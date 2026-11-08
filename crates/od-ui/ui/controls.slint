@@ -1,0 +1,653 @@
+// Controls: outlined plates led by a short emission line. Active state is a
+// dashed outline; disabled is struck.
+
+import { Theme } from "tokens.slint";
+import { VLine, HLine } from "lines.slint";
+import { TipArea, TooltipState } from "tooltip.slint";
+
+export { TipArea, TooltipState }
+
+// Where a popup goes: inside the window, flipped to the other side of its
+// anchor when it does not fit (the window size comes from AppWindow). On
+// platforms where popups are windows of their own nothing else keeps them
+// on screen, so every PopupWindow places itself with these.
+export global PopupPlace {
+    in-out property <length> window-width: 100000px;
+    in-out property <length> window-height: 100000px;
+    // Relative x of a popup `w` wide that wants to start `want` from its
+    // anchor at absolute x `ax`; kept 4 px inside the window.
+    public pure function x(ax: length, want: length, w: length) -> length {
+        return clamp(ax + want, 4px, max(4px, root.window-width - w - 4px)) - ax;
+    }
+    // Relative y of a popup `h` tall at an anchor at absolute y `ay`:
+    // `first` (e.g. below the anchor) when it fits, else `second` (above),
+    // else as close to `first` as the window allows.
+    public pure function y(ay: length, first: length, second: length, h: length) -> length {
+        if (ay + first >= 4px && ay + first + h <= root.window-height - 4px) { return first; }
+        if (ay + second >= 4px && ay + second + h <= root.window-height - 4px) { return second; }
+        return clamp(ay + first, 4px, max(4px, root.window-height - h - 4px)) - ay;
+    }
+}
+
+// Hairline marks drawn as paths instead of typed characters.
+export component Glyph inherits Path {
+    in property <string> kind: "plus";
+    in property <color> tone: Theme.bone-2;
+    width: 10px;
+    height: 10px;
+    viewbox-width: 10;
+    viewbox-height: 10;
+    stroke: kind == "play" || kind == "auto" ? transparent : root.tone;
+    fill: kind == "play" || kind == "pause" || kind == "auto" ? root.tone : transparent;
+    stroke-width: 1.2px;
+    commands: kind == "play" ? "M 1 0 L 10 5 L 1 10 Z"
+        : kind == "pause" ? "M 1 0 L 4 0 L 4 10 L 1 10 Z M 6 0 L 9 0 L 9 10 L 6 10 Z"
+        : kind == "usb" ? "M 3 0 L 7 0 L 7 3 M 3 0 L 3 3 M 1 3 L 9 3 L 9 10 L 1 10 Z"
+        : kind == "eject" ? "M 1 6 L 5 1 L 9 6 Z M 1 8.5 L 9 8.5"
+        : kind == "sync" ? "M 8.5 3.5 A 4 4 0 1 0 9 6.5 M 8.5 0.5 L 8.5 3.5 L 5.5 3.5"
+        : kind == "plus" ? "M 5 0 L 5 10 M 0 5 L 10 5"
+        : kind == "minus" ? "M 0 5 L 10 5"
+        : kind == "up" ? "M 5 10 L 5 1 M 1.5 4.5 L 5 1 L 8.5 4.5"
+        : kind == "down" ? "M 5 0 L 5 9 M 1.5 5.5 L 5 9 L 8.5 5.5"
+        : kind == "close" ? "M 1 1 L 9 9 M 9 1 L 1 9"
+        // Chevrons for steppers (previous / next value).
+        : kind == "prev" ? "M 6.5 1 L 2.5 5 L 6.5 9"
+        : kind == "next" ? "M 3.5 1 L 7.5 5 L 3.5 9"
+        // A six-tooth cog with its hub (not a sun: that is the light mode).
+        : kind == "gear" ? "M 8.06 3.76 L 8.34 4.35 L 9.75 4.33 L 9.75 5.67 L 8.34 5.65 L 8.06 6.24 L 7.60 7.03 L 7.23 7.57 L 7.96 8.78 L 6.80 9.45 L 6.11 8.21 L 5.46 8.27 L 4.54 8.27 L 3.89 8.21 L 3.20 9.45 L 2.04 8.78 L 2.77 7.57 L 2.40 7.03 L 1.94 6.24 L 1.66 5.65 L 0.25 5.67 L 0.25 4.33 L 1.66 4.35 L 1.94 3.76 L 2.40 2.97 L 2.77 2.43 L 2.04 1.22 L 3.20 0.55 L 3.89 1.79 L 4.54 1.73 L 5.46 1.73 L 6.11 1.79 L 6.80 0.55 L 7.96 1.22 L 7.23 2.43 L 7.60 2.97 Z M 5 3.6 A 1.4 1.4 0 1 0 5 6.4 A 1.4 1.4 0 1 0 5 3.6"
+        // Appearance: sun (light), crescent moon (dark), half disc (system).
+        : kind == "sun" ? "M 5 3 A 2 2 0 1 0 5 7 A 2 2 0 1 0 5 3 M 8.30 5.00 L 9.80 5.00 M 7.33 7.33 L 8.39 8.39 M 5.00 8.30 L 5.00 9.80 M 2.67 7.33 L 1.61 8.39 M 1.70 5.00 L 0.20 5.00 M 2.67 2.67 L 1.61 1.61 M 5.00 1.70 L 5.00 0.20 M 7.33 2.67 L 8.39 1.61"
+        : kind == "moon" ? "M 6.2 0.8 A 4.4 4.4 0 1 0 9.2 7 A 3.6 3.6 0 1 1 6.2 0.8 Z"
+        : kind == "auto" ? "M 5 0.6 A 4.4 4.4 0 0 0 5 9.4 Z M 5 0.6 A 4.4 4.4 0 0 1 5 9.4 L 5 8.3 A 3.3 3.3 0 0 0 5 1.7 Z"
+        : "M 0 5 L 10 5 M 6 1 L 10 5 L 6 9";
+}
+
+export component Caps inherits Text {
+    font-family: Theme.family;
+    font-size: Theme.index;
+    letter-spacing: Theme.tracking-index;
+    color: Theme.bone-3;
+    font-weight: 500;
+}
+
+component Outline inherits Rectangle {
+    in property <bool> dashed: false;
+    in property <color> tone: Theme.rule-strong;
+    if !root.dashed: Rectangle {
+        border-width: Theme.hair;
+        border-color: root.tone;
+    }
+    if root.dashed: Rectangle {
+        HLine { x: 0; y: 0; width: parent.width; tone: root.tone; form: "dashed"; }
+        HLine { x: 0; y: parent.height - self.height; width: parent.width; tone: root.tone; form: "dashed"; }
+        VLine { x: 0; y: 0; height: parent.height; weight: Theme.hair; tone: root.tone; form: "dashed"; }
+        VLine { x: parent.width - self.width; y: 0; height: parent.height; weight: Theme.hair; tone: root.tone; form: "dashed"; }
+    }
+}
+
+export component PlateButton inherits Rectangle {
+    // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
+    in property <string> tooltip;
+    in property <string> command;
+    in property <string> label;
+    in property <string> glyph;
+    in property <color> tone: Theme.bone-3;
+    in property <bool> active: false;
+    in property <bool> enabled: true;
+    in property <bool> compact: false;
+    callback clicked();
+
+    in property <bool> tall: false;
+    min-width: max(root.tall ? 44px : 0px, lbl.preferred-width + (glyph != "" ? 22px : 0px) + 30px);
+    height: tall ? 44px : compact ? 26px : 32px;
+    background: touch.pressed && enabled ? Theme.plate-raised : touch.has-hover && enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate;
+    animate background { duration: Theme.motion ? 90ms : 0ms; }
+
+    Outline { width: parent.width; height: parent.height; dashed: root.active; tone: root.active ? root.tone : Theme.rule-strong; }
+    VLine {
+        x: 10px; y: 6px; height: parent.height - 12px;
+        tone: root.enabled ? root.tone : Theme.bone-3;
+        form: root.enabled ? "solid" : "struck";
+    }
+    lbl := Text {
+        x: 22px;
+        text: root.label;
+        font-family: Theme.family;
+        font-size: root.compact ? 11px : 12px;
+        font-weight: 500;
+        letter-spacing: root.compact ? 1.4px : 1.8px;
+        color: root.enabled ? Theme.bone : Theme.bone-3;
+        vertical-alignment: center;
+        height: parent.height;
+    }
+    if root.glyph != "": Glyph {
+        x: parent.width - 20px;
+        y: (parent.height - self.height) / 2;
+        kind: root.glyph;
+        tone: Theme.bone-2;
+    }
+    touch := TipArea { tooltip: root.tooltip; command: root.command;
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Disclosure arrow of a tree row: › when closed, turning down to ⌄ when
+// open (animated, unless reduced motion is on).
+export component Disclosure inherits Rectangle {
+    in property <bool> open;
+    in property <color> tone: Theme.bone-3;
+    width: 12px; height: 12px;
+    property <float> turn: root.open ? 1 : 0;
+    animate turn { duration: Theme.motion ? 140ms : 0ms; easing: ease-out; }
+    // The chevron's points around the centre (5, 5), turned by 0–90°.
+    property <angle> a: root.turn * 90deg;
+    Path {
+        width: parent.width; height: parent.height;
+        viewbox-width: 10; viewbox-height: 10;
+        stroke: root.tone; stroke-width: 1.5px;
+        MoveTo { x: 5 + (-1.5) * Math.cos(root.a) - (-4) * Math.sin(root.a); y: 5 + (-1.5) * Math.sin(root.a) + (-4) * Math.cos(root.a); }
+        LineTo { x: 5 + 2.5 * Math.cos(root.a); y: 5 + 2.5 * Math.sin(root.a); }
+        LineTo { x: 5 + (-1.5) * Math.cos(root.a) - 4 * Math.sin(root.a); y: 5 + (-1.5) * Math.sin(root.a) + 4 * Math.cos(root.a); }
+    }
+}
+
+// Five-point rating star: filled when set, an outline when not.
+export component Star inherits Rectangle {
+    in property <bool> lit;
+    in property <color> tone: Theme.bone-2;
+    width: 11px; height: 11px;
+    Path {
+        width: parent.width; height: parent.height;
+        viewbox-width: 20; viewbox-height: 20;
+        fill: root.lit ? root.tone : transparent;
+        stroke: root.lit ? root.tone : Theme.rule-strong;
+        stroke-width: 1px;
+        MoveTo { x: 10; y: 1; }
+        LineTo { x: 12.6; y: 7.2; }
+        LineTo { x: 19.3; y: 7.6; }
+        LineTo { x: 14.2; y: 11.9; }
+        LineTo { x: 15.8; y: 18.5; }
+        LineTo { x: 10; y: 14.9; }
+        LineTo { x: 4.2; y: 18.5; }
+        LineTo { x: 5.8; y: 11.9; }
+        LineTo { x: 0.7; y: 7.6; }
+        LineTo { x: 7.4; y: 7.2; }
+        Close { }
+    }
+    @children
+}
+
+// Text field on an ash plate; focus draws a dashed outline.
+export component Field inherits Rectangle {
+    in property <string> placeholder;
+    in-out property <string> text <=> input.text;
+    in property <color> tone: Theme.w486;
+    callback edited(string);
+    callback accepted(string);
+    // Esc in the field.
+    callback cancelled();
+    height: 32px;
+    background: Theme.plate;
+
+    Outline { width: parent.width; height: parent.height; dashed: input.has-focus; tone: input.has-focus ? root.tone : Theme.rule; }
+    VLine { x: 10px; y: 8px; height: parent.height - 16px; tone: input.has-focus ? root.tone : Theme.bone-3; weight: Theme.hair; }
+    if input.text == "": Text {
+        x: 22px; height: parent.height;
+        text: root.placeholder;
+        font-family: Theme.family; font-size: 12px; letter-spacing: 1.4px;
+        color: Theme.bone-3;
+        vertical-alignment: center;
+    }
+    input := TextInput {
+        x: 22px; width: parent.width - 30px; height: parent.height;
+        font-family: Theme.family; font-size: 14px;
+        color: Theme.bone;
+        selection-background-color: Theme.w486.with-alpha(0.35);
+        selection-foreground-color: Theme.bone;
+        vertical-alignment: center;
+        single-line: true;
+        edited => { root.edited(self.text); }
+        accepted => { root.accepted(self.text); }
+        key-pressed(e) => {
+            if e.text == Key.Escape { root.cancelled(); return accept; }
+            reject
+        }
+    }
+
+    public function focus-field() { input.focus(); }
+    public function select-all() { input.select-all(); }
+}
+
+// Two-state switch drawn as a line that is either solid or struck.
+export component LineToggle inherits Rectangle {
+    // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
+    in property <string> tooltip;
+    in property <string> command;
+    in property <string> label;
+    in-out property <bool> checked;
+    in property <color> tone: Theme.live;
+    callback toggled(bool);
+    height: 26px;
+    min-width: t.preferred-width + 24px;
+
+    VLine { x: 2px; y: 5px; height: parent.height - 10px; tone: root.checked ? root.tone : Theme.rule-strong; form: root.checked ? "solid" : "half"; }
+    t := Text {
+        x: 16px; height: parent.height;
+        text: root.label;
+        font-family: Theme.family; font-size: 13px;
+        color: root.checked ? Theme.bone : Theme.bone-2;
+        vertical-alignment: center;
+    }
+    TipArea { tooltip: root.tooltip; command: root.command;
+        mouse-cursor: pointer;
+        clicked => { root.checked = !root.checked; root.toggled(root.checked); }
+    }
+}
+
+// Rotary knob: a ring with an indicator line. Vertical drag changes the
+// value; double-click resets it. Bipolar knobs (EQ, FX) light the arc from
+// the centre.
+export component Knob inherits Rectangle {
+    // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
+    in property <string> tooltip;
+    in property <string> command;
+    in-out property <float> value: 0;
+    in property <float> minimum: -1;
+    in property <float> maximum: 1;
+    in property <float> default-value: 0;
+    in property <string> label;
+    in property <color> tone: Theme.bone-2;
+    in property <length> size: 30px;
+    // Room under the ring for the legend (smaller on compact strips); a
+    // knob without a legend is just its ring, so it centres on its row.
+    in property <length> label-h: 16px;
+    callback changed(float);
+    width: max(root.size + 8px, lbl.preferred-width + 4px);
+    height: root.size + (root.label == "" ? 0px : root.label-h);
+
+    property <float> norm: (root.value - root.minimum) / (root.maximum - root.minimum);
+    property <angle> a: -225deg + 270deg * root.norm;
+
+    Rectangle {
+        x: (parent.width - root.size) / 2; y: 0;
+        width: root.size; height: root.size;
+        border-radius: root.size / 2;
+        border-width: 1px;
+        border-color: touch.has-hover ? Theme.bone-3 : Theme.rule-strong;
+        background: Theme.plate;
+        Path {
+            width: root.size; height: root.size;
+            viewbox-width: 100; viewbox-height: 100;
+            stroke: Math.abs(root.value - root.default-value) > 0.01 ? root.tone : Theme.bone;
+            stroke-width: 2px;
+            MoveTo { x: 50 + 16 * Math.cos(root.a); y: 50 + 16 * Math.sin(root.a); }
+            LineTo { x: 50 + 44 * Math.cos(root.a); y: 50 + 44 * Math.sin(root.a); }
+        }
+    }
+    lbl := Text {
+        y: root.size + (root.label-h >= 16px ? 3px : 1px); width: parent.width;
+        text: root.label;
+        font-family: Theme.family; font-size: root.label-h >= 16px ? 9px : 8px; font-weight: 600; letter-spacing: root.label-h >= 16px ? 1.2px : 0.8px;
+        color: Theme.bone-3;
+        horizontal-alignment: center;
+    }
+    property <float> start;
+    touch := TipArea { tooltip: root.tooltip; command: root.command;
+        mouse-cursor: ns-resize;
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down) { root.start = root.value; }
+        }
+        moved => {
+            if (self.pressed) {
+                root.value = clamp(root.start + (self.pressed-y - self.mouse-y) / 160px * (root.maximum - root.minimum), root.minimum, root.maximum);
+                root.changed(root.value);
+            }
+        }
+        double-clicked => { root.value = root.default-value; root.changed(root.value); }
+    }
+}
+
+// Vertical fader: a track line with a plate handle.
+export component Fader inherits Rectangle {
+    // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
+    in property <string> tooltip;
+    in property <string> command;
+    in-out property <float> value: 0;
+    in property <color> tone: Theme.bone;
+    callback changed(float);
+    width: 26px;
+    Rectangle { x: parent.width / 2 - 1px; y: 4px; width: 2px; height: parent.height - 8px; background: Theme.rule-strong; }
+    Rectangle {
+        x: parent.width / 2 - 1px; width: 2px;
+        y: 4px + (parent.height - 8px) * (1 - root.value);
+        height: (parent.height - 8px) * root.value;
+        background: root.tone.with-alpha(0.6);
+    }
+    Rectangle {
+        x: 1px; width: parent.width - 2px; height: 12px;
+        y: 4px + (parent.height - 8px - 12px) * (1 - root.value);
+        background: Theme.plate-raised;
+        border-width: 1px; border-color: touch.has-hover ? Theme.bone-2 : Theme.bone-3;
+        Rectangle { y: 5px; height: 2px; x: 3px; width: parent.width - 6px; background: Theme.bone; }
+    }
+    touch := TipArea { tooltip: root.tooltip; command: root.command;
+        mouse-cursor: ns-resize;
+        moved => {
+            if (self.pressed) {
+                root.value = clamp(1 - (self.mouse-y - 10px) / (root.height - 20px), 0, 1);
+                root.changed(root.value);
+            }
+        }
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down) {
+                root.value = clamp(1 - (self.mouse-y - 10px) / (root.height - 20px), 0, 1);
+                root.changed(root.value);
+            }
+        }
+    }
+}
+
+// Small state button: outlined plate, the line lights in `tone` when on.
+export component Toggle inherits Rectangle {
+    // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
+    in property <string> tooltip;
+    in property <string> command;
+    in property <string> label;
+    in property <bool> on;
+    in property <color> tone: Theme.attention;
+    in property <bool> enabled: true;
+    in property <length> size: 26px;
+    // Smallest width (44 px touch keys).
+    in property <length> min-w: 0px;
+    callback clicked();
+    min-width: max(root.min-w, t.preferred-width + 20px);
+    height: root.size;
+    background: root.on ? root.tone.with-alpha(0.2) : touch.pressed ? Theme.plate-raised : touch.has-hover && root.enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate;
+    border-width: 1px;
+    border-color: root.on ? root.tone.with-alpha(0.8) : Theme.rule;
+    animate background { duration: Theme.motion ? 90ms : 0ms; }
+    // Lit state: a line along the top edge in the toggle's tone.
+    Rectangle { y: 0; height: 2px; background: root.on ? root.tone : transparent; }
+    t := Text {
+        text: root.label;
+        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
+        color: !root.enabled ? Theme.bone-3.with-alpha(0.55) : root.on ? Theme.bone : Theme.bone-2;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
+}
+
+// Draggable divider between two panes. `horizontal` = a horizontal bar that
+// moves vertically. Reports the pointer delta; double-click resets.
+export component Splitter inherits Rectangle {
+    // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
+    in property <string> tooltip;
+    in property <string> command;
+    in property <bool> horizontal: true;
+    callback dragged(length);
+    callback reset();
+    // Thickness across: a vertical splitter is a full 24 px grab zone (the
+    // minimum target), the horizontal one stays slim to save height.
+    in property <length> thickness: root.horizontal ? 7px : 24px;
+    // Fixed thickness across, free along (a fixed 0 length would cap the
+    // surrounding layout).
+    min-width: root.horizontal ? 0px : root.thickness;
+    max-width: root.horizontal ? 100000px : root.thickness;
+    min-height: root.horizontal ? root.thickness : 0px;
+    max-height: root.horizontal ? root.thickness : 100000px;
+    horizontal-stretch: root.horizontal ? 1 : 0;
+    vertical-stretch: root.horizontal ? 0 : 1;
+    background: touch.pressed || touch.has-hover ? Theme.plate : transparent;
+    animate background { duration: Theme.motion ? 90ms : 0ms; }
+    Rectangle {
+        x: root.horizontal ? 0 : (root.thickness - 1px) / 2; y: root.horizontal ? (root.thickness - 1px) / 2 : 0;
+        width: root.horizontal ? parent.width : 1px;
+        height: root.horizontal ? 1px : parent.height;
+        background: touch.pressed ? Theme.attention : Theme.rule;
+    }
+    // Grip in the middle.
+    Rectangle {
+        x: root.horizontal ? (parent.width - 28px) / 2 : (root.thickness - 3px) / 2;
+        y: root.horizontal ? (root.thickness - 3px) / 2 : (parent.height - 28px) / 2;
+        width: root.horizontal ? 28px : 3px;
+        height: root.horizontal ? 3px : 28px;
+        background: touch.has-hover || touch.pressed ? Theme.bone-3 : Theme.rule-strong;
+    }
+    touch := TipArea { tooltip: root.tooltip; command: root.command;
+        mouse-cursor: root.horizontal ? row-resize : col-resize;
+        moved => {
+            if (self.pressed) {
+                root.dragged(root.horizontal ? self.mouse-y - self.pressed-y : self.mouse-x - self.pressed-x);
+            }
+        }
+        double-clicked => { root.reset(); }
+    }
+}
+
+// Jog display: a platter ring with a rotating position mark, the track's
+// progress as tick marks around the ring and readouts in the centre.
+export component Jog inherits Rectangle {
+    // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
+    in property <string> tooltip;
+    in property <string> command;
+    in property <float> angle;        // degrees, platter rotation
+    in property <float> progress;     // 0..1 through the track
+    in property <bool> playing;
+    in property <bool> loaded;
+    in property <color> tone: Theme.bone;
+    in property <string> top-text;
+    in property <string> main-text;
+    in property <string> sub-text;
+    in property <length> size: 150px;
+    // The BPM in the centre can be typed (target tempo) and the tempo range
+    // under it clicked through.
+    in property <bool> editable;
+    // Accessible label prefix of the BPM field and the range key ("deck1").
+    in property <string> a11y-prefix;
+    callback touched();
+    callback set-bpm(string);
+    callback range();
+    width: root.size; height: root.size;
+    property <length> r: root.size / 2;
+    // Platter.
+    Rectangle {
+        width: root.size; height: root.size; border-radius: root.r;
+        background: Theme.ground-band;
+        border-width: 1px; border-color: Theme.rule-strong;
+    }
+    // Progress ring: 60 ticks, lit up to the playhead.
+    for i in 60: Rectangle {
+        property <angle> a: (i * 6 - 90) * 1deg;
+        x: root.r + (root.r - 7px) * Math.cos(self.a) - 1px;
+        y: root.r + (root.r - 7px) * Math.sin(self.a) - 1px;
+        width: 3px; height: 3px; border-radius: 1.5px;
+        background: root.loaded && i / 60 <= root.progress ? root.tone : Theme.rule-strong;
+    }
+    // Inner ring.
+    Rectangle {
+        x: 16px; y: 16px; width: root.size - 32px; height: root.size - 32px;
+        border-radius: (root.size - 32px) / 2;
+        border-width: 1px; border-color: Theme.rule;
+        background: Theme.ground;
+    }
+    // Rotating position mark.
+    if root.loaded: Path {
+        width: root.size; height: root.size;
+        viewbox-width: 100; viewbox-height: 100;
+        stroke: root.playing ? root.tone : Theme.bone-2;
+        stroke-width: 3px;
+        MoveTo { x: 50 + 30 * Math.cos((root.angle - 90) * 1deg); y: 50 + 30 * Math.sin((root.angle - 90) * 1deg); }
+        LineTo { x: 50 + 39 * Math.cos((root.angle - 90) * 1deg); y: 50 + 39 * Math.sin((root.angle - 90) * 1deg); }
+    }
+    VerticalLayout {
+        x: 24px; width: root.size - 48px;
+        alignment: center;
+        spacing: 0;
+        Text { text: root.top-text; font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; color: Theme.bone-3; horizontal-alignment: center; }
+        Text { text: root.main-text; font-family: Theme.family; font-size: root.size > 120px ? 24px : 18px; font-weight: 600; color: Theme.bone; horizontal-alignment: center; }
+        Text { text: root.sub-text; font-family: Theme.family; font-size: 11px; color: Theme.bone-2; horizontal-alignment: center; }
+    }
+    TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.touched(); } }
+    // Click the BPM: type the tempo you want. The field opens on the current
+    // BPM, all selected; Return sets it, Esc or a click anywhere else
+    // turns it back into the readout.
+    if root.editable && root.loaded: TipArea {
+        accessible-role: button;
+        accessible-label: root.a11y-prefix + ".bpm-set";
+        x: 24px; y: root.r - 16px; width: root.size - 48px; height: 30px;
+        tooltip: @tr("Click to type a BPM: the tempo fader goes there (the range widens if needed)");
+        mouse-cursor: text;
+        clicked => { bpm-pop.show(); }
+    }
+    // Click the tempo / range line: the next range (±6, ±10, ±16 %, WIDE).
+    if root.editable: TipArea {
+        accessible-role: button;
+        accessible-label: root.a11y-prefix + ".range-set";
+        x: 24px; y: root.r + 14px; width: root.size - 48px; height: 20px;
+        tooltip: @tr("Click for the next tempo range: ±6 %, ±10 %, ±16 %, WIDE");
+        mouse-cursor: pointer;
+        clicked => { root.range(); }
+    }
+    bpm-pop := PopupWindow {
+        x: 22px; y: root.r - 16px; width: root.size - 44px; height: 32px;
+        close-policy: close-on-click-outside;
+        Field {
+            accessible-role: text-input;
+            accessible-label: root.a11y-prefix + ".bpm-input";
+            accessible-value: self.text;
+            width: parent.width; height: parent.height;
+            text: root.main-text;
+            placeholder: "BPM";
+            init => { self.focus-field(); self.select-all(); }
+            accepted(t) => { bpm-pop.close(); root.set-bpm(t); }
+            cancelled => { bpm-pop.close(); }
+        }
+    }
+}
+
+// Round transport button (CUE / PLAY) drawn as a ring with a mark.
+export component Transport inherits Rectangle {
+    // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
+    in property <string> tooltip;
+    in property <string> command;
+    in property <string> kind: "play";
+    in property <bool> on;
+    in property <color> tone: Theme.live;
+    in property <length> size: 44px;
+    callback clicked();
+    width: root.size; height: root.size;
+    border-radius: root.size / 2;
+    border-width: 2px;
+    border-color: root.on ? root.tone : touch.has-hover ? Theme.bone-3 : Theme.rule-strong;
+    background: root.on ? root.tone.with-alpha(0.12) : Theme.plate;
+    if root.kind == "cue": Text {
+        text: "CUE";
+        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1px;
+        color: root.on ? root.tone : Theme.bone-2;
+    }
+    if root.kind != "cue": Glyph {
+        x: (parent.width - 12px) / 2 + 1px; y: (parent.height - 12px) / 2;
+        width: 12px; height: 12px;
+        kind: root.on ? "pause" : "play";
+        tone: root.on ? root.tone : Theme.bone-2;
+    }
+    touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// A value with ‹ › on either side (effect, beat length, bank). The value
+// keeps the width of `template`, so stepping never moves its neighbours;
+// clicking the value can open a list (`value-clicked`).
+export component Stepper inherits Rectangle {
+    in property <string> tooltip;
+    in property <string> command;
+    in property <string> value;
+    in property <string> template: "00000";
+    in property <length> size: 24px;
+    // Width of the ‹ › areas.
+    in property <length> arrow: root.size;
+    in property <color> tone: Theme.bone-3;
+    in property <bool> lit;
+    in property <bool> enabled: true;
+    in property <length> font-size: 12px;
+    // Accessible labels of the ‹ area, the value and the › area (test
+    // hooks for steppers whose parts are separate controls).
+    in property <string> a11y-prev;
+    in property <string> a11y-value;
+    in property <string> a11y-next;
+    callback step(int);
+    callback value-clicked();
+    height: root.size;
+    min-width: probe.preferred-width + 2 * root.arrow + 12px;
+    background: Theme.plate;
+    border-width: 1px;
+    border-color: root.lit ? root.tone.with-alpha(0.8) : Theme.rule;
+    probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: 600; letter-spacing: 1px; }
+    Rectangle {
+        x: 0; width: root.arrow;
+        accessible-role: button;
+        accessible-label: root.a11y-prev;
+        background: prev.pressed ? Theme.plate-raised : prev.has-hover && root.enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : transparent;
+        Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "prev"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
+        prev := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.step(-1); } }
+    }
+    VLine { x: root.arrow; height: parent.height; weight: 1px; tone: Theme.rule; }
+    Rectangle {
+        x: root.arrow + 1px; width: parent.width - 2 * root.arrow - 2px;
+        accessible-role: text;
+        accessible-label: root.a11y-value;
+        accessible-value: root.value;
+        background: mid.has-hover && root.enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : transparent;
+        Text {
+            text: root.value;
+            font-family: Theme.family; font-size: root.font-size; font-weight: 600; letter-spacing: 1px;
+            color: !root.enabled ? Theme.bone-3 : root.lit ? Theme.bone : Theme.bone-2;
+            horizontal-alignment: center; vertical-alignment: center;
+            overflow: elide;
+        }
+        mid := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.value-clicked(); } }
+    }
+    VLine { x: parent.width - root.arrow - 1px; height: parent.height; weight: 1px; tone: Theme.rule; }
+    Rectangle {
+        x: parent.width - root.arrow; width: root.arrow;
+        accessible-role: button;
+        accessible-label: root.a11y-next;
+        background: next.pressed ? Theme.plate-raised : next.has-hover && root.enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : transparent;
+        Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "next"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
+        next := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.step(1); } }
+    }
+}
+
+// A momentary button: reports press and release (Exit FX, gate pads).
+// Lit while held or while `on`.
+export component HoldButton inherits Rectangle {
+    in property <string> tooltip;
+    in property <string> command;
+    in property <string> label;
+    in property <bool> on;
+    in property <color> tone: Theme.attention;
+    in property <length> size: 24px;
+    callback pressed();
+    callback released();
+    property <bool> lit: root.on || touch.pressed;
+    min-width: t.preferred-width + 16px;
+    height: root.size;
+    background: root.lit ? root.tone.with-alpha(0.22) : touch.has-hover ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate;
+    border-width: 1px;
+    border-color: root.lit ? root.tone.with-alpha(0.8) : Theme.rule;
+    Rectangle { y: 0; height: 2px; background: root.lit ? root.tone : transparent; }
+    t := Text {
+        text: root.label;
+        font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 1.1px;
+        color: root.lit ? Theme.bone : Theme.bone-2;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    touch := TipArea {
+        tooltip: root.tooltip; command: root.command; mouse-cursor: pointer;
+        pointer-event(ev) => {
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.down) { root.pressed(); }
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.up) { root.released(); }
+        }
+    }
+}

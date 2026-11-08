@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OpenDJDecks
+GenericName=DJ Software
+Comment=Prepare, sync and perform DJ sets
+Exec=opendjdecks
+Icon=de.opendjdecks.OpenDJDecks
+StartupWMClass=de.opendjdecks.OpenDJDecks
+Categories=AudioVideo;Audio;Music;
+Keywords=DJ;mix;decks;
+Terminal=false

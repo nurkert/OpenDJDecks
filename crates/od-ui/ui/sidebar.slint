@@ -1,0 +1,583 @@
+// Browser sidebar (the tree DJs know): collection, playlists, USB devices
+// with their sync state, recordings — and the actions to create lists.
+
+import { Theme } from "tokens.slint";
+import { VLine, HLine } from "lines.slint";
+import { Caps, Toggle, PlateButton, Glyph, TipArea, Stepper, Field, Disclosure } from "controls.slint";
+import { TreeItem } from "rail.slint";
+import { TreeRow, DeviceRow, VolumeRow, ExplorerRow } from "structs.slint";
+
+component Heading inherits Rectangle {
+    in property <string> label;
+    in property <string> action;
+    in property <string> tooltip;
+    in property <string> command;
+    // Accessible label of the action button (test hook).
+    in property <string> action-label;
+    in property <bool> action-enabled: true;
+    // Accessible label of the heading text (test hook).
+    in property <string> heading-label;
+    callback act();
+    height: Theme.touch ? 44px : 30px;
+    Caps {
+        accessible-label: root.heading-label;
+        x: 12px; y: 3px; height: Theme.target; vertical-alignment: center; text: root.label; color: Theme.bone-2; font-weight: 600;
+    }
+    if root.action != "": Rectangle {
+        accessible-label: root.action-label; accessible-role: button;
+        x: parent.width - Theme.target - 8px; y: 3px; width: Theme.target; height: Theme.target;
+        background: t.has-hover && root.action-enabled ? Theme.plate : transparent;
+        Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; width: 10px; height: 10px; kind: root.action; tone: root.action-enabled ? Theme.bone-2 : Theme.bone-3.with-alpha(0.5); }
+        t := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.action-enabled; mouse-cursor: root.action-enabled ? pointer : default; clicked => { root.act(); } }
+    }
+}
+
+// A USB stick: state line, name, detail, sync and eject.
+component DeviceItem inherits Rectangle {
+    in property <DeviceRow> device;
+    in property <bool> selected;
+    // Model index (accessible label `browser.tree.device<index>`).
+    in property <int> index;
+    accessible-label: "browser.tree.device\{root.index}";
+    accessible-role: list-item;
+    accessible-value: root.device.name;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.selected;
+    callback open();
+    callback sync();
+    callback eject();
+    height: 46px;
+    background: touch.has-hover ? Theme.ground-band : transparent;
+    property <string> form:
+        device.state == "in-sync" ? "solid" :
+        device.state == "pending" ? "dashed" :
+        device.state == "error" ? "struck" : "half";
+    property <color> tone:
+        device.state == "in-sync" ? Theme.live :
+        device.state == "pending" || device.state == "syncing" ? Theme.attention :
+        device.state == "error" ? Theme.fault : Theme.bone-3;
+    if root.selected: Rectangle { x: 0; y: parent.height / 2 - 1px; width: 8px; height: 2px; background: Theme.attention; }
+    if root.device.state != "syncing": VLine { x: 14px; y: 8px; height: parent.height - 16px; form: root.form; tone: root.tone; }
+    if root.device.state == "syncing": Rectangle {
+        x: 14px; y: 8px; width: 2px; height: parent.height - 16px;
+        VLine { height: parent.height; form: "dashed"; tone: Theme.attention.with-alpha(0.6); }
+        Rectangle {
+            y: parent.height * (1 - clamp(root.device.progress, 0, 1));
+            height: parent.height * clamp(root.device.progress, 0, 1);
+            background: Theme.live;
+            animate y, height { duration: Theme.motion ? 320ms : 0ms; easing: Theme.spring; }
+        }
+    }
+    Glyph { x: 24px; y: 9px; width: 10px; height: 10px; kind: "usb"; tone: root.device.connected ? Theme.bone-2 : Theme.bone-3; }
+    Text {
+        x: 40px; y: 6px; width: parent.width - 100px;
+        text: root.device.name;
+        font-family: Theme.family; font-size: 14px; font-weight: 600;
+        color: root.device.connected ? Theme.bone : Theme.bone-3; overflow: elide;
+    }
+    Text {
+        x: 40px; y: 25px; width: parent.width - 100px;
+        text: root.device.detail;
+        font-family: Theme.family; font-size: 11px;
+        color: root.device.state == "error" ? Theme.fault : Theme.bone-3; overflow: elide;
+    }
+    touch := TouchArea { clicked => { root.open(); } }
+    if root.device.connected: Rectangle {
+        accessible-label: "browser.tree.device\{root.index}.sync"; accessible-role: button;
+        x: parent.width - 2 * Theme.target - 12px; y: (parent.height - self.height) / 2; width: Theme.target; height: Theme.target;
+        background: s.has-hover ? Theme.plate : transparent;
+        border-width: 1px; border-color: s.has-hover ? Theme.live : transparent;
+        Glyph { x: 6px; y: 6px; width: 10px; height: 10px; kind: "sync"; tone: Theme.live; }
+        s := TipArea { tooltip: @tr("Sync this stick now"); command: "devices.sync"; mouse-cursor: pointer; clicked => { root.sync(); } }
+    }
+    if root.device.connected: Rectangle {
+        accessible-label: "browser.tree.device\{root.index}.eject"; accessible-role: button;
+        x: parent.width - Theme.target - 8px; y: (parent.height - self.height) / 2; width: Theme.target; height: Theme.target;
+        background: e.has-hover ? Theme.plate : transparent;
+        border-width: 1px; border-color: e.has-hover ? Theme.bone-3 : transparent;
+        Glyph { x: 6px; y: 6px; width: 10px; height: 10px; kind: "eject"; tone: Theme.bone-2; }
+        e := TipArea { tooltip: @tr("Eject this stick"); command: "devices.eject"; mouse-cursor: pointer; clicked => { root.eject(); } }
+    }
+}
+
+// A folder on disk: same rhythm as the list tree, no counts or length
+// bars. Roots carry a remove action (hover button and context menu).
+component ExplorerItem inherits Rectangle {
+    in property <ExplorerRow> item;
+    in property <bool> selected;
+    // Model index: the first row (always the first root) is
+    // `browser.tree.home`, the others `browser.tree.folder<index>`.
+    in property <int> index;
+    property <string> a11y: root.index == 0 ? "browser.tree.home" : "browser.tree.folder\{root.index}";
+    accessible-label: root.a11y;
+    accessible-role: list-item;
+    accessible-value: root.item.name;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.selected;
+    accessible-expandable: root.item.has-children;
+    accessible-expanded: root.item.expanded;
+    callback clicked();
+    callback toggled();
+    callback remove();
+    height: Theme.touch ? 44px : 26px;
+    background: touch.has-hover ? Theme.plate : transparent;
+    if root.selected: Rectangle {
+        x: 0; y: parent.height / 2 - 1px; width: 8px; height: 2px;
+        background: Theme.attention;
+    }
+    property <length> indent: 24px + root.item.depth * 14px;
+    menu := ContextMenuArea {
+        Menu {
+            MenuItem {
+                title: @tr("Remove from Explorer");
+                enabled: root.item.root;
+                activated => { root.remove(); }
+            }
+        }
+        touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    }
+    if root.item.has-children: Rectangle {
+        accessible-label: root.a11y + ".expand"; accessible-role: button;
+        accessible-checkable: true; accessible-checked: root.item.expanded;
+        x: root.indent - 16px; y: (parent.height - 12px) / 2; width: 12px; height: 12px;
+        Disclosure { open: root.item.expanded; }
+        TouchArea { clicked => { root.toggled(); } }
+    }
+    Text {
+        x: root.indent;
+        width: parent.width - root.indent - 36px;
+        height: parent.height;
+        text: root.item.name;
+        overflow: elide;
+        font-family: Theme.family;
+        font-size: 14px;
+        font-weight: root.item.root ? 600 : 400;
+        color: root.selected ? Theme.bone : Theme.bone-2;
+        vertical-alignment: center;
+    }
+    if root.item.root && touch.has-hover: Rectangle {
+        accessible-label: root.a11y + ".remove"; accessible-role: button;
+        x: parent.width - 30px; y: 3px; width: 22px; height: parent.height - 6px;
+        background: rm.has-hover ? Theme.plate-raised : transparent;
+        Glyph { x: 6px; y: (parent.height - 10px) / 2; width: 10px; height: 10px; kind: "close"; tone: Theme.bone-3; }
+        rm := TipArea { tooltip: @tr("Remove from Explorer"); mouse-cursor: pointer; clicked => { root.remove(); } }
+    }
+}
+
+// One source of the rail: a short legend with a tick that lights while
+// the source is open; a click opens the source (or scrolls the tree to it).
+// New-list key of the touch screen: a 44 px plate with a plus over a short
+// caption (the kiosk sidebar is too narrow for the worded keys).
+component NewListKey inherits Rectangle {
+    in property <string> label;
+    in property <string> tooltip;
+    in property <string> command;
+    in property <color> tone: Theme.bone-2;
+    callback clicked();
+    accessible-role: button;
+    min-width: 44px; height: 44px;
+    background: touch.pressed ? Theme.plate-raised : Theme.plate;
+    border-width: 1px;
+    border-color: Theme.rule;
+    Rectangle { y: 0; height: 2px; background: root.tone; }
+    Glyph { x: (parent.width - 10px) / 2; y: 10px; width: 10px; height: 10px; kind: "plus"; tone: root.tone; }
+    Text {
+        y: 25px; width: parent.width; height: 12px;
+        text: root.label;
+        font-family: Theme.family; font-size: 8px; font-weight: 600; letter-spacing: 0.6px;
+        color: Theme.bone-2;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+export component RailItem inherits Rectangle {
+    in property <string> label;
+    in property <string> tooltip;
+    in property <string> command;
+    in property <bool> current;
+    in property <bool> enabled: true;
+    in property <color> tone: Theme.bone-2;
+    callback clicked();
+    accessible-role: button;
+    accessible-checkable: true;
+    accessible-checked: root.current;
+    // Shrinks to the 24 px minimum target when the browser pane is short;
+    // 44 px keys on the touch screen.
+    min-height: Theme.target; preferred-height: Theme.touch ? 44px : 32px; max-height: Theme.touch ? 44px : 32px;
+    min-width: Theme.touch ? 44px : 0px;
+    background: touch.has-hover ? Theme.plate : transparent;
+    Rectangle {
+        x: 0; y: 4px; width: root.current ? 3px : 1px; height: parent.height - 8px;
+        background: root.current ? root.tone : Theme.rule-strong;
+    }
+    Text {
+        x: 5px; width: parent.width - 7px;
+        text: root.label;
+        font-family: Theme.family; font-size: 9px; font-weight: 600; letter-spacing: 0.6px;
+        color: !root.enabled ? Theme.bone-3.with-alpha(0.5) : root.current ? Theme.bone : Theme.bone-3;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
+}
+
+export component Sidebar inherits Rectangle {
+    in property <[TreeRow]> tree;
+    in property <int> selected-node;
+    in property <string> section;
+    in property <bool> can-add;
+    in property <[DeviceRow]> devices;
+    in property <[VolumeRow]> volumes;
+    in property <string> register-target;
+    in property <int> device-selected;
+    in property <int> recordings-count;
+    in property <[ExplorerRow]> explorer;
+    in property <int> explorer-selected: -1;
+    callback explorer-select(int);
+    callback explorer-toggle(int);
+    callback explorer-add-root();
+    callback explorer-open-roots();
+    callback explorer-remove-root(int);
+    callback select-node(int);
+    callback toggle-node(int);
+    callback add-to-node(int);
+    callback create-node(string);
+    callback select-section(string);
+    callback open-device(int);
+    callback sync-device(int);
+    callback eject-device(int);
+    callback sync-all-devices();
+    callback tree-filter(string);
+    callback register-volume(int);
+    callback import-folder();
+    // Histories (play history sessions), the tag list and the drop of a
+    // dragged tree node (source id, DragState.target).
+    in property <[TreeRow]> histories;
+    in property <string> history-year;
+    in property <int> history-year-count;
+    callback history-year-step(int);
+    in property <int> tag-list-count;
+    in property <int> similar-count;
+    // AUTO SORT: groups (folder rows) and their lists, computed from the
+    // analysis (browser::auto).
+    in property <[TreeRow]> auto-sort;
+    callback add-to-tag-list();
+    callback node-dropped(int, int);
+    // Source rail: the kind of the open list and the sampler source.
+    in property <string> node-kind;
+    callback open-sampler();
+    // A controller's browse encoder moves through the tree.
+    in property <bool> browse-focus;
+    background: Theme.ground;
+
+    property <[{ a11y: string, label: string, tone: color, tip: string }]> rail-items: [
+        { a11y: "browser.rail.collection", label: @tr("ALL"), tone: Theme.w486, tip: @tr("Collection: every track") },
+        { a11y: "browser.rail.playlists", label: @tr("LISTS"), tone: Theme.attention, tip: @tr("Playlists, sets and smart lists") },
+        { a11y: "browser.rail.similar", label: @tr("SIM"), tone: Theme.w546, tip: @tr("Similar tracks: what fits after the master deck") },
+        { a11y: "browser.rail.sampler", label: @tr("SMPL"), tone: Theme.w656, tip: @tr("Sampler: open the sampler panel in Perform") },
+        { a11y: "browser.rail.explorer", label: @tr("FILES"), tone: Theme.bone-2, tip: @tr("Explorer: folders on disk") },
+        { a11y: "browser.rail.devices", label: "USB", tone: Theme.live, tip: @tr("Devices: USB sticks") },
+        { a11y: "browser.rail.histories", label: @tr("HIST"), tone: Theme.bone-2, tip: @tr("Histories: every session you played") },
+        { a11y: "browser.rail.recordings", label: "REC", tone: Theme.w656, tip: @tr("Recordings: your mixes") },
+        { a11y: "browser.rail.tag-list", label: @tr("TAG"), tone: Theme.attention, tip: @tr("Tag list: tracks collected for later") },
+    ];
+    // The open source of the rail.
+    function rail-current(i: int) -> bool {
+        if (i == 0) { return root.section == "library" && root.selected-node == -1 && root.node-kind == "all"; }
+        if (i == 1) { return root.section == "library" && root.selected-node >= 0; }
+        if (i == 2) { return root.section == "library" && root.selected-node == -4; }
+        if (i == 4) { return root.section == "library" && root.node-kind == "explorer"; }
+        if (i == 5) { return root.section == "devices" || root.node-kind == "stick"; }
+        if (i == 6) { return root.section == "library" && root.node-kind == "history"; }
+        if (i == 7) { return root.section == "recordings"; }
+        if (i == 8) { return root.section == "library" && root.selected-node == -3; }
+        return false;
+    }
+    // A source of the rail: opens it or scrolls the tree to it.
+    function rail-click(i: int) {
+        if (i == 0) { root.reveal(coll-h.y); root.select-node(-1); }
+        if (i == 1) { root.reveal(pl-h.y); }
+        if (i == 2) { root.reveal(rel-h.y); root.select-node(-4); }
+        if (i == 3) { root.open-sampler(); }
+        if (i == 4) { root.explorer-open-roots(); root.reveal(ex-h.y); }
+        if (i == 5) { root.reveal(dev-h.y); }
+        if (i == 6) { root.reveal(hist-h.y); }
+        if (i == 7) { root.reveal(rec-h.y); root.select-section("recordings"); }
+        if (i == 8) { root.reveal(tag-h.y); root.select-node(-3); }
+    }
+
+    // Scrolls the tree so that `y` (a heading's position) is at the top.
+    property <length> tree-row: Theme.touch ? 44px : 26px;
+    function reveal(y: length) {
+        tree.content-y = -max(0px, min(y, tree.content-height - tree.height));
+    }
+    // A source opened elsewhere (controller, menu, view switch) scrolls into
+    // view when the part from `y` to `end` is not fully shown; selecting in
+    // the visible tree never jumps.
+    function show(y: length, end: length) {
+        if (y < -tree.content-y || end > -tree.content-y + tree.height) { root.reveal(y); }
+    }
+    changed selected-node => {
+        if (self.selected-node == -1) { root.show(coll-h.y, coll-h.y + 2 * root.tree-row); }
+        if (self.selected-node == -4) { root.show(rel-h.y, rel-h.y + 2 * root.tree-row); }
+        if (self.selected-node == -3) { root.show(tag-h.y, tag-h.y + 2 * root.tree-row); }
+    }
+
+    VerticalLayout {
+    // Touch screen: the sources as a grid of 44 px keys across the top, four
+    // a row, so the tree below keeps the sidebar's full width for its
+    // headings and keys; the new-list keys fill the last row.
+    if Theme.touch: GridLayout {
+        spacing: 0px;
+        for it[i] in root.rail-items: RailItem {
+            row: Math.floor(i / 4); col: Math.mod(i, 4);
+            accessible-label: it.a11y; label: it.label; tone: it.tone; tooltip: it.tip;
+            current: root.rail-current(i);
+            clicked => { root.rail-click(i); }
+        }
+        NewListKey { row: 2; col: 1; accessible-label: "browser.tree.new-set"; label: @tr("SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
+        NewListKey { row: 2; col: 2; accessible-label: "browser.tree.new-smart"; label: @tr("SMART"); tooltip: @tr("New smart list"); command: "browser.new.smart"; tone: Theme.w436; clicked => { root.create-node("smart"); } }
+        NewListKey { row: 2; col: 3; accessible-label: "browser.tree.new-folder"; label: @tr("FOLDER"); tooltip: @tr("New folder"); command: "browser.new.folder"; clicked => { root.create-node("folder"); } }
+    }
+    if Theme.touch: HLine { tone: Theme.rule; }
+    HorizontalLayout {
+      // Source rail (UX §1.6 order, without the streaming and cloud sources).
+      if !Theme.touch: VerticalLayout {
+        width: 38px;
+        padding-top: 0px;
+        spacing: 0px;
+        for it[i] in root.rail-items: RailItem {
+            accessible-label: it.a11y; label: it.label; tone: it.tone; tooltip: it.tip;
+            command: i == 7 ? "section.recordings" : "";
+            current: root.rail-current(i);
+            clicked => { root.rail-click(i); }
+        }
+        Rectangle { vertical-stretch: 1; min-height: 0px; }
+      }
+      if !Theme.touch: VLine { weight: 1px; tone: Theme.rule; }
+      VerticalLayout {
+        if root.browse-focus: Rectangle { height: 2px; background: Theme.attention; }
+        // Filter the lists by name (folders that hold a match stay open).
+        HorizontalLayout {
+            padding: 6px; padding-bottom: 2px;
+            Field {
+                accessible-label: "browser.tree.filter"; accessible-role: text-input;
+                accessible-value: self.text; accessible-placeholder-text: self.placeholder;
+                height: Theme.touch ? 44px : 26px;
+                placeholder: @tr("FILTER LISTS");
+                tone: Theme.attention;
+                edited(t) => { root.tree-filter(t); }
+            }
+        }
+        tree := Flickable {
+            accessible-label: "browser.tree"; accessible-role: AccessibleRole.tree;
+            accessible-value: root.browse-focus ? "controller" : "";
+            vertical-stretch: 1;
+            // Mouse drags move tree nodes; the wheel scrolls.
+            mouse-drag-pan-enabled: false;
+            // Never sideways: every row elides its name to the pane's width.
+            content-width: self.width;
+            tree-rows := VerticalLayout {
+                width: tree.width;
+                alignment: start;
+                coll-h := Heading { action-label: "browser.tree.add-music"; label: @tr("COLLECTION"); action: "plus"; tooltip: @tr("Add a music folder"); command: "browser.add.music"; act => { root.import-folder(); } }
+                for r in root.tree: TreeItem {
+                    label: "browser.tree.all";
+                    labelled: r.kind == "all";
+                    visible: r.kind == "all";
+                    height: r.kind == "all" ? root.tree-row : 0px;
+                    item: r;
+                    selected: root.selected-node == r.id && root.section == "library";
+                    can-add: false;
+                    clicked => { root.select-node(r.id); }
+                }
+                pl-h := Heading { heading-label: "browser.tree.playlists"; action-label: "browser.tree.add"; label: @tr("PLAYLISTS"); action: "plus"; tooltip: @tr("New playlist"); command: "browser.new.playlist"; act => { root.create-node("playlist"); } }
+                for r in root.tree: TreeItem {
+                    labelled: r.kind != "all" && r.kind != "stick" && r.id > -100;
+                    visible: r.kind != "all" && r.kind != "stick" && r.id > -100;
+                    height: r.kind != "all" && r.kind != "stick" && r.id > -100 ? root.tree-row : 0px;
+                    item: r;
+                    selected: root.selected-node == r.id && root.section == "library";
+                    can-add: root.can-add;
+                    clicked => { root.select-node(r.id); }
+                    toggled => { root.toggle-node(r.id); }
+                    add => { root.add-to-node(r.id); }
+                    dropped(t) => { root.node-dropped(r.id, t); }
+                }
+                ex-h := Heading { action-label: "browser.tree.add-explorer"; label: @tr("EXPLORER"); action: "plus"; tooltip: @tr("Add a folder to browse"); act => { root.explorer-add-root(); } }
+                if root.explorer.length == 0: Text {
+                    x: 12px; width: root.width - 24px;
+                    text: @tr("Add a folder with + to browse its files here.");
+                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                }
+                for f[i] in root.explorer: ExplorerItem {
+                    index: i;
+                    item: f;
+                    selected: root.explorer-selected == f.id && root.section == "library";
+                    // Opened elsewhere: the folder scrolls into view.
+                    changed selected => { if (self.selected) { root.show(self.y, self.y + self.height); } }
+                    clicked => { root.explorer-select(f.id); }
+                    toggled => { root.explorer-toggle(f.id); }
+                    remove => { root.explorer-remove-root(f.id); }
+                }
+                // Similar tracks: one row of its own (no heading), below the
+                // Explorer so the short Perform tree pane keeps the Explorer
+                // roots in view.
+                rel-h := TreeItem {
+                    label: "browser.tree.similar";
+                    item: { id: -4, name: @tr("Similar tracks"), kind: "similar", count: root.similar-count };
+                    selected: root.selected-node == -4 && root.section == "library";
+                    clicked => { root.select-node(-4); }
+                }
+                // The rules the similar list follows.
+                Caps {
+                    accessible-label: "browser.tree.rules"; accessible-role: text; accessible-value: self.text;
+                    x: 38px; height: 18px;
+                    text: @tr("TEMPO ±6 % · COMPATIBLE KEY");
+                    font-size: 9px; color: Theme.bone-3; vertical-alignment: top;
+                }
+                dev-h := Heading {
+                    heading-label: "browser.tree.devices";
+                    label: @tr("DEVICES");
+                    action: "sync"; action-label: "browser.tree.device-sync";
+                    action-enabled: root.devices.length > 0;
+                    tooltip: @tr("Sync every plugged-in stick now");
+                    act => { root.sync-all-devices(); }
+                }
+                if root.devices.length == 0 && root.volumes.length == 0: Text {
+                    x: 12px; width: root.width - 24px;
+                    text: @tr("Plug in a USB stick to register it.");
+                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                }
+                for d[i] in root.devices: DeviceItem {
+                    index: i;
+                    device: d;
+                    selected: root.section == "devices" && root.device-selected == d.id;
+                    open => { root.open-device(d.id); }
+                    sync => { root.sync-device(d.id); }
+                    eject => { root.eject-device(d.id); }
+                }
+                // Browsable stick libraries (read-only).
+                for r in root.tree: TreeItem {
+                    labelled: r.kind == "stick" || r.id <= -1000000;
+                    visible: r.kind == "stick" || r.id <= -1000000;
+                    height: r.kind == "stick" || r.id <= -1000000 ? root.tree-row : 0px;
+                    item: r;
+                    selected: root.selected-node == r.id && root.section == "library";
+                    can-add: false;
+                    clicked => { root.select-node(r.id); }
+                }
+                for v[i] in root.volumes: Rectangle {
+                    height: 54px;
+                    VLine { x: 14px; y: 8px; height: parent.height - 16px; form: "half"; tone: Theme.bone-2; }
+                    Text {
+                        x: 24px; y: 4px; width: root.width - 36px;
+                        text: @tr("New stick: {}", v.name);
+                        font-family: Theme.family; font-size: 13px; font-weight: 600; color: Theme.bone; overflow: elide;
+                    }
+                    PlateButton {
+                        accessible-label: "browser.tree.volume\{i}.register"; accessible-role: button;
+                        x: 24px; y: 24px; compact: true;
+                        enabled: root.register-target != "";
+                        label: root.register-target == "" ? @tr("SELECT A PLAYLIST FIRST") : @tr("REGISTER WITH {}", root.register-target);
+                        tone: Theme.live;
+                        tooltip: @tr("Keep this stick in sync with the selected playlist");
+                        clicked => { root.register-volume(v.index); }
+                    }
+                }
+                hist-h := Heading { label: @tr("HISTORIES"); }
+                if root.histories.length == 0: Text {
+                    x: 12px; width: root.width - 24px;
+                    text: @tr("Every session you play is listed here.");
+                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                }
+                // Year, then the sessions played in it (newest first).
+                HorizontalLayout {
+                    padding-left: 12px; padding-right: 12px;
+                    Stepper {
+                        accessible-role: spinbox;
+                        accessible-label: "browser.tree.years";
+                        accessible-value: root.history-year;
+                        size: Theme.target; font-size: 11px; template: "0000";
+                        value: root.history-year == "" ? "—" : root.history-year;
+                        enabled: root.history-year-count > 1;
+                        tooltip: @tr("Year of the sessions shown: earlier / later");
+                        step(d) => { root.history-year-step(d); }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                }
+                VerticalLayout {
+                    accessible-role: list;
+                    accessible-label: "browser.tree.sessions";
+                    accessible-item-count: root.histories.length;
+                    for h[i] in root.histories: TreeItem {
+                        label: "browser.tree.history\{i}";
+                        item: h;
+                        selected: root.selected-node == h.id && root.section == "library";
+                        clicked => { root.select-node(h.id); }
+                    }
+                }
+                rec-h := Heading { label: @tr("RECORDINGS"); }
+                Rectangle {
+                    accessible-label: "browser.tree.recordings"; accessible-role: list-item;
+                    accessible-value: root.recordings-count;
+                    accessible-item-selectable: true; accessible-item-selected: root.section == "recordings";
+                    height: root.tree-row;
+                    background: rt.has-hover ? Theme.ground-band : transparent;
+                    if root.section == "recordings": Rectangle { x: 0; y: parent.height / 2 - 1px; width: 8px; height: 2px; background: Theme.attention; }
+                    Glyph { x: 18px; y: 8px; width: 10px; height: 10px; kind: "play"; tone: Theme.w656; }
+                    Text {
+                        x: 36px; height: parent.height;
+                        text: @tr("Recordings");
+                        font-family: Theme.family; font-size: 14px; color: root.section == "recordings" ? Theme.bone : Theme.bone-2;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        x: parent.width - 40px; width: 32px; height: parent.height; horizontal-alignment: right;
+                        text: root.recordings-count; font-family: Theme.family; font-size: 12px; color: Theme.bone-3; vertical-alignment: center;
+                    }
+                    rt := TipArea { tooltip: @tr("Show recordings"); command: "section.recordings"; mouse-cursor: pointer; clicked => { root.select-section("recordings"); } }
+                }
+                tag-h := Heading { action-label: "browser.tree.tag-list.add"; label: @tr("TAG LIST"); action: "plus"; tooltip: @tr("Add the selected tracks to the tag list"); command: "browser.taglist.add"; act => { root.add-to-tag-list(); } }
+                TreeItem {
+                    label: "browser.tree.tag-list";
+                    item: { id: -3, name: @tr("Tag list"), kind: "taglist", count: root.tag-list-count };
+                    selected: root.selected-node == -3 && root.section == "library";
+                    clicked => { root.select-node(-3); }
+                }
+                // AUTO SORT: the collection sorted by its analysis — tempo,
+                // energy, mood, character and genre; a group opens on click.
+                Heading { heading-label: "browser.tree.auto-sort"; label: @tr("AUTO SORT"); }
+                if root.auto-sort.length == 0: Text {
+                    x: 12px; width: root.width - 24px;
+                    text: @tr("Analysed tracks are sorted here by tempo, energy, mood, character and genre.");
+                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                }
+                VerticalLayout {
+                    accessible-role: list;
+                    accessible-label: "browser.tree.auto";
+                    accessible-item-count: root.auto-sort.length;
+                    for r[i] in root.auto-sort: TreeItem {
+                        label: "browser.tree.auto\{i}";
+                        item: r;
+                        selected: root.selected-node == r.id && root.section == "library";
+                        can-add: false;
+                        clicked => { root.select-node(r.id); }
+                        toggled => { root.toggle-node(r.id); }
+                    }
+                }
+            }
+        }
+        if !Theme.touch: HLine { tone: Theme.rule; }
+        if !Theme.touch: HorizontalLayout {
+            padding: 8px;
+            spacing: 4px;
+            // New list buttons share the width (the sidebar is resizable).
+            Toggle { accessible-label: "browser.tree.new-set"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
+            Toggle { accessible-label: "browser.tree.new-smart"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SMART"); tooltip: @tr("New smart list"); command: "browser.new.smart"; tone: Theme.w436; clicked => { root.create-node("smart"); } }
+            Toggle { accessible-label: "browser.tree.new-folder"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ FOLDER"); tooltip: @tr("New folder"); command: "browser.new.folder"; clicked => { root.create-node("folder"); } }
+        }
+      }
+    }
+    }
+}

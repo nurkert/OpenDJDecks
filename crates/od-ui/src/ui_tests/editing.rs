@@ -1,0 +1,606 @@
+//! Behaviour tests of the Prepare editing features of
+//! `tests/parity/features.toml`: phrase display options, phrase editing
+//! (PHRASE tab), edit mode (EDIT tab: a region rendered into a new file)
+//! and the sub-browser.
+
+use super::harness::*;
+use i_slint_backend_testing::ElementHandle;
+use od_core::{Beatgrid, DataSource, Phrase, PhraseKind, TrackAnalysis, TrackId};
+use slint::{ComponentHandle, Model};
+
+/// Adds a `secs` long 120 BPM track to the fixture library, analysed: a
+/// constant grid from 0 s and the given phrases (bars, kinds).
+fn analysed_track(
+    fx: &Fixture,
+    title: &str,
+    secs: f32,
+    phrases: &[(u32, u32, PhraseKind)],
+) -> TrackId {
+    let path = fx.root.join(format!("music/{title}.wav"));
+    write_wav(&path, secs, 330.0);
+    let mut lib = fx.lib();
+    let id = crate::workers::import_file(&mut lib, &path).unwrap();
+    let mut tags = lib.track(id).unwrap().tags;
+    tags.title = title.into();
+    tags.artist = "Test Artist".into();
+    lib.set_tags(id, tags).unwrap();
+    let a = TrackAnalysis {
+        analysis_version: od_analysis::ANALYSIS_VERSION,
+        beatgrid: Beatgrid::constant(120.0, 0.0, 1, secs as f64),
+        phrases: phrases
+            .iter()
+            .map(|&(s, e, kind)| Phrase {
+                start_beat: s * 4,
+                end_beat: e * 4,
+                kind,
+            })
+            .collect(),
+        ..Default::default()
+    };
+    lib.store_analysis(id, &a, DataSource::Analysis).unwrap();
+    id
+}
+
+/// Shows `id` in the Prepare player.
+fn show(ui: &Ui, id: TrackId) {
+    {
+        let mut st = ui.app.state.borrow_mut();
+        st.player.current = Some(id);
+        st.player.cursor = 0.0;
+    }
+    crate::player::refresh_detail(&ui.app);
+    ui.pump(100);
+}
+
+/// Moves the player cursor to `secs` with a click on the overview position.
+fn seek(ui: &Ui, id: TrackId, secs: f64) {
+    let d = ui.fx.lib().track(id).unwrap().duration;
+    ui.app.ui.invoke_seek((secs / d) as f32);
+    ui.pump(50);
+}
+
+fn phrases(ui: &Ui, id: TrackId) -> Vec<(u32, u32, PhraseKind)> {
+    ui.fx
+        .lib()
+        .analysis(id)
+        .unwrap()
+        .phrases
+        .iter()
+        .map(|p| (p.start_beat / 4, p.end_beat / 4, p.kind))
+        .collect()
+}
+
+fn prefs(ui: &Ui) -> crate::PreferencesWindow {
+    ui.click("topbar.settings");
+    let w = ui
+        .app
+        .prefs
+        .borrow()
+        .window
+        .as_ref()
+        .map(|w| w.clone_strong())
+        .expect("Preferences open");
+    w.set_page("view".into());
+    w.window().set_size(slint::LogicalSize::new(900.0, 1600.0));
+    ui.pump(200);
+    w
+}
+
+fn prefs_el(w: &crate::PreferencesWindow, label: &str) -> ElementHandle {
+    ElementHandle::find_by_accessible_label(w, label)
+        .next()
+        .unwrap_or_else(|| panic!("no `{label}` in Preferences"))
+}
+
+fn stored(ui: &Ui) -> crate::settings::Settings {
+    crate::settings::Settings::from_json(
+        &ui.fx
+            .lib()
+            .meta(crate::settings::META_SETTINGS)
+            .unwrap()
+            .unwrap(),
+    )
+}
+
+/// Preferences > View: phrases on the enlarged waveform and on the
+/// overview switch separately; phrase types show as names or colours only.
+#[test]
+fn phrase_display_options_in_preferences() {
+    use PhraseKind::*;
+    let fx = Fixture::new();
+    let id = analysed_track(&fx, "Phrased", 32.0, &[(0, 8, Intro), (8, 16, Chorus)]);
+    let ui = Ui::start(fx, (1440, 900), false);
+    show(&ui, id);
+    let labels = |u: &Ui| {
+        u.app
+            .ui
+            .get_track_phrases()
+            .iter()
+            .map(|m| m.label.to_string())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        labels(&ui),
+        ["INTRO", "CHORUS"],
+        "names on the phrase bar by default"
+    );
+    let w = prefs(&ui);
+    let overview = prefs_el(&w, "prefs.view.phrase-overview");
+    prefs_el(&w, "prefs.view.phrase-enlarged");
+    prefs_el(&w, "prefs.view.phrase-types");
+    overview.mock_single_click(slint::platform::PointerEventButton::Left);
+    ui.pump(200);
+    assert!(
+        !stored(&ui).view.phrases_overview && stored(&ui).view.phrases,
+        "only the overview phrase bar is off"
+    );
+    assert!(
+        !ui.app.ui.get_show_phrases_overview() && ui.app.ui.get_show_phrases(),
+        "the window follows"
+    );
+    w.invoke_flag("view.phrases".into(), false);
+    w.invoke_flag("view.phrases-overview".into(), true);
+    ui.pump(100);
+    assert!(
+        ui.app.ui.get_show_phrases_overview() && !ui.app.ui.get_show_phrases(),
+        "and the enlarged waveform separately"
+    );
+    w.invoke_choose("view.phrase-types".into(), 1);
+    ui.pump(100);
+    assert_eq!(stored(&ui).view.phrase_types, "colors");
+    assert!(
+        !ui.app.ui.global::<crate::Theme>().get_phrase_names(),
+        "phrase bars drop their names"
+    );
+    assert_eq!(
+        labels(&ui),
+        ["", ""],
+        "colour blocks only in the Prepare player"
+    );
+    assert_eq!(
+        ui.app.ui.get_track_phrases().row_count(),
+        2,
+        "the blocks stay"
+    );
+}
+
+/// PHRASE tab: cut the phrase at the cursor, change its kind, move a
+/// boundary, undo, clear — stored in the library, normalized.
+#[test]
+fn phrase_editing_in_the_prepare_player() {
+    use PhraseKind::*;
+    let fx = Fixture::new();
+    let id = analysed_track(&fx, "Phrase Edit", 40.0, &[(0, 8, Intro), (8, 20, Chorus)]);
+    let ui = Ui::start(fx, (1440, 900), false);
+    show(&ui, id);
+    ui.click("player1.tab.phrase");
+    for l in [
+        "player1.phrase.kind0",
+        "player1.phrase.kind6",
+        "player1.phrase.cut",
+        "player1.phrase.boundary",
+        "player1.phrase.clear",
+    ] {
+        assert!(ui.has(l), "{l}");
+    }
+    let current = |u: &Ui| {
+        u.app
+            .ui
+            .global::<crate::PhraseEdit>()
+            .get_current()
+            .to_string()
+    };
+    // Cut at bar 4 (8 s): the part after the cursor gets its own kind.
+    seek(&ui, id, 8.0);
+    assert_eq!(current(&ui), "INTRO");
+    ui.click("player1.phrase.cut");
+    assert_eq!(
+        phrases(&ui, id),
+        [(0, 4, Intro), (4, 8, Verse), (8, 20, Chorus)]
+    );
+    assert_eq!(
+        current(&ui),
+        "VERSE",
+        "the tab shows the phrase at the cursor"
+    );
+    // That part becomes a chorus: it joins the chorus after it.
+    ui.click("player1.phrase.kind2");
+    assert_eq!(phrases(&ui, id), [(0, 4, Intro), (4, 20, Chorus)]);
+    // The nearest boundary (bar 4) moves to the cursor at bar 6.
+    seek(&ui, id, 12.0);
+    ui.click("player1.phrase.boundary");
+    assert_eq!(phrases(&ui, id), [(0, 6, Intro), (6, 20, Chorus)]);
+    assert_eq!(
+        ui.app.ui.get_track_phrases().row_count(),
+        2,
+        "the phrase bar follows"
+    );
+    // A cut that would leave a part under 4 bars changes nothing.
+    seek(&ui, id, 14.0);
+    ui.click("player1.phrase.cut");
+    assert_eq!(phrases(&ui, id), [(0, 6, Intro), (6, 20, Chorus)]);
+    assert!(
+        ui.value("status.message").contains("4 bars"),
+        "and says why: {}",
+        ui.value("status.message")
+    );
+    // One undo step per edit.
+    ui.app.undo();
+    assert_eq!(phrases(&ui, id), [(0, 4, Intro), (4, 20, Chorus)]);
+    ui.click("player1.phrase.clear");
+    assert!(phrases(&ui, id).is_empty(), "cleared");
+    assert_eq!(ui.app.ui.get_track_phrases().row_count(), 0);
+    // Without phrases a kind fills the whole grid.
+    ui.click("player1.phrase.kind4");
+    assert_eq!(phrases(&ui, id), [(0, 20, Up)]);
+}
+
+/// EDIT tab: IN / OUT at the cursor and TRIM render a new WAV with only the
+/// region; it joins the collection as "<title> (Edit)" and opens in the
+/// player; the original file and track stay as they were.
+#[test]
+fn edit_mode_renders_a_new_track() {
+    let fx = Fixture::new();
+    let id = analysed_track(&fx, "Edit Source", 16.0, &[]);
+    let ui = Ui::start(fx, (1440, 900), false);
+    let original = ui.fx.lib().track(id).unwrap();
+    let bytes = std::fs::read(&original.path).unwrap();
+    show(&ui, id);
+    ui.click("player1.tab.edit");
+    assert!(
+        ui.has("player1.edit.trim") && ui.has("player1.edit.cut") && ui.has("player1.edit.repeat")
+    );
+    seek(&ui, id, 4.0);
+    ui.click("player1.edit.in");
+    seek(&ui, id, 10.0);
+    ui.click("player1.edit.out");
+    assert!(
+        ui.app.ui.global::<crate::TrackEdit>().get_ready(),
+        "region set"
+    );
+    assert!(
+        ui.value("player1.edit.region").contains("0:04.000"),
+        "region readout, got `{}`",
+        ui.value("player1.edit.region")
+    );
+    assert!(
+        ui.has("player1.edit.span"),
+        "the region shows on the overview"
+    );
+    ui.click("player1.edit.trim");
+    let edited = |u: &Ui| {
+        u.fx.lib()
+            .tracks(od_library::SortKey::DateAdded, true)
+            .unwrap()
+            .into_iter()
+            .find(|t| t.tags.title == "Edit Source (Edit)")
+    };
+    assert!(
+        ui.wait_until(60.0, |u| edited(u).is_some()),
+        "the edit joins the collection"
+    );
+    let t = edited(&ui).unwrap();
+    assert!(
+        (t.duration - 6.0).abs() < 0.02,
+        "only the region: {} s",
+        t.duration
+    );
+    assert_eq!(
+        t.path.file_name().unwrap().to_string_lossy(),
+        "Edit Source (Edit).wav"
+    );
+    assert_eq!(t.tags.artist, "Test Artist", "tags carried over");
+    assert!(
+        ui.wait_until(10.0, |u| u.value("player1.title") == "Edit Source (Edit)"),
+        "the player opens the edit"
+    );
+    assert_eq!(
+        std::fs::read(&original.path).unwrap(),
+        bytes,
+        "the original file is untouched"
+    );
+    assert_eq!(
+        ui.fx.lib().track(id).unwrap().duration,
+        original.duration,
+        "the original track too"
+    );
+    // A region dragged on the overview (fractions), then cleared.
+    ui.app
+        .ui
+        .global::<crate::TrackEdit>()
+        .invoke_select(0.5, 0.25);
+    ui.pump(50);
+    let te = ui.app.ui.global::<crate::TrackEdit>();
+    assert!(
+        te.get_ready() && te.get_start() < te.get_end(),
+        "either drag direction"
+    );
+    ui.click("player1.edit.clear");
+    assert!(!te.get_ready() && te.get_start() < 0.0);
+}
+
+/// Cut and repeat render the expected lengths (the library side of the
+/// EDIT tab, without the window).
+#[test]
+fn edit_mode_cut_and_repeat_lengths() {
+    let fx = Fixture::new();
+    let id = analysed_track(&fx, "Lengths", 12.0, &[]);
+    let before = fx.lib().track(id).unwrap();
+    let cut =
+        crate::track_edit::run_edit(&fx.library, id, crate::track_edit::EditOp::Cut, 2.0, 5.0)
+            .unwrap();
+    let rep =
+        crate::track_edit::run_edit(&fx.library, id, crate::track_edit::EditOp::Repeat, 2.0, 5.0)
+            .unwrap();
+    let lib = fx.lib();
+    let (c, r) = (lib.track(cut).unwrap(), lib.track(rep).unwrap());
+    assert!((c.duration - 9.0).abs() < 0.02, "cut: {}", c.duration);
+    assert!((r.duration - 15.0).abs() < 0.02, "repeat: {}", r.duration);
+    assert!(
+        r.path.to_string_lossy().ends_with("Lengths (Edit 2).wav"),
+        "a second edit gets its own file: {}",
+        r.path.display()
+    );
+    assert_eq!(
+        lib.track(id).unwrap(),
+        before,
+        "the original track is unchanged"
+    );
+}
+
+/// The sub-browser (SUB in the list header, View > Sub Browser): a second
+/// tree and list; main-list rows dropped on one of its lists are added
+/// there, its rows dropped on a list in the main tree are added there.
+#[test]
+fn sub_browser_drags_between_lists() {
+    let fx = Fixture::new();
+    let peak = fx
+        .lib()
+        .create_node(None, od_library::NodeKind::Playlist, "Peak")
+        .unwrap();
+    let ui = Ui::start(fx, (1440, 900), false);
+    let pl = ui.fx.playlist;
+    assert!(!ui.has("browser.sub"));
+    ui.click("browser.panel.sub-browser");
+    assert!(
+        ui.has("browser.sub") && ui.has("browser.sub.tree"),
+        "the sub-browser opens under the list"
+    );
+    ui.click(&format!("browser.sub.node{}", pl.0));
+    assert_eq!(ui.value("browser.sub.title"), "Warm-up");
+    assert!(
+        ui.has("browser.sub.row0") && !ui.has("browser.sub.row1"),
+        "its one track"
+    );
+    // A main-list row onto the sub-browser's list.
+    let (b, tb) = ui.fx.tracks[1].clone();
+    let main_row = ui.by_value("browser.row", &tb).expect("row").1;
+    let target = Rect::of(&ui.get(&format!("browser.sub.node{}", pl.0))).centre();
+    ui.drag_el(&main_row, target);
+    assert!(
+        ui.wait_until(5.0, |u| u.fx.lib().entries(pl).unwrap().len() == 2),
+        "added to the sub-browser's list"
+    );
+    assert!(
+        ui.wait_until(5.0, |u| u.has("browser.sub.row1")),
+        "the sub list shows it"
+    );
+    // A sub-browser row onto a list in the main tree.
+    let to = Rect::of(&ui.get(&format!("browser.tree.node{}", peak.0))).centre();
+    ui.drag_el(&ui.get("browser.sub.row1"), to);
+    assert!(
+        ui.wait_until(5.0, |u| u
+            .fx
+            .lib()
+            .entries(peak)
+            .unwrap()
+            .iter()
+            .map(|e| e.track)
+            .collect::<Vec<_>>()
+            == [b]),
+        "added to Peak"
+    );
+    assert!(!ui.app.ui.global::<crate::DragState>().get_active());
+    // Onto its own list: nothing happens.
+    let own = Rect::of(&ui.get(&format!("browser.sub.node{}", pl.0))).centre();
+    ui.drag_el(&ui.get("browser.sub.row0"), own);
+    assert_eq!(ui.fx.lib().entries(pl).unwrap().len(), 2);
+    // View > Sub Browser closes it again; its shortcut opens it.
+    ui.app
+        .ui
+        .invoke_menu_action("view.panel.sub-browser".into());
+    ui.pump(100);
+    assert!(!ui.has("browser.sub") && !ui.app.ui.get_sub_browser_open());
+    let chord = ui
+        .app
+        .state
+        .borrow()
+        .keymap
+        .bindings("view.panel.sub-browser")[0]
+        .clone();
+    let m = chord.mods;
+    assert!(ui.app.ui.invoke_key_pressed(
+        chord.key.to_lowercase().into(),
+        m.primary,
+        m.secondary,
+        m.alt,
+        m.shift
+    ));
+    ui.pump(100);
+    assert!(ui.has("browser.sub"), "the shortcut toggles it");
+}
+
+/// Phrases edit in place on the strip under the overview: a click on a
+/// phrase and one on a type changes it (≤ 2 steps), one drag moves a
+/// boundary to another bar, the picker merges with the next phrase, and the
+/// keys open the picker / merge at the cursor.
+#[test]
+fn phrases_edit_on_the_strip() {
+    use PhraseKind::*;
+    let fx = Fixture::new();
+    // 120 BPM: one bar = 2 s; 40 bars.
+    let id = analysed_track(&fx, "Strip Edit", 80.0, &[(0, 8, Intro), (8, 24, Verse), (24, 40, Outro)]);
+    let ui = Ui::start(fx, (1440, 900), false);
+    show(&ui, id);
+    assert!(ui.wait_until(5.0, |u| u.has("player1.phrase.block1")));
+    assert_eq!(ui.value("player1.phrase.block1"), "VERSE");
+    // Type in two steps: the phrase, then the type in its picker.
+    ui.steps.set(0);
+    ui.click("player1.phrase.block1");
+    assert!(ui.has("player1.phrase.picker"), "the picker opens beside the phrase");
+    // Popup contents report popup-local positions: the list starts at the
+    // popup's corner (placement: PopupPlace, tested in alignment.rs).
+    let picker = Rect::of(&ui.get("player1.phrase.picker"));
+    assert!(picker.x.abs() < 0.5 && picker.y.abs() < 0.5 && picker.w > 100.0, "{:?}", (picker.x, picker.y, picker.w));
+    assert!(ui.click_menu_item("CHORUS"));
+    assert!(ui.steps.get() <= 2, "{} steps", ui.steps.get());
+    assert_eq!(phrases(&ui, id), [(0, 8, Intro), (8, 24, Chorus), (24, 40, Outro)]);
+    // One drag moves the boundary at bar 8 to (near) bar 12: it snaps.
+    let strip = Rect::of(&ui.get("player1.phrases"));
+    let edge = ui.get("player1.phrase.edge0");
+    let y = strip.y + strip.h / 2.0;
+    let d = ui.fx.lib().track(id).unwrap().duration;
+    let x = strip.x + strip.w * (24.3 / d) as f32;
+    ui.drag_el(&edge, slint::LogicalPosition::new(x, y));
+    assert_eq!(phrases(&ui, id), [(0, 12, Intro), (12, 24, Chorus), (24, 40, Outro)]);
+    // MERGE WITH NEXT in the picker of the chorus: it swallows the outro.
+    ui.click("player1.phrase.block1");
+    // (Popup contents have their own coordinates: the element clicks itself.)
+    ui.get("player1.phrase.merge-next").mock_single_click(slint::platform::PointerEventButton::Left);
+    ui.pump(100);
+    assert_eq!(phrases(&ui, id), [(0, 12, Intro), (12, 40, Chorus)]);
+    // Keys at the cursor: Shift+P opens the picker, Shift+J merges.
+    seek(&ui, id, 4.0);
+    crate::commands::run(&ui.app, "player.phrase.type");
+    ui.pump(100);
+    assert!(ui.has("player1.phrase.picker"), "Shift+P opens the picker at the cursor");
+    ui.key(slint::platform::Key::Escape);
+    ui.pump(50);
+    crate::commands::run(&ui.app, "player.phrase.merge");
+    assert_eq!(phrases(&ui, id), [(0, 40, Intro)]);
+    // Undo is one step per edit.
+    ui.app.undo();
+    assert_eq!(phrases(&ui, id), [(0, 12, Intro), (12, 40, Chorus)]);
+    // A hint explains the strip in the PHRASE tab.
+    ui.click("player1.tab.phrase");
+    assert!(ui.has("player1.phrase.hint") && ui.has("player1.phrase.merge"));
+}
+
+/// The Prepare player's enlarged waveform shows the cues too: hot cue A at
+/// 1 s left of the cursor at 2 s, the memory cue at the cursor.
+#[test]
+fn cues_show_on_the_enlarged_waveform() {
+    use PhraseKind::*;
+    let fx = Fixture::new();
+    let id = analysed_track(&fx, "Cue Marks", 40.0, &[(0, 20, Intro)]);
+    fx.lib().set_cues(id, vec![od_core::Cue::hot(0, 1.0), od_core::Cue::memory(2.0)]).unwrap();
+    let ui = Ui::start(fx, (1440, 900), false);
+    show(&ui, id);
+    seek(&ui, id, 2.0);
+    ui.pump(100);
+    let wave = Rect::of(&ui.get("player1.enlarged"));
+    let a = Rect::of(&ui.get("player1.wave.cue.A"));
+    let m = Rect::of(&ui.get("player1.wave.memory.1"));
+    let centre = wave.x + wave.w / 2.0;
+    assert!((m.x - centre).abs() < 1.5, "memory cue at the cursor: {} vs {centre}", m.x);
+    assert!(a.x < centre - 5.0 && a.x > wave.x, "hot cue A left of the cursor, inside: {}", a.x);
+}
+
+/// Kicks every half second from 0 s (synthetic transients of a 120 BPM
+/// track), put into the transients cache for track `id`.
+fn kicks_for(ui: &Ui, id: TrackId, secs: f64) {
+    let hash = ui.fx.lib().track(id).unwrap().content_hash;
+    let list = (0..)
+        .map(|k| k as f64 * 0.5)
+        .take_while(|t| *t < secs)
+        .map(|time| od_analysis::transients::Transient { time, strength: 1.0, low: true })
+        .collect();
+    crate::transients::insert(hash, list);
+}
+
+/// Holds Ctrl / ⌘ (Slint's `control`) while typing `c`.
+fn with_control(ui: &Ui, c: &str) {
+    use slint::platform::{Key, WindowEvent};
+    let w = ui.app.ui.window();
+    w.dispatch_event(WindowEvent::KeyPressed { text: Key::Control.into() });
+    ui.type_text(c);
+    w.dispatch_event(WindowEvent::KeyReleased { text: Key::Control.into() });
+    ui.pump(50);
+}
+
+/// EDIT GRID: a grid 30 ms late with the wrong downbeat is corrected in
+/// one session: a drag moves the grid (live) and snaps onto the kicks on
+/// release, a double-click makes the beat the 1, keys nudge and undo within
+/// the session. Nothing is stored until DONE, which writes one undo step;
+/// CANCEL (or Esc) leaves the stored grid alone.
+#[test]
+fn beatgrid_is_corrected_in_one_session() {
+    use PhraseKind::*;
+    use slint::platform::Key;
+    let fx = Fixture::new();
+    let id = analysed_track(&fx, "Grid Edit", 37.0, &[(0, 16, Intro)]);
+    // 30 ms late and counted from beat 3.
+    fx.lib().set_beatgrid(id, Beatgrid::constant(120.0, 0.03, 3, 37.0)).unwrap();
+    let ui = Ui::start(fx, (1440, 900), false);
+    kicks_for(&ui, id, 37.0);
+    show(&ui, id);
+    seek(&ui, id, 4.03);
+    ui.click("player1.tab.grid");
+    let stored = |u: &Ui| u.fx.lib().beatgrid(id).unwrap().unwrap();
+    let session = |_: &Ui| crate::grid_edit::view(id).unwrap().grid;
+    ui.click("player1.grid.edit");
+    assert!(ui.app.ui.global::<crate::GridEdit>().get_active());
+    assert_eq!(ui.value("player1.grid.title"), "Test Artist – Grid Edit");
+    assert_eq!(ui.value("player1.grid.fit"), "0 %", "30 ms off: no beat fits");
+    assert!(ui.has("player1.grid.drift") && ui.has("player1.grid.pin") && ui.has("player1.grid.auto-fix"));
+    // The four rows of keys fit the player: nothing sits under the browser.
+    let keys = Rect::of(&ui.get("player1.grid.lock"));
+    let list = Rect::of(&ui.get("browser.list"));
+    assert!(keys.bottom() <= list.y, "keys {keys:?} above the list {list:?}");
+    // Drag the grid 24 ms to the left: it snaps the last 6 ms onto the kicks.
+    let wave = Rect::of(&ui.get("player1.enlarged"));
+    let span = crate::player::detail_span(&ui.app) as f32;
+    let dx = -0.024 / span * wave.w;
+    let y = wave.y + wave.h * 0.7;
+    let from = slint::LogicalPosition::new(wave.x + wave.w * 0.5, y);
+    ui.drag_points(from, slint::LogicalPosition::new(from.x + dx, y));
+    ui.pump(50);
+    assert!(session(&ui).beats[0].time.abs() < 1e-6, "snapped onto the kick: {}", session(&ui).beats[0].time);
+    assert!((stored(&ui).beats[0].time - 0.03).abs() < 1e-9, "nothing stored yet");
+    assert_eq!(ui.value("player1.grid.fit"), "100 %");
+    assert_eq!(ui.value("player1.grid.at-cursor"), "0 ms");
+    // Double-click the beat at the cursor (4 s, beat 8): it becomes the 1.
+    ui.double_click_at(slint::LogicalPosition::new(wave.x + wave.w / 2.0, y));
+    let g = session(&ui);
+    let i = g.nearest_beat(4.0).unwrap();
+    assert!((g.beats[i].time - 4.0).abs() < 1e-6, "{}", g.beats[i].time);
+    assert_eq!(g.beats[i].bar_position, 1, "the double-clicked beat is the 1");
+    // Keys of the session: → is 1 ms later, ⌘Z takes it back.
+    ui.key(Key::RightArrow);
+    assert!((session(&ui).beats[0].time - 0.001).abs() < 1e-6, "→ moves the grid 1 ms");
+    with_control(&ui, "z");
+    assert!(session(&ui).beats[0].time.abs() < 1e-6, "⌘Z undoes it in the session");
+    // DONE: one undo step in the library.
+    ui.click("player1.grid.done");
+    assert!(!ui.app.ui.global::<crate::GridEdit>().get_active());
+    let g = stored(&ui);
+    assert!(g.beats[0].time.abs() < 1e-6);
+    assert_eq!(g.beats[g.nearest_beat(4.0).unwrap()].bar_position, 1);
+    ui.app.undo();
+    let g = stored(&ui);
+    assert!((g.beats[0].time - 0.03).abs() < 1e-9, "one undo restores the grid before the session");
+    assert_eq!(g.beats[0].bar_position, 3);
+    // CANCEL leaves the stored grid alone.
+    ui.click("player1.grid.edit");
+    ui.click("player1.grid.nudge-right");
+    ui.click("player1.grid.shift-right");
+    assert!(ui.app.ui.global::<crate::GridEdit>().get_active());
+    assert!((session(&ui).beats[0].time - 0.041).abs() < 1e-6, "{}", session(&ui).beats[0].time);
+    ui.click("player1.grid.cancel");
+    assert!((stored(&ui).beats[0].time - 0.03).abs() < 1e-9, "cancel stores nothing");
+    assert!(!ui.app.ui.global::<crate::GridEdit>().get_active());
+    // Esc cancels too.
+    ui.click("player1.grid.edit");
+    ui.key(Key::Escape);
+    assert!(!ui.app.ui.global::<crate::GridEdit>().get_active(), "Esc cancels");
+}

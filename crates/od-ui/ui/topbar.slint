@@ -1,0 +1,576 @@
+// Global header: brand, work mode (PREPARE ≈ export, PERFORM ≈ performance),
+// engine state, recording and undo — where DJs expect them.
+
+import { Theme } from "tokens.slint";
+import { VLine, HLine } from "lines.slint";
+import { Caps, PlateButton, Glyph, TipArea, Knob, PopupPlace } from "controls.slint";
+import { Club } from "club.slint";
+import { Lighting } from "lighting.slint";
+import { PerformLayout } from "perform.slint";
+
+component ModeTab inherits Rectangle {
+    in property <bool> narrow;
+    in property <string> label;
+    in property <bool> current;
+    in property <string> tooltip;
+    in property <string> command;
+    callback clicked();
+    min-width: t.preferred-width + (root.narrow ? 18px : 32px);
+    background: root.current ? Theme.plate : touch.has-hover ? Theme.ground-band : transparent;
+    Rectangle {
+        y: parent.height - 2px; height: 2px;
+        background: root.current ? Theme.attention : transparent;
+    }
+    t := Text {
+        text: root.label;
+        font-family: Theme.family; font-size: 13px; font-weight: 600; letter-spacing: root.narrow ? 1.2px : 2.4px;
+        color: root.current ? Theme.bone : Theme.bone-3;
+    }
+    touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// Panel switch in the bar (FX, SAMPLER): an outlined label whose line
+// lights while the panel is open.
+component PanelToggle inherits Rectangle {
+    in property <bool> narrow;
+    in property <string> label;
+    in property <bool> on;
+    in property <string> tooltip;
+    in property <string> command;
+    // Smallest width (44 px touch keys in the kiosk) and availability.
+    in property <length> min-w: 0px;
+    in property <bool> enabled: true;
+    callback clicked();
+    width: max(root.min-w, t.preferred-width + (root.narrow ? 14px : 22px));
+    Rectangle {
+        y: 9px; height: parent.height - 18px;
+        border-width: 1px;
+        border-color: root.on ? Theme.attention.with-alpha(0.8) : Theme.rule-strong;
+        background: root.on ? Theme.attention.with-alpha(0.14) : touch.has-hover ? Theme.plate : transparent;
+        Rectangle { y: 0; height: 2px; background: root.on ? Theme.attention : transparent; }
+    }
+    t := Text {
+        text: root.label;
+        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.6px;
+        color: !root.enabled ? Theme.bone-3.with-alpha(0.55) : root.on ? Theme.bone : touch.has-hover ? Theme.bone : Theme.bone-2;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
+}
+
+// Picture of a Perform view in the layout menu: deck lanes as bars
+// (horizontal) or posts (vertical), Browse as a framed list.
+component ViewIcon inherits Rectangle {
+    in property <string> view;
+    in property <color> tone;
+    width: 22px; height: 16px;
+    property <int> n: root.view == "4h" || root.view == "4v" ? 4 : 2;
+    if root.view == "2h" || root.view == "4h": VerticalLayout {
+        alignment: center; spacing: root.n == 4 ? 2px : 4px;
+        for i in root.n: Rectangle { height: 2px; background: root.tone; }
+    }
+    if root.view == "2v" || root.view == "4v": HorizontalLayout {
+        alignment: center; spacing: root.n == 4 ? 3px : 6px;
+        for i in root.n: Rectangle { width: 2px; background: root.tone; }
+    }
+    if root.view == "browse": Rectangle {
+        border-width: 1.5px; border-color: root.tone;
+        Rectangle { y: 4px; height: 1.5px; background: root.tone; }
+    }
+}
+
+// Perform view switch: deck count and waveform direction in one menu
+// (2 or 4 decks, horizontal or vertical lanes, or Browse).
+component ViewMenu inherits Rectangle {
+    in property <bool> narrow;
+    in property <int> deck-count;
+    in property <string> layout;
+    callback chose(string);
+    property <string> current: root.layout == "browse" ? "browse" : (root.deck-count >= 4 ? "4" : "2") + (root.layout == "vertical" ? "v" : "h");
+    width: max(root.narrow ? 52px : 64px, row.preferred-width + (root.narrow ? 14px : 22px));
+    Rectangle {
+        y: 9px; height: parent.height - 18px;
+        border-width: 1px; border-color: touch.has-hover ? Theme.rule-strong : Theme.rule;
+        background: touch.has-hover ? Theme.plate : transparent;
+        row := HorizontalLayout {
+            alignment: center; spacing: 6px;
+            VerticalLayout { alignment: center; ViewIcon { view: root.current; tone: Theme.bone; } }
+            Text { text: "▾"; font-size: 9px; color: Theme.bone-2; vertical-alignment: center; }
+        }
+    }
+    touch := TipArea {
+        accessible-role: combobox; accessible-label: "topbar.layout"; accessible-value: root.current;
+        tooltip: @tr("Perform view: 2 or 4 decks, horizontal or vertical waveforms, Browse");
+        mouse-cursor: pointer;
+        clicked => { pop.show(); }
+    }
+    pop := PopupWindow {
+        x: PopupPlace.x(root.absolute-position.x, 0, 220px);
+        y: PopupPlace.y(root.absolute-position.y, root.height - 6px, -5 * 36px - 2px, 5 * 36px + 2px);
+        width: 220px; height: 5 * 36px + 2px;
+        Rectangle {
+            background: Theme.plate; border-width: 1px; border-color: Theme.rule-strong;
+            VerticalLayout {
+                padding: 1px;
+                for v in [
+                    { id: "2h", label: @tr("2 Decks · horizontal") },
+                    { id: "2v", label: @tr("2 Decks · vertical") },
+                    { id: "4h", label: @tr("4 Decks · horizontal") },
+                    { id: "4v", label: @tr("4 Decks · vertical") },
+                    { id: "browse", label: @tr("Browse") },
+                ]: Rectangle {
+                    accessible-role: button; accessible-label: "topbar.layout.\{v.id}";
+                    accessible-checked: root.current == v.id;
+                    height: 36px;
+                    background: vi.has-hover ? Theme.plate-raised : transparent;
+                    HorizontalLayout {
+                        padding-left: 10px; padding-right: 12px; spacing: 10px;
+                        Text { width: 10px; text: root.current == v.id ? "✓" : ""; font-size: 12px; color: Theme.attention; vertical-alignment: center; }
+                        VerticalLayout { alignment: center; ViewIcon { view: v.id; tone: root.current == v.id ? Theme.attention : Theme.bone-2; } }
+                        Text {
+                            text: v.label; font-family: Theme.family; font-size: 12px; font-weight: 600;
+                            color: root.current == v.id ? Theme.bone : Theme.bone-2; vertical-alignment: center;
+                        }
+                    }
+                    vi := TouchArea { mouse-cursor: pointer; clicked => { root.chose(v.id); pop.close(); } }
+                }
+            }
+        }
+    }
+}
+
+export component TopBar inherits Rectangle {
+    in property <string> mode;
+    in property <string> status;
+    in property <bool> recording;
+    in property <string> recording-time;
+    in property <string> undo-label;
+    in property <bool> kiosk;
+    // Narrow window (below 1500 px): tighter tabs and toggles, shorter brand.
+    in property <bool> narrow;
+    // Prepare layout ("player" or "browser") and its switch.
+    in property <string> prepare-layout: "player";
+    callback cycle-layout();
+    // Perform view menu: decks shown and the chosen view ("2h", "4v", "browse" …).
+    in property <int> deck-count: 2;
+    callback set-perform-view(string);
+    // In Perform, recording lives in the global bar under the decks.
+    in property <bool> show-record: true;
+    // Perform panel switches (shown in Perform only).
+    in property <bool> show-panels;
+    in property <bool> fx-panel;
+    in property <bool> sampler-panel;
+    callback toggle-fx-panel();
+    callback toggle-sampler-panel();
+    // Mixer column, Mix Preview panel (Perform) and the recording
+    // section / bar (both modes).
+    in property <bool> mixer-panel: true;
+    in property <bool> mix-preview-panel;
+    in property <bool> rec-panel: true;
+    callback toggle-mixer-panel();
+    callback toggle-mix-preview-panel();
+    callback toggle-rec-panel();
+    callback set-mode(string);
+    callback toggle-recording();
+    callback undo();
+    callback open-preferences();
+    callback cycle-appearance();
+    // Connected controller ("" = none), master out level / meter, wall clock.
+    in property <string> midi-device;
+    in property <float> master-level: 1;
+    in property <float> master-meter;
+    in property <bool> master-clip;
+    in property <string> clock;
+    callback set-master-level(float);
+    // macOS: room for the window buttons at the left; the bar's empty space
+    // moves the window, a double-click there zooms it.
+    in property <length> chrome-inset;
+    callback window-drag();
+    callback window-zoom();
+    height: 44px;
+    background: Theme.ground;
+
+    // Under everything else: the bar's own background takes the window
+    // drag (the keys on top keep their clicks).
+    if root.chrome-inset > 0: TouchArea {
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) { root.window-drag(); }
+        }
+        double-clicked => { root.window-zoom(); }
+    }
+    if !root.kiosk: Rectangle {
+        // Test / accessibility hook: the work-mode tab group (no visuals, no
+        // input; it only spans the tabs).
+        Rectangle {
+            accessible-label: "topbar.mode"; accessible-role: tab-list;
+            accessible-value: root.mode;
+            x: prep.x; y: prep.y;
+            width: light.x + light.width - prep.x; height: prep.height;
+        }
+
+        HorizontalLayout {
+            padding-left: 16px + root.chrome-inset;
+            padding-right: 12px;
+            spacing: 0px;
+            // Brand on the rail.
+            Rectangle {
+                width: root.narrow ? 124px : 196px;
+                VLine { x: 12px; y: 10px; height: parent.height - 20px; weight: 1px; tone: Theme.rule-strong; }
+                Rectangle { x: 9px; y: 6px; width: 7px; height: 7px; border-radius: 3.5px; border-width: 1px; border-color: Theme.bone-3; }
+                Text {
+                    x: 28px; height: parent.height;
+                    text: "OPENDJDECKS";
+                    font-family: Theme.family; font-size: root.narrow ? 12px : 16px; font-weight: 600; letter-spacing: root.narrow ? 0.8px : 2.2px;
+                    color: Theme.bone; vertical-alignment: center;
+                }
+            }
+            prep := ModeTab {
+                narrow: root.narrow;
+                accessible-label: "topbar.mode.prepare"; accessible-role: tab;
+                accessible-item-selectable: true; accessible-item-selected: self.current;
+                label: @tr("PREPARE"); tooltip: @tr("Prepare: library, beatgrids, cues and sticks"); command: "mode.prepare"; current: root.mode == "prepare"; clicked => { root.set-mode("prepare"); } }
+            perf := ModeTab {
+                narrow: root.narrow;
+                accessible-label: "topbar.mode.perform"; accessible-role: tab;
+                accessible-item-selectable: true; accessible-item-selected: self.current;
+                label: @tr("PERFORM"); tooltip: @tr("Perform: decks and mixer"); command: "mode.perform"; current: root.mode == "perform"; clicked => { root.set-mode("perform"); } }
+            light := ModeTab {
+                narrow: root.narrow;
+                accessible-label: "topbar.mode.lighting"; accessible-role: tab;
+                accessible-item-selectable: true; accessible-item-selected: self.current;
+                label: @tr("LIGHTING"); tooltip: @tr("Lighting: DMX rig and light show"); command: "mode.lighting"; current: root.mode == "lighting"; clicked => { root.set-mode("lighting"); } }
+            Rectangle { width: 24px; }
+            if root.mode == "perform" && !root.kiosk: ViewMenu {
+                narrow: root.narrow;
+                deck-count: root.deck-count; layout: PerformLayout.layout;
+                chose(v) => { root.set-perform-view(v); }
+            }
+            if root.mode == "perform" && !root.kiosk: Rectangle { width: 12px; }
+            if root.mode == "prepare" && !root.kiosk: PanelToggle {
+                narrow: root.narrow;
+                accessible-label: "topbar.layout"; accessible-role: button;
+                accessible-value: root.prepare-layout;
+                label: root.prepare-layout == "browser" ? @tr("FULL BROWSER") : root.prepare-layout == "two" ? @tr("2 PLAYERS") : root.prepare-layout == "dual" ? @tr("DUAL") : root.prepare-layout == "simple" ? @tr("SIMPLE") : @tr("PLAYER");
+                on: root.prepare-layout != "player";
+                tooltip: @tr("Next Prepare layout: player, 2 players, dual, simple, full browser");
+                clicked => { root.cycle-layout(); }
+            }
+            if root.mode == "prepare" && !root.kiosk: Rectangle { width: 12px; }
+            if root.show-panels: PanelToggle {
+                narrow: root.narrow;
+                accessible-label: "topbar.club"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: self.on;
+                label: "CLUB"; on: Club.enabled;
+                tooltip: Club.enabled ? @tr("Back to the full deck controls") : @tr("Club mode: player screens and the club workflow");
+                command: "perform.club";
+                clicked => { Club.set-enabled(!Club.enabled); }
+            }
+            if root.show-panels: PanelToggle {
+                narrow: root.narrow;
+                accessible-label: "topbar.toggle.light"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: self.on;
+                label: "LIGHT"; on: Lighting.panel;
+                tooltip: Lighting.panel ? @tr("Hide the lighting strip") : @tr("Show the lighting strip");
+                command: "perform.light.panel";
+                clicked => { Lighting.panel = !Lighting.panel; }
+            }
+            if root.show-panels: PanelToggle {
+                narrow: root.narrow;
+                accessible-label: "topbar.toggle.fx"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: self.on;
+                label: "FX"; on: root.fx-panel;
+                tooltip: root.fx-panel ? @tr("Hide the Tempo FX panel") : @tr("Show the Tempo FX panel");
+                command: "perform.fx.panel";
+                clicked => { root.toggle-fx-panel(); }
+            }
+            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: PanelToggle {
+                narrow: root.narrow;
+                accessible-label: "topbar.toggle.mix-preview"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: self.on;
+                label: @tr("PREVIEW"); on: root.mix-preview-panel;
+                tooltip: root.mix-preview-panel ? @tr("Hide Mix Preview") : @tr("Mix Preview: set where the next track comes in and the current one goes out");
+                command: "perform.mix-preview.panel";
+                clicked => { root.toggle-mix-preview-panel(); }
+            }
+            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: PanelToggle {
+                narrow: root.narrow;
+                accessible-label: "topbar.toggle.sampler"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: self.on;
+                label: @tr("SAMPLER"); on: root.sampler-panel;
+                tooltip: root.sampler-panel ? @tr("Hide the sampler panel") : @tr("Show the sampler panel");
+                command: "perform.sampler.panel";
+                clicked => { root.toggle-sampler-panel(); }
+            }
+            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: PanelToggle {
+                narrow: root.narrow;
+                accessible-label: "topbar.toggle.mixer"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: self.on;
+                label: @tr("MIXER"); on: root.mixer-panel;
+                tooltip: root.mixer-panel ? @tr("Hide the mixer: the decks meet in the centre") : @tr("Show the mixer between the decks");
+                command: "perform.mixer.panel";
+                clicked => { root.toggle-mixer-panel(); }
+            }
+            if root.show-panels: Rectangle { width: 6px; }
+            // Recording section (Perform) / recording bar (Prepare); while
+            // recording it shows the elapsed time.
+            if !root.kiosk: PanelToggle {
+                narrow: root.narrow;
+                accessible-label: "topbar.toggle.rec"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: self.on;
+                accessible-value: root.recording ? root.recording-time : "";
+                label: root.recording ? @tr("REC {}", root.recording-time) : "REC";
+                on: root.rec-panel;
+                tooltip: root.rec-panel ? @tr("Hide the recording section") : @tr("Show the recording section: level, meter and the record button");
+                command: "view.panel.rec";
+                clicked => { root.toggle-rec-panel(); }
+            }
+            Rectangle { width: 10px; }
+            Caps { text: root.status; vertical-alignment: center; horizontal-stretch: 1; min-width: 0px; overflow: elide; }
+            // Controller state: a dot that lights while a MIDI controller is connected.
+            Rectangle {
+                accessible-label: "topbar.status.midi"; accessible-role: text;
+                accessible-value: root.midi-device == "" ? "none" : root.midi-device;
+                width: mt.preferred-width + 30px;
+                Rectangle {
+                    x: 8px; y: (parent.height - 6px) / 2; width: 6px; height: 6px; border-radius: 3px;
+                    background: root.midi-device != "" ? Theme.live : transparent;
+                    border-width: 1px; border-color: root.midi-device != "" ? Theme.live : Theme.bone-3;
+                }
+                mt := Caps { x: 20px; height: parent.height; text: "MIDI"; vertical-alignment: center; color: root.midi-device != "" ? Theme.bone : Theme.bone-3; }
+                TipArea { tooltip: root.midi-device != "" ? @tr("Controller connected: {}", root.midi-device) : @tr("No controller connected"); }
+            }
+            // Appearance: moon (dark), sun (light), half disc (follow system);
+            // a click moves on to the next mode.
+            Rectangle {
+                accessible-label: "topbar.appearance"; accessible-role: button;
+                width: 36px;
+                Rectangle {
+                    y: 8px; height: parent.height - 16px;
+                    background: at.has-hover ? Theme.plate : transparent;
+                }
+                Glyph {
+                    x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2;
+                    kind: Theme.appearance == "light" ? "sun" : Theme.appearance == "system" ? "auto" : "moon";
+                    tone: at.has-hover ? Theme.bone : Theme.bone-2;
+                }
+                at := TipArea {
+                    tooltip: Theme.appearance == "light" ? @tr("Appearance: light — click for system") : Theme.appearance == "system" ? @tr("Appearance: follows the system — click for dark") : @tr("Appearance: dark — click for light");
+                    mouse-cursor: pointer;
+                    clicked => { root.cycle-appearance(); }
+                }
+            }
+            // Preferences (⌘, / Ctrl+,).
+            Rectangle {
+                accessible-label: "topbar.settings"; accessible-role: button;
+                width: 36px;
+                Rectangle {
+                    y: 8px; height: parent.height - 16px;
+                    background: gt.has-hover ? Theme.plate : transparent;
+                }
+                Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "gear"; tone: gt.has-hover ? Theme.bone : Theme.bone-2; }
+                gt := TipArea { tooltip: @tr("Preferences"); command: "prefs.open"; mouse-cursor: pointer; clicked => { root.open-preferences(); } }
+            }
+            Rectangle { width: 4px; }
+            if root.undo-label != "": Rectangle {
+                accessible-label: "topbar.undo"; accessible-role: button; accessible-value: root.undo-label;
+                width: u.preferred-width + 24px;
+                u := Caps { text: @tr("UNDO  {}  ⌘Z", root.undo-label); vertical-alignment: center; height: parent.height; }
+                TipArea { tooltip: @tr("Undo the last change"); command: "library.undo"; mouse-cursor: pointer; clicked => { root.undo(); } }
+            }
+            Rectangle { width: 8px; }
+            // Master out: level meter, volume and the time of day.
+            if !root.kiosk: Rectangle {
+                accessible-label: "topbar.master-meter"; accessible-role: progress-indicator;
+                accessible-value: Math.round(clamp(root.master-meter, 0, 1) * 100) + "%";
+                width: 46px;
+                Rectangle { x: 0; y: (parent.height - 4px) / 2; width: parent.width; height: 4px; background: Theme.plate; }
+                Rectangle {
+                    x: 0; y: (parent.height - 4px) / 2; height: 4px;
+                    width: parent.width * clamp(root.master-meter, 0, 1);
+                    background: root.master-clip ? Theme.fault : root.master-meter > 0.8 ? Theme.attention : Theme.live;
+                }
+                Caps { y: parent.height / 2 + 4px; text: @tr("MASTER"); font-size: 8px; }
+            }
+            if !root.kiosk: Rectangle { width: 6px; }
+            if !root.kiosk: VerticalLayout {
+                alignment: center;
+                Knob {
+                    accessible-label: "topbar.master-volume"; accessible-role: slider;
+                    accessible-value: Math.round(root.master-level * 100) + "%";
+                    label: ""; size: 24px; minimum: 0; maximum: 1; default-value: 1;
+                    value: root.master-level; tone: Theme.attention;
+                    tooltip: @tr("Master out level (double-click resets)");
+                    changed(v) => { root.set-master-level(v); }
+                }
+            }
+            if !root.kiosk: Rectangle { width: 10px; }
+            Text {
+                accessible-label: "topbar.clock"; accessible-role: text; accessible-value: self.text;
+                text: root.clock;
+                font-family: Theme.family; font-size: 13px; font-weight: 600; letter-spacing: 1px;
+                color: Theme.bone-2; vertical-alignment: center;
+            }
+            Rectangle { width: 4px; }
+            // Recording: always one click away, as on the hardware.
+            if root.kiosk && (root.show-record || root.recording): Rectangle {
+                accessible-label: "topbar.record"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: root.recording;
+                accessible-value: root.recording ? root.recording-time : "";
+                width: rec.preferred-width + 44px;
+                Rectangle {
+                    y: 8px; height: parent.height - 16px;
+                    border-width: 1px;
+                    border-color: root.recording ? Theme.fault : Theme.rule-strong;
+                    background: root.recording ? Theme.fault.with-alpha(0.12) : rt.has-hover ? Theme.plate : transparent;
+                }
+                Rectangle {
+                    x: 12px; y: (parent.height - 8px) / 2; width: 8px; height: 8px; border-radius: 4px;
+                    background: root.recording ? Theme.fault : Theme.bone-3;
+                }
+                rec := Text {
+                    x: 28px; height: parent.height;
+                    text: root.recording ? @tr("REC {}", root.recording-time) : @tr("RECORD");
+                    font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 1.8px;
+                    color: root.recording ? Theme.bone : Theme.bone-2; vertical-alignment: center;
+                }
+                rt := TipArea { tooltip: root.recording ? @tr("Stop recording") : @tr("Record the master output"); command: "record.toggle"; mouse-cursor: pointer; clicked => { root.toggle-recording(); } }
+            }
+        }
+    }
+    // ── Kiosk (800 × 480, controller first): 44 px keys, the rest in ⋯ ──
+    if root.kiosk: HorizontalLayout {
+        padding-left: 8px; padding-right: 6px;
+        spacing: 4px;
+        // Work mode: one key; the list opens below it.
+        Rectangle {
+            accessible-label: "topbar.mode"; accessible-role: combobox; accessible-value: root.mode;
+            width: max(84px, mk.preferred-width + 20px);
+            background: kmode.has-hover ? Theme.plate : transparent;
+            Rectangle { y: parent.height - 2px; height: 2px; background: Theme.attention; }
+            mk := Text { text: root.mode == "prepare" ? @tr("PREPARE") : root.mode == "lighting" ? @tr("LIGHTING") : @tr("PERFORM"); font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 1.2px; color: Theme.bone; }
+            kmode := TipArea { tooltip: @tr("Work mode"); mouse-cursor: pointer; clicked => { modes.show(); } }
+            modes := PopupWindow {
+                x: PopupPlace.x(parent.absolute-position.x, 0, 140px);
+                y: PopupPlace.y(parent.absolute-position.y, parent.height, -3 * 44px, 3 * 44px);
+                width: 140px; height: 3 * 44px;
+                Rectangle {
+                    background: Theme.plate; border-width: 1px; border-color: Theme.rule-strong;
+                    VerticalLayout {
+                        width: 140px;
+                        for m[i] in [{ id: "prepare", label: @tr("PREPARE") }, { id: "perform", label: @tr("PERFORM") }, { id: "lighting", label: @tr("LIGHTING") }]: Rectangle {
+                            height: 44px;
+                            background: mi.has-hover ? Theme.plate-raised : transparent;
+                            Text { x: 12px; text: m.label; font-family: Theme.family; font-size: 12px; font-weight: 600; color: root.mode == m.id ? Theme.bone : Theme.bone-2; vertical-alignment: center; height: parent.height; }
+                            mi := TouchArea { clicked => { root.set-mode(m.id); modes.close(); } }
+                        }
+                    }
+                }
+            }
+        }
+        if root.mode == "perform": ViewMenu {
+            narrow: true;
+            deck-count: root.deck-count; layout: PerformLayout.layout;
+            chose(v) => { root.set-perform-view(v); }
+        }
+        if root.show-panels: PanelToggle {
+            accessible-label: "topbar.toggle.fx"; accessible-role: button;
+            accessible-checkable: true; accessible-checked: self.on;
+            narrow: true; min-w: 44px;
+            label: "FX"; on: root.fx-panel;
+            tooltip: root.fx-panel ? @tr("Hide the Tempo FX panel") : @tr("Show the Tempo FX panel");
+            clicked => { root.toggle-fx-panel(); }
+        }
+        if root.show-panels: PanelToggle {
+            accessible-label: "topbar.toggle.mix-preview"; accessible-role: button;
+            accessible-checkable: true; accessible-checked: self.on;
+            narrow: true; min-w: 44px;
+            label: "PREV"; on: root.mix-preview-panel;
+            tooltip: root.mix-preview-panel ? @tr("Hide Mix Preview") : @tr("Mix Preview: set where the next track comes in and the current one goes out");
+            clicked => { root.toggle-mix-preview-panel(); }
+        }
+        if root.show-panels: PanelToggle {
+            accessible-label: "topbar.toggle.sampler"; accessible-role: button;
+            accessible-checkable: true; accessible-checked: self.on;
+            narrow: true; min-w: 44px;
+            label: "SMPL"; on: root.sampler-panel;
+            tooltip: root.sampler-panel ? @tr("Hide the sampler panel") : @tr("Show the sampler panel");
+            clicked => { root.toggle-sampler-panel(); }
+        }
+        // The mixer is on the controller: the switch stays, dimmed.
+        if root.show-panels: PanelToggle {
+            accessible-label: "topbar.toggle.mixer"; accessible-role: button;
+            accessible-checkable: true; accessible-checked: self.on;
+            narrow: true; min-w: 44px;
+            label: "MIX"; on: false; enabled: false;
+            tooltip: @tr("The mixer is on the controller");
+        }
+        PanelToggle {
+            accessible-label: "topbar.toggle.rec"; accessible-role: button;
+            accessible-checkable: true; accessible-checked: self.on;
+            accessible-value: root.recording ? root.recording-time : "";
+            narrow: true; min-w: 44px;
+            label: root.recording ? @tr("REC {}", root.recording-time) : "REC";
+            on: root.rec-panel;
+            tooltip: root.rec-panel ? @tr("Hide the recording section") : @tr("Show the recording section: level, meter and the record button");
+            clicked => { root.toggle-rec-panel(); }
+        }
+        Rectangle {
+            accessible-label: "topbar.status.midi"; accessible-role: text;
+            accessible-value: root.midi-device == "" ? "none" : root.midi-device;
+            width: kmt.preferred-width + 22px;
+            Rectangle {
+                x: 4px; y: (parent.height - 6px) / 2; width: 6px; height: 6px; border-radius: 3px;
+                background: root.midi-device != "" ? Theme.live : transparent;
+                border-width: 1px; border-color: root.midi-device != "" ? Theme.live : Theme.bone-3;
+            }
+            kmt := Caps { x: 14px; height: parent.height; text: "MIDI"; vertical-alignment: center; color: root.midi-device != "" ? Theme.bone : Theme.bone-3; }
+        }
+        Caps { text: root.status; vertical-alignment: center; horizontal-stretch: 1; min-width: 0px; overflow: elide; }
+        Rectangle {
+            accessible-label: "topbar.settings"; accessible-role: button;
+            width: 44px;
+            background: kg.has-hover ? Theme.plate : transparent;
+            Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "gear"; tone: kg.has-hover ? Theme.bone : Theme.bone-2; }
+            kg := TipArea { tooltip: @tr("Preferences"); mouse-cursor: pointer; clicked => { root.open-preferences(); } }
+        }
+        Rectangle {
+            accessible-label: "topbar.master-meter"; accessible-role: progress-indicator;
+            accessible-value: Math.round(clamp(root.master-meter, 0, 1) * 100) + "%";
+            width: 40px;
+            Rectangle { x: 0; y: (parent.height - 4px) / 2; width: parent.width; height: 4px; background: Theme.plate; }
+            Rectangle {
+                x: 0; y: (parent.height - 4px) / 2; height: 4px;
+                width: parent.width * clamp(root.master-meter, 0, 1);
+                background: root.master-clip ? Theme.fault : root.master-meter > 0.8 ? Theme.attention : Theme.live;
+            }
+        }
+        Text {
+            accessible-label: "topbar.clock"; accessible-role: text; accessible-value: self.text;
+            text: root.clock;
+            font-family: Theme.family; font-size: 13px; font-weight: 600;
+            color: Theme.bone-2; vertical-alignment: center;
+        }
+        // Everything else of the bar: Club mode, lighting strip,
+        // appearance, undo, recording.
+        more := ContextMenuArea {
+            width: 44px;
+            Menu {
+                MenuItem { title: Club.enabled ? @tr("Back to the full deck controls") : @tr("Club mode"); enabled: root.show-panels; activated => { Club.set-enabled(!Club.enabled); } }
+                MenuItem { title: Lighting.panel ? @tr("Hide the lighting strip") : @tr("Show the lighting strip"); enabled: root.show-panels; activated => { Lighting.panel = !Lighting.panel; } }
+                MenuItem { title: @tr("Appearance: dark, light or system"); activated => { root.cycle-appearance(); } }
+                MenuItem { title: @tr("Undo the last change"); enabled: root.undo-label != ""; activated => { root.undo(); } }
+                MenuItem { title: root.recording ? @tr("Stop recording") : @tr("Record the master output"); activated => { root.toggle-recording(); } }
+            }
+            Rectangle {
+                accessible-label: "topbar.more"; accessible-role: button;
+                background: km.has-hover ? Theme.plate : transparent;
+                Text { text: "⋯"; font-family: Theme.family; font-size: 18px; font-weight: 600; color: Theme.bone-2; }
+                km := TipArea { tooltip: @tr("More"); mouse-cursor: pointer; clicked => { more.show({ x: 0, y: self.height }); } }
+            }
+        }
+    }
+    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
+}

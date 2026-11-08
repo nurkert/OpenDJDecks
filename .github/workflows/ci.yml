@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**", "assets/**"]
+  pull_request:
+    paths-ignore: ["**.md", "docs/**", "assets/**"]
+  # macOS and Windows runners are expensive on a free account: they only run
+  # when started by hand (Actions → CI → Run workflow → macos / windows) and
+  # in the release workflow.
+  workflow_dispatch:
+    inputs:
+      macos:
+        description: "Also test on the macOS runners"
+        type: boolean
+        default: false
+      windows:
+        description: "Also test on the Windows runner"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Zero in-scope gaps: a new gap fails feature_set_complete.
+  OD_PARITY_STRICT: "1"
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu-24.04: x86_64, ubuntu-24.04-arm: aarch64 (Raspberry Pi class),
+        # macos-latest: Apple Silicon, macos-15-intel: Intel (manual runs only)
+        os: ${{ fromJSON(inputs.macos && '["ubuntu-24.04","ubuntu-24.04-arm","macos-latest","macos-15-intel"]' || '["ubuntu-24.04","ubuntu-24.04-arm"]') }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: System dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install rubberband pkg-config
+      - name: System dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: packaging/linux/install-build-deps.sh
+      - name: Test
+        run: cargo test --workspace --locked
+      - name: Linux audio backends (JACK, PipeWire)
+        if: runner.os == 'Linux'
+        run: cargo test --locked -p od-audio-io --features jack,pipewire
+      - name: Build release
+        run: cargo build --release --locked -p opendjdecks -p od-cli
+
+  # Windows x86_64 (manual runs only, see workflow_dispatch above).
+  windows:
+    if: inputs.windows
+    runs-on: windows-latest
+    env:
+      VCPKGRS_TRIPLET: x64-windows
+      VCPKGRS_DYNAMIC: "1"
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-rubberband-x64-windows-v1
+      - name: Rubber Band (vcpkg)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install rubberband:x64-windows
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+          # vcpkg does not support a static Rubber Band on Windows: the DLLs
+          # go on PATH for the tests and into the zip.
+          "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin" >> $env:GITHUB_PATH
+      - name: Test
+        run: cargo test --workspace --locked --no-fail-fast
+      - name: Build release
+        run: cargo build --release --locked -p opendjdecks -p od-cli
+
+  # SPEC §16 gap report. Non-blocking until the gap count reaches zero
+  # (docs/parity.md, "Becoming the CI gate"); the always-enforced parity
+  # tests run in the test job above.
+  parity:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: packaging/linux/install-build-deps.sh
+      # Headless UI suites (Slint testing backend, no display): view
+      # completeness at every size and the superiority flows; they write
+      # target/parity/ for the report. The gap count is zero, so any gap
+      # fails the build (docs/parity.md, "Becoming the CI gate").
+      - name: View completeness and flows
+        run: cargo test --locked -p od-ui --lib ui_tests -- --nocapture
+      - name: Parity gap report
+        run: |
+          cargo run --locked -p od-parity --bin parity -- check --strict --out parity-report.md
+      - name: Job summary
+        if: always()
+        run: test -f parity-report.md && cat parity-report.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-report
+          path: |
+            parity-report.md
+            target/parity/
+          if-no-files-found: warn
+
+  kiosk:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: packaging/linux/install-build-deps.sh
+      - name: Build kiosk binary (Raspberry Pi 4/5)
+        run: cargo build --release --locked -p opendjdecks --features kiosk
+      - name: Headless end-to-end on aarch64 (import, Lite analysis, stick sync)
+        run: cargo build --release --locked -p od-cli && packaging/ci/headless-e2e.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opendjdecks-kiosk-aarch64
+          path: target/release/opendjdecks

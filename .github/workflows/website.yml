@@ -1,0 +1,85 @@
+name: Website
+
+# opendjdecks.de: the static site in website/, built with Astro and served by GitHub Pages.
+# Domain and the Pages mode "GitHub Actions" are set in the repository settings.
+# Linux only, on purpose: the owner's free account must stay frugal with runner minutes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      # The wiki is generated from docs/.
+      - 'docs/**'
+      - '.github/workflows/website.yml'
+  # A new release should show up on the download page right away. A release created by
+  # release.yml does not trigger this event (GITHUB_TOKEN does not start workflows), so its
+  # publish job calls this workflow via workflow_dispatch; this event catches manual releases.
+  release:
+    types: [published]
+  # Daily, so downloads and the imprint stay current.
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+# As little as possible: read the repository, deploy to Pages via OIDC.
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      # Unit tests: the stage, the Markdown plugins, the release asset names, the search.
+      - run: npm test
+      - run: npm run build
+        env:
+          # Read only, so the release query does not hit the API rate limit.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The imprint lives on the owner's site, not in this repository. Forks set their
+          # own variable IMPRINT_URL.
+          IMPRINT_URL: ${{ github.repository == 'nurkert/OpenDJDecks' && 'https://nurkert.de/impressum' || vars.IMPRINT_URL }}
+      # Dead internal links and anchors, and language pairs on every page.
+      - run: npm run check-links
+      # Every guide in both languages, and missing translations.
+      - run: npm run check-translations
+      # Every in-scope feature of tests/parity/features.toml must be explained in a guide.
+      - run: npm run check-features
+      # Lighthouse against the built site, failing below 95. Uses the runner's Chrome.
+      - run: npm run lighthouse
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: website/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

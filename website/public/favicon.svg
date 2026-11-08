@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  
+  <!-- 824 px macOS body; transparent 100 px exterior. Flat, original signal mark. -->
+  <rect x="100" y="100" width="824" height="824" rx="184" fill="#151514"/>
+  <g fill="none" stroke-width="18" stroke-linejoin="miter">
+    <path d="M240 426H476L516 378H784" stroke="#4FB8F0"/>
+    <path d="M240 538H476L516 490H784" stroke="#F5CE4A"/>
+    <path d="M240 650H476L516 602H784" stroke="#7A5CFF"/>
+  </g>
+  <path d="M610 228V796" fill="none" stroke="#E6E0D2" stroke-width="34"/>
+</svg>

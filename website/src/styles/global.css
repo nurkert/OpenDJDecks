@@ -1,0 +1,240 @@
+/* The site's vocabulary: dark ground, bone text, thin rules, square plates, one sodium line.
+   Only pictures of the app are rounded, like the app's own window (--r-window).
+   Colours and type are those of crates/od-ui/ui/tokens.slint. */
+
+@font-face {
+  font-family: 'Barlow Semi Condensed';
+  src: url('/fonts/barlow-semi-condensed-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Semi Condensed';
+  src: url('/fonts/barlow-semi-condensed-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Semi Condensed';
+  src: url('/fonts/barlow-semi-condensed-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --ground: #151514;
+  --ground-band: #1a1a19;
+  --plate: #21211f;
+  --plate-raised: #2a2a27;
+  --rule: #33322f;
+  --rule-strong: #4b4a46;
+  --bone: #e6e0d2;
+  --bone-2: #b7b1a4;
+  --bone-3: #8b867b;
+  --sodium: #f5ce4a;
+  --blue: #4fb8f0;
+  --orange: #f39047;
+  --green: #82d16b;
+  --red: #ef5a5a;
+  --violet: #9b7bff;
+
+  --font: 'Barlow Semi Condensed', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --gutter: clamp(1rem, 4vw, 3.25rem);
+  --max: 92rem;
+  --prose: 44rem;
+  --nav-h: 3.75rem;
+  --r-window: clamp(0.5rem, 0.85vw, 0.75rem);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--ground);
+  color: var(--bone);
+  font-family: var(--font);
+  font-size: 106.25%;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--nav-h) + 1.5rem);
+  scrollbar-color: var(--rule-strong) var(--ground);
+  caret-color: var(--sodium);
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: clip;
+  font-feature-settings: 'lnum' 1, 'kern' 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+img,
+video,
+svg,
+picture {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--sodium);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgb(245 206 74 / 0.35);
+}
+
+.container {
+  width: min(100%, var(--max));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.skip {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  padding: 0.6rem 0.9rem;
+  background: var(--sodium);
+  color: #151514;
+  font-weight: 600;
+  transform: translateY(-160%);
+  transition: transform 0.2s var(--ease-out);
+}
+.skip:focus {
+  transform: none;
+}
+
+/* Small capitals with wide tracking, the label voice of the app. */
+.caps {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  color: var(--bone-3);
+}
+
+/* A plate button: square, a hairline and a lit edge. */
+.plate-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0.45rem 1.1rem 0.45rem 1rem;
+  border: 1px solid var(--rule-strong);
+  border-left: 2px solid var(--sodium);
+  background: transparent;
+  color: var(--bone);
+  font: 500 0.9rem/1.2 var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease-out),
+    border-color 0.2s var(--ease-out),
+    color 0.2s var(--ease-out);
+}
+.plate-btn:hover {
+  background: var(--plate);
+  border-color: var(--rule-strong);
+}
+.plate-btn:active {
+  background: var(--plate-raised);
+}
+.plate-btn--primary {
+  background: var(--sodium);
+  border-color: var(--sodium);
+  color: #151514;
+  font-weight: 600;
+}
+.plate-btn--primary:hover {
+  background: #fbdd70;
+  border-color: #fbdd70;
+}
+.plate-btn svg {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+}
+
+/* The emission line: a thin rule with a lit node at its start. */
+.rail {
+  position: relative;
+  height: 1px;
+  background: var(--rule);
+}
+.rail::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 3.5rem;
+  height: 3px;
+  background: var(--sodium);
+}
+
+/* Layout helpers for content pages. */
+.page {
+  padding: calc(var(--nav-h) + clamp(2.5rem, 7vh, 5rem)) 0 clamp(4rem, 9vw, 7rem);
+}
+.page-title {
+  font-size: clamp(2.6rem, 6.5vw, 4.4rem);
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[hidden] {
+  display: none !important;
+}

@@ -1,0 +1,12 @@
+/target
+**/*.rs.bk
+.DS_Store
+/.idea
+/.vscode
+/samples
+/.impeccable/questions
+/.impeccable/ref
+/.impeccable/review
+.claude/
+docs/ux-study/
+*.po~

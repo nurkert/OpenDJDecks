@@ -1,0 +1,172 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  # A manual run builds the Linux packages only unless macos / windows is
+  # ticked (macOS and Windows runners are expensive on a free account).
+  workflow_dispatch:
+    inputs:
+      macos:
+        description: "Also build the macOS disk images"
+        type: boolean
+        default: false
+      windows:
+        description: "Also build the Windows zip"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  macos:
+    if: github.event_name == 'push' || inputs.macos
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: brew install rubberband pkg-config dylibbundler
+      - name: Build app and disk image
+        run: packaging/macos/build-dmg.sh
+      - name: Smoke test the bundled app
+        run: |
+          hdiutil attach target/dist/*.dmg -mountpoint /tmp/od -nobrowse
+          "/tmp/od/OpenDJDecks.app/Contents/MacOS/opendjdecks" --help
+          "/tmp/od/OpenDJDecks.app/Contents/MacOS/od-cli" --version
+          "/tmp/od/OpenDJDecks.app/Contents/MacOS/opendjdecks-mcp" --version
+          hdiutil detach /tmp/od
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.os }}
+          path: target/dist/*.dmg
+
+  windows:
+    if: github.event_name == 'push' || inputs.windows
+    runs-on: windows-latest
+    env:
+      # Rubber Band (keylock) from vcpkg, statically linked against the
+      # dynamic CRT like the Rust code (crates/od-engine/build.rs).
+      VCPKGRS_TRIPLET: x64-windows
+      VCPKGRS_DYNAMIC: "1"
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-rubberband-x64-windows-v1
+      - name: Rubber Band (vcpkg)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install rubberband:x64-windows
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+          # vcpkg does not support a static Rubber Band on Windows: the DLLs
+          # go on PATH for the tests and into the zip.
+          "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin" >> $env:GITHUB_PATH
+      - name: Build zip
+        shell: pwsh
+        run: packaging/windows/build-zip.ps1
+      - name: Smoke test the zip
+        shell: pwsh
+        run: |
+          Expand-Archive target/dist/*.zip -DestinationPath $env:RUNNER_TEMP\od
+          $d = Get-ChildItem $env:RUNNER_TEMP\od -Directory | Select-Object -First 1
+          & "$($d.FullName)\od-cli.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw "od-cli failed" }
+          & "$($d.FullName)\opendjdecks-mcp.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw "opendjdecks-mcp failed" }
+          # GUI subsystem: wait explicitly; a missing DLL fails here.
+          $p = Start-Process "$($d.FullName)\opendjdecks.exe" -ArgumentList '--help' -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw "opendjdecks --help exited with $($p.ExitCode)" }
+          if (-not (Test-Path "$($d.FullName)\mappings\controllers\ddj-flx10.toml")) { throw "mappings missing" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64
+          path: target/dist/*.zip
+
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    # Ubuntu 24.04 (glibc 2.39): the ONNX Runtime used for stem separation
+    # needs glibc 2.38. Packages run on Ubuntu 24.04+, Debian 13+ and
+    # Raspberry Pi OS (64-bit, trixie).
+    container: ubuntu:24.04
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - run: apt-get update && apt-get install -y --no-install-recommends git ca-certificates curl
+      - uses: actions/checkout@v4
+      - run: packaging/linux/install-build-deps.sh
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build .deb, AppImage and tar.gz
+        run: packaging/linux/build-packages.sh
+      - name: Smoke test the .deb
+        run: |
+          apt-get install -y ./target/dist/opendjdecks_*.deb
+          opendjdecks --help
+          od-cli --version
+          opendjdecks-mcp --version
+          test -f /usr/share/opendjdecks/mappings/controllers/ddj-flx10.toml
+          test -f /usr/share/applications/de.opendjdecks.OpenDJDecks.desktop
+          test -f /usr/share/icons/hicolor/scalable/apps/de.opendjdecks.OpenDJDecks.svg
+          test -f /usr/share/icons/hicolor/256x256/apps/de.opendjdecks.OpenDJDecks.png
+      - name: Raspberry Pi kiosk bundle
+        if: matrix.runner == 'ubuntu-24.04-arm'
+        run: packaging/raspberry-pi/build-bundle.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.runner }}
+          path: |
+            target/dist/*.deb
+            target/dist/*.AppImage
+            target/dist/*.tar.gz
+
+  publish:
+    needs: [macos, windows, linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "OpenDJDecks ${GITHUB_REF_NAME#v}" \
+            --notes-file packaging/release-notes.md
+      - name: Refresh the website's download page
+        # A release created here does not trigger other workflows (GITHUB_TOKEN
+        # does not start them), so the site rebuild is started explicitly. If
+        # this fails, the daily site build catches up; the release itself stands.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run website.yml --repo "$GITHUB_REPOSITORY" --ref main ||
+            echo "::warning::the website build could not be triggered"
+

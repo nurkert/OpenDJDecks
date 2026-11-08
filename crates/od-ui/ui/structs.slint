@@ -1,0 +1,499 @@
+export struct TreeRow {
+    id: int,
+    name: string,
+    // "folder" | "playlist" | "smart" | "set" | "all" | "recordings"
+    kind: string,
+    depth: int,
+    count: int,
+    // Share of the longest list, 0..1, drawn as the length bar.
+    length-frac: float,
+    duration: string,
+    has-children: bool,
+    expanded: bool,
+    // Assigned to at least one stick.
+    on-device: bool,
+}
+
+// A folder in the Explorer section of the sidebar.
+export struct ExplorerRow {
+    id: int,
+    name: string,
+    path: string,
+    depth: int,
+    // A user-added root folder (can be removed).
+    root: bool,
+    has-children: bool,
+    expanded: bool,
+}
+
+export struct TrackRow {
+    id: int,
+    // Mini overview waveform for the PREVIEW column.
+    preview: image,
+    // Cover thumbnail for the ARTWORK column (empty: none).
+    artwork: image,
+    position: int,
+    title: string,
+    artist: string,
+    album: string,
+    genre: string,
+    bpm: string,
+    key: string,
+    // Camelot distance to the selected track's key, -1 if unknown.
+    key-distance: int,
+    time: string,
+    rating: int,
+    analysed: bool,
+    missing: bool,
+    selected: bool,
+    // Transition note in sets.
+    note: string,
+    // Deck (1-based) the track is loaded on, 0 if none.
+    deck: int,
+    // On air long enough this session to count as played.
+    played: bool,
+    // Track colour tag (transparent when none).
+    tag-color: color,
+    // Optional columns (browser::columns).
+    label: string,
+    comment: string,
+    year: string,
+    date-added: string,
+    plays: string,
+    bitrate: string,
+    user-tag: string,
+    // MATCH column: fit with the reference track (master deck, else a
+    // playing deck, else the selected track), 0..3 segments; -1 = none.
+    match-score: int,
+    match-tip: string,
+}
+
+// A shown column of the track table, in display order.
+export struct ColumnView {
+    id: string,
+    title: string,
+    // Fixed width; 0 = shares the free width by `stretch`.
+    width: length,
+    stretch: float,
+    right: bool,
+    // Sort column name, "" = not sortable.
+    sort: string,
+    // 1 = primary sort, 2.. = secondary (⇧-click), 0 = not sorted.
+    rank: int,
+    descending: bool,
+}
+
+// An entry of the column menu (header right-click).
+export struct ColumnChoice {
+    id: string,
+    title: string,
+    visible: bool,
+}
+
+// The quick filter bar of the track list.
+export struct FilterView {
+    // Any condition set.
+    active: bool,
+    bpm-min: string,
+    bpm-max: string,
+    // Minimum stars, 0 = any.
+    rating: int,
+    // "Category: Value" or "" for any.
+    user-tag: string,
+    // Key compatible with the master deck.
+    key-match: bool,
+    // BPM within ± this percentage of the master deck ("" = off).
+    bpm-pct: string,
+    // The reference ("MASTER 124.0 · 8A"), "" when no deck plays.
+    reference: string,
+}
+
+// A tag value in the Tags panel; `on` = every selected track has it.
+export struct UserTagChip {
+    category: string,
+    value: string,
+    count: int,
+    on: bool,
+    // First value of its category (draws the category caption).
+    first: bool,
+}
+
+// A track suggested after the selected one (Similar panel).
+export struct SuggestionRow {
+    id: int,
+    title: string,
+    artist: string,
+    bpm: string,
+    key: string,
+}
+
+// A playlist / set the row context menu can add tracks to.
+export struct MenuTarget {
+    id: int,
+    name: string,
+}
+
+// One phrase on a phrase bar (positions as fractions of the track).
+export struct PhraseMark {
+    pos: float,
+    end: float,
+    label: string,
+    tone: color,
+}
+
+export struct CueMark {
+    // 0..7 for hot cues, -1 for memory cues.
+    slot: int,
+    letter: string,
+    // Position as a fraction of the track.
+    pos: float,
+    end: float,
+    is-loop: bool,
+    // Active loop: engages by itself when playback reaches it.
+    active: bool,
+    time: string,
+    label: string,
+    // Stored cue colour; transparent = the slot's line colour.
+    tone: color,
+}
+
+export struct HotCueSlot {
+    slot: int,
+    letter: string,
+    set: bool,
+    time: string,
+    label: string,
+    // Stored cue colour; transparent = the slot's line colour.
+    tone: color,
+}
+
+export struct DeviceRow {
+    id: int,
+    name: string,
+    // "disconnected" | "in-sync" | "pending" | "syncing" | "error"
+    state: string,
+    detail: string,
+    progress: float,
+    space: string,
+    connected: bool,
+}
+
+export struct VolumeRow {
+    index: int,
+    name: string,
+    space: string,
+}
+
+export struct FlowPoint {
+    title: string,
+    bpm: string,
+    key: string,
+    energy: float,
+    start: string,
+    // Fit of the transition into the next track: "good" | "ok" | "clash" | "unknown" | "none"
+    tempo-fit: string,
+    key-fit: string,
+    change: string,
+}
+
+// Motion of one zoomed waveform lane. The UI extrapolates the playhead with
+// animation-tick() at the display rate and translates the pre-rendered
+// tiles, so scrolling is smooth without re-rendering every frame.
+export struct LaneMotion {
+    loaded: bool,
+    // Playhead in seconds when this row was written, and its speed in
+    // seconds per millisecond (0 when paused).
+    pos: float,
+    rate: float,
+    // Visible span in seconds.
+    span: float,
+    // Three consecutive tiles, each `span` seconds wide, and their starts.
+    tile0: image,
+    tile1: image,
+    tile2: image,
+    t0: float,
+    t1: float,
+    t2: float,
+}
+
+// One deck pad in the current pad mode.
+export struct PadView {
+    // 0..7 (A–H).
+    index: int,
+    // Main legend (letter, "+2", "1/4", slot number) and the line under it.
+    caption: string,
+    sub: string,
+    // Has something to play (a stored cue, a loaded sample, …).
+    set: bool,
+    // Playing / engaged now.
+    lit: bool,
+    // Hot cue slot for the cue colour, -1 for the pad mode's colour.
+    cue-slot: int,
+    // Stored cue colour (transparent = the slot colour).
+    tone: color,
+}
+
+// A span where the vocals sing, as fractions of the track.
+export struct VocalMark {
+    start: float,
+    end: float,
+}
+
+export struct DeckView {
+    deck: int,
+    loaded: bool,
+    // A track was chosen and is being decoded (shown at once, playable soon).
+    loading: bool,
+    title: string,
+    artist: string,
+    bpm: string,
+    key: string,
+    tempo: string,
+    elapsed: string,
+    remaining: string,
+    // Remaining time at the current tempo (track time / tempo).
+    remaining-real: string,
+    progress: float,
+    // Track length in seconds (to place cue markers on the lanes).
+    length: float,
+    playing: bool,
+    master: bool,
+    sync: bool,
+    keylock: bool,
+    looping: bool,
+    // Loop in / out in seconds (equal = no loop; a loop may start before 0).
+    loop-in: float,
+    loop-out: float,
+    // Bar counter mode on the waveform: "to-phrase", "to-memory-cue", "up".
+    counter-mode: string,
+    loop-beats: string,
+    slip: bool,
+    level: float,
+    fader: float,
+    waveform: image,
+    overview: image,
+    cues: [CueMark],
+    // The eight pads in the deck's pad mode, and the two columns A–D / E–H.
+    pads: [PadView],
+    pads-left: [PadView],
+    pads-right: [PadView],
+    // Pad mode id ("hot_cue", "hold_fx1", "hold_fx2", "beat_jump", "sampler",
+    // "keyboard", "key_shift", "beat_loop", "slicer") and the value of its
+    // ‹ › (hot cue bank, jump size, …; "" = none).
+    pad-mode: string,
+    pad-param: string,
+    // Key shift ("±0", "+2") and key sync.
+    key-shift: string,
+    key-sync: bool,
+    // Beat jump size of the −/+ buttons, e.g. "4".
+    jump-size: string,
+    tempo-value: float,
+    tempo-range: string,
+    quantize: bool,
+    // Stems (part mute): true = muted.
+    stems-available: bool,
+    stems-busy: bool,
+    // Separation progress, e.g. "SPLIT 42%", and as a fraction 0..1.
+    split-text: string,
+    split-progress: float,
+    mute-vocal: bool,
+    mute-inst: bool,
+    mute-drums: bool,
+    mute-bass: bool,
+    // Stem levels 0..1 (part isolation).
+    level-vocal: float,
+    level-inst: float,
+    level-drums: float,
+    level-bass: float,
+    // Cover art of the loaded track (has-artwork false = none).
+    artwork: image,
+    has-artwork: bool,
+    loop-size: string,
+    phrases: [PhraseMark],
+    // Where the vocals sing (from the separated parts).
+    vocals: [VocalMark],
+    // Current phrase and bars left in it, e.g. "CHORUS · 8".
+    phrase: string,
+    // Name of the current phrase alone ("CHORUS"), for the playhead label.
+    phrase-kind: string,
+    // GRID panel: the track's grid is locked; your auto-gain correction.
+    grid-locked: bool,
+    gain-adjust: string,
+    // Platter rotation in degrees.
+    jog-angle: float,
+    // Bar.beat counter, e.g. "33.2".
+    beat-pos: string,
+    // Manual loop: the in point is set and waits for the out point.
+    loop-in-set: bool,
+}
+
+// One mixer channel.
+export struct ChannelView {
+    channel: int,
+    trim: float,
+    high: float,
+    mid: float,
+    low: float,
+    channel_fx: float,
+    fader: float,
+    cue: bool,
+    level: float,
+    peak: float,
+    // STEM: the HI / MID / LOW knobs set vocals / inst / drums.
+    parts: bool,
+}
+
+// Slot 2 or 3 of a Tempo FX unit in multi mode.
+export struct FxSlotView {
+    // 2 or 3.
+    slot: int,
+    kind: int,
+    beats: string,
+    level: float,
+    on: bool,
+}
+
+// One Tempo FX unit in the FX panel.
+export struct FxUnitView {
+    // 1 or 2.
+    unit: int,
+    // Effect: index into the engine's Tempo FX list (ECHO … SPIRAL).
+    kind: int,
+    // Beat length, e.g. "1/2", "3/4", "4".
+    beats: string,
+    // Channel the unit is inserted on: 0 = master, 1..4 = channel.
+    target: int,
+    // Depth 0..1 and effect parameter -1..1.
+    level: float,
+    param: float,
+    on: bool,
+    // Still sounding after switching off (tail or release).
+    ringing: bool,
+    // Tempo the unit follows, e.g. "124.0".
+    bpm: string,
+    // The tempo comes from TAP instead of the decks.
+    tapped: bool,
+    // Engaged Exit FX: -1 none, 0 vinyl brake, 1 backspin, 2 echo out.
+    release: int,
+    // Stem FX: the part of the target channel the unit takes
+    // (-1 = the whole channel, 0 vocals, 1 drums, 2 bass, 3 inst).
+    part: int,
+    // Multi mode: slots 2 and 3 chained after the unit's effect.
+    multi: bool,
+    slots: [FxSlotView],
+}
+
+
+// One sampler pad of the shown bank.
+export struct SamplerPadView {
+    // Slot number 0..63 and pad number 1..16 in the bank.
+    slot: int,
+    pad: int,
+    name: string,
+    loaded: bool,
+    playing: bool,
+    // Triggered, waiting for the quantise boundary.
+    pending: bool,
+    // 0 one-shot, 1 loop, 2 gate.
+    mode: int,
+    gain: float,
+    progress: float,
+    selected: bool,
+    sync: bool,
+}
+
+// The sampler panel's scalar state.
+export struct SamplerView {
+    bank: int,
+    // Selected pad in the shown bank (0..15), -1 if it is in another bank.
+    selected: int,
+    selected-number: int,
+    selected-name: string,
+    selected-loaded: bool,
+    selected-mode: int,
+    selected-gain: float,
+    selected-sync: bool,
+    selected-bpm: string,
+    quantize: bool,
+    volume: float,
+    cue: bool,
+    seq-playing: bool,
+    seq-recording: bool,
+    // Step the sequencer plays (0..15), -1 when stopped.
+    step: int,
+}
+
+// Remaining time on the decks (Preferences › View › Remaining time): the
+// time left in the file ("track"), the real time left at the deck's tempo
+// ("tempo"), or the real time with the track time small beside it ("both").
+export global DeckTime {
+    in-out property <string> mode: "tempo";
+    public pure function main(d: DeckView) -> string { return root.mode == "track" ? d.remaining : d.remaining-real; }
+    public pure function track(d: DeckView) -> string { return root.mode == "both" && d.remaining != d.remaining-real ? d.remaining : ""; }
+    public pure function label() -> string { return root.mode == "track" ? @tr("REMAIN") : @tr("REAL TIME"); }
+}
+
+// Readouts of a Perform deck's GRID panel (see deck_grid.rs): the meter
+// (median error of the grid against the kicks around the playhead, ms,
+// clamped to ±20; tone 0 / 1 / 2 = within 5 / 15 ms / further), FIT, the
+// grid tempo at the playhead, pins set, CLICK.
+export struct DeckGridView {
+    has-err: bool,
+    err: float,
+    err-text: string,
+    err-tone: int,
+    fit: string,
+    bpm: string,
+    pins: int,
+    click: bool,
+}
+
+// GRID panel of a Perform deck: (deck 1-based, action, argument), see
+// deck_grid.rs for the actions; `decks` holds the readouts per deck.
+export global DeckGrid {
+    in property <[DeckGridView]> decks;
+    callback act(int, string, string);
+}
+
+// The beatgrid editing session of the Prepare player (EDIT GRID): on while
+// it runs; positions are fractions of the enlarged waveform (its span).
+export global GridEdit {
+    in-out property <bool> active;
+    // "Artist – Title" of the track being edited.
+    in property <string> title;
+    // FIT of the whole grid ("94 %"), its tone (0 good, 1 fair, 2 poor,
+    // -1 unknown); the error at the cursor and its tone.
+    in property <string> fit;
+    in property <int> fit-tone: -1;
+    in property <string> at-cursor;
+    in property <int> at-cursor-tone: -1;
+    // Grid tempo at the cursor, tempo segments, where the grid came from.
+    in property <string> bpm;
+    in property <int> tempos: 1;
+    in property <string> source;
+    // Pin times, the worst spot ("+18 ms @ 3:42"), the drift strip.
+    in property <[string]> pins;
+    in property <string> worst;
+    in property <image> drift;
+    in property <bool> click;
+    in property <bool> snap: true;
+    in property <bool> locked;
+    in property <bool> can-undo;
+    in property <bool> can-redo;
+    callback start();
+    callback done();
+    callback cancel();
+    // Perform: open deck N's track in the player, editing its grid.
+    callback open-deck(int);
+    // A session action (grid_edit.rs::act): action, argument.
+    callback act(string, string);
+    // Drag of the grid: shown moved by `frac` of the span (live), then
+    // stored on release (`frac`, where it was released from the centre,
+    // Alt held = no snapping).
+    callback preview(float);
+    callback commit(float, float, bool);
+    // A double-click `frac` of the span from the cursor: that beat is the 1.
+    callback set-one-at(float);
+    // A click on the drift strip (fraction of the track).
+    callback drift-seek(float);
+}

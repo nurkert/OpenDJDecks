@@ -1,0 +1,77 @@
+---
+import '../../styles/prose.css';
+import '../../styles/docs.css';
+
+import Base from '../../layouts/Base.astro';
+import DocsSearch from './DocsSearch.astro';
+import { devDocs, devHref, guideGroups, guideHref, wikiHome } from '../../lib/docs-catalog.mjs';
+import { guideEntry, type Lang } from '../../lib/docs';
+import { ui } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+const groups = await Promise.all(
+  guideGroups.map(async (group) => ({
+    title: group.title[lang],
+    guides: await Promise.all(
+      group.slugs.map(async (slug) => {
+        const entry = await guideEntry(slug, lang);
+        return { slug, title: entry!.data.title, description: entry!.data.description };
+      }),
+    ),
+  })),
+);
+const alternates = [
+  { lang: 'de' as const, href: wikiHome('de') },
+  { lang: 'en' as const, href: wikiHome('en') },
+];
+---
+
+<Base lang={lang} title={`${t.docs.title} · OpenDJDecks`} description={t.docs.metaDescription} alternates={alternates}>
+  <main id="main" class="page">
+    <div class="container wikihome">
+      <header class="wikihome__head">
+        <h1 class="page-title">{t.docs.title}</h1>
+        <p class="docs__lede">{t.docs.guidesLede}</p>
+        <DocsSearch lang={lang} id="search-home" />
+      </header>
+
+      {
+        groups.map((group) => (
+          <section class="wikihome__group">
+            <h2>{group.title}</h2>
+            <div class="wikihome__cards">
+              {group.guides.map((guide) => (
+                <a class="wikihome__card" href={guideHref(guide.slug, lang)}>
+                  <strong>{guide.title}</strong>
+                  <span>{guide.description}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        ))
+      }
+
+      <section class="wikihome__group">
+        <h2>{t.docs.developers}</h2>
+        <p class="docs__lede" style="margin:0 0 0.9rem;font-size:1.05rem">{t.docs.developersLede}</p>
+        <div class="wikihome__cards">
+          {
+            devDocs.map((doc) => (
+              <a class="wikihome__card" href={devHref(doc.slug, lang)}>
+                <strong>{doc.label}</strong>
+              </a>
+            ))
+          }
+        </div>
+      </section>
+    </div>
+  </main>
+</Base>
+
+<script>
+  import '../../scripts/search';
+</script>

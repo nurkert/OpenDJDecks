@@ -1,0 +1,36 @@
+---
+import { ui, type Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  id: string;
+}
+const { lang, id } = Astro.props;
+const t = ui[lang].docs;
+---
+
+<div
+  class="s"
+  id={id}
+  data-search
+  data-lang={lang}
+  data-empty={t.searchEmpty}
+  data-loading={t.searchLoading}
+  data-failed={t.searchFailed}
+  role="search"
+>
+  <input
+    type="search"
+    placeholder={t.searchPlaceholder}
+    aria-label={t.searchLabel}
+    role="combobox"
+    aria-expanded="false"
+    aria-autocomplete="list"
+    aria-controls={`${id}-list`}
+    autocomplete="off"
+    spellcheck="false"
+    title={t.searchHint}
+  />
+  <div class="s__status" data-search-status role="status" aria-live="polite"></div>
+  <ul class="s__list" id={`${id}-list`} data-search-results role="listbox" hidden></ul>
+</div>

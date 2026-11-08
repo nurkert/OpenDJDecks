@@ -1,0 +1,25 @@
+---
+import { ui, type Lang } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  headings: { depth: number; text: string; slug: string }[];
+}
+const { lang, headings } = Astro.props;
+const items = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+---
+
+{
+  items.length > 1 && (
+    <nav class="toc" aria-label={ui[lang].docs.contents}>
+      <p class="toc__title">{ui[lang].docs.contents}</p>
+      <ul>
+        {items.map((item) => (
+          <li style={item.depth === 3 ? 'padding-left:0.85rem' : ''}>
+            <a href={`#${item.slug}`}>{item.text}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}

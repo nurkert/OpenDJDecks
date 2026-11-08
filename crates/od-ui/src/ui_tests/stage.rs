@@ -1,0 +1,454 @@
+//! LIGHTING view and Club mode, driven through the real window.
+
+use super::flows::deck_views;
+use super::harness::*;
+use slint::ComponentHandle;
+
+/// Patch a fixture, choose a mode, black out and set an output from the
+/// LIGHTING view; the rig file on disk follows.
+#[test]
+fn lighting_view_patches_and_controls_the_show() {
+    let ui = Ui::open((1440, 900));
+    ui.click("topbar.mode.lighting");
+    ui.pump(200);
+    assert_eq!(ui.app.ui.get_mode(), "lighting");
+    assert!(ui.has("lighting.stage"));
+
+    ui.click("lighting.rig.name");
+    ui.type_text("Front");
+    ui.click("lighting.rig.add");
+    ui.pump(100);
+    assert!(ui.has("lighting.rig.row0"), "the patched fixture is listed");
+    assert!(ui.has("lighting.stage.fixture0"), "and drawn on the stage");
+    {
+        let rt = ui.app.lighting.borrow();
+        assert_eq!(rt.config.patch.fixtures.len(), 1);
+        assert_eq!(rt.config.patch.fixtures[0].name, "Front");
+    }
+
+    ui.click("lighting.mode.easy");
+    ui.click("lighting.blackout");
+    ui.click("lighting.output.sacn");
+    ui.click("lighting.output.apply");
+    ui.pump(100);
+    let rig = od_lighting::RigConfig::load(&crate::lighting::rig_path(&ui.fx.library)).unwrap();
+    assert_eq!(rig.patch.fixtures.len(), 1);
+    assert_eq!(rig.settings.mode, od_lighting::Mode::Easy);
+    assert!(rig.settings.blackout);
+    assert_eq!(
+        rig.outputs,
+        vec![(0, od_lighting::OutputKind::Sacn { universe: 1 })]
+    );
+    assert!(rig.enabled);
+
+    ui.click("lighting.rig.remove0");
+    ui.pump(100);
+    assert!(!ui.has("lighting.rig.row0"));
+}
+
+/// Club mode swaps the deck panels for player screens; CUE and PLAY act with
+/// the player's rules and the checklist follows.
+#[test]
+fn club_mode_player_screens() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::engine::ensure_engine(&ui.app);
+    ui.pump(300);
+    ui.click("topbar.club");
+    ui.pump(300);
+    assert!(ui.app.ui.global::<crate::Club>().get_enabled());
+    assert!(ui.has("deck1.club") && ui.has("deck2.club"));
+    assert!(ui.has("app.club.steps"));
+
+    let id = ui.fx.tracks[0].0;
+    crate::decks::load_track(&ui.app, 0, id, None);
+    assert!(
+        ui.wait_until(30.0, |u| deck_views(u).first().is_some_and(|d| d.loaded)),
+        "deck 1 loads"
+    );
+    ui.click("deck1.club.play");
+    assert!(
+        ui.wait_until(10.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.decks[0].playing)),
+        "PLAY starts"
+    );
+    // Step 3 (start a deck) is seen while it plays.
+    assert!(ui.wait_until(10.0, |u| u.app.club.borrow().checklist.done[2]));
+    // CUE while playing returns to the cue point and pauses.
+    let cue = ui.get("deck1.club.cue");
+    let p = Rect::of(&cue).centre();
+    ui.press_at(p, slint::platform::PointerEventButton::Left);
+    ui.release_at(p, slint::platform::PointerEventButton::Left);
+    assert!(
+        ui.wait_until(10.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| !s.decks[0].playing)),
+        "CUE pauses"
+    );
+
+    ui.click("topbar.club");
+    ui.pump(200);
+    assert!(!ui.has("deck1.club"));
+}
+
+/// Club mode beat-position indicator: four segments per player, the lit one
+/// follows the beat of the bar while the deck plays.
+#[test]
+fn club_beat_position_follows_playback() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::engine::ensure_engine(&ui.app);
+    ui.pump(300);
+    ui.click("topbar.club");
+    ui.pump(300);
+    assert!(ui.has("club1.beat-position") && ui.has("club2.beat-position"));
+    // Nothing loaded: no beat lit.
+    assert_eq!(ui.value("club1.beat-position"), "0");
+    // Under the zoomed waveform, across the player.
+    let bp = Rect::of(&ui.get("club1.beat-position"));
+    let player = Rect::of(&ui.get("deck1.club"));
+    assert!(player.contains(&bp, 0.5) && bp.w > player.w / 2.0);
+
+    let id = ui.fx.tracks[0].0;
+    crate::decks::load_track(&ui.app, 0, id, None);
+    assert!(
+        ui.wait_until(30.0, |u| deck_views(u).first().is_some_and(|d| d.loaded)),
+        "deck 1 loads"
+    );
+    assert!(
+        ui.wait_until(30.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.decks[0].track.is_some())),
+        "engine has the track"
+    );
+    ui.click("deck1.club.play");
+    assert!(
+        ui.wait_until(10.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.decks[0].playing)),
+        "PLAY starts"
+    );
+    // The lit beat walks through the bar: at least three different beats
+    // of 1..4 are seen while it plays.
+    let mut seen = std::collections::BTreeSet::new();
+    assert!(
+        ui.wait_until(15.0, |u| {
+            if let Ok(b) = u.value("club1.beat-position").parse::<i32>() {
+                if (1..=4).contains(&b) {
+                    seen.insert(b);
+                }
+            }
+            seen.len() >= 3
+        }),
+        "beats seen: {seen:?}"
+    );
+    // The idle player shows none.
+    assert_eq!(ui.value("club2.beat-position"), "0");
+}
+
+/// The LIGHT toggle shows the lighting strip inside Perform; its controls
+/// act on the same show as the LIGHTING view.
+#[test]
+fn lighting_strip_in_perform() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("perform".into());
+    ui.pump(300);
+    assert!(!ui.has("lighting.strip"));
+    ui.click("topbar.toggle.light");
+    ui.pump(200);
+    assert!(ui.has("lighting.strip") && ui.has("lighting.strip.stage"));
+    ui.click("lighting.strip.mode.pro");
+    ui.click("lighting.strip.blackout");
+    ui.pump(100);
+    let rt = ui.app.lighting.borrow();
+    assert_eq!(rt.config.settings.mode, od_lighting::Mode::Pro);
+    assert!(rt.config.settings.blackout);
+}
+
+/// MIC controls in the global bar: talkover toggles; without an audio
+/// device the MIC button explains why it stays off.
+#[test]
+fn mic_controls_in_the_global_bar() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("perform".into());
+    ui.pump(300);
+    let g = ui.app.ui.global::<crate::Mic>();
+    ui.click("global.mic.talkover");
+    assert!(g.get_talkover());
+    ui.click("global.mic.on");
+    assert!(!g.get_on(), "no capture device in the headless test");
+    assert!(!g.get_error().is_empty());
+}
+
+/// Pro mode programmer: the group FX key picks an attribute effect, the XY
+/// square sets pan / tilt; FOG is held like FLASH.
+#[test]
+fn lighting_pro_effect_xy_and_fog() {
+    let ui = Ui::open((1440, 900));
+    ui.click("topbar.mode.lighting");
+    ui.pump(100);
+    let mover = od_lighting::FixtureDef::BUILTIN
+        .iter()
+        .position(|n| *n == "moving-head")
+        .unwrap();
+    crate::lighting::add_fixture(
+        &mut ui.app.lighting.borrow_mut().config.patch,
+        mover,
+        "Spot",
+        "Movers",
+    )
+    .unwrap();
+    ui.click("lighting.mode.pro");
+    ui.pump(200);
+    ui.click("lighting.pro.group0.effect");
+    ui.pump(100);
+    assert_eq!(
+        ui.app.lighting.borrow().config.settings.groups["Movers"].effect,
+        crate::lighting::effect_preset(1)
+    );
+    let xy = Rect::of(&ui.get("lighting.pro.group0.xy"));
+    ui.click_at(
+        slint::LogicalPosition::new(xy.x + xy.w * 0.75, xy.y + xy.h * 0.25),
+        slint::platform::PointerEventButton::Left,
+    );
+    ui.pump(100);
+    {
+        let rt = ui.app.lighting.borrow();
+        let g = &rt.config.settings.groups["Movers"];
+        assert!(
+            (g.pan.unwrap() - 0.75).abs() < 0.05 && (g.tilt.unwrap() - 0.75).abs() < 0.05,
+            "{:?} {:?}",
+            g.pan,
+            g.tilt
+        );
+    }
+    let fog = Rect::of(&ui.get("lighting.fog")).centre();
+    ui.press_at(fog, slint::platform::PointerEventButton::Left);
+    ui.pump(50);
+    assert!(slint::ComponentHandle::global::<crate::Lighting>(&ui.app.ui).get_fog());
+    ui.release_at(fog, slint::platform::PointerEventButton::Left);
+    ui.pump(50);
+    assert!(!slint::ComponentHandle::global::<crate::Lighting>(&ui.app.ui).get_fog());
+}
+
+/// Lighting pad mode: A–F pick the easy look, G strobes while held.
+#[test]
+fn lighting_pad_mode_drives_the_show() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::engine::ensure_engine(&ui.app);
+    ui.pump(200);
+    ui.app.ui.invoke_deck_pad_mode_set(1, 10);
+    ui.pump(100);
+    assert_eq!(
+        ui.app.decks.borrow().pad_mode[0],
+        od_controller::PadMode::Lighting
+    );
+    crate::decks::pad(&ui.app, 0, 2, true);
+    crate::decks::pad(&ui.app, 0, 2, false);
+    {
+        let rt = ui.app.lighting.borrow();
+        assert_eq!(rt.config.settings.mode, od_lighting::Mode::Easy);
+        assert_eq!(rt.config.settings.easy_program, od_lighting::Program::Chase);
+    }
+    crate::decks::pad(&ui.app, 0, 6, true);
+    assert!(slint::ComponentHandle::global::<crate::Lighting>(&ui.app.ui).get_strobe());
+    crate::decks::pad(&ui.app, 0, 6, false);
+    assert!(!slint::ComponentHandle::global::<crate::Lighting>(&ui.app.ui).get_strobe());
+}
+
+/// Club mode browse screen: BROWSE → All tracks → a track loads into that deck;
+/// Playlists lists the tree.
+#[test]
+fn club_browse_screen_loads_a_track() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::engine::ensure_engine(&ui.app);
+    ui.pump(200);
+    slint::ComponentHandle::global::<crate::Club>(&ui.app.ui).invoke_set_enabled(true);
+    ui.pump(200);
+    ui.click("deck2.club.browse");
+    assert!(
+        ui.wait_until(5.0, |u| u.has("deck2.club.browse-row1")),
+        "sources shown"
+    );
+    ui.click("deck2.club.browse-row1"); // Playlists
+    assert!(
+        ui.wait_until(5.0, |u| u
+            .by_value("deck2.club.browse-row", "Warm-up")
+            .is_some()),
+        "playlist tree"
+    );
+    ui.click("deck2.club.browse-back");
+    ui.click("deck2.club.browse-row0"); // All tracks
+    let title = ui.fx.tracks[2].1.clone();
+    let (_, row) = ui
+        .by_value("deck2.club.browse-row", &format!("Test Artist — {title}"))
+        .expect("track row");
+    ui.click_el(&row);
+    assert!(
+        ui.wait_until(30.0, |u| super::flows::deck_views(u)
+            .get(1)
+            .is_some_and(|d| d.title == title)),
+        "deck 2 loads {title}"
+    );
+    assert!(
+        !ui.has("deck2.club.browse-list"),
+        "browse closes after loading"
+    );
+}
+
+/// WINDOW opens the LIGHTING view in its own window; both windows show the
+/// same rig and either one drives the show.
+#[test]
+fn lighting_detaches_into_its_own_window() {
+    let ui = Ui::open((1440, 900));
+    ui.click("topbar.mode.lighting");
+    ui.pump(100);
+    ui.click("lighting.detach");
+    ui.pump(100);
+    let w = ui
+        .app
+        .lighting_window
+        .borrow()
+        .as_ref()
+        .map(|w| w.clone_strong())
+        .expect("lighting window");
+    let g = slint::ComponentHandle::global::<crate::Lighting>(&w);
+    // A blackout from the main window shows in the detached one…
+    ui.click("lighting.blackout");
+    ui.pump(50);
+    assert!(g.get_blackout());
+    // …and the detached window's controls act on the same show.
+    g.invoke_set_mode("pro".into());
+    assert_eq!(
+        ui.app.lighting.borrow().config.settings.mode,
+        od_lighting::Mode::Pro
+    );
+    assert_eq!(
+        slint::ComponentHandle::global::<crate::Lighting>(&ui.app.ui).get_mode(),
+        "pro"
+    );
+    assert!(
+        i_slint_backend_testing::ElementHandle::find_by_accessible_label(&w, "lighting.stage")
+            .next()
+            .is_some()
+    );
+    assert!(
+        i_slint_backend_testing::ElementHandle::find_by_accessible_label(&w, "lighting.detach")
+            .next()
+            .is_none(),
+        "no WINDOW key in the window itself"
+    );
+}
+
+/// Mapped controller inputs drive the light show.
+#[test]
+fn lighting_reacts_to_mapped_controls() {
+    use od_controller::action::LightingAction as L;
+    let ui = Ui::open((1440, 900));
+    crate::lighting::controller(&ui.app, L::Mode("pro".into()));
+    crate::lighting::controller(&ui.app, L::Master(0.25));
+    crate::lighting::controller(&ui.app, L::BlackoutToggle);
+    {
+        let rt = ui.app.lighting.borrow();
+        assert_eq!(rt.config.settings.mode, od_lighting::Mode::Pro);
+        assert_eq!(
+            (rt.config.settings.master, rt.config.settings.blackout),
+            (0.25, true)
+        );
+    }
+    crate::lighting::controller(&ui.app, L::Look(3));
+    assert_eq!(
+        ui.app.lighting.borrow().config.settings.easy_program,
+        od_lighting::Program::Sweep
+    );
+    crate::lighting::controller(&ui.app, L::Fog(true));
+    assert!(slint::ComponentHandle::global::<crate::Lighting>(&ui.app.ui).get_fog());
+}
+
+/// Track cues: with a track playing, CUE AT PLAYHEAD stores the current
+/// cue at the bar; the list shows it for that track.
+#[test]
+fn lighting_track_cue_timeline() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("lighting".into());
+    crate::engine::ensure_engine(&ui.app);
+    let g = slint::ComponentHandle::global::<crate::Lighting>(&ui.app.ui);
+    g.invoke_set_mode("pro".into());
+    g.invoke_cue_store("Drop".into());
+    let (id, title) = ui.fx.tracks[0].clone();
+    crate::decks::load_track(&ui.app, 0, id, None);
+    // Deck rows are projected in Perform only; check the engine instead.
+    assert!(ui.wait_until(30.0, |u| {
+        crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].track == Some(id))
+    }));
+    ui.app.ui.invoke_deck_toggle_play(1);
+    assert!(
+        ui.wait_until(30.0, |u| slint::ComponentHandle::global::<crate::Lighting>(
+            &u.app.ui
+        )
+        .get_timeline_title()
+            == title.as_str()),
+        "focused track"
+    );
+    ui.pump(200);
+    ui.click("lighting.timeline.add");
+    ui.pump(100);
+    let cues = ui
+        .app
+        .lighting
+        .borrow()
+        .config
+        .settings
+        .track_cues
+        .get(&id.0)
+        .cloned()
+        .unwrap_or_default();
+    assert_eq!(cues.len(), 1);
+    assert_eq!(cues[0].beat % 4, 0, "on a bar");
+    assert!(ui.has("lighting.timeline0"));
+    ui.click("lighting.timeline0.delete");
+    ui.pump(100);
+    assert!(
+        ui.app
+            .lighting
+            .borrow()
+            .config
+            .settings
+            .track_cues
+            .get(&id.0)
+            .is_none_or(|v| v.is_empty())
+    );
+}
+
+/// Both player screens fit side by side at desktop and laptop size: every
+/// control lies inside its player and the window, CUE / PLAY sit bottom
+/// left, the jog is round and centred under the hot cues.
+#[test]
+fn club_players_fit_side_by_side() {
+    for size in [(1440, 900), (1280, 800)] {
+        let ui = Ui::open(size);
+        ui.app.ui.invoke_set_mode("perform".into());
+        crate::engine::ensure_engine(&ui.app);
+        ui.pump(300);
+        ui.click("topbar.club");
+        ui.pump(300);
+        let (ww, wh) = ui.size();
+        let win = Rect { x: 0.0, y: 0.0, w: ww, h: wh };
+        for n in [1, 2] {
+            let player = Rect::of(&ui.get(&format!("deck{n}.club")));
+            assert!(win.contains(&player, 0.5), "{size:?} player {n} in the window");
+            for part in ["browse", "overview", "search-back", "search-fwd", "call-prev", "call-next", "time", "bpm", "loop-in", "loop-out", "reloop", "loop-4", "jump-back", "jump-fwd", "cue", "play", "jog", "tempo-range", "master-tempo", "tempo"] {
+                let r = Rect::of(&ui.get(&format!("deck{n}.club.{part}")));
+                assert!(player.contains(&r, 0.5) && r.w > 1.0, "{size:?} deck{n}.club.{part} at {:?} outside its player {:?}", (r.x, r.y, r.w, r.h), (player.x, player.y, player.w, player.h));
+            }
+            let cue = Rect::of(&ui.get(&format!("deck{n}.club.cue")));
+            let play = Rect::of(&ui.get(&format!("deck{n}.club.play")));
+            let jog = Rect::of(&ui.get(&format!("deck{n}.club.jog")));
+            let loop_in = Rect::of(&ui.get(&format!("deck{n}.club.loop-in")));
+            let tempo = Rect::of(&ui.get(&format!("deck{n}.club.tempo")));
+            assert!((cue.w - cue.h).abs() < 0.5 && (jog.w - jog.h).abs() < 0.5, "round keys and jog");
+            assert!((cue.y - play.y).abs() < 0.5 && cue.right() <= play.x, "CUE left of PLAY on one line");
+            assert!(cue.x < jog.x && cue.y > loop_in.y, "CUE / PLAY bottom left, loop above");
+            assert!(tempo.x > jog.right(), "tempo fader right of the jog");
+        }
+    }
+}

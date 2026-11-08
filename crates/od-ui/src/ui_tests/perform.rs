@@ -1,0 +1,870 @@
+//! Perform deck features driven through the real window.
+
+use super::harness::*;
+
+fn perform(ui: &Ui) {
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::engine::ensure_engine(&ui.app);
+    ui.pump(300);
+}
+
+/// Part levels: the stem keys' level reaches the engine; names map to parts.
+#[test]
+fn stem_levels_reach_the_engine() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    assert!(ui.has("deck1.stem.vocal") && ui.has("deck2.stem.bass"));
+    ui.app.ui.invoke_deck_stem_level(1, "vocal".into(), 0.4);
+    ui.app.ui.invoke_deck_stem_level(2, "bass".into(), 0.0);
+    assert!(
+        ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| {
+            (s.decks[0].stem_levels[od_engine::Stem::Vocals.index()] - 0.4).abs() < 1e-6
+                && s.decks[1].stem_levels[od_engine::Stem::Bass.index()] == 0.0
+        }))
+    );
+    assert_eq!(
+        crate::decks::stem_of_ui("inst"),
+        Some(od_engine::Stem::Inst)
+    );
+    assert_eq!(crate::decks::stem_of_ui("piano"), None);
+}
+
+/// The ×1 / ×3 key turns a Tempo FX unit into three chained slots; slot 2
+/// gets its own effect and ON.
+#[test]
+fn fx_multi_mode_slots() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    if !ui.app.ui.get_fx_panel() {
+        ui.app.ui.invoke_toggle_fx_panel();
+    }
+    ui.pump(200);
+    ui.click("fx.unit1.menu");
+    assert!(ui.wait_until(5.0, |u| {
+        crate::engine::snapshot(&u.app).is_some_and(|s| s.tempo_fx_multi[0])
+    }));
+    assert!(ui.wait_until(5.0, |u| u.has("fx.unit1.slot2.on")
+        && u.has("fx.unit1.slot3.type")));
+    ui.click("fx.unit1.slot2.on");
+
+    assert!(ui.wait_until(5.0, |u| {
+        crate::engine::snapshot(&u.app).is_some_and(|s| s.tempo_fx_slots[0][0].on)
+    }));
+    ui.click("fx.unit1.slot3.beats-up");
+    assert!(ui.wait_until(5.0, |u| {
+        crate::engine::snapshot(&u.app).is_some_and(|s| s.tempo_fx_slots[0][1].beats > 0.75)
+    }));
+}
+
+/// Stems and Memory Cue are in the pad mode list.
+#[test]
+fn new_pad_modes_are_selectable() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    ui.app.ui.invoke_deck_pad_mode_set(1, 8);
+    ui.pump(100);
+    assert_eq!(
+        ui.app.decks.borrow().pad_mode[0],
+        od_controller::PadMode::Stems
+    );
+    ui.app.ui.invoke_deck_pad_mode_set(1, 9);
+    ui.pump(100);
+    assert_eq!(
+        ui.app.decks.borrow().pad_mode[0],
+        od_controller::PadMode::MemoryCue
+    );
+}
+
+/// STEM on a mixer channel: the EQ knobs become part levels (HI vocals,
+/// MID inst, LOW drums) and show them.
+#[test]
+fn mixer_stem_button_turns_eq_into_parts() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    assert!(ui.wait_until(5.0, |u| u.has("mixer.ch1.stem")));
+    ui.click("mixer.ch1.stem");
+    assert!(ui.app.mixer.parts.get()[0]);
+    ui.app.ui.invoke_mixer_eq(1, 2, -1.0); // HI fully left: vocals off
+    assert!(
+        ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.decks[0].stem_levels
+                [od_engine::Stem::Vocals.index()]
+                == 0.0))
+    );
+    assert!(ui.wait_until(5.0, |u| {
+        u.app
+            .mixer
+            .channels
+            .get(0)
+            .is_some_and(|c| c.parts && c.high == -1.0)
+    }));
+    // The channel EQ itself is untouched.
+    assert_eq!(
+        crate::engine::snapshot(&ui.app).unwrap().channels[0].eq[2],
+        0.0
+    );
+    ui.click("mixer.ch1.stem");
+    assert!(!ui.app.mixer.parts.get()[0]);
+    assert_eq!(crate::mixer::knob_to_part(0.3), 1.0);
+    assert_eq!(crate::mixer::part_to_knob(0.5), -0.5);
+}
+
+/// Hot cue pads in Perform show the cue's stored colour.
+#[test]
+fn hot_cue_pads_show_stored_colours() {
+    use slint::Model;
+    let ui = Ui::open((1440, 900));
+    let id = ui.fx.tracks[1].0;
+    let red = crate::player::CUE_PALETTE[0];
+    let mut cue = od_core::Cue::hot(0, 1.0);
+    cue.color = Some(red);
+    ui.fx.lib().set_cues(id, vec![cue]).unwrap();
+    perform(&ui);
+    crate::decks::load_track(&ui.app, 0, id, None);
+    let want = slint::Color::from_rgb_u8(red.r, red.g, red.b);
+    assert!(
+        ui.wait_until(30.0, |u| {
+            super::flows::deck_views(u)
+                .first()
+                .is_some_and(|d| d.pads.row_data(0).is_some_and(|p| p.tone == want))
+        }),
+        "pad A in red"
+    );
+}
+
+/// Search ◀◀ / ▶▶ (club mode screens): the playhead runs fast while held.
+#[test]
+fn search_buttons_run_while_held() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    slint::ComponentHandle::global::<crate::Club>(&ui.app.ui).invoke_set_enabled(true);
+    let id = ui.fx.tracks[0].0;
+    crate::decks::load_track(&ui.app, 0, id, None);
+    assert!(ui.wait_until(30.0, |u| {
+        super::flows::deck_views(u)
+            .first()
+            .is_some_and(|d| d.loaded)
+    }));
+    ui.pump(200);
+    let p = Rect::of(&ui.get("deck1.club.search-fwd")).centre();
+    ui.press_at(p, slint::platform::PointerEventButton::Left);
+    assert!(
+        ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.decks[0].position > 1.0)),
+        "searching forward"
+    );
+    ui.release_at(p, slint::platform::PointerEventButton::Left);
+    ui.pump(200);
+    let at = crate::engine::snapshot(&ui.app).unwrap().decks[0].position;
+    ui.pump(300);
+    assert!(
+        (crate::engine::snapshot(&ui.app).unwrap().decks[0].position - at).abs() < 0.05,
+        "stops when released"
+    );
+}
+
+/// Jog readout: the bar counter shows bars.beats and runs while playing;
+/// the phrase line names the phrase with its countdown.
+#[test]
+fn platter_readout_counts_bars() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let (id, _) = ui.fx.tracks[0].clone();
+    assert!(
+        ui.wait_until(60.0, |u| u.fx.lib().track(id).unwrap().bpm.is_some()),
+        "fixture analysed"
+    );
+    crate::decks::load_track(&ui.app, 0, id, None);
+    assert!(ui.wait_until(30.0, |u| {
+        super::flows::deck_views(u)
+            .first()
+            .is_some_and(|d| d.loaded)
+    }));
+    ui.app.ui.invoke_deck_toggle_play(1);
+    let ok = |v: &str| {
+        let v = v.trim_start_matches('-');
+        let mut it = v.split('.');
+        matches!(
+            (
+                it.next().map(|b| b.parse::<u32>().is_ok()),
+                it.next().and_then(|b| b.parse::<u8>().ok()),
+                it.next()
+            ),
+            (Some(true), Some(1..=4), None)
+        )
+    };
+    assert!(
+        ui.wait_until(10.0, |u| super::flows::deck_views(u)
+            .first()
+            .is_some_and(|d| ok(&d.beat_pos))),
+        "bars.beats"
+    );
+    let first = super::flows::deck_views(&ui)[0].beat_pos.clone();
+    assert!(
+        ui.wait_until(10.0, |u| super::flows::deck_views(u)[0].beat_pos != first),
+        "counter runs"
+    );
+    let phrases = [od_core::Phrase {
+        start_beat: 0,
+        end_beat: 64,
+        kind: od_core::PhraseKind::Chorus,
+    }];
+    assert_eq!(crate::decks::phrase_now(&phrases, 32.0), "CHORUS -7.4");
+    assert_eq!(crate::decks::phrase_now(&phrases, 70.0), "");
+}
+
+/// FX assign SMP puts the unit on the sampler; TAP then AUTO returns to the
+/// deck tempo.
+#[test]
+fn fx_sampler_assign_and_auto() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    if !ui.app.ui.get_fx_panel() {
+        ui.app.ui.invoke_toggle_fx_panel();
+    }
+    ui.pump(200);
+    ui.click("fx.unit2.assign.sampler");
+    assert!(ui.wait_until(5.0, |u| {
+        crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.tempo_fx[1].target == od_engine::FxTarget::Sampler)
+    }));
+    // Taps measure wall-clock time; set the tapped tempo directly.
+    crate::engine::send(
+        &ui.app,
+        od_engine::Command::TempoFx(1, od_engine::TempoFxCommand::SetTapBpm(Some(124.0))),
+    );
+    assert!(
+        ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.tempo_fx[1].tap_bpm.is_some())),
+        "tapped tempo"
+    );
+    ui.click("fx.unit2.auto");
+    assert!(
+        ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.tempo_fx[1].tap_bpm.is_none())),
+        "AUTO"
+    );
+    assert!(ui.has("fx.unit2.tempo-fx"));
+}
+
+/// Pattern Recall: an empty pad stores the sampler patterns, a stored pad
+/// recalls them and starts the sequencer; the shifted pad clears it.
+#[test]
+fn pattern_recall_stores_and_recalls() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    ui.app.ui.invoke_deck_pad_mode_set(1, 12);
+    ui.pump(100);
+    assert_eq!(
+        ui.app.decks.borrow().pad_mode[0],
+        od_controller::PadMode::PatternRecall
+    );
+    let send = |c| crate::engine::send(&ui.app, od_engine::Command::Sampler(c));
+    send(od_engine::SamplerCommand::SeqPattern {
+        slot: 0,
+        mask: 0b1000_1000_1000_1000,
+    });
+    assert!(ui.wait_until(5.0, |u| {
+        crate::engine::snapshot(&u.app).is_some_and(|s| s.sampler[0].pattern != 0)
+    }));
+    crate::decks::pad(&ui.app, 0, 0, true); // store
+    assert!(ui.app.sampler.sequences.borrow()[0].is_some());
+    send(od_engine::SamplerCommand::SeqClear);
+    assert!(ui.wait_until(5.0, |u| {
+        crate::engine::snapshot(&u.app).is_some_and(|s| s.sampler[0].pattern == 0)
+    }));
+    crate::decks::pad(&ui.app, 0, 0, true); // recall
+    assert!(
+        ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s
+            .sampler[0]
+            .pattern
+            == 0b1000_1000_1000_1000
+            && s.sequencer.playing))
+    );
+    crate::decks::pad_alt(&ui.app, 0, 0);
+    assert!(ui.app.sampler.sequences.borrow()[0].is_none());
+}
+
+/// Browse layout: decks keep header, overview and parts; jog, pads,
+/// waveform lanes, mixer and global bar give their room to the browser.
+#[test]
+fn browse_layout_reduces_the_decks() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    assert!(ui.has("deck1.play") && ui.has("wave.lane1"));
+    crate::decks::toggle_browse_layout(&ui.app);
+    ui.pump(200);
+    assert!(ui.has("deck1.title") && ui.has("deck1.overview") && ui.has("deck1.stem.vocal"));
+    assert!(!ui.has("deck1.play") && !ui.has("wave.lane1") && !ui.has("global.xfader"));
+    crate::decks::toggle_browse_layout(&ui.app);
+    ui.pump(200);
+    assert!(ui.has("deck1.play") && ui.has("global.xfader"));
+}
+
+/// Vertical layout: the lanes stand upright above the mixer, with zoom keys.
+#[test]
+fn vertical_layout_turns_the_lanes() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    crate::decks::toggle_vertical_layout(&ui.app);
+    ui.pump(300);
+    assert!(ui.has("wave.vertical") && ui.has("wave.lane1") && ui.has("wave.zoom-in"));
+    let lane = Rect::of(&ui.get("wave.lane1"));
+    assert!(lane.h > lane.w, "upright lane: {}×{}", lane.w, lane.h);
+    let mixer = Rect::of(&ui.get("mixer.ch1.trim"));
+    assert!(lane.bottom() <= mixer.y + 1.0, "lanes above the mixer");
+    let before = ui.app.decks.borrow().zoom[0];
+    ui.click("wave.zoom-in");
+    assert!(ui.app.decks.borrow().zoom[0] < before, "zoom in");
+    crate::decks::cycle_perform_layout(&ui.app);
+    assert_eq!(
+        slint::ComponentHandle::global::<crate::PerformLayout>(&ui.app.ui).get_layout(),
+        "browse"
+    );
+    crate::decks::cycle_perform_layout(&ui.app);
+    assert_eq!(
+        slint::ComponentHandle::global::<crate::PerformLayout>(&ui.app.ui).get_layout(),
+        "standard"
+    );
+}
+
+/// REC off in the top bar hides the recording section of the global bar.
+#[test]
+fn rec_toggle_hides_the_recording_section() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    ui.app.ui.set_rec_panel(true);
+    ui.pump(100);
+    assert!(ui.has("rec.toggle") && ui.has("rec.time"));
+    ui.app.ui.set_rec_panel(false);
+    ui.pump(100);
+    assert!(!ui.has("rec.toggle") && !ui.has("rec.time"));
+}
+
+/// Auto Fader: with A and B assigned, the crossfader swaps the basses;
+/// off, the basses return to flat. Auto Channel FX is one of the channel FX.
+#[test]
+fn auto_fader_swaps_the_basses() {
+    use od_engine::{ChannelCommand, Command, MixerCommand, XfAssign};
+    assert_eq!(
+        (
+            crate::mixer::smart_low(0.0, true),
+            crate::mixer::smart_low(0.0, false)
+        ),
+        (0.0, -1.0)
+    );
+    assert_eq!(
+        (
+            crate::mixer::smart_low(1.0, true),
+            crate::mixer::smart_low(1.0, false)
+        ),
+        (-1.0, 0.0)
+    );
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let send = |c| crate::engine::send(&ui.app, c);
+    send(Command::Channel(
+        0,
+        ChannelCommand::SetCrossfaderAssign(XfAssign::A),
+    ));
+    send(Command::Channel(
+        1,
+        ChannelCommand::SetCrossfaderAssign(XfAssign::B),
+    ));
+    ui.pump(100);
+    ui.click("global.auto-fader");
+    assert!(ui.app.mixer.smart.get());
+    send(Command::Mixer(MixerCommand::SetCrossfader(1.0))); // full B
+    assert!(
+        ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s
+            .channels[0]
+            .eq[0]
+            == -1.0
+            && s.channels[1].eq[0] == 0.0)),
+        "A loses its bass"
+    );
+    ui.click("global.auto-fader");
+    assert!(
+        ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.channels[0].eq[0] == 0.0)),
+        "flat again"
+    );
+    assert_eq!(
+        crate::fx::channel_fx_kind("auto"),
+        od_engine::ChannelFxKind::Auto
+    );
+}
+
+/// Stem FX: with a unit on channel 1, the PART keys put it on one part.
+#[test]
+fn stem_fx_part_keys() {
+    use od_engine::{FxTarget, Stem};
+    assert_eq!(
+        crate::fx::part_target(FxTarget::Channel(1), 0),
+        FxTarget::Part(1, Stem::Vocals)
+    );
+    assert_eq!(
+        crate::fx::part_target(FxTarget::Part(1, Stem::Vocals), -1),
+        FxTarget::Channel(1)
+    );
+    assert_eq!(
+        crate::fx::part_target(FxTarget::Master, 2),
+        FxTarget::Master
+    );
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    if !ui.app.ui.get_fx_panel() {
+        ui.app.ui.invoke_toggle_fx_panel();
+    }
+    ui.pump(200);
+    ui.click("fx.unit1.assign.ch1");
+    assert!(ui.wait_until(5.0, |u| u.has("fx.unit1.part.drums")));
+    ui.click("fx.unit1.part.drums");
+    assert!(ui.wait_until(5.0, |u| {
+        crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.tempo_fx[0].target == FxTarget::Part(0, Stem::Drums))
+    }));
+    ui.click("fx.unit1.part.all");
+    assert!(ui.wait_until(5.0, |u| {
+        crate::engine::snapshot(&u.app).is_some_and(|s| s.tempo_fx[0].target == FxTarget::Channel(0))
+    }));
+}
+
+/// Mixer knobs sit centred in their channel strip (the CUE key spans the
+/// strip), and the PHONES knobs centred on the global bar row (the
+/// crossfader is centred on it), at desktop and laptop size.
+#[test]
+fn mixer_and_phones_knobs_are_centred() {
+    for size in [(1440, 900), (1280, 800)] {
+        let ui = Ui::open(size);
+        perform(&ui);
+        assert!(ui.wait_until(5.0, |u| u.has("mixer.ch1.cue")
+            && u.has("global.phones.mix")));
+        for ch in 1..=2 {
+            let strip = Rect::of(&ui.get(&format!("mixer.ch{ch}.cue")));
+            for knob in ["trim", "eq-high", "eq-mid", "eq-low"] {
+                let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{knob}")));
+                assert!(
+                    (k.centre().x - strip.centre().x).abs() <= 1.0,
+                    "{size:?} ch{ch} {knob}: knob x {} vs strip x {}",
+                    k.centre().x,
+                    strip.centre().x
+                );
+            }
+        }
+        let row = Rect::of(&ui.get("global.xfader"));
+        for knob in ["global.phones.mix", "global.phones.level"] {
+            let k = Rect::of(&ui.get(knob));
+            assert!(
+                (k.centre().y - row.centre().y).abs() <= 1.0,
+                "{size:?} {knob}: knob y {} vs row y {}",
+                k.centre().y,
+                row.centre().y
+            );
+        }
+    }
+}
+
+/// Loading a track shows it on the deck at once (title, LOADING sweep) and
+/// takes the old track off immediately; it becomes playable when decoded.
+#[test]
+fn loading_shows_at_once() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let (first, second) = (ui.fx.tracks[0].clone(), ui.fx.tracks[1].clone());
+    crate::decks::load_track(&ui.app, 0, first.0, None);
+    assert!(
+        ui.wait_until(30.0, |u| u.app.decks.borrow().loaded_id(0) == Some(first.0)),
+        "first track loaded"
+    );
+    crate::decks::load_track(&ui.app, 0, second.0, None);
+    // One frame later: the new title shows, loading, before decoding ends.
+    ui.pump(16);
+    let deck = super::flows::deck_views(&ui)[0].clone();
+    assert_eq!(deck.title.as_str(), second.1, "the new track shows at once");
+    assert!(
+        deck.loading || ui.app.decks.borrow().loaded_id(0) == Some(second.0),
+        "LOADING until playable"
+    );
+    assert_ne!(
+        ui.app.decks.borrow().loaded_id(0),
+        Some(first.0),
+        "the old track left at once"
+    );
+    assert!(
+        ui.wait_until(30.0, |u| !super::flows::deck_views(u)[0].loading
+            && u.app.decks.borrow().loaded_id(0) == Some(second.0)),
+        "playable after decoding"
+    );
+}
+
+/// Bottom panels (sampler, Tempo FX, Mix Preview) do not push the status
+/// band out of the window: the waveform lanes shrink to their smallest
+/// height, then decks and mixer go compact, then the waveform zone steps
+/// aside; when that is still not enough, the panel open longest closes with
+/// a status hint. The browser keeps its minimum. Every subset, opened one
+/// after the other, at desktop and laptop size.
+#[test]
+fn bottom_panels_keep_the_status_band_in_the_window() {
+    let mut failures = Vec::new();
+    let all = ["sampler", "fx", "mix-preview"];
+    for size in [(1440, 900), (1280, 800)] {
+        for mask in 1..8u32 {
+            let panels: Vec<&str> = all.iter().enumerate().filter(|(i, _)| mask & (1 << i) != 0).map(|(_, p)| *p).collect();
+            let ui = Ui::open(size);
+            perform(&ui);
+            let w = &ui.app.ui;
+            let shown = |p: &str| match p {
+                "sampler" => w.get_sampler_panel(),
+                "fx" => w.get_fx_panel(),
+                _ => w.get_mix_preview_panel(),
+            };
+            for p in &panels {
+                if !shown(p) {
+                    match *p {
+                        "sampler" => w.invoke_toggle_sampler_panel(),
+                        "fx" => w.invoke_toggle_fx_panel(),
+                        _ => w.invoke_menu_action("perform.mix-preview.panel".into()),
+                    }
+                }
+                ui.pump(300);
+            }
+            // The crowding steps settle one level at a time (a panel that has
+            // to close starts the steps again).
+            ui.pump(400);
+            let (ww, wh) = ui.size();
+            let win = Rect { x: 0.0, y: 0.0, w: ww, h: wh };
+            for l in ["status.summary", "status.activity", "global.xfader", "deck1.play"] {
+                let r = Rect::of(&ui.get(l));
+                if !win.contains(&r, 0.5) {
+                    failures.push(format!("{size:?} {panels:?}: `{l}` at y {:.0}..{:.0} outside the {wh:.0} px window", r.y, r.bottom()));
+                }
+            }
+            // The browser keeps its minimum (the source rail at 24 px a key).
+            if Rect::of(&ui.get("browser.splitter")).h < 216.0 {
+                failures.push(format!("{size:?} {panels:?}: browser below its minimum"));
+            }
+            // Lanes that are shown stay readable.
+            if let Some(l) = ui.find("wave.lane1") {
+                if Rect::of(&l).h < 23.5 {
+                    failures.push(format!("{size:?} {panels:?}: waveform lane below 24 px"));
+                }
+            }
+            // The panel opened last stays; closed ones are off in the toggles
+            // and the settings, and the status band says why.
+            let last = *panels.last().unwrap();
+            if !shown(last) {
+                failures.push(format!("{size:?} {panels:?}: the panel opened last (`{last}`) was closed"));
+            }
+            let st = ui.app.state.borrow().settings.perform.clone();
+            if (st.sampler_panel, st.fx_panel, st.mix_preview_panel) != (w.get_sampler_panel(), w.get_fx_panel(), w.get_mix_preview_panel()) {
+                failures.push(format!("{size:?} {panels:?}: panel toggles and settings disagree"));
+            }
+            let closed: Vec<&&str> = panels.iter().filter(|p| !shown(p)).collect();
+            if !closed.is_empty() && !w.get_status_text().contains("not enough room") {
+                failures.push(format!("{size:?} {panels:?}: {closed:?} closed without a status hint (`{}`)", w.get_status_text()));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// Closing the panels gives the decks and the waveform zone back.
+#[test]
+fn closing_bottom_panels_restores_the_full_perform_layout() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let w = &ui.app.ui;
+    w.invoke_toggle_sampler_panel();
+    w.invoke_toggle_fx_panel();
+    ui.pump(300);
+    assert_eq!(w.get_perform_crowd(), 4);
+    assert!(!ui.has("wave.lane1"));
+    w.invoke_toggle_sampler_panel();
+    w.invoke_toggle_fx_panel();
+    ui.pump(300);
+    assert_eq!(w.get_perform_crowd(), 0);
+    assert!(ui.has("wave.lane1") && Rect::of(&ui.get("wave.lane1")).h >= 36.0);
+}
+
+/// Part keys: while the parts are separated they fill left to right like
+/// one progress bar with a small percentage; once ready they are lit
+/// (audible), and a click mutes a part (grey).
+#[test]
+fn stem_keys_fill_while_separating_then_lit_means_audible() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let (id, title) = ui.fx.tracks[0].clone();
+    crate::decks::load_track(&ui.app, 0, id, None);
+    assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.title == title.as_str())));
+    // 60 % separated: VOCAL and INST full, DRUMS 40 %, BASS empty.
+    crate::decks::set_stem_progress(&ui.app, id, 0.6);
+    assert!(ui.wait_until(5.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.stems_busy && (d.split_progress - 0.6).abs() < 1e-3)));
+    ui.pump(50);
+    assert_eq!(ui.value("deck1.stem.vocal.progress"), "100 %");
+    assert_eq!(ui.value("deck1.stem.inst.progress"), "100 %");
+    assert_eq!(ui.value("deck1.stem.drums.progress"), "40 %");
+    assert_eq!(ui.value("deck1.stem.bass.progress"), "0 %");
+    assert_eq!(ui.value("deck1.stem.caption"), "60%");
+    let vocal = Rect::of(&ui.get("deck1.stem.vocal"));
+    let fill = Rect::of(&ui.get("deck1.stem.drums.progress"));
+    let drums = Rect::of(&ui.get("deck1.stem.drums"));
+    assert!((fill.w - (drums.w - 2.0) * 0.4).abs() < 1.0, "DRUMS filled to 40 %: {} of {}", fill.w, drums.w);
+    assert!(ui.get("deck1.stem.vocal").accessible_checked() != Some(true), "not playable while separating");
+    // Separated: the keys are lit (audible), no progress left.
+    let track = ui.fx.lib().track(id).unwrap();
+    let audio = od_decode::decode(&track.path, od_decode::Layout::Stereo).unwrap();
+    let n = audio.samples.len();
+    let stems = od_stems::Stems { sample_rate: audio.sample_rate, vocals: audio.samples, drums: vec![0.0; n], bass: vec![0.0; n] };
+    ui.app.decks.borrow().stem_cache().store(&track.content_hash, &stems).unwrap();
+    crate::decks::stems_ready(&ui.app, id);
+    assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.stems_available && !d.stems_busy)));
+    ui.pump(50);
+    assert!(!ui.has("deck1.stem.vocal.progress"));
+    assert_eq!(ui.value("deck1.stem.caption"), "PARTS");
+    for p in ["vocal", "inst", "drums", "bass"] {
+        assert_eq!(ui.get(&format!("deck1.stem.{p}")).accessible_checked(), Some(true), "{p} lit = audible");
+    }
+    // A click mutes VOCAL: grey (not checked) and gone from the audio.
+    ui.click("deck1.stem.vocal");
+    assert!(ui.wait_until(5.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.mute_vocal)));
+    ui.pump(50);
+    assert_eq!(ui.get("deck1.stem.vocal").accessible_checked(), Some(false));
+    assert_eq!(ui.get("deck1.stem.inst").accessible_checked(), Some(true));
+    assert_eq!(Rect::of(&ui.get("deck1.stem.vocal")).x, vocal.x, "the key stays in place");
+    let _ = ui.app.decks.borrow().stem_cache().remove(&track.content_hash);
+}
+
+/// Loading a track does not move the deck's controls: the overview and
+/// phrase strip keep their room while the deck is empty.
+#[test]
+fn deck_layout_is_the_same_before_and_after_loading() {
+    let mut problems = Vec::new();
+    for (size, decks, layout) in [((1440, 900), 2, "standard"), ((1280, 800), 2, "standard"), ((1440, 900), 4, "standard"), ((1440, 900), 2, "vertical"), ((1000, 700), 2, "standard"), ((2056, 1216), 2, "standard"), ((1920, 1080), 4, "standard"), ((1440, 900), 2, "browse"), ((1440, 900), 2, "standard+panels"), ((1920, 1080), 2, "standard+panels")] {
+        let ui = Ui::open(size);
+        perform(&ui);
+        ui.app.ui.invoke_set_deck_count(decks);
+        let panels = layout.ends_with("+panels");
+        let layout = layout.trim_end_matches("+panels");
+        slint::ComponentHandle::global::<crate::PerformLayout>(&ui.app.ui).set_layout(layout.into());
+        if panels {
+            ui.app.ui.invoke_toggle_fx_panel();
+            ui.app.ui.invoke_toggle_sampler_panel();
+        }
+        ui.pump(300);
+        let size = (size, decks, layout, panels, ui.app.ui.get_perform_crowd());
+        let labels = ["deck1.pad.A", "deck1.pad.H", "deck1.cue", "deck1.play", "deck1.platter", "deck1.stem.vocal", "deck1.overview", "deck1.loop.size", "deck1.pitch", "deck2.pad.A", "deck2.play", "global.xfader"];
+        let before: Vec<(String, Option<Rect>)> = labels.iter().map(|l| (l.to_string(), ui.find(l).map(|e| Rect::of(&e)))).collect();
+        let (id, title) = ui.fx.tracks[0].clone();
+        crate::decks::load_track(&ui.app, 0, id, None);
+        assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.loaded && d.title == title.as_str())));
+        ui.pump(300);
+        if ui.app.ui.get_perform_crowd() != size.4 {
+            problems.push(format!("{size:?}: crowding changed on load to {}", ui.app.ui.get_perform_crowd()));
+        }
+        for (l, r0) in before {
+            let r1 = ui.find(&l).map(|e| Rect::of(&e));
+            match (r0, r1) {
+                (Some(a), Some(b)) => {
+                    if !((a.x - b.x).abs() < 0.5 && (a.y - b.y).abs() < 0.5 && (a.w - b.w).abs() < 0.5 && (a.h - b.h).abs() < 0.5) {
+                        problems.push(format!(
+                            "{size:?} `{l}` moved on load: {:.0},{:.0} {:.0}×{:.0} → {:.0},{:.0} {:.0}×{:.0}",
+                            a.x, a.y, a.w, a.h, b.x, b.y, b.w, b.h
+                        ));
+                    }
+                }
+                (None, None) => {}
+                (a, b) => problems.push(format!("{size:?} `{l}` present before {} / after {}", a.is_some(), b.is_some())),
+            }
+        }
+    }
+    assert!(problems.is_empty(), "{}", problems.join("\n"));
+}
+
+/// Remaining time at tempo: at +8 % the deck shows the real time left
+/// (track time / 1.08); "track" shows the file's time, "both" the real time
+/// with the track time small beside the elapsed time.
+#[test]
+fn remaining_time_follows_the_tempo() {
+    use slint::ComponentHandle;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let (id, title) = ui.fx.tracks[0].clone();
+    crate::decks::load_track(&ui.app, 0, id, None);
+    assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.loaded && d.title == title.as_str())));
+    assert!(ui.wait_until(30.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].duration > 0.0)));
+    // +8 %: the fader's sign depends on the fader direction setting.
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::SetTempoFader(0.8));
+    ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| (s.decks[0].tempo - 1.0).abs() > 0.07));
+    if crate::engine::snapshot(&ui.app).unwrap().decks[0].tempo < 1.0 {
+        crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::SetTempoFader(-0.8));
+    }
+    assert!(ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| (s.decks[0].tempo - 1.08).abs() < 1e-3)), "tempo +8 %");
+    let s = crate::engine::snapshot(&ui.app).unwrap().decks[0];
+    let real = crate::format::remaining_at_tempo(s.duration, s.position, s.tempo);
+    let track = format!("-{}", crate::format::deck_time(s.duration - s.position));
+    assert_ne!(real, track);
+    let dt = ui.app.ui.global::<crate::DeckTime>();
+    // Default: real time at tempo.
+    assert_eq!(dt.get_mode(), "tempo");
+    assert!(ui.wait_until(5.0, |u| u.value("deck1.time-remaining") == real), "real time `{}` vs `{real}`", ui.value("deck1.time-remaining"));
+    assert!(!ui.has("deck1.time-track"));
+    dt.set_mode("track".into());
+    ui.pump(50);
+    assert_eq!(ui.value("deck1.time-remaining"), track);
+    dt.set_mode("both".into());
+    ui.pump(50);
+    assert_eq!(ui.value("deck1.time-remaining"), real);
+    assert_eq!(ui.value("deck1.time-track"), track);
+    assert!(ui.has("deck1.time-elapsed"));
+    // The second readout sits on the sub line: the header keeps its height.
+    let a = Rect::of(&ui.get("deck1.time-track"));
+    let b = Rect::of(&ui.get("deck1.time-elapsed"));
+    assert!((a.y - b.y).abs() < 0.5 && a.right() <= b.x + 0.5);
+    // The setting is stored and restored.
+    let mut st = crate::settings::Settings::default();
+    assert_eq!(st.view.deck_time, "tempo");
+    st.apply_values(&[("view.deck_time".to_string(), "both".to_string())]);
+    assert_eq!(st.view.deck_time, "both");
+    assert_eq!(crate::settings::Settings::from_json(&st.to_json()).view.deck_time, "both");
+}
+
+/// Deck switches stay as the DJ left them: master tempo and the tempo range
+/// switched on deck 1 survive loading another track and a restart on the
+/// same library; deck 2 keeps its own.
+#[test]
+fn deck_switches_survive_loads_and_restarts() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let (a, _) = ui.fx.tracks[0].clone();
+    let (b, title_b) = ui.fx.tracks[1].clone();
+    crate::decks::load_track(&ui.app, 0, a, None);
+    assert!(ui.wait_until(30.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].track == Some(a))));
+    // MT on and the ±16 % range on deck 1 (the screen keys).
+    let before = crate::engine::snapshot(&ui.app).unwrap().decks[0].tempo_range;
+    ui.click("deck1.master-tempo");
+    ui.app.ui.invoke_deck_tempo_range(1);
+    // Both reach the engine (a frame or two later).
+    assert!(ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)
+        .is_some_and(|s| s.decks[0].keylock && s.decks[0].tempo_range != before)));
+    let range = crate::engine::snapshot(&ui.app).unwrap().decks[0].tempo_range;
+    assert!(ui.wait_until(5.0, |u| u.app.state.borrow().settings.deck.decks[0].master_tempo), "remembered");
+    // A new track: MT and the range stay.
+    crate::decks::load_track(&ui.app, 0, b, None);
+    assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.title == title_b.as_str())));
+    assert!(
+        ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.decks[0].track == Some(b) && s.decks[0].keylock && s.decks[0].tempo_range == range)),
+        "kept on load"
+    );
+    assert!(!crate::engine::snapshot(&ui.app).unwrap().decks[1].keylock, "deck 2 keeps its own");
+    // Restart on the same library: the engine starts with them.
+    let Ui { app, fx, .. } = ui;
+    drop(app);
+    let ui = Ui::start(fx, (1440, 900), false);
+    perform(&ui);
+    assert!(
+        ui.wait_until(10.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].keylock && s.decks[0].tempo_range == range && !s.decks[1].keylock)),
+        "MT and range back after a restart"
+    );
+    assert_eq!(ui.get("deck1.master-tempo").accessible_checked(), Some(true));
+}
+
+/// Cues on the zoomed lane: hot cue A at 1 s as a flag with its letter and
+/// a memory cue at 2 s as a triangle, inside the lane, each at its time's
+/// x relative to the playhead.
+#[test]
+fn cues_show_on_the_waveform_lane() {
+    use od_core::Cue;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let (id, title) = ui.fx.tracks[0].clone();
+    ui.fx.lib().set_cues(id, vec![Cue::hot(0, 1.0), Cue::memory(2.0)]).unwrap();
+    crate::decks::load_track(&ui.app, 0, id, None);
+    assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.loaded && d.title == title.as_str() && slint::Model::row_count(&d.cues) == 2)));
+    assert!(ui.wait_until(10.0, |u| u.has("wave.cue1.A") && u.has("wave.memory1.1")));
+    ui.pump(100);
+    let lane = Rect::of(&ui.get("wave.lane1"));
+    let motion = slint::Model::row_data(&ui.app.ui.get_lane_motion(), 0).unwrap();
+    let pos = motion.pos as f32;
+    let area = lane.w - 44.0;
+    let playhead = lane.x + 44.0 + area / 2.0;
+    for (label, t) in [("wave.cue1.A", 1.0f32), ("wave.memory1.1", 2.0)] {
+        let m = ui.get(label);
+        let r = Rect::of(&m);
+        let want = playhead + (t - pos) / motion.span * area;
+        assert!((r.x - want).abs() < 1.5, "{label} at x {} (want {want})", r.x);
+        assert!(r.y >= lane.y - 0.5 && r.bottom() <= lane.bottom() + 0.5 && r.x >= lane.x + 44.0 - 0.5 && r.x <= lane.right(), "{label} inside the lane");
+    }
+    // The hot cue's flag carries its letter; the memory cue has none.
+    let flag: Vec<_> = ui.get("wave.cue1.A").query_descendants().match_predicate(|e| e.accessible_label().is_some_and(|l| l == "A")).find_all();
+    assert!(!flag.is_empty(), "flag with A");
+}
+
+/// From Perform, a lane's GRID key opens the deck's track in the Prepare
+/// player in EDIT GRID.
+#[test]
+fn lane_grid_key_opens_edit_grid() {
+    use slint::ComponentHandle;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let (id, title) = ui.fx.tracks[0].clone();
+    crate::decks::load_track(&ui.app, 0, id, None);
+    assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.loaded && d.title == title.as_str())));
+    assert!(ui.wait_until(30.0, |u| u.fx.lib().beatgrid(id).ok().flatten().is_some_and(|g| !g.beats.is_empty())), "analysed");
+    assert!(ui.wait_until(5.0, |u| u.has("wave.grid-edit1")));
+    ui.click("wave.grid-edit1");
+    assert_eq!(ui.app.ui.get_mode(), "prepare");
+    assert_eq!(ui.app.state.borrow().player.current, Some(id));
+    assert!(ui.app.ui.global::<crate::GridEdit>().get_active());
+    assert!(ui.wait_until(5.0, |u| u.has("player1.grid.edit-hint") && u.has("player1.grid.done")));
+}
+
+/// Short lanes (crowded Perform) have no GRID key; a right-click on the
+/// waveform offers "Edit beatgrid…" instead.
+#[test]
+fn lane_context_menu_opens_edit_grid() {
+    use slint::ComponentHandle;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let (id, title) = ui.fx.tracks[0].clone();
+    crate::decks::load_track(&ui.app, 0, id, None);
+    assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.loaded && d.title == title.as_str())));
+    assert!(ui.wait_until(30.0, |u| u.fx.lib().beatgrid(id).ok().flatten().is_some_and(|g| !g.beats.is_empty())));
+    let lane = Rect::of(&ui.get("wave.lane1"));
+    ui.right_click_el(&ui.get("wave.lane1"));
+    let _ = lane;
+    assert!(ui.click_menu_item("Edit beatgrid…"), "menu item");
+    assert_eq!(ui.app.ui.get_mode(), "prepare");
+    assert!(ui.app.ui.global::<crate::GridEdit>().get_active());
+}
+
+/// The view menu in the top bar picks 2 or 4 decks and horizontal or
+/// vertical lanes in one step, and the choice is kept.
+#[test]
+fn view_menu_picks_deck_count_and_direction() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    use slint::ComponentHandle;
+    let layout = |u: &Ui| u.app.ui.global::<crate::PerformLayout>().get_layout().to_string();
+    ui.click("topbar.layout");
+    assert!(ui.wait_until(2.0, |u| u.has("topbar.layout.4v")), "menu opens");
+    // Popups have their own coordinates: the testing API maps the click.
+    let pick = |u: &Ui, id: &str| {
+        u.get(id).mock_single_click(slint::platform::PointerEventButton::Left);
+        u.pump(150);
+    };
+    pick(&ui, "topbar.layout.4v");
+    assert!(
+        ui.wait_until(2.0, |u| u.app.decks.borrow().deck_count == 4 && layout(u) == "vertical"),
+        "{} {}",
+        ui.app.decks.borrow().deck_count,
+        layout(&ui)
+    );
+    assert_eq!(ui.value("topbar.layout"), "4v");
+    assert_eq!(ui.app.state.borrow().lib.meta("ui.deck-count").unwrap().as_deref(), Some("4"));
+    ui.click("topbar.layout");
+    assert!(ui.wait_until(2.0, |u| u.has("topbar.layout.2h")));
+    pick(&ui, "topbar.layout.2h");
+    assert!(ui.wait_until(2.0, |u| u.app.decks.borrow().deck_count == 2 && layout(u) == "standard"));
+}

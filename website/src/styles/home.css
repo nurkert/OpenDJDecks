@@ -1,0 +1,362 @@
+/* The landing page. The stage's default is the calm, static arrangement; big screens without
+   reduced motion get the pinned choreography from the media query at the end of this file. */
+
+.scene {
+  position: relative;
+  padding-top: var(--nav-h);
+}
+.scene__sticky {
+  position: relative;
+  overflow-x: clip;
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sky__glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  background:
+    radial-gradient(60% 45% at 50% 70%, rgb(245 206 74 / 0.13), transparent 70%),
+    radial-gradient(45% 40% at 18% 60%, rgb(79 184 240 / 0.11), transparent 70%),
+    radial-gradient(45% 40% at 82% 60%, rgb(243 144 71 / 0.1), transparent 70%);
+}
+.sky__line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 84%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, rgb(245 206 74 / 0.65) 18%, var(--sodium) 50%, rgb(245 206 74 / 0.65) 82%, transparent);
+  box-shadow:
+    0 0 18px rgb(245 206 74 / 0.55),
+    0 0 60px rgb(245 206 74 / 0.35);
+}
+
+.hero {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: 0.9rem;
+  justify-items: start;
+  width: min(100%, var(--max));
+  margin-inline: auto;
+  padding: clamp(1.75rem, 6vh, 3.75rem) var(--gutter) 0;
+  will-change: opacity, transform;
+}
+.hero__title {
+  font-size: clamp(3rem, 10.5vw, 6.4rem);
+  line-height: 0.92;
+  letter-spacing: 0.005em;
+}
+.hero__title span {
+  display: block;
+}
+.hero__title span:nth-child(2) {
+  color: var(--bone-2);
+}
+.hero__lede {
+  max-width: min(34rem, 100%);
+  font-size: clamp(1.1rem, 1.6vw, 1.32rem);
+  line-height: 1.4;
+  color: var(--bone-2);
+}
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+.hero__for {
+  font-weight: 500;
+  opacity: 0.75;
+}
+.hero__platforms {
+  margin-top: 0.1rem;
+}
+
+.world {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-top: clamp(1.75rem, 4vh, 3rem);
+  padding-bottom: clamp(2.5rem, 7vw, 5rem);
+}
+/* The calm arrangement: the front window, the two others peeking out at its sides. */
+.rig {
+  position: relative;
+  width: min(92vw, 62rem);
+  margin-inline: auto;
+}
+.win {
+  margin: 0;
+  overflow: hidden;
+  background: var(--ground);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-window);
+  box-shadow:
+    0 30px 80px rgb(0 0 0 / 0.5),
+    0 2px 0 rgb(230 224 210 / 0.08) inset;
+}
+.win img {
+  width: 100%;
+  height: auto;
+}
+.win--perform {
+  position: relative;
+  z-index: 2;
+}
+.win--prepare,
+.win--club {
+  position: absolute;
+  top: 4%;
+  width: 62%;
+  opacity: 0.55;
+}
+.win--prepare {
+  left: -8%;
+  transform: scale(0.92);
+  transform-origin: left center;
+}
+.win--club {
+  right: -8%;
+  transform: scale(0.92);
+  transform-origin: right center;
+}
+.win__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out);
+}
+.win__video[data-playing] {
+  opacity: 1;
+}
+
+/* Teasers */
+.teasers {
+  position: relative;
+  padding: clamp(3rem, 7vw, 5.5rem) 0 clamp(2rem, 5vw, 4rem);
+}
+.teasers__head {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+}
+.teasers__head .rail {
+  margin-bottom: 1rem;
+}
+.teasers__title {
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+}
+.teasers__lede {
+  max-width: 40rem;
+  font-size: 1.2rem;
+  color: var(--bone-2);
+}
+.teasers__list {
+  display: grid;
+  gap: clamp(3.5rem, 8vw, 6.5rem);
+}
+.teaser {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(1.75rem, 5vw, 4.5rem);
+  align-items: center;
+}
+.teaser--flip {
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+}
+.teaser--flip .teaser__text {
+  order: 2;
+}
+.teaser__title {
+  font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+}
+.teaser__body {
+  margin-top: 0.75rem;
+  max-width: 34rem;
+  color: var(--bone-2);
+  font-size: 1.05rem;
+}
+.teaser__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  margin-top: 0.4rem;
+  font-weight: 500;
+  color: var(--bone);
+}
+.teaser__link span {
+  color: var(--sodium);
+  transition: transform 0.2s var(--ease-out);
+}
+.teaser__link:hover span {
+  transform: translateX(3px);
+}
+.teaser__media {
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-window);
+  background: var(--ground-band);
+  overflow: hidden;
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.38);
+}
+.teaser__media img,
+.teaser__media svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Closing */
+.closing {
+  position: relative;
+  margin-top: clamp(1rem, 4vw, 3rem);
+  padding: clamp(4rem, 12vw, 8rem) 0;
+  border-top: 1px solid var(--rule);
+  background:
+    radial-gradient(55% 90% at 50% 100%, rgb(245 206 74 / 0.1), transparent 75%),
+    var(--ground-band);
+}
+.closing__inner {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  text-align: center;
+}
+.closing__title {
+  font-size: clamp(2.4rem, 6.5vw, 4.6rem);
+  max-width: 16ch;
+}
+.closing__text {
+  max-width: 36rem;
+  font-size: 1.15rem;
+  color: var(--bone-2);
+}
+.closing__actions {
+  justify-content: center;
+  margin-top: 1rem;
+}
+.closing__cta {
+  min-height: 3.5rem;
+  padding-inline: 2rem;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 56rem) {
+  .teaser,
+  .teaser--flip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .teaser--flip .teaser__text {
+    order: 0;
+  }
+  .teaser__media {
+    margin-top: 0.25rem;
+  }
+}
+@media (max-width: 40rem) {
+  .win--prepare,
+  .win--club {
+    width: 72%;
+    top: 3%;
+  }
+  .win--prepare {
+    left: -14%;
+  }
+  .win--club {
+    right: -14%;
+  }
+}
+
+/* The live stage: pinned, with the windows in a perspective world, placed from script. A media
+   query rather than a flag set from script, so that the first paint already has this layout.
+   The query is liveQuery in lib/stage-math.mjs. */
+@media (min-width: 880px) and (min-height: 560px) and (prefers-reduced-motion: no-preference) and (scripting: enabled) {
+  :root .scene__sticky {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: clip;
+  }
+
+  :root .hero {
+    position: absolute;
+    inset: 0 0 auto;
+    top: var(--nav-h);
+    padding-right: min(46vw, 48rem);
+    isolation: isolate;
+  }
+
+  :root .hero__lede {
+    max-width: clamp(19rem, 29vw, 34rem);
+  }
+
+  :root .hero__title {
+    font-size: clamp(3rem, 7vw, 6.4rem);
+  }
+
+  :root .hero::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: -10% 25% -10% -8%;
+    background: radial-gradient(70% 70% at 20% 50%, rgb(21 21 20 / 0.92), rgb(21 21 20 / 0.55) 55%, transparent 75%);
+  }
+
+  :root .scene {
+    height: 225svh;
+    padding-top: 0;
+  }
+
+  :root .world {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    perspective: 2200px;
+    perspective-origin: 50% 30%;
+  }
+
+  :root .rig {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+    transform-style: preserve-3d;
+  }
+
+  :root .win {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(60vw, 72rem, 92vh);
+    will-change: transform, opacity;
+    transform: translate(-50%, -50%);
+    opacity: 1;
+    backface-visibility: hidden;
+  }
+
+  :root .win--perform {
+    z-index: auto;
+  }
+
+  /* Hidden until stage.ts has placed them; the delayed reveal covers a script that never runs. */
+  .scene:not([data-stage-ready]) .win {
+    visibility: hidden;
+    animation: stage-reveal 0s linear 3s forwards;
+  }
+}
+
+@keyframes stage-reveal {
+  to {
+    visibility: visible;
+  }
+}

@@ -1,0 +1,101 @@
+---
+import { render } from 'astro:content';
+
+import Docs from '../../layouts/Docs.astro';
+import { guideEntry, guideNeighbours, guideTitle, devAlternates, devNeighbours, guideAlternates, type Lang } from '../../lib/docs';
+import { devDocs, devHref, githubBlob, guideGroups, guideHref, wikiHome } from '../../lib/docs-catalog.mjs';
+import { ui } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  kind: 'guide' | 'dev';
+  slug: string;
+  entry: import('astro:content').CollectionEntry<'guide' | 'dev'>;
+}
+const { lang, kind, slug, entry } = Astro.props;
+const t = ui[lang];
+const { Content, headings: allHeadings } = await render(entry);
+const isGuide = kind === 'guide';
+
+let title: string;
+let description: string;
+let group: string;
+let prev: { href: string; label: string } | undefined;
+let next: { href: string; label: string } | undefined;
+const sourcePath = isGuide ? `docs/guide/${lang}/${slug}.md` : `docs/${devDocs.find((d) => d.slug === slug)!.file}`;
+
+if (isGuide) {
+  const data = entry.data as { title: string; description: string };
+  title = data.title;
+  description = data.description;
+  group = guideGroups.find((g) => g.slugs.includes(slug))?.title[lang] ?? '';
+  const neighbours = guideNeighbours(slug);
+  if (neighbours.previous) prev = { href: guideHref(neighbours.previous, lang), label: await guideTitle(neighbours.previous, lang) };
+  if (neighbours.next) next = { href: guideHref(neighbours.next, lang), label: await guideTitle(neighbours.next, lang) };
+} else {
+  const doc = devDocs.find((d) => d.slug === slug)!;
+  title = doc.label;
+  description = entry.body?.replace(/^#.*$/m, '').replace(/[#*`[\]()]/g, '').trim().slice(0, 150) ?? doc.label;
+  group = t.docs.developers;
+  const neighbours = devNeighbours(slug);
+  if (neighbours.previous) prev = { href: devHref(neighbours.previous.slug, lang), label: neighbours.previous.label };
+  if (neighbours.next) next = { href: devHref(neighbours.next.slug, lang), label: neighbours.next.label };
+}
+
+const headings = isGuide ? allHeadings : allHeadings.filter((h) => h.depth > 1);
+const alternates = isGuide ? guideAlternates(slug) : devAlternates(slug);
+// The developer docs are English on every language path: both routes point search engines
+// at the English URL, so they do not compete with themselves.
+const canonicalHref = isGuide ? undefined : devHref(slug, 'en');
+const contentLang = isGuide ? lang : 'en';
+const showNotice = !isGuide && lang === 'de';
+const pageTitle = `${title} · ${t.docs.title} · OpenDJDecks`;
+---
+
+<Docs
+  lang={lang}
+  title={pageTitle}
+  description={description.slice(0, 160)}
+  headings={headings}
+  current={`${kind}:${slug}`}
+  alternates={alternates}
+  canonicalHref={canonicalHref}
+  contentLang={contentLang as Lang}
+>
+  <article class="prose">
+    <header class="docs__head">
+      <p class="caps docs__crumb">
+        <a href={wikiHome(lang)}>{t.docs.title}</a> &nbsp;/&nbsp; {group}
+      </p>
+      {
+        isGuide ? (
+          <>
+            <h1>{title}</h1>
+            <p class="docs__lede">{description}</p>
+          </>
+        ) : null
+      }
+      {showNotice && <p class="docs__notice" lang="de">{t.docs.englishOnly}</p>}
+    </header>
+    <Content />
+    <nav class="docs__pager" aria-label={lang === 'de' ? 'Weitere Seiten' : 'More pages'}>
+      {
+        prev && (
+          <a href={prev.href} class="prev" rel="prev">
+            <span>{t.docs.previous}</span>
+            {prev.label}
+          </a>
+        )
+      }
+      {
+        next && (
+          <a href={next.href} class="next" rel="next">
+            <span>{t.docs.next}</span>
+            {next.label}
+          </a>
+        )
+      }
+    </nav>
+    <p class="docs__edit"><a href={`${githubBlob}${sourcePath}`}>{t.docs.edit}</a></p>
+  </article>
+</Docs>

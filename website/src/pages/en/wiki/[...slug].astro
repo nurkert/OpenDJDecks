@@ -1,0 +1,9 @@
+---
+import type { GetStaticPaths } from 'astro';
+import DocPage from '../../../components/docs/DocPage.astro';
+import { wikiPaths } from '../../../lib/wiki-paths';
+
+export const getStaticPaths = (() => wikiPaths('en')) satisfies GetStaticPaths;
+---
+
+<DocPage lang="en" {...Astro.props} />

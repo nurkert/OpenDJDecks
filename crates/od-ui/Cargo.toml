@@ -1,0 +1,63 @@
+[package]
+name = "od-ui"
+description = "Slint user interface of OpenDJDecks"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+build = "build.rs"
+
+[features]
+default = ["separation"]
+# Stem separation on this machine (ONNX Runtime). Without it, stems that were
+# separated elsewhere still play.
+separation = ["od-stems/separation"]
+# Full-screen kiosk on the Raspberry Pi (no desktop environment).
+kiosk = ["slint/backend-linuxkms-noseat", "slint/renderer-femtovg"]
+
+[dependencies]
+od-core.workspace = true
+od-library.workspace = true
+od-decode.workspace = true
+od-analysis.workspace = true
+od-devices.workspace = true
+od-format-native.workspace = true
+# unstable-winit-030: files dropped from Finder / the file manager (winit
+# window events) until the winit backend delivers OS drops to `DropArea`.
+slint = { version = "1.18", features = ["unstable-winit-030"] }
+anyhow.workspace = true
+tracing.workspace = true
+crossbeam-channel.workspace = true
+rayon.workspace = true
+od-engine.workspace = true
+od-audio-io.workspace = true
+od-controller.workspace = true
+od-recorder.workspace = true
+od-stems = { workspace = true, default-features = false }
+od-i18n.workspace = true
+od-update.workspace = true
+od-lighting.workspace = true
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+od-import.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+toml.workspace = true
+rfd = "0.15"
+symphonia.workspace = true
+# Edit mode: the rendered edit is written as WAV.
+hound = "3"
+
+# The pointer over the window while files from Finder hover it (winit
+# reports native file drops without a position).
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSResponder", "NSView", "NSWindow", "objc2-core-foundation"] }
+
+[dev-dependencies]
+tempfile.workspace = true
+# Headless UI tests: the Slint testing backend (must match the slint version).
+i-slint-backend-testing = "=1.18.1"
+# Delivers simulated OS drag-and-drop events to the window (file drops).
+i-slint-core = "=1.18.1"
+od-parity = { path = "../od-parity" }
+
+[build-dependencies]
+slint-build = "1.18"

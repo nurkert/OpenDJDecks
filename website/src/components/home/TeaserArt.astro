@@ -1,0 +1,73 @@
+---
+// Drawn plates for what has no screenshot: the controllers and the Raspberry Pi unit.
+// Clearly schematic, in the thin-line language of the site.
+interface Props {
+  kind: string;
+  title: string;
+}
+const { kind, title } = Astro.props;
+---
+
+<figure class="art">
+  <svg viewBox="0 0 720 450" role="img" aria-label={title} fill="none" stroke-linecap="square">
+    <rect x="0.5" y="0.5" width="719" height="449" fill="#1a1a19" stroke="#33322f" />
+    {
+      kind === 'pi' ? (
+        <>
+          {/* A controller seen from above with a screen on the rail, and a small board. */}
+          <rect x="120" y="150" width="480" height="220" fill="#21211f" stroke="#4b4a46" />
+          <circle cx="220" cy="262" r="62" stroke="#8b867b" />
+          <circle cx="500" cy="262" r="62" stroke="#8b867b" />
+          <circle cx="220" cy="262" r="6" fill="#4fb8f0" />
+          <circle cx="500" cy="262" r="6" fill="#f39047" />
+          <path d="M340 190v144M360 190v144M380 190v144" stroke="#4b4a46" />
+          <rect x="160" y="60" width="400" height="90" fill="#151514" stroke="#e6e0d2" />
+          <path d="M174 118h120l8-10h240" stroke="#f5ce4a" stroke-width="2" />
+          <path d="M360 62v86" stroke="#e6e0d2" stroke-width="2" />
+          <rect x="300" y="384" width="120" height="44" stroke="#f5ce4a" />
+          <path d="M360 370v14" stroke="#f5ce4a" />
+          <text x="360" y="412" text-anchor="middle" fill="#b7b1a4" font-size="15" font-family="var(--font)" letter-spacing="2">PI</text>
+        </>
+      ) : (
+        <>
+          {/* A two-deck controller and the signal lines to the app. */}
+          <rect x="70" y="120" width="580" height="240" fill="#21211f" stroke="#4b4a46" />
+          <circle cx="205" cy="240" r="84" stroke="#b7b1a4" />
+          <circle cx="205" cy="240" r="5" fill="#4fb8f0" />
+          <path d="M205 240l44-58" stroke="#4fb8f0" stroke-width="2" />
+          <circle cx="515" cy="240" r="84" stroke="#b7b1a4" />
+          <circle cx="515" cy="240" r="5" fill="#f39047" />
+          <path d="M515 240l-44 58" stroke="#f39047" stroke-width="2" />
+          <path d="M340 150v180M360 150v180M380 150v180" stroke="#4b4a46" />
+          <rect x="334" y="214" width="12" height="20" fill="#e6e0d2" />
+          <rect x="354" y="176" width="12" height="20" fill="#e6e0d2" />
+          <rect x="374" y="248" width="12" height="20" fill="#e6e0d2" />
+          <g fill="#2a2a27" stroke="#4b4a46">
+            {[0, 1, 2, 3].map((i) => (
+              <rect x={100 + i * 48} y="322" width="38" height="26" />
+            ))}
+            {[0, 1, 2, 3].map((i) => (
+              <rect x={426 + i * 48} y="322" width="38" height="26" />
+            ))}
+          </g>
+          <g fill="#f5ce4a">
+            <rect x="100" y="322" width="38" height="4" />
+            <rect x="148" y="322" width="38" height="4" />
+          </g>
+          <path d="M360 96v24M40 96h640" stroke="#f5ce4a" stroke-width="1.5" />
+          <text x="360" y="72" text-anchor="middle" fill="#b7b1a4" font-size="18" letter-spacing="4" font-family="var(--font)">MIDI · LED</text>
+        </>
+      )
+    }
+  </svg>
+</figure>
+
+<style>
+  .art {
+    margin: 0;
+  }
+  .art svg {
+    width: 100%;
+    height: auto;
+  }
+</style>

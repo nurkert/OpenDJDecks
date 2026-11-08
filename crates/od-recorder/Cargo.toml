@@ -1,0 +1,22 @@
+[package]
+name = "od-recorder"
+description = "Mix recording with automatic tracklists"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+od-core.workspace = true
+od-engine = { workspace = true }
+crossbeam-channel.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+hound = "3"
+flacenc = "0.5"
+mp3lame-encoder = "0.3"
+
+[dev-dependencies]
+od-decode.workspace = true
+tempfile.workspace = true

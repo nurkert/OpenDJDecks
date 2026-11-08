@@ -1,0 +1,772 @@
+# OpenDJDecks — Specification
+
+Status: version 2, revised 2026-11-06 on the owner's request: the goal is a
+full-featured, open-source DJ toolkit with a complete professional feature
+set (no streaming, cloud or video; DMX lighting included since 2026-11-06),
+arranged by the layout conventions DJs are used to, in OpenDJDecks' own visual
+language. This
+document is the goal for implementation. Anything not stated here is out of
+scope until it is added to this document. `docs/feature-matrix.md` tracks
+every feature against the code.
+
+How it looks today (demo library of generated tracks):
+
+| Perform | Prepare | Club mode |
+|---|---|---|
+| ![Perform](assets/screenshots/perform.png) | ![Prepare](assets/screenshots/prepare.png) | ![Club mode](assets/screenshots/club-mode.png) |
+
+## 1. Vision
+
+OpenDJDecks is an open-source DJ application written in Rust that lets
+a DJ **prepare** a music library and sets on the desktop, keep USB sticks in
+sync **without friction**, and **perform** with compatible DJ controllers — on
+macOS, Linux, and as a standalone unit built from a Raspberry Pi attached to a
+controller.
+
+It is an independent product, not affiliated with or endorsed by any DJ
+hardware or software vendor. It imports library XML files
+(rekordbox-compatible) and works with compatible DJ controllers. Its arrangement follows the **general conventions of DJ
+software** (players on top, browser below, tree on the left, a preparation
+mode and a performance mode) so DJs feel at home immediately; its **visual
+language is its own** (DESIGN.md) and it contains no third-party assets.
+
+The feature set is **complete for professional DJ work** — everything a DJ
+expects from current commercial DJ software — except for the fixed
+exclusions below: library, analysis, cue and grid editing, Explorer playback
+straight from folders, stems, all FX, sampler and sequencer, recording, USB
+sticks with automatic sync. Fixed exclusions: streaming services, cloud sync and
+accounts (offline-first), video, DVS.
+
+### Core problems it solves
+
+1. **USB sticks drift out of date.** Editing a playlist, hot cue, memory cue
+   or beatgrid must cascade to every registered stick automatically,
+   incrementally and visibly.
+2. **Set preparation is clumsy.** Sets are first-class: ordered, annotated,
+   with BPM/key/energy flow and compatibility hints.
+3. **Recording is fiddly.** One button, automatic tracklist, clean files.
+4. **Hardware lock-in.** Runs on Linux and a Raspberry Pi so a controller can
+   become a standalone system.
+
+## 2. Ground rules
+
+| Topic | Decision |
+|---|---|
+| Language | Rust (stable), Cargo workspace |
+| License | GPL-3.0-or-later |
+| Platforms | macOS 13+ (Apple Silicon + Intel), Linux desktop (x86_64, aarch64), Windows 10/11 (x86_64; built and tested in CI, not yet verified on hardware), Raspberry Pi 4 and 5 (Raspberry Pi OS Lite 64-bit) |
+| Not supported | 32-bit OS, Windows on ARM, Raspberry Pi 3 and older |
+| UI | Slint; GPU-rendered waveforms embedded in the Slint scene |
+| UI languages | English (base), German; i18n from day one |
+| Network | Offline-first. No accounts, no cloud, no telemetry. Crash reports are written locally only. Single exception: the update check (§14.1), which only reads GitHub's public releases, sends no user data and can be switched off |
+| Repository | `git@github.com:nurkert/OpenDJDecks.git`, this directory is the workspace root |
+
+### Legal rules
+
+- No third-party code, images, icons, fonts, skins, sounds or mapping files
+  are copied into the repository or distributed.
+- Controller mappings are authored independently and checked with MIDI learn
+  and the MIDI monitor.
+- Product names are used only descriptively ("compatible with").
+
+## 3. Concepts
+
+### 3.1 Work modes
+
+- **Prepare**: library, analysis, cue and grid editing, playlists, smart
+  playlists, sets, USB devices, recordings browser.
+- **Perform**: decks, mixer, FX, sampler, recorder, controller operation.
+
+Both modes are part of one application binary. Switching is instant and keeps
+state (e.g. a track loaded in Perform stays loaded).
+
+### 3.2 Performance profiles
+
+Orthogonal to the work mode. Detected automatically from the hardware, can
+be overridden in settings and with `--profile lite|full`.
+
+| Aspect | Lite (Raspberry Pi 4/5, weak hardware) | Full (desktop) |
+|---|---|---|
+| Waveform frame rate | 30 fps, reduced detail | 60–120 fps (display rate), full detail |
+| Effects | reduced set | full set |
+| Keylock | Rubber Band in faster engine settings | highest quality |
+| UI animations | off | on |
+| Background analysis | throttled, pauses while performing | full speed |
+| Audio buffer default | larger (e.g. 256 frames) | small (e.g. 128 frames) |
+
+The audio signal path itself is never degraded by the profile, except the
+keylock quality trade-off above.
+
+### 3.3 Kiosk mode (Raspberry Pi)
+
+The Pi boots directly into OpenDJDecks in full screen, Perform mode,
+Lite profile, without a desktop environment (Slint `linuxkms` backend). It
+is operated mainly through the controller (browse encoder, load buttons,
+back/shift functions) and optionally a touchscreen. The library comes from a
+USB stick (OpenDJDecks format) or the Pi's own SSD.
+
+## 4. Architecture
+
+### 4.1 Workspace layout
+
+```
+opendjdecks/
+├── Cargo.toml                  # workspace
+├── crates/
+│   ├── od-core/                # domain types, IDs, units (beats, samples, time), errors
+│   ├── od-library/             # SQLite library, migrations, undo journal, backups, relocation
+│   ├── od-decode/              # symphonia decoding, resampling, file probing, tags
+│   ├── od-analysis/            # BPM, beatgrid, key, waveform, phrase, loudness
+│   ├── od-import/              # one-time import: library XML, iTunes library, settings
+│   ├── od-format-native/       # OpenDJDecks stick format reader/writer
+│   ├── od-devices/             # removable-volume watching, device registry, sync engine
+│   ├── od-audio-io/            # CoreAudio, ALSA (direct), PipeWire/JACK backends
+│   ├── od-engine/              # real-time engine: decks, mixer, sync, FX, sampler
+│   ├── od-recorder/            # recording, encoding, tracklists, splitting
+│   ├── od-controller/          # MIDI I/O, mapping format, controller profiles, LED feedback
+│   ├── od-i18n/                # translations
+│   └── od-ui/                  # Slint UI, waveform renderer, view models
+├── apps/
+│   ├── opendjdecks/              # the application binary
+│   └── od-cli/                 # headless tool: import, analyze, export, sync, verify
+├── mappings/                   # controller mapping files (TOML), see §9
+├── packaging/                  # dmg, AppImage, Flatpak, Pi image build
+├── tests/fixtures/             # small, license-clean audio and reference sticks
+└── docs/
+```
+
+Crate boundaries are firm: format crates do not depend on the UI, the engine
+does not depend on the library database, and everything below `od-ui` is
+usable headless through `od-cli` (which also drives automated tests).
+
+### 4.1a UI architecture (od-ui, rebuilt in v2)
+
+The UI crate is organised by feature, each module owning its view model,
+its Slint component and its command handlers:
+
+| Module | Owns |
+|---|---|
+| `shell` | window, top bar, mode switch, splitters and pane sizes, status band, key bindings |
+| `browser` | tree (collection, playlists, sets, smart lists, histories, devices, Explorer), track list, columns, search, filters, tag editing, drag and drop |
+| `explorer` | file-system roots, folder listing, import-on-load |
+| `player` | Prepare player: waveform, cue / loop / grid editors |
+| `decks` | deck view models, waveform lanes, pads and pad modes |
+| `mixer` | channels, master, headphones, crossfader |
+| `fx` | Tempo FX, Channel FX, Hold FX, Exit FX panels |
+| `sampler` | sampler slots, banks, sequencer |
+| `recorder` | recording control, recordings list, tracklists |
+| `devices` | sticks, sync status, export |
+| `preferences` | settings window: audio, controller, view, analysis, keyboard |
+
+A single `AppState` holds the domain state; modules mutate it only through
+commands, and a frame tick projects engine state into the deck and mixer
+view models. Long work (decode, analysis, separation, sync, export) runs on
+workers and reports through channels; the UI thread never blocks.
+
+### 4.2 Threads and real-time rules
+
+- **Audio thread**: owned by `od-audio-io`, runs `od-engine`. No allocation,
+  no locks, no I/O, no logging in the callback. Communication through
+  lock-free SPSC queues (`rtrb`) and atomics. Commands in, meters/positions
+  out.
+- **Disk/decode workers**: stream and decode audio into pre-allocated ring
+  buffers ahead of the playhead; whole-track preload into RAM when memory
+  allows (desktop default, Pi when the track fits the budget).
+- **Analysis workers**: rayon pool, low priority, cancellable, throttled in
+  Lite profile.
+- **Sync worker**: one per connected device, serialised writes.
+- **UI thread**: Slint event loop; receives state snapshots, never blocks on
+  I/O.
+- **Controller thread**: MIDI input → mapping → engine commands with
+  timestamping; LED output is diffed and rate-limited.
+
+### 4.3 Key dependencies (initial choice, may change with reason)
+
+`slint`, `symphonia`, `rubato` (resampling), Rubber Band (via FFI, GPL),
+`rusqlite` (bundled SQLite), `midir`, `cpal` / `alsa`, `pipewire`, `rtrb`, `rayon`,
+`notify` + platform volume APIs (DiskArbitration on macOS, udev on Linux,
+drive letters and the storage bus type on Windows),
+`fluent` (i18n), `tracing`.
+
+## 5. Library
+
+### 5.1 Storage
+
+- One SQLite database in the platform data directory
+  (`~/Library/Application Support/OpenDJDecks/` on macOS,
+  `$XDG_DATA_HOME/opendjdecks/` on Linux,
+  `%LOCALAPPDATA%\OpenDJDecks\` on Windows), WAL mode.
+- Analysis blobs (waveforms, beatgrids, phrases) stored in the database or a
+  content-addressed sidecar directory next to it, keyed by audio content hash.
+- Music files are **referenced** where they are. Optional **Consolidate**
+  copies them into a managed music folder. A **Relocate** function finds
+  moved/missing files by content hash, size and tags.
+
+### 5.2 Data model (logical)
+
+- `track`: id, file path, content hash, size, format, duration, sample rate,
+  tags (title, artist, album, genre, label, year, comment, rating, color),
+  date added, play count, analysis version.
+- `beatgrid`: track, list of (sample position, BPM, beat number in bar);
+  supports variable-tempo grids; `locked` flag.
+- `cue`: track, kind (hot cue A–H, memory cue, loop), position, loop length,
+  label, color, order.
+- `key`: track, key (internal representation), confidence, source
+  (analysis/import/manual).
+- `waveform`: track, resolution tiers, colour bands (low/mid/high).
+- `phrase`: track, sections (intro, verse, chorus, bridge, outro, …).
+- `playlist`, `playlist_entry`; `folder` for nesting.
+- `smart_playlist`: rule tree (field, operator, value; AND/OR), live
+  evaluated.
+- `set`: ordered entries with per-transition notes, backup tracks per
+  position, planned start time.
+- `device`: registered USB stick (volume UUID, label, formats enabled,
+  assigned playlists/sets/folders, last sync state).
+- `recording`: file, start time, duration, tracklist.
+- `history`: played tracks of own performances.
+- `journal`: undo/redo log of user edits.
+
+### 5.3 Editing, safety and undo
+
+- Every user edit (cues, grids, tags, playlist changes, set changes) goes
+  through a command layer that writes an undo journal entry. Undo/redo works
+  across the whole library, with a visible history.
+- Automatic database backups: on start, before migrations, before imports,
+  rotating (last 10 + one per day for 14 days).
+- Export/import of the whole library to one archive file (database +
+  analysis; optionally including audio).
+
+### 5.4 Supported audio formats
+
+MP3, AAC/M4A, ALAC, FLAC, WAV, AIFF, OGG Vorbis, Opus, decoded with
+symphonia.
+
+### 5.5 Browser features
+
+- Tree: Collection, Playlists (folders, playlists, smart lists, sets),
+  Histories (automatic per session), Explorer (folders on disk), Devices,
+  Recordings, Tag list (a staging list), Similar tracks and Track
+  suggestion panels.
+- Track list: configurable and re-orderable columns (incl. preview
+  waveform, artwork, rating, colour, comment, Tags, key, BPM, time,
+  date added, play count, bitrate), multi-sort, inline editing of tags,
+  rating and colour, drag and drop to playlists / decks / sticks (tracks
+  dragged from the list, Explorer or Finder onto a deck load there; the
+  target deck highlights while dragging; a playing deck is protected by an
+  optional load lock),
+  reordering in playlists and sets.
+- Search with filters (BPM range, key match, rating, colour, Tags,
+  genre), key and BPM matching against the master deck.
+- AUTO SORT in the tree: the collection classified offline from its
+  analysis into tempo bands, energy (thirds of the collection), mood (key
+  mode and phrase mood), character (waveform band balance) and genre
+  families; each list opens in the track list like any other.
+- MATCH column: each row's fit with the master deck (else a playing deck,
+  else the selected track) — key distance and tempo incl. half / double
+  time — as 0–3 lit lines with the reason on hover, sortable.
+- Personalised cue points: the places where the user sets hot and memory
+  cues (bars from the first downbeat, the phrases, the end; names, colours,
+  loops) are learned and applied to tracks without cues — from the row
+  menu, or after analysis (Preferences > Analysis, off by default); one
+  undo step per track.
+- Tags: user-defined tag categories and values, usable in smart lists.
+- Histories: every performance session is logged as a history list.
+- **Explorer:** browse folders on disk and play directly; loading a file
+  from Explorer adds it to the collection and analyses it in the
+  background.
+
+### 5.6 MCP server for set preparation with an LLM (owner requirement 2026-11-06)
+
+- `od-mcp` is a Model Context Protocol server (stdio, and optionally a
+  local-only HTTP transport) that gives an LLM client such as Claude full
+  access to the library for preparing sets together with the DJ.
+- **Read:** every track field (title, artist, album, genre, label, year,
+  comment, rating, colour, Tags, BPM, key in all notations, duration,
+  energy, loudness, phrases, cues, play count, date added, histories),
+  playlists, sets with transition notes, smart lists, search with filters
+  (BPM range, key compatibility, genre, energy, rating, tags), harmonic
+  neighbours and BPM-compatible candidates, set flow analysis (BPM / key /
+  energy curve, clashes).
+- **Write:** create sets and playlists, add / remove / reorder tracks,
+  transition notes, tags, ratings and colours, smart list rules. Every
+  write goes through the library's undo journal (one undo step per tool
+  call, labelled "MCP: …") and the change log, so sticks sync as usual.
+- Runs against the same library the app uses (concurrent access through
+  SQLite); no network beyond the local transport; the app shows MCP edits
+  live. Setup instructions for Claude Desktop / Claude Code in the docs.
+
+## 6. Analysis
+
+- Pure Rust: BPM and beatgrid (including bar/downbeat detection), musical key,
+  three-band colour waveform at several resolutions, phrase/section
+  detection, loudness (EBU R128) for auto-gain.
+- Deterministic and versioned (`analysis_version`). Re-analysis never
+  overwrites data that is imported or manually edited unless the user asks.
+- Priority of sources: manual > imported > analysed.
+- Beatgrid editor: shift, nudge, set downbeat, tap, halve/double, set BPM,
+  lock grid.
+- Key notation: Camelot (default), Open Key, musical. Display setting only.
+- Performance budget: a 6-minute track analysed in ≤ 3 s on an Apple Silicon
+  MacBook, ≤ 20 s on a Raspberry Pi 4.
+
+## 7. One-time import
+
+- Library XML files (rekordbox-compatible): tracks (paths), tags, ratings,
+  colours, beatgrids, hot cues, memory cues and loops, keys, playlists and
+  folders. Export to the same format as well.
+- iTunes / Music library export: tracks with tags and playlist folders.
+- Preferences and keyboard shortcuts of an existing rekordbox installation.
+- Automatic database backup before an import; a report shows imported
+  counts and missing files.
+
+## 8. USB devices and sync
+
+This is the most important part of the product's user experience.
+
+### 8.1 Device model
+
+- A USB stick is **registered** once (by volume UUID) and gets a name.
+- Each device has an assigned content: playlists, folders, sets, smart
+  playlists (evaluated at sync time).
+- Sticks hold the OpenDJDecks format (library, analysis and audio files). They
+  are read by OpenDJDecks and cannot be played on club players.
+
+### 8.2 Sync behaviour
+
+- Any change that affects a device's content (playlist membership or order,
+  cue, grid, tag, colour, track replacement) marks the device **out of date**
+  and records which items changed.
+- While a registered stick is connected, sync runs automatically in the
+  background after a short debounce (about 2 s after the last edit).
+  Otherwise sync runs automatically when the stick is next connected.
+- Sync is **incremental**: audio files are copied only when new or changed;
+  analysis data is rewritten only for changed tracks.
+- Crash- and unplug-safety: write to temporary files, fsync, atomic rename;
+  a journal on the stick allows resuming or rolling back an interrupted sync.
+- The device sidebar always shows per stick: connected or not, in sync /
+  out of date (with count of pending changes) / syncing (progress) / error,
+  free space.
+- One-click **safe eject**; eject waits for a running sync to finish.
+- Manual controls: "Sync now", "Rebuild stick" (full rewrite), "Remove from
+  stick".
+
+### 8.3 OpenDJDecks stick format
+
+- Directory `/OPENDJDECKS/` with a self-contained SQLite library (subset of the
+  main schema), analysis blobs, and a manifest with content hashes and format
+  version.
+- Readable by OpenDJDecks on any platform, including the Raspberry Pi kiosk,
+  without the main library.
+
+## 9. Controllers
+
+### 9.1 Scope
+
+- Compatible four-deck and two-deck MIDI controllers (mapping files in
+  `mappings/controllers/`).
+- USB class compliant devices (Audio + MIDI) on macOS and Linux; no kernel
+  driver is written.
+- Other controllers are future work; the layer is vendor-neutral.
+
+### 9.2 Controller layer
+
+- `od-controller` maps raw MIDI (notes, CC, 14-bit CC pairs, jog
+  rotate/touch, shift layers, deck layers) to **engine actions**.
+- Mapping files in TOML (`mappings/controllers/<model>.toml`): device matching
+  (USB IDs, port names), inputs → actions, outputs (LEDs, VU meters, pad
+  colours) ← engine state, per-deck channels, shift handling.
+- Optional Rust "device module" per controller for behaviour that cannot be
+  expressed declaratively (e.g. jog scaling).
+- Built-in **MIDI monitor** and **MIDI learn** for authoring and debugging
+  mappings.
+- Audio: the controller's audio interface is used for master and headphone
+  outputs; the channel layout is detected and can be set per device profile.
+
+## 10. Perform
+
+### 10.1 Decks
+
+- 2 or 4 decks, deck layer switching, layouts for 2 and 4
+  decks and a browser-maximised layout.
+- Tempo fader with ranges (±6/10/16 %, WIDE), **Sync** (BPM and phase,
+  beat-aware), master deck, **Quantize**, key lock (Rubber Band), key shift
+  and key sync.
+- Hot cues A–H with banks, memory cues, loops (manual, auto beat loop,
+  halve/double, loop roll, active loop, saved loops), **Slip**, beat jump
+  (configurable size), reverse, censor, needle search, auto cue.
+- Jog display with position, remaining time, phrase and bar counter.
+- Waveforms: three-band colour (RGB and blue variants), overview with phrase
+  bar, zoomable scrolling waveform per deck with beat grid, cues and
+  phrases; stacked for 2 and 4 decks.
+- Pad modes: Hot Cue, Hold FX, Beat Jump, Sampler, Keyboard, Key Shift, Beat
+  Loop, Slicer.
+
+### 10.2 Mixer and FX
+
+- Per channel trim / auto gain, 3-band EQ (isolator or classic), Channel FX
+  knob, fader with curves, CUE; crossfader with assign and curves; master,
+  booth, headphone cue / mix / level; meters.
+- **Tempo FX:** two units, echo, delay, ping pong, reverb, flanger, phaser,
+  roll, slip roll, filter, trans, pitch, vinyl brake, helix, spiral; beat
+  length, level/depth, channel assign, tap.
+- **Channel FX:** filter, echo, noise, space, crush, pitch, dub echo, sweep.
+- **Hold FX** and **Exit FX** (vinyl brake, backspin, echo out).
+
+### 10.3 Stems
+
+- Four parts per track: vocals, drums, bass and instrumental (INST = mix −
+  vocals − drums − bass), separated offline by a local ONNX model that is
+  downloaded once on demand; nothing leaves the machine.
+- Separation runs in the background and is cached per track; a deck shows
+  that it is separating until the parts are ready, then the part mutes and
+  levels work instantly and click-free; stem FX per part.
+- Desktop (Full profile) separates; the Raspberry Pi plays parts that were
+  separated on the desktop.
+
+### 10.3a Sampler
+
+- 16 slots in banks, one-shot / loop / gate, per-slot gain, quantised
+  triggering, sample sync to the master tempo, a step sequencer with
+  pattern recording and saved sequences.
+
+### 10.3c Club mode (owner requirement 2026-11-06)
+
+A Perform sub-mode that prepares a DJ who only owns a controller for club
+players: per deck a player-style screen with browse screen (source → list,
+track info), playing screen with zoomable waveform, overview, beat/bar
+counter, remaining time, tempo with range and master tempo, hot cue / memory
+cue call, loops and beat jump, player-style load and cue rules (cue point set
+while paused, back cue, cue/play stutter, needle search), and no software-only
+help unless enabled (no on-screen sync, no stems, optional beat sync). The
+controller's jog, tempo and pads drive it; a short guided checklist teaches
+the workflow (browse, load, cue, beatmatch by ear). Mixer stays as in Perform.
+
+### 10.3b Out of scope
+
+Streaming services, cloud, DVS, video.
+
+### 10.5 DMX lighting (owner requirement 2026-11-06)
+
+A full DMX lighting controller, first as its own tab (LIGHTING) next to
+Prepare / Perform, later also as a split view inside Perform or a separate
+window (detachable, second screen).
+
+- **Outputs:** USB-DMX interfaces (Enttec Open DMX /
+  DMX USB Pro and compatibles), Art-Net and sACN on the local network.
+  Several universes.
+- **Fixtures:** a fixture library in the Open Fixture Library format
+  (import from the OFL JSON files, plus user-defined fixtures), patching
+  with addresses and modes, groups (e.g. all moving heads left), and the
+  fixture types DJs use: moving heads (pan / tilt / fine, gobo, prism,
+  zoom, focus), LED bars and pixel bars, PARs, wash lights, strobes,
+  lasers (DMX), fog / hazer, blinders, dimmers.
+- **Automatic mode:** the show follows the music without any input —
+  beat- and bar-locked chases from the master deck's grid, scene choice
+  from the current phrase (intro, up, chorus/drop, down, outro), energy and
+  the three-band waveform, colours that fit the track (from its colour or
+  key / energy mapping), and **smooth transitions that follow the mix**
+  (crossfader / channel levels blend the scenes of the outgoing and the
+  incoming track; a drop in the incoming track triggers the drop look).
+  Uses phrase analysis ahead of time, so builds and drops are anticipated.
+- **Easy manual mode:** big scene pads (colour, intensity, strobe,
+  blackout, movement presets, fog burst), master dimmer and speed,
+  tap / sync to the master BPM; usable from the controller pads (a
+  "lighting" pad mode) and the touch screen in kiosk.
+- **Pro mode:** fixture patch editor, programmer with per-attribute
+  control (colour pickers, pan/tilt XY pad, beam), an effects engine
+  (sine / saw / square / random on any attribute, phase spread across a
+  group, beat-synced), cue stacks and chases, per-track or per-phrase
+  lighting cues stored with the track, timeline preview, and full MIDI mapping.
+- Real-time rules: DMX output runs on its own thread at a steady frame
+  rate (≥ 40 Hz), never on the audio thread; the engine publishes beat /
+  phrase / level data to it lock-free.
+- Verification: offline tests render the DMX frames for a recorded mix and
+  assert beat alignment, scene changes at phrase boundaries and smooth
+  crossfades; protocol tests for Art-Net / sACN / Enttec packets; a
+  virtual visualiser view (2D stage plot) shows the output without
+  hardware.
+
+### 10.4 Audio I/O
+
+- macOS: CoreAudio.
+- Raspberry Pi (Lite profile): ALSA directly on the controller's hardware
+  device, no sound server.
+- Linux desktop: PipeWire (preferred) or JACK; ALSA as fallback.
+- Sample rates 44.1/48 kHz; device buffer configurable.
+
+## 11. Recording
+
+- REC is always one click away in the top bar (and on the controller); a
+  recording panel shows level, elapsed time, file size and the tracklist
+  as it grows.
+- Records the master output of the engine.
+- Formats: WAV or FLAC (lossless), optionally MP3 in addition.
+- One-button start/stop in the UI and mappable to the controller.
+- Optional automatic start/stop by silence detection.
+- Automatic tracklist with timestamps (from the engine's "audible track"
+  logic): written as `.cue` and as plain text formatted for Mixcloud/SoundCloud.
+- Optional split into per-track files at tracklist boundaries.
+- Recordings appear in a dedicated library section with their tracklists.
+
+## 12. Design and UX
+
+- **Familiar layout** (owner decision 2026-11-06): regions, control order
+  inside decks, mixer, FX and browser, panel toggles and flows (load,
+  browse, record, export) follow the conventions DJs know from hardware
+  players, mixers and established DJ software, so an experienced DJ is at
+  home instantly. `tests/parity/views.toml` defines the required views and
+  elements; deviations need a documented reason.
+- Visual language is OpenDJDecks' own (DESIGN.md): charcoal ground, bone
+  legends, emission-line accents, one colour per deck; no third-party
+  assets, icons or trade dress.
+- One grid: flat panes separated by shared 1px rules that line up across the
+  window; draggable splitters (double-click resets) whose sizes persist.
+- Every state (sync status, analysis, separation, recording) is visible at
+  a glance; no modal dialogs during performance; keyboard shortcuts for all
+  Prepare actions; touch targets ≥ 9 mm in kiosk.
+- Accessibility: scalable UI, colour-blind-safe palette, high-contrast
+  option, text contrast ≥ 4.5:1.
+
+### 12.1 Beatgrid visibility (owner requirement 2026-11-06)
+
+- Every zoomed waveform (deck lanes, Prepare player) draws the beatgrid as
+  full-height lines behind the waveform: beats as thin lines, bar starts
+  (downbeats) clearly brighter with a marker at the top, phrase starts
+  (every 16 bars or the analysed phrases) strongest. The grid stays legible
+  over loud passages and in the colour-blind and high-contrast modes.
+- Overviews show bar ticks every 16 bars; the Prepare player shows the bar
+  number at each downbeat while editing the grid.
+- Checked by renderer tests (line positions within ±1 px of the grid) and
+  the view goldens (§16.3).
+
+### 12.2 Preferences and keyboard control (owner requirement 2026-11-06)
+
+- The settings window opens with the platform's native shortcut (⌘, on
+  macOS, Ctrl+, on Linux and Windows) and from a gear button in the top bar; sections
+  Audio, View, Analysis, Controller, Keyboard, Recording,
+  Advanced. Settings persist; CLI flags only override.
+- **The whole application is controllable by keyboard with configurable
+  shortcuts.** Every user action is a command in one registry with an id,
+  a default binding per platform and optional user bindings; the Keyboard
+  page lists all commands (searchable), records a new binding by key
+  press, detects conflicts, resets one or all, and imports / exports the
+  keymap as TOML.
+- Checked by tests: every registered command has a default binding, no
+  default conflicts per platform, user overrides round-trip, and the
+  Prepare command table is 100 % reachable by keyboard (§16.4).
+
+### 12.3 Interaction details (owner requirements 2026-11-06)
+
+- **Tooltips** on every button, toggle, knob and pad: what it does and its
+  current keyboard shortcut from the keymap, after a short hover delay.
+- **Waveform zoom:** the mouse wheel / trackpad scroll on any zoomed
+  waveform changes its time span (and so the grid spacing), as in
+  is common in DJ software; per-deck zoom with reset; zoom keys in the keymap.
+- **Smooth scrolling:** zoomed waveforms move at the display refresh rate
+  without stutter: the playhead position is interpolated between engine
+  updates and the waveform is drawn from pre-rendered tiles that are only
+  translated per frame.
+- **Responsive window:** the window can be resized freely down to 800 × 480;
+  decks switch to the compact layout, the mixer collapses and browser
+  columns hide by priority as space shrinks — nothing clips or overlaps.
+- **Appearance:** dark, light and "follow system" modes, switchable in
+  Preferences and the top bar; the emission-line identity holds in both
+  (light mode: paper ground, ink legends, the same wavelengths darkened for
+  contrast).
+
+## 13. Performance targets
+
+| Metric | Desktop (Apple Silicon) | Raspberry Pi 4 (Lite) |
+|---|---|---|
+| Cold start to usable UI | ≤ 2 s | ≤ 6 s (from app start) |
+| Library search, 50,000 tracks | ≤ 30 ms | ≤ 150 ms |
+| Track load to playable | ≤ 150 ms | ≤ 500 ms |
+| Round-trip audio latency target | ≤ 10 ms | ≤ 15 ms |
+| Audio dropouts, 1 h, 4 decks + FX + recording | 0 | 0 |
+| Cue edit → visible on stick (stick connected) | ≤ 5 s | — |
+| UI frame rate during playback | display rate | ≥ 30 fps |
+
+## 14. Packaging and CI
+
+- GitHub Actions: build and test on macOS (arm64, x86_64), Linux (x86_64,
+  aarch64).
+- Artifacts: `.dmg` (signed and notarised once a Developer ID exists),
+  AppImage, Flatpak, Raspberry Pi SD image (Raspberry Pi OS Lite 64-bit +
+  kiosk service), `od-cli` binaries.
+- Tests: unit tests per crate, format golden tests, engine offline-render
+  tests (bit-exact where possible), mapping tests from recorded MIDI streams,
+  UI smoke tests.
+
+### 14.0 Names
+
+The product is **OpenDJDecks** (<https://opendjdecks.de>, `nurkert/OpenDJDecks`).
+
+| What | Name |
+|---|---|
+| Binaries | `opendjdecks`, `opendjdecks-mcp`, `od-cli` |
+| App id (macOS bundle id, Linux `.desktop` file / icon, Wayland `app_id`, X11 `WM_CLASS`, Flatpak, AppStream) | `de.opendjdecks.OpenDJDecks` |
+| macOS bundle | `OpenDJDecks.app` |
+| Debian package | `opendjdecks` |
+| Release files | `OpenDJDecks-<v>-macos-<arch>.dmg`, `OpenDJDecks-<v>-<arch>.AppImage`, `OpenDJDecks-<v>-windows-x86_64.zip`, `opendjdecks_<v>_<arch>.deb`, `opendjdecks-<v>-linux-<arch>.tar.gz`, `opendjdecks-pi-<v>.tar.gz` |
+| Data directory | macOS `~/Library/Application Support/OpenDJDecks`, Linux `$XDG_DATA_HOME/opendjdecks`, Windows `%LOCALAPPDATA%\OpenDJDecks` |
+
+### 14.1 Updates
+
+- On start (and daily while running) the app checks the GitHub releases of
+  the project for a newer version (semver, pre-releases only when opted
+  in). Only the public releases API is contacted; no identifiers are sent.
+  The check can be switched off in Preferences; it never runs in Perform
+  while audio is playing and never interrupts a performance.
+- When an update exists, a non-modal notice offers **Install now**,
+  **Release notes** and **Later / skip this version**.
+- Install: download the matching asset, verify it against the release's
+  `SHA256SUMS`, then replace the app and restart — macOS: the `.app`
+  bundle; Linux AppImage: the AppImage file; `.deb`: download and hand to
+  the system installer (pkexec / apt) or, when that is not possible,
+  open the release page. A failed or interrupted update leaves the
+  current version working.
+
+## 15. Milestones and acceptance criteria
+
+### M1 — Prepare
+
+- Workspace, CI, design system and Prepare UI.
+- Library with tags, playlists, folders, smart playlists, sets, undo,
+  backups, consolidate, relocate.
+- Analysis (BPM, grid, key, waveform, phrase, loudness) and grid/cue editor.
+- One-time import of library XML files.
+- Device registry and automatic incremental sync in the OpenDJDecks format,
+  safe eject.
+
+Accepted when: a library XML file imports with cues and grids intact; editing
+a hot cue with the stick connected updates the stick automatically within 5 s with visible
+status; all of this runs on macOS and Linux.
+
+### M2 — Perform
+
+- Audio engine, Perform UI (2 and 4 decks), controller mappings with LED
+  feedback, recording with tracklists.
+
+Accepted when: a 1-hour 4-deck session on the MacBook with a four-deck controller has no
+audio dropouts; every control in the mapping coverage list works
+including LEDs; a recording produces a correct `.cue` tracklist.
+
+### M3 — Raspberry Pi standalone
+
+- Lite profile, linuxkms kiosk, controller-only browsing, SD image.
+
+Accepted when: Pi 4 and Pi 5 boot into OpenDJDecks, play a stick in OpenDJDecks
+format with a four-deck controller for 1 hour with 4 decks without dropouts at ≥ 30 fps.
+
+### M5 — Feature completeness (v2)
+
+In phases, tracked in `docs/feature-matrix.md`:
+
+1. **P1 everyday:** UI architecture rebuild (§4.1a), Explorer, cue changes
+   from performing persisted, track tag editing, playlist/set reordering
+   and drag and drop, full cue / loop / grid editor, Tempo FX and Channel FX
+   panels and controller wiring, all mapped controller inputs working,
+   Preferences window.
+2. **P2 depth:** hot cue banks, pad modes (Hold FX, Keyboard, Key Shift,
+   Slicer, Beat Loop), Exit FX, sampler panel and sequencer, histories,
+   Tags, similar tracks / track suggestion, key shift / key sync,
+   recording panel with live tracklist and auto split.
+3. **P3 polish:** layouts and panel toggles, waveform options, column
+   customisation, matching filters, booth output, censor, saved loops.
+
+Accepted when every non-out-of-scope row of the feature matrix is DONE.
+
+### M6 — Later
+
+LAN sync between desktop and Pi, more controllers.
+
+## 16. Verification: feature completeness and quality goals (binding acceptance)
+
+The goal of this specification is reached only when the automated suite
+below is green on CI (macOS and Linux). "Done" is never asserted by hand.
+Everything lives under `tests/parity/` and runs with
+`cargo test -p od-parity` (plus the UI suites in `od-ui`).
+
+### 16.1 Feature completeness
+
+- `tests/parity/features.toml` is the machine-readable source of
+  `docs/feature-matrix.md`: one entry per feature of the professional
+  feature set (§1)
+  with `id`, `area`, `scope` (`in` or `out` with the §1 exclusion that
+  applies), `status` and `tests` (the names of the automated tests that
+  prove it). The markdown matrix is generated from it.
+- The completeness test fails when an in-scope feature is not `done`, when a
+  `done` feature lists no test, when a listed test does not exist or did
+  not run, or when an exclusion is used that §1 does not name.
+- Features found missing later are added as entries; the inventory is
+  reviewed against current DJ practice each release.
+
+### 16.2 Functional tests per feature
+
+Every in-scope feature has at least one automated test at the lowest level
+that proves its behaviour, and one end-to-end test where a user can reach it:
+
+| Layer | How |
+|---|---|
+| Engine | offline renders with measured assertions (timing, level, pitch, phase), allocation guard on the audio thread |
+| Library / formats / sync | golden files, round trips |
+| Analysis | reference tracks with known BPM, key, phrases, loudness (tolerances stated) |
+| Controller | recorded MIDI streams → expected actions and LED feedback |
+| UI | Slint testing backend: the real window is driven headlessly (clicks, drags, keys) and the resulting engine/library state is asserted |
+
+### 16.3 View completeness
+
+- `tests/parity/views.toml` lists every view, layout and panel of the
+  application — Performance 2/4 decks
+  (horizontal, vertical), Browse, Export 1 player / 2 players / dual /
+  simple / full browser, FX panel, Sampler panel, Mix Preview, Recording,
+  browser sources (Collection, Playlists, Similar, Explorer, Devices,
+  Histories, Recordings, Tag list, Info panel, sub-browser), Preferences
+  sections, context menus — each with its **required elements** (every
+  control and readout the view must show) and their **order** within
+  the region.
+- The view test opens each view headlessly at 1440×900, 1280×800 and
+  800×480 (kiosk) and asserts that every required element exists (by
+  accessible label), is visible, unclipped, not overlapping a sibling, in
+  the required order and region, and at least 24 px (44 px in kiosk)
+  for touch targets.
+- Layout invariants are checked on every view: shared rules line up
+  across panes (±1 px), no text is elided where the full text fits, text
+  contrast ≥ 4.5:1 (large ≥ 3:1), no horizontal scrolling of the window.
+- Golden screenshots per view and size are rendered with the software
+  renderer and compared to approved images; a visual change needs an
+  updated, reviewed golden.
+
+### 16.4 Quality goals beyond the usual (measured)
+
+OpenDJDecks must meet the usual professional standard everywhere and go
+beyond it on these, each with an automated check:
+
+| Criterion | Target / check |
+|---|---|
+| Steps to common tasks | a flow table (`tests/parity/flows.toml`) states, per task, the usual step count in DJ software and ours; ours must be ≤ and is driven by a UI test (load from Explorer, set and name a hot cue, add to playlist, sync a stick, start a recording, separate stems) |
+| Stick sync | edits reach a connected stick automatically, status always visible; no manual export step |
+| Undo | every library edit undoable (test per edit kind) |
+| Keyboard | 100 % of Prepare actions reachable by keyboard (generated check over the command table) |
+| Responsiveness | cold start, search, track load within §13 targets (benchmarks on CI) |
+| Robustness | 1 h soak without dropouts; no modal dialog during performance (UI test asserts no dialog opens in Perform) |
+| Accessibility | colour-blind palette, high contrast, scaling 0.75–2.0 without clipping (view test at each scale) |
+| Openness | all data in documented open formats; no account, no network for any feature (test with network disabled) |
+| Platforms | macOS, Linux, Windows, Raspberry Pi kiosk run the same suites |
+
+### 16.5 Definition of done
+
+The goal is reached when, on CI: the completeness test reports zero
+in-scope gaps, every functional test passes, every view passes its
+completeness, invariant and golden checks at every size, every
+quality-goal check passes, and the hardware-only items of §15 (controllers,
+Raspberry Pi) are either verified on hardware or explicitly listed
+as awaiting hardware with their simulated tests passing.
+
+## 17. Open items and risks
+
+| Item | Plan |
+|---|---|
+| Controller USB IDs, MIDI maps and audio layouts | Verify with `system_profiler` / `lsusb -v` / `aplay -l` and the MIDI monitor with the device connected |
+| Rubber Band CPU cost on Pi 4 with 4 decks | Benchmark early in M2; faster engine options in Lite profile |
+| GPU waveform rendering on Pi 4 (V3D, GLES 3.1) | Prototype early in M1 to validate Slint + custom rendering |

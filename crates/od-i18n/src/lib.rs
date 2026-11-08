@@ -1,0 +1,1206 @@
+//! Translations for text produced in Rust code (status messages, states).
+//! Text in the Slint UI is translated with Slint's own gettext bundles.
+//!
+//! Messages are looked up by their English text; `{}` placeholders are
+//! filled in order by [`trf`].
+
+use std::sync::atomic::{AtomicU8, Ordering};
+
+static LANG: AtomicU8 = AtomicU8::new(0);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Language {
+    English,
+    German,
+}
+
+pub fn set_language(lang: Language) {
+    LANG.store(lang as u8, Ordering::Relaxed);
+}
+
+pub fn language() -> Language {
+    if LANG.load(Ordering::Relaxed) == 1 {
+        Language::German
+    } else {
+        Language::English
+    }
+}
+
+const DE: &[(&str, &str)] = &[
+    (
+        "Export the files to a folder",
+        "Dateien in einen Ordner exportieren",
+    ),
+    (
+        "Analyse the track first: there is no beatgrid to lock",
+        "Zuerst den Track analysieren: es gibt kein Beatgrid zum Sperren",
+    ),
+    ("Analysis locked", "Analyse gesperrt"),
+    ("Analysis unlocked", "Analyse entsperrt"),
+    (
+        "Tags reloaded from the files",
+        "Tags neu aus den Dateien gelesen",
+    ),
+    (
+        "Exported {} file(s) to {}",
+        "{} Datei(en) nach {} exportiert",
+    ),
+    ("Play count reset", "Wiedergabezähler zurückgesetzt"),
+    (
+        "Memory cues made hot cues",
+        "Memory Cues zu Hot Cues gemacht",
+    ),
+    ("Hot cues sorted by time", "Hot Cues nach Zeit sortiert"),
+    ("Nothing to change", "Nichts zu ändern"),
+    ("Already in the collection", "Schon in der Sammlung"),
+    ("Syncing sticks…", "Sticks werden synchronisiert…"),
+    (
+        "Sequence stored on Pattern Recall pad {}",
+        "Sequenz auf Pattern-Recall-Pad {} gespeichert",
+    ),
+    (
+        "Every Pattern Recall pad holds a sequence: clear one first",
+        "Jedes Pattern-Recall-Pad hält eine Sequenz: zuerst eines leeren",
+    ),
+    ("All tracks", "Alle Tracks"),
+    ("{} TRACKS  ·  {}", "{} TRACKS  ·  {}"),
+    ("Not connected", "Nicht verbunden"),
+    ("In sync", "Synchron"),
+    (
+        "No moved files found in that folder",
+        "In diesem Ordner wurden keine verschobenen Dateien gefunden",
+    ),
+    (
+        "Found {} moved file(s)",
+        "{} verschobene Datei(en) gefunden",
+    ),
+    (
+        "Split into {} track files next to the recording",
+        "In {} Track-Dateien neben der Aufnahme geteilt",
+    ),
+    ("Split failed: {}", "Teilen fehlgeschlagen: {}"),
+    (
+        "Tracks on a stick are read-only here — edit them in your library and the stick follows",
+        "Tracks auf einem Stick sind hier schreibgeschützt — bearbeite sie in deiner Bibliothek, der Stick folgt",
+    ),
+    ("In sync · {}", "Synchron · {}"),
+    ("Add tracks", "Tracks hinzufügen"),
+    ("Remove tracks", "Tracks entfernen"),
+    ("Reorder", "Neu ordnen"),
+    ("Edit cues", "Cues bearbeiten"),
+    ("Edit beatgrid", "Beatgrid bearbeiten"),
+    ("Edit key", "Tonart bearbeiten"),
+    ("Edit tags", "Tags bearbeiten"),
+    ("Rename", "Umbenennen"),
+    ("Move", "Verschieben"),
+    ("Delete", "Löschen"),
+    ("Edit transition note", "Übergangsnotiz bearbeiten"),
+    ("Edit backup tracks", "Ersatztracks bearbeiten"),
+    ("Edit smart rules", "Smart-Regeln bearbeiten"),
+    ("Edit set", "Set bearbeiten"),
+    ("Create playlist", "Playlist erstellen"),
+    ("Create set", "Set erstellen"),
+    ("Create folder", "Ordner erstellen"),
+    ("Create smart", "Smart-Liste erstellen"),
+    ("ANALYSIS", "ANALYSE"),
+    ("IMPORTED", "IMPORTIERT"),
+    ("MANUAL", "MANUELL"),
+    ("NONE", "KEINS"),
+    ("{} change waiting", "{} Änderung offen"),
+    ("{} changes waiting", "{} Änderungen offen"),
+    ("Copying {}", "Kopiere {}"),
+    ("Writing {} data", "Schreibe {}-Daten"),
+    ("Preparing", "Vorbereitung"),
+    ("{} FREE OF {}", "{} FREI VON {}"),
+    (
+        "Adding music: {} of {} files",
+        "Musik wird hinzugefügt: {} von {} Dateien",
+    ),
+    ("Added {} tracks", "{} Tracks hinzugefügt"),
+    (
+        "Added {} tracks, {} files could not be read",
+        "{} Tracks hinzugefügt, {} Dateien nicht lesbar",
+    ),
+    ("Analysis complete", "Analyse abgeschlossen"),
+    ("{} closed: not enough room", "{} geschlossen: zu wenig Platz"),
+    ("ANALYSING {}/{}", "ANALYSE {}/{}"),
+    (
+        "{} synced: {} copied, {} updated, {} removed{}",
+        "{} synchronisiert: {} kopiert, {} aktualisiert, {} entfernt{}",
+    ),
+    ("Sync failed: {}", "Sync fehlgeschlagen: {}"),
+    ("{} can be removed safely", "{} kann sicher entfernt werden"),
+    ("Eject failed: {}", "Auswerfen fehlgeschlagen: {}"),
+    ("Added {} track(s) to {}", "{} Track(s) zu {} hinzugefügt"),
+    (
+        "Created — click the title to rename it",
+        "Erstellt — Titel anklicken zum Umbenennen",
+    ),
+    ("Renamed", "Umbenannt"),
+    (
+        "Deleted — ⌘Z brings it back",
+        "Gelöscht — ⌘Z holt es zurück",
+    ),
+    ("Rules updated", "Regeln aktualisiert"),
+    ("Hot cue {} set", "Hot Cue {} gesetzt"),
+    ("Hot cue removed", "Hot Cue entfernt"),
+    ("Memory cue added", "Memory Cue hinzugefügt"),
+    ("Queued for analysis", "Zur Analyse eingereiht"),
+    ("Transition note saved", "Übergangsnotiz gespeichert"),
+    ("Rebuilding stick…", "Stick wird neu geschrieben…"),
+    ("Ejecting…", "Wird ausgeworfen…"),
+    (
+        "Stick forgotten. Its files were left untouched.",
+        "Stick vergessen. Seine Dateien bleiben unverändert.",
+    ),
+    (
+        "Select the playlist, set or folder that should go on the stick first",
+        "Wähle zuerst die Playlist, das Set oder den Ordner für den Stick",
+    ),
+    (
+        "Registering {} with {} — the first sync starts now",
+        "{} wird mit {} registriert — der erste Sync startet jetzt",
+    ),
+    (
+        "Removed {} track(s) — ⌘Z to undo",
+        "{} Track(s) entfernt — ⌘Z macht es rückgängig",
+    ),
+    ("Undid: {}", "Rückgängig: {}"),
+    ("Redid: {}", "Wiederholt: {}"),
+    ("Nothing to undo", "Nichts rückgängig zu machen"),
+    ("Nothing to redo", "Nichts zu wiederholen"),
+    ("Change taken over", "Änderung übernommen"),
+    (
+        "Kept the library version",
+        "Version der Bibliothek behalten",
+    ),
+    (
+        "This track has no beatgrid yet — analyse it first",
+        "Dieser Track hat noch kein Beatgrid — zuerst analysieren",
+    ),
+    ("Adding music…", "Musik wird hinzugefügt…"),
+    ("Controller connected: {}", "Controller verbunden: {}"),
+    ("Controller disconnected: {}", "Controller getrennt: {}"),
+    ("Loaded {} on deck {}", "{} auf Deck {} geladen"),
+    ("Deck {}: {} BPM", "Deck {}: {} BPM"),
+    ("Type a tempo the track can reach (half to double its BPM)", "Ein Tempo eingeben, das der Track erreichen kann (halbe bis doppelte BPM)"),
+    ("Could not load {}", "{} konnte nicht geladen werden"),
+    ("Stems ready on deck {}", "Stems auf Deck {} bereit"),
+    (
+        "Downloading the stem model … {} %",
+        "Stem-Modell wird geladen … {} %",
+    ),
+    (
+        "OpenDJDecks {} is available",
+        "OpenDJDecks {} ist verfügbar",
+    ),
+    (" (pre-release)", " (Vorabversion)"),
+    (
+        "Installing OpenDJDecks {} …",
+        "OpenDJDecks {} wird installiert …",
+    ),
+    (
+        "Downloading OpenDJDecks {} — {} %",
+        "OpenDJDecks {} wird geladen — {} %",
+    ),
+    (
+        "Downloading OpenDJDecks {} …",
+        "OpenDJDecks {} wird geladen …",
+    ),
+    (
+        "OpenDJDecks {} is ready — restart to finish",
+        "OpenDJDecks {} ist bereit — zum Abschließen neu starten",
+    ),
+    (
+        "Update failed: {} — this version keeps working",
+        "Update fehlgeschlagen: {} — diese Version läuft weiter",
+    ),
+    (
+        "OpenDJDecks {} is up to date",
+        "OpenDJDecks {} ist aktuell",
+    ),
+    (
+        "Could not check for updates: {}",
+        "Suche nach Updates fehlgeschlagen: {}",
+    ),
+    ("Checking for updates …", "Suche nach Updates …"),
+    (
+        "An update is already in progress",
+        "Ein Update läuft bereits",
+    ),
+    (
+        "Version {} skipped — newer versions are offered again",
+        "Version {} übersprungen — neuere Versionen werden wieder angeboten",
+    ),
+    (
+        "The update is installed when you restart",
+        "Das Update wird beim Neustart installiert",
+    ),
+    (
+        "OpenDJDecks {} is verified and open — drag it to Applications, then restart",
+        "OpenDJDecks {} ist geprüft und geöffnet — in Programme ziehen, dann neu starten",
+    ),
+    (
+        "This copy cannot update itself — download OpenDJDecks {} from the release page",
+        "Diese Installation kann sich nicht selbst aktualisieren — OpenDJDecks {} von der Release-Seite laden",
+    ),
+    (
+        "Version {} · up to date, checked {}",
+        "Version {} · aktuell, geprüft {}",
+    ),
+    ("Version {} · {} is available", "Version {} · {} ist verfügbar"),
+    ("Version {} · not checked yet", "Version {} · noch nicht geprüft"),
+    ("Checking …", "Prüfe …"),
+    ("never", "nie"),
+    ("just now", "gerade eben"),
+    ("{} min ago", "vor {} Min."),
+    ("{} h ago", "vor {} Std."),
+    ("{} days ago", "vor {} Tagen"),
+    ("Check for updates", "Nach Updates suchen"),
+    ("Rating set", "Bewertung gesetzt"),
+    ("Tags saved", "Tags gespeichert"),
+    (
+        "Recorded as WAV, then encoded when the recording stops.",
+        "Als WAV aufgenommen und nach dem Stopp kodiert.",
+    ),
+    ("Colour set", "Farbe gesetzt"),
+    (
+        "Stem separation failed: {}",
+        "Stem-Trennung fehlgeschlagen: {}",
+    ),
+    (
+        "Recording saved: {} ({} tracks)",
+        "Aufnahme gespeichert: {} ({} Tracks)",
+    ),
+    (
+        "Audio starts when you load a track",
+        "Audio startet, sobald du einen Track lädst",
+    ),
+    (
+        "Adding {} to the collection…",
+        "{} wird zur Sammlung hinzugefügt…",
+    ),
+    (
+        "Added {} to the collection — analysing",
+        "{} zur Sammlung hinzugefügt — wird analysiert",
+    ),
+    (
+        "Could not add {}: {}",
+        "{} konnte nicht hinzugefügt werden: {}",
+    ),
+    (
+        "Add a folder to the Explorer",
+        "Ordner zum Explorer hinzufügen",
+    ),
+    // Preferences and keyboard (SPEC §12.2).
+    ("Memory cue removed", "Memory Cue entfernt"),
+    ("Recording failed: {}", "Aufnahme fehlgeschlagen: {}"),
+    (
+        "Recording could not start: {}",
+        "Aufnahme konnte nicht starten: {}",
+    ),
+    ("Recording saved as {}", "Aufnahme gespeichert als {}"),
+    (
+        "Converting the recording failed — the WAV file is kept",
+        "Umwandeln der Aufnahme fehlgeschlagen — die WAV-Datei bleibt",
+    ),
+    ("Backup saved: {}", "Backup gespeichert: {}"),
+    (
+        "Library location saved — applies after restart",
+        "Speicherort der Bibliothek gespeichert — gilt nach Neustart",
+    ),
+    (
+        "All keys are back to their defaults",
+        "Alle Tasten sind wieder auf Standard",
+    ),
+    ("AUTO", "AUTO"),
+    ("Automatic", "Automatisch"),
+    ("DEVICE", "GERÄT"),
+    ("Controller mapping file", "Controller-Mapping-Datei"),
+    ("Export keymap", "Tastenbelegung exportieren"),
+    ("Import keymap", "Tastenbelegung importieren"),
+    ("Folder for recordings", "Ordner für Aufnahmen"),
+    (
+        "Library file (library.sqlite)",
+        "Bibliotheksdatei (library.sqlite)",
+    ),
+    (
+        "Needs ffmpeg on the PATH; without it the recording stays a WAV file.",
+        "Braucht ffmpeg im PATH; ohne bleibt die Aufnahme eine WAV-Datei.",
+    ),
+    (
+        "Recorded as WAV, then converted with ffmpeg when the recording stops.",
+        "Wird als WAV aufgenommen und beim Stoppen mit ffmpeg umgewandelt.",
+    ),
+    ("No backups yet", "Noch keine Backups"),
+    ("{} backups · newest {}", "{} Backups · neuestes {}"),
+    (
+        "OPEN WITH ⌘,  ·  CLOSE WITH ESC OR ⌘W",
+        "ÖFFNEN MIT ⌘,  ·  SCHLIESSEN MIT ESC ODER ⌘W",
+    ),
+    (
+        "OPEN WITH CTRL+,  ·  CLOSE WITH ESC OR CTRL+W",
+        "ÖFFNEN MIT STRG+,  ·  SCHLIESSEN MIT ESC ODER STRG+W",
+    ),
+    ("PREPARE", "PREPARE"),
+    ("PERFORM", "PERFORM"),
+    ("{} (not connected)", "{} (nicht verbunden)"),
+    ("{} — connected", "{} — verbunden"),
+    ("MIDI input: {}", "MIDI-Eingang: {}"),
+    ("{} now on {}", "{} jetzt auf {}"),
+    (
+        "{} is already used by {}. Replace it there?",
+        "{} ist schon belegt mit {}. Dort ersetzen?",
+    ),
+    ("{} has no key now", "{} hat jetzt keine Taste"),
+    ("{} is back to its default", "{} ist wieder auf Standard"),
+    (
+        "Press the new keys for {}",
+        "Drücke die neuen Tasten für {}",
+    ),
+    ("Keymap exported to {}", "Tastenbelegung exportiert nach {}"),
+    ("Imported {} bindings", "{} Belegungen importiert"),
+    (
+        " · skipped {} unknown, {} invalid",
+        " · {} unbekannte, {} ungültige übersprungen",
+    ),
+    ("Not a keymap file: {}", "Keine Tastenbelegungs-Datei: {}"),
+    (
+        "Not imported: {} is used by both {} and {}",
+        "Nicht importiert: {} ist doppelt belegt mit {} und {}",
+    ),
+    ("Deck {}: {}", "Deck {}: {}"),
+    ("Deck {}", "Deck {}"),
+    ("General", "Allgemein"),
+    ("Browser", "Browser"),
+    ("Prepare player", "Prepare-Player"),
+    ("Sampler", "Sampler"),
+    // Keyboard actions.
+    ("Open preferences", "Einstellungen öffnen"),
+    ("Undo", "Rückgängig"),
+    ("Redo", "Wiederholen"),
+    ("Switch to Prepare", "Zu Prepare wechseln"),
+    ("Switch to Perform", "Zu Perform wechseln"),
+    ("Switch to Lighting", "Zu Lighting wechseln"),
+    ("Club mode on / off", "Club-Modus an / aus"),
+    ("Load tracks on two decks", "Tracks auf zwei Decks laden"),
+    (
+        "Set a cue point while paused",
+        "Im Pausenzustand einen Cue-Punkt setzen",
+    ),
+    ("Start a deck with PLAY", "Ein Deck mit PLAY starten"),
+    (
+        "Match the other deck's tempo by ear",
+        "Das Tempo des anderen Decks nach Gehör angleichen",
+    ),
+    (
+        "Start it on the one and keep the beats together",
+        "Auf der Eins starten und die Beats zusammenhalten",
+    ),
+    (
+        "Club mode: sync is off, beatmatch by ear",
+        "Club-Modus: Sync ist aus, Beatmatching nach Gehör",
+    ),
+    ("Club mode off", "Club-Modus aus"),
+    ("Audio is not running", "Audio läuft nicht"),
+    (
+        "Show / hide the lighting strip",
+        "Lichtleiste ein- / ausblenden",
+    ),
+    ("Browse layout on / off", "Browse-Layout an / aus"),
+    (
+        "Vertical waveforms on / off",
+        "Senkrechte Wellenformen an / aus",
+    ),
+    (
+        "Fixture file (Open Fixture Library)",
+        "Scheinwerfer-Datei (Open Fixture Library)",
+    ),
+    ("TRACKS", "TRACKS"),
+    ("PLAYLISTS", "PLAYLISTS"),
+    ("Playlists", "Playlists"),
+    ("SOURCE", "QUELLE"),
+    ("Show the library", "Bibliothek zeigen"),
+    ("Show USB sticks", "USB-Sticks zeigen"),
+    ("Show recordings", "Aufnahmen zeigen"),
+    ("Start / stop recording", "Aufnahme starten / stoppen"),
+    ("Sync USB sticks now", "USB-Sticks jetzt synchronisieren"),
+    ("Eject the selected stick", "Gewählten Stick auswerfen"),
+    ("Quantize on / off", "Quantisierung an / aus"),
+    ("Search", "Suchen"),
+    ("Previous track", "Vorheriger Track"),
+    ("Next track", "Nächster Track"),
+    ("Previous list", "Vorherige Liste"),
+    ("Next list", "Nächste Liste"),
+    ("Select all tracks", "Alle Tracks auswählen"),
+    (
+        "Load the selected track (free deck)",
+        "Gewählten Track laden (freies Deck)",
+    ),
+    (
+        "Load the selected track to deck {}",
+        "Gewählten Track auf Deck {} laden",
+    ),
+    (
+        "Remove the selected tracks from the list",
+        "Gewählte Tracks aus der Liste entfernen",
+    ),
+    ("New playlist", "Neue Playlist"),
+    ("New set", "Neues Set"),
+    ("New folder", "Neuer Ordner"),
+    ("New smart list", "Neue Smart-Liste"),
+    ("Delete the open list", "Offene Liste löschen"),
+    ("Add a music folder", "Musikordner hinzufügen"),
+    ("Find moved files", "Verschobene Dateien finden"),
+    ("Preview play / pause", "Vorhören Play / Pause"),
+    ("Back to the cue point", "Zurück zum Cue-Punkt"),
+    ("Hot cue {}", "Hot Cue {}"),
+    ("Clear hot cue {}", "Hot Cue {} löschen"),
+    ("Add a memory cue", "Memory Cue setzen"),
+    (
+        "Delete the memory cue at the cursor",
+        "Memory Cue am Cursor löschen",
+    ),
+    ("Previous cue", "Vorheriger Cue"),
+    ("Next cue", "Nächster Cue"),
+    ("Cursor back (fine)", "Cursor zurück (fein)"),
+    ("Cursor forward (fine)", "Cursor vor (fein)"),
+    ("Cursor back 2 s", "Cursor 2 s zurück"),
+    ("Cursor forward 2 s", "Cursor 2 s vor"),
+    ("Beatgrid 10 ms earlier", "Beatgrid 10 ms früher"),
+    ("Beatgrid 10 ms later", "Beatgrid 10 ms später"),
+    ("Beatgrid double tempo", "Beatgrid doppeltes Tempo"),
+    ("Beatgrid half tempo", "Beatgrid halbes Tempo"),
+    (
+        "Set the downbeat at the cursor",
+        "Downbeat am Cursor setzen",
+    ),
+    (
+        "Lock / unlock the beatgrid",
+        "Beatgrid sperren / entsperren",
+    ),
+    ("Analyse the track", "Track analysieren"),
+    ("Play / pause", "Play / Pause"),
+    ("Cue", "Cue"),
+    ("Jump to the track start", "Zum Trackanfang springen"),
+    ("Beat sync", "Beat Sync"),
+    ("Sync master", "Sync-Master"),
+    ("Master tempo (key lock)", "Master Tempo (Key Lock)"),
+    ("Pitch bend + (hold)", "Pitch Bend + (halten)"),
+    ("Pitch bend − (hold)", "Pitch Bend − (halten)"),
+    ("Tempo up", "Tempo hoch"),
+    ("Tempo down", "Tempo runter"),
+    ("Beat jump forward", "Beat Jump vor"),
+    ("Beat jump back", "Beat Jump zurück"),
+    ("Loop in", "Loop In"),
+    ("Loop out", "Loop Out"),
+    ("Exit / reloop", "Exit / Reloop"),
+    ("Auto beat loop", "Auto Beat Loop"),
+    ("Halve the loop", "Loop halbieren"),
+    ("Double the loop", "Loop verdoppeln"),
+    ("{}-beat loop", "{}-Beat-Loop"),
+    ("Next memory cue", "Nächster Memory Cue"),
+    ("Previous memory cue", "Vorheriger Memory Cue"),
+    ("Sampler slot {}", "Sampler-Slot {}"),
+    // Keymap: pad modes, key, effects, sampler (Perform panels).
+    ("Next pad mode", "Nächster Pad-Modus"),
+    ("Previous pad mode", "Vorheriger Pad-Modus"),
+    ("Next hot cue bank", "Nächste Hot-Cue-Bank"),
+    ("Key sync on / off", "Key Sync an / aus"),
+    ("Key shift up a semitone", "Tonart einen Halbton höher"),
+    ("Key shift down a semitone", "Tonart einen Halbton tiefer"),
+    ("Effects", "Effekte"),
+    (
+        "Show / hide the Tempo FX panel",
+        "Tempo-FX-Panel ein- / ausblenden",
+    ),
+    ("FX {} on / off", "FX {} an / aus"),
+    ("FX {}: next effect", "FX {}: nächster Effekt"),
+    ("FX {}: shorter beat", "FX {}: kürzerer Beat"),
+    ("FX {}: longer beat", "FX {}: längerer Beat"),
+    ("FX {}: tap the tempo", "FX {}: Tempo tappen"),
+    ("FX {}: vinyl brake (hold)", "FX {}: Vinyl Brake (halten)"),
+    ("FX {}: backspin (hold)", "FX {}: Backspin (halten)"),
+    ("FX {}: echo out (hold)", "FX {}: Echo Out (halten)"),
+    ("Channel FX: next", "Channel FX: nächster"),
+    ("Channel FX: previous", "Channel FX: vorheriger"),
+    (
+        "Show / hide the sampler panel",
+        "Sampler-Panel ein- / ausblenden",
+    ),
+    ("Previous sampler bank", "Vorherige Sampler-Bank"),
+    ("Next sampler bank", "Nächste Sampler-Bank"),
+    ("Start / stop the sequencer", "Sequencer starten / stoppen"),
+    ("Stop all samples", "Alle Samples stoppen"),
+    // Status messages of the Perform panels.
+    (
+        "Sample could not be loaded: {}",
+        "Sample konnte nicht geladen werden: {}",
+    ),
+    (
+        "Loaded {} into sampler slot {}",
+        "{} in Sampler-Slot {} geladen",
+    ),
+    (
+        "Select a track to load into the sampler",
+        "Wähle einen Track, der in den Sampler geladen werden soll",
+    ),
+    ("Loading {} into the sampler …", "Lade {} in den Sampler …"),
+    ("Memory cue deleted", "Memory Cue gelöscht"),
+    (
+        "The beatgrid is locked — unlock it in Prepare to tap the tempo",
+        "Das Beatgrid ist gesperrt — entsperre es in Prepare, um das Tempo zu tappen",
+    ),
+    ("Tapped tempo: {} BPM", "Getapptes Tempo: {} BPM"),
+    // Browser: columns, filter, Tags, tag list, similar tracks, histories.
+    ("PREVIEW", "VORSCHAU"),
+    ("ART", "COVER"),
+    ("TITLE", "TITEL"),
+    ("ARTIST", "INTERPRET"),
+    ("ALBUM", "ALBUM"),
+    ("GENRE", "GENRE"),
+    ("LABEL", "LABEL"),
+    ("COMMENT", "KOMMENTAR"),
+    ("TAGS", "TAGS"),
+    ("COLOUR", "FARBE"),
+    ("BPM", "BPM"),
+    ("KEY", "TONART"),
+    ("TIME", "ZEIT"),
+    ("YEAR", "JAHR"),
+    ("ADDED", "HINZUGEFÜGT"),
+    ("PLAYS", "GESPIELT"),
+    ("BITRATE", "BITRATE"),
+    ("RATING", "BEWERTUNG"),
+    ("Tag list", "Tag-Liste"),
+    ("Similar tracks", "Passende Tracks"),
+    ("Fits after {}", "Passt nach {}"),
+    ("MASTER", "MASTER"),
+    ("SELECTED", "AUSGEWÄHLT"),
+    ("Edit Tags", "Tags bearbeiten"),
+    (
+        "Select tracks to add them to the tag list",
+        "Wähle Tracks, um sie zur Tag-Liste hinzuzufügen",
+    ),
+    (
+        "Added {} track(s) to the tag list",
+        "{} Track(s) zur Tag-Liste hinzugefügt",
+    ),
+    (
+        "Saved the tag list as a playlist ({} tracks)",
+        "Tag-Liste als Playlist gespeichert ({} Tracks)",
+    ),
+    ("Tag list cleared", "Tag-Liste geleert"),
+    (
+        "Select tracks to tag them",
+        "Wähle Tracks, um sie zu taggen",
+    ),
+    ("Tags {} updated", "Tags {} aktualisiert"),
+    (
+        "Type a Tags as Category: Value, e.g. Mood: Peak",
+        "Gib einen Tags als Kategorie: Wert ein, z. B. Stimmung: Peak",
+    ),
+    (
+        "Sort the list by # to reorder it",
+        "Sortiere die Liste nach #, um sie neu zu ordnen",
+    ),
+    (
+        "Reordered — ⌘Z to undo",
+        "Neu geordnet — ⌘Z macht es rückgängig",
+    ),
+    ("Moved — ⌘Z to undo", "Verschoben — ⌘Z macht es rückgängig"),
+    (
+        "Add the selected tracks to the tag list",
+        "Ausgewählte Tracks zur Tag-Liste hinzufügen",
+    ),
+    (
+        "Show / hide the filter bar",
+        "Filterleiste ein- / ausblenden",
+    ),
+    (
+        "Prepare layout: player and browser",
+        "Prepare-Layout: Player und Browser",
+    ),
+    (
+        "Prepare layout: full browser",
+        "Prepare-Layout: ganzer Browser",
+    ),
+    ("Prepare layout: 2 players", "Prepare-Layout: 2 Player"),
+    ("Prepare layout: dual player", "Prepare-Layout: Dual-Player"),
+    (
+        "Prepare layout: simple player",
+        "Prepare-Layout: einfacher Player",
+    ),
+    (
+        "Show / hide the info panel",
+        "Info-Bereich ein- / ausblenden",
+    ),
+    (
+        "Show / hide the recording section",
+        "Aufnahmebereich ein- / ausblenden",
+    ),
+    ("Show / hide the mixer", "Mixer ein- / ausblenden"),
+    (
+        "Show / hide Mix Preview",
+        "Mix-Vorschau ein- / ausblenden",
+    ),
+    (
+        "Import a Music / iTunes library XML",
+        "Musik- / iTunes-Mediathek (XML) importieren",
+    ),
+    (
+        "Adding {} dropped file(s)…",
+        "{} abgelegte Datei(en) werden hinzugefügt …",
+    ),
+    (
+        "Import a Music / iTunes library",
+        "Musik- / iTunes-Mediathek importieren",
+    ),
+    (
+        "Imported {} tracks and {} playlists from the Music library",
+        "{} Tracks und {} Playlists aus der Musik-Mediathek importiert",
+    ),
+    (
+        "Music library import failed: {}",
+        "Import der Musik-Mediathek fehlgeschlagen: {}",
+    ),
+    (
+        "No audio files in what was dropped",
+        "Unter dem Abgelegten sind keine Audiodateien",
+    ),
+    ("{} · channel {} · {}", "{} · Kanal {} · {}"),
+    ("14-bit fader", "14-Bit-Fader"),
+    ("button", "Taste"),
+    ("encoder / jog", "Drehregler / Jog"),
+    ("knob / fader", "Regler / Fader"),
+    (
+        "Add the file to the collection first",
+        "Füge die Datei zuerst der Sammlung hinzu",
+    ),
+    (
+        "Load a track on the deck first",
+        "Lade zuerst einen Track auf das Deck",
+    ),
+    (
+        "Mix Preview: deck {} comes in",
+        "Mix-Vorschau: Deck {} steigt ein",
+    ),
+    ("Mix Preview on", "Mix-Vorschau an"),
+    ("Mix Preview off", "Mix-Vorschau aus"),
+    ("Reserved {} — {} waiting", "{} vorgemerkt — {} warten"),
+    ("Reserved track loads on deck {}", "Vorgemerkter Track lädt auf Deck {}"),
+    ("Reservations cleared", "Vormerkungen gelöscht"),
+    (
+        "Select tracks in your library to reserve them",
+        "Wähle Tracks in deiner Bibliothek, um sie vorzumerken",
+    ),
+    ("No free hot cue pad", "Kein freies Hot-Cue-Pad"),
+    (
+        "Select a track in the list first",
+        "Wähle zuerst einen Track in der Liste",
+    ),
+    (
+        "Tempo marker: {} BPM from the cursor",
+        "Tempomarker: {} BPM ab dem Cursor",
+    ),
+    (
+        "Control added to {} — used from the next start",
+        "Bedienelement zu {} hinzugefügt — gilt ab dem nächsten Start",
+    ),
+    ("Learn a control first", "Lerne zuerst ein Bedienelement"),
+    (
+        "No controller layer running — connect a controller and restart",
+        "Keine Controller-Schicht aktiv — Controller anschließen und neu starten",
+    ),
+    (
+        "The control could not be added: {}",
+        "Das Bedienelement konnte nicht hinzugefügt werden: {}",
+    ),
+    (
+        "Parts are separated on a desktop computer; the stick brings them along",
+        "Stems werden am Desktop-Rechner getrennt; der Stick bringt sie mit",
+    ),
+    ("Parts ready for {} tracks", "Stems für {} Tracks bereit"),
+    (
+        "Parts ready for {} tracks, {} failed: {}",
+        "Stems für {} Tracks bereit, {} fehlgeschlagen: {}",
+    ),
+    (
+        "Select the tracks to separate first",
+        "Wähle zuerst die zu trennenden Tracks",
+    ),
+    (
+        "Separating parts: {} of {} tracks …",
+        "Stems werden getrennt: {} von {} Tracks …",
+    ),
+    (
+        "This build separates no parts (feature separation)",
+        "Diese Version trennt keine Stems (Feature separation)",
+    ),
+    ("Active loop changed", "Aktiver Loop geändert"),
+    (
+        "Separate the parts of the selected tracks",
+        "Stems der ausgewählten Tracks trennen",
+    ),
+    (
+        "Show / hide similar tracks",
+        "Passende Tracks ein- / ausblenden",
+    ),
+    ("Show / hide Tags", "Tags ein- / ausblenden"),
+    (
+        "Import a library XML (rekordbox-compatible)",
+        "Bibliotheks-XML importieren (rekordbox-kompatibel)",
+    ),
+    (
+        "Export the library as XML (rekordbox-compatible)",
+        "Bibliothek als XML exportieren (rekordbox-kompatibel)",
+    ),
+    ("Export a library archive", "Bibliotheksarchiv exportieren"),
+    (
+        "Restore a library archive",
+        "Bibliotheksarchiv wiederherstellen",
+    ),
+    ("Consolidate the library", "Bibliothek zusammenführen"),
+    (
+        "Import rekordbox preferences and shortcuts",
+        "rekordbox-Einstellungen und -Tastenkürzel importieren",
+    ),
+    ("Show duplicate tracks", "Doppelte Tracks anzeigen"),
+    ("Tap the tempo", "Tempo tappen"),
+    ("Tap {} of {}", "Tap {} von {}"),
+    ("Beatgrid set to {} BPM", "Beatgrid auf {} BPM gesetzt"),
+    (
+        "Type a tempo between 30 and 300 BPM",
+        "Gib ein Tempo zwischen 30 und 300 BPM ein",
+    ),
+    (
+        "The beatgrid is locked — unlock it to edit",
+        "Das Beatgrid ist gesperrt — entsperre es zum Bearbeiten",
+    ),
+    (
+        "Recording started automatically",
+        "Aufnahme automatisch gestartet",
+    ),
+    ("{} TRACKS  ·  {}  ·  {}", "{} TRACKS  ·  {}  ·  {}"),
+    ("{} SELECTED", "{} AUSGEWÄHLT"),
+    ("Duplicate tracks", "Doppelte Tracks"),
+    (
+        "Removed {} track(s) from the collection — the files stay on disk",
+        "{} Track(s) aus der Sammlung entfernt — die Dateien bleiben erhalten",
+    ),
+    ("Planned start saved", "Geplanter Start gespeichert"),
+    (
+        "Select a position of the set first",
+        "Wähle zuerst eine Position im Set",
+    ),
+    (
+        "The tag list is empty — collect the backup tracks there first",
+        "Die Tag-Liste ist leer — sammle die Ersatz-Tracks zuerst dort",
+    ),
+    ("Backup tracks removed", "Ersatz-Tracks entfernt"),
+    ("{} backup track(s) set", "{} Ersatz-Track(s) gesetzt"),
+    ("Export library XML", "Bibliotheks-XML exportieren"),
+    ("Import library XML", "Bibliotheks-XML importieren"),
+    ("Export library archive", "Bibliotheksarchiv exportieren"),
+    (
+        "Include the audio files? The archive then holds everything to move the library to another computer.",
+        "Audiodateien einschließen? Dann enthält das Archiv alles, um die Bibliothek auf einen anderen Computer umzuziehen.",
+    ),
+    (
+        "Restore library archive",
+        "Bibliotheksarchiv wiederherstellen",
+    ),
+    (
+        "Folder for the restored library",
+        "Ordner für die wiederhergestellte Bibliothek",
+    ),
+    (
+        "Folder to collect all tracks in",
+        "Ordner, in dem alle Tracks gesammelt werden",
+    ),
+    ("Exported {} tracks to {}", "{} Tracks nach {} exportiert"),
+    ("XML export failed: {}", "XML-Export fehlgeschlagen: {}"),
+    (
+        "Imported {} tracks, {} playlists and {} cues from XML",
+        "{} Tracks, {} Playlists und {} Cues aus XML importiert",
+    ),
+    (" · {} files not found", " · {} Dateien nicht gefunden"),
+    ("XML import failed: {}", "XML-Import fehlgeschlagen: {}"),
+    (
+        "Writing the library archive…",
+        "Bibliotheksarchiv wird geschrieben …",
+    ),
+    (
+        "Library archive saved: {} ({} audio files)",
+        "Bibliotheksarchiv gespeichert: {} ({} Audiodateien)",
+    ),
+    (
+        "Library archive failed: {}",
+        "Bibliotheksarchiv fehlgeschlagen: {}",
+    ),
+    (
+        "Library restored to {} — it opens at the next start",
+        "Bibliothek nach {} wiederhergestellt — sie öffnet sich beim nächsten Start",
+    ),
+    (
+        "Restoring the archive failed: {}",
+        "Wiederherstellen des Archivs fehlgeschlagen: {}",
+    ),
+    (
+        "Consolidating the library…",
+        "Bibliothek wird zusammengeführt …",
+    ),
+    (
+        "Consolidated: {} tracks copied to {}",
+        "Zusammengeführt: {} Tracks nach {} kopiert",
+    ),
+    (
+        "Consolidating failed: {}",
+        "Zusammenführen fehlgeschlagen: {}",
+    ),
+    (
+        "No rekordbox preferences found: {}",
+        "Keine rekordbox-Einstellungen gefunden: {}",
+    ),
+    (
+        "Took over {} rekordbox preferences and {} shortcuts",
+        "{} rekordbox-Einstellungen und {} Tastenkürzel übernommen",
+    ),
+    // Phrase editing, edit mode, sub-browser, file drops.
+    ("Edit phrases", "Phrasen bearbeiten"),
+    (
+        "Show / hide the sub-browser",
+        "Sub-Browser ein- / ausblenden",
+    ),
+    ("Cut the phrase at the cursor", "Phrase am Cursor teilen"),
+    ("Merge the phrase at the cursor with the next", "Phrase am Cursor mit der nächsten verbinden"),
+    ("Phrase type picker for the phrase at the cursor", "Phrasentyp der Phrase am Cursor wählen"),
+    ("Phrases merged", "Phrasen verbunden"),
+    ("Beatgrid 1 ms earlier", "Beatgrid 1 ms früher"),
+    ("Beatgrid 1 ms later", "Beatgrid 1 ms später"),
+    ("Edit the beatgrid on the waveform (again: done)", "Beatgrid an der Wellenform bearbeiten (nochmal: fertig)"),
+    ("Select a track to edit its beatgrid", "Einen Track wählen, um sein Beatgrid zu bearbeiten"),
+    ("The beatgrid is locked — unlock it (LOCK GRID) to edit", "Das Beatgrid ist gesperrt — zum Bearbeiten entsperren (LOCK GRID)"),
+    ("Edit grid: Shift-drag the waveform until the lines sit on the kicks, click the 1 of a bar", "Grid bearbeiten: Wellenform mit Shift ziehen, bis die Linien auf den Kicks liegen, die 1 eines Takts anklicken"),
+    ("Beatgrid saved", "Beatgrid gespeichert"),
+    ("Beatgrid edit cancelled", "Beatgrid-Bearbeitung abgebrochen"),
+    ("No phrase follows to merge with", "Keine folgende Phrase zum Verbinden"),
+    ("Phrase boundary moved", "Phrasengrenze verschoben"),
+    ("No phrase at the cursor", "Keine Phrase am Cursor"),
+    (
+        "Move the nearest phrase boundary to the cursor",
+        "Nächste Phrasengrenze an den Cursor verschieben",
+    ),
+    ("Clear the phrases", "Phrasen löschen"),
+    (
+        "Edit region start at the cursor",
+        "Beginn des Bearbeitungsbereichs am Cursor",
+    ),
+    (
+        "Edit region end at the cursor",
+        "Ende des Bearbeitungsbereichs am Cursor",
+    ),
+    (
+        "New track without the edit region",
+        "Neuer Track ohne den Bearbeitungsbereich",
+    ),
+    (
+        "New track with only the edit region",
+        "Neuer Track nur mit dem Bearbeitungsbereich",
+    ),
+    (
+        "New track with the edit region repeated",
+        "Neuer Track mit wiederholtem Bearbeitungsbereich",
+    ),
+    (
+        "This track has no phrases",
+        "Dieser Track hat keine Phrasen",
+    ),
+    ("Phrases cleared", "Phrasen gelöscht"),
+    ("Phrase changed", "Phrase geändert"),
+    ("Phrase cut at the cursor", "Phrase am Cursor geteilt"),
+    (
+        "No phrase to cut at the cursor",
+        "Am Cursor ist keine Phrase zum Teilen",
+    ),
+    (
+        "Cut at least 4 bars from the edges of the phrase",
+        "Teile mindestens 4 Takte vom Rand der Phrase entfernt",
+    ),
+    (
+        "Phrase boundary moved to the cursor",
+        "Phrasengrenze an den Cursor verschoben",
+    ),
+    (
+        "The boundary cannot move past the next one",
+        "Die Grenze kann nicht über die nächste hinaus verschoben werden",
+    ),
+    (
+        "Phrases shorter than 4 bars join their neighbour — nothing changed",
+        "Phrasen unter 4 Takten gehen in ihrer Nachbarphrase auf — nichts geändert",
+    ),
+    (
+        "An edit is being rendered — one moment",
+        "Eine Bearbeitung wird gerade erstellt — einen Moment",
+    ),
+    (
+        "Set IN and OUT on the waveform first",
+        "Setze zuerst IN und OUT auf der Wellenform",
+    ),
+    (
+        "Rendering the edit without the region…",
+        "Bearbeitung ohne den Bereich wird erstellt …",
+    ),
+    (
+        "Rendering the edit with only the region…",
+        "Bearbeitung nur mit dem Bereich wird erstellt …",
+    ),
+    (
+        "Rendering the edit with the region repeated…",
+        "Bearbeitung mit wiederholtem Bereich wird erstellt …",
+    ),
+    (
+        "Edit saved as a new track: {}",
+        "Bearbeitung als neuer Track gespeichert: {}",
+    ),
+    ("The edit failed: {}", "Bearbeitung fehlgeschlagen: {}"),
+    ("{} file(s)", "{} Datei(en)"),
+    (
+        "Sort the list by # to drop tracks into it",
+        "Sortiere die Liste nach #, um Tracks hineinzuziehen",
+    ),
+    (
+        "Added to the list — ⌘Z to undo",
+        "Zur Liste hinzugefügt — ⌘Z macht es rückgängig",
+    ),
+    // MATCH column (fit with the master deck).
+    ("MATCH", "PASSUNG"),
+    ("DECK {}", "DECK {}"),
+    ("key unknown", "Tonart unbekannt"),
+    ("same key", "gleiche Tonart"),
+    ("adjacent key", "benachbarte Tonart"),
+    ("key two steps away", "Tonart zwei Schritte entfernt"),
+    ("key clash", "Tonart passt nicht"),
+    ("tempo unknown", "Tempo unbekannt"),
+    ("tempo {} %", "Tempo {} %"),
+    ("vs {}: {} · {}", "zu {}: {} · {}"),
+    // AUTO SORT groups and lists.
+    ("Tempo", "Tempo"),
+    ("Energy", "Energie"),
+    ("Mood", "Stimmung"),
+    ("Character", "Charakter"),
+    ("Genre", "Genre"),
+    ("Low energy", "Wenig Energie"),
+    ("Mid energy", "Mittlere Energie"),
+    ("High energy", "Viel Energie"),
+    ("Euphoric", "Euphorisch"),
+    ("Warm", "Warm"),
+    ("Driving", "Treibend"),
+    ("Dark", "Dunkel"),
+    ("Bass-heavy", "Bassbetont"),
+    ("Balanced", "Ausgewogen"),
+    ("Bright", "Hell"),
+    ("Other genres", "Andere Genres"),
+    // Cues like my others (learned cue pattern).
+    (
+        "Set cues on at least {} analysed tracks first: their places become the pattern",
+        "Setze zuerst Cues auf mindestens {} analysierten Tracks: ihre Positionen werden zum Muster",
+    ),
+    (
+        "Nothing to change: analyse the tracks first, or every pad is taken",
+        "Nichts zu ändern: analysiere die Tracks zuerst, oder alle Pads sind belegt",
+    ),
+    (
+        "Cues set on {} track(s) like your others — ⌘Z to undo",
+        "Cues auf {} Track(s) wie bei deinen anderen gesetzt — ⌘Z macht es rückgängig",
+    ),
+    ("Set cues like my others", "Cues wie bei meinen anderen setzen"),    // Beatgrid editing.
+    ("EDIT GRID", "GRID BEARBEITEN"),
+    ("Grid moved one beat earlier", "Grid einen Beat früher"),
+    ("Grid moved one beat later", "Grid einen Beat später"),
+    ("Grid moved {}", "Grid verschoben: {}"),
+    ("No beat to set", "Kein Beat zum Setzen"),
+    ("Beat 1 at {}", "Beat 1 bei {}"),
+    ("Pin at {}: the beat sits there", "Pin bei {}: der Beat sitzt dort"),
+    ("These pins do not fit one grid", "Diese Pins passen nicht in ein Grid"),
+    ("Tempo {} → {} ({} pins, {} bars)", "Tempo {} → {} ({} Pins, {} Takte)"),
+    ("Pins cleared", "Pins gelöscht"),
+    ("The transients are still being computed — try again in a moment", "Die Transienten werden noch berechnet — gleich noch einmal versuchen"),
+    ("Too few kicks to measure the grid", "Zu wenige Kicks, um das Grid zu messen"),
+    ("Fixed: {} BPM, moved {} — the beat jumps at {}: TEMPO CHANGE HERE there", "Korrigiert: {} BPM, verschoben {} — der Beat springt bei {}: dort TEMPOWECHSEL HIER"),
+    ("Fixed: {} BPM, moved {}", "Korrigiert: {} BPM, verschoben {}"),
+    ("A tempo change needs beats before it — move the cursor into the track", "Ein Tempowechsel braucht Beats davor — den Cursor in den Track setzen"),
+    ("Too few kicks after the cursor to measure a tempo", "Zu wenige Kicks nach dem Cursor, um ein Tempo zu messen"),
+    ("The beats after the cursor already fit — no tempo change here", "Die Beats nach dem Cursor passen schon — hier kein Tempowechsel"),
+    ("Tempo change at {}: {} BPM", "Tempowechsel bei {}: {} BPM"),
+    ("Tempo {} BPM", "Tempo {} BPM"),
+    ("Beatgrid locked", "Beatgrid gesperrt"),
+    ("Beatgrid unlocked", "Beatgrid entsperrt"),
+    ("Edit grid: drag the grid onto the kicks, double-click the 1 · PIN two kicks far apart to solve the tempo", "Grid bearbeiten: das Grid auf die Kicks ziehen, die 1 doppelklicken · zwei weit auseinanderliegende Kicks pinnen löst das Tempo"),
+    ("Beatgrid unchanged", "Beatgrid unverändert"),
+    ("Undone", "Widerrufen"),
+    ("Redone", "Wiederholt"),
+    ("Snap to transients on", "Einrasten an Transienten an"),
+    ("Snap to transients off", "Einrasten an Transienten aus"),
+    ("No more spots where the grid is off", "Keine weiteren Stellen, an denen das Grid daneben liegt"),
+    ("Click on (headphones)", "Klick an (Kopfhörer)"),
+    ("Click off", "Klick aus"),
+    ("Load a track on this deck first", "Zuerst einen Track auf dieses Deck laden"),
+    ("Edit grid: grid 1 ms earlier", "Grid bearbeiten: Grid 1 ms früher"),
+    ("Edit grid: grid 1 ms later", "Grid bearbeiten: Grid 1 ms später"),
+    ("Edit grid: grid 10 ms earlier", "Grid bearbeiten: Grid 10 ms früher"),
+    ("Edit grid: grid 10 ms later", "Grid bearbeiten: Grid 10 ms später"),
+    ("Edit grid: grid one beat earlier", "Grid bearbeiten: Grid einen Beat früher"),
+    ("Edit grid: grid one beat later", "Grid bearbeiten: Grid einen Beat später"),
+    ("Edit grid: tempo 0.01 BPM faster about the cursor", "Grid bearbeiten: Tempo 0,01 BPM schneller um den Cursor"),
+    ("Edit grid: tempo 0.01 BPM slower about the cursor", "Grid bearbeiten: Tempo 0,01 BPM langsamer um den Cursor"),
+    ("Edit grid: tempo 0.1 BPM faster about the cursor", "Grid bearbeiten: Tempo 0,1 BPM schneller um den Cursor"),
+    ("Edit grid: tempo 0.1 BPM slower about the cursor", "Grid bearbeiten: Tempo 0,1 BPM langsamer um den Cursor"),
+    ("Edit grid: the beat at the cursor becomes the 1", "Grid bearbeiten: der Beat am Cursor wird die 1"),
+    ("Edit grid: pin the beat at the cursor", "Grid bearbeiten: Beat am Cursor pinnen"),
+    ("Edit grid: auto-fix slip and tempo", "Grid bearbeiten: Versatz und Tempo automatisch korrigieren"),
+    ("Edit grid: metronome click on / off", "Grid bearbeiten: Metronom-Klick an / aus"),
+    ("Edit grid: snap to transients on / off", "Grid bearbeiten: Einrasten an Transienten an / aus"),
+    ("Edit grid: tap the tempo", "Grid bearbeiten: Tempo tippen"),
+    ("Edit grid: previous spot where the grid is off", "Grid bearbeiten: vorige Stelle, an der das Grid daneben liegt"),
+    ("Edit grid: next spot where the grid is off", "Grid bearbeiten: nächste Stelle, an der das Grid daneben liegt"),
+    ("Edit grid: done (keep the grid)", "Grid bearbeiten: fertig (Grid behalten)"),
+    ("Edit grid: cancel", "Grid bearbeiten: abbrechen"),
+    ("Edit grid: undo", "Grid bearbeiten: widerrufen"),
+    ("Edit grid: redo", "Grid bearbeiten: wiederholen"),
+];
+
+/// Whether `english` has a German translation (independent of the
+/// current language).
+pub fn has_german(english: &str) -> bool {
+    DE.iter().any(|(e, _)| *e == english)
+}
+
+/// Translates `english` into the current language.
+pub fn tr(english: &str) -> &str {
+    match language() {
+        Language::English => english,
+        Language::German => DE
+            .iter()
+            .find(|(e, _)| *e == english)
+            .map(|(_, d)| *d)
+            .unwrap_or(english),
+    }
+}
+
+/// Translates `english` and fills its `{}` placeholders with `args`.
+pub fn trf(english: &str, args: &[&dyn std::fmt::Display]) -> String {
+    let mut out = String::new();
+    let mut parts = tr(english).split("{}");
+    if let Some(first) = parts.next() {
+        out.push_str(first);
+    }
+    for (i, p) in parts.enumerate() {
+        if let Some(a) = args.get(i) {
+            out.push_str(&a.to_string());
+        }
+        out.push_str(p);
+    }
+    out
+}
+
+/// Matches `text` against `template` (with `{}` placeholders) and returns
+/// the captured values.
+fn capture<'a>(template: &str, text: &'a str) -> Option<Vec<&'a str>> {
+    let parts: Vec<&str> = template.split("{}").collect();
+    let mut rest = text.strip_prefix(parts[0])?;
+    let mut caps = Vec::new();
+    for (i, lit) in parts.iter().enumerate().skip(1) {
+        let last = i == parts.len() - 1;
+        let end = if last {
+            if !rest.ends_with(lit) {
+                return None;
+            }
+            rest.len() - lit.len()
+        } else if lit.is_empty() {
+            return None;
+        } else {
+            rest.find(lit)?
+        };
+        caps.push(&rest[..end]);
+        rest = &rest[end + lit.len()..];
+    }
+    (rest.is_empty() || parts.len() == 1 && rest.is_empty()).then_some(caps)
+}
+
+/// Translates a finished message by finding the template it was formatted
+/// from. Unknown messages are returned unchanged.
+pub fn translate_message(text: &str) -> String {
+    if language() == Language::English {
+        return text.to_string();
+    }
+    for (e, d) in DE {
+        if !e.contains("{}") {
+            if *e == text {
+                return d.to_string();
+            }
+            continue;
+        }
+        if let Some(caps) = capture(e, text) {
+            let mut out = String::new();
+            let mut parts = d.split("{}");
+            out.push_str(parts.next().unwrap_or_default());
+            for (i, p) in parts.enumerate() {
+                out.push_str(caps.get(i).copied().unwrap_or_default());
+                out.push_str(p);
+            }
+            return out;
+        }
+    }
+    text.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn translates_and_formats() {
+        set_language(Language::English);
+        assert_eq!(trf("Hot cue {} set", &[&'A']), "Hot cue A set");
+        set_language(Language::German);
+        assert_eq!(trf("Hot cue {} set", &[&'A']), "Hot Cue A gesetzt");
+        assert_eq!(tr("unknown text"), "unknown text");
+        assert_eq!(
+            translate_message("Added 3 track(s) to Warmup"),
+            "3 Track(s) zu Warmup hinzugefügt"
+        );
+        assert_eq!(
+            translate_message("Red synced: 1 copied, 2 updated, 0 removed"),
+            "Red synced: 1 copied, 2 updated, 0 removed"
+                .replace("synced", "synchronisiert")
+                .replace("copied", "kopiert")
+                .replace("updated", "aktualisiert")
+                .replace("removed", "entfernt")
+        );
+        assert_eq!(
+            translate_message("Nothing to undo"),
+            "Nichts rückgängig zu machen"
+        );
+        assert_eq!(
+            translate_message("Added Deeper to the collection — analysing"),
+            "Deeper zur Sammlung hinzugefügt — wird analysiert"
+        );
+        set_language(Language::English);
+    }
+
+    #[test]
+    fn no_duplicate_entries() {
+        let mut seen = std::collections::HashSet::new();
+        for (e, _) in DE {
+            assert!(seen.insert(*e), "duplicate entry {e}");
+        }
+        assert!(has_german("Undo") && !has_german("no such text"));
+    }
+
+    #[test]
+    fn placeholder_counts_match() {
+        for (e, d) in DE {
+            assert_eq!(e.matches("{}").count(), d.matches("{}").count(), "{e}");
+        }
+    }
+}

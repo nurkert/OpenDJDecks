@@ -1,0 +1,50 @@
+---
+import { ui, type Lang } from '../../i18n/ui';
+import { devDocs, devHref, guideGroups, guideHref } from '../../lib/docs-catalog.mjs';
+import { guideTitle } from '../../lib/docs';
+
+interface Props {
+  lang: Lang;
+  current: string;
+}
+const { lang, current } = Astro.props;
+const t = ui[lang].docs;
+---
+
+<nav class="dnav" aria-label={t.sectionsLabel}>
+  {
+    await Promise.all(
+      guideGroups.map(async (group) => (
+        <section class="dnav__group">
+          <h2 class="dnav__title">{group.title[lang]}</h2>
+          <ul>
+            {await Promise.all(
+              group.slugs.map(async (slug) => (
+                <li>
+                  <a href={guideHref(slug, lang)} aria-current={current === `guide:${slug}` ? 'page' : undefined}>
+                    {await guideTitle(slug, lang)}
+                  </a>
+                </li>
+              )),
+            )}
+          </ul>
+        </section>
+      )),
+    )
+  }
+  <section class="dnav__group">
+    <h2 class="dnav__title">{t.developers}</h2>
+    <ul>
+      {
+        devDocs.map((doc) => (
+          <li>
+            <a href={devHref(doc.slug, lang)} aria-current={current === `dev:${doc.slug}` ? 'page' : undefined}>
+              {doc.label}
+              {lang === 'de' && <span class="dnav__badge">EN</span>}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</nav>

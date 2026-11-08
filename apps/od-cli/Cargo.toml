@@ -1,0 +1,26 @@
+[package]
+name = "od-cli"
+description = "Headless OpenDJDecks tool: import, analyse, sync, verify"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "od-cli"
+path = "src/main.rs"
+
+[dependencies]
+od-core.workspace = true
+od-library.workspace = true
+od-decode.workspace = true
+od-analysis.workspace = true
+od-devices.workspace = true
+od-format-native.workspace = true
+od-import.workspace = true
+od-lighting.workspace = true
+od-stems = { workspace = true, features = ["separation"] }
+anyhow.workspace = true
+clap.workspace = true
+rayon.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

@@ -1,0 +1,18 @@
+[package]
+name = "od-import"
+description = "Library import for OpenDJDecks: library XML, iTunes library and settings"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+od-core.workspace = true
+od-library.workspace = true
+od-decode.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+quick-xml = "0.37"
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

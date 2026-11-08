@@ -1,0 +1,49 @@
+---
+title: Einstellungen und Tastenkürzel
+description: Audiogeräte, Sprache und Darstellung, Wellenformen, Deck-Standards, alle Tastenkürzel und wie du sie änderst.
+keywords: [einstellungen, optionen, audio, ausgabegerät, puffer, abtastrate, sprache, deutsch, englisch, theme, darstellung, dunkel, hell, farbenblind, kontrast, skalierung, zoom, wellenform, tastenkürzel, kürzel, tastatur, tasten, belegen, belegung, shortcut]
+features: [prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends]
+---
+
+Öffne die **Einstellungen** mit dem Zahnrad oben, oder `⌘,` auf dem Mac und `Strg+,` auf Windows und Linux. `Esc` schließt das Fenster. **EINSTELLUNG FINDEN** oben durchsucht alle Seiten.
+
+![Einstellungen](../img/preferences.png)
+
+## Audio
+
+Das **Ausgabegerät** ist standardmäßig das Audio-Interface des Controllers, falls einer angeschlossen ist. Die **Puffergröße** reicht von 64 bis 1024 Samples: kleiner reagiert schneller, größer ist auf einem langsamen Rechner sicherer. **Kopfhörer (Cue)** kann automatisch, auf Ausgängen 3/4 oder aus sein. Audioeinstellungen gelten ab dem nächsten Audiostart, markiert mit **GILT NACH NEUSTART**.
+
+Unter Windows läuft Audio über WASAPI, unter macOS über CoreAudio und unter Linux über ALSA, JACK oder PipeWire, was du hier wählst.
+
+## Ansicht
+
+Sprache, Tonart-Schreibweise (**Camelot**, **Open Key** oder **musikalisch**), die Darstellung (dunkel, hell oder wie das System), **Skalierung** von 75 bis 200 % (nach Neustart) und die **Wellenform-Farbe**: 3 Bänder, blau oder RGB.
+
+- **Palette für Farbenblinde** und **Hoher Kontrast (helles Licht)** gelten sofort.
+- **Bewegung reduzieren** beruhigt die Oberfläche.
+- **Waveform-Zoom** legt fest, wie viele Sekunden eine Wellenform beim Öffnen eines Tracks zeigt; das Mausrad zoomt weiterhin.
+- Unter **Browser** stellst du **Schriftgröße** und **Zeilenabstand** der Liste ein.
+
+## Analyse, Aufnahme
+
+Siehe [Beatgrids](beatgrid.md#wenn-das-tempo-immer-wieder-falsch-ist) für den **BPM-Bereich** und [Aufnahme](recording.md) für die Aufnahmeseite.
+
+## Controller
+
+**Decks** enthält die Standards, die an jedes Deck gehen: Tempobereich, Quantisieren, Sync-Modus, Jog-Modus und Auto Cue. **Mixer** enthält EQ und Faderkurven. Den Rest findest du unter [Controller](controllers.md).
+
+## Tastatur
+
+Die Seite **Tastatur** listet jede Aktion mit ihrer Belegung. Suche nach Aktion, Id oder Taste.
+
+1. Klicke eine Belegung an (oder wähle eine mit `↑` `↓` und drücke Return) und drücke die neuen Tasten. `Esc` bricht ab, Rücktaste entfernt die Belegung.
+2. Ist eine Taste belegt, nennt die Seite die andere Aktion. **ERSETZEN** übernimmt die Taste, **ABBRECHEN** lässt beide unverändert.
+3. **STANDARD** setzt eine Aktion zurück und **ALLE ZURÜCKSETZEN** alles. **IMPORTIEREN…** und **EXPORTIEREN…** lesen und schreiben die Belegung als Datei.
+
+Die Standards folgen einem Layout, das DJs oft benutzen: Deck 1 und 2 liegen auf der linken und rechten Tastaturhälfte, zum Beispiel Play `Z` und `N`, Cue `A` und `H`, Sync `Q` und `Y`, Hot Cues auf den Zahlenreihen, Loop-In, -Out und -Exit auf `D F G` und `K L ;`. Deck 3 und 4 liegen auf `F1` bis `F11`. Ansichts- und Layout-Wechsel nutzen auf dem Mac `⌥⌘`.
+
+Die vollständige Tabelle, pro Deck und Modus, steht auf der Seite [Keyboard shortcuts](../../keyboard.md).
+
+## Erweitert
+
+Backups, der Speicherort der Bibliothek, Zusammenführen und Neu zuordnen, und die Update-Prüfung. Updates lesen nur die öffentliche Release-Liste auf GitHub; es wird nichts über dich gesendet, geprüft wird nicht, während in Perform ein Deck spielt, und ein Update unterbricht nie eine Performance.

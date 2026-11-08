@@ -1,0 +1,584 @@
+//! File menu actions on the whole library and files dropped on the window.
+
+use crate::app::App;
+use crate::workers::WorkerEvent;
+use slint::ComponentHandle;
+use std::path::Path;
+
+/// File menu actions on the whole library: XML import / export, library
+/// archive, consolidate and the preferences import. Asks for
+/// the file or folder, then runs the step.
+pub(crate) fn library_action(app: &App, id: &str) {
+    let message = match id {
+        "library.export.xml" => {
+            let Some(f) = rfd::FileDialog::new()
+                .set_title(od_i18n::tr("Export library XML"))
+                .set_file_name("opendjdecks.xml")
+                .add_filter("XML", &["xml"])
+                .save_file()
+            else {
+                return;
+            };
+            export_xml(app, &f)
+        }
+        "library.import.xml" => {
+            let Some(f) = rfd::FileDialog::new()
+                .set_title(od_i18n::tr("Import library XML"))
+                .add_filter("XML", &["xml"])
+                .pick_file()
+            else {
+                return;
+            };
+            import_xml(app, &f)
+        }
+        "library.export.archive" => {
+            let Some(f) = rfd::FileDialog::new()
+                .set_title(od_i18n::tr("Export library archive"))
+                .set_file_name("library.odlib")
+                .add_filter("OpenDJDecks library", &["odlib"])
+                .save_file()
+            else {
+                return;
+            };
+            let audio = rfd::MessageDialog::new()
+                .set_title(od_i18n::tr("Export library archive"))
+                .set_description(od_i18n::tr("Include the audio files? The archive then holds everything to move the library to another computer."))
+                .set_buttons(rfd::MessageButtons::YesNo)
+                .show()
+                == rfd::MessageDialogResult::Yes;
+            export_archive(app, &f, audio);
+            return;
+        }
+        "library.restore.archive" => {
+            let Some(f) = rfd::FileDialog::new()
+                .set_title(od_i18n::tr("Restore library archive"))
+                .add_filter("OpenDJDecks library", &["odlib"])
+                .pick_file()
+            else {
+                return;
+            };
+            let Some(dir) = rfd::FileDialog::new()
+                .set_title(od_i18n::tr("Folder for the restored library"))
+                .pick_folder()
+            else {
+                return;
+            };
+            restore_archive(app, &f, &dir)
+        }
+        "library.consolidate" => {
+            let Some(dir) = rfd::FileDialog::new()
+                .set_title(od_i18n::tr("Folder to collect all tracks in"))
+                .pick_folder()
+            else {
+                return;
+            };
+            consolidate(app, &dir);
+            return;
+        }
+        "library.import.settings" => import_settings(app, None),
+        "library.import.itunes" => {
+            let Some(f) = rfd::FileDialog::new()
+                .set_title(od_i18n::tr("Import a Music / iTunes library"))
+                .add_filter("XML", &["xml"])
+                .pick_file()
+            else {
+                return;
+            };
+            import_itunes(app, &f)
+        }
+        _ => return,
+    };
+    app.status(message);
+    crate::covers::spawn_backfill(app);
+}
+
+/// Writes the library as XML (rekordbox-compatible).
+pub(crate) fn export_xml(app: &App, path: &Path) -> String {
+    match od_import::xml::export_xml(&app.state.borrow().lib, path) {
+        Ok(n) => od_i18n::trf("Exported {} tracks to {}", &[&n, &path.display()]),
+        Err(e) => od_i18n::trf("XML export failed: {}", &[&e]),
+    }
+}
+
+/// Reads a library XML file (rekordbox-compatible) into the library.
+pub(crate) fn import_xml(app: &App, path: &Path) -> String {
+    if app.state.borrow().read_only() {
+        app.state.borrow_mut().browser.stick = None;
+    }
+    let r = od_import::xml::import_xml(&mut app.state.borrow_mut().lib, path);
+    let m = match r {
+        Ok(r) => {
+            let _ = app.analysis.wake.send(());
+            let mut m = od_i18n::trf(
+                "Imported {} tracks, {} playlists and {} cues from XML",
+                &[&r.tracks, &r.playlists, &r.cues],
+            );
+            if !r.missing.is_empty() {
+                m.push_str(&od_i18n::trf(" · {} files not found", &[&r.missing.len()]));
+            }
+            m
+        }
+        Err(e) => od_i18n::trf("XML import failed: {}", &[&e]),
+    };
+    app.refresh_library();
+    m
+}
+
+/// Reads an iTunes / Music library export (`Library.xml`): tracks with
+/// their tags and the playlists (in a folder of their own).
+pub(crate) fn import_itunes(app: &App, path: &Path) -> String {
+    if app.state.borrow().read_only() {
+        app.state.borrow_mut().browser.stick = None;
+    }
+    let r = od_import::itunes::import_itunes(&mut app.state.borrow_mut().lib, path);
+    let m = match r {
+        Ok(r) => {
+            let _ = app.analysis.wake.send(());
+            let mut m = od_i18n::trf(
+                "Imported {} tracks and {} playlists from the Music library",
+                &[&r.tracks, &r.playlists],
+            );
+            if !r.missing.is_empty() {
+                m.push_str(&od_i18n::trf(" · {} files not found", &[&r.missing.len()]));
+            }
+            m
+        }
+        Err(e) => od_i18n::trf("Music library import failed: {}", &[&e]),
+    };
+    app.refresh_library();
+    m
+}
+
+/// Writes the library archive in the background (it can take minutes with
+/// audio); the result arrives as a status message.
+pub(crate) fn export_archive(app: &App, path: &Path, include_audio: bool) {
+    let library = app.state.borrow().config.library_path.clone();
+    let tx = app.worker_tx.clone();
+    let path = path.to_path_buf();
+    app.status("Writing the library archive…");
+    std::thread::spawn(move || {
+        let r = od_library::Library::open(&library)
+            .and_then(|lib| lib.export_archive(&path, include_audio, |_, _| {}));
+        let m = match r {
+            Ok(n) => od_i18n::trf(
+                "Library archive saved: {} ({} audio files)",
+                &[&path.display(), &n],
+            ),
+            Err(e) => od_i18n::trf("Library archive failed: {}", &[&e]),
+        };
+        let _ = tx.send(WorkerEvent::Message(m));
+    });
+}
+
+/// Restores an archive into `dir` and opens that library from the next
+/// start.
+pub(crate) fn restore_archive(app: &App, archive: &Path, dir: &Path) -> String {
+    match od_library::Library::import_archive(archive, dir) {
+        Ok(lib) => {
+            drop(lib);
+            let db = dir.join("library.sqlite");
+            let mut c = crate::settings::GlobalConfig::load();
+            c.library = Some(db.clone());
+            match c.save() {
+                Ok(()) => od_i18n::trf(
+                    "Library restored to {} — it opens at the next start",
+                    &[&db.display()],
+                ),
+                Err(e) => format!("{e}"),
+            }
+        }
+        Err(e) => {
+            let _ = app;
+            od_i18n::trf("Restoring the archive failed: {}", &[&e])
+        }
+    }
+}
+
+/// Copies every track into `dir/<Artist>/` and points the library at the
+/// copies, in the background (originals stay).
+pub(crate) fn consolidate(app: &App, dir: &Path) {
+    let library = app.state.borrow().config.library_path.clone();
+    let tx = app.worker_tx.clone();
+    let dir = dir.to_path_buf();
+    app.status("Consolidating the library…");
+    std::thread::spawn(move || {
+        let r = od_library::Library::open(&library)
+            .and_then(|mut lib| lib.consolidate(&dir, |_, _| {}));
+        let m = match r {
+            Ok(n) => od_i18n::trf(
+                "Consolidated: {} tracks copied to {}",
+                &[&n, &dir.display()],
+            ),
+            Err(e) => od_i18n::trf("Consolidating failed: {}", &[&e]),
+        };
+        let _ = tx.send(WorkerEvent::Message(m));
+    });
+}
+
+/// Takes over the preferences and keyboard shortcuts of a rekordbox
+/// installation (`dir`, else the user's rekordbox settings folder). Shortcuts
+/// that would bind one key twice are left out.
+pub(crate) fn import_settings(app: &App, dir: Option<&Path>) -> String {
+    let (settings, _report) = match od_import::settings::read(dir) {
+        Ok(r) => r,
+        Err(e) => return od_i18n::trf("No rekordbox preferences found: {}", &[&e]),
+    };
+    let values = settings.preference_values();
+    let applied = app
+        .state
+        .borrow()
+        .stored
+        .clone()
+        .apply_values(&values)
+        .len();
+    app.state.borrow_mut().change_settings(|s| {
+        s.apply_values(&values);
+    });
+    let keys = apply_keymap(app, &settings.keymap_toml());
+    crate::preferences::apply_all(app);
+    od_i18n::trf(
+        "Took over {} rekordbox preferences and {} shortcuts",
+        &[&applied, &keys],
+    )
+}
+
+/// Applies imported bindings one by one, skipping those that would collide
+/// with a binding already in use; returns how many were taken.
+fn apply_keymap(app: &App, toml_text: &str) -> usize {
+    let mut st = app.state.borrow_mut();
+    let mut imported = st.keymap.clone();
+    if imported.import_toml(toml_text).is_err() {
+        return 0;
+    }
+    let mut taken = 0;
+    for a in crate::keymap::registry() {
+        let wanted = imported.bindings(&a.id);
+        if wanted == st.keymap.bindings(&a.id) {
+            continue;
+        }
+        let mut km = st.keymap.clone();
+        km.set(&a.id, wanted);
+        if km.all_conflicts().is_empty() {
+            st.keymap = km;
+            taken += 1;
+        }
+    }
+    if taken > 0 {
+        st.save_keymap();
+    }
+    taken
+}
+
+// ── Files dropped from Finder / the file manager ────────────────────────
+
+/// The audio files among dropped paths: files with a supported extension
+/// and every audio file below a dropped folder, in drop order, each once.
+pub(crate) fn dropped_audio(paths: &[std::path::PathBuf]) -> Vec<std::path::PathBuf> {
+    let mut out: Vec<std::path::PathBuf> = Vec::new();
+    for p in paths {
+        let found = if p.is_dir() {
+            crate::workers::scan(p)
+        } else if p.is_file() && od_core::AudioFormat::is_supported_extension(p) {
+            vec![p.clone()]
+        } else {
+            Vec::new()
+        };
+        for f in found {
+            if !out.contains(&f) {
+                out.push(f);
+            }
+        }
+    }
+    out
+}
+
+/// The list dropped files also go into: the open playlist or set of the
+/// library (not a stick, the Explorer or a virtual list).
+pub(crate) fn drop_list(app: &App) -> Option<od_library::NodeId> {
+    drop_list_of(&app.state.borrow())
+}
+
+fn drop_list_of(st: &crate::state::AppState) -> Option<od_library::NodeId> {
+    if st.read_only() || st.explorer.open.is_some() || st.browser.special.is_some() {
+        return None;
+    }
+    st.browser.node.filter(|n| {
+        st.lib.node(*n).is_ok_and(|n| {
+            matches!(
+                n.kind,
+                od_library::NodeKind::Playlist | od_library::NodeKind::Set
+            )
+        })
+    })
+}
+
+/// Where dropped files go, from the drop target under the pointer
+/// (`DragState.target`, the ranges of `browser::drop_target`).
+#[derive(Debug, PartialEq)]
+pub(crate) enum FileDrop {
+    /// Load the first file on this deck (0-based).
+    Deck(usize),
+    /// Show the first file in Prepare player 1 or 2.
+    Player(u8),
+    /// Add every file to the collection and to this library list.
+    List(od_library::NodeId),
+    /// Add every file to the collection and into the open list before row `n`.
+    Row(usize),
+    /// Add every file to the collection and to the open playlist or set.
+    Collection,
+}
+
+/// The drop target id → what happens to dropped files (pure).
+pub(crate) fn file_drop(target: i32) -> FileDrop {
+    use crate::browser::DropTarget;
+    match crate::browser::drop_target(target) {
+        DropTarget::Row(n) => FileDrop::Row(n),
+        DropTarget::Tree(id) if id >= 0 => FileDrop::List(od_library::NodeId(id as i64)),
+        DropTarget::Tree(_) => FileDrop::Collection,
+        DropTarget::Deck if (1..=crate::decks::DECKS as i32).contains(&target) => {
+            FileDrop::Deck(target as usize - 1)
+        }
+        DropTarget::Deck if target == -1 || target == -2 => {
+            FileDrop::Player(target.unsigned_abs() as u8)
+        }
+        DropTarget::Deck => FileDrop::Collection,
+    }
+}
+
+/// Files dropped on the window at drop target `target` (`DragState.target`:
+/// the deck, Prepare player, tree list or list position under the
+/// pointer, 0 = none): onto a deck or a player the first file is added to
+/// the collection and loaded there; onto a list in the tree every audio
+/// file (folders included) is added to the collection and that list;
+/// anywhere else to the collection and the open playlist or set (at the
+/// row under the pointer when the list is in its own order), in the
+/// background.
+pub(crate) fn files_dropped(app: &App, paths: Vec<std::path::PathBuf>, target: i32) {
+    let files = dropped_audio(&paths);
+    if files.is_empty() {
+        app.status("No audio files in what was dropped");
+        return;
+    }
+    let (list, at) = match file_drop(target) {
+        FileDrop::Deck(d) => {
+            crate::explorer::import_and_load(app, files[0].clone(), d.min(crate::decks::DECKS - 1));
+            return;
+        }
+        FileDrop::Player(n) => {
+            crate::explorer::import_and_show(app, files[0].clone(), n);
+            return;
+        }
+        FileDrop::List(node) => {
+            let st = app.state.borrow();
+            let takes = !st.read_only()
+                && st.lib.node(node).is_ok_and(|n| {
+                    matches!(
+                        n.kind,
+                        od_library::NodeKind::Playlist | od_library::NodeKind::Set
+                    )
+                });
+            (if takes { Some(node) } else { drop_list_of(&st) }, None)
+        }
+        FileDrop::Row(n) => {
+            let ordered = crate::browser::reorderable(&app.state.borrow());
+            (drop_list(app), ordered.then_some(n))
+        }
+        FileDrop::Collection => (drop_list(app), None),
+    };
+    let library = app.state.borrow().config.library_path.clone();
+    let (tx, wake) = (app.worker_tx.clone(), app.analysis.wake.clone());
+    app.status(od_i18n::trf("Adding {} dropped file(s)…", &[&files.len()]));
+    std::thread::spawn(move || {
+        let (added, failed) = match od_library::Library::open(&library) {
+            Ok(mut lib) => add_files(&mut lib, &files, list, at),
+            Err(e) => {
+                let _ = tx.send(WorkerEvent::Message(format!("Cannot open library: {e}")));
+                return;
+            }
+        };
+        let _ = tx.send(WorkerEvent::ImportFinished { added, failed });
+        let _ = wake.send(());
+    });
+}
+
+/// Adds `files` to the collection (known paths are kept) and, when `list`
+/// is given, inserts them into that list in order before position `at`
+/// (`None`: at the end). Returns (added, failed).
+pub(crate) fn add_files(
+    lib: &mut od_library::Library,
+    files: &[std::path::PathBuf],
+    list: Option<od_library::NodeId>,
+    at: Option<usize>,
+) -> (usize, usize) {
+    let (mut added, mut failed) = (0, 0);
+    let mut ids = Vec::new();
+    for f in files {
+        let known = lib.track_by_path(f).ok().flatten().map(|t| t.id);
+        match known
+            .map(Ok)
+            .unwrap_or_else(|| crate::workers::import_file(lib, f).inspect(|_| added += 1))
+        {
+            Ok(id) => ids.push(id),
+            Err(e) => {
+                failed += 1;
+                tracing::warn!(path = %f.display(), error = %e, "dropped file not added");
+            }
+        }
+    }
+    if let (Some(n), false) = (list, ids.is_empty()) {
+        if let Err(e) = lib.add_to_node(n, &ids, at) {
+            tracing::warn!(error = %e, "dropped files not added to the list");
+        }
+    }
+    (added, failed)
+}
+
+/// A file drag from the file manager enters the window: the drop targets
+/// (decks, players, lists) follow `DragState` as for dragged rows. The
+/// pointer is unknown until [`follow_pointer`] reads it.
+pub(crate) fn file_drag_begin(app: &App, files: usize) {
+    let d = app.ui.global::<crate::DragState>();
+    if !d.get_files() {
+        d.set_x(-10_000.0);
+        d.set_y(-10_000.0);
+        d.set_target(0);
+    }
+    d.set_kind("tracks".into());
+    d.set_files(true);
+    d.set_active(true);
+    d.set_label(od_i18n::trf("{} file(s)", &[&files.max(1)]).into());
+    app.ui.set_file_drag(true);
+}
+
+/// The file drag left the window or was dropped.
+pub(crate) fn file_drag_end(app: &App) {
+    let d = app.ui.global::<crate::DragState>();
+    d.set_active(false);
+    d.set_files(false);
+    d.set_target(0);
+    app.ui.set_file_drag(false);
+}
+
+/// Moves the drag position to the pointer while files hover the window
+/// (the OS reports no position with native file drags).
+fn follow_pointer(app: &App) {
+    if let Some((x, y)) = pointer_in_window(app.ui.window()) {
+        let d = app.ui.global::<crate::DragState>();
+        d.set_x(x);
+        d.set_y(y);
+    }
+}
+
+/// A point in the window's content (AppKit points, origin bottom-left of
+/// the content of height `content_h`) in logical window coordinates (origin
+/// top-left), for a backing scale `backing` and a UI scale factor `ui`
+/// (pure).
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn content_point_to_logical(
+    px: f64,
+    py: f64,
+    content_h: f64,
+    backing: f64,
+    ui: f64,
+) -> (f32, f32) {
+    let k = if ui > 0.0 { backing / ui } else { 1.0 };
+    ((px * k) as f32, ((content_h - py) * k) as f32)
+}
+
+/// The pointer over the window in logical coordinates, read from AppKit
+/// while a file drag is in flight (the window gets no mouse events then).
+#[cfg(target_os = "macos")]
+fn pointer_in_window(window: &slint::Window) -> Option<(f32, f32)> {
+    use slint::winit_030::WinitWindowAccessor;
+    use slint::winit_030::winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
+    let ui = window.scale_factor() as f64;
+    window
+        .with_winit_window(|w| {
+            let handle = w.window_handle().ok()?;
+            let RawWindowHandle::AppKit(h) = handle.as_raw() else {
+                return None;
+            };
+            // SAFETY: winit's content view lives as long as its window, and
+            // this runs on the main (UI) thread.
+            let view: &objc2_app_kit::NSView = unsafe { h.ns_view.cast().as_ref() };
+            let p = view.window()?.mouseLocationOutsideOfEventStream();
+            let frame = view.frame();
+            let (x, y) = content_point_to_logical(
+                p.x - frame.origin.x,
+                p.y - frame.origin.y,
+                frame.size.height,
+                w.scale_factor(),
+                ui,
+            );
+            Some((x, y))
+        })
+        .flatten()
+}
+
+#[cfg(not(target_os = "macos"))]
+fn pointer_in_window(_window: &slint::Window) -> Option<(f32, f32)> {
+    None
+}
+
+/// Native file drops (winit: Finder / the file manager). The OS reports one
+/// event per file; they are collected and handled together, at the drop
+/// target under the pointer (macOS reads the pointer while the files
+/// hover; elsewhere they go to the collection and the open list).
+/// Platforms whose Slint backend delivers OS drops to `DropArea` use that
+/// path instead.
+pub(crate) fn wire_native_drop(app: &std::rc::Rc<App>) {
+    use slint::winit_030::{WinitWindowAccessor, winit::event::WindowEvent};
+    let pending: std::rc::Rc<std::cell::RefCell<Vec<std::path::PathBuf>>> = Default::default();
+    let hovered = std::rc::Rc::new(std::cell::Cell::new(0usize));
+    let weak = std::rc::Rc::downgrade(app);
+    let timer = std::rc::Rc::new(slint::Timer::default());
+    let follow = std::rc::Rc::new(slint::Timer::default());
+    app.ui.window().on_winit_window_event(move |_, event| {
+        match event {
+            WindowEvent::HoveredFile(_) => {
+                hovered.set(hovered.get() + 1);
+                if let Some(a) = weak.upgrade() {
+                    file_drag_begin(&a, hovered.get());
+                    follow_pointer(&a);
+                    let w = weak.clone();
+                    follow.start(
+                        slint::TimerMode::Repeated,
+                        std::time::Duration::from_millis(30),
+                        move || {
+                            if let Some(a) = w.upgrade() {
+                                follow_pointer(&a);
+                            }
+                        },
+                    );
+                }
+            }
+            WindowEvent::HoveredFileCancelled => {
+                hovered.set(0);
+                follow.stop();
+                if let Some(a) = weak.upgrade() {
+                    file_drag_end(&a);
+                }
+            }
+            WindowEvent::DroppedFile(path) => {
+                hovered.set(0);
+                pending.borrow_mut().push(path.clone());
+                let (weak, pending, follow) = (weak.clone(), pending.clone(), follow.clone());
+                timer.start(
+                    slint::TimerMode::SingleShot,
+                    std::time::Duration::from_millis(120),
+                    move || {
+                        follow.stop();
+                        let paths = std::mem::take(&mut *pending.borrow_mut());
+                        if let Some(a) = weak.upgrade() {
+                            let target = a.ui.global::<crate::DragState>().get_target();
+                            file_drag_end(&a);
+                            files_dropped(&a, paths, target);
+                        }
+                    },
+                );
+            }
+            _ => {}
+        }
+        slint::winit_030::EventResult::Propagate
+    });
+}

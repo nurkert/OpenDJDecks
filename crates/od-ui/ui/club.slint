@@ -1,0 +1,537 @@
+// Club mode (SPEC §10.3c): per deck a club-player style screen —
+// zoomed waveform, overview with cue marks, a large jog display with
+// remaining time and bar counter, tempo with range and master tempo, hot
+// cue / memory cue call, loop in / out / reloop, beat jump and search, and
+// the big CUE and PLAY buttons with the player's cue rules. Software help
+// (on-screen sync, stems, pad modes) is hidden, so the DJ practises the
+// workflow of a club booth with the controller. A short checklist ticks
+// itself off as the DJ works through it.
+//
+// The visual language is OpenDJDecks' own (emission lines on charcoal); only
+// the structure of a player screen is followed.
+
+import { Theme } from "tokens.slint";
+import { VLine, HLine } from "lines.slint";
+import { Caps, PlateButton, Fader, Jog, TipArea, PopupPlace, Glyph } from "controls.slint";
+import { DeckView, LaneMotion, PadView, DeckTime } from "structs.slint";
+import { WaveLane } from "wave.slint";
+
+export struct ClubStep {
+    text: string,
+    done: bool,
+}
+
+export struct ClubItem {
+    title: string,
+    sub: string,
+    // A folder or list to open (else a track to load).
+    folder: bool,
+}
+
+export global Club {
+    in-out property <bool> enabled;
+    // Browse screen: deck it belongs to (0 = closed), where it is, rows.
+    in property <int> browse-deck;
+    in property <string> browse-title;
+    in property <[ClubItem]> browse-items;
+    callback browse(int);
+    callback browse-open(int);
+    callback browse-back();
+    in property <[ClubStep]> steps;
+    in-out property <bool> show-steps: true;
+    // Per deck (index deck - 1): the beat of the bar at the playhead, 1..4,
+    // from the beatgrid; 0 without grid.
+    in property <[int]> beat-in-bar;
+    // Preferences > View: the other deck's beat, greyed, under each
+    // player's beat boxes.
+    in-out property <bool> show-other-beat: true;
+    // Player actions by keymap id without the deck prefix ("memory.next",
+    // "loop.in", "loop.out", "loop.exit", "loop.4", "jump.fwd", "jump.back",
+    // "keylock", "play").
+    callback action(int, string);
+    callback cue(int, bool);
+    callback hot-cue(int, int, bool);
+    callback search(int, float);
+    callback tempo(int, float);
+    callback tempo-range(int);
+    callback set-enabled(bool);
+}
+
+// The player's keys: the app's square plates (as Toggle) with the emission
+// line along the top when lit. A key clicks; a hold key also reports press
+// and release (search, CUE preview).
+component Key inherits Rectangle {
+    in property <string> label;
+    in property <string> tooltip;
+    in property <bool> on;
+    in property <color> tone: Theme.attention;
+    in property <length> key-h: 30px;
+    callback clicked();
+    callback held(bool);
+    min-width: max(44px, t.preferred-width + 20px);
+    height: root.key-h;
+    background: root.on ? root.tone.with-alpha(0.2) : ta.pressed ? Theme.plate-raised : ta.has-hover ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate;
+    border-width: 1px;
+    border-color: root.on ? root.tone.with-alpha(0.8) : Theme.rule;
+    Rectangle { y: 0; height: 2px; background: root.on || ta.pressed ? root.tone : transparent; }
+    t := Text {
+        text: root.label;
+        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
+        color: root.on ? Theme.bone : Theme.bone-2;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    ta := TipArea {
+        tooltip: root.tooltip; mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+        pointer-event(ev) => {
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.down) { root.held(true); }
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.up) { root.held(false); }
+        }
+    }
+}
+
+// A hot cue: the Perform pad's plate, filled in the cue colour when set.
+component HotCueKey inherits Rectangle {
+    in property <PadView> pad;
+    callback pressed(bool);
+    property <color> tone: Theme.cue-color(root.pad.cue-slot >= 0 ? root.pad.cue-slot : root.pad.index);
+    height: 30px;
+    min-width: 28px;
+    background: root.pad.set
+        ? root.tone.with-alpha(ta.pressed ? 0.5 : ta.has-hover ? 0.34 : 0.24)
+        : (ta.pressed ? Theme.plate-raised : ta.has-hover ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate);
+    border-width: 1px;
+    border-color: root.pad.set ? root.tone.with-alpha(0.85) : Theme.rule;
+    Rectangle { y: 0; height: 2px; background: root.pad.set ? root.tone : transparent; }
+    Text {
+        text: root.pad.caption;
+        font-family: Theme.family; font-size: 13px; font-weight: 600;
+        color: root.pad.set ? Theme.bone : Theme.bone-3;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    ta := TipArea {
+        tooltip: root.pad.set ? root.pad.sub : @tr("Empty hot cue: press to set it");
+        mouse-cursor: pointer;
+        pointer-event(ev) => {
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.down) { root.pressed(true); }
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.up) { root.pressed(false); }
+        }
+    }
+}
+
+// CUE / PLAY as the Perform deck's Transport keys (same disc, ring and
+// legend), with press and release: CUE previews while held.
+component BigButton inherits Rectangle {
+    // "cue" or "play".
+    in property <string> kind: "cue";
+    in property <bool> lit;
+    in property <color> tone;
+    in property <length> size: 44px;
+    callback pressed(bool);
+    width: root.size; height: root.size;
+    border-radius: root.size / 2;
+    border-width: 2px;
+    border-color: root.lit ? root.tone : ta.has-hover ? Theme.bone-3 : Theme.rule-strong;
+    background: ta.pressed ? root.tone.with-alpha(0.24) : root.lit ? root.tone.with-alpha(0.12) : Theme.plate;
+    if root.kind == "cue": Text {
+        text: "CUE";
+        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1px;
+        color: root.lit ? root.tone : Theme.bone-2;
+    }
+    if root.kind != "cue": Glyph {
+        x: (parent.width - 12px) / 2 + 1px; y: (parent.height - 12px) / 2;
+        width: 12px; height: 12px;
+        kind: root.lit ? "pause" : "play";
+        tone: root.lit ? root.tone : Theme.bone-2;
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        pointer-event(ev) => {
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.down) { root.pressed(true); }
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.up) { root.pressed(false); }
+        }
+    }
+}
+
+// A small caption over a group of keys.
+component GroupCaption inherits Text {
+    font-family: Theme.family; font-size: 9px; font-weight: 600; letter-spacing: 1.2px;
+    color: Theme.bone-3; horizontal-alignment: center;
+}
+
+// One readout of the display: caption over a value.
+component DisplayValue inherits VerticalLayout {
+    in property <string> caption;
+    in property <string> value;
+    in property <string> value-label;
+    in property <length> font-size: 22px;
+    in property <string> template: "000.00";
+    in property <TextHorizontalAlignment> align: center;
+    spacing: 0;
+    alignment: center;
+    GroupCaption { text: root.caption; horizontal-alignment: root.align; }
+    Text {
+        accessible-role: text; accessible-label: root.value-label; accessible-value: root.value;
+        min-width: probe.preferred-width;
+        text: root.value == "" ? "—" : root.value;
+        font-family: Theme.family; font-size: root.font-size; font-weight: 600; color: Theme.bone;
+        horizontal-alignment: root.align;
+        probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: 600; }
+    }
+}
+
+// Beat position: four segments for the beats of the bar, the current one
+// lit; the downbeat (1) in the accent colour, 2–4 in the deck colour, so the
+// beats of two players can be matched by eye.
+component BeatPosition inherits HorizontalLayout {
+    in property <int> beat;
+    in property <color> tone;
+    // The other deck's beat (0 = none), shown as a thin grey row under the
+    // boxes, so the two bars can be lined up by eye.
+    in property <int> other;
+    in property <bool> show-other;
+    spacing: 3px;
+    height: root.show-other ? 13px : 8px;
+    for i in 4: Rectangle {
+        property <bool> lit: root.beat == i + 1;
+        property <color> on-tone: i == 0 ? Theme.attention : root.tone;
+        horizontal-stretch: 1;
+        Rectangle {
+            y: 0; height: 8px;
+            background: parent.lit ? parent.on-tone : i == 0 ? Theme.attention.with-alpha(0.12) : Theme.plate;
+            border-width: 1px;
+            border-color: parent.lit ? parent.on-tone : i == 0 ? Theme.attention.with-alpha(0.45) : Theme.rule;
+        }
+        if root.show-other: Rectangle {
+            y: 10px; height: 3px;
+            background: root.other == i + 1 ? Theme.bone-3 : Theme.rule;
+        }
+    }
+}
+
+// One row of the player's control grid (as the Perform deck's GridRow):
+// every column lays its keys on the same five rows, so their edges line up
+// across the player and all of them grow with the height it has. The row's
+// size is set here only, never by what it holds, so keys follow it.
+component ClubRow inherits Rectangle {
+    in property <length> base: 30px;
+    // Rows this cell spans (with the gaps between them).
+    in property <int> span: 1;
+    min-height: root.base * root.span + 4px * (root.span - 1);
+    preferred-height: self.min-height;
+    max-height: 100000px;
+    min-width: 0px;
+    vertical-stretch: root.span;
+}
+
+// A display readout in the header, with a thin rule before it.
+component HeaderRule inherits Rectangle {
+    width: 1px;
+    Rectangle { y: 6px; height: parent.height - 12px; background: Theme.rule; }
+}
+
+export component ClubPlayer inherits Rectangle {
+    in property <DeckView> deck;
+    in property <LaneMotion> motion;
+    in property <bool> mirror;
+    callback zoom(float);
+    callback zoom-reset();
+    callback seek(float);
+    callback load();
+    property <int> n: root.deck.deck;
+    property <color> tone: Theme.deck-color(root.n);
+    // Short windows (laptop): a lower waveform and lower key rows.
+    in property <bool> short;
+    // Narrow windows: slimmer columns so both players fit side by side.
+    in property <bool> narrow;
+    // One spacing between the parts of the player, one between keys.
+    property <length> gap: root.short ? 6px : 8px;
+    property <length> kgap: 4px;
+    // Base height of a key row, a little taller in tall windows; the rows
+    // grow further with the height the player gets.
+    property <length> base: root.short ? clamp(PopupPlace.window-height * 0.032, 28px, 40px) : clamp(PopupPlace.window-height * 0.036, 32px, 44px);
+    // Column widths (from the window, never from the height): loop / jump
+    // and CUE / PLAY left, range / MT and the tempo fader right; the centre
+    // (hot cues, search and the jog) takes the rest.
+    property <length> left-w: clamp(PopupPlace.window-width * 0.115, 140px, 224px);
+    property <length> right-w: clamp(PopupPlace.window-width * 0.08, 100px, 160px);
+    property <length> readout: root.narrow ? 17px : 20px;
+    accessible-role: groupbox;
+    accessible-label: "deck\{root.n}.club";
+    background: Theme.ground;
+    clip: true;
+
+    VerticalLayout {
+        padding: 8px; spacing: root.gap;
+        // ── Display: deck and track left, time / BPM / tempo / key right,
+        // then BROWSE ──
+        header := HorizontalLayout {
+            height: 40px; spacing: 12px;
+            Text { text: root.n; font-family: Theme.family; font-size: 26px; font-weight: 600; color: root.tone; vertical-alignment: center; }
+            VerticalLayout {
+                horizontal-stretch: 1; alignment: center;
+                Text { text: root.deck.loaded || root.deck.loading ? root.deck.title : @tr("No track — browse and load"); font-family: Theme.family; font-size: 14px; font-weight: 600; color: Theme.bone; overflow: elide; }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text { horizontal-stretch: 1; text: root.deck.artist; font-family: Theme.family; font-size: 11px; color: Theme.bone-2; overflow: elide; }
+                    if root.deck.master: Caps { text: "MASTER"; color: Theme.attention; }
+                }
+            }
+            HeaderRule { }
+            DisplayValue { caption: DeckTime.label(); value: DeckTime.main(root.deck); value-label: "deck\{root.n}.club.time"; template: "-00:00.0"; font-size: root.readout; align: right; }
+            HeaderRule { }
+            DisplayValue { caption: "BPM"; value: root.deck.bpm; value-label: "deck\{root.n}.club.bpm"; template: "000.00"; font-size: root.readout; align: right; }
+            DisplayValue { caption: @tr("TEMPO"); value: root.deck.tempo; value-label: "deck\{root.n}.club.tempo-value"; template: "+00.0%"; font-size: root.readout; align: right; }
+            HeaderRule { }
+            DisplayValue { caption: @tr("KEY"); value: root.deck.key; value-label: "deck\{root.n}.club.key"; template: "00A"; font-size: root.readout; align: right; }
+            VerticalLayout {
+                alignment: center;
+                Key {
+                    accessible-label: "deck\{root.n}.club.browse"; accessible-role: button;
+                    key-h: 30px; label: @tr("BROWSE"); on: Club.browse-deck == root.n;
+                    tooltip: @tr("Browse the source and load a track, as on the player");
+                    clicked => { Club.browse(root.n); }
+                }
+            }
+        }
+        // Zoomed waveform, the beat of the bar, the overview with cue marks.
+        WaveLane {
+            min-height: root.short ? 56px : 72px;
+            preferred-height: root.short ? 56px : 84px;
+            max-height: 160px;
+            vertical-stretch: 1;
+            deck: root.deck; motion: root.motion;
+            zoom(d) => { root.zoom(d); }
+            zoom-reset => { root.zoom-reset(); }
+        }
+        BeatPosition {
+            accessible-role: progress-indicator;
+            accessible-label: "club\{root.n}.beat-position";
+            accessible-value: Club.beat-in-bar[root.n - 1];
+            beat: root.deck.loaded ? Club.beat-in-bar[root.n - 1] : 0;
+            tone: root.tone;
+            show-other: Club.show-other-beat;
+            // The other player of the pair (1 ↔ 2, 3 ↔ 4).
+            other: Club.beat-in-bar[root.n - 1 + (Math.mod(root.n, 2) == 1 ? 1 : -1)];
+        }
+        Rectangle {
+            accessible-role: slider; accessible-label: "deck\{root.n}.club.overview"; accessible-value: root.deck.progress;
+            height: root.short ? 24px : 30px;
+            clip: true;
+            background: Theme.ground-band;
+            Image { width: parent.width; height: parent.height; source: root.deck.overview; image-fit: fill; }
+            Rectangle { x: 0; width: parent.width * root.deck.progress; height: parent.height; background: Theme.ground.with-alpha(0.55); }
+            for c in root.deck.cues: VLine {
+                x: parent.width * c.pos; height: parent.height; weight: c.slot >= 0 ? 2px : 1px;
+                tone: c.slot >= 0 ? Theme.cue-tone(c.slot, c.tone) : Theme.attention;
+                form: c.slot >= 0 ? "solid" : "dashed";
+            }
+            if root.deck.loaded: Rectangle { x: parent.width * root.deck.progress - 1px; width: 2px; height: parent.height; background: Theme.bone; }
+            TouchArea { mouse-cursor: crosshair; clicked => { root.seek(clamp(self.mouse-x / self.width, 0, 1)); } }
+            if !root.deck.loaded && !root.deck.loading: HorizontalLayout {
+                alignment: center;
+                VerticalLayout { alignment: center; PlateButton { accessible-label: "deck\{root.n}.club.load"; accessible-role: button; compact: true; label: @tr("LOAD SELECTED"); tone: root.tone; clicked => { root.load(); } } }
+            }
+        }
+        // ── Controls on one five-row grid ──
+        // Left: IN / OUT, RELOOP / 4 BEAT, beat jump, then CUE / PLAY over
+        // two rows. Centre: the hot cues on row 1; under them the jog over
+        // rows 2–5, back keys (search, call) left of it, forward keys right.
+        // Right: range / MT on row 1, the tempo fader over rows 2–5.
+        HorizontalLayout {
+            vertical-stretch: 3;
+            spacing: root.gap;
+            VerticalLayout {
+                width: root.left-w; spacing: root.kgap;
+                ClubRow {
+                    base: root.base;
+                    property <length> half: (self.width - root.kgap) / 2;
+                    Key { accessible-label: "deck\{root.n}.club.loop-in"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: @tr("IN"); tooltip: @tr("Loop in"); on: root.deck.looping; clicked => { Club.action(root.n, "loop.in"); } }
+                    Key { accessible-label: "deck\{root.n}.club.loop-out"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: @tr("OUT"); tooltip: @tr("Loop out"); on: root.deck.looping; clicked => { Club.action(root.n, "loop.out"); } }
+                }
+                ClubRow {
+                    base: root.base;
+                    property <length> half: (self.width - root.kgap) / 2;
+                    Key { accessible-label: "deck\{root.n}.club.reloop"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: @tr("RELOOP"); tooltip: @tr("Reloop / exit the loop"); clicked => { Club.action(root.n, "loop.exit"); } }
+                    Key { accessible-label: "deck\{root.n}.club.loop-4"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: @tr("4 BEAT"); tooltip: @tr("Four-beat loop"); clicked => { Club.action(root.n, "loop.4"); } }
+                }
+                ClubRow {
+                    base: root.base;
+                    property <length> half: (self.width - root.kgap) / 2;
+                    Key { accessible-label: "deck\{root.n}.club.jump-back"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: "◀ " + root.deck.jump-size; tooltip: @tr("Beat jump back"); clicked => { Club.action(root.n, "jump.back"); } }
+                    Key { accessible-label: "deck\{root.n}.club.jump-fwd"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: root.deck.jump-size + " ▶"; tooltip: @tr("Beat jump forward"); clicked => { Club.action(root.n, "jump.fwd"); } }
+                }
+                // CUE and PLAY side by side, bottom left, as large as the
+                // two rows allow.
+                ClubRow {
+                    base: root.base; span: 2;
+                    property <length> half: (self.width - root.kgap) / 2;
+                    property <length> d: min(self.half, self.height);
+                    BigButton {
+                        accessible-label: "deck\{root.n}.club.cue"; accessible-role: button;
+                        size: parent.d; x: (parent.half - parent.d) / 2; y: (parent.height - parent.d) / 2;
+                        kind: "cue"; tone: Theme.attention; lit: root.deck.loaded && !root.deck.playing;
+                        pressed(down) => { Club.cue(root.n, down); }
+                    }
+                    BigButton {
+                        accessible-label: "deck\{root.n}.club.play"; accessible-role: button;
+                        size: parent.d; x: parent.half + root.kgap + (parent.half - parent.d) / 2; y: (parent.height - parent.d) / 2;
+                        kind: "play"; tone: Theme.live; lit: root.deck.playing;
+                        pressed(down) => { if (down) { Club.action(root.n, "play"); } }
+                    }
+                }
+            }
+            VerticalLayout {
+                horizontal-stretch: 1; min-width: 0px; spacing: root.kgap;
+                ClubRow {
+                    base: root.base;
+                    property <length> w: (self.width - 7 * root.kgap) / 8;
+                    for p in root.deck.pads-left: HotCueKey { pad: p; x: p.index * (parent.w + root.kgap); width: parent.w; height: parent.height; pressed(down) => { Club.hot-cue(root.n, p.index, down); } }
+                    for p in root.deck.pads-right: HotCueKey { pad: p; x: p.index * (parent.w + root.kgap); width: parent.w; height: parent.height; pressed(down) => { Club.hot-cue(root.n, p.index, down); } }
+                }
+                ClubRow {
+                    base: root.base; span: 4;
+                    // The jog as large as the rows allow (keeping room for a
+                    // key column each side); the keys take the rest.
+                    property <length> d: max(0px, min(self.height, self.width - 2 * (56px + root.gap)));
+                    property <length> kw: (self.width - self.d) / 2 - root.gap;
+                    property <length> kh: (self.height - root.kgap) / 2;
+                    property <length> rx: self.width - self.kw;
+                    Key {
+                        accessible-label: "deck\{root.n}.club.search-back"; accessible-role: button;
+                        x: 0; y: 0; width: parent.kw; key-h: parent.kh;
+                        label: "◀◀"; tooltip: @tr("Search back while held");
+                        held(down) => { Club.search(root.n, down ? -4 : 0); }
+                    }
+                    Key { accessible-label: "deck\{root.n}.club.call-prev"; accessible-role: button; x: 0; y: parent.kh + root.kgap; width: parent.kw; key-h: parent.kh; label: "◀ CALL"; tooltip: @tr("Previous memory cue"); clicked => { Club.action(root.n, "memory.prev"); } }
+                    // A thin ring around the platter in the deck colour while it plays.
+                    Rectangle {
+                        x: (parent.width - parent.d) / 2; y: (parent.height - parent.d) / 2;
+                        width: parent.d; height: parent.d; border-radius: parent.d / 2;
+                        border-width: 2px;
+                        border-color: root.deck.playing ? root.tone.with-alpha(0.7) : Theme.rule;
+                    }
+                    Jog {
+                        accessible-label: "deck\{root.n}.club.jog"; accessible-role: image;
+                        size: max(0px, parent.d - 10px);
+                        x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+                        angle: root.deck.jog-angle; progress: root.deck.progress; playing: root.deck.playing; loaded: root.deck.loaded;
+                        tone: root.tone;
+                        top-text: root.deck.beat-pos;
+                        main-text: DeckTime.main(root.deck);
+                        sub-text: root.deck.phrase;
+                    }
+                    Key {
+                        accessible-label: "deck\{root.n}.club.search-fwd"; accessible-role: button;
+                        x: parent.rx; y: 0; width: parent.kw; key-h: parent.kh;
+                        label: "▶▶"; tooltip: @tr("Search forward while held");
+                        held(down) => { Club.search(root.n, down ? 4 : 0); }
+                    }
+                    Key { accessible-label: "deck\{root.n}.club.call-next"; accessible-role: button; x: parent.rx; y: parent.kh + root.kgap; width: parent.kw; key-h: parent.kh; label: "CALL ▶"; tooltip: @tr("Next memory cue"); clicked => { Club.action(root.n, "memory.next"); } }
+                }
+            }
+            VerticalLayout {
+                width: root.right-w; spacing: root.kgap;
+                ClubRow {
+                    base: root.base;
+                    property <length> half: (self.width - root.kgap) / 2;
+                    Key { accessible-label: "deck\{root.n}.club.tempo-range"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: root.deck.tempo-range; tooltip: @tr("Tempo range"); clicked => { Club.tempo-range(root.n); } }
+                    Key { accessible-label: "deck\{root.n}.club.master-tempo"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: "MT"; tooltip: @tr("Master tempo: the key stays when the tempo changes"); on: root.deck.keylock; tone: Theme.live; clicked => { Club.action(root.n, "keylock"); } }
+                }
+                // The tempo fader in a framed slot over rows 2–5, with its
+                // scale: − (slower) at the top, 0 in the middle, + below.
+                ClubRow {
+                    base: root.base; span: 4;
+                    background: Theme.ground-band;
+                    border-width: 1px; border-color: Theme.rule;
+                    property <length> cx: self.width / 2;
+                    for t in [{ y: 16px, w: 8px, s: "−" }, { y: self.height / 2, w: 14px, s: "0" }, { y: self.height - 16px, w: 8px, s: "+" }]: Rectangle {
+                        y: t.y - 0.5px; height: 1px;
+                        Rectangle { x: parent.width / 2 - 13px - t.w; width: t.w; background: Theme.rule-strong; }
+                        Rectangle { x: parent.width / 2 + 13px; width: t.w; background: Theme.rule-strong; }
+                        Text {
+                            x: parent.width / 2 + 17px + t.w; y: -6px; height: 12px;
+                            text: t.s; font-family: Theme.family; font-size: 10px; color: Theme.bone-3; vertical-alignment: center;
+                        }
+                    }
+                    Fader {
+                        accessible-label: "deck\{root.n}.club.tempo"; accessible-role: slider; accessible-value: root.deck.tempo;
+                        x: parent.cx - self.width / 2; y: 6px; height: parent.height - 12px;
+                        tone: root.tone;
+                        value: (1 - root.deck.tempo-value) / 2;
+                        tooltip: @tr("Tempo (up = slower, like a player)");
+                        changed(v) => { Club.tempo(root.n, 1 - v * 2); }
+                    }
+                }
+            }
+        }
+    }
+    // Browse screen over the player: source → list → track.
+    if Club.browse-deck == root.n: Rectangle {
+        x: 0; y: 56px; width: parent.width; height: parent.height - 56px;
+        background: Theme.ground-band;
+        accessible-role: list; accessible-label: "deck\{root.n}.club.browse-list";
+        VerticalLayout {
+            padding: 8px; spacing: 4px;
+            HorizontalLayout {
+                height: 28px; spacing: 8px;
+                Key { accessible-label: "deck\{root.n}.club.browse-back"; accessible-role: button; label: @tr("BACK"); clicked => { Club.browse-back(); } }
+                Caps { text: Club.browse-title; vertical-alignment: center; color: Theme.attention; overflow: elide; }
+            }
+            Flickable {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    alignment: start;
+                    for it[i] in Club.browse-items: Rectangle {
+                        accessible-role: list-item; accessible-label: "deck\{root.n}.club.browse-row\{i}"; accessible-value: it.title;
+                        height: 30px;
+                        background: ta.has-hover ? Theme.plate-raised : transparent;
+                        HorizontalLayout {
+                            padding-left: 8px; padding-right: 8px; spacing: 10px;
+                            Text { text: it.folder ? "▸" : "♪"; width: 14px; color: it.folder ? Theme.attention : Theme.bone-3; vertical-alignment: center; font-family: Theme.family; }
+                            Text { text: it.title; horizontal-stretch: 1; overflow: elide; color: Theme.bone; vertical-alignment: center; font-family: Theme.family; font-size: 13px; }
+                            Text { text: it.sub; color: Theme.bone-2; vertical-alignment: center; font-family: Theme.family; font-size: 11px; }
+                        }
+                        ta := TouchArea { mouse-cursor: pointer; clicked => { Club.browse-open(i); } }
+                    }
+                }
+            }
+        }
+    }
+    VLine { x: root.mirror ? 0 : parent.width - 1px; height: parent.height; weight: 1px; tone: Theme.rule; }
+}
+
+// The guided checklist over the decks.
+export component ClubSteps inherits Rectangle {
+    accessible-role: list; accessible-label: "app.club.steps";
+    height: Club.show-steps ? 30px : 0px;
+    visible: Club.show-steps;
+    background: Theme.ground-band;
+    HorizontalLayout {
+        padding-left: 12px; padding-right: 8px; spacing: 14px;
+        Caps { text: @tr("CLUB MODE"); color: Theme.attention; vertical-alignment: center; }
+        for s[i] in Club.steps: HorizontalLayout {
+            spacing: 5px;
+            Rectangle {
+                width: 12px; height: 12px; y: (parent.height - 12px) / 2;
+                border-width: 1px; border-color: s.done ? Theme.live : Theme.rule-strong;
+                background: s.done ? Theme.live.with-alpha(0.7) : transparent;
+            }
+            Text {
+                text: (i + 1) + " " + s.text;
+                font-family: Theme.family; font-size: 11px;
+                color: s.done ? Theme.bone-3 : Theme.bone; vertical-alignment: center;
+            }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        VerticalLayout {
+            alignment: center;
+            PlateButton {
+                accessible-label: "app.club.steps-hide"; accessible-role: button;
+                compact: true; glyph: "close"; width: 30px; tooltip: @tr("Hide the checklist");
+                clicked => { Club.show-steps = false; }
+            }
+        }
+    }
+    HLine { y: parent.height - 1px; tone: Theme.rule; }
+}

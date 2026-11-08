@@ -1,0 +1,308 @@
+---
+import '../styles/global.css';
+
+import Logo from '../components/Logo.astro';
+import { alternates, defaultLang, languages, path, repoUrl, ui, type Lang, type Page } from '../i18n/ui';
+import { wikiHome } from '../lib/docs-catalog.mjs';
+
+interface Props {
+  lang: Lang;
+  /** Absent on wiki pages, which pass their language versions through `alternates`. */
+  page?: Page;
+  alternates?: { lang: Lang; href: string }[];
+  /** Language of the main text if it differs from `lang`: the developer docs are English. */
+  contentLang?: Lang;
+  /** Set when a page's content is identical in another language: points search engines there. */
+  canonicalHref?: string;
+  title: string;
+  description: string;
+}
+
+const { lang, page, title, description, alternates: pageAlternates, contentLang = lang, canonicalHref } = Astro.props;
+const t = ui[lang];
+const site = Astro.site!;
+const canonical = new URL(canonicalHref ?? Astro.url.pathname, site);
+const versions = page ? alternates(page) : (pageAlternates ?? []);
+const xDefault = versions.find((version) => version.lang === defaultLang);
+const wiki = wikiHome(lang);
+const home = path('home', lang);
+const wikiCurrent = Astro.url.pathname.startsWith(wiki);
+const chromeLang = contentLang !== lang ? lang : undefined;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'OpenDJDecks',
+  url: site.toString(),
+  description: t.meta.description,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: ['macOS', 'Windows', 'Linux', 'Raspberry Pi'],
+  license: 'https://www.gnu.org/licenses/gpl-3.0.html',
+  codeRepository: repoUrl,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+  image: new URL('/og.jpg', site).toString(),
+};
+---
+
+<!doctype html>
+<html lang={contentLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#151514" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {versions.map((version) => <link rel="alternate" hreflang={version.lang} href={new URL(version.href, site)} />)}
+    {xDefault && <link rel="alternate" hreflang="x-default" href={new URL(xDefault.href, site)} />}
+    <link rel="preload" href="/fonts/barlow-semi-condensed-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/barlow-semi-condensed-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="OpenDJDecks" />
+    <meta property="og:locale" content={languages[lang].og} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL('/og.jpg', site)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body>
+    <a class="skip" href="#main" lang={chromeLang}>{t.skip}</a>
+    <header class="nav" data-nav lang={chromeLang}>
+      <div class="nav__bar">
+        <a class="nav__brand" href={home} aria-label={t.nav.home}>
+          <Logo />
+          <span class="nav__word" aria-hidden="true">OPEN<b>DJ</b>DECKS</span>
+        </a>
+        <nav class="nav__links" aria-label={t.nav.menu}>
+          <a href={wiki} aria-current={wikiCurrent ? 'true' : undefined}>{t.nav.wiki}</a>
+          <a href={repoUrl}>{t.nav.github}</a>
+        </nav>
+        <div class="nav__end">
+          {
+            versions.length > 0 && (
+              <ul class="nav__lang" aria-label={t.nav.language}>
+                {versions.map((version) => (
+                  <li>
+                    <a
+                      href={version.href}
+                      hreflang={version.lang}
+                      lang={version.lang}
+                      aria-current={version.lang === lang ? 'true' : undefined}
+                      title={languages[version.lang].label}
+                    >
+                      {languages[version.lang].short}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+          <a class="plate-btn plate-btn--primary nav__download" href={path('download', lang)} aria-current={page === 'download' ? 'page' : undefined}>
+            {t.nav.download}
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="foot" lang={chromeLang}>
+      <div class="container">
+        <div class="foot__row">
+          <a class="nav__brand" href={home} aria-label={t.nav.home}>
+            <Logo />
+            <span class="nav__word" aria-hidden="true">OPEN<b>DJ</b>DECKS</span>
+          </a>
+          <nav class="foot__links" aria-label={t.legal.imprint}>
+            <a href={path('download', lang)}>{t.nav.download}</a>
+            <a href={wiki}>{t.footer.wiki}</a>
+            <a href={repoUrl}>{t.footer.source}</a>
+            <a href={path('imprint', lang)}>{t.legal.imprint}</a>
+            <a href={path('privacy', lang)}>{t.legal.privacy}</a>
+          </nav>
+        </div>
+        <p class="foot__line">{t.footer.line}</p>
+        <p class="foot__tm">{t.footer.trademark}</p>
+      </div>
+    </footer>
+    <script>
+      import '../scripts/nav';
+    </script>
+  </body>
+</html>
+
+<style>
+  .nav {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 50;
+    border-bottom: 1px solid transparent;
+    transition:
+      background 0.3s var(--ease-out),
+      border-color 0.3s var(--ease-out);
+  }
+  :global(.nav[data-scrolled]) {
+    background: rgb(21 21 20 / 0.94);
+    border-color: var(--rule);
+  }
+  .nav__bar {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    width: min(100%, var(--max));
+    height: var(--nav-h);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+  .nav__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.75rem;
+    color: var(--bone);
+    text-decoration: none;
+  }
+  .nav__brand :global(svg) {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: none;
+  }
+  .nav__word {
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.19em;
+  }
+  .nav__word b {
+    color: var(--bone-3);
+    font-weight: 600;
+  }
+  .nav__links {
+    display: flex;
+    gap: 1.6rem;
+    margin-left: auto;
+  }
+  .nav__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding-inline: 0.15rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--bone-2);
+    transition: color 0.2s var(--ease-out);
+  }
+  .nav__links a:hover,
+  .nav__links a[aria-current] {
+    color: var(--bone);
+  }
+  .nav__end {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .nav__lang {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+  }
+  .nav__lang a {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    color: var(--bone-3);
+    text-decoration: none;
+  }
+  .nav__lang a[aria-current] {
+    color: var(--bone);
+    box-shadow: inset 0 -2px 0 var(--sodium);
+  }
+  .nav__download {
+    min-height: 2.75rem;
+    padding-inline: 1rem;
+    font-size: 0.8rem;
+  }
+  @media (max-width: 40rem) {
+    .nav__word {
+      display: none;
+    }
+    .nav__bar {
+      gap: 0.5rem;
+    }
+    .nav__links {
+      gap: 0.6rem;
+    }
+    .nav__links a:last-child {
+      display: none;
+    }
+    .nav__end {
+      gap: 0.3rem;
+    }
+    .nav__lang a {
+      min-width: 2.75rem;
+    }
+  }
+
+  .foot {
+    margin-top: auto;
+    border-top: 1px solid var(--rule);
+    padding: 2.5rem 0 3rem;
+    color: var(--bone-3);
+    font-size: 0.9rem;
+  }
+  .foot__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 2.5rem;
+  }
+  .foot__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.5rem;
+    margin-left: auto;
+  }
+  .foot__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: var(--bone-2);
+    text-decoration: none;
+  }
+  .foot__links a:hover {
+    color: var(--bone);
+  }
+  .foot__line {
+    margin-top: 1rem;
+  }
+  .foot__tm {
+    margin-top: 0.35rem;
+    max-width: 62rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+  @media (max-width: 40rem) {
+    .foot__links {
+      margin-left: 0;
+      gap: 0 1.1rem;
+    }
+  }
+</style>

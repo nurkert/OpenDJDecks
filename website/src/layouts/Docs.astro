@@ -1,0 +1,49 @@
+---
+// The wiki frame: search and navigation left, the page itself, the contents on the right.
+import '../styles/prose.css';
+import '../styles/docs.css';
+
+import Base from './Base.astro';
+import DocsNav from '../components/docs/DocsNav.astro';
+import DocsSearch from '../components/docs/DocsSearch.astro';
+import DocsToc from '../components/docs/DocsToc.astro';
+import { ui, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  headings?: { depth: number; text: string; slug: string }[];
+  current: string;
+  alternates?: { lang: Lang; href: string }[];
+  canonicalHref?: string;
+  contentLang?: Lang;
+}
+const { lang, title, description, headings = [], current, alternates, canonicalHref, contentLang } = Astro.props;
+const t = ui[lang];
+---
+
+<Base {lang} {title} {description} {alternates} {canonicalHref} {contentLang}>
+  <div class="docs">
+    <div class="docs__side">
+      <DocsSearch lang={lang} id="search-main" />
+      <details class="docs__menu" data-docs-menu>
+        <summary>{t.docs.menu}</summary>
+        <DocsNav lang={lang} current={current} />
+      </details>
+      <div class="docs__scroll">
+        <DocsNav lang={lang} current={current} />
+      </div>
+    </div>
+    <main id="main" class="docs__main">
+      <slot />
+    </main>
+    <aside class="docs__toc">
+      <DocsToc lang={lang} headings={headings} />
+    </aside>
+  </div>
+</Base>
+
+<script>
+  import '../scripts/search';
+</script>

@@ -1,0 +1,1322 @@
+import { Theme } from "tokens.slint";
+import { VLine, HLine, ProgressLine } from "lines.slint";
+import { UpdateBar } from "update.slint";
+import { DragGhost, DragState } from "drag.slint";
+export { DragState }
+export { PopupPlace }
+export { DeckTime, GridEdit, DeckGrid, DeckGridView } from "structs.slint";
+import { InfoPanel, TrackInfo } from "info.slint";
+import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace } from "controls.slint";
+import { TooltipLayer } from "tooltip.slint";
+import { Sidebar, RailItem } from "sidebar.slint";
+import { TopBar } from "topbar.slint";
+import { PreparePlayer } from "player.slint";
+import { TrackTable, TableStyle } from "table.slint";
+export { TableStyle }
+import { UserTagPanel, SuggestionPanel } from "user_tags.slint";
+import { ColumnView, ColumnChoice, FilterView, UserTagChip, SuggestionRow } from "structs.slint";
+export { ColumnView, ColumnChoice, FilterView, UserTagChip, SuggestionRow }
+import { DeviceLine } from "devices.slint";
+import { SetFlow } from "flow.slint";
+import { PerformView } from "perform.slint";
+import { LightingView, Lighting, LightFixtureView, LightGroupView, LightingWindow } from "lighting.slint";
+import { Club, ClubStep, ClubItem } from "club.slint";
+export { Club, ClubStep, ClubItem }
+import { Mic } from "mic.slint";
+import { Rec, RecTrack, RecPanel, RecBar } from "rec.slint";
+import { MixPreview, MixPreviewDeck, MixPreviewPanel } from "mix_preview.slint";
+export { MixPreview, MixPreviewDeck }
+export { Rec, RecTrack }
+export { Mic }
+import { CueEdit, MiniPlayer, MiniView, PhraseEdit, TrackEdit } from "player.slint";
+import { SubBrowser, SubBrowserPane, SubTrackRow } from "subbrowser.slint";
+export { SubBrowser, SubTrackRow }
+export { MiniView }
+export { CueEdit, PhraseEdit, TrackEdit }
+import { FxSlots } from "fx.slint";
+export { FxSlots }
+import { MixerParts, PerformLayout } from "perform.slint";
+export { MixerParts, PerformLayout }
+export { Lighting, LightFixtureView, LightGroupView, LightingWindow }
+import { PreferencesWindow, KeyRow } from "preferences.slint";
+import { VocalMark, TreeRow, TrackRow, CueMark, HotCueSlot, DeviceRow, VolumeRow, FlowPoint, DeckView, ChannelView, PhraseMark, ExplorerRow, LaneMotion, MenuTarget } from "structs.slint";
+
+export { PreferencesWindow, KeyRow }
+// Perform panels (FX, sampler, pad modes).
+import { FxUnitView, FxSlotView, SamplerPadView, SamplerView } from "structs.slint";
+export { FxUnitView, FxSlotView, SamplerPadView, SamplerView }
+export { Theme, TooltipState, TreeRow, TrackRow, CueMark, HotCueSlot, DeviceRow, VolumeRow, FlowPoint, DeckView, ChannelView, PhraseMark, ExplorerRow, LaneMotion, MenuTarget, TrackInfo }
+
+export struct NodeChoice {
+    id: int,
+    name: string,
+    depth: int,
+    checked: bool,
+}
+
+export struct RecordingRow {
+    id: int,
+    name: string,
+    detail: string,
+    path: string,
+}
+
+component SectionTitle inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> sub;
+    spacing: 14px;
+    Text {
+        text: root.title;
+        font-family: Theme.family; font-size: Theme.rank-b; font-weight: 600;
+        color: Theme.bone; vertical-alignment: center;
+        overflow: elide;
+    }
+    Caps { text: root.sub; vertical-alignment: center; }
+}
+
+export component AppWindow inherits Window {
+    // Popups keep inside the window (PopupPlace).
+    init => { PopupPlace.window-width = self.width; PopupPlace.window-height = self.height; }
+    changed width => { PopupPlace.window-width = self.width; }
+    changed height => { PopupPlace.window-height = self.height; }
+    title: "OpenDJDecks";
+    // Window / taskbar icon (X11 and Windows; Wayland and macOS take it
+    // from the .desktop file / the bundle).
+    icon: @image-url("../../../packaging/assets/icon-256.png");
+    preferred-width: 1440px;
+    preferred-height: 900px;
+    min-width: root.kiosk ? 480px : 800px;
+    min-height: root.kiosk ? 320px : 640px;
+    background: Theme.ground;
+    default-font-family: Theme.family;
+    default-font-size: Theme.body;
+
+    in-out property <string> mode: "prepare";
+    in-out property <string> section: "library";
+    in property <bool> kiosk;
+
+    // Library.
+    in property <[TreeRow]> tree;
+    in property <int> selected-node: -1;
+    in property <string> node-kind: "all";
+    in property <string> node-title: "All tracks";
+    in property <string> node-sub;
+    in property <[TrackRow]> tracks;
+    in property <string> sort-column: "date_added";
+    in property <bool> sort-descending: true;
+    in-out property <string> search-text;
+    in property <string> smart-rule-text;
+    in property <string> smart-rule-error;
+    in property <bool> has-selection;
+    // Browsing a stick: no editing.
+    in property <bool> read-only;
+    in property <int> selection-count;
+    in property <int> focus-row: -1;
+    // Explorer: folders on disk.
+    in property <[ExplorerRow]> explorer;
+    in property <int> explorer-selected: -1;
+    // Explorer folder list also shows the files of all sub-folders.
+    in-out property <bool> explorer-recursive;
+
+    // Selected track.
+    in property <bool> has-track;
+    in property <string> track-title;
+    in property <string> track-artist;
+    in property <string> track-bpm;
+    in property <string> track-key;
+    in property <string> track-duration;
+    in property <string> grid-source;
+    in property <bool> grid-locked;
+    in property <bool> track-analysed;
+    in property <image> track-overview;
+    in property <[CueMark]> track-cues;
+    in property <[HotCueSlot]> hot-cues-top;
+    in property <[HotCueSlot]> hot-cues-bottom;
+    in property <[PhraseMark]> track-phrases;
+    // Pane sizes, set by the splitters and restored from the library.
+    in-out property <length> sidebar-width: 260px;
+    in-out property <length> upper-height: 0px;
+    in property <[HotCueSlot]> hot-cues;
+    in property <image> track-detail;
+    // The enlarged waveform's span as a fraction of the track (cue markers).
+    in property <float> track-span;
+    in property <string> track-position;
+    in property <float> cursor;
+    in property <bool> previewing;
+
+    // Sets.
+    in property <[FlowPoint]> flow;
+    in property <string> flow-total;
+    in property <int> flow-selected: -1;
+    in property <string> transition-note;
+    // Sets: planned start and the backup tracks of the selected position.
+    in property <string> set-planned-start;
+    in property <string> set-backups-text;
+    callback save-planned-start(string);
+    // "from-tag-list" or "clear".
+    callback backups-action(string);
+
+    // Devices.
+    in property <[DeviceRow]> devices;
+    in property <[VolumeRow]> volumes;
+    in property <string> register-target;
+    in property <int> device-selected: -1;
+    in property <string> device-name;
+    in property <[NodeChoice]> device-content;
+
+    // Recordings.
+    in property <[RecordingRow]> recordings;
+    // Prepare layout: "player" (player above the browser), "two" (a second,
+    // compact player below it), "dual" (two compact players side by side),
+    // "simple" (one compact player) or "browser" (full browser); persisted
+    // in the library meta.
+    in-out property <string> prepare-layout: "player";
+    // The compact players (1: the selected track, 2: the second player).
+    in property <MiniView> mini1;
+    in property <MiniView> mini2;
+    callback mini-seek(int, float);
+    callback mini-act(int, string);
+    callback cycle-layout();
+    // Menu bar items and other commands by keymap action id.
+    callback menu-action(string);
+    // Files dragged in from Finder / the file manager: accepted when the
+    // transfer carries file paths; dropped with the drop target under the
+    // pointer (DragState.target: deck, player, list, list position; 0 =
+    // the collection and the open list).
+    pure callback drop-accepts(data-transfer) -> bool;
+    callback files-dropped(data-transfer, int);
+    // A file drag hovers the window (native drops that carry no position).
+    in-out property <bool> file-drag;
+    // Where a controller's browse encoder works: "tree" or "list".
+    in property <string> browse-focus: "list";
+    // Status band: summary of the open list (tracks, time, size).
+    in property <string> list-summary;
+    // Duplicates view: groups found.
+    in property <int> duplicate-groups;
+    callback duplicates-action(string);
+
+    // Perform.
+    in property <[DeckView]> decks;
+    // Update notice (SPEC §14.1); "" = hidden.
+    in property <string> update-state;
+    in property <string> update-text;
+    in property <float> update-progress;
+    callback update-action(string);
+    in property <[LaneMotion]> lane-motion;
+    callback deck-zoom(int, float);
+    callback deck-zoom-reset(int);
+    callback cycle-bar-counter();
+    in property <[DeckView]> decks-left;
+    in property <[DeckView]> decks-right;
+    in property <[ChannelView]> channels;
+    in property <float> master-level: 1;
+    in property <float> headphone-mix: 0.5;
+    in property <float> headphone-level: 0.8;
+    in property <bool> recording;
+    in property <string> recording-time;
+    in property <string> master-bpm;
+    // Top bar: connected controller, master meter (0..1, clip) and the clock.
+    in property <string> midi-device;
+    in property <float> master-meter;
+    in property <bool> master-clip;
+    in property <string> clock;
+    in property <float> crossfader: 0.5;
+    in property <bool> engine-ready;
+    in property <string> engine-message;
+    in property <bool> focus-mode;
+    in property <int> focus-deck: 1;
+    // Library browser below the decks (kiosk: a separate screen).
+    in-out property <bool> browser-open: true;
+    // Perform panels (top bar FX / SAMPLER), persisted in the settings.
+    in property <bool> fx-panel;
+    in property <bool> sampler-panel;
+    callback toggle-fx-panel();
+    callback toggle-sampler-panel();
+    // Where a double-click in the list loads in Perform: 0 = the free deck,
+    // 1..4 = that deck; and the list row density ("compact", "normal", "roomy").
+    in-out property <int> load-target;
+    in property <string> density: "normal";
+    callback cycle-density();
+    // Histories: the year shown ("" = none yet) and how many years exist.
+    in property <string> history-year;
+    in property <int> history-year-count;
+    callback tree-filter(string);
+    // Window shorter than 860 px (set from the frame tick, like small-screen).
+    in property <bool> short-screen;
+    // Perform when the window is too short for decks, waveforms and the open
+    // bottom panels (set from the frame tick, see `content-overflow`):
+    // 0 = full, 1 = compact decks and mixer, 2 = also without the waveform
+    // zone. The waveform lanes first shrink to their smallest height by
+    // themselves; the browser keeps its minimum.
+    in property <int> perform-crowd;
+    // The content's smallest height and the height it is laid out in (the
+    // window, or the content's minimum when that is taller); the frame tick
+    // compares them with the window to find an overflow.
+    out property <length> content-min: main.min-height;
+    out property <length> content-height: root.height;
+    // Window narrower than 1500 px: compact top bar.
+    in property <bool> narrow-screen;
+    callback toggle-full-screen();
+    // macOS integrated title bar: room for the window buttons in the top
+    // bar (logical px, 0 in full screen), window move and zoom from it.
+    in property <length> chrome-inset;
+    callback window-drag();
+    callback window-zoom();
+    callback explorer-open-roots();
+    // Prepare player: time left, loop / quantize state of the preview, the
+    // jump size and the zoom of the enlarged waveform, and its actions.
+    in property <string> track-remaining;
+    in property <string> player-loop-size: "4";
+    in property <bool> player-looping;
+    in property <bool> player-loop-in-set;
+    in property <bool> player-quantize: true;
+    in property <string> player-jump-size: "2 S";
+    in property <string> player-zoom: "8 S";
+    callback player-act(string);
+    callback sampler-bpm-scale(float);
+    callback sampler-seq-save();
+    callback sync-all-devices();
+    callback history-year-step(int);
+    // Top bar MIXER, MIX PREVIEW and REC toggles (persisted in the settings).
+    in property <bool> mixer-panel: true;
+    in property <bool> mix-preview-panel;
+    in property <bool> rec-panel: true;
+    // Tempo FX units (1-based unit numbers) and the Channel FX selection.
+    in property <[FxUnitView]> fx-units;
+    in property <int> channel-fx;
+    callback fx-kind(int, int);
+    callback fx-kind-step(int, int);
+    callback fx-beats-step(int, int);
+    callback fx-target(int, int);
+    callback fx-level(int, float);
+    callback fx-param(int, float);
+    callback fx-on(int);
+    callback fx-tap(int);
+    callback fx-release(int, int, bool);
+    callback channel-fx-select(int);
+    callback channel-fx-step(int);
+    // Sampler panel: the 16 pads of the shown bank, the selected slot's steps.
+    in property <[SamplerPadView]> sampler-pads;
+    in property <[bool]> sampler-steps;
+    in property <SamplerView> sampler;
+    callback sampler-pad(int, bool);
+    callback sampler-select(int);
+    callback sampler-bank(int);
+    callback sampler-load(int);
+    callback sampler-unload();
+    callback sampler-stop-all();
+    callback sampler-mode(int);
+    callback sampler-gain(float);
+    callback sampler-sync();
+    callback sampler-quantize();
+    callback sampler-volume(float);
+    callback sampler-cue();
+    callback sampler-step(int);
+    callback sampler-seq-play();
+    callback sampler-seq-record();
+    callback sampler-seq-clear();
+    // Deck pads in their pad mode (1-based deck, pad 0..7), the pad mode
+    // selector, key sync / shift and the beat jump size.
+    callback deck-pad(int, int, bool);
+    callback deck-pad-alt(int, int);
+    callback deck-pad-mode-step(int, int);
+    callback deck-pad-mode-set(int, int);
+    callback deck-pad-param(int, int);
+    callback deck-key-sync(int);
+    callback deck-key-shift(int, int);
+    callback deck-beat-jump-step(int, bool);
+    in property <bool> small-screen;
+    in property <image> ground-texture;
+
+    // Status band.
+    in property <float> analysis-progress;
+    in property <string> analysis-text;
+    in property <string> status-text;
+    in property <string> undo-label;
+    in property <string> redo-label;
+
+    callback select-section(string);
+    callback set-mode(string);
+    callback select-node(int);
+    callback toggle-node(int);
+    callback add-to-node(int);
+    callback create-node(string);
+    callback rename-node(string);
+    callback delete-node();
+    callback remove-selected();
+    callback search(string);
+    callback set-smart-rule(string);
+    callback sort(string);
+    callback row-clicked(int, bool, bool);
+    callback row-activated(int);
+    callback row-dropped(int, int);
+    callback row-rated(int, int);
+    callback row-menu(int, string);
+    in property <[MenuTarget]> menu-playlists;
+    // Lists added to last: inline in the row menu.
+    in property <[MenuTarget]> menu-recent;
+    // Sub-browser under the list (View > Sub Browser, SUB in the list header).
+    in-out property <bool> sub-browser-open;
+    callback toggle-sub-browser();
+    // Track info panel (right of the browser).
+    in-out property <bool> info-open;
+    in property <TrackInfo> track-info;
+    callback info-edit(string, string);
+    // Browser: columns (choice, order, secondary sort), quick filter, row
+    // reorder, Tags, tag list, similar tracks, histories, tree drag.
+    in property <[ColumnView]> columns;
+    in property <[ColumnChoice]> column-choices;
+    in property <bool> reorderable;
+    in property <bool> filter-open;
+    in property <FilterView> filter;
+    in property <[string]> user-tag-options;
+    in property <[TreeRow]> histories;
+    // AUTO SORT groups and lists (sidebar).
+    in property <[TreeRow]> auto-sort;
+    in property <int> tag-list-count;
+    in property <int> similar-count;
+    // Similar tracks list: "master" or the deck number it follows.
+    in property <string> similar-source: "master";
+    in-out property <bool> user-tag-open;
+    in property <[UserTagChip]> user-tag-chips;
+    in-out property <bool> similar-open;
+    in property <[SuggestionRow]> suggestions;
+    in property <string> suggestion-reference;
+    callback sort-then(string);
+    callback toggle-column(string);
+    callback move-column(string, int);
+    callback resize-column(string, float);
+    callback column-measured(string, float);
+    callback resize-begin(string);
+    callback reset-columns();
+    callback toggle-filter();
+    callback filter-edit(string, string);
+    callback node-dropped(int, int);
+    callback add-to-tag-list();
+    callback tag-list-action(string);
+    callback similar-source-set(string);
+    callback user-tag-toggle(string, string);
+    callback user-tag-add(string);
+    callback suggestion-activated(int);
+    callback suggestion-open();
+    callback panels-changed();
+    callback import-folder();
+    callback explorer-select(int);
+    callback explorer-toggle(int);
+    callback explorer-add-root();
+    callback explorer-remove-root(int);
+    callback explorer-set-recursive(bool);
+    callback seek(float);
+    callback hot-cue(int);
+    callback remove-hot-cue(int);
+    callback add-memory-cue();
+    callback grid-shift(int);
+    callback grid-scale(float);
+    callback grid-downbeat();
+    callback grid-lock();
+    callback grid-tap();
+    callback grid-bpm(string);
+    callback analyse-selected();
+    callback toggle-preview();
+    callback flow-select(int);
+    callback set-transition-note(string);
+    callback sync-device(int);
+    callback rebuild-device(int);
+    callback eject-device(int);
+    callback open-device(int);
+    callback forget-device(int);
+    callback register-volume(int);
+    callback set-device-node(int, bool);
+    callback rename-device(string);
+    callback undo();
+    callback redo();
+    callback reveal-recording(int);
+    callback split-recording(int);
+    callback find-moved-files();
+    in property <int> missing-count;
+    callback deck-toggle-play(int);
+    callback deck-cue(int);
+    callback deck-sync(int);
+    callback deck-seek(int, float);
+    callback deck-hot-cue(int, int);
+    callback toggle-recording();
+    callback set-deck-count(int);
+    // Perform view from the top-bar menu: "2h", "2v", "4h", "4v", "browse".
+    callback set-perform-view(string);
+    // Key text and modifiers: control (⌘ on macOS), meta (Ctrl on macOS, Super on Linux), alt, shift.
+    callback key-pressed(string, bool, bool, bool, bool) -> bool;
+    // Held keys (pitch bend) end on release.
+    callback key-released(string);
+    callback open-preferences();
+    callback check-updates();
+    // Appearance: the top-bar button cycles dark → light → system; Rust
+    // hears every change of the effective palette (waveform images).
+    callback cycle-appearance();
+    callback appearance-changed(bool);
+    property <bool> theme-light: Theme.light;
+    changed theme-light => { root.appearance-changed(self.theme-light); }
+    // Each change focuses the search field (keyboard: search).
+    in property <int> search-focus;
+    // Preferences > View: phrases on the enlarged waveforms and the phrase
+    // bar under the overviews.
+    in property <bool> show-phrases: true;
+    in property <bool> show-phrases-overview: true;
+    callback nudge(float);
+    callback jump-start();
+    callback deck-master(int);
+    callback deck-keylock(int);
+    callback deck-quantize(int);
+    callback deck-slip(int);
+    callback deck-tempo(int, float);
+    callback deck-stem(int, string);
+    callback deck-stem-level(int, string, float);
+    callback deck-loop(int, float);
+    callback deck-loop-exit(int);
+    callback deck-loop-scale(int, float);
+    callback deck-beat-jump(int, float);
+    callback deck-loop-manual(int);
+    callback deck-tempo-range(int);
+    callback deck-set-bpm(int, string);
+    callback deck-load(int);
+    callback mixer-trim(int, float);
+    callback mixer-eq(int, int, float);
+    callback mixer-channel-fx(int, float);
+    callback mixer-fader(int, float);
+    callback mixer-cue(int);
+    callback set-crossfader(float);
+    callback set-master-level(float);
+    // Crossfader assignment per deck ("A", "B", "T"), and its keys (deck 1..4, side).
+    in property <[string]> xf-assign: ["T", "T", "T", "T"];
+    callback mixer-xf-assign(int, string);
+    callback set-headphone-mix(float);
+    callback set-headphone-level(float);
+
+    // The platform menu bar (native on macOS; hidden elsewhere, where its
+    // shortcuts still work). Preferences open with ⌘, / Ctrl+, as users
+    // expect; every other shortcut goes through the configurable keymap.
+    MenuBar {
+        // Not in the kiosk (full screen on the Pi, no menu bar).
+        visible: Platform.os == OperatingSystemType.macos && !root.kiosk;
+        Menu {
+            title: @tr("File");
+            MenuItem { title: @tr("Preferences…"); shortcut: @keys(Control + ","); activated => { root.open-preferences(); } }
+            MenuItem { title: @tr("Check for Updates…"); activated => { root.check-updates(); } }
+            MenuSeparator { }
+            MenuItem { title: @tr("Add Music Folder…"); activated => { root.import-folder(); } }
+            MenuItem { title: @tr("Import rekordbox Preferences and Shortcuts…"); activated => { root.menu-action("library.import.settings"); } }
+            MenuSeparator { }
+            MenuItem { title: @tr("Import Library XML (rekordbox-compatible)…"); activated => { root.menu-action("library.import.xml"); } }
+            MenuItem { title: @tr("Export Library XML (rekordbox-compatible)…"); activated => { root.menu-action("library.export.xml"); } }
+            MenuItem { title: @tr("Import Music / iTunes Library XML…"); activated => { root.menu-action("library.import.itunes"); } }
+            MenuSeparator { }
+            MenuItem { title: @tr("Export Library Archive…"); activated => { root.menu-action("library.export.archive"); } }
+            MenuItem { title: @tr("Restore Library Archive…"); activated => { root.menu-action("library.restore.archive"); } }
+            MenuItem { title: @tr("Consolidate Library…"); activated => { root.menu-action("library.consolidate"); } }
+            MenuItem { title: @tr("Find Duplicate Tracks"); activated => { root.menu-action("browser.duplicates"); } }
+        }
+        Menu {
+            title: @tr("View");
+            MenuItem { title: @tr("Full Screen"); activated => { root.toggle-full-screen(); } }
+            MenuSeparator { }
+            MenuItem { title: @tr("Prepare"); activated => { root.set-mode("prepare"); } }
+            MenuItem { title: @tr("Perform"); activated => { root.set-mode("perform"); } }
+            MenuItem { title: @tr("Lighting"); activated => { root.set-mode("lighting"); } }
+            MenuSeparator { }
+            Menu {
+                title: @tr("Prepare Layout");
+                MenuItem { title: @tr("Player and Browser"); checkable: true; checked: root.prepare-layout == "player"; activated => { root.menu-action("view.layout.player"); } }
+                MenuItem { title: @tr("2 Players"); checkable: true; checked: root.prepare-layout == "two"; activated => { root.menu-action("view.layout.two"); } }
+                MenuItem { title: @tr("Dual Player"); checkable: true; checked: root.prepare-layout == "dual"; activated => { root.menu-action("view.layout.dual"); } }
+                MenuItem { title: @tr("Simple Player"); checkable: true; checked: root.prepare-layout == "simple"; activated => { root.menu-action("view.layout.simple"); } }
+                MenuItem { title: @tr("Full Browser"); checkable: true; checked: root.prepare-layout == "browser"; activated => { root.menu-action("view.layout.browser"); } }
+            }
+            Menu {
+                title: @tr("Perform Layout");
+                MenuItem { title: @tr("Standard"); checkable: true; checked: PerformLayout.layout == "standard"; activated => { root.menu-action("perform.layout.set.standard"); } }
+                MenuItem { title: @tr("Vertical Waveforms"); checkable: true; checked: PerformLayout.layout == "vertical"; activated => { root.menu-action("perform.layout.set.vertical"); } }
+                MenuItem { title: @tr("Browse"); checkable: true; checked: PerformLayout.layout == "browse"; activated => { root.menu-action("perform.layout.set.browse"); } }
+            }
+            MenuSeparator { }
+            MenuItem { title: @tr("Tags"); checkable: true; checked: root.user-tag-open; activated => { root.menu-action("view.panel.user-tag"); } }
+            MenuItem { title: @tr("Similar Tracks"); checkable: true; checked: root.similar-open; activated => { root.menu-action("view.panel.similar"); } }
+            MenuItem { title: @tr("Info Panel"); checkable: true; checked: root.info-open; activated => { root.menu-action("view.panel.info"); } }
+            MenuItem { title: @tr("Filter Bar"); checkable: true; checked: root.filter-open; activated => { root.menu-action("browser.filter"); } }
+            MenuItem { title: @tr("Sub Browser"); checkable: true; checked: root.sub-browser-open; activated => { root.menu-action("view.panel.sub-browser"); } }
+            MenuSeparator { }
+            MenuItem { title: @tr("Library"); activated => { root.select-section("library"); } }
+            MenuItem { title: @tr("USB Sticks"); activated => { root.select-section("devices"); } }
+            MenuItem { title: @tr("Recordings"); activated => { root.select-section("recordings"); } }
+        }
+    }
+
+    forward-focus: keys;
+    // The charcoal continuum behind everything (plain paper in light mode).
+    if !Theme.light: Image { width: root.width; height: root.height; source: root.ground-texture; image-fit: fill; }
+    keys := FocusScope {
+        key-pressed(event) => {
+            if (root.key-pressed(event.text, event.modifiers.control, event.modifiers.meta, event.modifiers.alt, event.modifiers.shift)) {
+                return accept;
+            }
+            reject
+        }
+        key-released(event) => {
+            root.key-released(event.text);
+            reject
+        }
+
+        main := VerticalLayout {
+            TopBar {
+                chrome-inset: root.chrome-inset;
+                window-drag => { root.window-drag(); }
+                window-zoom => { root.window-zoom(); }
+                open-preferences => { root.open-preferences(); }
+                cycle-appearance => { root.cycle-appearance(); }
+                mode: root.mode;
+                kiosk: root.kiosk;
+                narrow: root.narrow-screen;
+                prepare-layout: root.prepare-layout;
+                cycle-layout => { root.cycle-layout(); }
+                deck-count: root.decks.length;
+                set-perform-view(v) => { root.set-perform-view(v); }
+                show-record: root.mode != "perform";
+                show-panels: root.mode == "perform";
+                fx-panel: root.fx-panel;
+                sampler-panel: root.sampler-panel;
+                toggle-fx-panel => { root.toggle-fx-panel(); }
+                toggle-sampler-panel => { root.toggle-sampler-panel(); }
+                mixer-panel: root.mixer-panel;
+                mix-preview-panel: root.mix-preview-panel;
+                rec-panel: root.rec-panel;
+                toggle-mixer-panel => { root.menu-action("perform.mixer.panel"); }
+                toggle-mix-preview-panel => { root.menu-action("perform.mix-preview.panel"); }
+                toggle-rec-panel => { root.menu-action("view.panel.rec"); }
+                status: root.mode == "perform"
+                    ? (root.engine-ready ? (root.master-bpm == "" ? @tr("NO MASTER") : @tr("MASTER {} BPM", root.master-bpm)) : root.engine-message)
+                    : root.analysis-text;
+                recording: root.recording;
+                recording-time: root.recording-time;
+                undo-label: root.undo-label;
+                midi-device: root.midi-device;
+                master-level: root.master-level;
+                master-meter: root.master-meter;
+                master-clip: root.master-clip;
+                clock: root.clock;
+                set-master-level(v) => { root.set-master-level(v); }
+                set-mode(m) => { root.set-mode(m); }
+                toggle-recording => { root.toggle-recording(); }
+                undo => { root.undo(); }
+            }
+            if root.update-state != "": UpdateBar {
+                state: root.update-state;
+                text: root.update-text;
+                progress: root.update-progress;
+                act(what) => { root.update-action(what); }
+            }
+
+            // ── Upper half: player (Prepare) or decks + mixer (Perform) ──
+            upper := VerticalLayout {
+            // Kiosk: the decks take the screen, except in the BROWSE layout
+            // where the browser below gets the room.
+            vertical-stretch: root.kiosk && !(root.mode == "perform" && PerformLayout.layout == "browse") ? 1 : 0;
+            preferred-height: root.mode == "prepare" && root.prepare-layout == "browser" ? 0px : root.upper-height > 0 ? root.upper-height
+                : (root.mode == "prepare" ? (root.prepare-layout == "two" ? 400px : root.prepare-layout == "dual" ? 150px : root.prepare-layout == "simple" ? 60px : 280px) : PerformLayout.layout == "browse" ? (root.kiosk ? 0px : 220px) : 560px + (PerformLayout.layout == "standard" ? (PerformLayout.wave-size == 2 ? 140px : PerformLayout.wave-size == 0 ? -40px : 0px) : 0px));
+            if root.mode == "prepare" && (root.prepare-layout == "player" || root.prepare-layout == "two"): PreparePlayer {
+                phrases: root.show-phrases-overview ? root.track-phrases : [];
+                info-width: root.sidebar-width;
+                info-dragged(d) => { root.sidebar-width = clamp(root.sidebar-width + d, 180px, 480px); }
+                info-reset => { root.sidebar-width = 260px; }
+                has-track: root.has-track;
+                title: root.track-title;
+                artist: root.track-artist;
+                bpm: root.track-bpm;
+                key: root.track-key;
+                duration: root.track-duration;
+                position: root.track-position;
+                grid-source: root.grid-source;
+                grid-locked: root.grid-locked;
+                analysed: root.track-analysed;
+                read-only: root.read-only;
+                overview: root.track-overview;
+                detail: root.track-detail;
+                detail-span: root.track-span;
+                has-artwork: root.track-info.has-artwork;
+                artwork: root.track-info.artwork;
+                cues: root.track-cues;
+                hot-cues: root.hot-cues;
+                cursor: root.cursor;
+                previewing: root.previewing;
+                seek(p) => { root.seek(p); }
+                nudge(d) => { root.nudge(d); }
+                hot-cue(s) => { root.hot-cue(s); }
+                remove-hot-cue(s) => { root.remove-hot-cue(s); }
+                add-memory-cue => { root.add-memory-cue(); }
+                grid-shift(ms) => { root.grid-shift(ms); }
+                grid-scale(f) => { root.grid-scale(f); }
+                grid-downbeat => { root.grid-downbeat(); }
+                grid-lock => { root.grid-lock(); }
+                grid-tap => { root.grid-tap(); }
+                grid-bpm(t) => { root.grid-bpm(t); }
+                analyse => { root.analyse-selected(); }
+                toggle-preview => { root.toggle-preview(); }
+                jump-start => { root.jump-start(); }
+                remaining: root.track-remaining;
+                loop-size: root.player-loop-size;
+                looping: root.player-looping;
+                loop-in-set: root.player-loop-in-set;
+                quantize: root.player-quantize;
+                jump-size: root.player-jump-size;
+                zoom: root.player-zoom;
+                act(w) => { root.player-act(w); }
+            }
+            // Mix Preview above the waveforms (top bar MIX PREVIEW).
+            if root.mode == "perform" && root.mix-preview-panel: MixPreviewPanel { }
+            if root.mode == "prepare" && root.prepare-layout == "two": MiniPlayer {
+                index: 2; view: root.mini2;
+                seek(p) => { root.mini-seek(2, p); }
+                act(w) => { root.mini-act(2, w); }
+            }
+            if root.mode == "prepare" && root.prepare-layout == "dual": HorizontalLayout {
+                vertical-stretch: 1;
+                MiniPlayer { index: 1; can-load: false; view: root.mini1; seek(p) => { root.mini-seek(1, p); } act(w) => { root.mini-act(1, w); } }
+                VLine { weight: 1px; tone: Theme.rule; }
+                MiniPlayer { index: 2; view: root.mini2; seek(p) => { root.mini-seek(2, p); } act(w) => { root.mini-act(2, w); } }
+            }
+            if root.mode == "prepare" && root.prepare-layout == "simple": MiniPlayer {
+                vertical-stretch: 1;
+                single-line: true;
+                index: 1; can-load: false; view: root.mini1;
+                seek(p) => { root.mini-seek(1, p); }
+                act(w) => { root.mini-act(1, w); }
+            }
+            if root.mode == "lighting": LightingView { vertical-stretch: 1; }
+            // Kiosk: the browse screen replaces the decks, except in the
+            // BROWSE layout (decks reduced, the browser below).
+            if root.mode == "perform" && (!(root.kiosk && root.browser-open) || PerformLayout.layout == "browse"): PerformView {
+                vertical-stretch: 1;
+                show-rec: root.rec-panel;
+                decks: root.decks;
+                lane-motion: root.lane-motion;
+                zoom(d, delta) => { root.deck-zoom(d, delta); }
+                zoom-reset(d) => { root.deck-zoom-reset(d); }
+                cycle-counter => { root.cycle-bar-counter(); }
+                show-fx: root.fx-panel;
+                fx-units: root.fx-units;
+                channel-fx: root.channel-fx;
+                fx-kind(u, k) => { root.fx-kind(u, k); }
+                fx-kind-step(u, d) => { root.fx-kind-step(u, d); }
+                fx-beats-step(u, d) => { root.fx-beats-step(u, d); }
+                fx-target(u, t) => { root.fx-target(u, t); }
+                fx-level(u, v) => { root.fx-level(u, v); }
+                fx-param(u, v) => { root.fx-param(u, v); }
+                fx-on(u) => { root.fx-on(u); }
+                fx-tap(u) => { root.fx-tap(u); }
+                fx-release(u, k, p) => { root.fx-release(u, k, p); }
+                channel-fx-select(i) => { root.channel-fx-select(i); }
+                channel-fx-step(d) => { root.channel-fx-step(d); }
+                show-sampler: root.sampler-panel;
+                sampler-pads: root.sampler-pads;
+                sampler-steps: root.sampler-steps;
+                sampler: root.sampler;
+                sampler-pad(i, d) => { root.sampler-pad(i, d); }
+                sampler-select(i) => { root.sampler-select(i); }
+                sampler-bank(b) => { root.sampler-bank(b); }
+                sampler-load(i) => { root.sampler-load(i); }
+                sampler-unload => { root.sampler-unload(); }
+                sampler-stop-all => { root.sampler-stop-all(); }
+                sampler-mode(m) => { root.sampler-mode(m); }
+                sampler-gain(g) => { root.sampler-gain(g); }
+                sampler-sync => { root.sampler-sync(); }
+                sampler-quantize => { root.sampler-quantize(); }
+                sampler-volume(v) => { root.sampler-volume(v); }
+                sampler-cue => { root.sampler-cue(); }
+                sampler-step(k) => { root.sampler-step(k); }
+                sampler-seq-play => { root.sampler-seq-play(); }
+                sampler-seq-record => { root.sampler-seq-record(); }
+                sampler-seq-clear => { root.sampler-seq-clear(); }
+                sampler-bpm-scale(f) => { root.sampler-bpm-scale(f); }
+                sampler-seq-save => { root.sampler-seq-save(); }
+                decks-left: root.decks-left;
+                decks-right: root.decks-right;
+                channels: root.channels;
+                crossfader: root.crossfader;
+                master-level: root.master-level;
+                headphone-mix: root.headphone-mix;
+                headphone-level: root.headphone-level;
+                tight: root.small-screen;
+                short: root.short-screen;
+                crowd: root.perform-crowd;
+                touch-size: root.kiosk;
+                show-mixer: !root.small-screen && root.mixer-panel;
+                recording: root.recording;
+                recording-time: root.recording-time;
+                toggle-recording => { root.toggle-recording(); }
+                toggle-play(d) => { root.deck-toggle-play(d); }
+                cue(d) => { root.deck-cue(d); }
+                sync(d) => { root.deck-sync(d); }
+                master(d) => { root.deck-master(d); }
+                keylock(d) => { root.deck-keylock(d); }
+                quantize(d) => { root.deck-quantize(d); }
+                slip(d) => { root.deck-slip(d); }
+                seek(d, p) => { root.deck-seek(d, p); }
+                pad(d, i, p) => { root.deck-pad(d, i, p); }
+                pad-alt(d, i) => { root.deck-pad-alt(d, i); }
+                pad-mode-step(d, x) => { root.deck-pad-mode-step(d, x); }
+                pad-mode-set(d, i) => { root.deck-pad-mode-set(d, i); }
+                pad-param(d, x) => { root.deck-pad-param(d, x); }
+                key-sync(d) => { root.deck-key-sync(d); }
+                key-shift(d, x) => { root.deck-key-shift(d, x); }
+                tempo(d, v) => { root.deck-tempo(d, v); }
+                stem(d, s) => { root.deck-stem(d, s); }
+                stem-level(d, s, v) => { root.deck-stem-level(d, s, v); }
+                loop(d, b) => { root.deck-loop(d, b); }
+                loop-exit(d) => { root.deck-loop-exit(d); }
+                loop-scale(d, f) => { root.deck-loop-scale(d, f); }
+                beat-jump-step(d, f) => { root.deck-beat-jump-step(d, f); }
+                load(d) => { root.deck-load(d); }
+                loop-manual(d) => { root.deck-loop-manual(d); }
+                tempo-range(d) => { root.deck-tempo-range(d); }
+                set-bpm(d, t) => { root.deck-set-bpm(d, t); }
+                trim(c, v) => { root.mixer-trim(c, v); }
+                eq(c, b, v) => { root.mixer-eq(c, b, v); }
+                channel-fx-amount(c, v) => { root.mixer-channel-fx(c, v); }
+                fader(c, v) => { root.mixer-fader(c, v); }
+                channel-cue(c) => { root.mixer-cue(c); }
+                xf-assign: root.xf-assign;
+                xf-assign-set(d, x) => { root.mixer-xf-assign(d, x); }
+                set-crossfader(v) => { root.set-crossfader(v); }
+                set-master-level(v) => { root.set-master-level(v); }
+                set-headphone-mix(v) => { root.set-headphone-mix(v); }
+                set-headphone-level(v) => { root.set-headphone-level(v); }
+            }
+            }
+            // Recording bar under the player (top bar REC).
+            if root.mode == "prepare" && root.rec-panel && !root.kiosk: RecBar { }
+            if !root.kiosk && !(root.mode == "prepare" && root.prepare-layout == "browser"): Splitter {
+                accessible-label: "browser.upper-splitter"; accessible-role: slider;
+                horizontal: true;
+                tooltip: @tr("Drag to resize, double-click to reset");
+                dragged(d) => { root.upper-height = clamp(upper.height + d, upper.min-height, root.height - 260px); }
+                reset => { root.upper-height = 0px; }
+            }
+
+            // ── Lower half: the browser ──
+            if !root.kiosk || root.browser-open || (root.mode == "perform" && PerformLayout.layout == "browse"): HorizontalLayout {
+                vertical-stretch: 1;
+                // The source rail needs its nine sources at the 24 px minimum.
+                min-height: root.kiosk ? 180px : 218px;
+                Sidebar {
+                    width: root.kiosk ? 190px : root.sidebar-width;
+                    tree: root.tree;
+                    selected-node: root.selected-node;
+                    section: root.section;
+                    can-add: root.has-selection;
+                    devices: root.devices;
+                    volumes: root.volumes;
+                    register-target: root.register-target;
+                    device-selected: root.device-selected;
+                    recordings-count: root.recordings.length;
+                    explorer: root.explorer;
+                    explorer-selected: root.explorer-selected;
+                    explorer-select(i) => { root.explorer-select(i); }
+                    explorer-toggle(i) => { root.explorer-toggle(i); }
+                    explorer-add-root => { root.explorer-add-root(); }
+                    explorer-open-roots => { root.explorer-open-roots(); }
+                    explorer-remove-root(i) => { root.explorer-remove-root(i); }
+                    select-node(id) => { root.select-node(id); }
+                    toggle-node(id) => { root.toggle-node(id); }
+                    add-to-node(id) => { root.add-to-node(id); }
+                    create-node(k) => { root.create-node(k); }
+                    select-section(s) => { root.select-section(s); }
+                    open-device(id) => { root.open-device(id); }
+                    sync-device(id) => { root.sync-device(id); }
+                    sync-all-devices => { root.sync-all-devices(); }
+                    tree-filter(t) => { root.tree-filter(t); }
+                    eject-device(id) => { root.eject-device(id); }
+                    register-volume(i) => { root.register-volume(i); }
+                    import-folder => { root.import-folder(); }
+                    histories: root.histories;
+                    auto-sort: root.auto-sort;
+                    history-year: root.history-year;
+                    history-year-count: root.history-year-count;
+                    history-year-step(d) => { root.history-year-step(d); }
+                    tag-list-count: root.tag-list-count;
+                    similar-count: root.similar-count;
+                    add-to-tag-list => { root.add-to-tag-list(); }
+                    node-dropped(s, t) => { root.node-dropped(s, t); }
+                    node-kind: root.node-kind;
+                    browse-focus: root.browse-focus == "tree";
+                    open-sampler => { root.menu-action("browser.source.sampler"); }
+                }
+                Splitter {
+                    accessible-label: "browser.splitter"; accessible-role: slider;
+                    thickness: Theme.target;
+                    horizontal: false;
+                    tooltip: @tr("Drag to resize, double-click to reset");
+                    dragged(d) => { root.sidebar-width = clamp(root.sidebar-width + d, 180px, 480px); }
+                    reset => { root.sidebar-width = 260px; }
+                }
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    padding-left: 4px;
+                    padding-right: 12px;
+                    padding-top: 8px;
+                    spacing: 8px;
+
+                    // List header: title, count, search and list actions.
+                    if root.section == "library": HorizontalLayout {
+                        spacing: root.kiosk ? 6px : 10px;
+                        height: root.kiosk ? 44px : 32px;
+                        title := TextInput {
+                            accessible-label: "browser.list-title"; accessible-role: text-input;
+                            accessible-value: self.text; accessible-read-only: self.read-only;
+                            // Gives way to the list keys on a narrow window (info
+                            // panel open, moved files to find).
+                            min-width: root.kiosk ? 60px : 120px;
+                            max-width: min(self.preferred-width + 8px, root.kiosk ? 120px : 360px);
+                            horizontal-stretch: 0;
+                            text: root.node-title;
+                            read-only: root.node-kind == "all" || root.node-kind == "explorer" || root.node-kind == "similar" || root.node-kind == "history" || root.node-kind == "taglist" || root.node-kind == "auto" || root.read-only;
+                            font-family: Theme.family; font-size: 18px; font-weight: 600;
+                            color: Theme.bone;
+                            vertical-alignment: center;
+                            single-line: true;
+                            accepted => { root.rename-node(self.text); keys.focus(); }
+                        }
+                        // The kiosk shows the list summary in the status band only.
+                        if !root.kiosk: Caps { accessible-label: "browser.list-sub"; accessible-role: text; accessible-value: root.node-sub; text: root.node-sub; vertical-alignment: center; min-width: 0px; overflow: elide; }
+                        Rectangle { horizontal-stretch: 1; }
+                        if root.node-kind == "all" && root.missing-count > 0 && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.find-moved"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("{} MOVED", root.missing-count); tone: Theme.fault; tooltip: @tr("Search a folder for tracks whose files have moved"); command: "browser.find.moved"; clicked => { root.find-moved-files(); } } }
+                        if root.node-kind == "all" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.add-music"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("ADD MUSIC"); glyph: "plus"; tone: Theme.live; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } } }
+                        if root.node-kind == "explorer" && !root.kiosk: VerticalLayout {
+                            horizontal-stretch: 0; alignment: center;
+                            LineToggle {
+                                accessible-label: "browser.recursive"; accessible-role: checkbox;
+                                accessible-checkable: true; accessible-checked: self.checked;
+                                horizontal-stretch: 0;
+                                label: @tr("Include subfolders");
+                                checked <=> root.explorer-recursive;
+                                toggled(v) => { root.explorer-set-recursive(v); }
+                            }
+                        }
+                        if root.node-kind == "similar" && !root.kiosk: HorizontalLayout {
+                            spacing: 4px;
+                            // Each key centred on the 32 px header row.
+                            for d[i] in ["master", "1", "2", "3", "4"]: VerticalLayout {
+                                alignment: center;
+                                PlateButton {
+                                    accessible-label: i == 0 ? "browser.similar.master" : "browser.similar.deck\{i}"; accessible-role: button;
+                                    accessible-checkable: true; accessible-checked: root.similar-source == d;
+                                    horizontal-stretch: 0; compact: true;
+                                    label: i == 0 ? @tr("MASTER") : d;
+                                    active: root.similar-source == d; tone: Theme.w546;
+                                    tooltip: i == 0 ? @tr("Tracks that fit after the master deck") : @tr("Tracks that fit after deck {}", d);
+                                    clicked => { root.similar-source-set(d); }
+                                }
+                            }
+                        }
+                        if root.node-kind == "duplicates" && !root.kiosk: Caps { accessible-label: "browser.duplicates.groups"; accessible-role: text; accessible-value: root.duplicate-groups; text: @tr("{} GROUPS", root.duplicate-groups); vertical-alignment: center; }
+                        if root.node-kind == "duplicates" && !root.kiosk && root.has-selection: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.duplicates.remove"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("REMOVE SELECTED"); tone: Theme.fault; tooltip: @tr("Remove the selected tracks from the collection (the files stay on disk)"); clicked => { root.duplicates-action("remove-selected"); } } }
+                        if root.node-kind == "duplicates" && !root.kiosk && root.duplicate-groups > 0: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.duplicates.keep-first"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("KEEP ONE OF EACH"); tone: Theme.fault; tooltip: @tr("Remove every copy but the oldest of each group from the collection (the files stay on disk)"); clicked => { root.duplicates-action("keep-first"); } } }
+                        if root.node-kind == "taglist" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.tag-list.save"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("SAVE AS PLAYLIST"); tone: Theme.live; tooltip: @tr("Make a playlist of the tag list"); clicked => { root.tag-list-action("save"); } } }
+                        if root.node-kind == "taglist" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.tag-list.clear"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("CLEAR"); tone: Theme.fault; tooltip: @tr("Empty the tag list"); clicked => { root.tag-list-action("clear"); } } }
+                        if root.node-kind != "all" && root.node-kind != "stick" && root.node-kind != "explorer" && root.node-kind != "similar" && root.node-kind != "history" && root.node-kind != "taglist" && root.node-kind != "auto" && !root.read-only && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.delete-list"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("DELETE"); tone: Theme.fault; tooltip: @tr("Delete the open list"); command: "browser.delete.list"; clicked => { root.delete-node(); } } }
+                        // Load target of a double-click (Perform): the free deck or a fixed one.
+                        VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton {
+                            accessible-label: "browser.target"; accessible-role: button;
+                            accessible-value: root.load-target == 0 ? "auto" : root.load-target;
+                            horizontal-stretch: 0; compact: !root.kiosk; tall: root.kiosk;
+                            enabled: root.mode == "perform";
+                            label: root.load-target == 0 ? @tr("LOAD → FREE") : @tr("LOAD → {}", root.load-target);
+                            active: root.load-target > 0; tone: Theme.deck-color(root.load-target);
+                            tooltip: root.mode == "perform" ? @tr("Where a double-click loads: the free deck or a fixed deck — click for the next") : @tr("In Prepare a double-click opens the track in the player");
+                            clicked => { root.load-target = Math.mod(root.load-target + 1, max(2, root.decks.length) + 1); }
+                        } }
+                        // Row density of the list (Preferences > View > Line spacing).
+                        VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton {
+                            accessible-label: "browser.density"; accessible-role: button;
+                            accessible-value: root.density;
+                            horizontal-stretch: 0; compact: !root.kiosk; tall: root.kiosk;
+                            // The touch screen keeps its 44 px rows.
+                            enabled: !root.kiosk;
+                            label: root.density == "compact" ? @tr("COMPACT") : root.density == "roomy" ? @tr("ROOMY") : @tr("NORMAL");
+                            tooltip: @tr("Row spacing of the list: compact, normal, roomy — click for the next");
+                            clicked => { root.cycle-density(); }
+                        } }
+                        Field {
+                            accessible-label: "browser.search"; accessible-role: text-input;
+                            accessible-value: self.text; accessible-placeholder-text: self.placeholder;
+                            property <int> focus-request: root.search-focus;
+                            changed focus-request => { self.focus-field(); }
+                            min-width: 120px; preferred-width: 260px; max-width: 260px;
+                            horizontal-stretch: 1;
+                            height: root.kiosk ? 44px : 32px;
+                            placeholder: @tr("SEARCH  ⌘F");
+                            text <=> root.search-text;
+                            edited(t) => { root.search(t); }
+                        }
+                    }
+                    // Kiosk: the deck the similar list follows, on its own line.
+                    if root.section == "library" && root.node-kind == "similar" && root.kiosk: HorizontalLayout {
+                        spacing: 4px;
+                        height: 44px;
+                        alignment: start;
+                        for d[i] in ["master", "1", "2", "3", "4"]: PlateButton {
+                            accessible-label: i == 0 ? "browser.similar.master" : "browser.similar.deck\{i}"; accessible-role: button;
+                            accessible-checkable: true; accessible-checked: root.similar-source == d;
+                            horizontal-stretch: 0; tall: true;
+                            label: i == 0 ? @tr("MASTER") : d;
+                            active: root.similar-source == d; tone: Theme.w546;
+                            tooltip: i == 0 ? @tr("Tracks that fit after the master deck") : @tr("Tracks that fit after deck {}", d);
+                            clicked => { root.similar-source-set(d); }
+                        }
+                    }
+                    if root.section == "library" && root.node-kind == "smart": VerticalLayout {
+                        spacing: 4px;
+                        Field {
+                            accessible-label: "browser.smart-rule"; accessible-role: text-input; accessible-value: self.text;
+                            placeholder: @tr("RULES, E.G.  bpm 120-126, key 8A~, genre house, rating >= 3, added < 30d");
+                            text: root.smart-rule-text;
+                            tone: Theme.w436;
+                            accepted(t) => { root.set-smart-rule(t); }
+                        }
+                        if root.smart-rule-error != "": Text {
+                            accessible-label: "browser.smart-rule-error"; accessible-role: text; accessible-value: self.text;
+                            text: root.smart-rule-error;
+                            font-family: Theme.family; font-size: 12px; color: Theme.fault;
+                        }
+                    }
+                    if root.section == "library" && root.node-kind == "set" && root.mode == "prepare": SetFlow {
+                        points: root.flow;
+                        total: root.flow-total;
+                        selected: root.flow-selected;
+                        select(i) => { root.flow-select(i); }
+                    }
+                    if root.section == "library" && root.node-kind == "set" && root.mode == "prepare" && !root.read-only: HorizontalLayout {
+                        spacing: 8px;
+                        height: 32px;
+                        Field {
+                            accessible-label: "browser.set.planned-start"; accessible-role: text-input; accessible-value: self.text;
+                            width: 200px;
+                            placeholder: @tr("PLANNED START, E.G. 23:30");
+                            text: root.set-planned-start;
+                            tone: Theme.attention;
+                            accepted(t) => { root.save-planned-start(t); }
+                        }
+                        if root.flow-selected >= 0: Caps {
+                            accessible-label: "browser.set.backups"; accessible-role: text; accessible-value: root.set-backups-text;
+                            horizontal-stretch: 1;
+                            text: root.set-backups-text == "" ? @tr("NO BACKUP TRACKS FOR THIS POSITION") : @tr("BACKUPS: {}", root.set-backups-text);
+                            vertical-alignment: center; overflow: elide;
+                        }
+                        if root.flow-selected < 0: Rectangle { horizontal-stretch: 1; }
+                        if root.flow-selected >= 0: PlateButton {
+                            accessible-label: "browser.set.backups-from-tag-list"; accessible-role: button;
+                            horizontal-stretch: 0; compact: true; label: @tr("BACKUPS FROM TAG LIST"); tone: Theme.attention;
+                            tooltip: @tr("The tracks of the tag list become the backups of the selected position");
+                            clicked => { root.backups-action("from-tag-list"); }
+                        }
+                        if root.flow-selected >= 0 && root.set-backups-text != "": PlateButton {
+                            accessible-label: "browser.set.backups-clear"; accessible-role: button;
+                            horizontal-stretch: 0; compact: true; label: @tr("CLEAR"); tone: Theme.fault;
+                            tooltip: @tr("Remove the backup tracks of the selected position");
+                            clicked => { root.backups-action("clear"); }
+                        }
+                    }
+                    if root.section == "library" && root.node-kind == "set" && root.flow-selected >= 0 && root.mode == "prepare": Field {
+                        accessible-label: "browser.transition-note"; accessible-role: text-input; accessible-value: self.text;
+                        placeholder: @tr("TRANSITION NOTE FOR THE SELECTED POSITION — ENTER TO SAVE");
+                        text: root.transition-note;
+                        tone: Theme.attention;
+                        accepted(t) => { root.set-transition-note(t); }
+                    }
+                    if root.section == "library": TrackTable {
+                        accessible-label: "browser.list"; accessible-role: table;
+                        vertical-stretch: 1;
+                        rows: root.tracks;
+                        sort-column: root.sort-column;
+                        descending: root.sort-descending;
+                        focus-row: root.focus-row;
+                        show-position: root.node-kind == "playlist" || root.node-kind == "set";
+                        empty-text: root.node-kind == "all"
+                            ? @tr("Your library is empty. Use ADD MUSIC to add a folder, or import a library XML file.")
+                            : root.node-kind == "explorer"
+                            ? @tr("No audio files in this folder.")
+                            : root.node-kind == "similar"
+                            ? @tr("Nothing fits yet: load an analysed track on a deck (or select one) and open this list again.")
+                            : root.node-kind == "taglist"
+                            ? @tr("The tag list is empty. Collect tracks here with + next to TAG LIST or the row menu.")
+                            : root.node-kind == "duplicates"
+                            ? @tr("No duplicates: every track is in the collection once.")
+                            : root.filter.active
+                            ? @tr("No track matches the filter.")
+                            : @tr("No tracks here yet. Select tracks in All tracks and press + next to this list in the sidebar.");
+                        sort(c) => { root.sort(c); }
+                        row-clicked(i, c, s) => { root.row-clicked(i, c, s); keys.focus(); }
+                        row-activated(i) => { root.row-activated(i); }
+                        row-dropped(i, t) => { root.row-dropped(i, t); }
+                        row-rated(i, n) => { root.row-rated(i, n); }
+                        row-menu(i, a) => { root.row-menu(i, a); }
+                        playlists: root.menu-playlists;
+                        recent: root.menu-recent;
+                        explorer: root.node-kind == "explorer";
+                        columns: root.columns;
+                        column-choices: root.column-choices;
+                        reorderable: root.reorderable;
+                        filter-open: root.filter-open;
+                        filter: root.filter;
+                        user-tag-options: root.user-tag-options;
+                        sort-then(c) => { root.sort-then(c); }
+                        toggle-column(c) => { root.toggle-column(c); }
+                        move-column(c, i) => { root.move-column(c, i); }
+                        resize-column(c, w) => { root.resize-column(c, w); }
+                        column-measured(c, w) => { root.column-measured(c, w); }
+                        resize-begin(c) => { root.resize-begin(c); }
+                        reset-columns => { root.reset-columns(); }
+                        toggle-filter => { root.toggle-filter(); }
+                        filter-edit(f, v) => { root.filter-edit(f, v); }
+                    }
+                    if root.section == "library" && root.sub-browser-open: SubBrowserPane {
+                        height: 210px;
+                        tree-width: min(root.sidebar-width, 240px);
+                    }
+                    if root.section == "library" && root.node-kind == "all" && root.tracks.length == 0: HorizontalLayout {
+                        alignment: center;
+                        spacing: 10px;
+                        PlateButton { accessible-label: "browser.empty.add-music"; accessible-role: button; label: @tr("ADD MUSIC FOLDER"); tone: Theme.live; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } }
+                        PlateButton { accessible-label: "browser.empty.import-library"; accessible-role: button; label: @tr("IMPORT LIBRARY"); tone: Theme.w486; tooltip: @tr("Import a library XML file (rekordbox-compatible)"); command: "library.import.xml"; clicked => { root.menu-action("library.import.xml"); } }
+                    }
+
+                    // ── Devices section ──
+                    if root.section == "devices": SectionTitle { title: @tr("USB STICKS"); sub: @tr("{} REGISTERED", root.devices.length); }
+                    if root.section == "devices": Text {
+                        text: @tr("Registered sticks are kept in sync automatically while they are plugged in. Every change to a playlist, cue or beatgrid reaches the stick within seconds.");
+                        wrap: word-wrap; font-family: Theme.family; font-size: 14px; color: Theme.bone-2;
+                    }
+                    if root.section == "devices": HorizontalLayout {
+                        vertical-stretch: 1;
+                        spacing: 32px;
+                        VerticalLayout {
+                            width: 360px;
+                            spacing: 6px;
+                            for d in root.devices: DeviceLine {
+                                device: d;
+                                roomy: true;
+                                selected: d.id == root.device-selected;
+                                sync => { root.sync-device(d.id); }
+                                eject => { root.eject-device(d.id); }
+                                open => { root.open-device(d.id); }
+                            }
+                            Rectangle { vertical-stretch: 1; }
+                        }
+                        if root.device-selected >= 0: VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 10px;
+                            Field {
+                                text: root.device-name;
+                                placeholder: @tr("STICK NAME");
+                                accepted(t) => { root.rename-device(t); }
+                            }
+                            Caps { text: @tr("CONTENT — LISTS ON THIS STICK"); }
+                            Rectangle {
+                                vertical-stretch: 1;
+                                Flickable {
+                                    VerticalLayout {
+                                        alignment: start;
+                                        for c in root.device-content: LineToggle {
+                                            x: c.depth * 16px;
+                                            label: c.name;
+                                            checked: c.checked;
+                                            toggled(v) => { root.set-device-node(c.id, v); }
+                                        }
+                                    }
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 8px;
+                                PlateButton { compact: true; label: @tr("SYNC NOW"); tone: Theme.live; tooltip: @tr("Sync this stick now"); command: "devices.sync"; clicked => { root.sync-device(root.device-selected); } }
+                                PlateButton { compact: true; label: @tr("REBUILD STICK"); tone: Theme.attention; tooltip: @tr("Write the whole stick again from the library"); clicked => { root.rebuild-device(root.device-selected); } }
+                                PlateButton { compact: true; label: @tr("FORGET"); tone: Theme.fault; tooltip: @tr("Stop keeping this stick in sync"); clicked => { root.forget-device(root.device-selected); } }
+                            }
+                        }
+                    }
+
+                    // ── Recordings section ──
+                    if root.section == "recordings": SectionTitle { title: @tr("RECORDINGS"); sub: @tr("{} MIXES", root.recordings.length); }
+                    if root.section == "recordings": RecPanel { }
+                    if root.section == "recordings": VerticalLayout {
+                        vertical-stretch: 1;
+                        spacing: 4px;
+                        if root.recordings.length == 0: Text {
+                            text: @tr("No recordings yet. Press RECORD in Perform, or the record button on your controller.");
+                            wrap: word-wrap; font-family: Theme.family; font-size: 14px; color: Theme.bone-3;
+                        }
+                        for r in root.recordings: Rectangle {
+                            height: 48px;
+                            VLine { x: 0; y: 8px; height: parent.height - 16px; tone: Theme.w656; }
+                            Text { x: 16px; y: 6px; text: r.name; font-family: Theme.family; font-size: 15px; font-weight: 600; color: Theme.bone; }
+                            Caps { x: 16px; y: 28px; text: r.detail; }
+                            TouchArea { width: parent.width - 260px; clicked => { root.reveal-recording(r.id); } }
+                            HorizontalLayout {
+                                x: parent.width - 250px; y: 8px; width: 250px; height: 26px;
+                                spacing: 6px; alignment: end;
+                                PlateButton { compact: true; label: @tr("SHOW FILE"); tooltip: @tr("Show the recording in the file manager"); clicked => { root.reveal-recording(r.id); } }
+                                PlateButton { compact: true; label: @tr("SPLIT INTO TRACKS"); tone: Theme.w656; tooltip: @tr("Cut the recording into one file per played track"); clicked => { root.split-recording(r.id); } }
+                            }
+                        }
+                        Rectangle { vertical-stretch: 1; }
+                    }
+                }
+                if root.user-tag-open && root.section == "library": UserTagPanel {
+                    chips: root.user-tag-chips;
+                    selection-count: root.selection-count;
+                    read-only: root.read-only;
+                    toggle(c, v) => { root.user-tag-toggle(c, v); }
+                    add(t) => { root.user-tag-add(t); }
+                }
+                if root.similar-open && root.section == "library": SuggestionPanel {
+                    rows: root.suggestions;
+                    reference: root.suggestion-reference;
+                    activated(id) => { root.suggestion-activated(id); }
+                    open-list => { root.suggestion-open(); }
+                }
+                if root.info-open && root.section == "library": InfoPanel {
+                    accessible-label: "info.panel"; accessible-role: groupbox;
+                    info: root.track-info;
+                    edit(f, v) => { root.info-edit(f, v); }
+                }
+                // Right panel strip: the panels beside the list.
+                HorizontalLayout {
+                    VLine { weight: 1px; tone: Theme.rule; }
+                    VerticalLayout {
+                        width: root.kiosk ? 44px : 38px;
+                        padding-top: root.kiosk ? 0px : 8px;
+                        spacing: 0px;
+                        // Kiosk browse screen: back to the decks.
+                        if root.kiosk && root.browser-open && PerformLayout.layout != "browse": RailItem {
+                            accessible-label: "browser.decks"; label: @tr("DECKS"); tone: Theme.w486;
+                            tooltip: @tr("Back to the decks");
+                            clicked => { root.browser-open = false; }
+                        }
+                        RailItem {
+                            accessible-label: "browser.panel.user-tag"; label: @tr("TAGS"); tone: Theme.w436;
+                            current: root.user-tag-open;
+                            tooltip: @tr("Tags: tag the selected tracks with your own categories");
+                            clicked => { root.user-tag-open = !root.user-tag-open; root.panels-changed(); }
+                        }
+                        RailItem {
+                            accessible-label: "browser.panel.similar"; label: @tr("SIM"); tone: Theme.w546;
+                            current: root.similar-open;
+                            tooltip: @tr("Similar: tracks that fit after the selected one");
+                            clicked => { root.similar-open = !root.similar-open; root.panels-changed(); }
+                        }
+                        RailItem {
+                            accessible-label: "browser.panel.sampler"; label: @tr("SMPL"); tone: Theme.w656;
+                            current: root.sampler-panel && root.mode == "perform";
+                            enabled: root.mode == "perform";
+                            tooltip: root.mode == "perform" ? @tr("Show or hide the sampler panel") : @tr("The sampler panel is part of Perform");
+                            clicked => { root.toggle-sampler-panel(); }
+                        }
+                        RailItem {
+                            accessible-label: "browser.panel.info"; label: "INFO"; tone: Theme.w486;
+                            current: root.info-open;
+                            tooltip: @tr("Info: the tags and file details of the selected track");
+                            clicked => { root.info-open = !root.info-open; }
+                        }
+                        RailItem {
+                            accessible-label: "browser.panel.sub-browser"; label: @tr("SUB"); tone: Theme.attention;
+                            current: root.sub-browser-open;
+                            tooltip: @tr("Sub browser: a second tree and list under this one, to drag tracks between lists");
+                            command: "view.panel.sub-browser";
+                            clicked => { root.toggle-sub-browser(); }
+                        }
+                        Rectangle { vertical-stretch: 1; min-height: 0px; }
+                    }
+                }
+            }
+
+            // Status band.
+            Rectangle {
+                height: 26px;
+                HLine { y: 0; width: parent.width; tone: Theme.rule; }
+                HorizontalLayout {
+                    padding-left: 14px;
+                    padding-right: 14px;
+                    spacing: 16px;
+                    if root.analysis-progress > 0 && root.analysis-progress < 1: ProgressLine {
+                        accessible-label: "status.progress"; accessible-role: progress-indicator;
+                        accessible-value: round(root.analysis-progress * 100) + "%";
+                        accessible-value-minimum: 0; accessible-value-maximum: 1;
+                        width: 120px; y: 12px; height: 2px;
+                        progress: root.analysis-progress; tone: Theme.attention;
+                    }
+                    Caps {
+                        accessible-label: "status.activity"; accessible-role: text; accessible-value: root.analysis-text;
+                        text: root.analysis-text; vertical-alignment: center;
+                    }
+                    Text {
+                        accessible-label: "status.message"; accessible-role: text; accessible-value: root.status-text;
+                        horizontal-stretch: 1;
+                        text: root.status-text;
+                        font-family: Theme.family; font-size: 12px; color: Theme.bone-2;
+                        vertical-alignment: center; overflow: elide;
+                    }
+                    Caps {
+                        accessible-label: "status.summary"; accessible-role: text; accessible-value: root.list-summary;
+                        horizontal-stretch: 0;
+                        text: root.list-summary; vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+
+    // Files from Finder / the file manager: the whole window takes them.
+    file-drop := DropArea {
+        // The drag position drives the same drop targets as dragged rows
+        // (decks, players, lists, list positions; DragState.target).
+        can-drop(event) => {
+            if (!root.drop-accepts(event.data)) {
+                return DragAction.none;
+            }
+            DragState.x = self.absolute-position.x + event.position.x;
+            DragState.y = self.absolute-position.y + event.position.y;
+            DragState.kind = "tracks";
+            DragState.files = true;
+            DragState.label = @tr("Audio files");
+            DragState.active = true;
+            DragAction.copy
+        }
+        dropped(event) => {
+            root.files-dropped(event.data, DragState.target);
+            DragState.active = false;
+            DragState.files = false;
+            DragState.target = 0;
+            DragAction.copy
+        }
+        changed has-drag => {
+            if (!self.has-drag && DragState.files && !root.file-drag) {
+                DragState.active = false;
+                DragState.files = false;
+                DragState.target = 0;
+            }
+        }
+    }
+    if file-drop.has-drag || root.file-drag: drop-hint := Rectangle {
+        accessible-label: "browser.drop-files"; accessible-role: text;
+        accessible-value: self.hint;
+        property <string> hint: root.mode == "perform" ? @tr("Drop on a deck to load, anywhere else to add to the collection") : @tr("Drop on a player to open, on a list to add to it, anywhere else to add to the collection and the open list");
+        border-width: 2px; border-color: Theme.live;
+        background: Theme.live.with-alpha(0.06);
+        // Low in the window, clear of the decks and players it points at.
+        Rectangle {
+            y: parent.height - 76px;
+            width: t.preferred-width + 32px; height: 36px;
+            background: Theme.plate-raised; border-width: 1px; border-color: Theme.live;
+            t := Text { text: drop-hint.hint; font-family: Theme.family; font-size: 14px; font-weight: 600; color: Theme.bone; }
+        }
+    }
+    // The dragged track follows the pointer.
+    DragGhost { }
+    // Tooltips draw above everything.
+    TooltipLayer { }
+}

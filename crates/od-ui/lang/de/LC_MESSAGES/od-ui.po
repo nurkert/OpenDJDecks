@@ -1,0 +1,5594 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-11-07 01:39+0000\n"
+"Language: de\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: ui/app.slint:431
+msgctxt "AppWindow"
+msgid "File"
+msgstr "Ablage"
+
+#: ui/app.slint:432
+msgctxt "AppWindow"
+msgid "Preferences…"
+msgstr "Einstellungen…"
+
+#: ui/app.slint:433
+msgctxt "AppWindow"
+msgid "Check for Updates…"
+msgstr "Nach Updates suchen …"
+
+#: ui/app.slint:435
+msgctxt "AppWindow"
+msgid "Add Music Folder…"
+msgstr "Musikordner hinzufügen…"
+
+#: ui/app.slint:437
+msgctxt "AppWindow"
+msgid "Import rekordbox Preferences and Shortcuts…"
+msgstr "rekordbox-Einstellungen und -Tastenkürzel importieren…"
+
+#: ui/app.slint:439
+msgctxt "AppWindow"
+msgid "Import Library XML (rekordbox-compatible)…"
+msgstr "Bibliotheks-XML importieren (rekordbox-kompatibel)…"
+
+#: ui/app.slint:440
+msgctxt "AppWindow"
+msgid "Export Library XML (rekordbox-compatible)…"
+msgstr "Bibliotheks-XML exportieren (rekordbox-kompatibel)…"
+
+#: ui/app.slint:441
+msgctxt "AppWindow"
+msgid "Import Music / iTunes Library XML…"
+msgstr "Musik- / iTunes-Mediathek (XML) importieren…"
+
+#: ui/app.slint:443
+msgctxt "AppWindow"
+msgid "Export Library Archive…"
+msgstr "Bibliotheksarchiv exportieren…"
+
+#: ui/app.slint:444
+msgctxt "AppWindow"
+msgid "Restore Library Archive…"
+msgstr "Bibliotheksarchiv wiederherstellen…"
+
+#: ui/app.slint:445
+msgctxt "AppWindow"
+msgid "Consolidate Library…"
+msgstr "Bibliothek zusammenführen…"
+
+#: ui/app.slint:446
+msgctxt "AppWindow"
+msgid "Find Duplicate Tracks"
+msgstr "Doppelte Tracks finden"
+
+#: ui/app.slint:449
+msgctxt "AppWindow"
+msgid "View"
+msgstr "Ansicht"
+
+#: ui/app.slint:450
+msgctxt "AppWindow"
+msgid "Prepare"
+msgstr "Prepare"
+
+#: ui/app.slint:451
+msgctxt "AppWindow"
+msgid "Perform"
+msgstr "Perform"
+
+#: ui/app.slint:452
+msgctxt "AppWindow"
+msgid "Lighting"
+msgstr "Lighting"
+
+#: ui/app.slint:455
+msgctxt "AppWindow"
+msgid "Prepare Layout"
+msgstr "Prepare-Layout"
+
+#: ui/app.slint:456
+msgctxt "AppWindow"
+msgid "Player and Browser"
+msgstr "Player und Browser"
+
+#: ui/app.slint:457
+msgctxt "AppWindow"
+msgid "2 Players"
+msgstr "2 Player"
+
+#: ui/app.slint:458
+msgctxt "AppWindow"
+msgid "Dual Player"
+msgstr "Dual-Player"
+
+#: ui/app.slint:459
+msgctxt "AppWindow"
+msgid "Simple Player"
+msgstr "Einfacher Player"
+
+#: ui/app.slint:460
+msgctxt "AppWindow"
+msgid "Full Browser"
+msgstr "Ganzer Browser"
+
+#: ui/app.slint:463
+msgctxt "AppWindow"
+msgid "Perform Layout"
+msgstr "Perform-Layout"
+
+#: ui/app.slint:464
+msgctxt "AppWindow"
+msgid "Standard"
+msgstr "Standard"
+
+#: ui/app.slint:465
+msgctxt "AppWindow"
+msgid "Vertical Waveforms"
+msgstr "Vertikale Wellenformen"
+
+#: ui/app.slint:466
+msgctxt "AppWindow"
+msgid "Browse"
+msgstr "Browse"
+
+#: ui/app.slint:469
+msgctxt "AppWindow"
+msgid "Info Panel"
+msgstr "Info-Bereich"
+
+#: ui/app.slint:470
+msgctxt "AppWindow"
+msgid "Similar Tracks"
+msgstr "Passende Tracks"
+
+#: ui/app.slint:471
+msgctxt "AppWindow"
+msgid "Tags"
+msgstr "Tags"
+
+#: ui/app.slint:472
+msgctxt "AppWindow"
+msgid "Filter Bar"
+msgstr "Filterleiste"
+
+#: ui/app.slint:474
+msgctxt "AppWindow"
+msgid "Library"
+msgstr "Bibliothek"
+
+#: ui/app.slint:475
+msgctxt "AppWindow"
+msgid "USB Sticks"
+msgstr "USB-Sticks"
+
+#: ui/app.slint:476
+msgctxt "AppWindow"
+msgid "Recordings"
+msgstr "Aufnahmen"
+
+#: ui/app.slint:516
+msgctxt "AppWindow"
+msgid "NO MASTER"
+msgstr "KEIN MASTER"
+
+#: ui/app.slint:516
+msgctxt "AppWindow"
+msgid "MASTER {} BPM"
+msgstr "MASTER {} BPM"
+
+#: ui/app.slint:689 ui/app.slint:738
+msgctxt "AppWindow"
+msgid "Drag to resize, double-click to reset"
+msgstr "Ziehen zum Ändern der Größe, Doppelklick setzt zurück"
+
+#: ui/app.slint:756
+msgctxt "AppWindow"
+msgid "DECKS"
+msgstr "DECKS"
+
+#: ui/app.slint:756
+msgctxt "AppWindow"
+msgid "Back to the decks"
+msgstr "Zurück zu den Decks"
+
+#: ui/app.slint:773
+msgctxt "AppWindow"
+msgid "{} MOVED"
+msgstr "{} VERSCHOBEN"
+
+#: ui/app.slint:773
+msgctxt "AppWindow"
+msgid "Search a folder for tracks whose files have moved"
+msgstr "Einen Ordner nach verschobenen Track-Dateien durchsuchen"
+
+#: ui/app.slint:774
+msgctxt "AppWindow"
+msgid "ADD MUSIC"
+msgstr "MUSIK HINZUFÜGEN"
+
+#: ui/app.slint:774 ui/app.slint:940
+msgctxt "AppWindow"
+msgid "Add a music folder"
+msgstr "Musikordner hinzufügen"
+
+#: ui/app.slint:779
+msgctxt "AppWindow"
+msgid "Include subfolders"
+msgstr "Unterordner einbeziehen"
+
+#: ui/app.slint:789
+msgctxt "AppWindow"
+msgid "MASTER"
+msgstr "MASTER"
+
+#: ui/app.slint:791
+msgctxt "AppWindow"
+msgid "Tracks that fit after the master deck"
+msgstr "Tracks, die nach dem Master-Deck passen"
+
+#: ui/app.slint:791
+msgctxt "AppWindow"
+msgid "Tracks that fit after deck {}"
+msgstr "Tracks, die nach Deck {} passen"
+
+#: ui/app.slint:795
+msgctxt "AppWindow"
+msgid "{} GROUPS"
+msgstr "{} GRUPPEN"
+
+#: ui/app.slint:796
+msgctxt "AppWindow"
+msgid "REMOVE SELECTED"
+msgstr "AUSGEWÄHLTE ENTFERNEN"
+
+#: ui/app.slint:796
+msgctxt "AppWindow"
+msgid "Remove the selected tracks from the collection (the files stay on disk)"
+msgstr ""
+"Ausgewählte Tracks aus der Sammlung entfernen (die Dateien bleiben erhalten)"
+
+#: ui/app.slint:797
+msgctxt "AppWindow"
+msgid "KEEP ONE OF EACH"
+msgstr "JE EINEN BEHALTEN"
+
+#: ui/app.slint:797
+msgctxt "AppWindow"
+msgid ""
+"Remove every copy but the oldest of each group from the collection (the "
+"files stay on disk)"
+msgstr ""
+"Alle Kopien außer der ältesten jeder Gruppe aus der Sammlung entfernen (die "
+"Dateien bleiben erhalten)"
+
+#: ui/app.slint:798
+msgctxt "AppWindow"
+msgid "SAVE AS PLAYLIST"
+msgstr "ALS PLAYLIST SPEICHERN"
+
+#: ui/app.slint:798
+msgctxt "AppWindow"
+msgid "Make a playlist of the tag list"
+msgstr "Aus der Tag-Liste eine Playlist machen"
+
+#: ui/app.slint:799 ui/app.slint:884
+msgctxt "AppWindow"
+msgid "CLEAR"
+msgstr "LEEREN"
+
+#: ui/app.slint:799
+msgctxt "AppWindow"
+msgid "Empty the tag list"
+msgstr "Tag-Liste leeren"
+
+#: ui/app.slint:800
+msgctxt "AppWindow"
+msgid "DELETE"
+msgstr "LÖSCHEN"
+
+#: ui/app.slint:800
+msgctxt "AppWindow"
+msgid "Delete the open list"
+msgstr "Geöffnete Liste löschen"
+
+#: ui/app.slint:808
+msgctxt "AppWindow"
+msgid "SEARCH  ⌘F"
+msgstr "SUCHEN  ⌘F"
+
+#: ui/app.slint:815
+msgctxt "AppWindow"
+msgid "TAGS"
+msgstr "TAGS"
+
+#: ui/app.slint:817
+msgctxt "AppWindow"
+msgid "Tag the selected tracks with your own categories"
+msgstr "Die ausgewählten Tracks mit eigenen Kategorien taggen"
+
+#: ui/app.slint:823
+msgctxt "AppWindow"
+msgid "SIMILAR"
+msgstr "PASSEND"
+
+#: ui/app.slint:825
+msgctxt "AppWindow"
+msgid "Show tracks that fit after the selected one"
+msgstr "Tracks zeigen, die nach dem ausgewählten passen"
+
+#: ui/app.slint:833
+msgctxt "AppWindow"
+msgid "Show the tags of the selected track"
+msgstr "Tags des ausgewählten Tracks zeigen"
+
+#: ui/app.slint:841
+msgctxt "AppWindow"
+msgid ""
+"RULES, E.G.  bpm 120-126, key 8A~, genre house, rating >= 3, added < 30d"
+msgstr ""
+"REGELN, Z. B.  bpm 120-126, key 8A~, genre house, rating >= 3, added < 30d"
+
+#: ui/app.slint:864
+msgctxt "AppWindow"
+msgid "PLANNED START, E.G. 23:30"
+msgstr "GEPLANTER START, Z. B. 23:30"
+
+#: ui/app.slint:872
+msgctxt "AppWindow"
+msgid "NO BACKUP TRACKS FOR THIS POSITION"
+msgstr "KEINE ERSATZ-TRACKS FÜR DIESE POSITION"
+
+#: ui/app.slint:872
+msgctxt "AppWindow"
+msgid "BACKUPS: {}"
+msgstr "ERSATZ: {}"
+
+#: ui/app.slint:878
+msgctxt "AppWindow"
+msgid "BACKUPS FROM TAG LIST"
+msgstr "ERSATZ AUS TAG-LISTE"
+
+#: ui/app.slint:879
+msgctxt "AppWindow"
+msgid "The tracks of the tag list become the backups of the selected position"
+msgstr ""
+"Die Tracks der Tag-Liste werden zu Ersatz-Tracks der gewählten Position"
+
+#: ui/app.slint:885
+msgctxt "AppWindow"
+msgid "Remove the backup tracks of the selected position"
+msgstr "Ersatz-Tracks der gewählten Position entfernen"
+
+#: ui/app.slint:891
+msgctxt "AppWindow"
+msgid "TRANSITION NOTE FOR THE SELECTED POSITION — ENTER TO SAVE"
+msgstr "ÜBERGANGSNOTIZ FÜR DIE GEWÄHLTE POSITION — ENTER ZUM SPEICHERN"
+
+#: ui/app.slint:905
+msgctxt "AppWindow"
+msgid "Your library is empty. Use ADD MUSIC to add a folder, or import a library XML file."
+msgstr "Deine Bibliothek ist leer. Füge mit MUSIK HINZUFÜGEN einen Ordner hinzu oder importiere eine Bibliotheks-XML-Datei."
+
+#: ui/app.slint:907
+msgctxt "AppWindow"
+msgid "No audio files in this folder."
+msgstr "Keine Audiodateien in diesem Ordner."
+
+#: ui/app.slint:909
+msgctxt "AppWindow"
+msgid ""
+"Nothing fits yet: load an analysed track on a deck (or select one) and open "
+"this list again."
+msgstr ""
+"Noch passt nichts: Lade einen analysierten Track auf ein Deck (oder wähle "
+"einen aus) und öffne diese Liste erneut."
+
+#: ui/app.slint:911
+msgctxt "AppWindow"
+msgid ""
+"The tag list is empty. Collect tracks here with + next to TAG LIST or the "
+"row menu."
+msgstr ""
+"Die Tag-Liste ist leer. Sammle Tracks hier mit + neben TAG-LISTE oder über "
+"das Zeilenmenü."
+
+#: ui/app.slint:913
+msgctxt "AppWindow"
+msgid "No duplicates: every track is in the collection once."
+msgstr "Keine Duplikate: jeder Track ist nur einmal in der Sammlung."
+
+#: ui/app.slint:915
+msgctxt "AppWindow"
+msgid "No track matches the filter."
+msgstr "Kein Track passt zum Filter."
+
+#: ui/app.slint:916
+msgctxt "AppWindow"
+msgid ""
+"No tracks here yet. Select tracks in All tracks and press + next to this "
+"list in the sidebar."
+msgstr ""
+"Hier sind noch keine Tracks. Wähle Tracks unter „Alle Tracks“ und drücke + "
+"neben dieser Liste in der Seitenleiste."
+
+#: ui/app.slint:940
+msgctxt "AppWindow"
+msgid "ADD MUSIC FOLDER"
+msgstr "MUSIKORDNER HINZUFÜGEN"
+
+#: ui/app.slint:941
+msgctxt "AppWindow"
+msgid "Import a library XML file (rekordbox-compatible)"
+msgstr "Eine Bibliotheks-XML-Datei importieren (rekordbox-kompatibel)"
+
+#: ui/app.slint:941
+msgctxt "AppWindow"
+msgid "IMPORT LIBRARY"
+msgstr "BIBLIOTHEK IMPORTIEREN"
+
+#. ── Devices section ──
+#: ui/app.slint:945
+msgctxt "AppWindow"
+msgid "USB STICKS"
+msgstr "USB-STICKS"
+
+#. ── Devices section ──
+#: ui/app.slint:945
+msgctxt "AppWindow"
+msgid "{} REGISTERED"
+msgstr "{} REGISTRIERT"
+
+#: ui/app.slint:947
+msgctxt "AppWindow"
+msgid ""
+"Registered sticks are kept in sync automatically while they are plugged in. "
+"Every change to a playlist, cue or beatgrid reaches the stick within seconds."
+msgstr ""
+"Registrierte Sticks werden automatisch synchron gehalten, solange sie "
+"eingesteckt sind. Jede Änderung an Playlists, Cues oder Beatgrids ist in "
+"Sekunden auf dem Stick."
+
+#: ui/app.slint:971
+msgctxt "AppWindow"
+msgid "STICK NAME"
+msgstr "STICK-NAME"
+
+#: ui/app.slint:980
+msgctxt "AppWindow"
+msgid "CONTENT — LISTS ON THIS STICK"
+msgstr "INHALT — LISTEN AUF DIESEM STICK"
+
+#: ui/app.slint:1005
+msgctxt "AppWindow"
+msgid "IMPORT"
+msgstr "IMPORTIEREN"
+
+#: ui/app.slint:1010
+msgctxt "AppWindow"
+msgid "SYNC NOW"
+msgstr "JETZT SYNCHRONISIEREN"
+
+#: ui/app.slint:1010
+msgctxt "AppWindow"
+msgid "Sync this stick now"
+msgstr "Diesen Stick jetzt synchronisieren"
+
+#: ui/app.slint:1011
+msgctxt "AppWindow"
+msgid "REBUILD STICK"
+msgstr "STICK NEU SCHREIBEN"
+
+#: ui/app.slint:1011
+msgctxt "AppWindow"
+msgid "Write the whole stick again from the library"
+msgstr "Den ganzen Stick neu aus der Bibliothek schreiben"
+
+#: ui/app.slint:1012
+msgctxt "AppWindow"
+msgid "FORGET"
+msgstr "VERGESSEN"
+
+#: ui/app.slint:1012
+msgctxt "AppWindow"
+msgid "Stop keeping this stick in sync"
+msgstr "Diesen Stick nicht mehr synchronisieren"
+
+#. ── Recordings section ──
+#: ui/app.slint:1018
+msgctxt "AppWindow"
+msgid "RECORDINGS"
+msgstr "AUFNAHMEN"
+
+#. ── Recordings section ──
+#: ui/app.slint:1018
+msgctxt "AppWindow"
+msgid "{} MIXES"
+msgstr "{} MIXE"
+
+#: ui/app.slint:1024
+msgctxt "AppWindow"
+msgid ""
+"No recordings yet. Press RECORD in Perform, or the record button on your "
+"controller."
+msgstr ""
+"Noch keine Aufnahmen. Drücke AUFNEHMEN in Perform oder die Aufnahmetaste am "
+"Controller."
+
+#: ui/app.slint:1036
+msgctxt "AppWindow"
+msgid "SHOW FILE"
+msgstr "DATEI ZEIGEN"
+
+#: ui/app.slint:1036
+msgctxt "AppWindow"
+msgid "Show the recording in the file manager"
+msgstr "Aufnahme im Dateimanager zeigen"
+
+#: ui/app.slint:1037
+msgctxt "AppWindow"
+msgid "SPLIT INTO TRACKS"
+msgstr "IN TRACKS TEILEN"
+
+#: ui/app.slint:1037
+msgctxt "AppWindow"
+msgid "Cut the recording into one file per played track"
+msgstr "Aufnahme in eine Datei pro gespieltem Track schneiden"
+
+#: ui/app.slint:1112
+msgctxt "AppWindow"
+msgid "Drop on a deck to load, anywhere else to add to the collection"
+msgstr "Auf ein Deck ziehen zum Laden, sonst in die Sammlung aufnehmen"
+
+#: ui/club.slint:150
+msgctxt "ClubPlayer"
+msgid "No track — browse and load"
+msgstr "Kein Track — durchsuchen und laden"
+
+#: ui/club.slint:156
+msgctxt "ClubPlayer"
+msgid "BROWSE"
+msgstr "BROWSE"
+
+#: ui/club.slint:157
+msgctxt "ClubPlayer"
+msgid "Browse the source and load a track, as on the player"
+msgstr "Quelle durchsuchen und einen Track laden, wie am Player"
+
+#: ui/club.slint:184
+msgctxt "ClubPlayer"
+msgid "LOAD SELECTED"
+msgstr "AUSWAHL LADEN"
+
+#: ui/club.slint:192
+msgctxt "ClubPlayer"
+msgid "HOT CUE"
+msgstr "HOT CUE"
+
+#: ui/club.slint:197
+msgctxt "ClubPlayer"
+msgid "CALL"
+msgstr "CALL"
+
+#: ui/club.slint:198
+msgctxt "ClubPlayer"
+msgid "Previous memory cue"
+msgstr "Vorheriger Memory Cue"
+
+#: ui/club.slint:199
+msgctxt "ClubPlayer"
+msgid "Next memory cue"
+msgstr "Nächster Memory Cue"
+
+#: ui/club.slint:203
+msgctxt "ClubPlayer"
+msgid "LOOP"
+msgstr "LOOP"
+
+#: ui/club.slint:204
+msgctxt "ClubPlayer"
+msgid "IN"
+msgstr "IN"
+
+#: ui/club.slint:205
+msgctxt "ClubPlayer"
+msgid "OUT"
+msgstr "OUT"
+
+#: ui/club.slint:206
+msgctxt "ClubPlayer"
+msgid "RELOOP / EXIT"
+msgstr "RELOOP / EXIT"
+
+#: ui/club.slint:207
+msgctxt "ClubPlayer"
+msgid "4 BEAT"
+msgstr "4 BEAT"
+
+#: ui/club.slint:211
+msgctxt "ClubPlayer"
+msgid "JUMP"
+msgstr "JUMP"
+
+#: ui/club.slint:216
+msgctxt "ClubPlayer"
+msgid "Search back while held"
+msgstr "Rückwärts suchen, solange gedrückt"
+
+#: ui/club.slint:221
+msgctxt "ClubPlayer"
+msgid "Search forward while held"
+msgstr "Vorwärts suchen, solange gedrückt"
+
+#: ui/club.slint:258
+msgctxt "ClubPlayer"
+msgid "Tempo range"
+msgstr "Tempobereich"
+
+#: ui/club.slint:259
+msgctxt "ClubPlayer"
+msgid "MASTER TEMPO"
+msgstr "MASTER TEMPO"
+
+#: ui/club.slint:266
+msgctxt "ClubPlayer"
+msgid "Tempo (up = slower, like a player)"
+msgstr "Tempo (oben = langsamer, wie am Player)"
+
+#: ui/club.slint:282
+msgctxt "ClubPlayer"
+msgid "BACK"
+msgstr "ZURÜCK"
+
+#: ui/club.slint:316
+msgctxt "ClubSteps"
+msgid "CLUB MODE"
+msgstr "CLUB-MODUS"
+
+#: ui/club.slint:333
+msgctxt "ClubSteps"
+msgid "Hide the checklist"
+msgstr "Checkliste ausblenden"
+
+#: ui/devices.slint:69
+msgctxt "DeviceLine"
+msgid "SYNC"
+msgstr "SYNC"
+
+#: ui/devices.slint:69
+msgctxt "DeviceLine"
+msgid "Sync this stick now"
+msgstr "Diesen Stick jetzt synchronisieren"
+
+#: ui/devices.slint:73
+msgctxt "DeviceLine"
+msgid "EJECT"
+msgstr "AUSWERFEN"
+
+#: ui/devices.slint:73
+msgctxt "DeviceLine"
+msgid "Eject this stick"
+msgstr "Diesen Stick auswerfen"
+
+#: ui/devices.slint:96
+msgctxt "DeviceBoard"
+msgid "DEVICES"
+msgstr "GERÄTE"
+
+#: ui/devices.slint:101
+msgctxt "DeviceBoard"
+msgid ""
+"Plug in a USB stick to register it. Registered sticks stay in sync "
+"automatically."
+msgstr ""
+"Stecke einen USB-Stick ein, um ihn zu registrieren. Registrierte Sticks "
+"bleiben automatisch synchron."
+
+#: ui/devices.slint:116
+msgctxt "DeviceBoard"
+msgid "New stick: {}"
+msgstr "Neuer Stick: {}"
+
+#: ui/devices.slint:124
+msgctxt "DeviceBoard"
+msgid "SELECT A PLAYLIST FIRST"
+msgstr "ZUERST EINE PLAYLIST WÄHLEN"
+
+#: ui/devices.slint:124
+msgctxt "DeviceBoard"
+msgid "REGISTER WITH {}"
+msgstr "MIT {} REGISTRIEREN"
+
+#: ui/filter.slint:21
+msgctxt "FilterBar"
+msgid "Any Tags"
+msgstr "Beliebiger Tags"
+
+#: ui/filter.slint:35
+msgctxt "FilterBar"
+msgid "FROM"
+msgstr "VON"
+
+#: ui/filter.slint:42
+msgctxt "FilterBar"
+msgid "TO"
+msgstr "BIS"
+
+#: ui/filter.slint:50
+msgctxt "FilterBar"
+msgid "Key fits master"
+msgstr "Tonart passt zum Master"
+
+#: ui/filter.slint:51
+msgctxt "FilterBar"
+msgid "Only keys compatible with the master deck (same, ±1, relative)"
+msgstr "Nur Tonarten, die zum Master-Deck passen (gleich, ±1, parallel)"
+
+#: ui/filter.slint:59
+msgctxt "FilterBar"
+msgid "BPM ±%"
+msgstr "BPM ±%"
+
+#: ui/filter.slint:65
+msgctxt "FilterBar"
+msgid "NO MASTER DECK"
+msgstr "KEIN MASTER-DECK"
+
+#: ui/filter.slint:70
+msgctxt "FilterBar"
+msgid "RATING"
+msgstr "BEWERTUNG"
+
+#: ui/filter.slint:91
+msgctxt "FilterBar"
+msgid "TAGS: ANY"
+msgstr "TAGS: ALLE"
+
+#: ui/filter.slint:94
+msgctxt "FilterBar"
+msgid "Only tracks with this tag value"
+msgstr "Nur Tracks mit diesem Tag-Wert"
+
+#: ui/filter.slint:101
+msgctxt "FilterBar"
+msgid "CLEAR"
+msgstr "ZURÜCKSETZEN"
+
+#: ui/filter.slint:103
+msgctxt "FilterBar"
+msgid "Remove every filter condition"
+msgstr "Alle Filterbedingungen entfernen"
+
+#: ui/flow.slint:18
+msgctxt "SetFlow"
+msgid "SET FLOW"
+msgstr "SET-VERLAUF"
+
+#: ui/flow.slint:19
+msgctxt "SetFlow"
+msgid "HEIGHT ENERGY  ·  DASHED CAUTION  ·  STRUCK CLASH"
+msgstr "HÖHE ENERGIE  ·  GESTRICHELT VORSICHT  ·  DURCHGESTRICHEN CLASH"
+
+#: ui/fx.slint:24 ui/fx.slint:27
+msgctxt "FxNames"
+msgid "ECHO"
+msgstr "ECHO"
+
+#: ui/fx.slint:24
+msgctxt "FxNames"
+msgid "DELAY"
+msgstr "DELAY"
+
+#: ui/fx.slint:24
+msgctxt "FxNames"
+msgid "PING PONG"
+msgstr "PING PONG"
+
+#: ui/fx.slint:24
+msgctxt "FxNames"
+msgid "REVERB"
+msgstr "REVERB"
+
+#: ui/fx.slint:24
+msgctxt "FxNames"
+msgid "FLANGER"
+msgstr "FLANGER"
+
+#: ui/fx.slint:24
+msgctxt "FxNames"
+msgid "PHASER"
+msgstr "PHASER"
+
+#: ui/fx.slint:24
+msgctxt "FxNames"
+msgid "ROLL"
+msgstr "ROLL"
+
+#: ui/fx.slint:25
+msgctxt "FxNames"
+msgid "SLIP ROLL"
+msgstr "SLIP ROLL"
+
+#: ui/fx.slint:25 ui/fx.slint:27
+msgctxt "FxNames"
+msgid "FILTER"
+msgstr "FILTER"
+
+#: ui/fx.slint:25
+msgctxt "FxNames"
+msgid "TRANS"
+msgstr "TRANS"
+
+#: ui/fx.slint:25 ui/fx.slint:27
+msgctxt "FxNames"
+msgid "PITCH"
+msgstr "PITCH"
+
+#: ui/fx.slint:25
+msgctxt "FxNames"
+msgid "VINYL BRAKE"
+msgstr "VINYL BRAKE"
+
+#: ui/fx.slint:25
+msgctxt "FxNames"
+msgid "HELIX"
+msgstr "HELIX"
+
+#: ui/fx.slint:25
+msgctxt "FxNames"
+msgid "SPIRAL"
+msgstr "SPIRAL"
+
+#: ui/fx.slint:27
+msgctxt "FxNames"
+msgid "NOISE"
+msgstr "NOISE"
+
+#: ui/fx.slint:27
+msgctxt "FxNames"
+msgid "SPACE"
+msgstr "SPACE"
+
+#: ui/fx.slint:27
+msgctxt "FxNames"
+msgid "CRUSH"
+msgstr "CRUSH"
+
+#: ui/fx.slint:27
+msgctxt "FxNames"
+msgid "DUB ECHO"
+msgstr "DUB ECHO"
+
+#: ui/fx.slint:27
+msgctxt "FxNames"
+msgid "SWEEP"
+msgstr "SWEEP"
+
+#: ui/fx.slint:28
+msgctxt "FxNames"
+msgid "BRAKE"
+msgstr "BRAKE"
+
+#: ui/fx.slint:28
+msgctxt "FxNames"
+msgid "BACKSPIN"
+msgstr "BACKSPIN"
+
+#: ui/fx.slint:28
+msgctxt "FxNames"
+msgid "ECHO OUT"
+msgstr "ECHO OUT"
+
+#: ui/fx.slint:111
+msgctxt "FxUnit"
+msgid "TAP"
+msgstr "TAP"
+
+#: ui/fx.slint:116
+msgctxt "FxUnit"
+msgid "Single effect or three effects in a chain"
+msgstr "Ein Effekt oder drei Effekte in Reihe"
+
+#: ui/fx.slint:129
+msgctxt "FxUnit"
+msgid "Tempo FX: previous / next effect — click the name for the list"
+msgstr "Tempo FX: vorheriger / nächster Effekt — Name anklicken für die Liste"
+
+#: ui/fx.slint:136
+msgctxt "FxUnit"
+msgid "BEAT"
+msgstr "BEAT"
+
+#: ui/fx.slint:143
+msgctxt "FxUnit"
+msgid "Beat length: shorter / longer"
+msgstr "Beat-Länge: kürzer / länger"
+
+#: ui/fx.slint:162
+msgctxt "FxUnit"
+msgid "Insert the effect on channel {}"
+msgstr "Effekt auf Kanal {} legen"
+
+#: ui/fx.slint:170
+msgctxt "FxUnit"
+msgid "Insert the effect on the sampler"
+msgstr "Effekt auf den Sampler legen"
+
+#: ui/fx.slint:178
+msgctxt "FxUnit"
+msgid "Insert the effect on the master output"
+msgstr "Effekt auf den Master-Ausgang legen"
+
+#: ui/fx.slint:188
+msgctxt "FxUnit"
+msgid "Exit FX: slow the target to a stop while held"
+msgstr "Exit FX: Ziel bis zum Stillstand abbremsen, solange gehalten"
+
+#: ui/fx.slint:189
+msgctxt "FxUnit"
+msgid "Exit FX: spin the target backwards while held"
+msgstr "Exit FX: Ziel rückwärts drehen, solange gehalten"
+
+#: ui/fx.slint:190
+msgctxt "FxUnit"
+msgid "Exit FX: cut the target and let it echo out while held"
+msgstr "Exit FX: Ziel abschneiden und ausklingen lassen, solange gehalten"
+
+#: ui/fx.slint:211
+msgctxt "FxUnit"
+msgid "Effect of this slot"
+msgstr "Effekt dieses Slots"
+
+#: ui/fx.slint:246
+msgctxt "FxUnit"
+msgid "LEVEL"
+msgstr "LEVEL"
+
+#: ui/fx.slint:248
+msgctxt "FxUnit"
+msgid "Level / depth of the effect"
+msgstr "Level / Tiefe des Effekts"
+
+#: ui/fx.slint:252
+msgctxt "FxUnit"
+msgid "PARAM"
+msgstr "PARAM"
+
+#: ui/fx.slint:254
+msgctxt "FxUnit"
+msgid "Effect parameter (filter direction, pitch, reverb colour)"
+msgstr "Effektparameter (Filterrichtung, Tonhöhe, Hallfarbe)"
+
+#: ui/fx.slint:266
+msgctxt "FxUnit"
+msgid "Tempo FX on / off"
+msgstr "Tempo FX an / aus"
+
+#: ui/fx.slint:274
+msgctxt "FxUnit"
+msgid "AUTO: the effect follows the deck tempo again"
+msgstr "AUTO: Der Effekt folgt wieder dem Deck-Tempo"
+
+#: ui/fx.slint:281
+msgctxt "FxUnit"
+msgid "Tap the tempo of the effect; AUTO returns to the deck tempo"
+msgstr "Tempo des Effekts tappen; AUTO kehrt zum Deck-Tempo zurück"
+
+#: ui/fx.slint:345
+msgctxt "ChannelFxSelector"
+msgid ""
+"Channel FX of the CH FX knobs: previous / next — click the name for the list"
+msgstr ""
+"Channel FX der CH-FX-Regler: vorheriger / nächster — Name anklicken für die Liste"
+
+#: ui/info.slint:59
+msgctxt "InfoPanel"
+msgid "Select a track to see and edit its tags."
+msgstr "Track auswählen, um seine Tags zu sehen und zu bearbeiten."
+
+#: ui/info.slint:68
+msgctxt "InfoPanel"
+msgid "TRACK INFO"
+msgstr "TRACK-INFO"
+
+#: ui/info.slint:74
+msgctxt "InfoPanel"
+msgid "TITLE"
+msgstr "TITEL"
+
+#: ui/info.slint:75
+msgctxt "InfoPanel"
+msgid "ARTIST"
+msgstr "ARTIST"
+
+#: ui/info.slint:76
+msgctxt "InfoPanel"
+msgid "ALBUM"
+msgstr "ALBUM"
+
+#: ui/info.slint:77
+msgctxt "InfoPanel"
+msgid "GENRE"
+msgstr "GENRE"
+
+#: ui/info.slint:78
+msgctxt "InfoPanel"
+msgid "LABEL"
+msgstr "LABEL"
+
+#: ui/info.slint:79
+msgctxt "InfoPanel"
+msgid "REMIXER"
+msgstr "REMIXER"
+
+#: ui/info.slint:80
+msgctxt "InfoPanel"
+msgid "COMPOSER"
+msgstr "KOMPONIST"
+
+#: ui/info.slint:81
+msgctxt "InfoPanel"
+msgid "YEAR"
+msgstr "JAHR"
+
+#: ui/info.slint:82
+msgctxt "InfoPanel"
+msgid "COMMENT"
+msgstr "KOMMENTAR"
+
+#: ui/info.slint:87
+msgctxt "InfoPanel"
+msgid "KEY"
+msgstr "TONART"
+
+#: ui/info.slint:88
+msgctxt "InfoPanel"
+msgid "TIME"
+msgstr "ZEIT"
+
+#: ui/info.slint:90
+msgctxt "InfoPanel"
+msgid "ADDED"
+msgstr "HINZUGEFÜGT"
+
+#: ui/info.slint:91
+msgctxt "InfoPanel"
+msgid "PLAYS"
+msgstr "WIEDERGABEN"
+
+#: ui/info.slint:92
+msgctxt "InfoPanel"
+msgid "FILE"
+msgstr "DATEI"
+
+#: ui/lighting.slint:117
+msgctxt "Swatches"
+msgid "TRACK"
+msgstr "TRACK"
+
+#: ui/lighting.slint:189
+msgctxt "Stage"
+msgid "No fixtures patched yet. Add your lights on the left."
+msgstr "Noch keine Scheinwerfer gepatcht. Füge deine Lampen links hinzu."
+
+#: ui/lighting.slint:201
+msgctxt "RigPanel"
+msgid "RIG"
+msgstr "RIG"
+
+#: ui/lighting.slint:216
+msgctxt "RigPanel"
+msgid "Remove this fixture"
+msgstr "Diesen Scheinwerfer entfernen"
+
+#: ui/lighting.slint:222
+msgctxt "RigPanel"
+msgid "ADD FIXTURE"
+msgstr "SCHEINWERFER HINZUFÜGEN"
+
+#: ui/lighting.slint:230
+msgctxt "RigPanel"
+msgid "Name"
+msgstr "Name"
+
+#: ui/lighting.slint:231
+msgctxt "RigPanel"
+msgid "Group"
+msgstr "Gruppe"
+
+#: ui/lighting.slint:234
+msgctxt "RigPanel"
+msgid "ADD"
+msgstr "HINZUFÜGEN"
+
+#: ui/lighting.slint:235
+msgctxt "RigPanel"
+msgid "Patch the fixture at the next free DMX address"
+msgstr "Scheinwerfer auf die nächste freie DMX-Adresse patchen"
+
+#: ui/lighting.slint:240
+msgctxt "RigPanel"
+msgid "OUTPUT"
+msgstr "AUSGANG"
+
+#: ui/lighting.slint:246
+msgctxt "RigPanel"
+msgid "Choose how universe 1 leaves the computer"
+msgstr "Wählen, wie Universe 1 den Computer verlässt"
+
+#: ui/lighting.slint:259
+msgctxt "RigPanel"
+msgid "SET"
+msgstr "SETZEN"
+
+#: ui/lighting.slint:259
+msgctxt "RigPanel"
+msgid "Send universe 1 to this output"
+msgstr "Universe 1 an diesen Ausgang senden"
+
+#: ui/lighting.slint:266
+msgctxt "RigPanel"
+msgid "IMPORT FIXTURE FILE…"
+msgstr "SCHEINWERFER-DATEI IMPORTIEREN…"
+
+#: ui/lighting.slint:267
+msgctxt "RigPanel"
+msgid "Patch a fixture from an Open Fixture Library file (.json)"
+msgstr "Scheinwerfer aus einer Open-Fixture-Library-Datei (.json) patchen"
+
+#: ui/lighting.slint:280
+msgctxt "ShowPanel"
+msgid "SHOW"
+msgstr "SHOW"
+
+#: ui/lighting.slint:283
+msgctxt "ShowPanel"
+msgid "DMX OUT"
+msgstr "DMX AUS"
+
+#: ui/lighting.slint:284
+msgctxt "ShowPanel"
+msgid "Send the show to the outputs"
+msgstr "Die Show an die Ausgänge senden"
+
+#: ui/lighting.slint:293
+msgctxt "ShowPanel"
+msgid "The show follows phrases, beat and the mix"
+msgstr "Die Show folgt Phrasen, Beat und Mix"
+
+#: ui/lighting.slint:294
+msgctxt "ShowPanel"
+msgid "One look for the whole rig, locked to the beat"
+msgstr "Ein Look für das ganze Rig, im Takt"
+
+#: ui/lighting.slint:295
+msgctxt "ShowPanel"
+msgid "Programs and colours per group, cue stack"
+msgstr "Programme und Farben pro Gruppe, Cue-Stack"
+
+#: ui/lighting.slint:307
+msgctxt "ShowPanel"
+msgid "Master dimmer"
+msgstr "Master-Dimmer"
+
+#: ui/lighting.slint:310
+msgctxt "ShowPanel"
+msgid "MASTER"
+msgstr "MASTER"
+
+#: ui/lighting.slint:316
+msgctxt "ShowPanel"
+msgid "BLACKOUT"
+msgstr "BLACKOUT"
+
+#: ui/lighting.slint:317
+msgctxt "ShowPanel"
+msgid "All lights off"
+msgstr "Alle Lichter aus"
+
+#: ui/lighting.slint:322
+msgctxt "ShowPanel"
+msgid "FLASH"
+msgstr "FLASH"
+
+#: ui/lighting.slint:323
+msgctxt "ShowPanel"
+msgid "Full white while held"
+msgstr "Volles Weiß, solange gedrückt"
+
+#: ui/lighting.slint:329
+msgctxt "ShowPanel"
+msgid "STROBE"
+msgstr "STROBE"
+
+#: ui/lighting.slint:330
+msgctxt "ShowPanel"
+msgid "Strobe while held"
+msgstr "Strobe, solange gedrückt"
+
+#: ui/lighting.slint:338
+msgctxt "ShowPanel"
+msgid "FOG"
+msgstr "NEBEL"
+
+#: ui/lighting.slint:339
+msgctxt "ShowPanel"
+msgid "Fog machines on while held"
+msgstr "Nebelmaschinen an, solange gedrückt"
+
+#: ui/lighting.slint:345
+msgctxt "ShowPanel"
+msgid "TAP"
+msgstr "TAP"
+
+#: ui/lighting.slint:346
+msgctxt "ShowPanel"
+msgid "Tap the tempo for the lights when no deck plays"
+msgstr "Tempo für das Licht tappen, wenn kein Deck spielt"
+
+#: ui/lighting.slint:355
+msgctxt "ShowPanel"
+msgid "AUTOMATIC"
+msgstr "AUTOMATIK"
+
+#: ui/lighting.slint:357
+msgctxt "ShowPanel"
+msgid ""
+"Intros breathe, build-ups chase faster and end in a strobe, choruses sweep "
+"the movers on the beat, breakdowns calm down, outros fade. During a mix both "
+"tracks' looks blend by how loud each is."
+msgstr ""
+"Intros atmen, Build-ups jagen schneller und enden im Strobe, Choruses "
+"schwenken die Moving Heads im Takt, Breakdowns beruhigen sich, Outros "
+"blenden aus. Im Mix verschmelzen die Looks beider Tracks je nach Lautstärke."
+
+#: ui/lighting.slint:363
+msgctxt "ShowPanel"
+msgid "LOOK"
+msgstr "LOOK"
+
+#: ui/lighting.slint:369
+msgctxt "ShowPanel"
+msgid "COLOUR"
+msgstr "FARBE"
+
+#: ui/lighting.slint:374
+msgctxt "ShowPanel"
+msgid "GROUPS"
+msgstr "GRUPPEN"
+
+#: ui/lighting.slint:382
+msgctxt "ShowPanel"
+msgid "MUSIC"
+msgstr "MUSIK"
+
+#: ui/lighting.slint:383
+msgctxt "ShowPanel"
+msgid "Follow the music"
+msgstr "Der Musik folgen"
+
+#: ui/lighting.slint:399
+msgctxt "ShowPanel"
+msgid "Attribute effect: click for the next one"
+msgstr "Attribut-Effekt: Klick für den nächsten"
+
+#: ui/lighting.slint:431
+msgctxt "ShowPanel"
+msgid "CUE STACK"
+msgstr "CUE-STACK"
+
+#: ui/lighting.slint:440
+msgctxt "ShowPanel"
+msgid "Delete this cue"
+msgstr "Diesen Cue löschen"
+
+#: ui/lighting.slint:445
+msgctxt "ShowPanel"
+msgid "BACK"
+msgstr "ZURÜCK"
+
+#: ui/lighting.slint:445
+msgctxt "ShowPanel"
+msgid "Previous cue"
+msgstr "Vorheriger Cue"
+
+#: ui/lighting.slint:446
+msgctxt "ShowPanel"
+msgid "GO"
+msgstr "GO"
+
+#: ui/lighting.slint:446
+msgctxt "ShowPanel"
+msgid "Next cue"
+msgstr "Nächster Cue"
+
+#: ui/lighting.slint:450
+msgctxt "ShowPanel"
+msgid "Cue name"
+msgstr "Cue-Name"
+
+#: ui/lighting.slint:453
+msgctxt "ShowPanel"
+msgid "STORE"
+msgstr "SPEICHERN"
+
+#: ui/lighting.slint:453
+msgctxt "ShowPanel"
+msgid "Store the group settings as a new cue"
+msgstr "Gruppeneinstellungen als neuen Cue speichern"
+
+#: ui/lighting.slint:474
+msgctxt "LightingView"
+msgid "STAGE"
+msgstr "BÜHNE"
+
+#: ui/lighting.slint:478
+msgctxt "LightingView"
+msgid "WINDOW"
+msgstr "FENSTER"
+
+#: ui/lighting.slint:478
+msgctxt "LightingView"
+msgid "Open the lighting in its own window (second screen)"
+msgstr "Licht in einem eigenen Fenster öffnen (zweiter Bildschirm)"
+
+#: ui/lighting.slint:512
+msgctxt "LightingStrip"
+msgid "DMX OUT"
+msgstr "DMX AUS"
+
+#: ui/lighting.slint:521
+msgctxt "LightingStrip"
+msgid "BLACKOUT"
+msgstr "BLACKOUT"
+
+#: ui/lighting.slint:526
+msgctxt "LightingStrip"
+msgid "FLASH"
+msgstr "FLASH"
+
+#: ui/lighting.slint:531
+msgctxt "LightingStrip"
+msgid "STROBE"
+msgstr "STROBE"
+
+#: ui/mic.slint:48
+msgctxt "MicControls"
+msgid "Microphone / aux input: {}"
+msgstr "Mikrofon / Aux-Eingang: {}"
+
+#: ui/mic.slint:48
+msgctxt "MicControls"
+msgid "Microphone / aux input (system default)"
+msgstr "Mikrofon / Aux-Eingang (Systemstandard)"
+
+#: ui/mic.slint:67
+msgctxt "MicControls"
+msgid "TALK ▼"
+msgstr "TALK ▼"
+
+#: ui/mic.slint:67
+msgctxt "MicControls"
+msgid "TALK"
+msgstr "TALK"
+
+#: ui/mic.slint:68
+msgctxt "MicControls"
+msgid "Talkover: the music ducks while you speak"
+msgstr "Talkover: Die Musik wird leiser, während du sprichst"
+
+#: ui/mic.slint:73
+msgctxt "MicControls"
+msgid "Next input device"
+msgstr "Nächstes Eingangsgerät"
+
+#: ui/mix_preview.slint:51
+msgctxt "DeckPoints"
+msgid "DECK {}"
+msgstr "DECK {}"
+
+#: ui/mix_preview.slint:54
+msgctxt "DeckPoints"
+msgid "{} POINTS"
+msgstr "{} PUNKTE"
+
+#: ui/mix_preview.slint:57
+msgctxt "DeckPoints"
+msgid "IN"
+msgstr "IN"
+
+#: ui/mix_preview.slint:58
+msgctxt "DeckPoints"
+msgid "OUT"
+msgstr "OUT"
+
+#: ui/mix_preview.slint:69
+msgctxt "MixPreviewPanel"
+msgid "MIX IN"
+msgstr "MIX IN"
+
+#: ui/mix_preview.slint:70
+msgctxt "MixPreviewPanel"
+msgid "Set the mix-in point of the edited deck at its playhead"
+msgstr "Mix-In-Punkt des bearbeiteten Decks an seinen Abspielpunkt setzen"
+
+#: ui/mix_preview.slint:75
+msgctxt "MixPreviewPanel"
+msgid "MIX OUT"
+msgstr "MIX OUT"
+
+#: ui/mix_preview.slint:76
+msgctxt "MixPreviewPanel"
+msgid "Set the mix-out point of the edited deck at its playhead"
+msgstr "Mix-Out-Punkt des bearbeiteten Decks an seinen Abspielpunkt setzen"
+
+#: ui/mix_preview.slint:81
+msgctxt "MixPreviewPanel"
+msgid "Edited deck: back to the previous point"
+msgstr "Bearbeitetes Deck: zurück zum vorigen Punkt"
+
+#: ui/mix_preview.slint:86
+msgctxt "MixPreviewPanel"
+msgid "Edited deck: on to the next point"
+msgstr "Bearbeitetes Deck: weiter zum nächsten Punkt"
+
+#: ui/mix_preview.slint:91
+msgctxt "MixPreviewPanel"
+msgid "EDIT DECK {}"
+msgstr "DECK {} BEARBEITEN"
+
+#: ui/mix_preview.slint:92
+msgctxt "MixPreviewPanel"
+msgid "Switch the deck the points are set on"
+msgstr "Deck wechseln, auf dem die Punkte gesetzt werden"
+
+#: ui/mix_preview.slint:99
+msgctxt "MixPreviewPanel"
+msgid "Stop linking the mix points"
+msgstr "Mix-Punkte nicht mehr verknüpfen"
+
+#: ui/mix_preview.slint:99
+msgctxt "MixPreviewPanel"
+msgid ""
+"Link: the other deck starts from its mix-in point when this one reaches its "
+"mix-out point"
+msgstr "Link: das andere Deck startet an seinem Mix-In-Punkt, sobald dieses seinen Mix-Out-Punkt erreicht"
+
+#: ui/user_tags.slint:28
+msgctxt "UserTagPanel"
+msgid "TAGS"
+msgstr "TAGS"
+
+#: ui/user_tags.slint:30
+msgctxt "UserTagPanel"
+msgid "Select tracks to tag them."
+msgstr "Wähle Tracks, um sie zu taggen."
+
+#: ui/user_tags.slint:30
+msgctxt "UserTagPanel"
+msgid "{} selected — click a value to tag or untag them."
+msgstr ""
+"{} ausgewählt — klicke einen Wert, um sie zu taggen oder den Tag zu "
+"entfernen."
+
+#: ui/user_tags.slint:36
+msgctxt "UserTagPanel"
+msgid "CATEGORY: VALUE — RETURN"
+msgstr "KATEGORIE: WERT — RETURN"
+
+#: ui/user_tags.slint:41
+msgctxt "UserTagPanel"
+msgid "No tag values yet. Type one above, e.g. Mood: Peak."
+msgstr "Noch keine Tag-Werte. Gib oben einen ein, z. B. Stimmung: Peak."
+
+#: ui/user_tags.slint:68
+msgctxt "UserTagPanel"
+msgid "Tag or untag the selected tracks"
+msgstr "Ausgewählte Tracks taggen oder Tag entfernen"
+
+#: ui/user_tags.slint:95
+msgctxt "SuggestionPanel"
+msgid "FITS AFTER"
+msgstr "PASST NACH"
+
+#: ui/user_tags.slint:97
+msgctxt "SuggestionPanel"
+msgid "Select a track to see what fits after it."
+msgstr "Wähle einen Track, um zu sehen, was danach passt."
+
+#: ui/user_tags.slint:101
+msgctxt "SuggestionPanel"
+msgid "No analysed track within ±6 % tempo and a compatible key."
+msgstr "Kein analysierter Track innerhalb von ±6 % Tempo mit passender Tonart."
+
+#: ui/user_tags.slint:130
+msgctxt "SuggestionPanel"
+msgid "Double-click to load into a free deck"
+msgstr "Doppelklick lädt auf ein freies Deck"
+
+#: ui/user_tags.slint:139
+msgctxt "SuggestionPanel"
+msgid "SHOW AS LIST"
+msgstr "ALS LISTE ZEIGEN"
+
+#: ui/user_tags.slint:141
+msgctxt "SuggestionPanel"
+msgid "Open these tracks as the Similar tracks list"
+msgstr "Diese Tracks als Liste „Passende Tracks“ öffnen"
+
+#: ui/perform.slint:142
+msgctxt "Overview"
+msgid "LOAD SELECTED"
+msgstr "AUSWAHL LADEN"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "HOT CUE"
+msgstr "HOT CUE"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "HOLD FX"
+msgstr "HOLD FX"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "BEAT JUMP"
+msgstr "BEAT JUMP"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "SAMPLER"
+msgstr "SAMPLER"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "KEYBOARD"
+msgstr "KEYBOARD"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "KEY SHIFT"
+msgstr "KEY SHIFT"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "BEAT LOOP"
+msgstr "BEAT LOOP"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "SLICER"
+msgstr "SLICER"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "STEMS"
+msgstr "STEMS"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "MEMORY CUE"
+msgstr "MEMORY CUE"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "LIGHTING"
+msgstr "LIGHTING"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "CENSOR"
+msgstr "CENSOR"
+
+#: ui/perform.slint:157
+msgctxt "PadModes"
+msgid "PATTERN"
+msgstr "PATTERN"
+
+#: ui/perform.slint:222
+msgctxt "DeckPad"
+msgid "Hot cue: jump (hold to preview while paused) — right click deletes"
+msgstr ""
+"Hot Cue: springen (im Pausenzustand halten zum Vorhören) — Rechtsklick löscht"
+
+#: ui/perform.slint:222
+msgctxt "DeckPad"
+msgid "Hot cue: store the current position"
+msgstr "Hot Cue: aktuelle Position speichern"
+
+#: ui/perform.slint:223
+msgctxt "DeckPad"
+msgid "Play the sampler slot (drop tracks on the sampler panel)"
+msgstr "Sampler-Slot abspielen (Tracks auf das Sampler-Panel ziehen)"
+
+#: ui/perform.slint:224
+msgctxt "DeckPad"
+msgid "Jump by this many beats"
+msgstr "Um so viele Beats springen"
+
+#: ui/perform.slint:225
+msgctxt "DeckPad"
+msgid "Loop this many beats; press again to exit"
+msgstr "So viele Beats loopen; erneut drücken zum Beenden"
+
+#: ui/perform.slint:226
+msgctxt "DeckPad"
+msgid "Shift the key by these semitones"
+msgstr "Tonart um so viele Halbtöne verschieben"
+
+#: ui/perform.slint:227
+msgctxt "DeckPad"
+msgid "Play the hot cue at this key"
+msgstr "Hot Cue in dieser Tonart spielen"
+
+#: ui/perform.slint:228
+msgctxt "DeckPad"
+msgid "Play this slice while held"
+msgstr "Diesen Slice spielen, solange gedrückt"
+
+#: ui/perform.slint:229
+msgctxt "DeckPad"
+msgid "Effect while held"
+msgstr "Effekt, solange gedrückt"
+
+#: ui/perform.slint:257
+msgctxt "PadModeBar"
+msgid "HOLD FX 2"
+msgstr "HOLD FX 2"
+
+#: ui/perform.slint:259
+msgctxt "PadModeBar"
+msgid "Pad mode: previous / next — click the name for the list"
+msgstr "Pad-Modus: vorheriger / nächster — Name anklicken für die Liste"
+
+#: ui/perform.slint:269
+msgctxt "PadModeBar"
+msgid "Hot cue bank"
+msgstr "Hot-Cue-Bank"
+
+#: ui/perform.slint:270
+msgctxt "PadModeBar"
+msgid "Beat jump size of the − / + buttons"
+msgstr "Beat-Jump-Weite der Tasten − / +"
+
+#: ui/perform.slint:271
+msgctxt "PadModeBar"
+msgid "Sampler bank"
+msgstr "Sampler-Bank"
+
+#: ui/perform.slint:272
+msgctxt "PadModeBar"
+msgid "Hot cue the keyboard plays"
+msgstr "Hot Cue, den das Keyboard spielt"
+
+#: ui/perform.slint:273
+msgctxt "PadModeBar"
+msgid "Key shift in semitones"
+msgstr "Tonartverschiebung in Halbtönen"
+
+#: ui/perform.slint:274
+msgctxt "PadModeBar"
+msgid "Length of the sliced section"
+msgstr "Länge des geslicten Abschnitts"
+
+#: ui/perform.slint:275
+msgctxt "PadModeBar"
+msgid "Hold FX page"
+msgstr "Hold-FX-Seite"
+
+#: ui/perform.slint:353
+msgctxt "LoopColumn"
+msgid "Beat jump back (size: ‹ › in Beat Jump pad mode)"
+msgstr "Beat Jump zurück (Weite: ‹ › im Pad-Modus Beat Jump)"
+
+#: ui/perform.slint:354
+msgctxt "LoopColumn"
+msgid "Beat jump forward"
+msgstr "Beat Jump vorwärts"
+
+#: ui/perform.slint:429
+msgctxt "StemKey"
+msgid "Click: mute / unmute · wheel: level"
+msgstr "Klick: stumm / laut · Mausrad: Pegel"
+
+#: ui/perform.slint:513
+msgctxt "DeckPanel"
+msgid "Not loaded"
+msgstr "Nicht geladen"
+
+#: ui/perform.slint:528
+msgctxt "DeckPanel"
+msgid "REMAIN"
+msgstr "REST"
+
+#: ui/perform.slint:529
+msgctxt "DeckPanel"
+msgid "KEY"
+msgstr "TONART"
+
+#: ui/perform.slint:540
+msgctxt "DeckPanel"
+msgid "Key sync: match the key of the master deck"
+msgstr "Key Sync: an die Tonart des Master-Decks anpassen"
+
+#: ui/perform.slint:550
+msgctxt "DeckPanel"
+msgid "Key shift: down / up a semitone — click the value to reset"
+msgstr ""
+"Key Shift: einen Halbton tiefer / höher — Wert anklicken zum Zurücksetzen"
+
+#: ui/perform.slint:636
+msgctxt "DeckPanel"
+msgid "Pad mode: click for the next one"
+msgstr "Pad-Modus: klicken für den nächsten"
+
+#: ui/perform.slint:688
+msgctxt "ChannelStrip"
+msgid "EQ knobs control the parts: HI vocals, MID inst, LOW drums"
+msgstr "EQ-Regler steuern die Parts: HI Vocals, MID Inst, LOW Drums"
+
+#: ui/perform.slint:802
+msgctxt "GlobalBar"
+msgid "PHONES"
+msgstr "KOPFHÖRER"
+
+#: ui/perform.slint:804
+msgctxt "GlobalBar"
+msgid "LEVEL"
+msgstr "PEGEL"
+
+#: ui/perform.slint:816
+msgctxt "GlobalBar"
+msgid "MASTER OUT"
+msgstr "MASTER OUT"
+
+#: ui/plate.slint:84
+msgctxt "TrackPlate"
+msgid "NO TRACK SELECTED"
+msgstr "KEIN TRACK GEWÄHLT"
+
+#: ui/plate.slint:103
+msgctxt "TrackPlate"
+msgid "KEY"
+msgstr "TONART"
+
+#: ui/plate.slint:104
+msgctxt "TrackPlate"
+msgid "TIME"
+msgstr "ZEIT"
+
+#: ui/plate.slint:152
+msgctxt "TrackPlate"
+msgid "STOP"
+msgstr "STOPP"
+
+#: ui/plate.slint:152
+msgctxt "TrackPlate"
+msgid "PREVIEW"
+msgstr "VORHÖREN"
+
+#: ui/plate.slint:157
+msgctxt "TrackPlate"
+msgid "MEMORY CUE"
+msgstr "MEMORY CUE"
+
+#: ui/plate.slint:158
+msgctxt "TrackPlate"
+msgid "ANALYSE"
+msgstr "ANALYSIEREN"
+
+#: ui/plate.slint:163
+msgctxt "TrackPlate"
+msgid "HOT CUES"
+msgstr "HOT CUES"
+
+#: ui/plate.slint:165
+msgctxt "TrackPlate"
+msgid "Click an empty letter to set it at the cursor"
+msgstr "Leeren Buchstaben klicken, um ihn am Cursor zu setzen"
+
+#: ui/plate.slint:189
+msgctxt "TrackPlate"
+msgid "BEATGRID"
+msgstr "BEATGRID"
+
+#: ui/plate.slint:191
+msgctxt "TrackPlate"
+msgid "LOCKED"
+msgstr "GESPERRT"
+
+#: ui/plate.slint:197
+msgctxt "TrackPlate"
+msgid "HALF"
+msgstr "HALB"
+
+#: ui/plate.slint:198
+msgctxt "TrackPlate"
+msgid "DOUBLE"
+msgstr "DOPPELT"
+
+#: ui/plate.slint:202
+msgctxt "TrackPlate"
+msgid "DOWNBEAT AT CURSOR"
+msgstr "DOWNBEAT AM CURSOR"
+
+#: ui/plate.slint:203
+msgctxt "TrackPlate"
+msgid "UNLOCK"
+msgstr "ENTSPERREN"
+
+#: ui/plate.slint:203
+msgctxt "TrackPlate"
+msgid "LOCK"
+msgstr "SPERREN"
+
+#: ui/player.slint:129
+msgctxt "PreparePlayer"
+msgid "SECONDS"
+msgstr "SEKUNDEN"
+
+#: ui/player.slint:153
+msgctxt "PreparePlayer"
+msgid "No track selected"
+msgstr "Kein Track ausgewählt"
+
+#: ui/player.slint:158
+msgctxt "PreparePlayer"
+msgid "POS"
+msgstr "POS"
+
+#: ui/player.slint:159 ui/player.slint:316
+msgctxt "PreparePlayer"
+msgid "TIME"
+msgstr "ZEIT"
+
+#: ui/player.slint:161 ui/player.slint:315
+msgctxt "PreparePlayer"
+msgid "KEY"
+msgstr "TONART"
+
+#: ui/player.slint:208
+msgctxt "PreparePlayer"
+msgid "Select a track to prepare it"
+msgstr "Track auswählen, um ihn vorzubereiten"
+
+#: ui/player.slint:223 ui/player.slint:317
+msgctxt "PreparePlayer"
+msgid "GRID"
+msgstr "RASTER"
+
+#: ui/player.slint:236
+msgctxt "PreparePlayer"
+msgid "MEMORY"
+msgstr "MEMORY"
+
+#: ui/player.slint:251
+msgctxt "PreparePlayer"
+msgid "+ MARKER"
+msgstr "+ MARKER"
+
+#: ui/player.slint:251
+msgctxt "PreparePlayer"
+msgid "Tempo change: the typed BPM from the beat at the cursor on"
+msgstr "Tempowechsel: das eingegebene BPM ab dem Beat am Cursor"
+
+#: ui/player.slint:252
+msgctxt "PreparePlayer"
+msgid "TAP"
+msgstr "TAP"
+
+#: ui/player.slint:252
+msgctxt "PreparePlayer"
+msgid ""
+"Tap along with the beat: from the fourth tap the grid takes the tapped tempo"
+msgstr ""
+"Im Takt tippen: ab dem vierten Tippen übernimmt das Grid das getippte Tempo"
+
+#: ui/player.slint:255
+msgctxt "PreparePlayer"
+msgid "HALF"
+msgstr "HALB"
+
+#: ui/player.slint:256
+msgctxt "PreparePlayer"
+msgid "DOUBLE"
+msgstr "DOPPELT"
+
+#: ui/player.slint:257
+msgctxt "PreparePlayer"
+msgid "DOWNBEAT AT CURSOR"
+msgstr "DOWNBEAT AM CURSOR"
+
+#: ui/player.slint:260
+msgctxt "PreparePlayer"
+msgid "GRID LOCKED"
+msgstr "GRID GESPERRT"
+
+#: ui/player.slint:260
+msgctxt "PreparePlayer"
+msgid "LOCK GRID"
+msgstr "GRID SPERREN"
+
+#: ui/player.slint:309
+msgctxt "PreparePlayer"
+msgid "Memory cues appear here. Set one with MEMORY +."
+msgstr "Memory Cues erscheinen hier. Mit MEMORY + einen setzen."
+
+#: ui/player.slint:309
+msgctxt "PreparePlayer"
+msgid "Hot cues appear here. Click an empty pad to set one at the cursor."
+msgstr ""
+"Hot Cues erscheinen hier. Ein leeres Pad klicken setzt einen am Cursor."
+
+#: ui/player.slint:309
+msgctxt "PreparePlayer"
+msgid "Cues appear here. Double-click one to name it."
+msgstr "Cues erscheinen hier. Doppelklick zum Benennen."
+
+#: ui/player.slint:318
+msgctxt "PreparePlayer"
+msgid "ANALYSE"
+msgstr "ANALYSIEREN"
+
+#: ui/player.slint:329
+msgctxt "PreparePlayer"
+msgid "Cue name"
+msgstr "Cue-Name"
+
+#: ui/player.slint:344
+msgctxt "PreparePlayer"
+msgid "TO CURSOR"
+msgstr "ZUM CURSOR"
+
+#: ui/player.slint:345
+msgctxt "PreparePlayer"
+msgid "Move the cue to the cursor (snapped to the beat)"
+msgstr "Cue zum Cursor verschieben (auf den Beat eingerastet)"
+
+#: ui/player.slint:350
+msgctxt "PreparePlayer"
+msgid "→ HOT"
+msgstr "→ HOT"
+
+#: ui/player.slint:351
+msgctxt "PreparePlayer"
+msgid "Make this memory cue a hot cue on the first free pad"
+msgstr "Diesen Memory Cue zum Hot Cue auf dem ersten freien Pad machen"
+
+#: ui/player.slint:357
+msgctxt "PreparePlayer"
+msgid "ACTIVE"
+msgstr "AKTIV"
+
+#: ui/player.slint:359
+msgctxt "PreparePlayer"
+msgid "Active loop: the loop engages by itself when playback reaches it"
+msgstr "Aktiver Loop: der Loop greift von selbst, wenn die Wiedergabe ihn erreicht"
+
+#: ui/player.slint:365
+msgctxt "PreparePlayer"
+msgid "Delete this cue"
+msgstr "Diesen Cue löschen"
+
+#: ui/player.slint:374
+msgctxt "PreparePlayer"
+msgid "ALL"
+msgstr "ALLE"
+
+#: ui/player.slint:433
+msgctxt "MiniPlayer"
+msgid "Empty — select a track and press LOAD, or drag it here"
+msgstr "Leer — Track wählen und LADEN drücken oder hierher ziehen"
+
+#: ui/player.slint:433
+msgctxt "MiniPlayer"
+msgid "No track selected"
+msgstr "Kein Track ausgewählt"
+
+#: ui/player.slint:438
+msgctxt "MiniPlayer"
+msgid "POS"
+msgstr "POS"
+
+#: ui/player.slint:440
+msgctxt "MiniPlayer"
+msgid "KEY"
+msgstr "TONART"
+
+#: ui/player.slint:443
+msgctxt "MiniPlayer"
+msgid "LOAD"
+msgstr "LADEN"
+
+#: ui/player.slint:444
+msgctxt "MiniPlayer"
+msgid "Load the selected track into this player"
+msgstr "Den ausgewählten Track in diesen Player laden"
+
+#: ui/preferences.slint:159
+msgctxt "PreferencesWindow"
+msgid "Preferences — OpenDJDecks"
+msgstr "Einstellungen — OpenDJDecks"
+
+#: ui/preferences.slint:314
+msgctxt "PreferencesWindow"
+msgid "PREFERENCES"
+msgstr "EINSTELLUNGEN"
+
+#: ui/preferences.slint:315
+msgctxt "PreferencesWindow"
+msgid "AUDIO"
+msgstr "AUDIO"
+
+#: ui/preferences.slint:316
+msgctxt "PreferencesWindow"
+msgid "VIEW"
+msgstr "ANSICHT"
+
+#: ui/preferences.slint:317
+msgctxt "PreferencesWindow"
+msgid "ANALYSIS"
+msgstr "ANALYSE"
+
+#: ui/preferences.slint:318
+msgctxt "PreferencesWindow"
+msgid "CONTROLLER"
+msgstr "CONTROLLER"
+
+#: ui/preferences.slint:319
+msgctxt "PreferencesWindow"
+msgid "KEYBOARD"
+msgstr "TASTATUR"
+
+#: ui/preferences.slint:320
+msgctxt "PreferencesWindow"
+msgid "RECORDING"
+msgstr "AUFNAHME"
+
+#: ui/preferences.slint:321
+msgctxt "PreferencesWindow"
+msgid "ADVANCED"
+msgstr "ERWEITERT"
+
+#: ui/preferences.slint:343
+msgctxt "PreferencesWindow"
+msgid "Audio"
+msgstr "Audio"
+
+#: ui/preferences.slint:343
+msgctxt "PreferencesWindow"
+msgid "View"
+msgstr "Ansicht"
+
+#: ui/preferences.slint:343
+msgctxt "PreferencesWindow"
+msgid "Analysis"
+msgstr "Analyse"
+
+#: ui/preferences.slint:344
+msgctxt "PreferencesWindow"
+msgid "Controller"
+msgstr "Controller"
+
+#: ui/preferences.slint:344
+msgctxt "PreferencesWindow"
+msgid "Keyboard"
+msgstr "Tastatur"
+
+#: ui/preferences.slint:344
+msgctxt "PreferencesWindow"
+msgid "Recording"
+msgstr "Aufnahme"
+
+#: ui/preferences.slint:344
+msgctxt "PreferencesWindow"
+msgid "Advanced"
+msgstr "Erweitert"
+
+#: ui/preferences.slint:352
+msgctxt "PreferencesWindow"
+msgid "RESET PAGE"
+msgstr "SEITE ZURÜCKSETZEN"
+
+#: ui/preferences.slint:352
+msgctxt "PreferencesWindow"
+msgid "Set everything on this page back to the defaults"
+msgstr "Alles auf dieser Seite auf Standard zurücksetzen"
+
+#: ui/preferences.slint:364
+msgctxt "PreferencesWindow"
+msgid "Output"
+msgstr "Ausgabe"
+
+#: ui/preferences.slint:364 ui/preferences.slint:457 ui/preferences.slint:669
+msgctxt "PreferencesWindow"
+msgid "APPLIES AFTER RESTART"
+msgstr "GILT NACH NEUSTART"
+
+#: ui/preferences.slint:365
+msgctxt "PreferencesWindow"
+msgid "Output device"
+msgstr "Ausgabegerät"
+
+#: ui/preferences.slint:366
+msgctxt "PreferencesWindow"
+msgid "Buffer size"
+msgstr "Puffergröße"
+
+#: ui/preferences.slint:367
+msgctxt "PreferencesWindow"
+msgid "Sample rate"
+msgstr "Abtastrate"
+
+#: ui/preferences.slint:369
+msgctxt "PreferencesWindow"
+msgid "Headphones (cue)"
+msgstr "Kopfhörer (Cue)"
+
+#: ui/preferences.slint:370
+msgctxt "PreferencesWindow"
+msgid "AUTOMATIC"
+msgstr "AUTOMATISCH"
+
+#: ui/preferences.slint:370
+msgctxt "PreferencesWindow"
+msgid "OUTPUTS 3/4"
+msgstr "AUSGÄNGE 3/4"
+
+#: ui/preferences.slint:370 ui/preferences.slint:513
+msgctxt "PreferencesWindow"
+msgid "OFF"
+msgstr "AUS"
+
+#: ui/preferences.slint:372
+msgctxt "PreferencesWindow"
+msgid "Automatic picks the controller's audio interface when it is connected, else the system output. Headphones play on outputs 3/4 when the device has four outputs."
+msgstr "Automatisch nimmt das Audio-Interface des Controllers, wenn er angeschlossen ist, sonst die Systemausgabe. Kopfhörer spielen auf den Ausgängen 3/4, wenn das Gerät vier Ausgänge hat."
+
+#: ui/preferences.slint:373 ui/preferences.slint:694
+msgctxt "PreferencesWindow"
+msgid "Now"
+msgstr "Jetzt"
+
+#: ui/preferences.slint:386
+msgctxt "PreferencesWindow"
+msgid "Language and keys"
+msgstr "Sprache und Tonarten"
+
+#: ui/preferences.slint:387
+msgctxt "PreferencesWindow"
+msgid "Language"
+msgstr "Sprache"
+
+#: ui/preferences.slint:387 ui/preferences.slint:390
+msgctxt "PreferencesWindow"
+msgid "SYSTEM"
+msgstr "SYSTEM"
+
+#: ui/preferences.slint:388
+msgctxt "PreferencesWindow"
+msgid "Key notation"
+msgstr "Tonart-Schreibweise"
+
+#: ui/preferences.slint:388
+msgctxt "PreferencesWindow"
+msgid "CAMELOT  8A"
+msgstr "CAMELOT  8A"
+
+#: ui/preferences.slint:388
+msgctxt "PreferencesWindow"
+msgid "OPEN KEY  1M"
+msgstr "OPEN KEY  1M"
+
+#: ui/preferences.slint:388
+msgctxt "PreferencesWindow"
+msgid "MUSICAL  Am"
+msgstr "MUSIKALISCH  Am"
+
+#: ui/preferences.slint:389
+msgctxt "PreferencesWindow"
+msgid "Display"
+msgstr "Darstellung"
+
+#: ui/preferences.slint:389
+msgctxt "PreferencesWindow"
+msgid "UI SCALE APPLIES AFTER RESTART"
+msgstr "SKALIERUNG GILT NACH NEUSTART"
+
+#: ui/preferences.slint:390
+msgctxt "PreferencesWindow"
+msgid "Appearance"
+msgstr "Darstellung"
+
+#: ui/preferences.slint:390
+msgctxt "PreferencesWindow"
+msgid "DARK"
+msgstr "DUNKEL"
+
+#: ui/preferences.slint:390
+msgctxt "PreferencesWindow"
+msgid "LIGHT"
+msgstr "HELL"
+
+#: ui/preferences.slint:391
+msgctxt "PreferencesWindow"
+msgid "UI scale"
+msgstr "Skalierung"
+
+#: ui/preferences.slint:392
+msgctxt "PreferencesWindow"
+msgid "Waveform colour"
+msgstr "Wellenform-Farbe"
+
+#: ui/preferences.slint:392
+msgctxt "PreferencesWindow"
+msgid "3-BAND"
+msgstr "3 BÄNDER"
+
+#: ui/preferences.slint:392
+msgctxt "PreferencesWindow"
+msgid "BLUE"
+msgstr "BLAU"
+
+#: ui/preferences.slint:394
+msgctxt "PreferencesWindow"
+msgid "Bar counter"
+msgstr "Taktzähler"
+
+#: ui/preferences.slint:398
+msgctxt "PreferencesWindow"
+msgid "Countdown to phrase end"
+msgstr "Countdown bis Phrasenende"
+
+#: ui/preferences.slint:398
+msgctxt "PreferencesWindow"
+msgid "Countdown to next memory cue"
+msgstr "Countdown bis zum nächsten Memory Cue"
+
+#: ui/preferences.slint:398
+msgctxt "PreferencesWindow"
+msgid "Count up"
+msgstr "Hochzählen"
+
+#: ui/preferences.slint:403 ui/preferences.slint:428
+msgctxt "PreferencesWindow"
+msgid "Phrases"
+msgstr "Phrasen"
+
+#: ui/preferences.slint:404
+msgctxt "PreferencesWindow"
+msgid "Accessibility"
+msgstr "Barrierefreiheit"
+
+#: ui/preferences.slint:405
+msgctxt "PreferencesWindow"
+msgid "Colour"
+msgstr "Farbe"
+
+#: ui/preferences.slint:405
+msgctxt "PreferencesWindow"
+msgid "Colour-blind-safe palette"
+msgstr "Palette für Farbenblinde"
+
+#: ui/preferences.slint:406
+msgctxt "PreferencesWindow"
+msgid "Contrast"
+msgstr "Kontrast"
+
+#: ui/preferences.slint:406
+msgctxt "PreferencesWindow"
+msgid "High contrast (bright light)"
+msgstr "Hoher Kontrast (helles Licht)"
+
+#: ui/preferences.slint:407
+msgctxt "PreferencesWindow"
+msgid "Motion"
+msgstr "Bewegung"
+
+#: ui/preferences.slint:407
+msgctxt "PreferencesWindow"
+msgid "Reduce motion"
+msgstr "Bewegung reduzieren"
+
+#: ui/preferences.slint:408
+msgctxt "PreferencesWindow"
+msgid "Waveform zoom"
+msgstr "Waveform-Zoom"
+
+#: ui/preferences.slint:408
+msgctxt "PreferencesWindow"
+msgid "4 S"
+msgstr "4 S"
+
+#: ui/preferences.slint:408
+msgctxt "PreferencesWindow"
+msgid "8 S"
+msgstr "8 S"
+
+#: ui/preferences.slint:408
+msgctxt "PreferencesWindow"
+msgid "16 S"
+msgstr "16 S"
+
+#: ui/preferences.slint:408
+msgctxt "PreferencesWindow"
+msgid "32 S"
+msgstr "32 S"
+
+#: ui/preferences.slint:409
+msgctxt "PreferencesWindow"
+msgid ""
+"Seconds shown across the zoomed waveform when a track opens; the wheel still "
+"zooms each waveform."
+msgstr ""
+"Sekunden, die die vergrößerte Waveform beim Öffnen eines Tracks zeigt; das "
+"Mausrad zoomt jede Waveform weiterhin."
+
+#: ui/preferences.slint:410
+msgctxt "PreferencesWindow"
+msgid "Browser"
+msgstr "Browser"
+
+#: ui/preferences.slint:411
+msgctxt "PreferencesWindow"
+msgid "Text size"
+msgstr "Schriftgröße"
+
+#: ui/preferences.slint:412
+msgctxt "PreferencesWindow"
+msgid "Line spacing"
+msgstr "Zeilenabstand"
+
+#: ui/preferences.slint:412
+msgctxt "PreferencesWindow"
+msgid "COMPACT"
+msgstr "KOMPAKT"
+
+#: ui/preferences.slint:412
+msgctxt "PreferencesWindow"
+msgid "NORMAL"
+msgstr "NORMAL"
+
+#: ui/preferences.slint:412
+msgctxt "PreferencesWindow"
+msgid "ROOMY"
+msgstr "LUFTIG"
+
+#: ui/preferences.slint:424
+msgctxt "PreferencesWindow"
+msgid "Track analysis"
+msgstr "Track-Analyse"
+
+#: ui/preferences.slint:425
+msgctxt "PreferencesWindow"
+msgid "BPM range"
+msgstr "BPM-Bereich"
+
+#: ui/preferences.slint:426
+msgctxt "PreferencesWindow"
+msgid ""
+"Tempos are folded into this range: pick a lower range for hip-hop, a higher "
+"one for drum & bass."
+msgstr ""
+"Tempi werden in diesen Bereich gefaltet: ein niedrigerer Bereich für Hip-"
+"Hop, ein höherer für Drum & Bass."
+
+#: ui/preferences.slint:427
+msgctxt "PreferencesWindow"
+msgid "Key"
+msgstr "Tonart"
+
+#: ui/preferences.slint:427
+msgctxt "PreferencesWindow"
+msgid "Detect the key"
+msgstr "Tonart erkennen"
+
+#: ui/preferences.slint:428
+msgctxt "PreferencesWindow"
+msgid "Detect phrases (intro, verse, chorus …)"
+msgstr "Phrasen erkennen (Intro, Verse, Chorus …)"
+
+#: ui/preferences.slint:429
+msgctxt "PreferencesWindow"
+msgid "New tracks"
+msgstr "Neue Tracks"
+
+#: ui/preferences.slint:429
+msgctxt "PreferencesWindow"
+msgid "Analyse automatically when added"
+msgstr "Beim Hinzufügen automatisch analysieren"
+
+#: ui/preferences.slint:430
+msgctxt "PreferencesWindow"
+msgid ""
+"Changes apply to tracks analysed from now on. Use ANALYSE in the player to "
+"analyse a track again."
+msgstr ""
+"Änderungen gelten für Tracks, die ab jetzt analysiert werden. Mit "
+"ANALYSIEREN im Player wird ein Track erneut analysiert."
+
+#: ui/preferences.slint:442
+msgctxt "PreferencesWindow"
+msgid "Decks"
+msgstr "Decks"
+
+#: ui/preferences.slint:443
+msgctxt "PreferencesWindow"
+msgid "Tempo range"
+msgstr "Tempobereich"
+
+#: ui/preferences.slint:443
+msgctxt "PreferencesWindow"
+msgid "WIDE"
+msgstr "WEIT"
+
+#: ui/preferences.slint:444
+msgctxt "PreferencesWindow"
+msgid "Quantize"
+msgstr "Quantisieren"
+
+#: ui/preferences.slint:444
+msgctxt "PreferencesWindow"
+msgid "Quantize cues, loops and jumps to the beat"
+msgstr "Cues, Loops und Sprünge auf den Beat quantisieren"
+
+#: ui/preferences.slint:445
+msgctxt "PreferencesWindow"
+msgid "Sync"
+msgstr "Sync"
+
+#: ui/preferences.slint:445
+msgctxt "PreferencesWindow"
+msgid "BEAT SYNC (TEMPO + PHASE)"
+msgstr "BEAT SYNC (TEMPO + PHASE)"
+
+#: ui/preferences.slint:446
+msgctxt "PreferencesWindow"
+msgid "Jog wheel"
+msgstr "Jogwheel"
+
+#: ui/preferences.slint:446
+msgctxt "PreferencesWindow"
+msgid "VINYL"
+msgstr "VINYL"
+
+#: ui/preferences.slint:446
+msgctxt "PreferencesWindow"
+msgid "PITCH BEND"
+msgstr "PITCH BEND"
+
+#: ui/preferences.slint:447
+msgctxt "PreferencesWindow"
+msgid "Auto cue"
+msgstr "Auto Cue"
+
+#: ui/preferences.slint:447
+msgctxt "PreferencesWindow"
+msgid "A loaded track waits at its first sound"
+msgstr "Ein geladener Track wartet am ersten Ton"
+
+#: ui/preferences.slint:448
+msgctxt "PreferencesWindow"
+msgid "Mixer"
+msgstr "Mixer"
+
+#: ui/preferences.slint:449
+msgctxt "PreferencesWindow"
+msgid "EQ"
+msgstr "EQ"
+
+#: ui/preferences.slint:449
+msgctxt "PreferencesWindow"
+msgid "ISOLATOR"
+msgstr "ISOLATOR"
+
+#: ui/preferences.slint:449
+msgctxt "PreferencesWindow"
+msgid "CLASSIC EQ"
+msgstr "KLASSISCHER EQ"
+
+#: ui/preferences.slint:450
+msgctxt "PreferencesWindow"
+msgid "Channel fader curve"
+msgstr "Kanalfader-Kurve"
+
+#: ui/preferences.slint:450 ui/preferences.slint:451
+msgctxt "PreferencesWindow"
+msgid "LINEAR"
+msgstr "LINEAR"
+
+#: ui/preferences.slint:450
+msgctxt "PreferencesWindow"
+msgid "SMOOTH"
+msgstr "WEICH"
+
+#: ui/preferences.slint:450
+msgctxt "PreferencesWindow"
+msgid "SHARP"
+msgstr "STEIL"
+
+#: ui/preferences.slint:451
+msgctxt "PreferencesWindow"
+msgid "Crossfader curve"
+msgstr "Crossfader-Kurve"
+
+#: ui/preferences.slint:451
+msgctxt "PreferencesWindow"
+msgid "CONSTANT POWER"
+msgstr "KONSTANTE LEISTUNG"
+
+#: ui/preferences.slint:451
+msgctxt "PreferencesWindow"
+msgid "CUT"
+msgstr "CUT"
+
+#: ui/preferences.slint:452
+msgctxt "PreferencesWindow"
+msgid "Auto gain"
+msgstr "Auto Gain"
+
+#: ui/preferences.slint:452
+msgctxt "PreferencesWindow"
+msgid "Level tracks by their analysed loudness"
+msgstr "Tracks nach ihrer analysierten Lautheit angleichen"
+
+#: ui/preferences.slint:453
+msgctxt "PreferencesWindow"
+msgid "Deck and mixer settings apply at once and every time audio starts."
+msgstr "Deck- und Mixer-Einstellungen gelten sofort und bei jedem Audiostart."
+
+#: ui/preferences.slint:454
+msgctxt "PreferencesWindow"
+msgid "Detected"
+msgstr "Erkannt"
+
+#: ui/preferences.slint:455
+msgctxt "PreferencesWindow"
+msgid "No MIDI controller found. Connect a supported controller by USB; it is picked up within a few seconds."
+msgstr "Kein MIDI-Controller gefunden. Schließe einen unterstützten Controller per USB an; er wird in wenigen Sekunden erkannt."
+
+#: ui/preferences.slint:457
+msgctxt "PreferencesWindow"
+msgid "Mappings"
+msgstr "Mappings"
+
+#: ui/preferences.slint:460
+msgctxt "PreferencesWindow"
+msgid "Own mapping file"
+msgstr "Eigene Mapping-Datei"
+
+#: ui/preferences.slint:461
+msgctxt "PreferencesWindow"
+msgid "None"
+msgstr "Keine"
+
+#: ui/preferences.slint:462 ui/preferences.slint:637 ui/preferences.slint:673
+msgctxt "PreferencesWindow"
+msgid "CHOOSE…"
+msgstr "WÄHLEN…"
+
+#: ui/preferences.slint:462
+msgctxt "PreferencesWindow"
+msgid "Pick a mapping file"
+msgstr "Mapping-Datei wählen"
+
+#: ui/preferences.slint:463
+msgctxt "PreferencesWindow"
+msgid "REMOVE"
+msgstr "ENTFERNEN"
+
+#: ui/preferences.slint:463
+msgctxt "PreferencesWindow"
+msgid "Use only the built-in mappings"
+msgstr "Nur die eingebauten Mappings verwenden"
+
+#: ui/preferences.slint:465
+msgctxt "PreferencesWindow"
+msgid ""
+"A mapping file (TOML, see docs/controller-mappings.md) is loaded in addition "
+"to the built-in mappings and wins for its device."
+msgstr ""
+"Eine Mapping-Datei (TOML, siehe docs/controller-mappings.md) wird zusätzlich "
+"zu den eingebauten Mappings geladen und hat für ihr Gerät Vorrang."
+
+#: ui/preferences.slint:467
+msgctxt "PreferencesWindow"
+msgid "MIDI monitor"
+msgstr "MIDI-Monitor"
+
+#: ui/preferences.slint:469
+msgctxt "PreferencesWindow"
+msgid "Monitor"
+msgstr "Monitor"
+
+#: ui/preferences.slint:470
+msgctxt "PreferencesWindow"
+msgid "Show every MIDI message and what it does"
+msgstr "Jede MIDI-Nachricht und ihre Wirkung anzeigen"
+
+#: ui/preferences.slint:472
+msgctxt "PreferencesWindow"
+msgid "CLEAR"
+msgstr "LEEREN"
+
+#: ui/preferences.slint:472
+msgctxt "PreferencesWindow"
+msgid "Empty the monitor"
+msgstr "Monitor leeren"
+
+#: ui/preferences.slint:487
+msgctxt "PreferencesWindow"
+msgid "Move a control on your controller."
+msgstr "Bewege ein Bedienelement deines Controllers."
+
+#: ui/preferences.slint:489
+msgctxt "PreferencesWindow"
+msgid "MIDI learn"
+msgstr "MIDI-Learn"
+
+#: ui/preferences.slint:491
+msgctxt "PreferencesWindow"
+msgid "Action"
+msgstr "Aktion"
+
+#: ui/preferences.slint:494
+msgctxt "PreferencesWindow"
+msgid "Deck / channel"
+msgstr "Deck / Kanal"
+
+#: ui/preferences.slint:494
+msgctxt "PreferencesWindow"
+msgid "NONE"
+msgstr "KEINS"
+
+#: ui/preferences.slint:496
+msgctxt "PreferencesWindow"
+msgid "Control"
+msgstr "Bedienelement"
+
+#: ui/preferences.slint:500
+msgctxt "PreferencesWindow"
+msgid "Move or press the control now …"
+msgstr "Jetzt das Bedienelement bewegen oder drücken …"
+
+#: ui/preferences.slint:500
+msgctxt "PreferencesWindow"
+msgid "Press LEARN, then move the control"
+msgstr "LERNEN drücken, dann das Bedienelement bewegen"
+
+#: ui/preferences.slint:503
+msgctxt "PreferencesWindow"
+msgid "STOP"
+msgstr "STOPP"
+
+#: ui/preferences.slint:503
+msgctxt "PreferencesWindow"
+msgid "LEARN"
+msgstr "LERNEN"
+
+#: ui/preferences.slint:503
+msgctxt "PreferencesWindow"
+msgid "Listen for the next control you move"
+msgstr "Auf das nächste bewegte Bedienelement hören"
+
+#: ui/preferences.slint:504
+msgctxt "PreferencesWindow"
+msgid "ADD TO MY MAPPING"
+msgstr "ZU MEINEM MAPPING"
+
+#: ui/preferences.slint:504
+msgctxt "PreferencesWindow"
+msgid "Write the learned control into your own mapping file"
+msgstr "Das gelernte Bedienelement in deine eigene Mapping-Datei schreiben"
+
+#: ui/preferences.slint:510
+msgctxt "PreferencesWindow"
+msgid "Learned controls go into {} and are used from the next start."
+msgstr "Gelernte Bedienelemente kommen in {} und gelten ab dem nächsten Start."
+
+#: ui/preferences.slint:541
+msgctxt "PreferencesWindow"
+msgid "SEARCH {} ACTIONS OR KEYS"
+msgstr "{} AKTIONEN ODER TASTEN SUCHEN"
+
+#: ui/preferences.slint:545
+msgctxt "PreferencesWindow"
+msgid "IMPORT…"
+msgstr "IMPORTIEREN…"
+
+#: ui/preferences.slint:545
+msgctxt "PreferencesWindow"
+msgid "Load key bindings from a TOML file"
+msgstr "Tastenbelegung aus einer TOML-Datei laden"
+
+#: ui/preferences.slint:546
+msgctxt "PreferencesWindow"
+msgid "EXPORT…"
+msgstr "EXPORTIEREN…"
+
+#: ui/preferences.slint:546
+msgctxt "PreferencesWindow"
+msgid "Save all key bindings as a TOML file"
+msgstr "Alle Tastenbelegungen als TOML-Datei speichern"
+
+#: ui/preferences.slint:547
+msgctxt "PreferencesWindow"
+msgid "RESET ALL"
+msgstr "ALLE ZURÜCKSETZEN"
+
+#: ui/preferences.slint:547
+msgctxt "PreferencesWindow"
+msgid "Restore every default key binding"
+msgstr "Alle Standard-Tastenbelegungen wiederherstellen"
+
+#: ui/preferences.slint:554
+msgctxt "PreferencesWindow"
+msgid "REPLACE"
+msgstr "ERSETZEN"
+
+#: ui/preferences.slint:554
+msgctxt "PreferencesWindow"
+msgid "Take the keys from the other action"
+msgstr "Die Tasten von der anderen Aktion übernehmen"
+
+#: ui/preferences.slint:555
+msgctxt "PreferencesWindow"
+msgid "CANCEL"
+msgstr "ABBRECHEN"
+
+#: ui/preferences.slint:555
+msgctxt "PreferencesWindow"
+msgid "Keep the bindings as they are"
+msgstr "Belegungen unverändert lassen"
+
+#: ui/preferences.slint:557
+msgctxt "PreferencesWindow"
+msgid ""
+"Click a binding (or pick one with ↑ ↓ and press Return), then press the new "
+"keys. Esc cancels, Backspace removes the binding; on a conflict Return "
+"replaces. ← → switch pages."
+msgstr ""
+"Klicke auf eine Belegung (oder wähle eine mit ↑ ↓ und drücke Return) und "
+"drücke dann die neuen Tasten. Esc bricht ab, Rücktaste entfernt die "
+"Belegung; bei einem Konflikt ersetzt Return. ← → wechseln die Seite."
+
+#: ui/preferences.slint:602
+msgctxt "PreferencesWindow"
+msgid "PRESS KEYS…"
+msgstr "TASTEN DRÜCKEN…"
+
+#: ui/preferences.slint:602
+msgctxt "PreferencesWindow"
+msgid "NOT SET"
+msgstr "NICHT BELEGT"
+
+#: ui/preferences.slint:608
+msgctxt "PreferencesWindow"
+msgid "Click, then press the new keys"
+msgstr "Klicken, dann die neuen Tasten drücken"
+
+#: ui/preferences.slint:610
+msgctxt "PreferencesWindow"
+msgid "DEFAULT"
+msgstr "STANDARD"
+
+#: ui/preferences.slint:610
+msgctxt "PreferencesWindow"
+msgid "Back to the default binding"
+msgstr "Zurück zur Standardbelegung"
+
+#: ui/preferences.slint:615
+msgctxt "PreferencesWindow"
+msgid "Remove this binding"
+msgstr "Diese Belegung entfernen"
+
+#: ui/preferences.slint:631
+msgctxt "PreferencesWindow"
+msgid "Files"
+msgstr "Dateien"
+
+#: ui/preferences.slint:632
+msgctxt "PreferencesWindow"
+msgid "Format"
+msgstr "Format"
+
+#: ui/preferences.slint:635
+msgctxt "PreferencesWindow"
+msgid "Folder"
+msgstr "Ordner"
+
+#: ui/preferences.slint:637
+msgctxt "PreferencesWindow"
+msgid "Pick the folder for recordings"
+msgstr "Ordner für Aufnahmen wählen"
+
+#: ui/preferences.slint:640
+msgctxt "PreferencesWindow"
+msgid "File name"
+msgstr "Dateiname"
+
+#: ui/preferences.slint:651
+msgctxt "PreferencesWindow"
+msgid ""
+"{{date}}, {{time}} and {{n}} (number of the day) are filled in; Return "
+"saves. Example: {}"
+msgstr ""
+"{{date}}, {{time}} und {{n}} (Nummer des Tages) werden eingesetzt; Return "
+"speichert. Beispiel: {}"
+
+#: ui/preferences.slint:652
+msgctxt "PreferencesWindow"
+msgid "Recording level"
+msgstr "Aufnahmepegel"
+
+#: ui/preferences.slint:653
+msgctxt "PreferencesWindow"
+msgid "Automation"
+msgstr "Automatik"
+
+#: ui/preferences.slint:654
+msgctxt "PreferencesWindow"
+msgid "Split"
+msgstr "Teilen"
+
+#: ui/preferences.slint:654
+msgctxt "PreferencesWindow"
+msgid "Split into one file per track when recording stops"
+msgstr "Beim Stoppen in eine Datei pro Track teilen"
+
+#: ui/preferences.slint:655
+msgctxt "PreferencesWindow"
+msgid "Start"
+msgstr "Start"
+
+#: ui/preferences.slint:655
+msgctxt "PreferencesWindow"
+msgid "Start recording when sound starts"
+msgstr "Aufnahme starten, sobald Ton kommt"
+
+#: ui/preferences.slint:656
+msgctxt "PreferencesWindow"
+msgid "Stop"
+msgstr "Stopp"
+
+#: ui/preferences.slint:656
+msgctxt "PreferencesWindow"
+msgid "Stop recording after 30 seconds of silence"
+msgstr "Aufnahme nach 30 Sekunden Stille beenden"
+
+#: ui/preferences.slint:657
+msgctxt "PreferencesWindow"
+msgid ""
+"With automatic start, recording begins once the master carries sound for two "
+"seconds; stopping it by hand disarms it until the next start of the app."
+msgstr ""
+"Mit automatischem Start beginnt die Aufnahme, sobald der Master zwei "
+"Sekunden lang Ton führt; ein Stopp von Hand schaltet die Automatik bis zum "
+"nächsten App-Start aus."
+
+#: ui/preferences.slint:669
+msgctxt "PreferencesWindow"
+msgid "Library"
+msgstr "Bibliothek"
+
+#: ui/preferences.slint:671
+msgctxt "PreferencesWindow"
+msgid "Location"
+msgstr "Speicherort"
+
+#: ui/preferences.slint:673
+msgctxt "PreferencesWindow"
+msgid "Pick the library file to open from the next start"
+msgstr "Bibliotheksdatei für den nächsten Start wählen"
+
+#: ui/preferences.slint:674 ui/preferences.slint:688
+msgctxt "PreferencesWindow"
+msgid "SHOW"
+msgstr "ZEIGEN"
+
+#: ui/preferences.slint:674
+msgctxt "PreferencesWindow"
+msgid "Show the library file in the file manager"
+msgstr "Bibliotheksdatei im Dateimanager zeigen"
+
+#: ui/preferences.slint:676
+msgctxt "PreferencesWindow"
+msgid ""
+"Choose the library file (library.sqlite) to open from the next start. The "
+"command-line option --library still wins."
+msgstr ""
+"Wähle die Bibliotheksdatei (library.sqlite), die ab dem nächsten Start "
+"geöffnet wird. Die Kommandozeilen-Option --library hat weiterhin Vorrang."
+
+#: ui/preferences.slint:678
+msgctxt "PreferencesWindow"
+msgid "rekordbox"
+msgstr "rekordbox"
+
+#: ui/preferences.slint:679
+msgctxt "PreferencesWindow"
+msgid "Preferences and keyboard shortcuts"
+msgstr "Einstellungen und Tastenkürzel"
+
+#: ui/preferences.slint:680
+msgctxt "PreferencesWindow"
+msgid "IMPORT"
+msgstr "IMPORTIEREN"
+
+#: ui/preferences.slint:680
+msgctxt "PreferencesWindow"
+msgid ""
+"Take over the preferences and shortcuts of a rekordbox installation "
+"(rekordbox itself is not changed)"
+msgstr ""
+"Einstellungen und Tastenkürzel einer rekordbox-Installation übernehmen "
+"(rekordbox selbst wird nicht verändert)"
+
+#: ui/preferences.slint:682 ui/preferences.slint:685
+msgctxt "PreferencesWindow"
+msgid "Backups"
+msgstr "Backups"
+
+#: ui/preferences.slint:683
+msgctxt "PreferencesWindow"
+msgid "At start"
+msgstr "Beim Start"
+
+#: ui/preferences.slint:683
+msgctxt "PreferencesWindow"
+msgid "Back up the library every time the app starts"
+msgstr "Bibliothek bei jedem App-Start sichern"
+
+#: ui/preferences.slint:687
+msgctxt "PreferencesWindow"
+msgid "BACK UP NOW"
+msgstr "JETZT SICHERN"
+
+#: ui/preferences.slint:687
+msgctxt "PreferencesWindow"
+msgid "Copy the library to the backups folder now"
+msgstr "Bibliothek jetzt in den Backup-Ordner kopieren"
+
+#: ui/preferences.slint:688
+msgctxt "PreferencesWindow"
+msgid "Show the backups folder"
+msgstr "Backup-Ordner zeigen"
+
+#: ui/preferences.slint:690
+msgctxt "PreferencesWindow"
+msgid "Updates"
+msgstr "Updates"
+
+#: ui/preferences.slint:691
+msgctxt "PreferencesWindow"
+msgid "Automatically"
+msgstr "Automatisch"
+
+#: ui/preferences.slint:691
+msgctxt "PreferencesWindow"
+msgid "Check for updates automatically"
+msgstr "Automatisch nach Updates suchen"
+
+#: ui/preferences.slint:692
+msgctxt "PreferencesWindow"
+msgid "Pre-releases"
+msgstr "Vorabversionen"
+
+#: ui/preferences.slint:692
+msgctxt "PreferencesWindow"
+msgid "Include pre-releases"
+msgstr "Vorabversionen einbeziehen"
+
+#: ui/preferences.slint:696
+msgctxt "PreferencesWindow"
+msgid "CHECK NOW"
+msgstr "JETZT PRÜFEN"
+
+#: ui/preferences.slint:698
+msgctxt "PreferencesWindow"
+msgid ""
+"Only GitHub's public release list is read; nothing about you or your library "
+"is sent. Checks never run while a deck plays in Perform, and an update never "
+"interrupts a performance."
+msgstr ""
+"Es wird nur die öffentliche Release-Liste auf GitHub gelesen; nichts über "
+"dich oder deine Bibliothek wird gesendet. Während in Perform ein Deck "
+"spielt, wird nie geprüft, und ein Update unterbricht nie eine Performance."
+
+#: ui/rail.slint:150
+msgctxt "TreeItem"
+msgid "Add the selected tracks to this list"
+msgstr "Ausgewählte Tracks zu dieser Liste hinzufügen"
+
+#: ui/rail.slint:211
+msgctxt "Rail"
+msgid "LIBRARY"
+msgstr "BIBLIOTHEK"
+
+#: ui/rail.slint:211
+msgctxt "Rail"
+msgid "TRACKS & PLAYLISTS"
+msgstr "TRACKS & PLAYLISTS"
+
+#: ui/rail.slint:216
+msgctxt "Rail"
+msgid "DEVICES"
+msgstr "GERÄTE"
+
+#: ui/rail.slint:216
+msgctxt "Rail"
+msgid "USB STICKS"
+msgstr "USB-STICKS"
+
+#: ui/rail.slint:221
+msgctxt "Rail"
+msgid "RECORDINGS"
+msgstr "AUFNAHMEN"
+
+#: ui/rail.slint:221
+msgctxt "Rail"
+msgid "MIXES"
+msgstr "MIXE"
+
+#: ui/rail.slint:255
+msgctxt "Rail"
+msgid "PREPARE"
+msgstr "PREPARE"
+
+#: ui/rail.slint:256
+msgctxt "Rail"
+msgid "PERFORM"
+msgstr "PERFORM"
+
+#: ui/rec.slint:96
+msgctxt "RecStrip"
+msgid "MASTER"
+msgstr "MASTER"
+
+#: ui/rec.slint:119
+msgctxt "RecPanel"
+msgid "STOP"
+msgstr "STOPP"
+
+#: ui/rec.slint:119
+msgctxt "RecPanel"
+msgid "RECORD"
+msgstr "AUFNEHMEN"
+
+#: ui/rec.slint:121
+msgctxt "RecPanel"
+msgid "Stop recording"
+msgstr "Aufnahme beenden"
+
+#: ui/rec.slint:121
+msgctxt "RecPanel"
+msgid "Record the master output"
+msgstr "Den Master-Ausgang aufnehmen"
+
+#: ui/rec.slint:125
+msgctxt "RecPanel"
+msgid "MASTER"
+msgstr "MASTER"
+
+#: ui/rec.slint:154
+msgctxt "RecPanel"
+msgid "Armed: recording starts when the master carries sound"
+msgstr "Bereit: die Aufnahme startet, sobald der Master Ton führt"
+
+#: ui/rec.slint:162
+msgctxt "RecPanel"
+msgid "The tracklist grows here as tracks become audible."
+msgstr "Die Trackliste wächst hier, sobald Tracks hörbar werden."
+
+#: ui/sampler.slint:64
+msgctxt "SamplerPad"
+msgid "Play the sample (drop a track here to replace it)"
+msgstr "Sample abspielen (Track hierher ziehen, um es zu ersetzen)"
+
+#: ui/sampler.slint:64
+msgctxt "SamplerPad"
+msgid "Empty slot: drop a track here or use LOAD SELECTED"
+msgstr "Leerer Slot: Track hierher ziehen oder AUSGEWÄHLTEN LADEN"
+
+#: ui/sampler.slint:110
+msgctxt "SamplerPanel"
+msgid "BANK"
+msgstr "BANK"
+
+#: ui/sampler.slint:116
+msgctxt "SamplerPanel"
+msgid "Sampler bank {}"
+msgstr "Sampler-Bank {}"
+
+#: ui/sampler.slint:129
+msgctxt "SamplerPanel"
+msgid "QUANT"
+msgstr "QUANT"
+
+#: ui/sampler.slint:130
+msgctxt "SamplerPanel"
+msgid "Quantise: pads start on the next beat of the master tempo"
+msgstr "Quantisieren: Pads starten auf dem nächsten Beat des Master-Tempos"
+
+#: ui/sampler.slint:138
+msgctxt "SamplerPanel"
+msgid "Sampler to the headphones"
+msgstr "Sampler auf den Kopfhörer"
+
+#: ui/sampler.slint:150
+msgctxt "SamplerPanel"
+msgid "STOP"
+msgstr "STOP"
+
+#: ui/sampler.slint:150
+msgctxt "SamplerPanel"
+msgid "PLAY"
+msgstr "PLAY"
+
+#: ui/sampler.slint:151
+msgctxt "SamplerPanel"
+msgid "Start / stop the step sequencer (locked to the master beat)"
+msgstr "Step-Sequencer starten / stoppen (am Master-Beat ausgerichtet)"
+
+#: ui/sampler.slint:160
+msgctxt "SamplerPanel"
+msgid "Record pads into the pattern while the sequencer plays"
+msgstr "Pads ins Pattern aufnehmen, während der Sequencer läuft"
+
+#: ui/sampler.slint:168
+msgctxt "SamplerPanel"
+msgid "Clear the selected slot's pattern"
+msgstr "Pattern des gewählten Slots löschen"
+
+#: ui/sampler.slint:208
+msgctxt "SamplerPanel"
+msgid "Step {} of the selected slot's pattern"
+msgstr "Schritt {} im Pattern des gewählten Slots"
+
+#: ui/sampler.slint:231
+msgctxt "SamplerPanel"
+msgid "Empty slot"
+msgstr "Leerer Slot"
+
+#: ui/sampler.slint:244
+msgctxt "SamplerPanel"
+msgid "1-SHOT"
+msgstr "1-SHOT"
+
+#: ui/sampler.slint:245
+msgctxt "SamplerPanel"
+msgid "One-shot: plays to the end once"
+msgstr "One-Shot: spielt einmal bis zum Ende"
+
+#: ui/sampler.slint:246
+msgctxt "SamplerPanel"
+msgid "LOOP"
+msgstr "LOOP"
+
+#: ui/sampler.slint:247
+msgctxt "SamplerPanel"
+msgid "Loop: repeats until stopped"
+msgstr "Loop: wiederholt bis zum Stoppen"
+
+#: ui/sampler.slint:248
+msgctxt "SamplerPanel"
+msgid "GATE"
+msgstr "GATE"
+
+#: ui/sampler.slint:249
+msgctxt "SamplerPanel"
+msgid "Gate: plays only while the pad is held"
+msgstr "Gate: spielt nur, solange das Pad gehalten wird"
+
+#: ui/sampler.slint:252
+msgctxt "SamplerPanel"
+msgid "Sync the sample to the master tempo"
+msgstr "Sample mit dem Master-Tempo synchronisieren"
+
+#: ui/sampler.slint:257
+msgctxt "SamplerPanel"
+msgid "LOAD SELECTED"
+msgstr "AUSGEWÄHLTEN LADEN"
+
+#: ui/sampler.slint:258
+msgctxt "SamplerPanel"
+msgid "Load the selected track into this slot"
+msgstr "Ausgewählten Track in diesen Slot laden"
+
+#: ui/sampler.slint:259
+msgctxt "SamplerPanel"
+msgid "CLEAR"
+msgstr "LEEREN"
+
+#: ui/sampler.slint:260
+msgctxt "SamplerPanel"
+msgid "Empty this slot"
+msgstr "Diesen Slot leeren"
+
+#: ui/sampler.slint:271
+msgctxt "SamplerPanel"
+msgid "GAIN"
+msgstr "GAIN"
+
+#: ui/sampler.slint:273
+msgctxt "SamplerPanel"
+msgid "Gain of the selected slot"
+msgstr "Gain des gewählten Slots"
+
+#: ui/sampler.slint:277
+msgctxt "SamplerPanel"
+msgid "VOL"
+msgstr "VOL"
+
+#: ui/sampler.slint:279
+msgctxt "SamplerPanel"
+msgid "Sampler volume"
+msgstr "Sampler-Lautstärke"
+
+#: ui/sampler.slint:284
+msgctxt "SamplerPanel"
+msgid "STOP ALL"
+msgstr "ALLE STOP"
+
+#: ui/sampler.slint:285
+msgctxt "SamplerPanel"
+msgid "Stop every sample"
+msgstr "Alle Samples stoppen"
+
+#: ui/sidebar.slint:85
+msgctxt "DeviceItem"
+msgid "Sync this stick now"
+msgstr "Diesen Stick jetzt synchronisieren"
+
+#: ui/sidebar.slint:93
+msgctxt "DeviceItem"
+msgid "Eject this stick"
+msgstr "Diesen Stick auswerfen"
+
+#: ui/sidebar.slint:126 ui/sidebar.slint:157
+msgctxt "ExplorerItem"
+msgid "Remove from Explorer"
+msgstr "Aus dem Explorer entfernen"
+
+#: ui/sidebar.slint:242
+msgctxt "Sidebar"
+msgid "ALL"
+msgstr "ALLE"
+
+#: ui/sidebar.slint:243
+msgctxt "Sidebar"
+msgid "Collection: every track"
+msgstr "Sammlung: alle Tracks"
+
+#: ui/sidebar.slint:247
+msgctxt "Sidebar"
+msgid "LISTS"
+msgstr "LISTEN"
+
+#: ui/sidebar.slint:248
+msgctxt "Sidebar"
+msgid "Playlists, sets and smart lists"
+msgstr "Playlists, Sets und Smart-Listen"
+
+#: ui/sidebar.slint:252
+msgctxt "Sidebar"
+msgid "SIM"
+msgstr "PASST"
+
+#: ui/sidebar.slint:253
+msgctxt "Sidebar"
+msgid "Similar tracks: what fits after the master deck"
+msgstr "Passende Tracks: was nach dem Master-Deck passt"
+
+#: ui/sidebar.slint:257
+msgctxt "Sidebar"
+msgid "SMPL"
+msgstr "SMPL"
+
+#: ui/sidebar.slint:258
+msgctxt "Sidebar"
+msgid "Sampler: open the sampler panel in Perform"
+msgstr "Sampler: das Sampler-Panel in Perform öffnen"
+
+#: ui/sidebar.slint:262
+msgctxt "Sidebar"
+msgid "FILES"
+msgstr "DATEIEN"
+
+#: ui/sidebar.slint:263
+msgctxt "Sidebar"
+msgid "Explorer: folders on disk"
+msgstr "Explorer: Ordner auf der Festplatte"
+
+#: ui/sidebar.slint:268
+msgctxt "Sidebar"
+msgid "Devices: USB sticks"
+msgstr "Geräte: USB-Sticks"
+
+#: ui/sidebar.slint:272
+msgctxt "Sidebar"
+msgid "HIST"
+msgstr "VERL"
+
+#: ui/sidebar.slint:273
+msgctxt "Sidebar"
+msgid "Histories: every session you played"
+msgstr "Verläufe: jede gespielte Session"
+
+#: ui/sidebar.slint:278
+msgctxt "Sidebar"
+msgid "Recordings: your mixes"
+msgstr "Aufnahmen: deine Mixe"
+
+#: ui/sidebar.slint:282
+msgctxt "Sidebar"
+msgid "TAG"
+msgstr "TAG"
+
+#: ui/sidebar.slint:283
+msgctxt "Sidebar"
+msgid "Tag list: tracks collected for later"
+msgstr "Tag-Liste: für später gesammelte Tracks"
+
+#: ui/sidebar.slint:300
+msgctxt "Sidebar"
+msgid "COLLECTION"
+msgstr "SAMMLUNG"
+
+#: ui/sidebar.slint:300
+msgctxt "Sidebar"
+msgid "Add a music folder"
+msgstr "Musikordner hinzufügen"
+
+#: ui/sidebar.slint:310
+msgctxt "Sidebar"
+msgid "PLAYLISTS"
+msgstr "PLAYLISTS"
+
+#: ui/sidebar.slint:310
+msgctxt "Sidebar"
+msgid "New playlist"
+msgstr "Neue Playlist"
+
+#: ui/sidebar.slint:323
+msgctxt "Sidebar"
+msgid "EXPLORER"
+msgstr "EXPLORER"
+
+#: ui/sidebar.slint:323
+msgctxt "Sidebar"
+msgid "Add a folder to browse"
+msgstr "Ordner zum Durchsuchen hinzufügen"
+
+#: ui/sidebar.slint:326
+msgctxt "Sidebar"
+msgid "Add a folder with + to browse its files here."
+msgstr "Füge mit + einen Ordner hinzu, um seine Dateien hier zu durchsuchen."
+
+#: ui/sidebar.slint:342
+msgctxt "Sidebar"
+msgid "Similar tracks"
+msgstr "Passende Tracks"
+
+#: ui/sidebar.slint:346
+msgctxt "Sidebar"
+msgid "DEVICES"
+msgstr "GERÄTE"
+
+#: ui/sidebar.slint:349
+msgctxt "Sidebar"
+msgid "Plug in a USB stick to register it."
+msgstr "USB-Stick einstecken, um ihn zu registrieren."
+
+#: ui/sidebar.slint:375
+msgctxt "Sidebar"
+msgid "New stick: {}"
+msgstr "Neuer Stick: {}"
+
+#: ui/sidebar.slint:382
+msgctxt "Sidebar"
+msgid "SELECT A PLAYLIST FIRST"
+msgstr "ZUERST PLAYLIST WÄHLEN"
+
+#: ui/sidebar.slint:382
+msgctxt "Sidebar"
+msgid "REGISTER WITH {}"
+msgstr "MIT {} REGISTRIEREN"
+
+#: ui/sidebar.slint:384
+msgctxt "Sidebar"
+msgid "Keep this stick in sync with the selected playlist"
+msgstr "Diesen Stick mit der gewählten Playlist synchron halten"
+
+#: ui/sidebar.slint:388
+msgctxt "Sidebar"
+msgid "HISTORIES"
+msgstr "VERLAUF"
+
+#: ui/sidebar.slint:391
+msgctxt "Sidebar"
+msgid "Every session you play is listed here."
+msgstr "Jede Session, die du spielst, erscheint hier."
+
+#: ui/sidebar.slint:400
+msgctxt "Sidebar"
+msgid "RECORDINGS"
+msgstr "AUFNAHMEN"
+
+#: ui/sidebar.slint:411
+msgctxt "Sidebar"
+msgid "Recordings"
+msgstr "Aufnahmen"
+
+#: ui/sidebar.slint:419
+msgctxt "Sidebar"
+msgid "Show recordings"
+msgstr "Aufnahmen zeigen"
+
+#: ui/sidebar.slint:421
+msgctxt "Sidebar"
+msgid "TAG LIST"
+msgstr "TAG-LISTE"
+
+#: ui/sidebar.slint:421
+msgctxt "Sidebar"
+msgid "Add the selected tracks to the tag list"
+msgstr "Ausgewählte Tracks zur Tag-Liste hinzufügen"
+
+#: ui/sidebar.slint:424
+msgctxt "Sidebar"
+msgid "Tag list"
+msgstr "Tag-Liste"
+
+#. New list buttons share the width (the sidebar is resizable).
+#: ui/sidebar.slint:435
+msgctxt "Sidebar"
+msgid "+ SET"
+msgstr "+ SET"
+
+#. New list buttons share the width (the sidebar is resizable).
+#: ui/sidebar.slint:435
+msgctxt "Sidebar"
+msgid "New set"
+msgstr "Neues Set"
+
+#: ui/sidebar.slint:436
+msgctxt "Sidebar"
+msgid "+ SMART"
+msgstr "+ SMART"
+
+#: ui/sidebar.slint:436
+msgctxt "Sidebar"
+msgid "New smart list"
+msgstr "Neue Smart-Liste"
+
+#: ui/sidebar.slint:437
+msgctxt "Sidebar"
+msgid "+ FOLDER"
+msgstr "+ ORDNER"
+
+#. Touch screen: the new-list keys as 44 px plates.
+#: ui/sidebar.slint
+msgctxt "Sidebar"
+msgid "SET"
+msgstr "SET"
+
+#: ui/sidebar.slint
+msgctxt "Sidebar"
+msgid "SMART"
+msgstr "SMART"
+
+#: ui/sidebar.slint
+msgctxt "Sidebar"
+msgid "FOLDER"
+msgstr "ORDNER"
+
+#: ui/sidebar.slint:437
+msgctxt "Sidebar"
+msgid "New folder"
+msgstr "Neuer Ordner"
+
+#: ui/table.slint:74
+msgctxt "HeaderCell"
+msgid "Drag to move this column"
+msgstr "Ziehen, um diese Spalte zu verschieben"
+
+#: ui/table.slint:75
+msgctxt "HeaderCell"
+msgid ""
+"Sorted by this column — click to reverse, ⇧-click adds a secondary sort, "
+"drag to move"
+msgstr ""
+"Nach dieser Spalte sortiert — Klick kehrt um, ⇧-Klick fügt eine zweite "
+"Sortierung hinzu, Ziehen verschiebt sie"
+
+#: ui/table.slint:76
+msgctxt "HeaderCell"
+msgid "Sort by this column — ⇧-click adds it as a secondary sort, drag to move"
+msgstr ""
+"Nach dieser Spalte sortieren — ⇧-Klick fügt sie als zweite Sortierung hinzu, "
+"Ziehen verschiebt sie"
+
+#: ui/table.slint:159
+msgctxt "TrackLine"
+msgid "Load to deck"
+msgstr "Auf Deck laden"
+
+#: ui/table.slint:160
+msgctxt "TrackLine"
+msgid "Deck 1"
+msgstr "Deck 1"
+
+#: ui/table.slint:161
+msgctxt "TrackLine"
+msgid "Deck 2"
+msgstr "Deck 2"
+
+#: ui/table.slint:162
+msgctxt "TrackLine"
+msgid "Deck 3"
+msgstr "Deck 3"
+
+#: ui/table.slint:163
+msgctxt "TrackLine"
+msgid "Deck 4"
+msgstr "Deck 4"
+
+#: ui/table.slint:166
+msgctxt "TrackLine"
+msgid "Add to playlist"
+msgstr "Zu Playlist hinzufügen"
+
+#: ui/table.slint:169
+msgctxt "TrackLine"
+msgid "Add to tag list"
+msgstr "Zur Tag-Liste hinzufügen"
+
+#: ui/table.slint:170
+msgctxt "TrackLine"
+msgid "Show similar tracks"
+msgstr "Passende Tracks zeigen"
+
+#: ui/table.slint:172
+msgctxt "TrackLine"
+msgid "Colour"
+msgstr "Farbe"
+
+#: ui/table.slint:173
+msgctxt "TrackLine"
+msgid "Pink"
+msgstr "Pink"
+
+#: ui/table.slint:174
+msgctxt "TrackLine"
+msgid "Red"
+msgstr "Rot"
+
+#: ui/table.slint:175
+msgctxt "TrackLine"
+msgid "Orange"
+msgstr "Orange"
+
+#: ui/table.slint:176
+msgctxt "TrackLine"
+msgid "Yellow"
+msgstr "Gelb"
+
+#: ui/table.slint:177
+msgctxt "TrackLine"
+msgid "Green"
+msgstr "Grün"
+
+#: ui/table.slint:178
+msgctxt "TrackLine"
+msgid "Aqua"
+msgstr "Türkis"
+
+#: ui/table.slint:179
+msgctxt "TrackLine"
+msgid "Blue"
+msgstr "Blau"
+
+#: ui/table.slint:180
+msgctxt "TrackLine"
+msgid "Purple"
+msgstr "Lila"
+
+#: ui/table.slint:181
+msgctxt "TrackLine"
+msgid "No colour"
+msgstr "Keine Farbe"
+
+#: ui/table.slint:184
+msgctxt "TrackLine"
+msgid "Rating"
+msgstr "Bewertung"
+
+#: ui/table.slint:190
+msgctxt "TrackLine"
+msgid "No rating"
+msgstr "Keine Bewertung"
+
+#: ui/table.slint:192
+msgctxt "TrackLine"
+msgid "Analyse"
+msgstr "Analysieren"
+
+#: ui/table.slint:193
+msgctxt "TrackLine"
+msgid "Separate parts"
+msgstr "Stems trennen"
+
+#: ui/table.slint:194
+msgctxt "TrackLine"
+msgid "Show in file manager"
+msgstr "Im Dateimanager zeigen"
+
+#: ui/table.slint:195
+msgctxt "TrackLine"
+msgid "Remove from this list"
+msgstr "Aus dieser Liste entfernen"
+
+#: ui/table.slint:372
+msgctxt "TrackTable"
+msgid "Default columns"
+msgstr "Standardspalten"
+
+#: ui/table.slint:414
+msgctxt "TrackTable"
+msgid "Filter the list (BPM, key, rating, Tags)"
+msgstr "Liste filtern (BPM, Tonart, Bewertung, Tags)"
+
+#: ui/table.slint:427
+msgctxt "TrackTable"
+msgid "Choose the columns (or right-click the header)"
+msgstr "Spalten wählen (oder Rechtsklick auf die Kopfzeile)"
+
+#: ui/topbar.slint:119
+msgctxt "TopBar"
+msgid "PREPARE"
+msgstr "PREPARE"
+
+#: ui/topbar.slint:119
+msgctxt "TopBar"
+msgid "Prepare: library, beatgrids, cues and sticks"
+msgstr "Prepare: Bibliothek, Beatgrids, Cues und Sticks"
+
+#: ui/topbar.slint:123
+msgctxt "TopBar"
+msgid "PERFORM"
+msgstr "PERFORM"
+
+#: ui/topbar.slint:123
+msgctxt "TopBar"
+msgid "Perform: decks and mixer"
+msgstr "Perform: Decks und Mixer"
+
+#: ui/topbar.slint:127
+msgctxt "TopBar"
+msgid "LIGHTING"
+msgstr "LIGHTING"
+
+#: ui/topbar.slint:127
+msgctxt "TopBar"
+msgid "Lighting: DMX rig and light show"
+msgstr "Lighting: DMX-Rig und Lichtshow"
+
+#: ui/topbar.slint:132
+msgctxt "TopBar"
+msgid "BROWSE"
+msgstr "BROWSE"
+
+#: ui/topbar.slint:132
+msgctxt "TopBar"
+msgid "VERTICAL"
+msgstr "VERTIKAL"
+
+#: ui/topbar.slint:132
+msgctxt "TopBar"
+msgid "DECKS"
+msgstr "DECKS"
+
+#: ui/topbar.slint:134
+msgctxt "TopBar"
+msgid "Next Perform layout: standard, vertical waveforms, browse"
+msgstr "Nächstes Perform-Layout: Standard, vertikale Wellenformen, Browse"
+
+#: ui/topbar.slint:141
+msgctxt "TopBar"
+msgid "FULL BROWSER"
+msgstr "GANZER BROWSER"
+
+#: ui/topbar.slint:141
+msgctxt "TopBar"
+msgid "2 PLAYERS"
+msgstr "2 PLAYER"
+
+#: ui/topbar.slint:141
+msgctxt "TopBar"
+msgid "DUAL"
+msgstr "DUAL"
+
+#: ui/topbar.slint:141
+msgctxt "TopBar"
+msgid "SIMPLE"
+msgstr "EINFACH"
+
+#: ui/topbar.slint:141
+msgctxt "TopBar"
+msgid "PLAYER"
+msgstr "PLAYER"
+
+#: ui/topbar.slint:143
+msgctxt "TopBar"
+msgid "Next Prepare layout: player, 2 players, dual, simple, full browser"
+msgstr "Nächstes Prepare-Layout: Player, 2 Player, Dual, einfach, ganzer Browser"
+
+#: ui/topbar.slint:151
+msgctxt "TopBar"
+msgid "Back to the full deck controls"
+msgstr "Zurück zu den vollen Deck-Bedienelementen"
+
+#: ui/topbar.slint:151
+msgctxt "TopBar"
+msgid "Club mode: player screens and the club workflow"
+msgstr "Club-Modus: Player-Screens und der Club-Workflow"
+
+#: ui/topbar.slint:159
+msgctxt "TopBar"
+msgid "Hide the lighting strip"
+msgstr "Lichtleiste ausblenden"
+
+#: ui/topbar.slint:159
+msgctxt "TopBar"
+msgid "Show the lighting strip"
+msgstr "Lichtleiste einblenden"
+
+#: ui/topbar.slint:167
+msgctxt "TopBar"
+msgid "Hide the Tempo FX panel"
+msgstr "Tempo-FX-Panel ausblenden"
+
+#: ui/topbar.slint:167
+msgctxt "TopBar"
+msgid "Show the Tempo FX panel"
+msgstr "Tempo-FX-Panel einblenden"
+
+#: ui/topbar.slint:175
+msgctxt "TopBar"
+msgid "PREVIEW"
+msgstr "VORSCHAU"
+
+#: ui/topbar.slint:176
+msgctxt "TopBar"
+msgid "Hide Mix Preview"
+msgstr "Mix-Vorschau ausblenden"
+
+#: ui/topbar.slint:176
+msgctxt "TopBar"
+msgid ""
+"Mix Preview: set where the next track comes in and the current one goes "
+"out"
+msgstr "Mix-Vorschau: festlegen, wo der nächste Track einsteigt und der aktuelle aussteigt"
+
+#: ui/topbar.slint:184
+msgctxt "TopBar"
+msgid "SAMPLER"
+msgstr "SAMPLER"
+
+#: ui/topbar.slint:185
+msgctxt "TopBar"
+msgid "Hide the sampler panel"
+msgstr "Sampler-Panel ausblenden"
+
+#: ui/topbar.slint:185
+msgctxt "TopBar"
+msgid "Show the sampler panel"
+msgstr "Sampler-Panel einblenden"
+
+#: ui/topbar.slint:193
+msgctxt "TopBar"
+msgid "MIXER"
+msgstr "MIXER"
+
+#: ui/topbar.slint:194
+msgctxt "TopBar"
+msgid "Hide the mixer: the decks meet in the centre"
+msgstr "Mixer ausblenden: die Decks treffen sich in der Mitte"
+
+#: ui/topbar.slint:194
+msgctxt "TopBar"
+msgid "Show the mixer between the decks"
+msgstr "Mixer zwischen den Decks anzeigen"
+
+#: ui/topbar.slint:205 ui/topbar.slint:270
+msgctxt "TopBar"
+msgid "REC {}"
+msgstr "REC {}"
+
+#: ui/topbar.slint:207
+msgctxt "TopBar"
+msgid "Hide the recording section"
+msgstr "Aufnahmebereich ausblenden"
+
+#: ui/topbar.slint:207
+msgctxt "TopBar"
+msgid "Show the recording section: level, meter and the record button"
+msgstr "Aufnahmebereich anzeigen: Pegel, Anzeige und Aufnahmetaste"
+
+#: ui/topbar.slint:228
+msgctxt "TopBar"
+msgid "Appearance: light — click for system"
+msgstr "Darstellung: hell — klicken für System"
+
+#: ui/topbar.slint:228
+msgctxt "TopBar"
+msgid "Appearance: follows the system — click for dark"
+msgstr "Darstellung: folgt dem System — klicken für dunkel"
+
+#: ui/topbar.slint:228
+msgctxt "TopBar"
+msgid "Appearance: dark — click for light"
+msgstr "Darstellung: dunkel — klicken für hell"
+
+#: ui/topbar.slint:242
+msgctxt "TopBar"
+msgid "Preferences"
+msgstr "Einstellungen"
+
+#: ui/topbar.slint:248
+msgctxt "TopBar"
+msgid "UNDO  {}  ⌘Z"
+msgstr "RÜCKGÄNGIG  {}  ⌘Z"
+
+#: ui/topbar.slint:249
+msgctxt "TopBar"
+msgid "Undo the last change"
+msgstr "Letzte Änderung rückgängig machen"
+
+#: ui/topbar.slint:270
+msgctxt "TopBar"
+msgid "RECORD"
+msgstr "AUFNEHMEN"
+
+#: ui/topbar.slint:274
+msgctxt "TopBar"
+msgid "Stop recording"
+msgstr "Aufnahme stoppen"
+
+#: ui/topbar.slint:274
+msgctxt "TopBar"
+msgid "Record the master output"
+msgstr "Master-Ausgang aufnehmen"
+
+#: ui/update.slint:42
+msgctxt "UpdateBar"
+msgid "INSTALL NOW"
+msgstr "JETZT INSTALLIEREN"
+
+#: ui/update.slint:43
+msgctxt "UpdateBar"
+msgid "RELEASE NOTES"
+msgstr "VERSIONSHINWEISE"
+
+#: ui/update.slint:44 ui/update.slint:48
+msgctxt "UpdateBar"
+msgid "LATER"
+msgstr "SPÄTER"
+
+#: ui/update.slint:45
+msgctxt "UpdateBar"
+msgid "SKIP THIS VERSION"
+msgstr "VERSION ÜBERSPRINGEN"
+
+#: ui/update.slint:46
+msgctxt "UpdateBar"
+msgid "CANCEL"
+msgstr "ABBRECHEN"
+
+#: ui/update.slint:47
+msgctxt "UpdateBar"
+msgid "RESTART NOW"
+msgstr "JETZT NEU STARTEN"
+
+#: ui/update.slint:49
+msgctxt "UpdateBar"
+msgid "RELEASE PAGE"
+msgstr "RELEASE-SEITE"
+
+#: ui/update.slint:50
+msgctxt "UpdateBar"
+msgid "CLOSE"
+msgstr "SCHLIESSEN"
+
+msgctxt "StemKey"
+msgid "separating"
+msgstr "wird getrennt"
+
+msgctxt "StemKey"
+msgid "muted"
+msgstr "stumm"
+
+msgctxt "StemKey"
+msgid "audible"
+msgstr "hörbar"
+
+msgctxt "StemKey"
+msgid "Lit = audible · click: mute / unmute · wheel: level"
+msgstr "Leuchtet = hörbar · Klick: stumm / laut · Mausrad: Pegel"
+
+msgctxt "StemStrip"
+msgid "PARTS"
+msgstr "PARTS"
+
+msgctxt "PhraseStrip"
+msgid "No phrases — analyse the track, or pick a type in the PHRASE tab"
+msgstr "Keine Phrasen — Track analysieren oder im PHRASE-Tab einen Typ wählen"
+
+msgctxt "PhraseStrip"
+msgid "Click: phrase type · drag an edge to move it (snaps to bars) · Shift+X split at the cursor · Shift+J merge"
+msgstr "Klick: Phrasentyp · Kante ziehen zum Verschieben (rastet auf Takte) · Shift+X am Cursor teilen · Shift+J verbinden"
+
+msgctxt "PhraseStrip"
+msgid "Drag to move the boundary (snaps to bars)"
+msgstr "Ziehen verschiebt die Grenze (rastet auf Takte)"
+
+msgctxt "PhraseStrip"
+msgid "MERGE WITH NEXT"
+msgstr "MIT NÄCHSTER VERBINDEN"
+
+msgctxt "PreparePlayer"
+msgid "MERGE"
+msgstr "VERBINDEN"
+
+msgctxt "PreparePlayer"
+msgid "Join the phrase at the cursor with the next one"
+msgstr "Die Phrase am Cursor mit der nächsten verbinden"
+
+msgctxt "PreparePlayer"
+msgid "OR ON THE STRIP: CLICK A PHRASE FOR ITS TYPE, DRAG AN EDGE"
+msgstr "ODER AUF DER LEISTE: PHRASE ANKLICKEN FÜR DEN TYP, KANTE ZIEHEN"
+
+msgctxt "PreferencesWindow"
+msgid "Remaining time"
+msgstr "Restzeit"
+
+msgctxt "PreferencesWindow"
+msgid "TRACK TIME"
+msgstr "TRACKZEIT"
+
+msgctxt "PreferencesWindow"
+msgid "REAL TIME AT TEMPO"
+msgstr "ECHTZEIT IM TEMPO"
+
+msgctxt "PreferencesWindow"
+msgid "BOTH"
+msgstr "BEIDE"
+
+msgctxt "DeckTime"
+msgid "REMAIN"
+msgstr "REST"
+
+msgctxt "DeckTime"
+msgid "REAL TIME"
+msgstr "ECHTZEIT"
+
+msgctxt "HotCueKey"
+msgid "Empty hot cue: press to set it"
+msgstr "Leerer Hot Cue: drücken zum Setzen"
+
+msgctxt "ClubPlayer"
+msgid "TEMPO"
+msgstr "TEMPO"
+
+msgctxt "ClubPlayer"
+msgid "RELOOP"
+msgstr "RELOOP"
+
+msgctxt "ClubPlayer"
+msgid "Reloop / exit the loop"
+msgstr "Loop wieder starten / verlassen"
+
+msgctxt "ClubPlayer"
+msgid "BEAT JUMP"
+msgstr "BEAT JUMP"
+
+msgctxt "ClubPlayer"
+msgid "Master tempo: the key stays when the tempo changes"
+msgstr "Master Tempo: die Tonart bleibt, wenn sich das Tempo ändert"
+
+msgctxt "ClubPlayer"
+msgid "KEY"
+msgstr "TONART"
+
+msgctxt "ClubPlayer"
+msgid "Loop in"
+msgstr "Loop-Anfang"
+
+msgctxt "ClubPlayer"
+msgid "Loop out"
+msgstr "Loop-Ende"
+
+msgctxt "ClubPlayer"
+msgid "Four-beat loop"
+msgstr "Loop über vier Beats"
+
+msgctxt "ClubPlayer"
+msgid "Beat jump back"
+msgstr "Beat Jump zurück"
+
+msgctxt "ClubPlayer"
+msgid "Beat jump forward"
+msgstr "Beat Jump vor"
+
+msgctxt "PreparePlayer"
+msgid "EDIT GRID"
+msgstr "GRID BEARBEITEN"
+
+msgctxt "PreparePlayer"
+msgid "Shift-drag the waveform until the lines sit on the kicks · click the 1 of a bar · fine-tune below"
+msgstr "Wellenform mit Shift ziehen, bis die Linien auf den Kicks liegen · die 1 eines Takts anklicken · unten fein justieren"
+
+msgctxt "PreparePlayer"
+msgid "CANCEL"
+msgstr "ABBRECHEN"
+
+msgctxt "PreparePlayer"
+msgid "Back to the grid before editing"
+msgstr "Zurück zum Grid vor der Bearbeitung"
+
+msgctxt "PreparePlayer"
+msgid "DONE"
+msgstr "FERTIG"
+
+msgctxt "PreparePlayer"
+msgid "EDITING"
+msgstr "BEARBEITUNG"
+
+msgctxt "PreparePlayer"
+msgid "Guided grid editing on the waveform: Shift-drag the grid, click the downbeat; DONE / CANCEL"
+msgstr "Geführte Grid-Bearbeitung an der Wellenform: Grid mit Shift ziehen, den Downbeat anklicken; FERTIG / ABBRECHEN"
+
+msgctxt "PreparePlayer"
+msgid "Grid 10 ms earlier"
+msgstr "Grid 10 ms früher"
+
+msgctxt "PreparePlayer"
+msgid "Grid 1 ms earlier"
+msgstr "Grid 1 ms früher"
+
+msgctxt "PreparePlayer"
+msgid "Grid 1 ms later"
+msgstr "Grid 1 ms später"
+
+msgctxt "PreparePlayer"
+msgid "Grid 10 ms later"
+msgstr "Grid 10 ms später"
+
+msgctxt "PreparePlayer"
+msgid "Double the tempo"
+msgstr "Tempo verdoppeln"
+
+msgctxt "PreparePlayer"
+msgid "Halve the tempo"
+msgstr "Tempo halbieren"
+
+msgctxt "PreparePlayer"
+msgid "1 AT CURSOR"
+msgstr "1 AM CURSOR"
+
+msgctxt "PreparePlayer"
+msgid "The beat at the cursor becomes the downbeat (or click it in EDIT GRID)"
+msgstr "Der Beat am Cursor wird zum Downbeat (oder in GRID BEARBEITEN anklicken)"
+
+msgctxt "WaveLane"
+msgid "GRID"
+msgstr "GRID"
+
+msgctxt "WaveLane"
+msgid "Edit beatgrid…"
+msgstr "Beatgrid bearbeiten…"
+
+msgctxt "PreparePlayer"
+msgid "UNDO"
+msgstr "RÜCKG."
+
+msgctxt "PreparePlayer"
+msgid "REDO"
+msgstr "WIEDERH."
+
+#~ msgctxt "DeckPanel"
+#~ msgid "SPLIT…"
+#~ msgstr "TRENNEN…"
+
+#~ msgctxt "PreferencesWindow"
+#~ msgid ""
+#~ "With automatic start, recording begins as soon as the master is no longer "
+#~ "silent; stopping it by hand disarms it until the next start of the app."
+#~ msgstr ""
+#~ "Mit automatischem Start beginnt die Aufnahme, sobald der Master nicht "
+#~ "mehr still ist; ein Stopp von Hand schaltet das bis zum nächsten App-"
+#~ "Start ab."
+
+#~ msgctxt "HeaderCell"
+#~ msgid "Sorted by this column — click to reverse"
+#~ msgstr "Nach dieser Spalte sortiert — klicken zum Umkehren"
+
+#~ msgctxt "HeaderCell"
+#~ msgid "Sort by this column"
+#~ msgstr "Nach dieser Spalte sortieren"
+
+#~ msgctxt "TrackTable"
+#~ msgid "PREVIEW"
+#~ msgstr "VORSCHAU"
+
+#~ msgctxt "TrackTable"
+#~ msgid "TITLE"
+#~ msgstr "TITEL"
+
+#~ msgctxt "TrackTable"
+#~ msgid "ARTIST"
+#~ msgstr "KÜNSTLER"
+
+#~ msgctxt "TrackTable"
+#~ msgid "GENRE"
+#~ msgstr "GENRE"
+
+#~ msgctxt "TrackTable"
+#~ msgid "KEY"
+#~ msgstr "TONART"
+
+#~ msgctxt "TrackTable"
+#~ msgid "TIME"
+#~ msgstr "ZEIT"
+
+#~ msgctxt "TrackTable"
+#~ msgid "RATING"
+#~ msgstr "WERTUNG"
+
+#~ msgctxt "UpdateBar"
+#~ msgid "Update"
+#~ msgstr "Update"
+
+#~ msgctxt "DeckPanel"
+#~ msgid "Not loaded — double-click a track or press LOAD"
+#~ msgstr "Nicht geladen – Track doppelklicken oder LOAD drücken"
+
+#~ msgctxt "DeckPanel"
+#~ msgid "KEY LOCK"
+#~ msgstr "KEY LOCK"
+
+#~ msgctxt "DeckPanel"
+#~ msgid "JUMP"
+#~ msgstr "SPRUNG"
+
+#~ msgctxt "MixerPanel"
+#~ msgid "PHONES"
+#~ msgstr "KOPFHÖRER"
+
+#~ msgctxt "MixerPanel"
+#~ msgid "LEVEL"
+#~ msgstr "PEGEL"
+
+#~ msgctxt "PreparePlayer"
+#~ msgid "POSITION"
+#~ msgstr "POSITION"
+
+#~ msgctxt "DeckPanel"
+#~ msgid "SEPARATING…"
+#~ msgstr "TRENNE…"
+
+#~ msgctxt "DeckPanel"
+#~ msgid "LOOP"
+#~ msgstr "LOOP"
+
+#~ msgctxt "PreparePlayer"
+#~ msgid "HOT CUE"
+#~ msgstr "HOT CUE"
+
+#~ msgctxt "PreparePlayer"
+#~ msgid "CLICK EMPTY = SET AT CURSOR"
+#~ msgstr "LEER KLICKEN = AM CURSOR SETZEN"
+
+#~ msgctxt "PreparePlayer"
+#~ msgid "UNLOCK"
+#~ msgstr "ENTSPERREN"
+
+#~ msgctxt "PreparePlayer"
+#~ msgid "LOCK"
+#~ msgstr "SPERREN"
+
+#~ msgctxt "AppWindow"
+#~ msgid "PLAYLIST"
+#~ msgstr "PLAYLIST"
+
+#~ msgctxt "AppWindow"
+#~ msgid "SET"
+#~ msgstr "SET"
+
+#~ msgctxt "AppWindow"
+#~ msgid "SMART"
+#~ msgstr "SMART"
+
+#~ msgctxt "AppWindow"
+#~ msgid "FOLDER"
+#~ msgstr "ORDNER"
+
+#~ msgctxt "AppWindow"
+#~ msgid "UNDO  {}  ⌘Z"
+#~ msgstr "RÜCKGÄNGIG  {}  ⌘Z"
+
+#~ msgctxt "AppWindow"
+#~ msgid "SEARCH"
+#~ msgstr "SUCHEN"
+
+#~ msgctxt "DeckPlate"
+#~ msgid "Empty — load a track"
+#~ msgstr "Leer — lade einen Track"
+
+#~ msgctxt "DeckPlate"
+#~ msgid "TEMPO"
+#~ msgstr "TEMPO"
+
+#~ msgctxt "DeckPlate"
+#~ msgid "KEY"
+#~ msgstr "TONART"
+
+#~ msgctxt "DeckPlate"
+#~ msgid "REMAIN"
+#~ msgstr "REST"
+
+#~ msgctxt "DeckPlate"
+#~ msgid "PLAY"
+#~ msgstr "PLAY"
+
+#~ msgctxt "DeckPlate"
+#~ msgid "LOOP"
+#~ msgstr "LOOP"
+
+#~ msgctxt "DeckPlate"
+#~ msgid "PAUSE"
+#~ msgstr "PAUSE"
+
+#~ msgctxt "PerformView"
+#~ msgid "NO MASTER"
+#~ msgstr "KEIN MASTER"
+
+#~ msgctxt "PerformView"
+#~ msgid "MASTER {} BPM"
+#~ msgstr "MASTER {} BPM"
+
+#~ msgctxt "PerformView"
+#~ msgid "DECKS"
+#~ msgstr "DECKS"
+
+#~ msgctxt "PerformView"
+#~ msgid "BROWSE"
+#~ msgstr "DURCHSUCHEN"
+
+#~ msgctxt "PerformView"
+#~ msgid "2 DECKS"
+#~ msgstr "2 DECKS"
+
+#~ msgctxt "PerformView"
+#~ msgid "4 DECKS"
+#~ msgstr "4 DECKS"
+
+#~ msgctxt "PerformView"
+#~ msgid "REC {}"
+#~ msgstr "REC {}"
+
+#~ msgctxt "PerformView"
+#~ msgid "RECORD"
+#~ msgstr "AUFNEHMEN"
+
+#~ msgctxt "TopBar"
+#~ msgid "Show the player above the browser"
+#~ msgstr "Den Player über dem Browser zeigen"
+
+#~ msgctxt "TopBar"
+#~ msgid "Give the whole window to the browser"
+#~ msgstr "Dem Browser das ganze Fenster geben"
+
+#: ui/lighting.slint
+msgctxt "ShowPanel"
+msgid "TRACK CUES"
+msgstr "TRACK-CUES"
+
+#: ui/lighting.slint
+msgctxt "ShowPanel"
+msgid "Play a track to store lighting cues with it."
+msgstr "Spiele einen Track, um Licht-Cues mit ihm zu speichern."
+
+#: ui/lighting.slint
+msgctxt "ShowPanel"
+msgid "Remove this track cue"
+msgstr "Diesen Track-Cue entfernen"
+
+#: ui/lighting.slint
+msgctxt "ShowPanel"
+msgid "CUE AT PLAYHEAD"
+msgstr "CUE AM PLAYHEAD"
+
+#: ui/lighting.slint
+msgctxt "ShowPanel"
+msgid "The current cue starts at this bar whenever the track plays"
+msgstr "Der aktuelle Cue startet bei diesem Takt, wann immer der Track läuft"
+
+#: ui/preferences.slint
+msgctxt "PreferencesWindow"
+msgid "BEAT"
+msgstr "BEAT"
+
+#: ui/preferences.slint
+msgctxt "PreferencesWindow"
+msgid "TEMPO ONLY"
+msgstr "NUR TEMPO"
+
+#: ui/perform.slint
+msgctxt "FxNames"
+msgid "AUTO"
+msgstr "AUTO"
+
+#: ui/perform.slint
+msgctxt "GlobalBar"
+msgid "Auto Fader: the crossfader also swaps the basses and keeps the decks in sync"
+msgstr "Auto Fader: Der Crossfader tauscht auch die Bässe und hält die Decks synchron"
+
+msgctxt "AppWindow"
+msgid "Sub Browser"
+msgstr "Sub-Browser"
+
+msgctxt "AppWindow"
+msgid "SUB"
+msgstr "SUB"
+
+msgctxt "AppWindow"
+msgid "A second tree and list under this one, to drag tracks between lists"
+msgstr "Ein zweiter Baum mit Liste unter dieser, um Tracks zwischen Listen zu ziehen"
+
+msgctxt "AppWindow"
+msgid "Audio files"
+msgstr "Audiodateien"
+
+msgctxt "AppWindow"
+msgid "Drop on a player to open, on a list to add to it, anywhere else to add to the collection and the open list"
+msgstr "Auf einem Player ablegen zum Öffnen, auf einer Liste zum Hinzufügen, sonst zur Sammlung und zur offenen Liste"
+
+msgctxt "PreparePlayer"
+msgid "PHRASE"
+msgstr "PHRASE"
+
+msgctxt "PreparePlayer"
+msgid "EDIT"
+msgstr "EDIT"
+
+msgctxt "PreparePlayer"
+msgid "The phrase at the cursor becomes this kind (in a gap: a new phrase)"
+msgstr "Die Phrase am Cursor bekommt diese Art (in einer Lücke: eine neue Phrase)"
+
+msgctxt "PreparePlayer"
+msgid "CUT"
+msgstr "TEILEN"
+
+msgctxt "PreparePlayer"
+msgid "Split the phrase at the cursor (on the nearest bar)"
+msgstr "Die Phrase am Cursor teilen (am nächsten Takt)"
+
+msgctxt "PreparePlayer"
+msgid "BOUNDARY TO CURSOR"
+msgstr "GRENZE ZUM CURSOR"
+
+msgctxt "PreparePlayer"
+msgid "Move the nearest phrase boundary to the cursor (on the nearest bar)"
+msgstr "Die nächste Phrasengrenze an den Cursor verschieben (am nächsten Takt)"
+
+msgctxt "PreparePlayer"
+msgid "CLEAR"
+msgstr "LÖSCHEN"
+
+msgctxt "PreparePlayer"
+msgid "Remove all phrases of this track"
+msgstr "Alle Phrasen dieses Tracks entfernen"
+
+msgctxt "PreparePlayer"
+msgid "Region start at the cursor (or shift-drag on the overview)"
+msgstr "Bereichsanfang am Cursor (oder mit Umschalt auf der Übersicht ziehen)"
+
+msgctxt "PreparePlayer"
+msgid "Region end at the cursor (or shift-drag on the overview)"
+msgstr "Bereichsende am Cursor (oder mit Umschalt auf der Übersicht ziehen)"
+
+msgctxt "PreparePlayer"
+msgid "RENDERING…"
+msgstr "WIRD ERSTELLT …"
+
+msgctxt "PreparePlayer"
+msgid "SET IN AND OUT"
+msgstr "IN UND OUT SETZEN"
+
+msgctxt "PreparePlayer"
+msgid "CUT OUT"
+msgstr "HERAUSSCHNEIDEN"
+
+msgctxt "PreparePlayer"
+msgid "New file without the region"
+msgstr "Neue Datei ohne den Bereich"
+
+msgctxt "PreparePlayer"
+msgid "TRIM"
+msgstr "ZUSCHNEIDEN"
+
+msgctxt "PreparePlayer"
+msgid "New file with only the region"
+msgstr "Neue Datei nur mit dem Bereich"
+
+msgctxt "PreparePlayer"
+msgid "REPEAT"
+msgstr "WIEDERHOLEN"
+
+msgctxt "PreparePlayer"
+msgid "New file with the region played twice"
+msgstr "Neue Datei, in der der Bereich zweimal läuft"
+
+msgctxt "PreparePlayer"
+msgid "NEW FILE · ORIGINAL KEPT"
+msgstr "NEUE DATEI · ORIGINAL BLEIBT"
+
+msgctxt "PreparePlayer"
+msgid "Forget the region"
+msgstr "Bereich verwerfen"
+
+msgctxt "PreferencesWindow"
+msgid "Show phrases on the enlarged waveforms"
+msgstr "Phrasen auf den vergrößerten Wellenformen zeigen"
+
+msgctxt "PreferencesWindow"
+msgid "Show the phrase bar under the overviews"
+msgstr "Phrasenleiste unter den Übersichten zeigen"
+
+msgctxt "PreferencesWindow"
+msgid "Phrase types"
+msgstr "Phrasenarten"
+
+msgctxt "PreferencesWindow"
+msgid "NAMES"
+msgstr "NAMEN"
+
+msgctxt "PreferencesWindow"
+msgid "COLOURS ONLY"
+msgstr "NUR FARBEN"
+
+msgctxt "SubBrowserPane"
+msgid "SUB-BROWSER — PICK A LIST"
+msgstr "SUB-BROWSER — LISTE WÄHLEN"
+
+msgctxt "SubBrowserPane"
+msgid "{} TRACKS"
+msgstr "{} TRACKS"
+
+msgctxt "SubBrowserPane"
+msgid "Empty. Drag tracks from the list above onto this list."
+msgstr "Leer. Ziehe Tracks aus der Liste darüber auf diese Liste."
+
+msgctxt "SubBrowserPane"
+msgid "No tracks in this list."
+msgstr "Keine Tracks in dieser Liste."
+
+#: ui/fx.slint
+msgctxt "FxUnit"
+msgid "The effect takes the whole channel"
+msgstr "Der Effekt nimmt den ganzen Kanal"
+
+#: ui/fx.slint
+msgctxt "FxUnit"
+msgid "Stem FX: the effect takes only this part of the channel"
+msgstr "Stem FX: Der Effekt nimmt nur diesen Part des Kanals"
+
+msgctxt "AppWindow"
+msgid "COMPACT"
+msgstr "KOMPAKT"
+
+msgctxt "AppWindow"
+msgid "Full Screen"
+msgstr "Vollbild"
+
+msgctxt "AppWindow"
+msgid "In Prepare a double-click opens the track in the player"
+msgstr "In Prepare öffnet ein Doppelklick den Track im Player"
+
+msgctxt "AppWindow"
+msgid "Info: the tags and file details of the selected track"
+msgstr "Info: Tags und Dateidetails des gewählten Tracks"
+
+msgctxt "AppWindow"
+msgid "LOAD → FREE"
+msgstr "LADEN → FREI"
+
+msgctxt "AppWindow"
+msgid "LOAD → {}"
+msgstr "LADEN → {}"
+
+msgctxt "AppWindow"
+msgid "Tags: tag the selected tracks with your own categories"
+msgstr "Tags: die gewählten Tracks mit eigenen Kategorien taggen"
+
+msgctxt "AppWindow"
+msgid "NORMAL"
+msgstr "NORMAL"
+
+msgctxt "AppWindow"
+msgid "SIM"
+msgstr "VERW"
+
+msgctxt "AppWindow"
+msgid "ROOMY"
+msgstr "LUFTIG"
+
+msgctxt "AppWindow"
+msgid "Similar: tracks that fit after the selected one"
+msgstr "Verwandt: Tracks, die nach dem gewählten passen"
+
+msgctxt "AppWindow"
+msgid "Row spacing of the list: compact, normal, roomy — click for the next"
+msgstr "Zeilenabstand der Liste: kompakt, normal, luftig — klicken für den nächsten"
+
+msgctxt "AppWindow"
+msgid "SMPL"
+msgstr "SMPL"
+
+msgctxt "AppWindow"
+msgid "Show or hide the sampler panel"
+msgstr "Sampler-Panel zeigen oder ausblenden"
+
+msgctxt "AppWindow"
+msgid "Sub browser: a second tree and list under this one, to drag tracks between lists"
+msgstr "Sub-Browser: ein zweiter Baum mit Liste darunter, um Tracks zwischen Listen zu ziehen"
+
+msgctxt "AppWindow"
+msgid "The sampler panel is part of Perform"
+msgstr "Das Sampler-Panel gehört zu Perform"
+
+msgctxt "AppWindow"
+msgid "Where a double-click loads: the free deck or a fixed deck — click for the next"
+msgstr "Wohin ein Doppelklick lädt: freies Deck oder ein festes Deck — klicken für das nächste"
+
+msgctxt "DeckPanel"
+msgid "Double the loop"
+msgstr "Loop verdoppeln"
+
+msgctxt "DeckPanel"
+msgid "Halve the loop"
+msgstr "Loop halbieren"
+
+msgctxt "InfoPanel"
+msgid "ARTWORK"
+msgstr "COVER"
+
+msgctxt "InfoPanel"
+msgid "BIT RATE"
+msgstr "BITRATE"
+
+msgctxt "InfoPanel"
+msgid "FILE TYPE"
+msgstr "DATEITYP"
+
+msgctxt "InfoPanel"
+msgid "SAMPLE RATE"
+msgstr "ABTASTRATE"
+
+msgctxt "InfoPanel"
+msgid "SIZE"
+msgstr "GRÖSSE"
+
+msgctxt "InfoPanel"
+msgid "SUMMARY"
+msgstr "ÜBERSICHT"
+
+msgctxt "InfoPanel"
+msgid "This track has no cover art."
+msgstr "Dieser Track hat kein Cover."
+
+msgctxt "LoopColumn"
+msgid "Auto loop of the shown length; press again to leave it"
+msgstr "Auto-Loop der angezeigten Länge; erneut drücken zum Verlassen"
+
+msgctxt "ManualLoop"
+msgid "EXIT"
+msgstr "EXIT"
+
+msgctxt "ManualLoop"
+msgid "IN"
+msgstr "IN"
+
+msgctxt "ManualLoop"
+msgid "Manual loop: set the in point, then the out point; press again to leave the loop"
+msgstr "Manueller Loop: Startpunkt setzen, dann Endpunkt; erneut drücken verlässt den Loop"
+
+msgctxt "ManualLoop"
+msgid "OUT"
+msgstr "OUT"
+
+msgctxt "MiniPlayer"
+msgid "REMAIN"
+msgstr "REST"
+
+msgctxt "PreferencesWindow"
+msgid "CONSOLIDATE…"
+msgstr "ZUSAMMENFÜHREN…"
+
+msgctxt "PreferencesWindow"
+msgid "COUNT UP"
+msgstr "AUFWÄRTS"
+
+msgctxt "PreferencesWindow"
+msgid "Colour and accessibility"
+msgstr "Farbe und Barrierefreiheit"
+
+msgctxt "PreferencesWindow"
+msgid "Consolidate"
+msgstr "Zusammenführen"
+
+msgctxt "PreferencesWindow"
+msgid "Copy every track into a folder you pick (Artist / file) and point the library at the copies"
+msgstr "Jeden Track in einen gewählten Ordner kopieren (Künstler / Datei) und die Bibliothek auf die Kopien umstellen"
+
+msgctxt "PreferencesWindow"
+msgid "Copy every track into one music folder"
+msgstr "Alle Tracks in einen Musikordner kopieren"
+
+msgctxt "PreferencesWindow"
+msgid "FIND A SETTING"
+msgstr "EINSTELLUNG FINDEN"
+
+msgctxt "PreferencesWindow"
+msgid "Find tracks whose files were moved or renamed"
+msgstr "Tracks finden, deren Dateien verschoben oder umbenannt wurden"
+
+msgctxt "PreferencesWindow"
+msgid "Moved files"
+msgstr "Verschobene Dateien"
+
+msgctxt "PreferencesWindow"
+msgid "RELOCATE…"
+msgstr "NEU ZUORDNEN…"
+
+msgctxt "PreferencesWindow"
+msgid "Search a folder for the missing files and point the tracks at them"
+msgstr "Einen Ordner nach den fehlenden Dateien durchsuchen und die Tracks darauf umstellen"
+
+msgctxt "PreferencesWindow"
+msgid "Show what a control does and its shortcut on hover"
+msgstr "Beim Darüberfahren zeigen, was ein Bedienelement tut, und sein Tastenkürzel"
+
+msgctxt "PreferencesWindow"
+msgid "TO NEXT MEMORY CUE"
+msgstr "BIS ZUM NÄCHSTEN MEMORY CUE"
+
+msgctxt "PreferencesWindow"
+msgid "TO PHRASE END"
+msgstr "BIS ZUM PHRASENENDE"
+
+msgctxt "PreferencesWindow"
+msgid "Tooltips"
+msgstr "Tooltips"
+
+msgctxt "PreferencesWindow"
+msgid "Waveforms and phrases"
+msgstr "Wellenformen und Phrasen"
+
+msgctxt "PreparePlayer"
+msgid "Analyse again"
+msgstr "Erneut analysieren"
+
+msgctxt "PreparePlayer"
+msgid "Auto loop of the shown length while the track plays; again to leave"
+msgstr "Auto-Loop der angezeigten Länge, während der Track spielt; erneut drücken zum Verlassen"
+
+msgctxt "PreparePlayer"
+msgid "DEL"
+msgstr "ENTF"
+
+msgctxt "PreparePlayer"
+msgid "Delete the memory cue at the cursor"
+msgstr "Memory Cue am Cursor löschen"
+
+msgctxt "PreparePlayer"
+msgid "Double the loop"
+msgstr "Loop verdoppeln"
+
+msgctxt "PreparePlayer"
+msgid "EXIT"
+msgstr "EXIT"
+
+msgctxt "PreparePlayer"
+msgid "Halve the loop"
+msgstr "Loop halbieren"
+
+msgctxt "PreparePlayer"
+msgid "IN"
+msgstr "IN"
+
+msgctxt "PreparePlayer"
+msgid "Jump back by the jump size"
+msgstr "Um die Sprungweite zurückspringen"
+
+msgctxt "PreparePlayer"
+msgid "Jump forward by the jump size"
+msgstr "Um die Sprungweite vorspringen"
+
+msgctxt "PreparePlayer"
+msgid "Jump size of − / +: shorter / longer"
+msgstr "Sprungweite von − / +: kürzer / länger"
+
+msgctxt "PreparePlayer"
+msgid "Loop in point at the playhead (while the track plays)"
+msgstr "Loop-Startpunkt am Abspielkopf (während der Track spielt)"
+
+msgctxt "PreparePlayer"
+msgid "Loop out point: the loop starts"
+msgstr "Loop-Endpunkt: der Loop startet"
+
+msgctxt "PreparePlayer"
+msgid "Manual loop: in point, then out point; again to leave"
+msgstr "Manueller Loop: Startpunkt, dann Endpunkt; erneut zum Verlassen"
+
+msgctxt "PreparePlayer"
+msgid "More for this track"
+msgstr "Mehr zu diesem Track"
+
+msgctxt "PreparePlayer"
+msgid "Next cue"
+msgstr "Nächster Cue"
+
+msgctxt "PreparePlayer"
+msgid "OUT"
+msgstr "OUT"
+
+msgctxt "PreparePlayer"
+msgid "Previous cue"
+msgstr "Vorheriger Cue"
+
+msgctxt "PreparePlayer"
+msgid "Quantize loops and cues to the beat"
+msgstr "Loops und Cues auf den Beat quantisieren"
+
+msgctxt "PreparePlayer"
+msgid "REMAIN"
+msgstr "REST"
+
+msgctxt "PreparePlayer"
+msgid "Redo"
+msgstr "Wiederholen"
+
+msgctxt "PreparePlayer"
+msgid "Reset the zoom (Preferences > View > Waveform zoom)"
+msgstr "Zoom zurücksetzen (Einstellungen > Ansicht > Wellenform-Zoom)"
+
+msgctxt "PreparePlayer"
+msgid "Show in file manager"
+msgstr "Im Dateimanager zeigen"
+
+msgctxt "PreparePlayer"
+msgid "Show info"
+msgstr "Info zeigen"
+
+msgctxt "PreparePlayer"
+msgid "Undo the last change"
+msgstr "Letzte Änderung rückgängig machen"
+
+msgctxt "PreparePlayer"
+msgid "Zoom in"
+msgstr "Hineinzoomen"
+
+msgctxt "PreparePlayer"
+msgid "Zoom out"
+msgstr "Herauszoomen"
+
+msgctxt "SamplerPanel"
+msgid "Double the slot's tempo (detected at half speed)"
+msgstr "Tempo des Slots verdoppeln (mit halbem Tempo erkannt)"
+
+msgctxt "SamplerPanel"
+msgid "Halve the slot's tempo (detected at double speed)"
+msgstr "Tempo des Slots halbieren (mit doppeltem Tempo erkannt)"
+
+msgctxt "SamplerPanel"
+msgid "SAVE"
+msgstr "SPEICHERN"
+
+msgctxt "SamplerPanel"
+msgid "Sampler volume (double-click: full)"
+msgstr "Sampler-Lautstärke (Doppelklick: voll)"
+
+msgctxt "SamplerPanel"
+msgid "Store the patterns on the next free Pattern Recall pad"
+msgstr "Die Patterns auf dem nächsten freien Pattern-Recall-Pad speichern"
+
+msgctxt "SamplerPanel"
+msgid "Sync the selected sample to the master tempo"
+msgstr "Das gewählte Sample zum Master-Tempo synchronisieren"
+
+msgctxt "Sidebar"
+msgid "FILTER LISTS"
+msgstr "LISTEN FILTERN"
+
+msgctxt "Sidebar"
+msgid "Sync every plugged-in stick now"
+msgstr "Jeden eingesteckten Stick jetzt synchronisieren"
+
+msgctxt "Sidebar"
+msgid "TEMPO ±6 % · COMPATIBLE KEY"
+msgstr "TEMPO ±6 % · PASSENDE TONART"
+
+msgctxt "Sidebar"
+msgid "Year of the sessions shown: earlier / later"
+msgstr "Jahr der gezeigten Sessions: früher / später"
+
+msgctxt "TempoRange"
+msgid "Tempo range of the fader — click for the next"
+msgstr "Tempobereich des Faders — klicken für den nächsten"
+
+msgctxt "TopBar"
+msgid "Controller connected: {}"
+msgstr "Controller verbunden: {}"
+
+msgctxt "TopBar"
+msgid "MASTER"
+msgstr "MASTER"
+
+msgctxt "TopBar"
+msgid "Master out level (double-click resets)"
+msgstr "Master-Ausgangspegel (Doppelklick setzt zurück)"
+
+msgctxt "TopBar"
+msgid "No controller connected"
+msgstr "Kein Controller verbunden"
+
+msgctxt "TrackLine"
+msgid "Add to “{}”"
+msgstr "Zu „{}“ hinzufügen"
+
+msgctxt "TrackLine"
+msgid "Export file…"
+msgstr "Datei exportieren…"
+
+msgctxt "TrackLine"
+msgid "Import to collection"
+msgstr "In die Sammlung importieren"
+
+msgctxt "TrackLine"
+msgid "Lock / unlock analysis"
+msgstr "Analyse sperren / entsperren"
+
+msgctxt "TrackLine"
+msgid "Memory cues to hot cues"
+msgstr "Memory Cues zu Hot Cues"
+
+msgctxt "TrackLine"
+msgid "Reload tags from file"
+msgstr "Tags neu aus der Datei lesen"
+
+msgctxt "TrackLine"
+msgid "Reset play count"
+msgstr "Wiedergabezähler zurücksetzen"
+
+msgctxt "TrackLine"
+msgid "Show info"
+msgstr "Info zeigen"
+
+msgctxt "TrackLine"
+msgid "Sort hot cues by time"
+msgstr "Hot Cues nach Zeit sortieren"
+
+msgctxt "TrackTable"
+msgid "State"
+msgstr "Status"
+
+msgctxt "TrackTable"
+msgid "State column: a short line = waiting for analysis, a struck line = file missing, empty = ready"
+msgstr "Statusspalte: kurze Linie = wartet auf Analyse, durchgestrichene Linie = Datei fehlt, leer = bereit"
+
+msgctxt "WaveZoneColumn"
+msgid "Larger waveform zone"
+msgstr "Größerer Wellenformbereich"
+
+msgctxt "WaveZoneColumn"
+msgid "Reset the zoom (all decks)"
+msgstr "Zoom zurücksetzen (alle Decks)"
+
+msgctxt "WaveZoneColumn"
+msgid "Smaller waveform zone"
+msgstr "Kleinerer Wellenformbereich"
+
+msgctxt "WaveZoneColumn"
+msgid "Zoom in (all decks)"
+msgstr "Hineinzoomen (alle Decks)"
+
+msgctxt "WaveZoneColumn"
+msgid "Zoom out (all decks)"
+msgstr "Herauszoomen (alle Decks)"
+
+msgctxt "XfAssignGrid"
+msgid "Crossfader: deck to side A (again: through)"
+msgstr "Crossfader: Deck auf Seite A (erneut: durch)"
+
+msgctxt "XfAssignGrid"
+msgid "Crossfader: deck to side B (again: through)"
+msgstr "Crossfader: Deck auf Seite B (erneut: durch)"
+
+
+msgctxt "FxUnit"
+msgid "{} BEATS"
+msgstr "{} BEATS"
+
+msgctxt "KioskDeck"
+msgid "Click: mute / unmute · wheel: level"
+msgstr "Klick: stumm / laut · Mausrad: Pegel"
+
+msgctxt "KioskDeck"
+msgid "Key shift: down / up a semitone — click the value to reset"
+msgstr "Key Shift: einen Halbton tiefer / höher — Wert anklicken zum Zurücksetzen"
+
+msgctxt "KioskDeck"
+msgid "Key sync: match the key of the master deck"
+msgstr "Key Sync: an die Tonart des Master-Decks anpassen"
+
+msgctxt "KioskDeck"
+msgid "LOAD SELECTED"
+msgstr "AUSWAHL LADEN"
+
+msgctxt "KioskDeck"
+msgid "Master deck: the others sync to it"
+msgstr "Master-Deck: die anderen synchronisieren sich darauf"
+
+msgctxt "KioskDeck"
+msgid "Not loaded"
+msgstr "Nicht geladen"
+
+msgctxt "KioskDeck"
+msgid "The channel's EQ knobs control the parts: HI vocals, MID inst, LOW drums"
+msgstr "Die EQ-Regler des Kanals steuern die Parts: HI Vocals, MID Instrumente, LOW Drums"
+
+msgctxt "SamplerPanel"
+msgid "LOAD"
+msgstr "LADEN"
+
+msgctxt "TopBar"
+msgid "Appearance: dark, light or system"
+msgstr "Darstellung: dunkel, hell oder System"
+
+msgctxt "TopBar"
+msgid "Club mode"
+msgstr "Club-Modus"
+
+msgctxt "TopBar"
+msgid "More"
+msgstr "Mehr"
+
+msgctxt "TopBar"
+msgid "The mixer is on the controller"
+msgstr "Der Mixer ist am Controller"
+
+msgctxt "TopBar"
+msgid "VERT"
+msgstr "VERT"
+
+msgctxt "TopBar"
+msgid "Work mode"
+msgstr "Arbeitsmodus"
+
+msgid "LOADING"
+msgstr "LÄDT"
+
+msgid "TO CUE"
+msgstr "BIS CUE"
+
+msgid "BAR"
+msgstr "TAKT"
+
+msgid "TO PHRASE"
+msgstr "BIS PHRASE"
+
+msgid "Click to type a BPM: the tempo fader goes there (the range widens if needed)"
+msgstr "Klicken und BPM eintippen: der Tempo-Fader geht dorthin (der Bereich wird bei Bedarf erweitert)"
+
+msgid "Click for the next tempo range: ±6 %, ±10 %, ±16 %, WIDE"
+msgstr "Klicken für den nächsten Tempobereich: ±6 %, ±10 %, ±16 %, WIDE"
+
+msgctxt "ViewMenu"
+msgid "2 Decks · horizontal"
+msgstr "2 Decks · horizontal"
+
+msgctxt "ViewMenu"
+msgid "2 Decks · vertical"
+msgstr "2 Decks · vertikal"
+
+msgctxt "ViewMenu"
+msgid "4 Decks · horizontal"
+msgstr "4 Decks · horizontal"
+
+msgctxt "ViewMenu"
+msgid "4 Decks · vertical"
+msgstr "4 Decks · vertikal"
+
+msgctxt "ViewMenu"
+msgid "Browse"
+msgstr "Browse"
+
+msgctxt "ViewMenu"
+msgid "Perform view: 2 or 4 decks, horizontal or vertical waveforms, Browse"
+msgstr "Perform-Ansicht: 2 oder 4 Decks, Waveforms horizontal oder vertikal, Browse"
+
+msgctxt "GridKey"
+msgid "Beatgrid and gain: fix the grid at the playhead while the track plays"
+msgstr "Beatgrid und Gain: das Grid an der Abspielposition korrigieren, während der Track läuft"
+
+msgctxt "GridPanel"
+msgid "SET 1"
+msgstr "1 SETZEN"
+
+msgctxt "GridPanel"
+msgid "GRID BPM"
+msgstr "GRID-BPM"
+
+msgctxt "GridPanel"
+msgid "BEAT ▶"
+msgstr "BEAT ▶"
+
+msgctxt "GridPanel"
+msgid "◀ BEAT"
+msgstr "◀ BEAT"
+
+msgctxt "GridPanel"
+msgid "LOCKED"
+msgstr "GESPERRT"
+
+msgctxt "GridPanel"
+msgid "LOCK"
+msgstr "SPERREN"
+
+msgctxt "GridPanel"
+msgid "GAIN"
+msgstr "GAIN"
+
+msgctxt "GridPanel"
+msgid "Double the tempo"
+msgstr "Tempo verdoppeln"
+
+msgctxt "GridPanel"
+msgid "Half the tempo"
+msgstr "Tempo halbieren"
+
+msgctxt "GridPanel"
+msgid "Grid tempo 0.01 BPM faster"
+msgstr "Grid-Tempo 0,01 BPM schneller"
+
+msgctxt "GridPanel"
+msgid "Grid tempo 0.01 BPM slower"
+msgstr "Grid-Tempo 0,01 BPM langsamer"
+
+msgctxt "GridPanel"
+msgid "Lock the grid against changes (analysis and edits)"
+msgstr "Grid gegen Änderungen sperren (Analyse und Bearbeitung)"
+
+msgctxt "GridPanel"
+msgid "Move the grid 10 ms earlier"
+msgstr "Grid 10 ms früher setzen"
+
+msgctxt "GridPanel"
+msgid "Move the grid 10 ms later"
+msgstr "Grid 10 ms später setzen"
+
+msgctxt "GridPanel"
+msgid "Move the grid one beat earlier"
+msgstr "Grid einen Beat früher setzen"
+
+msgctxt "GridPanel"
+msgid "Move the grid one beat later"
+msgstr "Grid einen Beat später setzen"
+
+msgctxt "GridPanel"
+msgid "The beat at the playhead becomes the 1 of the bar"
+msgstr "Der Beat an der Abspielposition wird die 1 des Takts"
+
+msgctxt "GridPanel"
+msgid "Track gain 0.5 dB higher (stored with the track)"
+msgstr "Track-Gain 0,5 dB höher (wird beim Track gespeichert)"
+
+msgctxt "GridPanel"
+msgid "Track gain 0.5 dB lower (stored with the track)"
+msgstr "Track-Gain 0,5 dB niedriger (wird beim Track gespeichert)"
+
+msgctxt "FxNames"
+msgid "BUILD UP"
+msgstr "BUILD UP"
+
+msgctxt "FxNames"
+msgid "BREAKDOWN"
+msgstr "BREAKDOWN"
+
+msgctxt "FxNames"
+msgid "REVERSE ROLL"
+msgstr "REVERSE ROLL"
+
+msgctxt "MixPreviewPanel"
+msgid "NOTHING RESERVED"
+msgstr "NICHTS VORGEMERKT"
+
+msgctxt "MixPreviewPanel"
+msgid "NEXT  {}"
+msgstr "ALS NÄCHSTES  {}"
+
+msgctxt "MixPreviewPanel"
+msgid "NEXT  {}  +{}"
+msgstr "ALS NÄCHSTES  {}  +{}"
+
+msgctxt "MixPreviewPanel"
+msgid "RESERVE"
+msgstr "VORMERKEN"
+
+msgctxt "MixPreviewPanel"
+msgid "CLEAR"
+msgstr "LEEREN"
+
+msgctxt "MixPreviewPanel"
+msgid "Reserve the tracks selected in the list: each loads into the deck that has played out, ready for the next link"
+msgstr "Die in der Liste gewählten Tracks vormerken: jeder lädt in das Deck, das ausgespielt hat, bereit für den nächsten Link"
+
+msgctxt "MixPreviewPanel"
+msgid "Clear the reserved tracks"
+msgstr "Vorgemerkte Tracks löschen"
+
+msgctxt "Sidebar"
+msgid "AUTO SORT"
+msgstr "AUTO-SORTIERUNG"
+
+msgctxt "Sidebar"
+msgid "Analysed tracks are sorted here by tempo, energy, mood, character and genre."
+msgstr "Analysierte Tracks werden hier nach Tempo, Energie, Stimmung, Charakter und Genre sortiert."
+
+msgctxt "TrackLine"
+msgid "Set cues like my others"
+msgstr "Cues wie bei meinen anderen setzen"
+
+msgctxt "PreferencesWindow"
+msgid "Cue points"
+msgstr "Cue-Punkte"
+
+msgctxt "PreferencesWindow"
+msgid "Set cues like my other tracks"
+msgstr "Cues wie bei meinen anderen Tracks setzen"
+
+msgctxt "PreferencesWindow"
+msgid "Learns where you put hot cues and memory cues — by bars from the first downbeat, the phrases and the end — and places them, with their names and colours, on newly analysed tracks that have no cues. Each placement is one undo step. The row menu offers it for any selected track."
+msgstr "Lernt, wo du Hot Cues und Memory Cues setzt – in Takten ab dem ersten Downbeat, den Phrasen und dem Ende – und setzt sie mit ihren Namen und Farben auf neu analysierte Tracks ohne Cues. Jedes Setzen ist ein Rückgängig-Schritt. Das Zeilenmenü bietet es für beliebige gewählte Tracks an."
+
+msgctxt "GridKey"
+msgid "GRID"
+msgstr "GRID"
+
+msgctxt "GridKey"
+msgid "Back to the pads"
+msgstr "Zurück zu den Pads"
+
+msgctxt "PreferencesWindow"
+msgid "Club mode"
+msgstr "Club-Modus"
+
+msgctxt "PreferencesWindow"
+msgid "Show the other deck's beat under the beat boxes"
+msgstr "Den Takt des anderen Decks unter den Beat-Kästchen zeigen"
+
+#: ui/player.slint:244
+msgctxt "GridHeader"
+msgid "EDIT GRID"
+msgstr "GRID BEARBEITEN"
+
+#: ui/player.slint:262
+msgctxt "GridHeader"
+msgid "CANCEL"
+msgstr "ABBRECHEN"
+
+#: ui/player.slint:262
+msgctxt "GridHeader"
+msgid "Back to the grid before editing (nothing is stored)"
+msgstr "Zurück zum Grid vor dem Bearbeiten (nichts wird gespeichert)"
+
+#: ui/player.slint:263
+msgctxt "GridHeader"
+msgid "DONE"
+msgstr "FERTIG"
+
+#: ui/player.slint:263
+msgctxt "GridHeader"
+msgid "Keep the grid (one undo step)"
+msgstr "Grid behalten (ein Schritt zum Widerrufen)"
+
+#: ui/player.slint:274
+msgctxt "DriftStrip"
+msgid "DRIFT"
+msgstr "DRIFT"
+
+#: ui/player.slint:293
+msgctxt "DriftStrip"
+msgid "no spot over 5 ms"
+msgstr "keine Stelle über 5 ms"
+
+#: ui/player.slint:293
+msgctxt "DriftStrip"
+msgid "worst {} ▸"
+msgstr "schlechteste {} ▸"
+
+#: ui/player.slint:297
+msgctxt "DriftStrip"
+msgid "Jump to the spot where the grid is furthest off"
+msgstr "Zur Stelle springen, an der das Grid am weitesten daneben liegt"
+
+#: ui/player.slint:312
+msgctxt "GridReadout"
+msgid "BPM AT CURSOR · {} TEMPOS"
+msgstr "BPM AM CURSOR · {} TEMPI"
+
+#: ui/player.slint:312
+msgctxt "GridReadout"
+msgid "BPM"
+msgstr "BPM"
+
+#: ui/player.slint:323
+msgctxt "GridReadout"
+msgid "AT CURSOR"
+msgstr "AM CURSOR"
+
+#: ui/player.slint:331
+msgctxt "GridReadout"
+msgid "PINS"
+msgstr "PINS"
+
+#: ui/player.slint:339
+msgctxt "GridReadout"
+msgid "PIN a kick near the start and one near the end: the tempo between them is solved."
+msgstr "PIN auf einen Kick nahe dem Anfang und einen nahe dem Ende: das Tempo dazwischen wird gelöst."
+
+#: ui/player.slint:343
+msgctxt "GridReadout"
+msgid "SOURCE"
+msgstr "QUELLE"
+
+#: ui/player.slint:351
+msgctxt "GridReadout"
+msgid "within 5 ms"
+msgstr "bis 5 ms"
+
+#: ui/player.slint:351
+msgctxt "GridReadout"
+msgid "within 15 ms"
+msgstr "bis 15 ms"
+
+#: ui/player.slint:351
+msgctxt "GridReadout"
+msgid "further off"
+msgstr "weiter daneben"
+
+#: ui/player.slint:359
+msgctxt "GridReadout"
+msgid "transient (long: kick)"
+msgstr "Transiente (lang: Kick)"
+
+#: ui/player.slint:372
+msgctxt "GridSessionKeys"
+msgid "MOVE"
+msgstr "VERSCHIEBEN"
+
+#: ui/player.slint:373
+msgctxt "GridSessionKeys"
+msgid "Grid 10 ms earlier"
+msgstr "Grid 10 ms früher"
+
+#: ui/player.slint:374
+msgctxt "GridSessionKeys"
+msgid "Grid 1 ms earlier"
+msgstr "Grid 1 ms früher"
+
+#: ui/player.slint:375
+msgctxt "GridSessionKeys"
+msgid "Grid 1 ms later"
+msgstr "Grid 1 ms später"
+
+#: ui/player.slint:376
+msgctxt "GridSessionKeys"
+msgid "Grid 10 ms later"
+msgstr "Grid 10 ms später"
+
+#: ui/player.slint:378
+msgctxt "GridSessionKeys"
+msgid "◀ BEAT"
+msgstr "◀ BEAT"
+
+#: ui/player.slint:378
+msgctxt "GridSessionKeys"
+msgid "Grid one beat earlier"
+msgstr "Grid einen Beat früher"
+
+#: ui/player.slint:379
+msgctxt "GridSessionKeys"
+msgid "BEAT ▶"
+msgstr "BEAT ▶"
+
+#: ui/player.slint:379
+msgctxt "GridSessionKeys"
+msgid "Grid one beat later"
+msgstr "Grid einen Beat später"
+
+#: ui/player.slint:381
+msgctxt "GridSessionKeys"
+msgid "SET 1 HERE"
+msgstr "1 HIER"
+
+#: ui/player.slint:381
+msgctxt "GridSessionKeys"
+msgid "The beat at the cursor becomes the 1 and sits on its kick (±60 ms)"
+msgstr "Der Beat am Cursor wird die 1 und sitzt auf seinem Kick (±60 ms)"
+
+#: ui/player.slint:386
+msgctxt "GridSessionKeys"
+msgid "TEMPO"
+msgstr "TEMPO"
+
+#: ui/player.slint:387
+msgctxt "GridSessionKeys"
+msgid "Tempo 0.01 BPM slower about the cursor"
+msgstr "Tempo 0,01 BPM langsamer um den Cursor"
+
+#: ui/player.slint:388
+msgctxt "GridSessionKeys"
+msgid "Tempo 0.01 BPM faster about the cursor"
+msgstr "Tempo 0,01 BPM schneller um den Cursor"
+
+#: ui/player.slint:389
+msgctxt "GridSessionKeys"
+msgid "Half the tempo"
+msgstr "Halbes Tempo"
+
+#: ui/player.slint:390
+msgctxt "GridSessionKeys"
+msgid "Double the tempo"
+msgstr "Doppeltes Tempo"
+
+#: ui/player.slint:391
+msgctxt "GridSessionKeys"
+msgid "TAP"
+msgstr "TAP"
+
+#: ui/player.slint:391
+msgctxt "GridSessionKeys"
+msgid "Tap along: from the fourth tap the tempo follows; while it plays the taps also set the phase"
+msgstr "Mittippen: ab dem vierten Tap folgt das Tempo; während es läuft, setzen die Taps auch die Phase"
+
+#: ui/player.slint:393
+msgctxt "GridSessionKeys"
+msgid "PIVOT ▸ CURSOR"
+msgstr "DREHPUNKT ▸ CURSOR"
+
+#: ui/player.slint:398
+msgctxt "GridSessionKeys"
+msgid "SOLVE"
+msgstr "LÖSEN"
+
+#: ui/player.slint:399
+msgctxt "GridSessionKeys"
+msgid "PIN HERE ◆{}"
+msgstr "PIN HIER ◆{}"
+
+#: ui/player.slint:399
+msgctxt "GridSessionKeys"
+msgid "PIN HERE"
+msgstr "PIN HIER"
+
+#: ui/player.slint:399
+msgctxt "GridSessionKeys"
+msgid "This beat sits exactly here (snapped to its kick): one pin moves the grid, two pins solve the tempo"
+msgstr "Dieser Beat sitzt genau hier (am Kick ausgerichtet): ein Pin verschiebt das Grid, zwei Pins lösen das Tempo"
+
+#: ui/player.slint:400
+msgctxt "GridSessionKeys"
+msgid "AUTO-FIX"
+msgstr "AUTO-FIX"
+
+#: ui/player.slint:400
+msgctxt "GridSessionKeys"
+msgid "Correct slip and tempo from the kicks of the tempo section at the cursor"
+msgstr "Versatz und Tempo aus den Kicks des Tempoabschnitts am Cursor korrigieren"
+
+#: ui/player.slint:401
+msgctxt "GridSessionKeys"
+msgid "TEMPO CHANGE HERE"
+msgstr "TEMPOWECHSEL HIER"
+
+#: ui/player.slint:401
+msgctxt "GridSessionKeys"
+msgid "A new tempo from the beat at the cursor on, measured from the kicks after it"
+msgstr "Ein neues Tempo ab dem Beat am Cursor, gemessen an den Kicks danach"
+
+#: ui/player.slint:402
+msgctxt "GridSessionKeys"
+msgid "CLEAR PINS"
+msgstr "PINS LÖSCHEN"
+
+#: ui/player.slint:402
+msgctxt "GridSessionKeys"
+msgid "Remove the pins (the grid stays)"
+msgstr "Pins entfernen (das Grid bleibt)"
+
+#: ui/player.slint:407
+msgctxt "GridSessionKeys"
+msgid "HEAR"
+msgstr "HÖREN"
+
+#: ui/player.slint:408
+msgctxt "GridSessionKeys"
+msgid "CLICK ●"
+msgstr "KLICK ●"
+
+#: ui/player.slint:408
+msgctxt "GridSessionKeys"
+msgid "CLICK ○"
+msgstr "KLICK ○"
+
+#: ui/player.slint:408
+msgctxt "GridSessionKeys"
+msgid "Metronome on the grid while the preview plays (higher on the 1)"
+msgstr "Metronom auf dem Grid, während die Vorschau läuft (höher auf der 1)"
+
+#: ui/player.slint:409
+msgctxt "GridSessionKeys"
+msgid "SNAP ●"
+msgstr "SNAP ●"
+
+#: ui/player.slint:409
+msgctxt "GridSessionKeys"
+msgid "SNAP ○"
+msgstr "SNAP ○"
+
+#: ui/player.slint:409
+msgctxt "GridSessionKeys"
+msgid "Snap SET 1, PIN and drags to the kicks (hold Alt while dragging: no snap)"
+msgstr "1 HIER, PIN und Ziehen rasten an den Kicks ein (Alt beim Ziehen: kein Einrasten)"
+
+#: ui/player.slint:411
+msgctxt "GridSessionKeys"
+msgid "UNDO"
+msgstr "WIDERRUFEN"
+
+#: ui/player.slint:411
+msgctxt "GridSessionKeys"
+msgid "Undo the last grid change of this session"
+msgstr "Letzte Grid-Änderung dieser Sitzung widerrufen"
+
+#: ui/player.slint:412
+msgctxt "GridSessionKeys"
+msgid "REDO"
+msgstr "WIEDERHOLEN"
+
+#: ui/player.slint:412
+msgctxt "GridSessionKeys"
+msgid "Redo"
+msgstr "Wiederholen"
+
+#: ui/player.slint:413
+msgctxt "GridSessionKeys"
+msgid "GRID LOCKED"
+msgstr "GRID GESPERRT"
+
+#: ui/player.slint:413
+msgctxt "GridSessionKeys"
+msgid "LOCK GRID"
+msgstr "GRID SPERREN"
+
+#: ui/player.slint:413
+msgctxt "GridSessionKeys"
+msgid "Lock the grid against changes (analysis and edits)"
+msgstr "Grid gegen Änderungen sperren (Analyse und Bearbeitung)"
+
+#: ui/player.slint:887
+msgctxt "PreparePlayer"
+msgid "Edit the beatgrid with the kicks in view: move, tempo about the cursor, pins, AUTO-FIX; DONE keeps it"
+msgstr "Beatgrid mit den Kicks im Blick bearbeiten: verschieben, Tempo um den Cursor, Pins, AUTO-FIX; FERTIG behält es"
+
+#: ui/player.slint:891
+msgctxt "PreparePlayer"
+msgid "Half the tempo"
+msgstr "Halbes Tempo"
+
+#: ui/player.slint:893
+msgctxt "PreparePlayer"
+msgid "SET 1 HERE"
+msgstr "1 HIER"
+
+#: ui/player.slint:893
+msgctxt "PreparePlayer"
+msgid "The beat at the cursor becomes the 1 and sits on its kick"
+msgstr "Der Beat am Cursor wird die 1 und sitzt auf seinem Kick"
+
+#: ui/perform.slint:408
+msgctxt "GridPanel"
+msgid "CLICK"
+msgstr "KLICK"
+
+#: ui/perform.slint:409
+msgctxt "GridPanel"
+msgid "Metronome on the grid in the headphones (higher on the 1)"
+msgstr "Metronom auf dem Grid im Kopfhörer (höher auf der 1)"
+
+#: ui/perform.slint:416
+msgctxt "GridPanel"
+msgid "The kick you just heard (±60 ms) becomes the 1 and the grid sits on it"
+msgstr "Der gerade gehörte Kick (±60 ms) wird die 1 und das Grid sitzt darauf"
+
+#: ui/perform.slint:417
+msgctxt "GridPanel"
+msgid "Move the grid 1 ms earlier"
+msgstr "Grid 1 ms früher"
+
+#: ui/perform.slint:418
+msgctxt "GridPanel"
+msgid "Move the grid 1 ms later"
+msgstr "Grid 1 ms später"
+
+#: ui/perform.slint:421
+msgctxt "GridPanel"
+msgid "◀B"
+msgstr "◀B"
+
+#: ui/perform.slint:422
+msgctxt "GridPanel"
+msgid "B▶"
+msgstr "B▶"
+
+#: ui/perform.slint:427
+msgctxt "GridPanel"
+msgid "Grid tempo 0.01 BPM slower about the playhead"
+msgstr "Grid-Tempo 0,01 BPM langsamer um den Abspielpunkt"
+
+#: ui/perform.slint:428
+msgctxt "GridPanel"
+msgid "Grid tempo 0.01 BPM faster about the playhead"
+msgstr "Grid-Tempo 0,01 BPM schneller um den Abspielpunkt"
+
+#: ui/perform.slint:433
+msgctxt "GridPanel"
+msgid "PIN ◆{}"
+msgstr "PIN ◆{}"
+
+#: ui/perform.slint:433
+msgctxt "GridPanel"
+msgid "PIN"
+msgstr "PIN"
+
+#: ui/perform.slint:435
+msgctxt "GridPanel"
+msgid "Pin the kick at the playhead: one pin moves the grid, a second one far away solves the tempo"
+msgstr "Kick am Abspielpunkt pinnen: ein Pin verschiebt das Grid, ein zweiter weit entfernt löst das Tempo"
+
+#: ui/perform.slint:438
+msgctxt "GridPanel"
+msgid "AUTO-FIX"
+msgstr "AUTO-FIX"
+
+#: ui/perform.slint:438
+msgctxt "GridPanel"
+msgid "Correct slip and tempo from the kicks"
+msgstr "Versatz und Tempo aus den Kicks korrigieren"
+
+#: ui/perform.slint:448
+msgctxt "GridPanel"
+msgid "EDIT …"
+msgstr "BEARBEITEN …"
+
+#: ui/perform.slint:449
+msgctxt "GridPanel"
+msgid "Open the track in the grid editor (Prepare)"
+msgstr "Track im Grid-Editor öffnen (Prepare)"

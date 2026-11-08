@@ -1,0 +1,8 @@
+[package]
+name = "od-i18n"
+description = "Translations of messages produced in Rust code"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]

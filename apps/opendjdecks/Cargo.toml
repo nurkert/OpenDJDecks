@@ -1,0 +1,51 @@
+[package]
+name = "opendjdecks"
+description = "OpenDJDecks: prepare, sync and perform"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "opendjdecks"
+path = "src/main.rs"
+
+[features]
+kiosk = ["od-ui/kiosk"]
+
+[dependencies]
+od-ui.workspace = true
+od-core.workspace = true
+od-library.workspace = true
+od-i18n.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+slint = "1.18"
+
+[package.metadata.deb]
+name = "opendjdecks"
+maintainer = "OpenDJDecks contributors"
+copyright = "OpenDJDecks contributors, GPL-3.0-or-later"
+license-file = ["../../LICENSE", "0"]
+extended-description = """\
+Open-source DJ software: prepare your library and sets, keep USB sticks in \
+sync automatically in the OpenDJDecks format, record mixes and perform with compatible DJ controllers."""
+section = "sound"
+priority = "optional"
+depends = "$auto, udisks2"
+# The icon name, the .desktop file id, the Wayland app_id and the X11
+# WM_CLASS are all de.opendjdecks.OpenDJDecks (crates/od-ui/src/lib.rs).
+assets = [
+    ["target/release/opendjdecks", "usr/bin/", "755"],
+    ["target/release/od-cli", "usr/bin/", "755"],
+    ["target/release/opendjdecks-mcp", "usr/bin/", "755"],
+    ["../../mappings/**/*", "usr/share/opendjdecks/mappings/", "644"],
+    ["../../packaging/linux/de.opendjdecks.OpenDJDecks.desktop", "usr/share/applications/de.opendjdecks.OpenDJDecks.desktop", "644"],
+    ["../../packaging/linux/de.opendjdecks.OpenDJDecks.metainfo.xml", "usr/share/metainfo/de.opendjdecks.OpenDJDecks.metainfo.xml", "644"],
+    ["../../packaging/assets/icon.svg", "usr/share/icons/hicolor/scalable/apps/de.opendjdecks.OpenDJDecks.svg", "644"],
+    ["../../packaging/assets/icon-48.png", "usr/share/icons/hicolor/48x48/apps/de.opendjdecks.OpenDJDecks.png", "644"],
+    ["../../packaging/assets/icon-128.png", "usr/share/icons/hicolor/128x128/apps/de.opendjdecks.OpenDJDecks.png", "644"],
+    ["../../packaging/assets/icon-256.png", "usr/share/icons/hicolor/256x256/apps/de.opendjdecks.OpenDJDecks.png", "644"],
+    ["../../packaging/assets/icon-512.png", "usr/share/icons/hicolor/512x512/apps/de.opendjdecks.OpenDJDecks.png", "644"],
+    ["../../README.md", "usr/share/doc/opendjdecks/README.md", "644"],
+]

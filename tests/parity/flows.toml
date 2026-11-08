@@ -1,0 +1,114 @@
+# Quality-goal flows (SPEC §16.4 "Steps to common tasks"): per task, the
+# usual step count in established DJ software and our target. Ours must be ≤
+# the usual one and is proven by a UI test that drives the real window
+# (`ui_test`, a test id as in features.toml; empty until it exists).
+
+[meta]
+step_rule = """One step = one click, one drag, one key chord, one hover that opens a submenu, or one typed text entry \
+(typing a whole name counts once). Opening a menu and choosing an item are two steps. Waiting for background work is \
+not a step. Each flow starts from the state given in `note`; both paths start from the same state."""
+
+[[flow]]
+id = "load-from-explorer"
+task = "Load a file that is not in the collection from a folder on disk into deck 1"
+reference_steps = 4
+reference_note = "Usual step count in established DJ software (observed or inferred; see inferred)"
+reference_path = [
+  "click the Explorer icon in the source rail",
+  "expand the user folder with its disclosure triangle",
+  "click the folder name (lists its audio files)",
+  "drag the file onto deck 1",
+]
+target_steps = 3
+opendjdecks_path = [
+  "click Explorer in the source rail (scrolls the tree to the Explorer and opens every root one level)",
+  "click the folder",
+  "double-click the file (loads into the free deck, imports and analyses it in the background)",
+]
+labels = ["browser.rail.explorer", "browser.tree.home", "browser.rows", "deck1.title"]
+ui_test = "od-ui::ui_tests::flows::load_from_explorer"
+note = "Start: Perform, 2 decks, browser on Collection, deck 1 empty; the file sits one level below the user folder."
+
+[[flow]]
+id = "set-and-name-hot-cue"
+task = "Set hot cue A at the playhead and name it"
+reference_steps = 5
+reference_note = "Usual step count in established DJ software (observed or inferred; see inferred)"
+inferred = true
+reference_path = [
+  "click hot cue A in the player toolbar",
+  "click the HOT CUE tab of the cue list",
+  "double-click the comment field of cue A",
+  "type the name",
+  "press Return",
+]
+target_steps = 4
+opendjdecks_path = [
+  "click hot cue A in the player toolbar",
+  "double-click cue A in the cue list (hot and memory cues share the list)",
+  "type the name",
+  "press Return",
+]
+labels = ["player1.hot-cue.A", "player1.cue-list.rows", "player1.cue-list.tab.hot-cue"]
+ui_test = "od-ui::ui_tests::flows::set_and_name_hot_cue"
+note = "Start: Prepare, 1 player, track loaded and paused. Naming in other software was not observed (inferred from the cue list layout)."
+
+[[flow]]
+id = "add-to-playlist"
+task = "Add the selected track to an existing playlist"
+reference_steps = 3
+reference_note = "Usual step count in established DJ software (observed or inferred; see inferred)"
+reference_path = [
+  "right-click the row",
+  "hover Add To Playlist ▸",
+  "click the playlist",
+]
+target_steps = 2
+opendjdecks_path = [
+  "right-click the row",
+  "click the playlist in the menu's inline 'Add to' group (recent playlists; the rest in a submenu)",
+]
+labels = ["browser.rows", "ctx.row.add-to-playlist"]
+ui_test = "od-ui::ui_tests::flows::add_to_playlist"
+note = "Start: browser on Collection, track selected, the playlist was used before."
+
+[[flow]]
+id = "sync-stick"
+task = "Bring an edited playlist onto a registered USB stick"
+reference_steps = 3
+reference_note = "Usual step count in established DJ software (observed or inferred; see inferred)"
+reference_path = [
+  "open the Playlist menu",
+  "hover Export Playlist ▸",
+  "click the device",
+]
+target_steps = 0
+opendjdecks_path = []
+labels = ["browser.tree.devices", "status.activity"]
+ui_test = "od-ui::ui_tests::flows::sync_stick"
+note = "Start: stick registered and plugged in, a track of the playlist got a new hot cue. OpenDJDecks syncs automatically ~2 s after the edit (SPEC §8.2); the test asserts the stick content and the visible status without any input."
+
+[[flow]]
+id = "start-recording"
+task = "Start recording the mix"
+reference_steps = 1
+reference_note = "Usual step count in established DJ software (observed or inferred; see inferred)"
+reference_path = ["click REC"]
+target_steps = 1
+opendjdecks_path = ["click REC in the recording section (or the controller's REC)"]
+labels = ["rec.toggle"]
+ui_test = "od-ui::ui_tests::flows::start_recording"
+note = "Start: Perform default layout, recording section shown."
+
+[[flow]]
+id = "separate-stems"
+task = "Separate a loaded track and mute its vocals"
+reference_steps = 1
+reference_note = "Usual step count in established DJ software (observed or inferred; see inferred)"
+inferred = true
+reference_path = ["click VOCAL in the deck's stem strip"]
+target_steps = 1
+opendjdecks_path = ["click VOCAL in the deck's stem strip (separation started on load; the strip shows SEPARATING until ready)"]
+labels = ["deck1.stem.vocal"]
+ui_test = "od-ui::ui_tests::flows::separate_stems"
+note = "Start: track loaded on deck 1, never separated, model present. In the UI test the worker's result is written to the stem cache by the test (the ONNX separator itself is tested in od-stems), so the flow is measured without the model download."

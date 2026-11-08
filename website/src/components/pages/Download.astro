@@ -1,0 +1,305 @@
+---
+// The download page: the latest release as read from GitHub at build time, a client-side
+// recommendation for the visitor's system, and under each platform the install steps.
+import { Picture } from 'astro:assets';
+
+import '../../styles/download.css';
+
+import Base from '../../layouts/Base.astro';
+import StepArt from '../StepArt.astro';
+import { path, releasesUrl, ui, type Lang } from '../../i18n/ui';
+import { guideHref } from '../../lib/docs-catalog.mjs';
+import { loadRelease, type Asset, type Platform } from '../../lib/releases';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+const d = t.download;
+const release = await loadRelease();
+
+// The real macOS screenshots replace the placeholders under src/assets/install; if one is
+// absent the page shows a drawn plate instead.
+const installImages = import.meta.glob<{ default: ImageMetadata }>('../../assets/install/mac-*.png', { eager: true });
+const macImage = (n: number) => {
+  const names = ['1-drag', '2-blocked', '3-settings', '4-open-anyway', '5-confirm'];
+  const key = Object.keys(installImages).find((file) => file.endsWith(`/mac-${names[n]}.png`));
+  return key ? installImages[key].default : undefined;
+};
+
+const byPlatform = (platform: Platform): Asset[] => release?.assets.filter((asset) => asset.platform === platform) ?? [];
+const date = release ? new Intl.DateTimeFormat(lang === 'de' ? 'de-DE' : 'en-GB', { dateStyle: 'long' }).format(release.publishedAt) : '';
+const sizeLabel = (asset: Asset) => `${asset.sizeMb.toLocaleString(lang === 'de' ? 'de-DE' : 'en-GB')} ${d.size}`;
+const platformOrder: Platform[] = ['macos', 'windows', 'linux', 'pi'];
+const allAssets = platformOrder.flatMap((p) => byPlatform(p));
+const altFor = (n: number, title: string) => d.stepImageAlt.replace('{n}', String(n)).replace('{title}', title);
+
+const macFiles = byPlatform('macos');
+const windowsFiles = byPlatform('windows');
+const linuxFiles = byPlatform('linux');
+const piFiles = byPlatform('pi');
+---
+
+<Base lang={lang} page="download" title={d.metaTitle} description={d.metaDescription}>
+  <main id="main" class="page">
+    <div class="container dl">
+      <header class="dl__head">
+        <h1 class="page-title">{d.title}</h1>
+        {
+          release ? (
+            <p class="dl__meta">
+              <strong>
+                {d.version} {release.version}
+              </strong>
+              {d.published ? ` · ${d.published} ${date}` : ` · ${date}`}
+              {' · '}
+              <a href={release.url}>{d.allReleases}</a>
+            </p>
+          ) : (
+            <p class="dl__meta">
+              {d.latestFailed} <a href={releasesUrl}>{d.allReleases}</a>
+            </p>
+          )
+        }
+      </header>
+
+      {
+        release && (
+          <section class="reco" data-reco hidden aria-labelledby="reco-title">
+            <h2 id="reco-title">{d.recommended}</h2>
+            <div class="reco__items">
+              {allAssets.map((asset) => (
+                <a class="plate-btn plate-btn--primary" data-reco-item={asset.kind} hidden href={asset.url}>
+                  {d.kinds[asset.kind]}
+                  <span class="reco__size">{sizeLabel(asset)}</span>
+                </a>
+              ))}
+            </div>
+            <p class="reco__hint">{d.recommendedHint}</p>
+            <p class="reco__hint" data-reco-chip hidden>{d.bothChips}</p>
+          </section>
+        )
+      }
+
+      {
+        !release && (
+          <p>
+            {d.noRelease} <a class="plate-btn" href={releasesUrl}>{d.toReleases}</a>
+          </p>
+        )
+      }
+
+      <section class="platform" id="macos" aria-labelledby="macos-title">
+        <div class="rail" aria-hidden="true"></div>
+        <h2 class="platform__title" id="macos-title">{d.platforms.macos}</h2>
+        {
+          macFiles.length > 0 && (
+            <div class="files">
+              {macFiles.map((asset) => (
+                <div class="file">
+                  <span class="file__kind">{d.kinds[asset.kind]}</span>
+                  <span class="file__name">{asset.name}</span>
+                  <div class="file__row">
+                    <a class="plate-btn" href={asset.url}>
+                      {d.title}
+                    </a>
+                    <span class="file__size">{sizeLabel(asset)}</span>
+                    {release?.checksumsUrl && (
+                      <a class="file__sum" href={release.checksumsUrl}>
+                        SHA256
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        }
+        <h3 class="steps__title">{d.macTitle}</h3>
+        <p class="steps__intro">{d.macIntro}</p>
+        <ol class="steps">
+          {
+            d.macSteps.map((step, i) => {
+              const image = macImage(i);
+              return (
+                <li class="step">
+                  <div class="step__media">
+                    {image ? (
+                      <Picture src={image} alt={altFor(i + 1, step.title)} formats={['avif', 'webp']} fallbackFormat="webp" widths={[400, 700]} sizes="(max-width: 48rem) 92vw, 22rem" loading="lazy" decoding="async" />
+                    ) : (
+                      <StepArt kind="start" alt={altFor(i + 1, step.title)} />
+                    )}
+                  </div>
+                  <h4 class="step__title">{step.title}</h4>
+                  <p class="step__text" set:html={step.text} />
+                </li>
+              );
+            })
+          }
+        </ol>
+        <details class="term">
+          <summary>{d.macTerminalSummary}</summary>
+          <div>
+            <p>{d.macTerminalIntro}</p>
+            <code>xattr -dr com.apple.quarantine "/Applications/OpenDJDecks.app"</code>
+          </div>
+        </details>
+      </section>
+
+      <section class="platform" id="windows" aria-labelledby="windows-title">
+        <div class="rail" aria-hidden="true"></div>
+        <h2 class="platform__title" id="windows-title">{d.platforms.windows}</h2>
+        {
+          windowsFiles.length > 0 && (
+            <div class="files">
+              {windowsFiles.map((asset) => (
+                <div class="file">
+                  <span class="file__kind">{d.kinds[asset.kind]}</span>
+                  <span class="file__name">{asset.name}</span>
+                  <div class="file__row">
+                    <a class="plate-btn" href={asset.url}>
+                      {d.title}
+                    </a>
+                    <span class="file__size">{sizeLabel(asset)}</span>
+                    {release?.checksumsUrl && (
+                      <a class="file__sum" href={release.checksumsUrl}>
+                        SHA256
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        }
+        <h3 class="steps__title">{d.windowsTitle}</h3>
+        <p class="steps__intro">{d.windowsIntro}</p>
+        <ol class="steps">
+          {
+            d.windowsSteps.map((step, i) => (
+              <li class="step">
+                <div class="step__media">
+                  <StepArt kind={['unzip', 'run', 'smartscreen'][i]} alt={altFor(i + 1, step.title)} />
+                </div>
+                <h4 class="step__title">{step.title}</h4>
+                <p class="step__text" set:html={step.text} />
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <section class="platform" id="linux" aria-labelledby="linux-title">
+        <div class="rail" aria-hidden="true"></div>
+        <h2 class="platform__title" id="linux-title">{d.platforms.linux}</h2>
+        {
+          linuxFiles.length > 0 && (
+            <div class="files">
+              {linuxFiles.map((asset) => (
+                <div class="file">
+                  <span class="file__kind">{d.kinds[asset.kind]}</span>
+                  <span class="file__name">{asset.name}</span>
+                  <div class="file__row">
+                    <a class="plate-btn" href={asset.url}>
+                      {d.title}
+                    </a>
+                    <span class="file__size">{sizeLabel(asset)}</span>
+                    {release?.checksumsUrl && (
+                      <a class="file__sum" href={release.checksumsUrl}>
+                        SHA256
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        }
+        <h3 class="steps__title">{d.linuxTitle}</h3>
+        <p class="steps__intro">{d.linuxIntro}</p>
+        <h4 class="steps__title">{d.linuxDeb.title}</h4>
+        <ol class="steps">
+          {
+            d.linuxDeb.steps.map((step, i) => (
+              <li class="step">
+                <div class="step__media">
+                  <StepArt kind={['deb', 'install'][i]} alt={altFor(i + 1, step.title)} />
+                </div>
+                <h5 class="step__title">{step.title}</h5>
+                <p class="step__text" set:html={step.text} />
+              </li>
+            ))
+          }
+        </ol>
+        <h4 class="steps__title">{d.linuxAppImage.title}</h4>
+        <ol class="steps">
+          {
+            d.linuxAppImage.steps.map((step, i) => (
+              <li class="step">
+                <div class="step__media">
+                  <StepArt kind={['exec', 'run'][i]} alt={altFor(i + 1, step.title)} />
+                </div>
+                <h5 class="step__title">{step.title}</h5>
+                <p class="step__text" set:html={step.text} />
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <section class="platform" id="pi" aria-labelledby="pi-title">
+        <div class="rail" aria-hidden="true"></div>
+        <h2 class="platform__title" id="pi-title">{d.platforms.pi}</h2>
+        <p class="steps__intro">{d.piIntro}</p>
+        {
+          piFiles.length > 0 && (
+            <div class="files">
+              {piFiles.map((asset) => (
+                <div class="file">
+                  <span class="file__kind">{d.kinds[asset.kind]}</span>
+                  <span class="file__name">{asset.name}</span>
+                  <div class="file__row">
+                    <a class="plate-btn" href={asset.url}>
+                      {d.title}
+                    </a>
+                    <span class="file__size">{sizeLabel(asset)}</span>
+                    {release?.checksumsUrl && (
+                      <a class="file__sum" href={release.checksumsUrl}>
+                        SHA256
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        }
+        <p>
+          <a class="plate-btn" href={guideHref('raspberry-pi', lang)}>{d.piLink}</a>
+        </p>
+      </section>
+
+      {
+        release?.checksumsUrl && (
+          <p class="reco__hint">
+            <a href={release.checksumsUrl}>{d.checksums}</a>
+          </p>
+        )
+      }
+
+      <div class="dl__after">
+        <div>
+          <strong>{d.after}</strong>
+          <p>{d.afterText}</p>
+        </div>
+        <a class="plate-btn" href={guideHref('getting-started', lang)}>{d.afterStart}</a>
+        <a class="plate-btn" href={guideHref('importing-your-library', lang)}>{d.afterMigrate}</a>
+      </div>
+    </div>
+  </main>
+</Base>
+
+<script>
+  import '../../scripts/download';
+</script>
