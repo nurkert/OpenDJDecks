@@ -5662,3 +5662,48 @@ msgstr "Diese Historie ignorieren"
 msgctxt "AppWindow"
 msgid "Keep the library cues; the stick gets them at the next sync"
 msgstr "Bibliotheks-Cues behalten; der Stick bekommt sie beim nächsten Sync"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Import an Encrypted Library Database…"
+msgstr "Verschlüsselte Bibliotheksdatenbank importieren…"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "IMPORT AN ENCRYPTED LIBRARY DATABASE"
+msgstr "VERSCHLÜSSELTE BIBLIOTHEKSDATENBANK IMPORTIEREN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "No file chosen"
+msgstr "Keine Datei gewählt"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "CHOOSE FILE"
+msgstr "DATEI WÄHLEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Pick the library database file. Nothing is searched for on this computer."
+msgstr "Wähle die Datei der Bibliotheksdatenbank. Auf diesem Computer wird nichts gesucht."
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "ADVANCED"
+msgstr "ERWEITERT"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "KEY FOR THIS LIBRARY"
+msgstr "SCHLÜSSEL FÜR DIESE BIBLIOTHEK"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "You need the key for your own library. OpenDJDecks neither contains nor fetches it, and the key is used for this import only: it is not stored or logged. The database itself is only read."
+msgstr "Du brauchst den Schlüssel für deine eigene Bibliothek. OpenDJDecks enthält ihn nicht und beschafft ihn nicht; er wird nur für diesen Import verwendet, nicht gespeichert und nicht protokolliert. Die Datenbank selbst wird nur gelesen."
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "CANCEL"
+msgstr "ABBRECHEN"

@@ -778,6 +778,15 @@ fn build() -> Vec<Action> {
         &["Alt+Shift+U"],
     );
     b.add_split(
+        "library.import.encrypted",
+        "Import an encrypted library database",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+L"],
+        &["Alt+Shift+L"],
+    );
+    b.add_split(
         "library.export.archive",
         "Export a library archive",
         None,

@@ -184,6 +184,8 @@ export component Field inherits Rectangle {
     in property <string> placeholder;
     in-out property <string> text <=> input.text;
     in property <color> tone: Theme.w486;
+    // InputType.password shows dots instead of the text.
+    in property <InputType> input-type: InputType.text;
     callback edited(string);
     callback accepted(string);
     // Esc in the field.
@@ -208,6 +210,7 @@ export component Field inherits Rectangle {
         selection-foreground-color: Theme.bone;
         vertical-alignment: center;
         single-line: true;
+        input-type: root.input-type;
         edited => { root.edited(self.text); }
         accepted => { root.accepted(self.text); }
         key-pressed(e) => {

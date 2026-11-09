@@ -2,7 +2,7 @@
 //! (`/PIONEER/rekordbox/export.pdb` plus the `USBANLZ` analysis files), via
 //! `od-format-clubusb`.
 
-use crate::model::{SrcLibrary, SrcNode, SrcTrack, anlz_family};
+use crate::model::{SmartFields, SrcLibrary, SrcNode, SrcTrack, anlz_family};
 use crate::{ImportError, Result};
 use od_format_clubusb::pdb::ExportDatabase;
 use std::path::{Path, PathBuf};
@@ -43,12 +43,17 @@ pub(crate) fn read(root: &Path) -> Result<SrcLibrary> {
             file_size: t.file_size,
             bpm: t.bpm.filter(|b| *b > 0.0),
             key: t.key,
+            db_cues: None,
             anlz: if t.anlz_path.is_empty() {
                 Vec::new()
             } else {
                 anlz_family(on_stick(root, &t.anlz_path))
             },
             artwork: t.artwork_path.as_deref().map(|p| on_stick(root, p)),
+            smart: SmartFields {
+                play_count: t.play_count as i64,
+                ..Default::default()
+            },
         });
     }
     for p in db.playlists {
@@ -59,6 +64,7 @@ pub(crate) fn read(root: &Path) -> Result<SrcLibrary> {
             folder: p.is_folder,
             seq: p.sort_order as i64,
             tracks: p.track_ids.iter().map(|i| i.to_string()).collect(),
+            was_smart: false,
         });
     }
     for (i, h) in db.history.into_iter().enumerate() {
@@ -69,6 +75,7 @@ pub(crate) fn read(root: &Path) -> Result<SrcLibrary> {
             folder: false,
             seq: i as i64,
             tracks: h.track_ids.iter().map(|i| i.to_string()).collect(),
+            was_smart: false,
         });
     }
     Ok(lib)

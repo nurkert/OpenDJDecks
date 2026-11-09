@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 215 features; 209 in scope: 209 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 216 features; 210 in scope: 210 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -85,6 +85,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Automatic database backups (rotating) | DONE (beyond the usual) | `crates/od-library/src/backup.rs`; (SPEC §5.3) | 1 |  |
 | Export / import the whole library as one archive (database + analysis, optional audio) | DONE | `crates/od-ui/src/import.rs::export_archive`, `crates/od-ui/src/import.rs::restore_archive`; File ▸ Export Library Archive (asks whether to include the audio; runs in the background) and Restore Library Archive (into a chosen folder, opened from the next start); (SPEC §5.3) | 2 |  |
 | Import a Club player USB written by other software | DONE | `od-import/src/club_stick.rs`; `od-import` (`club_stick`, shared engine in `lib.rs`), File menu in `od-ui/src/import.rs`, `od-cli club-usb-import` | 3 |  |
+| Import an encrypted library database (opt-in, the user supplies the key) | DONE | `od-import/src/encrypted_library.rs`, `od-import/src/sqlcipher.rs`, `od-ui/src/import.rs::start_encrypted_import`; The user picks the file and types the key under Advanced (or `od-cli encrypted-library-import`, `OD_ENCRYPTED_LIBRARY_KEY`). No key is contained, fetched, stored or logged; the source is read-only and the temporary decrypted copy is removed, also on error | 9 |  |
 | MCP server: full library access for preparing sets with an LLM | DONE | `apps/od-mcp/src/tools.rs`, `apps/od-mcp/src/server.rs`, `apps/od-mcp/src/lighting.rs`, `crates/od-lighting/src/rig.rs`; Owner request 2026-11-06 (SPEC §5.6). `opendjdecks-mcp` (MCP 2025-06-18, stdio or loopback HTTP): 8 read and 10 write tools, track/node resources, build_set and fix_transitions prompts; each write is one undo step "MCP: …" plus change-log rows (stick sync); setup in docs/mcp.md. Owner request 2026-11-07: the light show too — 8 lighting tools (rig overview, patch, settings, group looks, outputs, cue stack, track cues, live actions); the app reloads the edited rig and runs live actions from the rig's inbox; (SPEC §5.6) | 10 | **P1** |
 | Played tick in the list (on air this session) | DONE | `recorder.rs::mark_played`, `ui/table.slint`; A track that was audible on the master for 30 s in all gets a tick in the list and the Explorer; a short listen in the headphones does not count | 2 | P3 |
 
@@ -324,13 +325,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 209 |
+| DONE | 210 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **215** |
+| **Total** | **216** |
 
 ## P1 gaps and implementation notes
 

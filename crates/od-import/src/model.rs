@@ -5,6 +5,19 @@ use od_core::{Beatgrid, Cue, MusicalKey, Phrase, PhraseMood, TrackTags, Waveform
 use od_format_clubusb::anlz::AnlzFile;
 use std::path::PathBuf;
 
+/// Fields only needed to evaluate smart playlists.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct SmartFields {
+    pub original_artist: String,
+    pub key_name: String,
+    pub file_name: String,
+    pub stock_date: String,
+    pub date_created: String,
+    pub release_date: String,
+    pub play_count: i64,
+    pub color_id: i64,
+}
+
 #[derive(Clone, Debug)]
 pub(crate) struct SrcTrack {
     /// Id in the source database (only used to link playlist entries).
@@ -18,11 +31,14 @@ pub(crate) struct SrcTrack {
     pub file_size: u64,
     pub bpm: Option<f64>,
     pub key: Option<MusicalKey>,
+    /// Cues from the source database. `None`: take them from ANLZ.
+    pub db_cues: Option<Vec<Cue>>,
     /// Analysis files in the order `.DAT`, `.EXT`, `.2EX` (any may be absent).
     pub anlz: Vec<PathBuf>,
     /// Cover art the source keeps next to its database, used when the file
     /// has no embedded picture.
     pub artwork: Option<PathBuf>,
+    pub smart: SmartFields,
 }
 
 #[derive(Clone, Debug)]
@@ -34,6 +50,8 @@ pub(crate) struct SrcNode {
     pub seq: i64,
     /// Source track ids in order.
     pub tracks: Vec<String>,
+    /// Imported from a smart playlist (contents evaluated at import time).
+    pub was_smart: bool,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -41,6 +59,8 @@ pub(crate) struct SrcLibrary {
     pub tracks: Vec<SrcTrack>,
     pub playlists: Vec<SrcNode>,
     pub history: Vec<SrcNode>,
+    /// Cue count known without parsing ANLZ files (database cues).
+    pub db_cue_count: usize,
     pub notes: Vec<String>,
     pub skipped: Vec<(String, String)>,
 }

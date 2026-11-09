@@ -17,6 +17,10 @@ pub enum WorkerEvent {
     AnalysisProgress { done: usize, total: usize },
     AnalysisIdle,
     Message(String),
+    /// The encrypted library import started: its dialog can close.
+    EncryptedImportStarted,
+    /// The encrypted library import was refused (shown in its dialog).
+    EncryptedImportFailed(String),
 }
 
 /// Collects supported audio files below `root`.

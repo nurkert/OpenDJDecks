@@ -1081,6 +1081,11 @@ const DE: &[(&str, &str)] = &[
     ("History: {}", "Historie: {}"),
     ("{} tracks played", "{} Tracks gespielt"),
     ("A player changed cues or wrote history on a stick — review it under Devices", "Ein Player hat auf einem Stick Cues geändert oder eine Historie geschrieben — unter Geräte prüfen"),
+    ("Import an encrypted library database", "Verschlüsselte Bibliotheksdatenbank importieren"),
+    ("The key was not accepted. Check it and try again.", "Der Schlüssel wurde nicht akzeptiert. Prüfe ihn und versuche es erneut."),
+    ("This library database is encrypted. Enter its key under Advanced.", "Diese Bibliotheksdatenbank ist verschlüsselt. Gib ihren Schlüssel unter Erweitert ein."),
+    ("Choose the library database file first", "Wähle zuerst die Datei der Bibliotheksdatenbank"),
+    ("Choose the library database file", "Datei der Bibliotheksdatenbank wählen"),
 ];
 
 /// Whether `english` has a German translation (independent of the

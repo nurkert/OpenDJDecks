@@ -5,6 +5,9 @@
 //! * [`settings`]: preferences and keyboard shortcuts.
 //! * [`club_stick`]: a Club player USB written by other software
 //!   (`/PIONEER/rekordbox/export.pdb` + ANLZ), via `od-format-clubusb`.
+//! * [`encrypted_library`]: an encrypted library database, opt-in. The user
+//!   picks the file and supplies the key for their own library; the key is
+//!   never stored, and this crate contains none and fetches none.
 //!
 //! Nothing on the source is ever written.
 //!
@@ -13,8 +16,10 @@
 //! Tracks (path and tags: title, artist, album, genre, label, remixer,
 //! composer, comment, year, track number, rating, colour), beatgrids (ANLZ
 //! `PQTZ`), keys, hot cues / memory cues / loops with colours and comments
-//! (ANLZ `PCO2`/`PCOB`), phrases (`PSSI`), the detail waveform, playlists and
-//! folders in their order and optionally the history.
+//! (`djmdCue`, or ANLZ `PCO2`/`PCOB` on sticks), phrases (`PSSI`), the
+//! detail waveform, playlists and folders in their order, smart playlists
+//! (as static playlists with their contents at import time) and optionally
+//! the history.
 //!
 //! # Priority and re-running
 //!
@@ -35,10 +40,15 @@
 //!   listed in [`ImportReport::missing_files`].
 
 pub mod club_stick;
+mod encrypted_library;
 pub mod itunes;
 mod model;
 pub mod settings;
+mod smart;
+mod sqlcipher;
 pub mod xml;
+
+pub use encrypted_library::LibraryKey;
 
 use model::{AnlzData, SrcLibrary, SrcNode, SrcTrack, load_anlz};
 use od_core::{Beatgrid, ContentHash, DataSource, TrackAnalysis, TrackId};
@@ -57,6 +67,14 @@ pub enum ImportError {
     NotFound(PathBuf),
     #[error("i/o error: {0}")]
     Io(#[from] std::io::Error),
+    #[error("the key was not accepted")]
+    KeyNotAccepted,
+    #[error("this library database is encrypted and needs its key")]
+    KeyRequired,
+    #[error("cannot decrypt the library database: {0}")]
+    Cipher(sqlcipher::CipherError),
+    #[error("library database error: {0}")]
+    Db(#[from] rusqlite::Error),
     #[error("cannot read the Club player USB database: {0}")]
     ClubUsb(#[from] od_format_clubusb::Error),
     #[error("library error: {0}")]
@@ -65,6 +83,15 @@ pub enum ImportError {
     Invalid(String),
     #[error("import cancelled")]
     Cancelled,
+}
+
+impl From<sqlcipher::CipherError> for ImportError {
+    fn from(e: sqlcipher::CipherError) -> Self {
+        match e {
+            sqlcipher::CipherError::BadKey => Self::KeyNotAccepted,
+            e => Self::Cipher(e),
+        }
+    }
 }
 
 pub type Result<T> = std::result::Result<T, ImportError>;
@@ -86,17 +113,25 @@ pub struct ImportOptions {
 }
 
 /// Where to import from.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub enum Source {
     /// The mount point of a Club player USB written by other software.
     ClubStick { root: PathBuf },
+    /// An encrypted library database the user picked. `key` is the user's
+    /// own key for it (`None`: the file is not encrypted). Not stored.
+    EncryptedLibrary {
+        file: PathBuf,
+        key: Option<LibraryKey>,
+    },
 }
 
 /// Counts shown before importing.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ImportPreview {
     pub tracks: usize,
+    /// Playlists including smart playlists.
     pub playlists: usize,
+    pub smart_playlists: usize,
     pub folders: usize,
     pub history_playlists: usize,
     pub cues: usize,
@@ -126,7 +161,7 @@ pub struct ImportProgress {
 pub struct ImportReport {
     pub tracks_added: usize,
     pub tracks_existing: usize,
-    /// Playlists created (including history lists).
+    /// Playlists created (including smart playlists and history lists).
     pub playlists: usize,
     pub folders: usize,
     /// Cues stored as imported.
@@ -147,24 +182,33 @@ pub struct ImportReport {
     pub needs_analysis: Vec<TrackId>,
 }
 
-fn read_source(source: &Source) -> Result<SrcLibrary> {
+fn read_source(source: &Source, with_smart: bool) -> Result<SrcLibrary> {
     match source {
         Source::ClubStick { root } => club_stick::read(root),
+        Source::EncryptedLibrary { file, key } => {
+            let copy = encrypted_library::open_copy(file, key.as_ref())?;
+            let folder = file.parent().unwrap_or(Path::new(""));
+            encrypted_library::read(&copy.conn, folder, with_smart)
+        }
     }
 }
 
-/// Counts what an import would bring in. Reads the database and the ANLZ cue
-/// lists only.
+/// Counts what an import would bring in. Reads the database only (and the
+/// ANLZ cue lists of a stick).
 pub fn preview(source: &Source) -> Result<ImportPreview> {
-    let src = read_source(source)?;
-    let cues = src
-        .tracks
-        .iter()
-        .map(|t| load_anlz(&t.anlz).cues.len())
-        .sum();
+    let src = read_source(source, true)?;
+    let cues = match source {
+        Source::EncryptedLibrary { .. } => src.db_cue_count,
+        Source::ClubStick { .. } => src
+            .tracks
+            .iter()
+            .map(|t| load_anlz(&t.anlz).cues.len())
+            .sum(),
+    };
     Ok(ImportPreview {
         tracks: src.tracks.len(),
         playlists: src.playlists.iter().filter(|p| !p.folder).count(),
+        smart_playlists: src.playlists.iter().filter(|p| p.was_smart).count(),
         folders: src.playlists.iter().filter(|p| p.folder).count(),
         history_playlists: src.history.iter().filter(|p| !p.folder).count(),
         cues,
@@ -194,7 +238,7 @@ pub fn import(
         }
     };
     tick(ImportPhase::Reading, 0, 0, "")?;
-    let src = read_source(source)?;
+    let src = read_source(source, true)?;
     let is_stick = matches!(source, Source::ClubStick { .. });
     let mut report = ImportReport {
         skipped: src.skipped.clone(),
@@ -248,6 +292,12 @@ pub fn import(
             name: HISTORY_FOLDER.into(),
             children: history,
         });
+    }
+    let smart = src.playlists.iter().filter(|p| p.was_smart).count();
+    if smart > 0 {
+        report.notes.push(format!(
+            "{smart} smart playlist(s) were imported as normal playlists with their tracks at import time"
+        ));
     }
     if !plan.is_empty() {
         let wanted = canonical(&plan);
@@ -526,8 +576,9 @@ fn finish_track(
     if t.key.is_some() && key_src == Some(DataSource::Imported) {
         report.keys += 1;
     }
-    if !anlz.cues.is_empty() {
-        lib.store_imported_cues(id, &anlz.cues)?;
+    let cues = t.db_cues.clone().unwrap_or(anlz.cues);
+    if !cues.is_empty() {
+        lib.store_imported_cues(id, &cues)?;
         report.cues += lib
             .cues(id)?
             .iter()

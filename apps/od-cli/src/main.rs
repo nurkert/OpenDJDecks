@@ -83,6 +83,19 @@ enum Cmd {
     XmlExport { file: PathBuf },
     /// Import a library XML file (rekordbox-compatible; tracks, cues, grids, playlists).
     XmlImport { file: PathBuf },
+    /// Import an encrypted library database. You pick the file and supply
+    /// the key for your own library; OpenDJDecks contains no key.
+    EncryptedLibraryImport {
+        file: PathBuf,
+        /// Key for this library, used once and not stored. Prefer the
+        /// environment variable OD_ENCRYPTED_LIBRARY_KEY: command-line
+        /// arguments are visible to other programs on this computer.
+        #[arg(long)]
+        key: Option<String>,
+        /// Also import the play history.
+        #[arg(long)]
+        history: bool,
+    },
     /// Import a Club player USB written by other software (stick mount point).
     ClubUsbImport {
         root: PathBuf,
@@ -320,6 +333,22 @@ fn main() -> anyhow::Result<()> {
             for m in &r.missing {
                 println!("missing file: {}", m.display());
             }
+        }
+        Cmd::EncryptedLibraryImport { file, key, history } => {
+            let key = key
+                .or_else(|| std::env::var("OD_ENCRYPTED_LIBRARY_KEY").ok())
+                .map(od_import::LibraryKey::new);
+            let r = od_import::import(
+                &od_import::Source::EncryptedLibrary { file, key },
+                &mut lib,
+                &od_import::ImportOptions {
+                    include_history: history,
+                    analyse_missing: true,
+                    ..Default::default()
+                },
+                |_| true,
+            )?;
+            print_import_report(&r);
         }
         Cmd::ClubUsbImport { root, history } => {
             let r = od_import::import(
