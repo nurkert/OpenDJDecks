@@ -103,7 +103,7 @@ export component AppWindow inherits Window {
     default-font-size: Theme.body;
 
     // The list header's keys shorten when a panel takes the room (small window).
-    property <bool> list-tight: root.width < 1500px && (root.info-open || root.user-tag-open || root.similar-open);
+    property <bool> list-tight: root.width < 1000px || (root.width < 1500px && (root.info-open || root.user-tag-open || root.similar-open));
     in-out property <string> mode: "prepare";
     in-out property <string> section: "library";
     in property <bool> kiosk;

@@ -835,7 +835,7 @@ export component PreparePlayer inherits Rectangle {
                                 accessible-role: button;
                                 accessible-label: "player1.hot-cue." + c.letter;
                                 accessible-value: c.set ? (c.label != "" ? c.label : c.time) : "";
-                                horizontal-stretch: 1; cue: c; pressed => { root.hot-cue(c.slot); } }
+                                horizontal-stretch: 3; cue: c; pressed => { root.hot-cue(c.slot); } }
                             Rectangle { width: Theme.s2; }
                             PlateButton { accessible-role: button; accessible-label: "player1.memory.set"; horizontal-stretch: 0; compact: true; height: 30px; label: @tr("MEMORY"); glyph: "plus"; enabled: root.has-track && !root.read-only; clicked => { root.add-memory-cue(); } }
                             Toggle { accessible-role: button; accessible-label: "player1.memory.prev"; size: 30px; width: 26px; label: "‹"; tooltip: @tr("Previous cue"); enabled: root.has-track; clicked => { root.act("memory-prev"); } }

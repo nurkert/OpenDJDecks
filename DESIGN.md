@@ -34,26 +34,26 @@ colors:
 typography:
   display:
     fontFamily: "Barlow Semi Condensed"
-    fontSize: "34px"
+    fontSize: "32px"
     fontWeight: 600
     lineHeight: 1
     letterSpacing: "normal"
   headline:
     fontFamily: "Barlow Semi Condensed"
-    fontSize: "24px"
+    fontSize: "22px"
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "normal"
   title:
     fontFamily: "Barlow Semi Condensed"
-    fontSize: "17px"
+    fontSize: "22px"
     fontWeight: 600
     lineHeight: 1.25
     letterSpacing: "normal"
   body:
     fontFamily: "Barlow Semi Condensed"
-    fontSize: "14px"
-    fontWeight: 400
+    fontSize: "15px"
+    fontWeight: 500
     lineHeight: 1.35
     letterSpacing: "normal"
   nav:
@@ -63,8 +63,8 @@ typography:
     letterSpacing: "2.2px"
   button-label:
     fontFamily: "Barlow Semi Condensed"
-    fontSize: "12px"
-    fontWeight: 500
+    fontSize: "13px"
+    fontWeight: 600
     letterSpacing: "1.8px"
   label:
     fontFamily: "Barlow Semi Condensed"
@@ -308,10 +308,10 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 ### Inputs / Fields
 - **Style:** ash plate, 4px radius, 32px tall (44px on touch), text in Body rank, placeholder in bone 3.
 - **Focus:** the focus ring.
-- **Error:** a 12px deep-red message below the field that says what to do next.
+- **Error:** a deep-red message in Control rank below the field that says what to do next.
 
 ### Toggles and status lines
-- Switches in settings are filled tracks with a thumb. Status marks in lists keep the emission-line grammar: a 2px vertical line plus a label, solid in its tone when on, half-height strong-rule when off. Perform state marks (PLAY, SYNC, MASTER, KEYLOCK, LOOP, SLIP) use the same grammar at 11px / 600 / 1.5px caps.
+- Switches in settings are filled tracks with a thumb. Status marks in lists keep the emission-line grammar: a 2px vertical line plus a label, solid in its tone when on, half-height strong-rule when off. Perform state marks (PLAY, SYNC, MASTER, KEYLOCK, LOOP, SLIP) use the same grammar in Label at weight 600.
 
 ### Navigation (sidebar and top bar)
 - **Sidebar sections:** caps headings (COLLECTION, PLAYLISTS, DEVICES, RECORDINGS) with a hairline plus glyph for creation where it applies.
@@ -326,7 +326,7 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 - **Analysis state:** nothing when analysed; half-height sodium when pending; struck deep red when the file is missing (ink drops to bone-3).
 
 ### Track Plate and Hot Cue Ruler
-- Title (17px), artist, then BPM / KEY / TIME readings (11px caps over 24px values).
+- Title (Heading), artist, then BPM / KEY / TIME readings (Label caps over Heading values).
 - **Overview well:** 92px of band charcoal; three-band columns in violet, teal and sodium by default, which the user can change in Preferences; dimmed sodium phrase ticks every 16 bars in the top and bottom margins; cue lines (2px solid in cue colour with their letter, 1px dashed bone for memory cues); the cursor as doubled sodium.
 - **Hot cue ruler:** letters A to H on a strong-rule baseline 18px from the bottom. A set cue is a 2px solid line in its colour with a bone letter and its time; an empty slot is a hollow outline in bone 3, and a set one is filled in its cue colour.
 - **Beatgrid:** compact plates, struck while the grid is locked; LOCK goes dashed-active in sodium with a LOCKED caps legend.
@@ -334,15 +334,15 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 ### Device Line (signature)
 - One stick, one line: 2px, inset 8px top and bottom, 64px rows (78px in the Devices section). In sync is solid green; pending is dashed sodium; error is struck with the detail text in deep red; unknown or unregistered is half-height.
 - **Syncing:** the dashed sodium line (60% alpha) fills solid green from the bottom by progress, animated 320ms on the spring easing (one damped overshoot). Motion off sets it to 0ms.
-- Name 15px / 600, detail 12px, capacity and formats in 10px caps; compact SYNC / EJECT plates on the right.
+- Name in Body at weight 600, detail in Label, capacity and formats in Label caps; compact SYNC / EJECT plates on the right.
 
 ### Set Flow
 - 150px. Each position is a vertical line whose height is the track's energy (min 6px, max 92px), bone-2 at 2px, or sodium at 3px when selected; BPM and key are written beside it.
-- Transitions between positions are 1px lines whose form is the fit: solid bone-3 good, dashed sodium caution, half unknown, struck deep red clash. A 9px caps legend spells the code out.
+- Transitions between positions are 1px lines whose form is the fit: solid bone-3 good, dashed sodium caution, half unknown, struck deep red clash. A Label caps legend spells the code out.
 
 ### Deck Panel and Mixer (Perform)
 - The deck's 2px line runs the full panel height on the left (doubled when master) beside its numeral in the deck colour.
-- **Header:** numeral, title and artist, REMAIN / KEY / BPM readouts (24px, BPM 28px), SYNC and MASTER toggles.
+- **Header:** numeral, title and artist in Body, BPM and remaining time as Hero readouts, KEY as a Heading, SYNC and MASTER toggles.
 - **Overview** (34px, 26px compact) with played-portion veil, cue lines, doubled sodium position line and needle search; LOAD SELECTED when empty.
 - **Stems row:** VOCAL / INST / DRUMS / BASS mute toggles (disabled until the track has stems, SEPARATING… while separating) and KEY LOCK.
 - **Performance row:** hot cue pads A–D | E–H in two columns, LOOP (½, size, 2×), BEAT JUMP −4 / +4, Q and SLIP, round CUE and PLAY, the tempo fader with its range.

@@ -1677,8 +1677,10 @@ component GlobalBar inherits Rectangle {
             alignment: end;
             spacing: Theme.s4;
             padding-right: Theme.s4;
-            MicControls { }
-            Rectangle { width: Theme.s3; }
+            // Too narrow for both: the headphones keep their place, the
+            // microphone gives way.
+            if root.width >= 1000px: MicControls { }
+            if root.width >= 1000px: Rectangle { width: Theme.s3; }
             Caps { text: @tr("PHONES"); vertical-alignment: center; }
             VerticalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "global.phones.mix"; accessible-value: root.headphone-mix; label: "MIX"; size: 20px; minimum: 0; maximum: 1; default-value: 0.5; value: root.headphone-mix; changed(v) => { root.set-headphone-mix(v); } } }
             VerticalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "global.phones.level"; accessible-value: root.headphone-level; label: @tr("LEVEL"); size: 20px; minimum: 0; maximum: 1; default-value: 0.8; value: root.headphone-level; changed(v) => { root.set-headphone-level(v); } } }

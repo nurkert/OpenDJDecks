@@ -303,13 +303,13 @@ export component TopBar inherits Rectangle {
             spacing: 0px;
             // Brand on the rail.
             Rectangle {
-                width: root.narrow ? 112px : 196px;
+                width: root.narrow ? 132px : 196px;
                 VLine { x: 12px; y: 10px; height: parent.height - 20px; weight: 1px; tone: Theme.rule-strong; }
                 Rectangle { x: 9px; y: 6px; width: 7px; height: 7px; border-radius: 3.5px; border-width: 1px; border-color: Theme.bone-3; }
                 Text {
                     x: 28px; height: parent.height;
                     text: "OPENDJDECKS";
-                    font-family: Theme.family; font-size: root.narrow ? Theme.control : Theme.body; font-weight: Theme.weight-semi; letter-spacing: root.narrow ? 0.8px : 2.2px;
+                    font-family: Theme.family; font-size: root.narrow ? Theme.control : Theme.body; font-weight: Theme.weight-semi; letter-spacing: root.narrow ? 0.4px : 2.2px;
                     color: Theme.bone; vertical-alignment: center;
                 }
             }
@@ -423,13 +423,13 @@ export component TopBar inherits Rectangle {
             Rectangle {
                 accessible-label: "topbar.status.midi"; accessible-role: text;
                 accessible-value: root.midi-device == "" ? "none" : root.midi-device;
-                width: mt.preferred-width + 30px;
+                width: root.narrow ? 20px : 66px;
                 Rectangle {
                     x: 8px; y: (parent.height - 6px) / 2; width: 6px; height: 6px; border-radius: 3px;
                     background: root.midi-device != "" ? Theme.live : transparent;
                     border-width: 1px; border-color: root.midi-device != "" ? Theme.live : Theme.bone-3;
                 }
-                mt := Caps { x: 20px; height: parent.height; text: "MIDI"; vertical-alignment: center; color: root.midi-device != "" ? Theme.bone : Theme.bone-3; }
+                if !root.narrow: Caps { x: 20px; height: parent.height; text: "MIDI"; vertical-alignment: center; color: root.midi-device != "" ? Theme.bone : Theme.bone-3; }
                 TipArea { tooltip: root.midi-device != "" ? @tr("Controller connected: {}", root.midi-device) : @tr("No controller connected"); }
             }
             GigKey { narrow: root.narrow; }
