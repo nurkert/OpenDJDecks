@@ -56,9 +56,9 @@ These come first because every later screen builds on them.
 - [ ] **[16] Output status and failsafe.** Status per universe, also visible in Perform, a live channel view, USB reconnect, and a chosen behaviour for a lost link or crash. Done when pulling the interface is shown and recovers by itself.
 - [ ] **[19] Safety limits.** A strobe rate cap with a safe default, lockout for fog and lasers, level caps per group, and a PIN that keeps guests out of setup. Done when automatic looks cannot exceed the limits.
 
-### Before releasing 0.7.0
+### Hardware checks
 
-Hardware tests come last, so they never hold up the steps above.
+These need the real devices. They do not hold up any release: until one is confirmed, the release notes and guides say it is unconfirmed.
 
 - [ ] **[H1] Controller mappings** confirmed on a real DDJ-FLX10, with unconfirmed entries resolved.
 - [ ] **[H2] Club player USB** confirmed on real players, including the WAV conversion for older ones.
@@ -87,7 +87,7 @@ Hardware tests come last, so they never hold up the steps above.
 - [ ] **[18] AUTO you can steer.** Palettes, an editable phrase-to-look table, hold and a clear order of AUTO, overrides and release.
 - [ ] **[20] Connecting interfaces.** Several universes, port picker, Art-Net node discovery, test pattern and a short guided setup.
 
-## 0.9.0 and later
+## 0.9.0: the rest of the craft
 
 ### Interface
 
@@ -127,7 +127,7 @@ Hardware tests come last, so they never hold up the steps above.
 - [ ] **[37]** Unattended mode for a fixed venue.
 - [ ] **[38]** Pixel mapping, only if real users ask for it.
 
-### Connections and hardware
+## 0.10.0: connections and hardware
 
 - [ ] **[68]** Signed desktop builds, stated minimum requirements, and a low-CPU mode.
 - [ ] **[39]** Controller settings and jog displays, built only from USB captures on the owner's own device.
@@ -135,6 +135,6 @@ Hardware tests come last, so they never hold up the steps above.
 - [ ] **[41]** Network connection to club players, read-only first and limited to the user's own network.
 - [ ] **[42]** Signed updates, so that a release can be verified independently of GitHub.
 
-## Leaving beta
+## Beta
 
-The beta label goes when [51], [52] and [53] are published and [H1] to [H3] are confirmed. Real gig reports from other DJs count for more here than any number in this file.
+OpenDJDecks stays in beta through this whole roadmap. Finishing it does not end the beta. Items [51], [52], [53] and [H1] to [H3] and real gig reports from other DJs are what that decision will be based on later.
