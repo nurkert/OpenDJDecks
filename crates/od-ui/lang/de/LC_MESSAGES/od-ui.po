@@ -5791,3 +5791,11 @@ msgstr "In anderer Tonart vorhören, in Halbtönen; der Track und seine Analyse 
 msgctxt "PreparePlayer"
 msgid "Back to the original tempo and key"
 msgstr "Zurück zum Originaltempo und zur Originaltonart"
+
+msgctxt "TrackTable"
+msgid "Sort keys by circle of fifths"
+msgstr "Tonarten nach Quintenzirkel sortieren"
+
+msgctxt "TrackTable"
+msgid "Sort keys alphabetically"
+msgstr "Tonarten alphabetisch sortieren"

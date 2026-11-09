@@ -2,7 +2,7 @@
 title: Einstellungen und Tastenkürzel
 description: Audiogeräte, Sprache und Darstellung, Wellenformen, Deck-Standards, alle Tastenkürzel und wie du sie änderst.
 keywords: [einstellungen, optionen, audio, ausgabegerät, puffer, abtastrate, sprache, deutsch, englisch, theme, darstellung, dunkel, hell, farbenblind, kontrast, skalierung, zoom, wellenform, tastenkürzel, kürzel, tastatur, tasten, belegen, belegung, shortcut]
-features: [prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends]
+features: [analysis-bpm-ranges, prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends]
 ---
 
 Öffne die **Einstellungen** mit dem Zahnrad oben, oder `⌘,` auf dem Mac und `Strg+,` auf Windows und Linux. `Esc` schließt das Fenster. **EINSTELLUNG FINDEN** oben durchsucht alle Seiten.
@@ -27,6 +27,15 @@ Sprache, Tonart-Schreibweise (**Camelot**, **Open Key** oder **musikalisch**), d
 ## Analyse, Aufnahme
 
 Siehe [Beatgrids](beatgrid.md#wenn-das-tempo-immer-wieder-falsch-ist) für den **BPM-Bereich** und [Aufnahme](recording.md) für die Aufnahmeseite.
+
+Der **BPM-Bereich** (ab Version 0.6) sagt der Tempoanalyse, in welchem Bereich deine Musik liegt. Tracks, die mit halbem oder doppeltem Tempo erkannt würden, werden in den gewählten Bereich verschoben:
+
+- **70–180** ist die Voreinstellung und passt für die meiste Musik.
+- **58–115** für langsame Musik wie Reggae oder Downtempo.
+- **98–195** für schnellere Genres, bei denen ein Track nicht als halbes Tempo erscheinen soll.
+- **118–236** für sehr schnelle Musik wie Drum and Bass oder Hardcore.
+
+Der Bereich gilt für alle Tracks, die ab jetzt analysiert werden. Um einen analysierten Track zu ändern, wähle in seinem Menü im Player oder in der Liste **Erneut analysieren**.
 
 ## Controller
 

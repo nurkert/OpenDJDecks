@@ -2,7 +2,7 @@
 title: Library, playlists and smart lists
 description: Find, sort and tag your tracks. Playlists, smart lists, Tags, auto sort, the match column, similar tracks and the explorer.
 keywords: [library, collection, playlist, playlists, smart list, smart playlist, folder, search, filter, tag, tags, rating, stars, colour, comment, sort, auto sort, match, match column, similar, duplicates, relocate, moved files, missing files, explorer, history, histories, column, columns, undo, backup]
-features: [browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck]
+features: [browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck]
 ---
 
 The browser is the same in Prepare and Perform. On the left are your sources and lists, in the middle the tracks, on the right a strip of panels.
@@ -12,6 +12,15 @@ The browser is the same in Prepare and Perform. On the left are your sources and
 ## The sources on the left
 
 The narrow rail switches what the tree shows: **ALL** (the whole collection), **LISTS** (playlists, sets and smart lists), **REL** (similar tracks), **SMPL** (the sampler panel in Perform), **FILES** (the explorer), **USB** (your sticks), **HIST** (histories), **REC** (recordings) and **TAG** (the tag list).
+
+## Sorting by key (from version 0.6)
+
+Click the **KEY** column to sort your tracks by key. Right-click the column heading to choose how:
+
+- **Sort keys by circle of fifths** runs in musical order, the way the numbers go round the wheel: 1A, 1B, 2A, 2B and so on. Tracks next to each other mix harmonically. This is the default.
+- **Sort keys alphabetically** simply sorts by the key text you see.
+
+Your choice is remembered. The column uses the key notation you chose under **Preferences › Analysis**.
 
 ## Playlists, sets, smart lists and folders
 

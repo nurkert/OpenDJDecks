@@ -456,6 +456,8 @@ export component TrackTable inherits Rectangle {
     // Shown columns in order, and every column for the column menu.
     in property <[ColumnView]> columns;
     in property <[ColumnChoice]> column-choices;
+    // How the KEY column sorts: "circle" (of fifths) or "alpha".
+    in property <string> key-sort: "circle";
     // Rows can be dragged to a new position (playlist / set in its order).
     in property <bool> reorderable;
     // Quick filter bar.
@@ -466,6 +468,7 @@ export component TrackTable inherits Rectangle {
     // ⇧-click: add / reverse a secondary sort column.
     callback sort-then(string);
     callback toggle-column(string);
+    callback set-key-sort(string);
     callback move-column(string, int);
     callback resize-column(string, float);
     callback column-measured(string, float);
@@ -494,6 +497,9 @@ export component TrackTable inherits Rectangle {
                         checked: c.visible;
                         activated => { root.toggle-column(c.id); }
                     }
+                    MenuSeparator { }
+                    MenuItem { title: @tr("Sort keys by circle of fifths"); checkable: true; checked: root.key-sort == "circle"; activated => { root.set-key-sort("circle"); } }
+                    MenuItem { title: @tr("Sort keys alphabetically"); checkable: true; checked: root.key-sort == "alpha"; activated => { root.set-key-sort("alpha"); } }
                     MenuSeparator { }
                     MenuItem { title: @tr("Default columns"); activated => { root.reset-columns(); } }
                 }

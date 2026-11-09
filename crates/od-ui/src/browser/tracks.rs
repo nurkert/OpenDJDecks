@@ -144,8 +144,44 @@ pub(crate) fn colour_index(c: Option<od_core::CueColor>) -> u8 {
     .unwrap_or(0)
 }
 
+/// How the KEY column sorts.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) enum KeyOrder {
+    /// Around the circle of fifths: 1A, 1B, 2A, 2B, … (Camelot order).
+    #[default]
+    Circle,
+    /// By the key text shown in the given notation.
+    Alphabetical(od_core::KeyNotation),
+}
+
+/// Key order of two rows (rows without a key first when ascending).
+fn compare_keys(
+    a: Option<od_core::MusicalKey>,
+    b: Option<od_core::MusicalKey>,
+    order: KeyOrder,
+) -> Ordering {
+    match order {
+        KeyOrder::Circle => {
+            // Camelot letters: minor (A) before major (B) at each number.
+            let wheel = |k: Option<od_core::MusicalKey>| {
+                k.map(|k| (k.camelot_number(), k.mode == od_core::Mode::Major))
+            };
+            wheel(a).cmp(&wheel(b))
+        }
+        KeyOrder::Alphabetical(notation) => {
+            let text = |k: Option<od_core::MusicalKey>| k.map(|k| k.format(notation).to_lowercase());
+            text(a).cmp(&text(b))
+        }
+    }
+}
+
 /// Compares two rows by sort column `column` (ascending).
-pub(crate) fn compare<T: SortFields>(a: &T, b: &T, column: &str) -> Ordering {
+pub(crate) fn compare<T: SortFields>(
+    a: &T,
+    b: &T,
+    column: &str,
+    key_order: KeyOrder,
+) -> Ordering {
     let text = |x: &str, y: &str| x.to_lowercase().cmp(&y.to_lowercase());
     match column {
         "title" => text(a.title(), b.title()),
@@ -155,10 +191,7 @@ pub(crate) fn compare<T: SortFields>(a: &T, b: &T, column: &str) -> Ordering {
         "label" => text(a.label(), b.label()),
         "comment" => text(a.comment(), b.comment()),
         "bpm" => a.bpm().unwrap_or(0.0).total_cmp(&b.bpm().unwrap_or(0.0)),
-        "key" => a
-            .key()
-            .map(|k| (k.camelot_number(), k.mode as u8))
-            .cmp(&b.key().map(|k| (k.camelot_number(), k.mode as u8))),
+        "key" => compare_keys(a.key(), b.key(), key_order),
         "rating" => a.rating().cmp(&b.rating()),
         "duration" => a.duration().total_cmp(&b.duration()),
         "colour" => a.colour().cmp(&b.colour()),
@@ -177,8 +210,9 @@ pub(crate) fn sort_rows<T: SortFields>(
     column: &str,
     descending: bool,
     then: &[SortSpec],
+    key_order: KeyOrder,
 ) {
-    sort_rows_with(rows, column, descending, then, &|_| 0.0);
+    sort_rows_with(rows, column, descending, then, key_order, &|_| 0.0);
 }
 
 /// [`sort_rows`] with the MATCH column ranked by `matching` (higher is a
@@ -188,6 +222,7 @@ pub(crate) fn sort_rows_with<T: SortFields>(
     column: &str,
     descending: bool,
     then: &[SortSpec],
+    key_order: KeyOrder,
     matching: &dyn Fn(&T) -> f64,
 ) {
     if !sort_key_known(column) {
@@ -205,7 +240,7 @@ pub(crate) fn sort_rows_with<T: SortFields>(
             let o = if *c == "match" {
                 matching(a).total_cmp(&matching(b))
             } else {
-                compare(a, b, c)
+                compare(a, b, c, key_order)
             };
             let o = if *desc { o.reverse() } else { o };
             if o != Ordering::Equal {
@@ -261,7 +296,8 @@ impl AppState {
     pub fn load_rows(&mut self) {
         if self.explorer.open.is_some() {
             let (col, desc) = (self.browser.sort.clone(), self.browser.descending);
-            self.explorer.sort(&col, desc, &mut self.browser.selection);
+            let key_order = self.settings.key_order();
+            self.explorer.sort(&col, desc, &mut self.browser.selection, key_order);
             return;
         }
         self.browser.user_tags = self.src().all_user_tags().unwrap_or_default();
@@ -296,11 +332,16 @@ impl AppState {
             });
         }
         let then = &self.settings.browser.sort_then;
-        let sql_sorted =
-            b.node.is_none() && b.special.is_none() && !searching && sort_key(&b.sort).is_some();
+        // The key order is always applied here: SQL only knows the stored text.
+        let sql_sorted = b.node.is_none()
+            && b.special.is_none()
+            && !searching
+            && sort_key(&b.sort).is_some()
+            && b.sort != "key";
         if !sql_sorted || !then.is_empty() {
             let reference = b.match_ref.as_ref();
-            sort_rows_with(&mut rows, &b.sort, b.descending, then, &|t: &TrackRecord| {
+            let key_order = self.settings.key_order();
+            sort_rows_with(&mut rows, &b.sort, b.descending, then, key_order, &|t: &TrackRecord| {
                 super::filter::match_with(reference, t.bpm, t.key).rank()
             });
         }
@@ -849,26 +890,96 @@ mod tests {
             R("Alpha", 128.0, "1"),
             R("gamma", 120.0, "3"),
         ];
-        sort_rows(&mut v, "title", false, &[]);
+        sort_rows(&mut v, "title", false, &[], KeyOrder::Circle);
         assert_eq!(
             v.iter().map(|r| r.0).collect::<Vec<_>>(),
             ["Alpha", "beta", "gamma"]
         );
-        sort_rows(&mut v, "bpm", true, &[]);
+        sort_rows(&mut v, "bpm", true, &[], KeyOrder::Circle);
         assert_eq!(
             v.iter().map(|r| r.1).collect::<Vec<_>>(),
             [128.0, 124.0, 120.0]
         );
-        sort_rows(&mut v, "date_added", false, &[]);
+        sort_rows(&mut v, "date_added", false, &[], KeyOrder::Circle);
         assert_eq!(v.iter().map(|r| r.2).collect::<Vec<_>>(), ["1", "2", "3"]);
         // "position" keeps the order.
-        sort_rows(&mut v, "position", true, &[]);
+        sort_rows(&mut v, "position", true, &[], KeyOrder::Circle);
         assert_eq!(v.iter().map(|r| r.2).collect::<Vec<_>>(), ["1", "2", "3"]);
         // MATCH ranks by the fit with the reference: the closest tempo first.
-        sort_rows_with(&mut v, "match", true, &[], &|r: &R| -(r.1 - 125.0).abs());
+        sort_rows_with(&mut v, "match", true, &[], KeyOrder::Circle, &|r: &R| -(r.1 - 125.0).abs());
         assert_eq!(v.iter().map(|r| r.1).collect::<Vec<_>>(), [124.0, 128.0, 120.0]);
         assert!(default_descending("match") && sort_key_known("match"));
         assert!(default_descending("bpm") && !default_descending("title"));
+    }
+
+    struct Keyed(od_core::MusicalKey);
+    impl SortFields for Keyed {
+        fn title(&self) -> &str {
+            ""
+        }
+        fn artist(&self) -> &str {
+            ""
+        }
+        fn genre(&self) -> &str {
+            ""
+        }
+        fn bpm(&self) -> Option<f64> {
+            None
+        }
+        fn key(&self) -> Option<od_core::MusicalKey> {
+            Some(self.0)
+        }
+        fn rating(&self) -> u8 {
+            0
+        }
+        fn duration(&self) -> f64 {
+            0.0
+        }
+        fn date_added(&self) -> &str {
+            ""
+        }
+    }
+
+    /// Circle-of-fifths order runs 1A, 1B, 2A … 12B in the column's ring;
+    /// alphabetical follows the text shown (Camelot: "10A" before "9A").
+    #[test]
+    fn key_column_sorts_by_circle_or_alphabet() {
+        let camelot: Vec<_> = ["10A", "9A", "2B", "9B", "2A"]
+            .iter()
+            .map(|k| od_core::MusicalKey::parse(k).unwrap())
+            .collect();
+        let shown = |v: &[Keyed]| {
+            v.iter()
+                .map(|r| r.0.format(od_core::KeyNotation::Camelot))
+                .collect::<Vec<_>>()
+        };
+        let mut v: Vec<Keyed> = camelot.iter().copied().map(Keyed).collect();
+        sort_rows(&mut v, "key", false, &[], KeyOrder::Circle);
+        assert_eq!(shown(&v), ["2A", "2B", "9A", "9B", "10A"]);
+        let mut v: Vec<Keyed> = camelot.iter().copied().map(Keyed).collect();
+        sort_rows(
+            &mut v,
+            "key",
+            false,
+            &[],
+            KeyOrder::Alphabetical(od_core::KeyNotation::Camelot),
+        );
+        assert_eq!(shown(&v), ["10A", "2A", "2B", "9A", "9B"]);
+        let mut v: Vec<Keyed> = camelot.iter().copied().map(Keyed).collect();
+        sort_rows(
+            &mut v,
+            "key",
+            false,
+            &[],
+            KeyOrder::Alphabetical(od_core::KeyNotation::Musical),
+        );
+        let names: Vec<_> = v
+            .iter()
+            .map(|r| r.0.format(od_core::KeyNotation::Musical).to_lowercase())
+            .collect();
+        let mut sorted = names.clone();
+        sorted.sort();
+        assert_eq!(names, sorted);
     }
 
     #[test]

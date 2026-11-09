@@ -180,6 +180,7 @@ pub(crate) fn refresh(app: &App) {
             .filter(|c| !(st.config.kiosk && c == "artwork"))
             .collect()
     };
+    app.ui.set_key_sort(st.settings.browser.key_sort.clone().into());
     let b = &st.browser;
     let kiosk = st.config.kiosk;
     let then = &st.settings.browser.sort_then;

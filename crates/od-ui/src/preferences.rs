@@ -268,6 +268,17 @@ pub(crate) fn with_theme(app: &App, f: impl FnOnce(&crate::Theme<'_>)) {
     with_window(app, |w| f(&w.global::<crate::Theme>()));
 }
 
+/// The BPM ranges to offer and the selected one: the presets, plus a stored
+/// range that is not one of them (older settings), which stays selected.
+pub(crate) fn bpm_choices(stored: (u32, u32)) -> (Vec<(u32, u32)>, i32) {
+    let mut ranges = BPM_RANGES.to_vec();
+    if !ranges.contains(&stored) {
+        ranges.push(stored);
+    }
+    let selected = index_of(&ranges, &stored);
+    (ranges, selected)
+}
+
 fn index_of<T: PartialEq>(list: &[T], v: &T) -> i32 {
     list.iter()
         .position(|x| x == v)
@@ -427,13 +438,11 @@ pub(crate) fn refresh(app: &App) {
         ));
         w.set_auto_gain(s.mixer.auto_gain);
         // Analysis.
+        let (ranges, selected) = bpm_choices((s.analysis.bpm_min, s.analysis.bpm_max));
         w.set_bpm_options(strings(
-            BPM_RANGES.iter().map(|(a, b)| format!("{a}–{b}")).collect(),
+            ranges.iter().map(|(a, b)| format!("{a}–{b}")).collect(),
         ));
-        w.set_bpm_range(index_of(
-            &BPM_RANGES,
-            &(s.analysis.bpm_min, s.analysis.bpm_max),
-        ));
+        w.set_bpm_range(selected);
         w.set_detect_key(s.analysis.detect_key);
         w.set_detect_phrases(s.analysis.detect_phrases);
         w.set_auto_analyse(s.analysis.auto_analyse);
@@ -1259,7 +1268,11 @@ fn choose(app: &App, key: &str, i: i32) {
                 .to_string()
         }),
         "analysis.bpm" => {
-            let (a, b) = BPM_RANGES.get(i).copied().unwrap_or((87, 175));
+            let stored = {
+                let st = app.state.borrow();
+                (st.settings.analysis.bpm_min, st.settings.analysis.bpm_max)
+            };
+            let (a, b) = bpm_choices(stored).0.get(i).copied().unwrap_or(BPM_RANGES[0]);
             change(app, |s| {
                 s.analysis.bpm_min = a;
                 s.analysis.bpm_max = b;
@@ -1779,7 +1792,13 @@ mod tests {
         assert!(BUFFER_SIZES.contains(&d.audio.buffer));
         assert!(SAMPLE_RATES.contains(&d.audio.sample_rate));
         assert!(SCALES.contains(&d.view.scale));
+        assert_eq!((d.analysis.bpm_min, d.analysis.bpm_max), (70, 180));
         assert!(BPM_RANGES.contains(&(d.analysis.bpm_min, d.analysis.bpm_max)));
+        // An older stored range stays what analysis uses and stays selected.
+        assert_eq!(bpm_choices((70, 180)), (BPM_RANGES.to_vec(), 0));
+        let (ranges, selected) = bpm_choices((87, 175));
+        assert_eq!(ranges.len(), 5);
+        assert_eq!(ranges[selected as usize], (87, 175));
         assert!(
             TEMPO_RANGES.contains(&d.deck.tempo_range.as_str())
                 && JOG_MODES.contains(&d.deck.jog_mode.as_str())

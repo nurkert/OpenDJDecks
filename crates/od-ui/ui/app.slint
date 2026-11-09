@@ -392,6 +392,7 @@ export component AppWindow inherits Window {
     // reorder, Tags, tag list, similar tracks, histories, tree drag.
     in property <[ColumnView]> columns;
     in property <[ColumnChoice]> column-choices;
+    in property <string> key-sort: "circle";
     in property <bool> reorderable;
     in property <bool> filter-open;
     in property <FilterView> filter;
@@ -410,6 +411,7 @@ export component AppWindow inherits Window {
     in property <string> suggestion-reference;
     callback sort-then(string);
     callback toggle-column(string);
+    callback set-key-sort(string);
     callback move-column(string, int);
     callback resize-column(string, float);
     callback column-measured(string, float);
@@ -1098,12 +1100,14 @@ export component AppWindow inherits Window {
                         explorer: root.node-kind == "explorer";
                         columns: root.columns;
                         column-choices: root.column-choices;
+                        key-sort: root.key-sort;
                         reorderable: root.reorderable;
                         filter-open: root.filter-open;
                         filter: root.filter;
                         user-tag-options: root.user-tag-options;
                         sort-then(c) => { root.sort-then(c); }
                         toggle-column(c) => { root.toggle-column(c); }
+                        set-key-sort(o) => { root.set-key-sort(o); }
                         move-column(c, i) => { root.move-column(c, i); }
                         resize-column(c, w) => { root.resize-column(c, w); }
                         column-measured(c, w) => { root.column-measured(c, w); }

@@ -4,8 +4,8 @@
 
 use super::flows::{deck_title, deck_views};
 use super::harness::*;
-use slint::ComponentHandle;
 use slint::platform::Key;
+use slint::{ComponentHandle, Model};
 
 fn perform(ui: &Ui) {
     ui.app.ui.invoke_set_mode("perform".into());
@@ -700,4 +700,86 @@ fn preview_at_another_tempo_and_key() {
     assert!(ui.wait_until(10.0, |u| deck(u).key_shift == 0.0 && deck(u).tempo_fader == 0.0));
     assert!(!deck(&ui).keylock, "the deck's own switch is back");
     assert_eq!(ui.value("player1.shift.tempo"), "0 %");
+}
+
+/// Preferences > Analysis offers the BPM ranges for detection; the choice
+/// is stored and goes to the analysis worker.
+#[test]
+fn bpm_range_preference_reaches_the_analysis() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_open_preferences();
+    ui.pump(200);
+    let prefs = ui
+        .app
+        .prefs
+        .borrow()
+        .window
+        .as_ref()
+        .map(|w| w.clone_strong())
+        .expect("Preferences open");
+    prefs.set_page("analysis".into());
+    ui.pump(200);
+    assert!(
+        i_slint_backend_testing::ElementHandle::find_by_accessible_label(&prefs, "prefs.analysis.bpm-range")
+            .next()
+            .is_some(),
+        "the BPM range choice is on the page"
+    );
+    let options: Vec<String> = prefs.get_bpm_options().iter().map(|s| s.to_string()).collect();
+    assert_eq!(options, ["70–180", "58–115", "98–195", "118–236"]);
+    assert_eq!(prefs.get_bpm_range(), 0, "70–180 by default");
+
+    prefs.invoke_choose("analysis.bpm".into(), 3);
+    assert_eq!(
+        (
+            ui.app.state.borrow().settings.analysis.bpm_min,
+            ui.app.state.borrow().settings.analysis.bpm_max
+        ),
+        (118, 236)
+    );
+    let opts = ui
+        .app
+        .analysis
+        .control
+        .lock()
+        .unwrap()
+        .options
+        .clone();
+    assert_eq!((opts.min_bpm, opts.max_bpm), (118.0, 236.0));
+    let _ = prefs.hide();
+}
+
+/// The KEY column sorts around the circle of fifths or by the key text;
+/// the choice is in the column menu and is stored.
+#[test]
+fn key_column_sorts_by_circle_or_alphabet() {
+    let ui = Ui::open((1440, 900));
+    let (a, b) = (ui.fx.tracks[0].0, ui.fx.tracks[1].0);
+    {
+        let mut st = ui.app.state.borrow_mut();
+        let key = od_core::MusicalKey::parse;
+        st.lib.set_key(a, key("10A")).unwrap();
+        st.lib.set_key(b, key("2A")).unwrap();
+        st.load_rows();
+    }
+    ui.app.ui.invoke_sort("key".into());
+    ui.pump(100);
+    let order = |ui: &Ui| {
+        let st = ui.app.state.borrow();
+        let pos = |id| st.browser.rows.iter().position(|t| t.id == id).unwrap();
+        pos(b) < pos(a)
+    };
+    assert!(order(&ui), "circle of fifths: 2A before 10A");
+    assert_eq!(ui.app.state.borrow().settings.browser.key_sort, "circle");
+
+    ui.right_click_el(&ui.get("browser.header.key"));
+    assert!(ui.click_menu_item("Sort keys alphabetically"));
+    assert!(
+        ui.wait_until(5.0, |u| u.app.state.borrow().settings.browser.key_sort == "alpha"),
+        "the choice is stored"
+    );
+    assert!(
+        ui.wait_until(5.0, |u| !order(u)),
+        "alphabetical by the key shown: 10A before 2A"
+    );
 }

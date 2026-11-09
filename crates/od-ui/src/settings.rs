@@ -296,6 +296,8 @@ pub struct BrowserSettings {
     pub columns: Vec<String>,
     /// Secondary sort columns (⇧-click in the header), in order.
     pub sort_then: Vec<SortSpec>,
+    /// Order of the KEY column: "circle" (of fifths) or "alpha".
+    pub key_sort: String,
     /// Text size of the track table in px (0 = the default, 14).
     pub font_size: u32,
     /// Row height of the track table: "compact", "normal" or "roomy".
@@ -314,6 +316,7 @@ impl Default for BrowserSettings {
         Self {
             columns: Vec::new(),
             sort_then: Vec::new(),
+            key_sort: "circle".into(),
             font_size: 14,
             line_spacing: "normal".into(),
             widths: Default::default(),
@@ -464,7 +467,8 @@ pub const DECK_TIMES: [&str; 3] = ["track", "tempo", "both"];
 pub const PHRASE_TYPES: [&str; 2] = ["names", "colors"];
 /// Appearance modes, in the order the top-bar button cycles them.
 pub const APPEARANCES: [&str; 3] = ["dark", "light", "system"];
-pub const BPM_RANGES: [(u32, u32); 5] = [(58, 115), (68, 135), (78, 155), (87, 175), (98, 195)];
+/// The BPM ranges offered for tempo detection; the first is the default.
+pub const BPM_RANGES: [(u32, u32); 4] = [(70, 180), (58, 115), (98, 195), (118, 236)];
 
 impl Settings {
     /// Reads the settings from JSON; unknown or broken values fall back to
@@ -534,6 +538,9 @@ impl Settings {
         }
         if !self.browser.columns.is_empty() {
             self.browser.columns = crate::browser::sanitize_columns(&self.browser.columns);
+        }
+        if !["circle", "alpha"].contains(&self.browser.key_sort.as_str()) {
+            self.browser.key_sort = "circle".into();
         }
         self.browser
             .sort_then
@@ -705,6 +712,15 @@ impl Settings {
             std::env::var("LANG").unwrap_or_default()
         } else {
             self.view.language.clone()
+        }
+    }
+
+    /// How the KEY column sorts.
+    pub fn key_order(&self) -> crate::browser::KeyOrder {
+        if self.browser.key_sort == "alpha" {
+            crate::browser::KeyOrder::Alphabetical(self.key_notation())
+        } else {
+            crate::browser::KeyOrder::Circle
         }
     }
 

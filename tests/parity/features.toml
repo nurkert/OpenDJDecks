@@ -3284,3 +3284,31 @@ tests = [
 ]
 evidence = ["player.rs::apply_shift", "player.rs::shift_readout", "ui/player.slint::PreparePlayer"]
 note = "Steps of whole percents (with key lock, so the key stays) and semitones on the hidden preview deck. Nothing is stored with the track or its analysis; the shift ends when another track is previewed and is not remembered as a deck switch"
+
+[[feature]]
+id = "analysis-bpm-ranges"
+area = "analysis"
+name = "BPM range presets for tempo detection (70–180, 58–115, 98–195, 118–236)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-analysis::tempo::tests::bpm_range_presets_fold_the_tempo_estimate",
+  "od-ui::ui_tests::features::bpm_range_preference_reaches_the_analysis",
+]
+evidence = ["settings.rs::BPM_RANGES", "preferences.rs::bpm_choices", "workers.rs::AnalysisControl", "tempo.rs::sanitize_range"]
+note = "Preferences > Analysis offers four BPM ranges (70–180 is the default), used for new analyses and for analysing a track again. A range stored by an older version stays selected and in use until another is chosen"
+
+[[feature]]
+id = "browser-key-sort"
+area = "browser"
+name = "KEY column sorts by circle of fifths or alphabetically (stored choice)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::browser::tracks::tests::key_column_sorts_by_circle_or_alphabet",
+  "od-ui::ui_tests::features::key_column_sorts_by_circle_or_alphabet",
+]
+evidence = ["browser/tracks.rs::KeyOrder", "browser/tracks.rs::compare_keys", "ui/table.slint::TrackTable"]
+note = "Two checkable items in the column menu; circle of fifths (Camelot order) is the default. Alphabetical sorts by the key text in the chosen notation. The key sort is always done in the app, not by SQL"
