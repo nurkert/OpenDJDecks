@@ -66,11 +66,11 @@ component ViewIcon inherits Rectangle {
     width: 22px; height: 16px;
     property <int> n: root.view == "4h" || root.view == "4v" ? 4 : 2;
     if root.view == "2h" || root.view == "4h": VerticalLayout {
-        alignment: center; spacing: root.n == 4 ? 2px : 4px;
+        alignment: center; spacing: root.n == 4 ? Theme.key-gap : Theme.s1;
         for i in root.n: Rectangle { height: 2px; background: root.tone; }
     }
     if root.view == "2v" || root.view == "4v": HorizontalLayout {
-        alignment: center; spacing: root.n == 4 ? 3px : 6px;
+        alignment: center; spacing: root.n == 4 ? Theme.key-gap : Theme.s2;
         for i in root.n: Rectangle { width: 2px; background: root.tone; }
     }
     if root.view == "browse": Rectangle {
@@ -93,7 +93,7 @@ component ViewMenu inherits Rectangle {
         border-width: 1px; border-color: touch.has-hover ? Theme.rule-strong : Theme.rule;
         background: touch.has-hover ? Theme.plate : transparent;
         row := HorizontalLayout {
-            alignment: center; spacing: 6px;
+            alignment: center; spacing: Theme.s2;
             VerticalLayout { alignment: center; ViewIcon { view: root.current; tone: Theme.bone; } }
             Text { text: "▾"; font-size: 9px; color: Theme.bone-2; vertical-alignment: center; }
         }
@@ -111,7 +111,7 @@ component ViewMenu inherits Rectangle {
         Rectangle {
             background: Theme.plate; border-width: 1px; border-color: Theme.rule-strong;
             VerticalLayout {
-                padding: 1px;
+                padding: Theme.key-gap;
                 for v in [
                     { id: "2h", label: @tr("2 Decks · horizontal") },
                     { id: "2v", label: @tr("2 Decks · vertical") },
@@ -124,7 +124,7 @@ component ViewMenu inherits Rectangle {
                     height: 36px;
                     background: vi.has-hover ? Theme.plate-raised : transparent;
                     HorizontalLayout {
-                        padding-left: 10px; padding-right: 12px; spacing: 10px;
+                        padding-left: Theme.s3; padding-right: Theme.s3; spacing: Theme.s3;
                         Text { width: 10px; text: root.current == v.id ? "✓" : ""; font-size: 12px; color: Theme.attention; vertical-alignment: center; }
                         VerticalLayout { alignment: center; ViewIcon { view: v.id; tone: root.current == v.id ? Theme.attention : Theme.bone-2; } }
                         Text {
@@ -188,7 +188,6 @@ export component TopBar inherits Rectangle {
     callback window-drag();
     callback window-zoom();
     height: 44px;
-    background: Theme.ground;
 
     // Under everything else: the bar's own background takes the window
     // drag (the keys on top keep their clicks).
@@ -209,8 +208,8 @@ export component TopBar inherits Rectangle {
         }
 
         HorizontalLayout {
-            padding-left: 16px + root.chrome-inset;
-            padding-right: 12px;
+            padding-left: Theme.s4 + root.chrome-inset;
+            padding-right: Theme.s3;
             spacing: 0px;
             // Brand on the rail.
             Rectangle {
@@ -239,13 +238,13 @@ export component TopBar inherits Rectangle {
                 accessible-label: "topbar.mode.lighting"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
                 label: @tr("LIGHTING"); tooltip: @tr("Lighting: DMX rig and light show"); command: "mode.lighting"; current: root.mode == "lighting"; clicked => { root.set-mode("lighting"); } }
-            Rectangle { width: 24px; }
+            Rectangle { width: Theme.s5; }
             if root.mode == "perform" && !root.kiosk: ViewMenu {
                 narrow: root.narrow;
                 deck-count: root.deck-count; layout: PerformLayout.layout;
                 chose(v) => { root.set-perform-view(v); }
             }
-            if root.mode == "perform" && !root.kiosk: Rectangle { width: 12px; }
+            if root.mode == "perform" && !root.kiosk: Rectangle { width: Theme.s3; }
             if root.mode == "prepare" && !root.kiosk: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.layout"; accessible-role: button;
@@ -255,7 +254,7 @@ export component TopBar inherits Rectangle {
                 tooltip: @tr("Next Prepare layout: player, 2 players, dual, simple, full browser");
                 clicked => { root.cycle-layout(); }
             }
-            if root.mode == "prepare" && !root.kiosk: Rectangle { width: 12px; }
+            if root.mode == "prepare" && !root.kiosk: Rectangle { width: Theme.s3; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.club"; accessible-role: button;
@@ -283,7 +282,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.fx.panel";
                 clicked => { root.toggle-fx-panel(); }
             }
-            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: Rectangle { width: Theme.s2; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.mix-preview"; accessible-role: button;
@@ -293,7 +292,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.mix-preview.panel";
                 clicked => { root.toggle-mix-preview-panel(); }
             }
-            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: Rectangle { width: Theme.s2; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.sampler"; accessible-role: button;
@@ -303,7 +302,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.sampler.panel";
                 clicked => { root.toggle-sampler-panel(); }
             }
-            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: Rectangle { width: Theme.s2; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.mixer"; accessible-role: button;
@@ -313,7 +312,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.mixer.panel";
                 clicked => { root.toggle-mixer-panel(); }
             }
-            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: Rectangle { width: Theme.s2; }
             // Recording section (Perform) / recording bar (Prepare); while
             // recording it shows the elapsed time.
             if !root.kiosk: PanelToggle {
@@ -327,7 +326,7 @@ export component TopBar inherits Rectangle {
                 command: "view.panel.rec";
                 clicked => { root.toggle-rec-panel(); }
             }
-            Rectangle { width: 10px; }
+            Rectangle { width: Theme.s3; }
             Caps { text: root.status; vertical-alignment: center; horizontal-stretch: 1; min-width: 0px; overflow: elide; }
             // Controller state: a dot that lights while a MIDI controller is connected.
             Rectangle {
@@ -373,14 +372,14 @@ export component TopBar inherits Rectangle {
                 Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "gear"; tone: gt.has-hover ? Theme.bone : Theme.bone-2; }
                 gt := TipArea { tooltip: @tr("Preferences"); command: "prefs.open"; mouse-cursor: pointer; clicked => { root.open-preferences(); } }
             }
-            Rectangle { width: 4px; }
+            Rectangle { width: Theme.s1; }
             if root.undo-label != "": Rectangle {
                 accessible-label: "topbar.undo"; accessible-role: button; accessible-value: root.undo-label;
                 width: u.preferred-width + 24px;
                 u := Caps { text: @tr("UNDO  {}  ⌘Z", root.undo-label); vertical-alignment: center; height: parent.height; }
                 TipArea { tooltip: @tr("Undo the last change"); command: "library.undo"; mouse-cursor: pointer; clicked => { root.undo(); } }
             }
-            Rectangle { width: 8px; }
+            Rectangle { width: Theme.s2; }
             // Master out: level meter, volume and the time of day.
             if !root.kiosk: Rectangle {
                 accessible-label: "topbar.master-meter"; accessible-role: progress-indicator;
@@ -394,7 +393,7 @@ export component TopBar inherits Rectangle {
                 }
                 Caps { y: parent.height / 2 + 4px; text: @tr("MASTER"); font-size: 8px; }
             }
-            if !root.kiosk: Rectangle { width: 6px; }
+            if !root.kiosk: Rectangle { width: Theme.s2; }
             if !root.kiosk: VerticalLayout {
                 alignment: center;
                 Knob {
@@ -406,14 +405,14 @@ export component TopBar inherits Rectangle {
                     changed(v) => { root.set-master-level(v); }
                 }
             }
-            if !root.kiosk: Rectangle { width: 10px; }
+            if !root.kiosk: Rectangle { width: Theme.s3; }
             Text {
                 accessible-label: "topbar.clock"; accessible-role: text; accessible-value: self.text;
                 text: root.clock;
                 font-family: Theme.family; font-size: 13px; font-weight: 600; letter-spacing: 1px;
                 color: Theme.bone-2; vertical-alignment: center;
             }
-            Rectangle { width: 4px; }
+            Rectangle { width: Theme.s1; }
             // Recording: always one click away, as on the hardware.
             if root.kiosk && (root.show-record || root.recording): Rectangle {
                 accessible-label: "topbar.record"; accessible-role: button;
@@ -442,8 +441,8 @@ export component TopBar inherits Rectangle {
     }
     // ── Kiosk (800 × 480, controller first): 44 px keys, the rest in ⋯ ──
     if root.kiosk: HorizontalLayout {
-        padding-left: 8px; padding-right: 6px;
-        spacing: 4px;
+        padding-left: Theme.s2; padding-right: Theme.s2;
+        spacing: Theme.s1;
         // Work mode: one key; the list opens below it.
         Rectangle {
             accessible-label: "topbar.mode"; accessible-role: combobox; accessible-value: root.mode;
@@ -572,5 +571,4 @@ export component TopBar inherits Rectangle {
             }
         }
     }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }

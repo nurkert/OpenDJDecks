@@ -47,10 +47,10 @@ component Heading inherits VerticalLayout {
     in property <string> note;
     // Accessible label of the heading text (test hook; empty: none).
     in property <string> a11y;
-    padding-top: 14px;
-    spacing: 4px;
+    padding-top: Theme.s4;
+    spacing: Theme.s1;
     HorizontalLayout {
-        spacing: 12px;
+        spacing: Theme.s3;
         Text { accessible-label: root.a11y; text: root.text; font-family: Theme.family; font-size: Theme.rank-c; font-weight: 600; color: Theme.bone; vertical-alignment: center; }
         if root.note != "": Caps { text: root.note; color: Theme.attention; vertical-alignment: center; }
         Rectangle { horizontal-stretch: 1; }
@@ -61,11 +61,11 @@ component Heading inherits VerticalLayout {
 // A labelled setting row.
 component Row inherits HorizontalLayout {
     in property <string> label;
-    spacing: 16px;
+    spacing: Theme.s4;
     min-height: 32px;
     VerticalLayout {
         width: 190px;
-        padding-top: 5px;
+        padding-top: Theme.s1;
         Text {
             text: root.label;
             font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
@@ -83,7 +83,7 @@ component Swatches inherits HorizontalLayout {
     in property <[color]> colours;
     in property <int> selected;
     callback picked(int);
-    spacing: 6px;
+    spacing: Theme.s2;
     alignment: start;
     for c[i] in root.colours: Rectangle {
         accessible-role: button;
@@ -106,7 +106,7 @@ component Choice inherits HorizontalLayout {
     callback picked(int);
     accessible-role: combobox;
     accessible-value: root.selected >= 0 && root.selected < root.options.length ? root.options[root.selected] : "";
-    spacing: 6px;
+    spacing: Theme.s2;
     alignment: start;
     for o[i] in root.options: PlateButton {
         compact: true;
@@ -348,13 +348,13 @@ export component PreferencesWindow inherits Window {
                 width: 200px;
                 VLine { x: Theme.rail-x - 16px; y: 0; height: parent.height; tone: Theme.rule; }
                 VerticalLayout {
-                    padding-top: 18px;
-                    spacing: 2px;
+                    padding-top: Theme.s4;
+                    spacing: Theme.key-gap;
                     alignment: start;
                     Caps { x: 28px; text: @tr("PREFERENCES"); height: 28px; vertical-alignment: center; }
                     // Find a setting: opens the page that has it.
                     HorizontalLayout {
-                        padding-left: 12px; padding-right: 10px; padding-bottom: 6px;
+                        padding-left: Theme.s3; padding-right: Theme.s3; padding-bottom: Theme.s2;
                         Field {
                             accessible-label: "prefs.search"; accessible-role: text-input;
                             accessible-value: self.text; accessible-placeholder-text: self.placeholder;
@@ -383,11 +383,11 @@ export component PreferencesWindow inherits Window {
             // ── Page ──
             VerticalLayout {
                 horizontal-stretch: 1;
-                padding-left: 24px;
-                padding-right: 20px;
-                padding-top: 14px;
-                padding-bottom: 12px;
-                spacing: 8px;
+                padding-left: Theme.s5;
+                padding-right: Theme.s5;
+                padding-top: Theme.s4;
+                padding-bottom: Theme.s3;
+                spacing: Theme.s2;
 
                 HorizontalLayout {
                     height: 36px;
@@ -407,7 +407,7 @@ export component PreferencesWindow inherits Window {
                     VerticalLayout {
                         width: parent.width;
                         alignment: start;
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         Heading { text: @tr("Output"); note: root.audio-pending ? @tr("APPLIES AFTER RESTART") : ""; }
                         Row { label: @tr("Output device"); RadioList { accessible-label: "prefs.audio.device"; horizontal-stretch: 1; options: root.audio-devices; selected: root.audio-device; picked(i) => { root.choose("audio.device", i); } } }
                         Row { label: @tr("Buffer size"); Choice { accessible-label: "prefs.audio.buffer"; options: root.buffer-options; selected: root.buffer; picked(i) => { root.choose("audio.buffer", i); } } }
@@ -429,7 +429,7 @@ export component PreferencesWindow inherits Window {
                     VerticalLayout {
                         width: parent.width;
                         alignment: start;
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         Heading { text: @tr("Display"); note: root.scale-pending ? @tr("UI SCALE APPLIES AFTER RESTART") : ""; }
                         Row { label: @tr("Language"); Choice { accessible-label: "prefs.view.language"; options: [@tr("SYSTEM"), "ENGLISH", "DEUTSCH"]; selected: root.language; picked(i) => { root.choose("view.language", i); } } }
                         Row { label: @tr("Tooltips"); Switch { accessible-label: "prefs.view.tooltips"; label: @tr("Show what a control does and its shortcut on hover"); on: root.tooltips; toggled(v) => { root.flag("view.tooltips", v); } } }
@@ -440,7 +440,7 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Phrases"); Switch { accessible-label: "prefs.view.phrase-enlarged"; label: @tr("Show phrases on the enlarged waveforms"); on: root.phrases; toggled(v) => { root.flag("view.phrases", v); } } }
                         Row { label: ""; Switch { accessible-label: "prefs.view.phrase-overview"; label: @tr("Show the phrase bar under the overviews"); on: root.phrases-overview; toggled(v) => { root.flag("view.phrases-overview", v); } } }
                         Row { label: @tr("Phrase types"); Choice { accessible-label: "prefs.view.phrase-types"; options: [@tr("NAMES"), @tr("COLOURS ONLY")]; selected: root.phrase-types; picked(i) => { root.choose("view.phrase-types", i); } } }
-                        Row { label: @tr("Waveform colour"); HorizontalLayout { alignment: start; spacing: 18px; Choice { accessible-label: "prefs.view.waveform-colour"; options: [@tr("3-BAND"), @tr("ONE COLOUR"), "RGB"]; selected: root.waveform; picked(i) => { root.choose("view.waveform", i); } } if root.waveform == 0: PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-customise"; label: @tr("OWN COLOURS"); active: root.waveform-own; clicked => { root.waveform-own = !root.waveform-own; } } } }
+                        Row { label: @tr("Waveform colour"); HorizontalLayout { alignment: start; spacing: Theme.s4; Choice { accessible-label: "prefs.view.waveform-colour"; options: [@tr("3-BAND"), @tr("ONE COLOUR"), "RGB"]; selected: root.waveform; picked(i) => { root.choose("view.waveform", i); } } if root.waveform == 0: PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-customise"; label: @tr("OWN COLOURS"); active: root.waveform-own; clicked => { root.waveform-own = !root.waveform-own; } } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Lows"); Swatches { key: "prefs.view.waveform-low"; colours: root.waveform-swatches; selected: root.waveform-low; picked(i) => { root.choose("view.waveform-low", i); } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Mids"); Swatches { key: "prefs.view.waveform-mid"; colours: root.waveform-swatches; selected: root.waveform-mid; picked(i) => { root.choose("view.waveform-mid", i); } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Highs"); Swatches { key: "prefs.view.waveform-high"; colours: root.waveform-swatches; selected: root.waveform-high; picked(i) => { root.choose("view.waveform-high", i); } } }
@@ -464,7 +464,7 @@ export component PreferencesWindow inherits Window {
                     VerticalLayout {
                         width: parent.width;
                         alignment: start;
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         Heading { text: @tr("Track analysis"); }
                         Row { label: @tr("BPM range"); Choice { accessible-label: "prefs.analysis.bpm-range"; options: root.bpm-options; selected: root.bpm-range; picked(i) => { root.choose("analysis.bpm", i); } } }
                         Note { text: @tr("Tempos are folded into this range: pick a lower range for hip-hop, a higher one for drum & bass."); }
@@ -500,7 +500,7 @@ export component PreferencesWindow inherits Window {
                     VerticalLayout {
                         width: parent.width;
                         alignment: start;
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         Heading { text: @tr("Decks"); }
                         Row { label: @tr("Tempo range"); Choice { accessible-label: "prefs.controller.tempo-range"; options: ["±6 %", "±10 %", "±16 %", @tr("WIDE")]; selected: root.tempo-range; picked(i) => { root.choose("deck.tempo-range", i); } } }
                         Row { label: @tr("Quantize"); Switch { accessible-label: "prefs.controller.quantize"; label: @tr("Quantize cues, loops and jumps to the beat"); on: root.deck-quantize; toggled(v) => { root.flag("deck.quantize", v); } } }
@@ -565,7 +565,7 @@ export component PreferencesWindow inherits Window {
                                 content-height: max(self.height, root.midi-lines.length * 18px + 8px);
                                 content-y: min(0px, self.height - self.content-height);
                                 VerticalLayout {
-                                    padding: 4px; alignment: start;
+                                    padding: Theme.s1; alignment: start;
                                     for l in root.midi-lines: Text { height: 18px; text: l; font-family: "Menlo"; font-size: 11px; color: Theme.bone-2; overflow: elide; }
                                 }
                             }
@@ -577,9 +577,9 @@ export component PreferencesWindow inherits Window {
                 // ── Keyboard ──
                 if root.page == "keyboard": VerticalLayout {
                     vertical-stretch: 1;
-                    spacing: 8px;
+                    spacing: Theme.s2;
                     HorizontalLayout {
-                        spacing: 8px;
+                        spacing: Theme.s2;
                         Field {
                             accessible-role: text-input;
                             accessible-label: "prefs.keyboard.search";
@@ -594,7 +594,7 @@ export component PreferencesWindow inherits Window {
 
                     }
                     if root.key-message != "": HorizontalLayout {
-                        spacing: 10px;
+                        spacing: Theme.s3;
                         min-height: 30px;
                         VLine { weight: 2px; form: root.key-conflict ? "double" : "solid"; tone: root.key-conflict ? Theme.attention : Theme.live; }
                         Text { horizontal-stretch: 1; text: root.key-message; font-family: Theme.family; font-size: 14px; color: Theme.bone; vertical-alignment: center; wrap: word-wrap; }
@@ -674,7 +674,7 @@ export component PreferencesWindow inherits Window {
                     VerticalLayout {
                         width: parent.width;
                         alignment: start;
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         Heading { text: @tr("Files"); }
                         Row { label: @tr("Format"); Choice { accessible-label: "prefs.recording.format"; options: ["WAV", "FLAC", "WAV + MP3"]; selected: root.rec-format; picked(i) => { root.choose("rec.format", i); } } }
                         if root.rec-note != "": Note { text: root.rec-note; }
@@ -712,7 +712,7 @@ export component PreferencesWindow inherits Window {
                     VerticalLayout {
                         width: parent.width;
                         alignment: start;
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         Heading { text: @tr("Library"); note: root.library-pending ? @tr("APPLIES AFTER RESTART") : ""; }
                         Row {
                             label: @tr("Location");

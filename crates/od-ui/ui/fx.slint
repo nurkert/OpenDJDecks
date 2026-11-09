@@ -79,7 +79,7 @@ component FxUnit inherits Rectangle {
     callback tap();
     callback release(int, bool);
     property <color> tone: Theme.attention;
-    background: Theme.ground;
+    background: Theme.ground-band;
 
     kinds := PopupWindow {
         x: PopupPlace.x(root.absolute-position.x, 72px, kinds-list.width);
@@ -98,17 +98,17 @@ component FxUnit inherits Rectangle {
     // parameter, the unit readout, AUTO, TAP and ON. PART and the release
     // effects sit on a second line.
     VerticalLayout {
-        padding-left: 14px; padding-right: 14px; padding-top: Theme.touch ? 2px : 6px; padding-bottom: Theme.touch ? 2px : 6px;
-        spacing: 4px;
+        padding-left: Theme.s4; padding-right: Theme.s4; padding-top: Theme.touch ? Theme.key-gap : Theme.s2; padding-bottom: Theme.touch ? Theme.key-gap : Theme.s2;
+        spacing: Theme.s1;
         HorizontalLayout {
-            spacing: 8px;
+            spacing: Theme.s2;
             alignment: start;
             // Assign: 1 2 S 3 4 M (channels that are not shown stay, dimmed);
             // the kiosk leaves it to the controller's channel select.
             if !Theme.touch: VerticalLayout {
                 alignment: center;
                 HorizontalLayout {
-                    spacing: 2px;
+                    spacing: Theme.key-gap;
                     for t[k] in [{ id: "ch1", label: "1", target: 1 }, { id: "ch2", label: "2", target: 2 }, { id: "sampler", label: "S", target: -1 }, { id: "ch3", label: "3", target: 3 }, { id: "ch4", label: "4", target: 4 }, { id: "master", label: "M", target: 0 }]: Toggle {
                         accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.target == t.target;
                         accessible-label: "fx.unit\{root.u.unit}.assign." + t.id;
@@ -134,7 +134,7 @@ component FxUnit inherits Rectangle {
             }
             // Slot 1: the unit's own effect, level and beat length.
             VerticalLayout {
-                spacing: 4px; alignment: center;
+                spacing: Theme.s1; alignment: center;
                 Stepper {
                     accessible-role: combobox;
                     accessible-label: "fx.unit\{root.u.unit}.slot1.type";
@@ -153,7 +153,7 @@ component FxUnit inherits Rectangle {
                     text: @tr("{} BEATS", root.u.beats); font-family: Theme.family; font-size: 10px; font-weight: 600; color: Theme.bone-2; horizontal-alignment: center;
                 }
                 if !Theme.touch: HorizontalLayout {
-                    spacing: 4px;
+                    spacing: Theme.s1;
                     Knob {
                         accessible-role: slider;
                         accessible-label: "fx.unit\{root.u.unit}.slot1.depth";
@@ -176,11 +176,11 @@ component FxUnit inherits Rectangle {
                 }
             }
             if root.u.multi: HorizontalLayout {
-                spacing: 8px;
+                spacing: Theme.s2;
                 for sl in root.u.slots: VerticalLayout {
-                    spacing: 4px; alignment: center;
+                    spacing: Theme.s1; alignment: center;
                     HorizontalLayout {
-                        spacing: 2px;
+                        spacing: Theme.key-gap;
                         Stepper {
                             accessible-role: combobox;
                             accessible-label: "fx.unit\{root.u.unit}.slot\{sl.slot}.type";
@@ -202,7 +202,7 @@ component FxUnit inherits Rectangle {
                         text: @tr("{} BEATS", sl.beats); font-family: Theme.family; font-size: 10px; font-weight: 600; color: Theme.bone-2; horizontal-alignment: center;
                     }
                     if !Theme.touch: HorizontalLayout {
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         Knob {
                             accessible-role: slider;
                             accessible-label: "fx.unit\{root.u.unit}.slot\{sl.slot}.depth";
@@ -252,7 +252,7 @@ component FxUnit inherits Rectangle {
             VerticalLayout {
                 alignment: center;
                 HorizontalLayout {
-                    spacing: 4px;
+                    spacing: Theme.s1;
                     Toggle {
                         accessible-role: button;
                         accessible-label: "fx.unit\{root.u.unit}.auto";
@@ -280,11 +280,11 @@ component FxUnit inherits Rectangle {
             }
         }
         if !root.tiny: HorizontalLayout {
-            spacing: 3px;
+            spacing: Theme.key-gap;
             alignment: start;
             if root.u.target > 0: Caps { text: "PART"; font-size: 9px; vertical-alignment: center; width: 30px; }
             if root.u.target > 0: HorizontalLayout {
-                spacing: 3px;
+                spacing: Theme.key-gap;
                 for p[k] in [{ id: "all", label: "ALL", i: -1 }, { id: "vocal", label: "VOC", i: 0 }, { id: "drums", label: "DRUM", i: 1 }, { id: "bass", label: "BASS", i: 2 }, { id: "inst", label: "INST", i: 3 }]: Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.part == p.i;
                     accessible-label: "fx.unit\{root.u.unit}.part." + p.id;
@@ -293,7 +293,7 @@ component FxUnit inherits Rectangle {
                     clicked => { FxSlots.part(root.u.unit, p.i); }
                 }
             }
-            if root.u.target > 0: Rectangle { width: 12px; }
+            if root.u.target > 0: Rectangle { width: Theme.s3; }
             Caps { text: "REL"; font-size: 9px; vertical-alignment: center; width: 24px; }
             for name[k] in FxNames.release: HoldButton {
                 label: name; on: root.u.release == k; tone: Theme.w656;
@@ -321,7 +321,7 @@ export component FxPanel inherits Rectangle {
     callback on(int);
     callback tap(int);
     callback release(int, int, bool);
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     // Side by side while both units show one effect; one unit per line
     // once a unit chains three.
     property <bool> stack: root.units.length > 1 && (root.units[0].multi || root.units[1].multi);
@@ -331,7 +331,6 @@ export component FxPanel inherits Rectangle {
             for u[i] in root.units: HorizontalLayout {
                 horizontal-stretch: 1;
                 spacing: 0;
-                if i > 0: VLine { weight: 1px; tone: Theme.rule; }
                 FxUnit {
                     horizontal-stretch: 1;
                     u: u;
@@ -373,7 +372,6 @@ export component FxPanel inherits Rectangle {
             }
         }
     }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }
 
 // Channel FX of the CH FX knobs (one selection for all channels, as on the

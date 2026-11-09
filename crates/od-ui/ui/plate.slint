@@ -10,7 +10,7 @@ component Reading inherits VerticalLayout {
     in property <string> label;
     in property <string> value;
     in property <color> tone: Theme.bone;
-    spacing: 2px;
+    spacing: Theme.key-gap;
     Caps { text: root.label; }
     Text {
         text: root.value == "" ? "—" : root.value;
@@ -159,7 +159,7 @@ export component TrackPlate inherits Rectangle {
         }
 
         HorizontalLayout {
-            spacing: 8px;
+            spacing: Theme.s2;
             Caps { text: @tr("HOT CUES"); color: Theme.bone-2; vertical-alignment: center; }
             Text {
                 text: @tr("Click an empty letter to set it at the cursor");
@@ -191,14 +191,14 @@ export component TrackPlate inherits Rectangle {
             if root.grid-locked: Caps { text: @tr("LOCKED"); color: Theme.attention; vertical-alignment: center; }
         }
         HorizontalLayout {
-            spacing: 6px;
+            spacing: Theme.s2;
             PlateButton { compact: true; label: "−10 MS"; enabled: !root.grid-locked; clicked => { root.grid-shift(-10); } }
             PlateButton { compact: true; label: "+10 MS"; enabled: !root.grid-locked; clicked => { root.grid-shift(10); } }
             PlateButton { compact: true; label: @tr("HALF"); enabled: !root.grid-locked; clicked => { root.grid-scale(0.5); } }
             PlateButton { compact: true; label: @tr("DOUBLE"); enabled: !root.grid-locked; clicked => { root.grid-scale(2.0); } }
         }
         HorizontalLayout {
-            spacing: 6px;
+            spacing: Theme.s2;
             PlateButton { compact: true; label: @tr("DOWNBEAT AT CURSOR"); enabled: !root.grid-locked; clicked => { root.grid-downbeat(); } }
             PlateButton { compact: true; label: root.grid-locked ? @tr("UNLOCK") : @tr("LOCK"); tone: Theme.attention; active: root.grid-locked; clicked => { root.grid-lock(); } }
         }

@@ -150,16 +150,16 @@ export component SamplerPanel inherits Rectangle {
     // Exactly the content: padding, the pad row (as tall as the slot column:
     // three 24 px rows), the gap and the footer.
     height: Theme.touch ? 2 * 44px + root.gap + 8px : 2 * 6px + 3 * 24px + 2 * root.gap + root.gap + 26px;
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
 
     VerticalLayout {
-        padding-left: 14px; padding-right: 14px; padding-top: Theme.touch ? 4px : 6px; padding-bottom: Theme.touch ? 4px : 6px;
+        padding-left: Theme.s4; padding-right: Theme.s4; padding-top: Theme.touch ? Theme.s1 : Theme.s2; padding-bottom: Theme.touch ? Theme.s1 : Theme.s2;
         spacing: root.gap;
         // Kiosk: the controller's pads play the slots; the selected slot,
         // its gain, cue and tempo on 44 px keys.
         if Theme.touch: HorizontalLayout {
             height: 44px;
-            spacing: 4px;
+            spacing: Theme.s1;
             VerticalLayout { alignment: start; Knob {
                 accessible-role: slider; accessible-label: "sampler.gain"; accessible-value: root.s.selected-gain;
                 label: @tr("GAIN"); size: 36px; label-h: 8px; minimum: 0; maximum: 2; default-value: 1;
@@ -205,14 +205,14 @@ export component SamplerPanel inherits Rectangle {
         // centre holds two columns on the same three rows: the slot (name,
         // mode, load / clear) and its sound (gain, CUE / STOP ALL, tempo).
         if !Theme.touch: HorizontalLayout {
-            spacing: 14px;
+            spacing: Theme.s4;
             PadHalf { half: 0; pads: root.pads; gap: root.gap; pad(i, d) => { root.pad(i, d); } dropped(i) => { root.select(i); root.load(i); } }
             VerticalLayout {
                 width: 220px;
                 spacing: root.gap;
                 HorizontalLayout {
                     height: 24px;
-                    spacing: 6px;
+                    spacing: Theme.s2;
                     Text {
                         text: root.s.selected-number;
                         font-family: Theme.family; font-size: 17px; font-weight: 600; color: Theme.w546;
@@ -226,7 +226,7 @@ export component SamplerPanel inherits Rectangle {
                 }
                 HorizontalLayout {
                     height: 24px;
-                    spacing: 3px;
+                    spacing: Theme.key-gap;
                     Toggle { size: 24px; horizontal-stretch: 1; label: @tr("1-SHOT"); on: root.s.selected-mode == 0; tone: Theme.w486; enabled: root.s.selected-loaded;
                         tooltip: @tr("One-shot: plays to the end once"); clicked => { root.mode(0); } }
                     Toggle { size: 24px; horizontal-stretch: 1; label: @tr("LOOP"); on: root.s.selected-mode == 1; tone: Theme.w486; enabled: root.s.selected-loaded;
@@ -236,7 +236,7 @@ export component SamplerPanel inherits Rectangle {
                 }
                 HorizontalLayout {
                     height: 24px;
-                    spacing: 3px;
+                    spacing: Theme.key-gap;
                     PlateButton { compact: true; height: 24px; horizontal-stretch: 1; label: @tr("LOAD SELECTED"); tone: Theme.w546;
                         tooltip: @tr("Load the selected track into this slot"); clicked => { root.load(-1); } }
                     PlateButton { compact: true; height: 24px; label: @tr("CLEAR"); tone: Theme.bone-3; enabled: root.s.selected-loaded;
@@ -256,7 +256,7 @@ export component SamplerPanel inherits Rectangle {
                 }
                 HorizontalLayout {
                     height: 24px;
-                    spacing: 3px;
+                    spacing: Theme.key-gap;
                     Toggle {
                         accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.s.cue;
                         accessible-label: "sampler.cue";
@@ -274,7 +274,7 @@ export component SamplerPanel inherits Rectangle {
                 }
                 HorizontalLayout {
                     height: 24px;
-                    spacing: 3px;
+                    spacing: Theme.key-gap;
                     Rectangle {
                         accessible-role: text; accessible-label: "sampler.bpm"; accessible-value: root.s.selected-bpm;
                         horizontal-stretch: 2;
@@ -293,10 +293,10 @@ export component SamplerPanel inherits Rectangle {
         // play, save, the pattern of the selected slot, the step, clear.
         HorizontalLayout {
             height: Theme.touch ? 44px : 26px;
-            spacing: 4px;
+            spacing: Theme.s1;
             HorizontalLayout {
                 accessible-role: tab-list; accessible-label: "sampler.bank"; accessible-value: root.s.bank + 1;
-                spacing: 2px;
+                spacing: Theme.key-gap;
                 Caps { text: @tr("BANK"); font-size: 9px; vertical-alignment: center; width: 30px; }
                 for b in 4: Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.s.bank == b;
@@ -335,7 +335,7 @@ export component SamplerPanel inherits Rectangle {
                     double-clicked => { root.volume(1); }
                 }
             }
-            Rectangle { width: 8px; }
+            Rectangle { width: Theme.s2; }
             Caps { text: "SEQ"; font-size: 9px; vertical-alignment: center; width: 24px; }
             Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.s.seq-recording;
@@ -364,7 +364,7 @@ export component SamplerPanel inherits Rectangle {
             HorizontalLayout {
                 accessible-role: list; accessible-label: "sampler.seq.pattern";
                 horizontal-stretch: 1;
-                spacing: 2px;
+                spacing: Theme.key-gap;
                 for on[k] in root.steps: Rectangle {
                     horizontal-stretch: 1;
                     property <bool> playing: root.s.step == k;
@@ -400,5 +400,4 @@ export component SamplerPanel inherits Rectangle {
             }
         }
     }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }

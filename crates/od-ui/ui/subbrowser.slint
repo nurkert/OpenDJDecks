@@ -73,8 +73,8 @@ component TrackItem inherits Rectangle {
     height: 24px;
     background: touch.has-hover ? Theme.plate : transparent;
     HorizontalLayout {
-        padding-left: 10px; padding-right: 8px;
-        spacing: 10px;
+        padding-left: Theme.s3; padding-right: Theme.s2;
+        spacing: Theme.s3;
         Text { horizontal-stretch: 3; text: root.item.title; font-family: Theme.family; font-size: 13px; color: Theme.bone; vertical-alignment: center; overflow: elide; }
         Text { horizontal-stretch: 2; text: root.item.artist; font-family: Theme.family; font-size: 13px; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
         Text { width: 58px; text: root.item.bpm; font-family: Theme.family; font-size: 13px; color: Theme.bone-2; horizontal-alignment: right; vertical-alignment: center; }
@@ -110,7 +110,7 @@ export component SubBrowserPane inherits Rectangle {
     accessible-label: "browser.sub";
     HLine { y: 0; width: parent.width; tone: Theme.rule; }
     HorizontalLayout {
-        padding-top: 1px;
+        padding-top: Theme.key-gap;
         // Lists.
         Rectangle {
           accessible-role: list;
@@ -124,7 +124,7 @@ export component SubBrowserPane inherits Rectangle {
             mouse-drag-pan-enabled: false;
             VerticalLayout {
                 alignment: start;
-                padding-top: 4px;
+                padding-top: Theme.s1;
                 for l in SubBrowser.lists: ListItem {
                     item: l;
                     selected: l.id == SubBrowser.selected;
@@ -139,8 +139,8 @@ export component SubBrowserPane inherits Rectangle {
             horizontal-stretch: 1;
             HorizontalLayout {
                 height: 26px;
-                padding-left: 10px; padding-right: 8px;
-                spacing: 10px;
+                padding-left: Theme.s3; padding-right: Theme.s2;
+                spacing: Theme.s3;
                 Text {
                     accessible-role: text; accessible-label: "browser.sub.title"; accessible-value: self.text;
                     text: SubBrowser.selected < 0 ? @tr("SUB-BROWSER — PICK A LIST") : SubBrowser.title;

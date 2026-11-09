@@ -89,7 +89,7 @@ component Level inherits Rectangle {
 export component RecStrip inherits HorizontalLayout {
     // Kiosk: 44 px touch targets.
     in property <bool> tall;
-    spacing: 8px;
+    spacing: Theme.s2;
     alignment: end;
     Caps {
         accessible-role: text; accessible-label: "rec.source"; accessible-value: self.text;
@@ -108,9 +108,9 @@ export component RecStrip inherits HorizontalLayout {
 // The recording panel: REC, level, meter, elapsed time, file size and the
 // live tracklist.
 export component RecPanel inherits VerticalLayout {
-    spacing: 6px;
+    spacing: Theme.s2;
     HorizontalLayout {
-        spacing: 12px;
+        spacing: Theme.s3;
         height: 32px;
         VerticalLayout {
             horizontal-stretch: 0; alignment: center;
@@ -149,7 +149,7 @@ export component RecPanel inherits VerticalLayout {
         }
     }
     if Rec.recording || Rec.armed: HorizontalLayout {
-        spacing: 10px;
+        spacing: Theme.s3;
         VLine { weight: 2px; tone: Theme.fault; form: Rec.recording ? "solid" : "dashed"; }
         Text {
             accessible-role: text; accessible-label: "rec.file"; accessible-value: self.text;
@@ -160,14 +160,14 @@ export component RecPanel inherits VerticalLayout {
     }
     if Rec.recording: VerticalLayout {
         accessible-role: list; accessible-label: "rec.tracklist";
-        spacing: 2px;
+        spacing: Theme.key-gap;
         if Rec.tracks.length == 0: Text {
             text: @tr("The tracklist grows here as tracks become audible.");
             font-family: Theme.family; font-size: 12px; color: Theme.bone-3;
         }
         for t in Rec.tracks: HorizontalLayout {
             accessible-role: list-item; accessible-label: "rec.tracklist.row\{t.index}"; accessible-value: t.title;
-            spacing: 10px;
+            spacing: Theme.s3;
             height: 22px;
             Text { width: 22px; text: t.index; font-family: Theme.family; font-size: 12px; color: Theme.bone-3; horizontal-alignment: right; vertical-alignment: center; }
             Text { width: 64px; text: t.time; font-family: Theme.family; font-size: 12px; color: Theme.bone-2; vertical-alignment: center; }
@@ -181,10 +181,10 @@ export component RecPanel inherits VerticalLayout {
 // level, meter, the record button and the elapsed time on one 30 px row.
 export component RecBar inherits Rectangle {
     height: 34px;
-    background: Theme.ground-band;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     HorizontalLayout {
-        padding-left: 14px; padding-right: 14px;
-        spacing: 12px;
+        padding-left: Theme.s4; padding-right: Theme.s4;
+        spacing: Theme.s3;
         RecStrip { }
         Rectangle {
             accessible-role: checkbox; accessible-label: "rec.toggle";
@@ -206,5 +206,4 @@ export component RecBar inherits Rectangle {
         }
         Rectangle { horizontal-stretch: 1; }
     }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }

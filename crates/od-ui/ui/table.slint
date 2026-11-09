@@ -341,9 +341,9 @@ component TrackLine inherits Rectangle {
     }
 
     HorizontalLayout {
-        padding-left: Theme.touch ? 46px : 16px;
-        padding-right: Theme.touch ? 52px : 36px;
-        spacing: Theme.touch ? 6px : 12px;
+        padding-left: Theme.touch ? Theme.target + Theme.key-gap : Theme.s4;
+        padding-right: Theme.touch ? Theme.target + Theme.s2 : Theme.target + Theme.s3;
+        spacing: Theme.touch ? Theme.s2 : Theme.s3;
         Cell {
             width: Columns.pos;
             text: root.show-position ? root.item.position : "";
@@ -391,7 +391,7 @@ component TrackLine inherits Rectangle {
                 }
                 if root.item.match-score >= 0: HorizontalLayout {
                     alignment: end;
-                    spacing: 4px;
+                    spacing: Theme.s1;
                     for i in 3: VerticalLayout {
                         alignment: center;
                         VLine {
@@ -408,7 +408,7 @@ component TrackLine inherits Rectangle {
             // Five stars, always clickable to rate; unset ones are outlines.
             if c.id == "rating": HorizontalLayout {
                 alignment: end;
-                spacing: 2px;
+                spacing: Theme.key-gap;
                 for i in 5: VerticalLayout {
                     alignment: center;
                     Star {
@@ -505,9 +505,9 @@ export component TrackTable inherits Rectangle {
                 }
             }
             HorizontalLayout {
-                padding-left: Theme.touch ? 46px : 16px;
-                padding-right: Theme.touch ? 52px : 36px;
-                spacing: Theme.touch ? 6px : 12px;
+                padding-left: Theme.touch ? Theme.target + Theme.key-gap : Theme.s4;
+                padding-right: Theme.touch ? Theme.target + Theme.s2 : Theme.target + Theme.s3;
+                spacing: Theme.touch ? Theme.s2 : Theme.s3;
                 HeaderCell {
                     accessible-label: "browser.header.position"; accessible-role: button;
                     width: Columns.pos;

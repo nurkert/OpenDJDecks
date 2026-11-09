@@ -113,7 +113,7 @@ component SectionTitle inherits HorizontalLayout {
 component Swatches inherits HorizontalLayout {
     in property <int> current;
     callback chosen(int);
-    spacing: 4px;
+    spacing: Theme.s1;
     height: 24px;
     Rectangle {
         accessible-label: "lighting.swatch.track"; accessible-role: button;
@@ -179,7 +179,7 @@ component Stage inherits Rectangle {
         }
         if f.role == "bar": HorizontalLayout {
             x: cx - 80px; y: cy - 7px; width: 160px; height: 14px;
-            spacing: 2px;
+            spacing: Theme.key-gap;
             for c in f.cells: Rectangle {
                 background: c.with-alpha(0.25 + 0.75 * lit);
                 border-width: 1px; border-color: #33322F;
@@ -202,8 +202,8 @@ component Stage inherits Rectangle {
 component RigPanel inherits VerticalLayout {
     property <int> type-index: 0;
     property <string> output-kind: "artnet";
-    spacing: 6px;
-    padding: 10px;
+    spacing: Theme.s2;
+    padding: Theme.s3;
 
     SectionTitle { text: @tr("RIG"); }
     for f[i] in Lighting.fixtures: Rectangle {
@@ -213,7 +213,7 @@ component RigPanel inherits VerticalLayout {
         background: ta.has-hover ? Theme.plate-raised : transparent;
         ta := TouchArea {}
         HorizontalLayout {
-            spacing: 8px; padding-left: 6px; padding-right: 4px;
+            spacing: Theme.s2; padding-left: Theme.s2; padding-right: Theme.s1;
             Rectangle { width: 10px; Rectangle { height: 10px; width: 10px; border-radius: 5px; background: f.color.with-alpha(0.3 + 0.7 * f.intensity); } }
             Text { text: f.name; font-family: Theme.family; font-size: 13px; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
             Caps { text: f.group; vertical-alignment: center; width: 70px; overflow: elide; }
@@ -233,7 +233,7 @@ component RigPanel inherits VerticalLayout {
         chosen(i) => { root.type-index = i; }
     }
     HorizontalLayout {
-        spacing: 6px;
+        spacing: Theme.s2;
         name := Field { accessible-label: "lighting.rig.name"; accessible-role: text-input; placeholder: @tr("Name"); horizontal-stretch: 1; }
         group := Field { accessible-label: "lighting.rig.group"; accessible-role: text-input; placeholder: @tr("Group"); width: 90px; }
         VerticalLayout {
@@ -249,7 +249,7 @@ component RigPanel inherits VerticalLayout {
     HLine { }
     Caps { text: @tr("OUTPUT"); }
     HorizontalLayout {
-        spacing: 4px;
+        spacing: Theme.s1;
         for k[i] in [{ id: "artnet", label: "ART-NET" }, { id: "sacn", label: "SACN" }, { id: "enttec", label: "USB-DMX" }]: PlateButton {
             accessible-label: "lighting.output." + k.id; accessible-role: tab;
             compact: true; label: k.label; active: root.output-kind == k.id;
@@ -258,7 +258,7 @@ component RigPanel inherits VerticalLayout {
         }
     }
     HorizontalLayout {
-        spacing: 6px;
+        spacing: Theme.s2;
         target := Field {
             accessible-label: "lighting.output.target"; accessible-role: text-input;
             horizontal-stretch: 1;
@@ -285,11 +285,11 @@ component RigPanel inherits VerticalLayout {
 
 component ShowPanel inherits VerticalLayout {
     property <string> cue-name;
-    spacing: 8px;
-    padding: 10px;
+    spacing: Theme.s2;
+    padding: Theme.s3;
 
     HorizontalLayout {
-        spacing: 8px;
+        spacing: Theme.s2;
         SectionTitle { text: @tr("SHOW"); horizontal-stretch: 1; }
         LineToggle {
             accessible-label: "lighting.enable"; accessible-role: checkbox;
@@ -299,7 +299,7 @@ component ShowPanel inherits VerticalLayout {
         }
     }
     HorizontalLayout {
-        spacing: 4px;
+        spacing: Theme.s1;
         for m in [{ id: "auto", label: "AUTO" }, { id: "easy", label: "EASY" }, { id: "pro", label: "PRO" }]: PlateButton {
             accessible-label: "lighting.mode." + m.id; accessible-role: tab;
             label: m.label; active: Lighting.mode == m.id; horizontal-stretch: 1;
@@ -310,10 +310,10 @@ component ShowPanel inherits VerticalLayout {
         }
     }
     HorizontalLayout {
-        spacing: 10px;
+        spacing: Theme.s3;
         height: 150px;
         VerticalLayout {
-            spacing: 2px;
+            spacing: Theme.key-gap;
             // The fader centred over its caption.
             HorizontalLayout {
                 alignment: center; vertical-stretch: 1;
@@ -327,7 +327,7 @@ component ShowPanel inherits VerticalLayout {
             Caps { text: @tr("MASTER"); horizontal-alignment: center; }
         }
         VerticalLayout {
-            spacing: 6px; horizontal-stretch: 1;
+            spacing: Theme.s2; horizontal-stretch: 1;
             PlateButton {
                 accessible-label: "lighting.blackout"; accessible-role: button;
                 label: @tr("BLACKOUT"); active: Lighting.blackout; tone: Theme.fault;
@@ -349,7 +349,7 @@ component ShowPanel inherits VerticalLayout {
                 released => { Lighting.strobe-held(false); }
             }
             HorizontalLayout {
-                spacing: 6px;
+                spacing: Theme.s2;
                 HoldButton {
                     accessible-label: "lighting.fog"; accessible-role: button;
                     label: @tr("FOG"); on: Lighting.fog; size: 30px; tone: Theme.w486; horizontal-stretch: 1;
@@ -368,7 +368,7 @@ component ShowPanel inherits VerticalLayout {
     }
     HLine { }
     if Lighting.mode == "auto": VerticalLayout {
-        spacing: 6px;
+        spacing: Theme.s2;
         Caps { text: @tr("AUTOMATIC"); }
         Text {
             text: @tr("Intros breathe, build-ups chase faster and end in a strobe, choruses sweep the movers on the beat, breakdowns calm down, outros fade. During a mix both tracks' looks blend by how loud each is.");
@@ -376,7 +376,7 @@ component ShowPanel inherits VerticalLayout {
         }
     }
     if Lighting.mode == "easy": VerticalLayout {
-        spacing: 6px;
+        spacing: Theme.s2;
         Caps { text: @tr("LOOK"); }
         ChoiceList {
             accessible-label: "lighting.easy.program"; accessible-role: list;
@@ -387,13 +387,13 @@ component ShowPanel inherits VerticalLayout {
         Swatches { current: Lighting.easy-color; chosen(i) => { Lighting.choose-easy-color(i); } }
     }
     if Lighting.mode == "pro": VerticalLayout {
-        spacing: 6px;
+        spacing: Theme.s2;
         Caps { text: @tr("GROUPS"); }
         for g[gi] in Lighting.groups: VerticalLayout {
-            spacing: 3px;
+            spacing: Theme.key-gap;
             Text { text: g.name; font-family: Theme.family; font-size: 13px; color: Theme.bone; }
             HorizontalLayout {
-                spacing: 3px;
+                spacing: Theme.key-gap;
                 PlateButton {
                     accessible-label: "lighting.pro.group" + gi + ".follow"; accessible-role: button;
                     compact: true; label: @tr("MUSIC"); active: g.program < 0;
@@ -408,7 +408,7 @@ component ShowPanel inherits VerticalLayout {
             }
             Swatches { current: g.color; chosen(i) => { Lighting.group-color(gi, i); } }
             HorizontalLayout {
-                spacing: 6px;
+                spacing: Theme.s2;
                 PlateButton {
                     accessible-label: "lighting.pro.group" + gi + ".effect"; accessible-role: button;
                     compact: true; horizontal-stretch: 1;
@@ -451,7 +451,7 @@ component ShowPanel inherits VerticalLayout {
             accessible-label: "lighting.timeline" + ti; accessible-role: list-item; accessible-value: t;
             height: 22px;
             HorizontalLayout {
-                padding-left: 8px; spacing: 6px;
+                padding-left: Theme.s2; spacing: Theme.s2;
                 Text { text: t; font-family: Theme.family; font-size: 12px; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
                 PlateButton { accessible-label: "lighting.timeline" + ti + ".delete"; accessible-role: button; compact: true; glyph: "close"; width: 30px; tooltip: @tr("Remove this track cue"); clicked => { Lighting.timeline-delete(ti); } }
             }
@@ -470,18 +470,18 @@ component ShowPanel inherits VerticalLayout {
             background: ci == Lighting.active-cue ? Theme.attention.with-alpha(0.16) : transparent;
             Rectangle { x: 0; width: 2px; background: ci == Lighting.active-cue ? Theme.attention : transparent; }
             HorizontalLayout {
-                padding-left: 8px; spacing: 6px;
+                padding-left: Theme.s2; spacing: Theme.s2;
                 Text { text: (ci + 1) + "  " + c; font-family: Theme.family; font-size: 13px; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; }
                 PlateButton { accessible-label: "lighting.cue" + ci + ".delete"; accessible-role: button; compact: true; glyph: "close"; tooltip: @tr("Delete this cue"); clicked => { Lighting.cue-delete(ci); } }
             }
         }
         HorizontalLayout {
-            spacing: 4px;
+            spacing: Theme.s1;
             PlateButton { accessible-label: "lighting.cue.back"; accessible-role: button; label: @tr("BACK"); horizontal-stretch: 1; tooltip: @tr("Previous cue"); clicked => { Lighting.cue-back(); } }
             PlateButton { accessible-label: "lighting.cue.go"; accessible-role: button; label: @tr("GO"); tone: Theme.live; horizontal-stretch: 1; tooltip: @tr("Next cue"); clicked => { Lighting.cue-go(); } }
         }
         HorizontalLayout {
-            spacing: 6px;
+            spacing: Theme.s2;
             cue := Field { accessible-label: "lighting.cue.name"; accessible-role: text-input; placeholder: @tr("Cue name"); horizontal-stretch: 1; }
             PlateButton {
                 accessible-label: "lighting.cue.store"; accessible-role: button;
@@ -496,16 +496,16 @@ component ShowPanel inherits VerticalLayout {
 export component LightingView inherits Rectangle {
     in property <bool> detachable: true;
     accessible-label: "lighting.view"; accessible-role: groupbox;
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     HorizontalLayout {
         RigPanel { width: 330px; }
         VLine { }
         VerticalLayout {
             horizontal-stretch: 1;
-            padding: 10px; spacing: 8px;
+            padding: Theme.s3; spacing: Theme.s2;
             HorizontalLayout {
                 height: 26px;
-                spacing: 8px;
+                spacing: Theme.s2;
                 SectionTitle { text: @tr("STAGE"); }
                 Rectangle { horizontal-stretch: 1; }
                 if root.detachable: PlateButton {
@@ -529,14 +529,14 @@ export component LightingView inherits Rectangle {
 export component LightingStrip inherits Rectangle {
     accessible-label: "lighting.strip"; accessible-role: groupbox;
     height: 118px;
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     HorizontalLayout {
-        padding: 6px; spacing: 10px;
+        padding: Theme.s2; spacing: Theme.s3;
         Stage { compact: true; horizontal-stretch: 1; accessible-label: "lighting.strip.stage"; accessible-role: image; }
         VerticalLayout {
-            width: 300px; spacing: 6px;
+            width: 300px; spacing: Theme.s2;
             HorizontalLayout {
-                spacing: 4px;
+                spacing: Theme.s1;
                 for m in [{ id: "auto", label: "AUTO" }, { id: "easy", label: "EASY" }, { id: "pro", label: "PRO" }]: PlateButton {
                     accessible-label: "lighting.strip.mode." + m.id; accessible-role: tab;
                     compact: true; label: m.label; active: Lighting.mode == m.id; horizontal-stretch: 1;
@@ -550,7 +550,7 @@ export component LightingStrip inherits Rectangle {
             }
             Caps { text: Lighting.status; color: Theme.attention; overflow: elide; }
             HorizontalLayout {
-                spacing: 4px;
+                spacing: Theme.s1;
                 PlateButton {
                     accessible-label: "lighting.strip.blackout"; accessible-role: button;
                     compact: true; label: @tr("BLACKOUT"); active: Lighting.blackout; tone: Theme.fault; horizontal-stretch: 1;
@@ -569,7 +569,6 @@ export component LightingStrip inherits Rectangle {
             }
         }
     }
-    HLine { y: parent.height - 1px; tone: Theme.rule; }
 }
 
 // The LIGHTING view on its own (detached window, second screen).

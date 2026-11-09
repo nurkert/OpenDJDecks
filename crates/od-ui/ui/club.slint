@@ -190,7 +190,7 @@ component BeatPosition inherits HorizontalLayout {
     // boxes, so the two bars can be lined up by eye.
     in property <int> other;
     in property <bool> show-other;
-    spacing: 3px;
+    spacing: Theme.key-gap;
     height: root.show-other ? 13px : 8px;
     for i in 4: Rectangle {
         property <bool> lit: root.beat == i + 1;
@@ -258,21 +258,21 @@ export component ClubPlayer inherits Rectangle {
     property <length> readout: root.narrow ? 17px : 20px;
     accessible-role: groupbox;
     accessible-label: "deck\{root.n}.club";
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     clip: true;
 
     VerticalLayout {
-        padding: 8px; spacing: root.gap;
+        padding: Theme.s2; spacing: root.gap;
         // ── Display: deck and track left, time / BPM / tempo / key right,
         // then BROWSE ──
         header := HorizontalLayout {
-            height: 40px; spacing: 12px;
+            height: 40px; spacing: Theme.s3;
             Text { text: root.n; font-family: Theme.family; font-size: 26px; font-weight: 600; color: root.tone; vertical-alignment: center; }
             VerticalLayout {
                 horizontal-stretch: 1; alignment: center;
                 Text { text: root.deck.loaded || root.deck.loading ? root.deck.title : @tr("No track — browse and load"); font-family: Theme.family; font-size: 14px; font-weight: 600; color: Theme.bone; overflow: elide; }
                 HorizontalLayout {
-                    spacing: 8px;
+                    spacing: Theme.s2;
                     Text { horizontal-stretch: 1; text: root.deck.artist; font-family: Theme.family; font-size: 11px; color: Theme.bone-2; overflow: elide; }
                     if root.deck.master: Caps { text: "MASTER"; color: Theme.attention; }
                 }
@@ -472,9 +472,9 @@ export component ClubPlayer inherits Rectangle {
         background: Theme.ground-band;
         accessible-role: list; accessible-label: "deck\{root.n}.club.browse-list";
         VerticalLayout {
-            padding: 8px; spacing: 4px;
+            padding: Theme.s2; spacing: Theme.s1;
             HorizontalLayout {
-                height: 28px; spacing: 8px;
+                height: 28px; spacing: Theme.s2;
                 Key { accessible-label: "deck\{root.n}.club.browse-back"; accessible-role: button; label: @tr("BACK"); clicked => { Club.browse-back(); } }
                 Caps { text: Club.browse-title; vertical-alignment: center; color: Theme.attention; overflow: elide; }
             }
@@ -487,7 +487,7 @@ export component ClubPlayer inherits Rectangle {
                         height: 30px;
                         background: ta.has-hover ? Theme.plate-raised : transparent;
                         HorizontalLayout {
-                            padding-left: 8px; padding-right: 8px; spacing: 10px;
+                            padding-left: Theme.s2; padding-right: Theme.s2; spacing: Theme.s3;
                             Text { text: it.folder ? "▸" : "♪"; width: 14px; color: it.folder ? Theme.attention : Theme.bone-3; vertical-alignment: center; font-family: Theme.family; }
                             Text { text: it.title; horizontal-stretch: 1; overflow: elide; color: Theme.bone; vertical-alignment: center; font-family: Theme.family; font-size: 13px; }
                             Text { text: it.sub; color: Theme.bone-2; vertical-alignment: center; font-family: Theme.family; font-size: 11px; }
@@ -506,12 +506,12 @@ export component ClubSteps inherits Rectangle {
     accessible-role: list; accessible-label: "app.club.steps";
     height: Club.show-steps ? 30px : 0px;
     visible: Club.show-steps;
-    background: Theme.ground-band;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     HorizontalLayout {
-        padding-left: 12px; padding-right: 8px; spacing: 14px;
+        padding-left: Theme.s3; padding-right: Theme.s2; spacing: Theme.s4;
         Caps { text: @tr("CLUB MODE"); color: Theme.attention; vertical-alignment: center; }
         for s[i] in Club.steps: HorizontalLayout {
-            spacing: 5px;
+            spacing: Theme.s1;
             Rectangle {
                 width: 12px; height: 12px; y: (parent.height - 12px) / 2;
                 border-width: 1px; border-color: s.done ? Theme.live : Theme.rule-strong;
@@ -533,5 +533,4 @@ export component ClubSteps inherits Rectangle {
             }
         }
     }
-    HLine { y: parent.height - 1px; tone: Theme.rule; }
 }

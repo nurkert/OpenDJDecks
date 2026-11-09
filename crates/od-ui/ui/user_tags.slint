@@ -16,14 +16,13 @@ export component UserTagPanel inherits Rectangle {
     // "Category: Value" typed into the field.
     callback add(string);
     accessible-label: "user_tag.panel"; accessible-role: groupbox;
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     width: 260px;
-    VLine { x: 0; height: parent.height; weight: 1px; tone: Theme.rule; }
     Flickable {
         x: 1px; width: parent.width - 1px;
         VerticalLayout {
-            padding: 14px;
-            spacing: 6px;
+            padding: Theme.s4;
+            spacing: Theme.s2;
             alignment: start;
             Caps { text: @tr("TAGS"); color: Theme.bone-2; }
             Text {
@@ -42,7 +41,7 @@ export component UserTagPanel inherits Rectangle {
                 font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
             }
             for c[i] in root.chips: VerticalLayout {
-                spacing: 2px;
+                spacing: Theme.key-gap;
                 if c.first: Caps { text: c.category; font-size: 10px; }
                 Rectangle {
                     accessible-label: "user_tag.value\{i}"; accessible-role: checkbox;
@@ -85,13 +84,12 @@ export component SuggestionPanel inherits Rectangle {
     // Open the suggestions as the Similar tracks list.
     callback open-list();
     accessible-label: "similar.panel"; accessible-role: groupbox;
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     width: 280px;
-    VLine { x: 0; height: parent.height; weight: 1px; tone: Theme.rule; }
     VerticalLayout {
         x: 1px; width: parent.width - 1px;
-        padding: 14px;
-        spacing: 6px;
+        padding: Theme.s4;
+        spacing: Theme.s2;
         Caps { text: @tr("FITS AFTER"); color: Theme.bone-2; }
         Text {
             text: root.reference == "" ? @tr("Select a track to see what fits after it.") : root.reference;

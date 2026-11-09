@@ -268,7 +268,7 @@ export component Sidebar inherits Rectangle {
     callback open-sampler();
     // A controller's browse encoder moves through the tree.
     in property <bool> browse-focus;
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
 
     property <[{ a11y: string, label: string, tone: color, tip: string }]> rail-items: [
         { a11y: "browser.rail.collection", label: @tr("ALL"), tone: Theme.w486, tip: @tr("Collection: every track") },
@@ -354,12 +354,11 @@ export component Sidebar inherits Rectangle {
         }
         Rectangle { vertical-stretch: 1; min-height: 0px; }
       }
-      if !Theme.touch: VLine { weight: 1px; tone: Theme.rule; }
       VerticalLayout {
         if root.browse-focus: Rectangle { height: 2px; background: Theme.attention; }
         // Filter the lists by name (folders that hold a match stay open).
         HorizontalLayout {
-            padding: 6px; padding-bottom: 2px;
+            padding: Theme.s2; padding-bottom: Theme.key-gap;
             Field {
                 accessible-label: "browser.tree.filter"; accessible-role: text-input;
                 accessible-value: self.text; accessible-placeholder-text: self.placeholder;
@@ -493,7 +492,7 @@ export component Sidebar inherits Rectangle {
                 }
                 // Year, then the sessions played in it (newest first).
                 HorizontalLayout {
-                    padding-left: 12px; padding-right: 12px;
+                    padding-left: Theme.s3; padding-right: Theme.s3;
                     Stepper {
                         accessible-role: spinbox;
                         accessible-label: "browser.tree.years";
@@ -570,8 +569,8 @@ export component Sidebar inherits Rectangle {
         }
         if !Theme.touch: HLine { tone: Theme.rule; }
         if !Theme.touch: HorizontalLayout {
-            padding: 8px;
-            spacing: 4px;
+            padding: Theme.s2;
+            spacing: Theme.s1;
             // New list buttons share the width (the sidebar is resizable).
             Toggle { accessible-label: "browser.tree.new-set"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
             Toggle { accessible-label: "browser.tree.new-smart"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SMART"); tooltip: @tr("New smart list"); command: "browser.new.smart"; tone: Theme.w436; clicked => { root.create-node("smart"); } }

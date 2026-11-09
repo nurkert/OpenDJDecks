@@ -23,7 +23,7 @@ Two findings set the order. People judge the interface by its hierarchy and fini
 
 These come first because every later screen builds on them.
 
-- [ ] **[44] Surfaces and spacing.** Two or three visible surface levels and one spacing scale, so groups separate without outlines around everything. Keeps the dark base, the deck colours and the platter ring. Needs `DESIGN.md` updated first, because it currently requires outlined plates, square corners and dashed active states. Done when the rules are rewritten and applied to Perform.
+- [x] **[44] Surfaces and spacing.** Two or three visible surface levels and one spacing scale, so groups separate without outlines around everything. Keeps the dark base, the deck colours and the platter ring. Needs `DESIGN.md` updated first, because it currently requires outlined plates, square corners and dashed active states. Done when the rules are rewritten and applied to Perform.
 - [ ] **[4] Plain words.** One glossary applied everywhere: full words such as Keylock where space allows, Stems on the deck, LIGHT and LIGHTING told apart, side rails spelled out. Done when each concept has one name in the app and the guides.
 - [ ] **[2] One state language.** Off, selected, on, armed, running, disabled and focused as documented tokens, used in Perform, Lighting, FX and Preferences, with a visible focus ring. Each accent colour has one job and colour is never the only cue. Done when dashed outlines no longer mean "selected" and idle toggles never look lit.
 - [ ] **[43] Type scale.** About five sizes and two weights, fixed-width figures for changing numbers, and BPM and remaining time as the largest values on a deck. Done when hard-coded font sizes are gone.

@@ -63,7 +63,7 @@ export component DeviceLine inherits Rectangle {
     }
     HorizontalLayout {
         x: parent.width - 160px; y: 10px; width: 160px; height: 26px;
-        spacing: 6px;
+        spacing: Theme.s2;
         alignment: end;
         if root.device.connected && root.device.state != "syncing": PlateButton {
             compact: true; label: @tr("SYNC"); tone: Theme.live; tooltip: @tr("Sync this stick now"); command: "devices.sync";
@@ -90,7 +90,7 @@ export component DeviceBoard inherits Rectangle {
     callback register(int);
 
     VerticalLayout {
-        spacing: 4px;
+        spacing: Theme.s1;
         alignment: start;
         HorizontalLayout {
             Caps { text: @tr("DEVICES"); color: Theme.bone-2; }

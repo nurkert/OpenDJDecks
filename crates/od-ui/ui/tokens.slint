@@ -35,16 +35,16 @@ export global Theme {
     // Continuum: charcoal in dark, paper in light.
     out property <color> ground: light ? (high-contrast ? #FAF9F5 : #F3F0E8) : (high-contrast ? #0B0B0B : #151514);
     out property <color> ground-band: light ? (high-contrast ? #F2F0E9 : #E9E5DA) : (high-contrast ? #121212 : #1A1A19);
-    out property <color> plate: light ? (high-contrast ? #ECE9E0 : #E4E0D4) : (high-contrast ? #1C1C1B : #21211F);
-    out property <color> plate-raised: light ? (high-contrast ? #E0DCD0 : #D8D3C5) : #2A2A27;
+    out property <color> plate: light ? (high-contrast ? #ECE9E0 : #E4E0D4) : (high-contrast ? #1C1C1B : #262624);
+    out property <color> plate-raised: light ? (high-contrast ? #E0DCD0 : #D8D3C5) : #32322F;
     out property <color> rule: light ? (high-contrast ? #8A857A : #CAC5B8) : (high-contrast ? #4B4A46 : #33322F);
     out property <color> rule-strong: light ? (high-contrast ? #6A665E : #A39E91) : #4B4A46;
 
     // Legends: bone on charcoal, ink on paper (all ≥ 4.5:1 on ground and
     // ground-band; see tests/theme_contrast.rs).
     out property <color> bone: light ? (high-contrast ? #000000 : #1D1C1A) : (high-contrast ? #FFFFFF : #E6E0D2);
-    out property <color> bone-2: light ? (high-contrast ? #26241F : #4A4740) : (high-contrast ? #E6E0D2 : #B7B1A4);
-    out property <color> bone-3: light ? (high-contrast ? #45423C : #5E5A53) : (high-contrast ? #B7B1A4 : #8B867B);
+    out property <color> bone-2: light ? (high-contrast ? #26241F : #4A4740) : (high-contrast ? #E6E0D2 : #BDB7AA);
+    out property <color> bone-3: light ? (high-contrast ? #45423C : #5E5A53) : (high-contrast ? #B7B1A4 : #A29C90);
 
     // Emission lines (nm); darkened on paper to ≥ 3:1 against ground,
     // ground-band and plate.
@@ -78,7 +78,19 @@ export global Theme {
     out property <length> tracking-index: 1.6px;
     out property <length> tracking-c: 2.2px;
 
-    // Spacing (4px grid).
+    // Surfaces carry the structure (DESIGN.md, Elevation): the window is
+    // `ground`, a panel is `ground-band`, a control is `plate`, and hover and
+    // press move to `plate-raised`. Panels sit in the window with
+    // `gutter` between them; a border is the exception, not the structure.
+    out property <length> r-control: 4px;
+    out property <length> r-panel: 8px;
+    out property <length> r-overlay: 10px;
+    // The space between panels: tighter on the touch screen.
+    out property <length> gutter: root.touch ? 0px : 8px;
+
+    // Spacing (4px grid). Layout spacing and padding use only these values;
+    // keys inside a group touch at `key-gap`.
+    out property <length> key-gap: 2px;
     out property <length> s1: 4px;
     out property <length> s2: 8px;
     out property <length> s3: 12px;

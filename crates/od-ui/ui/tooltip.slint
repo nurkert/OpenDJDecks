@@ -111,11 +111,11 @@ export component TooltipLayer inherits Rectangle {
         border-width: 1px;
         border-color: Theme.rule-strong;
         lay := HorizontalLayout {
-            padding-left: 8px;
-            padding-right: 8px;
-            padding-top: 4px;
-            padding-bottom: 4px;
-            spacing: 10px;
+            padding-left: Theme.s2;
+            padding-right: Theme.s2;
+            padding-top: Theme.s1;
+            padding-bottom: Theme.s1;
+            spacing: Theme.s3;
             Text {
                 text: TooltipState.text;
                 font-family: Theme.family; font-size: 12px;
