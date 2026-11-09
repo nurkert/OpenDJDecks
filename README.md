@@ -17,7 +17,8 @@
   <a href="docs/SPEC.md">Specification</a> ·
   <a href="docs/feature-matrix.md">Feature list</a> ·
   <a href="docs/keyboard.md">Keyboard shortcuts</a> ·
-  <a href="docs/parity.md">Verification</a>
+  <a href="docs/parity.md">Verification</a> ·
+  <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
 # OpenDJDecks
