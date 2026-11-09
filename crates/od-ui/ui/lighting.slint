@@ -187,13 +187,13 @@ component Stage inherits Rectangle {
         if !root.compact: Text {
             x: cx - 60px; y: cy + (f.role == "bar" ? 10px : 24px); width: 120px;
             text: f.name;
-            font-family: Theme.family; font-size: Theme.label; color: #8B867B;
+            font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
             horizontal-alignment: center; overflow: elide;
         }
     }
     if Lighting.fixtures.length == 0: Text {
         text: @tr("No fixtures patched yet. Add your lights on the left.");
-        font-family: Theme.family; font-size: Theme.control; color: #8B867B;
+        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
         horizontal-alignment: center; vertical-alignment: center;
     }
 }

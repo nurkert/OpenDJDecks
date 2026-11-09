@@ -157,6 +157,9 @@ pub(crate) fn apply_browser_style(ui: &AppWindow, settings: &Settings, kiosk: bo
 
 /// Palette, contrast and motion of one window's theme.
 pub(crate) fn apply_theme(theme: &crate::Theme<'_>, settings: &Settings, lite: bool) {
+    // The text size preference scales the whole interface's type, not just
+    // the track list (14 is the default, 1:1).
+    theme.set_text_scale(settings.browser.font_size as f32 / 14.0);
     theme.set_colorblind_safe(settings.view.colorblind_safe);
     theme.set_high_contrast(settings.view.high_contrast);
     theme.set_motion(!settings.view.reduced_motion && !lite);

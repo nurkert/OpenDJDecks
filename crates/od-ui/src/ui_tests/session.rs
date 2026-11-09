@@ -269,6 +269,11 @@ fn browser_text_size_and_line_spacing() {
     w.invoke_choose("view.font-size".into(), 3);
     ui.pump(200);
     assert_eq!(ui.app.ui.global::<crate::TableStyle>().get_text(), 18.0);
+    let theme = ui.app.ui.global::<crate::Theme>();
+    assert!(
+        (theme.get_text_scale() - 18.0 / 14.0).abs() < 1e-3,
+        "the text size also scales the deck and mixer"
+    );
     assert!(
         (row0(&ui) - 34.0).abs() < 0.5,
         "roomy rows, got {}",

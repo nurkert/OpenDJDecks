@@ -21,6 +21,7 @@
 
 mod alignment;
 mod browser;
+mod design;
 mod editing;
 mod features;
 mod flows;
