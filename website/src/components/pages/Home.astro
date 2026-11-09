@@ -46,6 +46,20 @@ const teasers = t.teasers.map((teaser) => ({
 const publicDir = new URL('../../../public/media/', import.meta.url);
 const hasVideo = existsSync(new URL('perform.webm', publicDir)) && existsSync(new URL('perform.mp4', publicDir));
 const formats = ['avif', 'webp'] as const;
+
+// The background: a spectrum of emission lines that breathes in a seamless loop, drawn by CSS,
+// so it stays sharp on any screen and costs no download. The numbers are fixed for a stable build.
+const lineTones = ['--blue', '--violet', '--sodium', '--orange', '--green'];
+const skyLines = Array.from({ length: 72 }, (_, i) => {
+  const wobble = (Math.sin(i * 12.9898) * 43758.5453) % 1;
+  const shape = Math.abs(Math.sin(i * 0.31)) * 0.55 + Math.abs(wobble) * 0.45;
+  return {
+    height: Math.round(18 + shape * 74),
+    delay: -(Math.abs(wobble) * 4).toFixed(2),
+    period: (1.94 * (1 + (i % 3))).toFixed(2),
+    tone: lineTones[i % 5 === 0 ? 2 : Math.abs(Math.round(wobble * 10)) % 5],
+  };
+});
 ---
 
 <Base lang={lang} page="home" title={t.meta.title} description={t.meta.description}>
@@ -54,6 +68,9 @@ const formats = ['avif', 'webp'] as const;
       <div class="scene__sticky">
         <div class="sky" aria-hidden="true">
           <div class="sky__glow" data-glow></div>
+          <div class="sky__loop">
+            {skyLines.map((line) => <i style={`--h: ${line.height}%; --d: ${line.delay}s; --t: ${line.period}s; --c: var(${line.tone})`} />)}
+          </div>
           <div class="sky__line"></div>
         </div>
 

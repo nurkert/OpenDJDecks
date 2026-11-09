@@ -24,6 +24,38 @@
     radial-gradient(45% 40% at 18% 60%, rgb(79 184 240 / 0.11), transparent 70%),
     radial-gradient(45% 40% at 82% 60%, rgb(243 144 71 / 0.1), transparent 70%);
 }
+.sky__loop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 2vw;
+  opacity: 0.17;
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 50%, #000 30%, transparent 100%);
+  mask-image: radial-gradient(70% 60% at 50% 50%, #000 30%, transparent 100%);
+}
+.sky__loop i {
+  display: block;
+  flex: none;
+  width: 2px;
+  height: var(--h);
+  background: var(--c);
+  animation: sky-breathe var(--t) ease-in-out var(--d) infinite alternate;
+}
+@keyframes sky-breathe {
+  from {
+    transform: scaleY(0.16);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@media (max-width: 40rem) {
+  .sky__loop i:nth-child(even) {
+    display: none;
+  }
+}
 .sky__line {
   position: absolute;
   left: 0;
