@@ -716,7 +716,7 @@ impl Settings {
     }
 
     /// How the KEY column sorts.
-    pub fn key_order(&self) -> crate::browser::KeyOrder {
+    pub(crate) fn key_order(&self) -> crate::browser::KeyOrder {
         if self.browser.key_sort == "alpha" {
             crate::browser::KeyOrder::Alphabetical(self.key_notation())
         } else {
