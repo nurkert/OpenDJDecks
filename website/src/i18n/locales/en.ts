@@ -263,6 +263,17 @@ const en = {
     getTitle: 'Not using OpenDJDecks yet?',
     getText: 'Free and without an account, for Mac, Windows, Linux and the Raspberry Pi.',
     getCta: 'Go to the download',
+    homeTitle: 'How OpenDJDecks works',
+    startHere: 'Getting started',
+    groupIntros: {
+      start: 'Install, add your music, get going.',
+      library: 'Put your music in order and plan your sets.',
+      prepare: 'Set cues, check the beat and trim tracks.',
+      sticks: 'Take your music and everything you prepared with you.',
+      perform: 'Everything for the moment behind the decks.',
+      setup: 'Controllers, lights and your settings.',
+      more: 'When something is stuck or you want to go deeper.',
+    },
   },
 };
 
