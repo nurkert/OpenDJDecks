@@ -1,28 +1,68 @@
-// The download page: shows the file for the visitor's computer in the recommendation plate
-// at the top. Without a usable detection the plate stays hidden and the full list remains.
+// The download page: opens the visitor's system, switches between systems through the quiet
+// tabs and, where the browser says which chip a Mac has, leaves one button instead of two.
+// Without JavaScript every system stays open, one below the other.
 import { detectArch, detectOs } from './platform';
 
-const box = document.querySelector<HTMLElement>('[data-reco]');
+const root = document.querySelector<HTMLElement>('[data-dl]');
+const nav = root?.querySelector<HTMLElement>('[data-tabs]');
 
-(async () => {
-  if (!box) return;
+if (root && nav) void start(root, nav);
+
+async function start(rootEl: HTMLElement, navEl: HTMLElement) {
+  const tabs = [...navEl.querySelectorAll<HTMLAnchorElement>('[data-tab]')];
+  const panels = [...rootEl.querySelectorAll<HTMLElement>('[data-panel]')];
+  const ids = tabs.map((tab) => tab.dataset.tab!);
   const os = detectOs();
-  if (!os) return;
-  let items: HTMLElement[] = [];
-  if (os === 'macos') {
-    const arch = await detectArch();
-    const arm = box.querySelector<HTMLElement>('[data-reco-item="dmgArm"]');
-    const intel = box.querySelector<HTMLElement>('[data-reco-item="dmgIntel"]');
-    if (arch === 'arm' && arm) items = [arm];
-    else if (arch === 'x86' && intel) items = [intel];
-    else items = [arm, intel].filter((el): el is HTMLElement => Boolean(el));
-    box.querySelector<HTMLElement>('[data-reco-chip]')?.toggleAttribute('hidden', items.length < 2);
-  } else if (os === 'windows') {
-    items = [...box.querySelectorAll<HTMLElement>('[data-reco-item="zip"]')];
-  } else {
-    items = [...box.querySelectorAll<HTMLElement>('[data-reco-item="debAmd"], [data-reco-item="appimageX86"]')];
+  const home = os || ids[0];
+  const fromHash = () => {
+    const id = location.hash.slice(1);
+    return ids.includes(id) ? id : home;
+  };
+
+  const place = () => {
+    const tab = tabs.find((el) => el.hasAttribute('aria-current'));
+    if (!tab) return;
+    navEl.style.setProperty('--gx', `${tab.offsetLeft}px`);
+    navEl.style.setProperty('--gw', `${tab.offsetWidth}px`);
+  };
+
+  const select = (id: string) => {
+    for (const tab of tabs) {
+      if (tab.dataset.tab === id) tab.setAttribute('aria-current', 'true');
+      else tab.removeAttribute('aria-current');
+    }
+    for (const panel of panels) panel.hidden = panel.dataset.panel !== id;
+    place();
+  };
+
+  if (os === 'macos') narrowMac(rootEl, await detectArch());
+  rootEl.querySelector<HTMLElement>('[data-unknown]')?.toggleAttribute('hidden', Boolean(os));
+
+  select(fromHash());
+  // A link to #windows must not leave the page scrolled to where that section used to be.
+  if (location.hash) window.scrollTo(0, 0);
+  rootEl.setAttribute('data-ready', '');
+
+  for (const tab of tabs) {
+    tab.addEventListener('click', (event) => {
+      event.preventDefault();
+      rootEl.setAttribute('data-switched', '');
+      history.pushState(null, '', `#${tab.dataset.tab}`);
+      select(tab.dataset.tab!);
+    });
   }
-  if (items.length === 0) return;
-  for (const item of box.querySelectorAll<HTMLElement>('[data-reco-item]')) item.hidden = !items.includes(item);
-  box.hidden = false;
-})();
+  window.addEventListener('popstate', () => select(fromHash()));
+  window.addEventListener('hashchange', () => select(fromHash()));
+  window.addEventListener('resize', place);
+  document.fonts?.ready.then(place);
+}
+
+/** One button for the chip the browser reports; the other version moves under "Other versions". */
+function narrowMac(rootEl: HTMLElement, arch: string) {
+  const keep = arch === 'arm' ? 'dmgArm' : arch === 'x86' ? 'dmgIntel' : '';
+  const buttons = [...rootEl.querySelectorAll<HTMLElement>('#macos .get__btn[data-kind]')];
+  if (!keep || !buttons.some((button) => button.dataset.kind === keep)) return;
+  for (const button of buttons) button.hidden = button.dataset.kind !== keep;
+  rootEl.querySelector<HTMLElement>('[data-chip]')?.toggleAttribute('hidden', true);
+  rootEl.querySelector<HTMLElement>('[data-more="macos"]')?.toggleAttribute('hidden', false);
+}
