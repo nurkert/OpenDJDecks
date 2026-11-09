@@ -37,6 +37,8 @@ const teaserArt: Record<string, string> = {
   recording: 'recording',
   lights: 'lighting',
 };
+// Teasers that also have a short clip of the app (public/media/clips).
+const teaserClip: Record<string, string> = { beatgrid: 'beatgrid', stems: 'stems', fx: 'teaser-fx', lights: 'lighting' };
 const teasers = t.teasers.map((teaser) => ({
   ...teaser,
   image: teaserArt[teaser.id] ? teaserImage(teaserArt[teaser.id]) : undefined,
@@ -150,6 +152,19 @@ const skyLines = Array.from({ length: 72 }, (_, i) => {
                     <Picture src={teaser.image} alt={teaser.title} formats={formats} fallbackFormat="webp" widths={[480, 720, 1080]} sizes="(max-width: 56rem) 92vw, 50vw" loading="lazy" decoding="async" />
                   ) : (
                     <TeaserArt kind={teaser.id} title={teaser.title} />
+                  )}
+                  {teaserClip[teaser.id] && (
+                    <video
+                      class="win__video"
+                      data-stage-video
+                      data-webm={`/media/clips/${teaserClip[teaser.id]}.webm`}
+                      data-mp4={`/media/clips/${teaserClip[teaser.id]}.mp4`}
+                      muted
+                      loop
+                      playsinline
+                      preload="none"
+                      aria-label={teaser.title}
+                    />
                   )}
                 </div>
               </article>

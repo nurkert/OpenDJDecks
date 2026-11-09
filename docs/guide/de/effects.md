@@ -7,7 +7,7 @@ features: [fx-tempo-fx, fx-tempo-fx-controls, fx-tempo-fx-catalogue, fx-channel-
 
 Drücke **FX** in der oberen Leiste (`⌥⌘F`), um die zwei Tempo-FX-Einheiten über den Decks zu öffnen.
 
-![Das FX-Panel mit zwei Einheiten](../img/fx.png)
+![Das FX-Panel mit zwei Einheiten](../img/teaser-fx.png)
 
 ## Tempo FX
 

@@ -1,8 +1,6 @@
-// The animated front window: its video starts only when the stage is visible, stops offscreen,
-// and is skipped for reduced motion or Save-Data. Without files the poster picture stays.
-const video = document.querySelector<HTMLVideoElement>('[data-stage-video]');
-
-if (video) {
+// Moving pictures of the app: each video starts only when it is visible, stops offscreen, and is
+// skipped for reduced motion or Save-Data. Without files the still picture stays.
+for (const video of document.querySelectorAll<HTMLVideoElement>('[data-stage-video]')) {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
   if (!reduced && !saveData && video.dataset.webm && video.dataset.mp4) {
