@@ -40,7 +40,11 @@ Drücke **Weitere Informationen** und dann **Trotzdem ausführen**. Das Programm
 
 ## Stems bleiben bei SPLIT stehen oder scheitern
 
-Die Trennung braucht beim ersten Mal einmalig den Download ihres Modells, prüfe dann die Internetverbindung. Danach läuft sie offline.
+Die Trennung braucht einmalig den Download ihres Modells. Ab Version 0.7 fragt die App, bevor sie es lädt, und danach läuft sie offline.
+
+## Der Stem-Download ist abgebrochen
+
+Öffne ab Version 0.7 **Einstellungen › Analyse › Stems** und folge den Schritten unter [Der Download ist abgebrochen und Stems funktionieren nicht](stems.md#der-download-ist-abgebrochen-und-stems-funktionieren-nicht).
 
 ## Meine Cue- oder Grid-Änderung ist nicht auf dem Stick
 

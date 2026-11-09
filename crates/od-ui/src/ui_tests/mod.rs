@@ -31,4 +31,5 @@ mod remote;
 mod waveform;
 mod session;
 mod stage;
+mod stems_model;
 mod views;

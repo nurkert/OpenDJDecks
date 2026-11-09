@@ -16,8 +16,8 @@
 //! `htdemucs_fp16weights.onnx`, 165,612,636 bytes, SHA-256 `d05c269d…db70a`
 //! (see [`MODEL`]). MIT is compatible with distribution alongside this
 //! GPL-3.0-or-later software. The model is **not** in git: it is downloaded
-//! on first use (or with `od-cli stems fetch-model`) to
-//! `od_library::data_dir()/models/` and its SHA-256 verified.
+//! once, when the user asks for it (or with `od-cli stems fetch-model`), to
+//! `od_library::data_dir()/models/`, and its SHA-256 verified ([`ModelStore`]).
 //!
 //! Inference runs in ONNX Runtime (MIT) through the `ort` crate (MIT OR
 //! Apache-2.0) on the CPU (the CoreML execution provider of ONNX Runtime
@@ -67,9 +67,10 @@
 //!
 //! * [`StemWorker::enqueue`] / [`StemWorker::prioritize`] /
 //!   [`StemWorker::cancel`] / [`StemWorker::cancel_all`]; jobs run one at a
-//!   time (ONNX Runtime already uses all cores). The worker downloads the
-//!   model on first use (reported as [`StemEvent::ModelDownload`]) unless
-//!   [`StemWorkerOptions::fetch_model`] is false.
+//!   time (ONNX Runtime already uses all cores). The worker never downloads
+//!   the model unless [`StemWorkerOptions::fetch_model`] is set (then
+//!   reported as [`StemEvent::ModelDownload`]); without a usable model a job
+//!   fails, or reports [`StemEvent::ModelDamaged`].
 //! * [`StemCache::exists`] / [`StemCache::info`] are cheap (UI badges);
 //!   [`StemCache::load`] decompresses the whole file.
 //! * One-shot use: [`separate()`] or a [`Separator`] (`separate_file` /
@@ -98,8 +99,11 @@ mod worker;
 
 pub use cache::{FORMAT_VERSION, StemCache, StemFileInfo};
 #[cfg(feature = "separation")]
-pub use model::fetch_model;
-pub use model::{MODEL, ModelInfo, model_available, model_path, models_dir};
+pub use model::{FreeSpace, fetch_model};
+pub use model::{
+    FetchFailure, MODEL, ModelInfo, ModelStatus, ModelStore, model_available, model_path,
+    model_status, models_dir, separation_supported,
+};
 pub use od_engine::Stem;
 #[cfg(feature = "separation")]
 pub use separate::{MODEL_RATE, OVERLAP, SEGMENT, Separator, SeparatorOptions, separate};
@@ -124,7 +128,9 @@ pub enum Error {
     #[error("separation model not found at {0} (run `od-cli stems fetch-model`)")]
     ModelMissing(PathBuf),
     #[error("model download: {0}")]
-    Download(String),
+    Fetch(FetchFailure),
+    #[error("the separation model is damaged")]
+    ModelDamaged,
     #[error("model: {0}")]
     Model(String),
     #[error("cancelled")]

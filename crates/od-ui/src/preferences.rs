@@ -553,6 +553,7 @@ pub(crate) fn refresh(app: &App) {
     });
     drop(st);
     refresh_updates(app);
+    refresh_stems(app);
     refresh_keys(app);
 }
 
@@ -645,6 +646,16 @@ pub(crate) fn midi_act(app: &Rc<App>, what: &str) {
     }
     midi_stream(app);
     refresh(app);
+}
+
+/// Analysis > Stems: the model's state, in the words the buttons follow.
+pub(crate) fn refresh_stems(app: &App) {
+    let view = crate::stems_model::current_prefs_view(app);
+    with_window(app, |w| {
+        w.set_stems_state(view.state.into());
+        w.set_stems_status(view.text.into());
+        w.set_stems_help(view.help);
+    });
 }
 
 /// Advanced > Updates: the version and when it was last checked.
@@ -1489,6 +1500,11 @@ fn act(app: &App, what: &str) {
             }
         }
         "update.check" => crate::update::check_now(app, true),
+        "stems.download" => crate::stems_model::act(app, "download"),
+        "stems.redownload" => crate::stems_model::act(app, "redownload"),
+        "stems.remove" => crate::stems_model::act(app, "remove"),
+        "stems.cancel" => crate::stems_model::act(app, "cancel"),
+        "stems.help" => crate::stems_model::act(app, "help"),
         "import.settings" => {
             let m = crate::import::import_settings(app, None);
             app.status(m);

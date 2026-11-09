@@ -333,6 +333,7 @@ fn start_recording() {
 fn separate_stems() {
     let ui = Ui::open((1440, 900));
     perform(&ui);
+    crate::stems_model::assume_model_installed(&ui.app);
     let title = ui.fx.tracks[0].1.clone();
     // Start: the track loaded on deck 1 (drag from the list), never separated.
     let (_, row) = ui.by_value("browser.row", &title).unwrap();
@@ -343,8 +344,8 @@ fn separate_stems() {
         "deck 1 loads, got `{}`",
         deck_title(&ui, 1)
     );
-    // Separation is queued on load; the strip says so and the stem
-    // controls stay in place, dimmed.
+    // With the model installed separation is queued on load; the strip
+    // says so and the stem controls stay in place, dimmed.
     let queued = ui.wait_until(10.0, |u| {
         deck_views(u)
             .into_iter()

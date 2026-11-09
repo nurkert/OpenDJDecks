@@ -17,7 +17,7 @@ Two findings set the order. People judge the interface by its hierarchy and fini
 
 ### Step 1: stem model setup
 
-- [ ] **[S1] Guided model download.** Asks before the one-time download, shows progress, explains errors with retry and help, and can start again from nothing in Preferences. Done when an interrupted or damaged download can always be repaired from Preferences, and the guide explains how.
+- [x] **[S1] Guided model download.** Asks before the one-time download, shows progress, explains errors with retry and help, and can start again from nothing in Preferences. Done when an interrupted or damaged download can always be repaired from Preferences, and the guide explains how.
 
 ### Step 2: a design language worth looking at
 

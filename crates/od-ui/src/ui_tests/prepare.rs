@@ -699,6 +699,7 @@ fn controller_page_monitor_and_learn() {
 #[test]
 fn separate_parts_for_selected_tracks() {
     let ui = Ui::open((1440, 900));
+    crate::stems_model::assume_model_installed(&ui.app);
     let rows: Vec<_> = ui
         .fx
         .tracks

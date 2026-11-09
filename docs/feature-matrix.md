@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 221 features; 215 in scope: 215 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 222 features; 216 in scope: 216 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -223,6 +223,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Stem buttons on the controller | ENGINE-ONLY, deferred to M6 | `mappings/controllers/ddj-flx10.toml`; `DeckAction::StemMuteToggle` and the mapping action exist; which notes are the part buttons (vs. mix point buttons) still has to be confirmed on a real controller (M6) | — | **P1** |
 | Separate ahead of time (Prepare, batch) | DONE | `crates/od-ui/src/stems_batch.rs`; Row menu Separate parts and ⌥⌘⇧S queue the selected tracks on a background separation worker writing into the decks' stem cache; the status line reports progress and the result. Also `od-cli stems` | 2 | P2 |
 | Separation model downloaded once on demand, nothing leaves the machine | DONE | `crates/od-stems/src/model.rs`; (SPEC §10.3) | 1 |  |
+| Stem model workflow: asked before downloading, progress, resume, plain errors with HELP, Preferences repair | DONE | `crates/od-stems/src/model.rs`, `crates/od-ui/src/stems_model.rs`, `crates/od-ui/ui/stems_model.slint`; No implicit download: a part key, the STEM switch or batch separation asks (dialog when quiet, notice while music plays or records, dialog after it stops); NOT NOW holds for the session. Resumable download with percent and size, cancellable, SHA-256 verified, free space checked first. Plain failures with RETRY and HELP. Preferences › Analysis › Stems: status, size, DOWNLOAD, DELETE AND DOWNLOAD AGAIN, REMOVE MODEL. Kiosk and builds without separation never ask; (SPEC §10.3) | 18 | P2 |
 | Deck shows separation progress; stem controls visible (dimmed) while separating | DONE | Separation is queued on load; the stem strip shows SPLIT and the progress in percent; the part keys stay in place, disabled until parts exist (flow test); (SPEC §10.3; UX §2.4) | 2 | P2 |
 | Raspberry Pi plays parts separated on the desktop | DONE | The native sync copies cached parts to /OPENDJDECKS/stems on the stick (and prunes stale ones); tracks loaded from a stick read their parts from there, so the Pi plays parts separated on the desktop; (SPEC §10.3) | 2 | P2 |
 
@@ -330,13 +331,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 215 |
+| DONE | 216 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **221** |
+| **Total** | **222** |
 
 ## P1 gaps and implementation notes
 

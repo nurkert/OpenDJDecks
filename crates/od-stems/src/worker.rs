@@ -24,7 +24,8 @@ pub struct StemJob {
 /// Progress reports from the worker (drain [`StemWorker::events`]).
 #[derive(Clone, Debug, PartialEq)]
 pub enum StemEvent {
-    /// The model is being downloaded (first use); bytes done / total.
+    /// The model is being downloaded ([`StemWorkerOptions::fetch_model`]);
+    /// bytes done / total.
     ModelDownload {
         done: u64,
         total: u64,
@@ -52,6 +53,11 @@ pub enum StemEvent {
         track: TrackId,
         error: String,
     },
+    /// The model on disk failed its check: nothing was separated, and
+    /// separation will not work until it is replaced.
+    ModelDamaged {
+        track: TrackId,
+    },
     Cancelled {
         track: TrackId,
     },
@@ -60,7 +66,8 @@ pub enum StemEvent {
 /// Options of the worker.
 #[derive(Clone, Debug)]
 pub struct StemWorkerOptions {
-    /// Download the model on first use if it is missing.
+    /// Download the model if it is missing. Off by default: nothing is
+    /// downloaded without the user asking for it.
     pub fetch_model: bool,
     pub separator: SeparatorOptions,
 }
@@ -68,7 +75,7 @@ pub struct StemWorkerOptions {
 impl Default for StemWorkerOptions {
     fn default() -> Self {
         Self {
-            fetch_model: true,
+            fetch_model: false,
             separator: SeparatorOptions::default(),
         }
     }
@@ -230,6 +237,7 @@ fn run(shared: Arc<Shared>, cache: StemCache, opts: StemWorkerOptions, tx: Sende
                 hash: job.hash.clone(),
             },
             Err(crate::Error::Cancelled) => StemEvent::Cancelled { track },
+            Err(crate::Error::ModelDamaged) => StemEvent::ModelDamaged { track },
             Err(e) => {
                 tracing::warn!("stem separation of track {track} failed: {e}");
                 StemEvent::Failed {
@@ -241,6 +249,46 @@ fn run(shared: Arc<Shared>, cache: StemCache, opts: StemWorkerOptions, tx: Sende
         shared.queue.lock().current = None;
         let _ = tx.send(ev);
     }
+}
+
+/// A checked model, loaded. A file that fails its check is never handed to
+/// ONNX Runtime; when loading itself fails, the checksum tells a damaged
+/// file from anything else going wrong.
+fn load_separator(
+    cancel: &AtomicBool,
+    opts: &StemWorkerOptions,
+    tx: &Sender<StemEvent>,
+) -> Result<Separator, crate::Error> {
+    use crate::ModelStatus;
+    let store = crate::ModelStore::open_default();
+    let usable = store.status().usable();
+    if !usable && opts.fetch_model {
+        store.fetch(
+            &mut |done, total| {
+                let _ = tx.send(StemEvent::ModelDownload { done, total });
+            },
+            cancel,
+        )?;
+    }
+    match store.status() {
+        ModelStatus::Missing | ModelStatus::Partial { .. } => {
+            return Err(crate::Error::ModelMissing(store.model_path()));
+        }
+        ModelStatus::Damaged { .. } => return Err(crate::Error::ModelDamaged),
+        ModelStatus::Unverified => {
+            if !store.verify()?.usable() {
+                return Err(crate::Error::ModelDamaged);
+            }
+        }
+        ModelStatus::Installed => {}
+    }
+    Separator::new(&store.model_path(), &opts.separator).map_err(|e| {
+        tracing::warn!("loading the model failed: {e}");
+        match store.verify() {
+            Ok(status) if !status.usable() => crate::Error::ModelDamaged,
+            _ => e,
+        }
+    })
 }
 
 fn process(
@@ -256,18 +304,7 @@ fn process(
     }
     let cancel = &shared.cancel_current;
     if separator.is_none() {
-        if !crate::model_available() {
-            if !opts.fetch_model {
-                return Err(crate::Error::ModelMissing(crate::model_path()));
-            }
-            crate::fetch_model(
-                &mut |done, total| {
-                    let _ = tx.send(StemEvent::ModelDownload { done, total });
-                },
-                cancel,
-            )?;
-        }
-        *separator = Some(Separator::new(&crate::model_path(), &opts.separator)?);
+        *separator = Some(load_separator(cancel, opts, tx)?);
     }
     let sep = separator.as_mut().unwrap();
     let _ = tx.send(StemEvent::Started { track: job.track });

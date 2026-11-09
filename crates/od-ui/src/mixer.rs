@@ -245,6 +245,13 @@ pub(crate) fn wire(app: &Rc<App>) {
             let mut p = a.mixer.parts.get();
             p[i] = !p[i];
             a.mixer.parts.set(p);
+            // STEM on a deck without parts: the switch asks for them.
+            if p[i]
+                && !engine::snapshot(&a)
+                    .is_some_and(|s| s.decks[i].stems_available)
+            {
+                crate::stems_model::part_pressed(&a, i);
+            }
         }));
     ui.on_mixer_channel_fx(handler!(app, |a, c: i32, v: f32| ch(
         &a,

@@ -1,6 +1,7 @@
 import { Theme } from "tokens.slint";
 import { VLine, HLine, ProgressLine } from "lines.slint";
 import { UpdateBar, UpdatePrompt } from "update.slint";
+import { StemsModelBar, StemsModelPrompt } from "stems_model.slint";
 import { DragGhost, DragState } from "drag.slint";
 export { DragState }
 export { PopupPlace }
@@ -224,6 +225,14 @@ export component AppWindow inherits Window {
     in property <string> update-prompt-title;
     in property <string> update-prompt-notes;
     callback update-action(string);
+    // The stem separation model (stems_model.slint): notice ("" = hidden) and dialog.
+    in property <string> stems-model-state;
+    in property <string> stems-model-text;
+    in property <float> stems-model-progress;
+    in property <bool> stems-model-prompt;
+    in property <string> stems-model-prompt-title;
+    in property <int> stems-model-size;
+    callback stems-model-action(string);
     in property <[LaneMotion]> lane-motion;
     callback deck-zoom(int, float);
     callback deck-zoom-reset(int);
@@ -647,6 +656,12 @@ export component AppWindow inherits Window {
                 text: root.update-text;
                 progress: root.update-progress;
                 act(what) => { root.update-action(what); }
+            }
+            if root.stems-model-state != "": StemsModelBar {
+                state: root.stems-model-state;
+                text: root.stems-model-text;
+                progress: root.stems-model-progress;
+                act(what) => { root.stems-model-action(what); }
             }
 
             // ── Upper half: player (Prepare) or decks + mixer (Perform) ──
@@ -1455,6 +1470,13 @@ export component AppWindow inherits Window {
         title: root.update-prompt-title;
         notes: root.update-prompt-notes;
         act(what) => { root.update-action(what); }
+    }
+    if root.stems-model-prompt: StemsModelPrompt {
+        width: 100%;
+        height: 100%;
+        title: root.stems-model-prompt-title;
+        size-mb: root.stems-model-size;
+        act(what) => { root.stems-model-action(what); }
     }
     TooltipLayer { }
 }

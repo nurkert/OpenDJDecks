@@ -40,7 +40,11 @@ Press **More info** and then **Run anyway**. The program is not code-signed yet.
 
 ## Stems stay on SPLIT or fail
 
-Separation needs a one-time download of its model on the first use, so check your internet connection then. Afterwards it runs offline.
+Separation needs a one-time download of its model. From version 0.7 the app asks before downloading it, and afterwards it runs offline.
+
+## The stem download stopped
+
+From version 0.7, open **Preferences › Analysis › Stems** and follow the steps in [The download stopped and now stems do not work](stems.md#the-download-stopped-and-now-stems-do-not-work).
 
 ## My cue or grid edit is not on the stick
 

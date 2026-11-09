@@ -190,8 +190,69 @@ const DE: &[(&str, &str)] = &[
     ("Could not load {}", "{} konnte nicht geladen werden"),
     ("Stems ready on deck {}", "Stems auf Deck {} bereit"),
     (
-        "Downloading the stem model … {} %",
-        "Stem-Modell wird geladen … {} %",
+        "Downloading the stem model — {} % ({} of {} MB)",
+        "Stem-Modell wird geladen — {} % ({} von {} MB)",
+    ),
+    (
+        "No internet connection. Check your network and try again.",
+        "Keine Internetverbindung. Prüfe dein Netzwerk und versuche es noch einmal.",
+    ),
+    (
+        "The download server did not answer properly. Try again in a few minutes.",
+        "Der Download-Server hat nicht richtig geantwortet. Versuche es in ein paar Minuten noch einmal.",
+    ),
+    (
+        "There is not enough free disk space. The stem model needs {} MB free.",
+        "Auf der Festplatte ist nicht genug Platz. Das Stem-Modell braucht {} MB freien Speicher.",
+    ),
+    (
+        "The download was damaged on the way and was thrown away. Please try again.",
+        "Der Download wurde unterwegs beschädigt und verworfen. Bitte versuche es noch einmal.",
+    ),
+    (
+        "The download stopped before it was finished. It continues where it left off.",
+        "Der Download wurde unterbrochen. Er macht dort weiter, wo er aufgehört hat.",
+    ),
+    (
+        "The stem model could not be saved on this computer. Check that the disk is writable and try again.",
+        "Das Stem-Modell konnte nicht auf diesem Computer gespeichert werden. Prüfe, ob die Festplatte beschreibbar ist, und versuche es noch einmal.",
+    ),
+    (
+        "The stem model is damaged. RETRY deletes it and downloads it again.",
+        "Das Stem-Modell ist beschädigt. NOCHMAL löscht es und lädt es neu herunter.",
+    ),
+    (
+        "Stems need a one-time download of {} MB. Your music stays on this computer.",
+        "Stems brauchen einmalig einen Download von {} MB. Deine Musik bleibt auf diesem Computer.",
+    ),
+    ("The stem model is incomplete", "Das Stem-Modell ist unvollständig"),
+    ("The stem model is damaged", "Das Stem-Modell ist beschädigt"),
+    ("Stems need a one-time download", "Stems brauchen einmalig einen Download"),
+    (
+        "Stems cannot be separated with this build. Stems separated on another computer still play.",
+        "Mit dieser Version lassen sich keine Stems trennen. Auf einem anderen Computer getrennte Stems spielen trotzdem.",
+    ),
+    ("Damaged, {} MB on disk", "Beschädigt, {} MB auf der Festplatte"),
+    ("Not installed. The download is {} MB.", "Nicht installiert. Der Download hat {} MB."),
+    ("Incomplete, {} of {} MB", "Unvollständig, {} von {} MB"),
+    ("Installed, {} MB on disk", "Installiert, {} MB auf der Festplatte"),
+    ("The stem model is still downloading", "Das Stem-Modell wird noch geladen"),
+    (
+        "Stem model removed. Stems you already separated keep working.",
+        "Stem-Modell entfernt. Bereits getrennte Stems funktionieren weiter.",
+    ),
+    (
+        "The stem model could not be removed. Is it in use by another program?",
+        "Das Stem-Modell konnte nicht entfernt werden. Wird es von einem anderen Programm benutzt?",
+    ),
+    (
+        "Stems stay off for now. The download is in Preferences › Analysis › Stems.",
+        "Stems bleiben erst einmal aus. Der Download liegt unter Einstellungen › Analyse › Stems.",
+    ),
+    ("Stem model installed", "Stem-Modell installiert"),
+    (
+        "Download paused. DOWNLOAD continues it where it stopped.",
+        "Download angehalten. HERUNTERLADEN setzt ihn an dieser Stelle fort.",
     ),
     (
         "OpenDJDecks {} is available",
