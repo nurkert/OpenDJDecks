@@ -41,7 +41,8 @@
   z-index: 3;
   display: grid;
   gap: 0.9rem;
-  justify-items: start;
+  justify-items: center;
+  text-align: center;
   width: min(100%, var(--max));
   margin-inline: auto;
   padding: clamp(1.75rem, 6vh, 3.75rem) var(--gutter) 0;
@@ -59,14 +60,16 @@
   color: var(--bone-2);
 }
 .hero__lede {
-  max-width: min(34rem, 100%);
+  max-width: min(40rem, 100%);
   font-size: clamp(1.1rem, 1.6vw, 1.32rem);
   line-height: 1.4;
+  text-wrap: balance;
   color: var(--bone-2);
 }
 .hero__actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.65rem;
   margin-top: 0.35rem;
 }
@@ -291,24 +294,21 @@
     position: absolute;
     inset: 0 0 auto;
     top: var(--nav-h);
-    padding-right: min(46vw, 48rem);
-    isolation: isolate;
+    padding-top: clamp(1.5rem, 5vh, 3.25rem);
   }
 
-  :root .hero__lede {
-    max-width: clamp(19rem, 29vw, 34rem);
-  }
-
+  /* One line across the stage, sized so that it also fits a low window. */
   :root .hero__title {
-    font-size: clamp(3rem, 7vw, 6.4rem);
+    font-size: clamp(3rem, min(6.2vw, 11.5svh), 6rem);
+    line-height: 1;
   }
 
-  :root .hero::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    inset: -10% 25% -10% -8%;
-    background: radial-gradient(70% 70% at 20% 50%, rgb(21 21 20 / 0.92), rgb(21 21 20 / 0.55) 55%, transparent 75%);
+  :root .hero__title span {
+    display: inline-block;
+  }
+
+  :root .hero__title span + span {
+    margin-left: 0.26em;
   }
 
   :root .scene {
@@ -322,7 +322,7 @@
     margin: 0;
     padding: 0;
     perspective: 2200px;
-    perspective-origin: 50% 30%;
+    perspective-origin: 50% 50%;
   }
 
   :root .rig {
@@ -337,7 +337,7 @@
     position: absolute;
     left: 50%;
     top: 50%;
-    width: min(60vw, 72rem, 92vh);
+    width: min(70vw, 76rem, calc((100svh - 7.75rem) * 1.6));
     will-change: transform, opacity;
     transform: translate(-50%, -50%);
     opacity: 1;

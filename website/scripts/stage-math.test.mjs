@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { clamp01, ease, glowAt, heroAt, liveMinHeight, liveMinWidth, liveQuery, poseAt, progress, scrollRange, transformOf, windows } from '../src/lib/stage-math.mjs';
+import { arrival, clamp01, ease, glowAt, heroAt, liveMinHeight, liveMinWidth, liveQuery, poseAt, progress, scrollRange, transformOf, windows } from '../src/lib/stage-math.mjs';
 
 test('progress is clamped to the pinned stretch', () => {
   assert.equal(progress(0, 100, 500), 0);
@@ -28,24 +28,30 @@ test('all three windows exist', () => {
 });
 
 test('the side windows end as mirror images and stay behind the front window', () => {
-  const left = poseAt('prepare', 1, 1000, 600);
-  const right = poseAt('club', 1, 1000, 600);
+  const left = poseAt('prepare', 1, 1000);
+  const right = poseAt('club', 1, 1000);
   assert.ok(Math.abs(left.x + right.x) < 1e-6, 'x mirrored');
-  assert.ok(Math.abs(left.ry + right.ry) < 1e-6, 'yaw mirrored');
-  assert.ok(left.x < -100, 'ends left');
+    assert.ok(left.x < -100, 'ends left');
   assert.ok(right.x > 100, 'ends right');
   for (let t = 0; t <= 1; t += 0.05) {
-    for (const name of ['prepare', 'club']) assert.ok(poseAt(name, t, 1000, 600).z < 0, `${name} behind the front window`);
+    for (const name of ['prepare', 'club']) assert.ok(poseAt(name, t, 1000).z < 0, `${name} behind the front window`);
   }
 });
 
 test('the front window ends flat, facing the viewer', () => {
-  const start = poseAt('perform', 0, 1000, 600);
-  const end = poseAt('perform', 1, 1000, 600);
+  const start = poseAt('perform', 0, 1000);
+  const end = poseAt('perform', 1, 1000);
   assert.ok(start.rx > 5, 'tilted on the floor at the start');
   assert.equal(end.rx, 0);
-  assert.equal(end.ry, 0);
   assert.ok(end.s >= start.s);
+});
+
+test('all windows share one vertical line and arrive before the scroll ends', () => {
+  for (const name of windows) {
+    assert.equal(poseAt(name, 0, 1000, 300, 30).y, 300);
+    assert.equal(poseAt(name, arrival, 1000, 300, 30).y, 30);
+    assert.deepEqual(poseAt(name, 1, 1000, 300, 30), poseAt(name, arrival, 1000, 300, 30));
+  }
 });
 
 test('the stylesheet goes live under the same condition as the script', () => {
@@ -64,6 +70,6 @@ test('hero leaves in the first half, the glow opens with the scroll', () => {
 });
 
 test('a transform is a single translate3d + rotations + scale string', () => {
-  const css = transformOf(poseAt('perform', 0.5, 1000, 600));
-  assert.match(css, /^translate\(-50%, -50%\) translate3d\([^)]+px\) rotateX\([^)]+deg\) rotateY\([^)]+deg\) scale\([^)]+\)$/);
+  const css = transformOf(poseAt('perform', 0.5, 1000));
+  assert.match(css, /^translate\(-50%, -50%\) translate3d\([^)]+px\) rotateX\([^)]+deg\) scale\([^)]+\)$/);
 });
