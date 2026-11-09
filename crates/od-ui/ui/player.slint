@@ -441,6 +441,10 @@ export component PreparePlayer inherits Rectangle {
     in property <bool> quantize;
     in property <string> jump-size: "2 S";
     in property <string> zoom: "8 S";
+    // Preview at another tempo or key (TEMPO / KEY tab): read-outs.
+    in property <string> shift-tempo: "0 %";
+    in property <string> shift-key: "0";
+    in property <string> shift-result;
     // Loops, quantize, memory cue stepping, zoom, jump size and the menu.
     callback act(string);
     in property <length> info-width: 260px;
@@ -799,6 +803,7 @@ export component PreparePlayer inherits Rectangle {
                     Tab { accessible-label: "player1.tab.grid"; height: 30px; label: @tr("GRID"); current: root.tool-tab == "grid"; clicked => { root.tool-tab = "grid"; } }
                     Tab { accessible-label: "player1.tab.phrase"; height: 30px; label: @tr("PHRASE"); current: root.tool-tab == "phrase"; clicked => { root.tool-tab = "phrase"; } }
                     Tab { accessible-label: "player1.tab.edit"; height: 30px; label: @tr("EDIT"); current: root.tool-tab == "edit"; clicked => { root.tool-tab = "edit"; } }
+                    Tab { accessible-label: "player1.tab.shift"; height: 30px; label: @tr("TEMPO / KEY"); current: root.tool-tab == "shift"; clicked => { root.tool-tab = "shift"; } }
                     Rectangle { horizontal-stretch: 1; min-width: 16px; }
                     HorizontalLayout {
                         spacing: 4px;
@@ -913,6 +918,44 @@ export component PreparePlayer inherits Rectangle {
                                 font-size: 9px; vertical-alignment: center; horizontal-alignment: center; overflow: elide;
                             }
                             Toggle { size: 30px; accessible-role: button; accessible-label: "player1.phrase.clear"; label: @tr("CLEAR"); command: "player.phrase.clear"; tone: Theme.fault; tooltip: @tr("Remove all phrases of this track"); enabled: parent.can-edit; clicked => { PhraseEdit.clear(); } }
+                        }
+                    }
+                    if root.tool-tab == "shift": VerticalLayout {
+                        horizontal-stretch: 1;
+                        // Hear the track at another tempo or key; the keys
+                        // centred on the 30 px line. Nothing is stored.
+                        alignment: center;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Caps { text: @tr("TEMPO"); font-size: 10px; vertical-alignment: center; }
+                            Stepper {
+                                a11y-prev: "player1.shift.tempo-down"; a11y-value: "player1.shift.tempo"; a11y-next: "player1.shift.tempo-up";
+                                size: 30px; arrow: 22px; font-size: 11px; template: "+16 %"; value: root.shift-tempo;
+                                lit: root.shift-tempo != "0 %"; tone: Theme.attention; enabled: root.has-track;
+                                tooltip: @tr("Preview at another tempo (the key stays); the track and its analysis are not changed");
+                                step(d) => { root.act(d > 0 ? "shift-tempo-up" : "shift-tempo-down"); }
+                            }
+                            Rectangle { width: 6px; }
+                            Caps { text: @tr("KEY"); font-size: 10px; vertical-alignment: center; }
+                            Stepper {
+                                a11y-prev: "player1.shift.key-down"; a11y-value: "player1.shift.key"; a11y-next: "player1.shift.key-up";
+                                size: 30px; arrow: 22px; font-size: 11px; template: "+12"; value: root.shift-key;
+                                lit: root.shift-key != "0"; tone: Theme.attention; enabled: root.has-track;
+                                tooltip: @tr("Preview in another key, in semitones; the track and its analysis are not changed");
+                                step(d) => { root.act(d > 0 ? "shift-key-up" : "shift-key-down"); }
+                            }
+                            Text {
+                                accessible-role: text; accessible-label: "player1.shift.result"; accessible-value: self.text;
+                                text: root.shift-result; font-family: Theme.family; font-size: 12px; font-weight: 600;
+                                color: Theme.bone-2; vertical-alignment: center;
+                            }
+                            Rectangle { horizontal-stretch: 1; }
+                            Toggle {
+                                size: 30px; accessible-role: button; accessible-label: "player1.shift.reset";
+                                label: @tr("RESET"); tooltip: @tr("Back to the original tempo and key");
+                                enabled: root.shift-tempo != "0 %" || root.shift-key != "0";
+                                clicked => { root.act("shift-reset"); }
+                            }
                         }
                     }
                     if root.tool-tab == "edit": VerticalLayout {

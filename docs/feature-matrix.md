@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 218 features; 212 in scope: 212 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 219 features; 213 in scope: 213 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -88,6 +88,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Import an encrypted library database (opt-in, the user supplies the key) | DONE | `od-import/src/encrypted_library.rs`, `od-import/src/sqlcipher.rs`, `od-ui/src/import.rs::start_encrypted_import`; The user picks the file and types the key under Advanced (or `od-cli encrypted-library-import`, `OD_ENCRYPTED_LIBRARY_KEY`). No key is contained, fetched, stored or logged; the source is read-only and the temporary decrypted copy is removed, also on error | 9 |  |
 | MCP server: full library access for preparing sets with an LLM | DONE | `apps/od-mcp/src/tools.rs`, `apps/od-mcp/src/server.rs`, `apps/od-mcp/src/lighting.rs`, `crates/od-lighting/src/rig.rs`; Owner request 2026-11-06 (SPEC §5.6). `opendjdecks-mcp` (MCP 2025-06-18, stdio or loopback HTTP): 8 read and 10 write tools, track/node resources, build_set and fix_transitions prompts; each write is one undo step "MCP: …" plus change-log rows (stick sync); setup in docs/mcp.md. Owner request 2026-11-07: the light show too — 8 lighting tools (rig overview, patch, settings, group looks, outputs, cue stack, track cues, live actions); the app reloads the edited rig and runs live actions from the rig's inbox; (SPEC §5.6) | 10 | **P1** |
 | Played tick in the list (on air this session) | DONE | `recorder.rs::mark_played`, `ui/table.slint`; A track that was audible on the master for 30 s in all gets a tick in the list and the Explorer; a short listen in the headphones does not count | 2 | P3 |
+| Preview a track at another tempo or key (TEMPO / KEY tab in the Prepare player) | DONE | `player.rs::apply_shift`, `player.rs::shift_readout`, `ui/player.slint::PreparePlayer`; Steps of whole percents (with key lock, so the key stays) and semitones on the hidden preview deck. Nothing is stored with the track or its analysis; the shift ends when another track is previewed and is not remembered as a deck switch | 2 | P2 |
 
 ## 2. Analysis
 
@@ -327,13 +328,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 212 |
+| DONE | 213 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **218** |
+| **Total** | **219** |
 
 ## P1 gaps and implementation notes
 

@@ -293,6 +293,9 @@ export component AppWindow inherits Window {
     in property <bool> player-loop-in-set;
     in property <bool> player-quantize: true;
     in property <string> player-jump-size: "2 S";
+    in property <string> player-shift-tempo: "0 %";
+    in property <string> player-shift-key: "0";
+    in property <string> player-shift-result;
     in property <string> player-zoom: "8 S";
     callback player-act(string);
     callback sampler-bpm-scale(float);
@@ -696,6 +699,9 @@ export component AppWindow inherits Window {
                 loop-in-set: root.player-loop-in-set;
                 quantize: root.player-quantize;
                 jump-size: root.player-jump-size;
+                shift-tempo: root.player-shift-tempo;
+                shift-key: root.player-shift-key;
+                shift-result: root.player-shift-result;
                 zoom: root.player-zoom;
                 act(w) => { root.player-act(w); }
             }

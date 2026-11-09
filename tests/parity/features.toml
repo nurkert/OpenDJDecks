@@ -3270,3 +3270,17 @@ tests = [
 ]
 evidence = ["convert.rs::write_wav", "sync.rs::sync_device", "club_usb.rs::ClubUsbWriter", "placement.rs::WavCopy"]
 note = "Off by default, per stick. FLAC, AAC and ALAC tracks are written as stereo 16-bit WAV for Club player USB (sample rates above 48 kHz are reduced); the export and analysis files name the .wav, a conversion is only redone when the source changes and removed when it is stale. Sticks that also carry the OpenDJDecks format keep the original file for it. Originals in the library are never touched."
+
+[[feature]]
+id = "prepare-preview-shift"
+area = "browser"
+name = "Preview a track at another tempo or key (TEMPO / KEY tab in the Prepare player)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::features::preview_at_another_tempo_and_key",
+  "od-ui::player::tests::preview_shift_moves_the_key_around_the_wheel",
+]
+evidence = ["player.rs::apply_shift", "player.rs::shift_readout", "ui/player.slint::PreparePlayer"]
+note = "Steps of whole percents (with key lock, so the key stays) and semitones on the hidden preview deck. Nothing is stored with the track or its analysis; the shift ends when another track is previewed and is not remembered as a deck switch"

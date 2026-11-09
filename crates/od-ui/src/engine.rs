@@ -394,6 +394,10 @@ fn remember_deck_switches(app: &App, state: &EngineState) {
     let mut applied = SWITCHES_APPLIED.with(|a| a.get());
     let mut changed: Vec<(usize, bool, &'static str)> = Vec::new();
     for (i, d) in state.decks.iter().enumerate().take(4) {
+        // A preview at another tempo or key is not a choice for the deck.
+        if i == decks::PREVIEW_DECK && app.state.borrow().player.shift_engaged {
+            continue;
+        }
         let mem = s.decks.get(i).cloned().unwrap_or_default();
         let want = if mem.tempo_range.is_empty() { s.tempo_range.as_str() } else { mem.tempo_range.as_str() };
         let range = tempo_range_id(d.tempo_range);
@@ -481,6 +485,7 @@ fn frame(app: &App) {
     decks::project(app, &state);
     crate::deck_grid::tick(app, &state);
     crate::club::frame(app, &state);
+    player::settle_shift(app, &state);
     remember_deck_switches(app, &state);
     crate::mic::frame(app, &state);
     mixer::project(app, &state);

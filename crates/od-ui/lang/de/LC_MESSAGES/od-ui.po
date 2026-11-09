@@ -5775,3 +5775,19 @@ msgstr "Maximale Kompatibilität (WAV für ältere Club-Player)"
 msgctxt "AppWindow"
 msgid "Writes FLAC and M4A/AAC/ALAC tracks to this stick as 16-bit WAV. Your original files stay as they are."
 msgstr "Schreibt FLAC- und M4A/AAC/ALAC-Tracks als 16-Bit-WAV auf diesen Stick. Deine Originaldateien bleiben unverändert."
+
+msgctxt "PreparePlayer"
+msgid "TEMPO / KEY"
+msgstr "TEMPO / TONART"
+
+msgctxt "PreparePlayer"
+msgid "Preview at another tempo (the key stays); the track and its analysis are not changed"
+msgstr "In anderem Tempo vorhören (die Tonart bleibt); der Track und seine Analyse ändern sich nicht"
+
+msgctxt "PreparePlayer"
+msgid "Preview in another key, in semitones; the track and its analysis are not changed"
+msgstr "In anderer Tonart vorhören, in Halbtönen; der Track und seine Analyse ändern sich nicht"
+
+msgctxt "PreparePlayer"
+msgid "Back to the original tempo and key"
+msgstr "Zurück zum Originaltempo und zur Originaltonart"

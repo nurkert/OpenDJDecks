@@ -2,7 +2,7 @@
 title: Preparing a set
 description: A set is a playlist with a plan. See the flow of tempo, key and energy, add transition notes, keep backup tracks ready and plan the start time.
 keywords: [set, sets, set list, setlist, plan, planning, flow, transition, transitions, notes, backup, backups, order, energy, key, tempo, harmonic]
-features: [browser-sets-flow, browser-set-backups, shell-prepare-layouts]
+features: [prepare-preview-shift, browser-sets-flow, browser-set-backups, shell-prepare-layouts]
 ---
 
 A set is an ordered list with extras for playing it live: it shows how tempo, key and energy move from track to track, and you can leave yourself notes for each transition.
@@ -35,6 +35,16 @@ Click a position to select it. Notes, backups and the track you hear all relate 
 
 - Sort or read the **MATCH** column while a candidate plays, or open **SIMILAR** for suggestions; see [Library](library.md#the-match-column).
 - Hot cues and memory cues you set while preparing appear on the stick and in Perform automatically.
+
+## Hear a track at another tempo or key (from version 0.6)
+
+Before you commit to a transition you can listen to a track as if it were pitched: in the Prepare player open the **TEMPO / KEY** tab.
+
+- The **TEMPO** arrows change the speed of the preview (in percent); the key stays the same.
+- The **KEY** arrows move it up or down by semitones.
+- Next to the arrows you can read the tempo and key the preview comes to, and **RESET** brings it back to the original.
+
+This is only for listening: the stored track, its beatgrid and its analysis do not change, and when you load it on a deck it plays as usual. The shift ends by itself as soon as you preview another track.
 
 ## Layouts for preparing
 

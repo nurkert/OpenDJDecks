@@ -649,3 +649,55 @@ fn max_compatibility_is_a_per_stick_option() {
     );
     let _ = std::fs::remove_dir_all(&stick);
 }
+
+/// Preview at another tempo or key: the shift reaches the preview deck, the
+/// track and its analysis stay as they are, and it ends when another track
+/// is previewed.
+#[test]
+fn preview_at_another_tempo_and_key() {
+    let ui = Ui::open((1440, 900));
+    let (id, title) = ui.fx.tracks[0].clone();
+    let (other, other_title) = ui.fx.tracks[1].clone();
+    ui.click_el(&row(&ui, &title));
+    assert!(ui.wait_until(10.0, |u| u.has("player1.tab.shift")));
+    ui.click("player1.tab.shift");
+    ui.pump(100);
+    assert_eq!(ui.value("player1.shift.tempo"), "0 %");
+    ui.click("player1.shift.tempo-up");
+    ui.click("player1.shift.tempo-up");
+    ui.click("player1.shift.key-up");
+    ui.pump(100);
+    assert_eq!(ui.value("player1.shift.tempo"), "+2 %");
+    assert_eq!(ui.value("player1.shift.key"), "+1");
+    ui.click("player1.play");
+    assert!(
+        ui.wait_until(20.0, |u| u.app.decks.borrow().loaded_id(crate::decks::PREVIEW_DECK) == Some(id)),
+        "the preview deck holds the track"
+    );
+    let deck = |ui: &Ui| crate::engine::snapshot(&ui.app).unwrap().decks[crate::decks::PREVIEW_DECK];
+    assert!(ui.wait_until(10.0, |u| (deck(u).tempo_fader - 2.0 / 16.0).abs() < 1e-3));
+    assert_eq!(deck(&ui).key_shift, 1.0);
+    assert!(deck(&ui).keylock, "the key stays while the tempo moves");
+    assert_eq!(deck(&ui).tempo_range, od_engine::TempoRange::Sixteen);
+    let lib = ui.fx.lib();
+    let (before, analysis) = (lib.track(id).unwrap(), lib.analysis(id).unwrap());
+    ui.pump(300);
+    assert_eq!(lib.track(id).unwrap().bpm, before.bpm, "stored tempo untouched");
+    assert_eq!(lib.analysis(id).unwrap(), analysis, "analysis untouched");
+    assert!(
+        !ui.app.state.borrow().settings.deck.decks[3].master_tempo,
+        "not remembered as a deck switch"
+    );
+
+    // Another track: the shift ends.
+    ui.click_el(&row(&ui, &other_title));
+    ui.click("player1.play"); // pauses the preview
+    ui.click("player1.play"); // plays the other track
+    assert!(
+        ui.wait_until(20.0, |u| u.app.decks.borrow().loaded_id(crate::decks::PREVIEW_DECK) == Some(other)),
+        "the other track previewing"
+    );
+    assert!(ui.wait_until(10.0, |u| deck(u).key_shift == 0.0 && deck(u).tempo_fader == 0.0));
+    assert!(!deck(&ui).keylock, "the deck's own switch is back");
+    assert_eq!(ui.value("player1.shift.tempo"), "0 %");
+}
