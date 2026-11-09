@@ -328,6 +328,15 @@
   }
 }
 
+.clip {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--r-window);
+}
+.clip img {
+  display: block;
+}
 .docs__get {
   display: flex;
   flex-wrap: wrap;

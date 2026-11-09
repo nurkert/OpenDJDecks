@@ -27,11 +27,47 @@ function walk(node, visit) {
   }
 }
 
+/** Pictures of the guides that also exist as a short clip in public/media/clips. */
+const clips = { stems: 'stems', beatgrid: 'beatgrid', 'teaser-fx': 'teaser-fx', lighting: 'lighting' };
+
+/** A picture with its clip on top; the still stays for reduced motion and until the clip plays. */
+function withClip(img, clip) {
+  return {
+    type: 'element',
+    tagName: 'span',
+    properties: { className: ['clip'] },
+    children: [
+      img,
+      {
+        type: 'element',
+        tagName: 'video',
+        properties: {
+          className: ['win__video'],
+          dataStageVideo: '',
+          dataWebm: `/media/clips/${clip}.webm`,
+          dataMp4: `/media/clips/${clip}.mp4`,
+          muted: true,
+          loop: true,
+          playsInline: true,
+          preload: 'none',
+          ariaLabel: img.properties?.alt ?? '',
+        },
+        children: [],
+      },
+    ],
+  };
+}
+
 export default function rehypeDocs() {
   return (tree) => {
     const seen = new Map();
     walk(tree, (node) => {
       if (!isElement(node)) return undefined;
+      if (isElement(node, 'img')) {
+        // The asset pipeline may already have moved the path into its own property.
+        const name = /img\/([a-z-]+)\.png/.exec(JSON.stringify(node.properties ?? {}))?.[1];
+        return name && clips[name] ? withClip(node, clips[name]) : undefined;
+      }
       if (/^h[1-4]$/.test(node.tagName)) {
         const value = text(node).trim();
         node.properties ??= {};
