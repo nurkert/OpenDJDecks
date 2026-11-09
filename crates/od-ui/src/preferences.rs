@@ -379,9 +379,26 @@ pub(crate) fn refresh(app: &App) {
             &s.view.appearance.as_str(),
         ));
         w.set_waveform(index_of(
-            &["3band", "blue", "rgb"],
+            &["3band", "mono", "rgb"],
             &s.view.waveform.as_str(),
         ));
+        let swatch = |stored: &str, standard: &str| {
+            let hex = if stored.is_empty() { standard } else { stored };
+            crate::settings::WAVEFORM_SWATCHES
+                .iter()
+                .position(|c| c.eq_ignore_ascii_case(hex))
+                .map_or(-1, |i| i as i32)
+        };
+        w.set_waveform_swatches(model(
+            crate::settings::WAVEFORM_SWATCHES
+                .iter()
+                .filter_map(|hex| crate::render::parse_hex(hex))
+                .map(|[r, g, b]| slint::Color::from_rgb_u8(r, g, b))
+                .collect(),
+        ));
+        w.set_waveform_low(swatch(&s.view.waveform_low, crate::render::LOW_HEX));
+        w.set_waveform_mid(swatch(&s.view.waveform_mid, crate::render::MID_HEX));
+        w.set_waveform_high(swatch(&s.view.waveform_high, crate::render::HIGH_HEX));
         w.set_phrases(s.view.phrases);
         w.set_tooltips(s.view.tooltips);
         w.set_club_other_beat(s.view.club_other_beat);
@@ -1144,6 +1161,13 @@ fn change_engine(app: &App, key: &str, f: impl Fn(&mut Settings)) {
     apply_engine_key(app, key);
 }
 
+/// Shows a new waveform style or new band colours at once.
+fn redraw_waveforms(app: &App) {
+    crate::decks::redraw_overviews(app);
+    crate::player::refresh_detail(app);
+    crate::player::invalidate_detail(app);
+}
+
 fn choose(app: &App, key: &str, i: i32) {
     let i = i.max(0) as usize;
     match key {
@@ -1200,12 +1224,34 @@ fn choose(app: &App, key: &str, i: i32) {
             crate::appearance::set(app, crate::settings::APPEARANCES.get(i).unwrap_or(&"dark"));
             return;
         }
-        "view.waveform" => change(app, |s| {
-            s.view.waveform = ["3band", "blue", "rgb"]
-                .get(i)
-                .unwrap_or(&"3band")
-                .to_string()
-        }),
+        "view.waveform" => {
+            change(app, |s| {
+                s.view.waveform = ["3band", "mono", "rgb"]
+                    .get(i)
+                    .unwrap_or(&"3band")
+                    .to_string()
+            });
+            redraw_waveforms(app);
+        }
+        "view.waveform-low" | "view.waveform-mid" | "view.waveform-high" => {
+            let Some(hex) = crate::settings::WAVEFORM_SWATCHES.get(i) else {
+                return;
+            };
+            change(app, |s| match key {
+                "view.waveform-low" => s.view.waveform_low = hex.to_string(),
+                "view.waveform-mid" => s.view.waveform_mid = hex.to_string(),
+                _ => s.view.waveform_high = hex.to_string(),
+            });
+            redraw_waveforms(app);
+        }
+        "view.waveform-reset" => {
+            change(app, |s| {
+                s.view.waveform_low.clear();
+                s.view.waveform_mid.clear();
+                s.view.waveform_high.clear();
+            });
+            redraw_waveforms(app);
+        }
         "view.phrase-types" => change(app, |s| {
             s.view.phrase_types = crate::settings::PHRASE_TYPES
                 .get(i)

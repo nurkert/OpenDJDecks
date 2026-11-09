@@ -77,6 +77,29 @@ component Row inherits HorizontalLayout {
 }
 
 // One of several values, as outlined plates side by side.
+// A row of colours to choose from.
+component Swatches inherits HorizontalLayout {
+    in property <string> key;
+    in property <[color]> colours;
+    in property <int> selected;
+    callback picked(int);
+    spacing: 6px;
+    alignment: start;
+    for c[i] in root.colours: Rectangle {
+        accessible-role: button;
+        accessible-label: root.key + "." + i;
+        accessible-checkable: true;
+        accessible-checked: i == root.selected;
+        accessible-action-default => { root.picked(i); }
+        width: 24px;
+        height: 24px;
+        background: c;
+        border-width: i == root.selected ? 2px : 1px;
+        border-color: i == root.selected ? Theme.bone : touch.has-hover ? Theme.bone-2 : Theme.rule-strong;
+        touch := TouchArea { clicked => { root.picked(i); } }
+    }
+}
+
 component Choice inherits HorizontalLayout {
     in property <[string]> options;
     in property <int> selected;
@@ -198,6 +221,13 @@ export component PreferencesWindow inherits Window {
     in property <int> bar-counter;
     in property <int> deck-time;
     in property <int> waveform;
+    // Chosen swatch per band, -1 when the colour is not one of the swatches.
+    in property <int> waveform-low;
+    in property <int> waveform-mid;
+    in property <int> waveform-high;
+    in property <[color]> waveform-swatches;
+    // The colour rows are folded away until asked for.
+    property <bool> waveform-own: false;
     // Phrases on the enlarged waveforms and on the overviews; phrase types
     // as names (0) or colours only (1).
     in property <bool> phrases;
@@ -406,7 +436,11 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Phrases"); Switch { accessible-label: "prefs.view.phrase-enlarged"; label: @tr("Show phrases on the enlarged waveforms"); on: root.phrases; toggled(v) => { root.flag("view.phrases", v); } } }
                         Row { label: ""; Switch { accessible-label: "prefs.view.phrase-overview"; label: @tr("Show the phrase bar under the overviews"); on: root.phrases-overview; toggled(v) => { root.flag("view.phrases-overview", v); } } }
                         Row { label: @tr("Phrase types"); Choice { accessible-label: "prefs.view.phrase-types"; options: [@tr("NAMES"), @tr("COLOURS ONLY")]; selected: root.phrase-types; picked(i) => { root.choose("view.phrase-types", i); } } }
-                        Row { label: @tr("Waveform colour"); Choice { accessible-label: "prefs.view.waveform-colour"; options: [@tr("3-BAND"), @tr("BLUE"), "RGB"]; selected: root.waveform; picked(i) => { root.choose("view.waveform", i); } } }
+                        Row { label: @tr("Waveform colour"); HorizontalLayout { alignment: start; spacing: 18px; Choice { accessible-label: "prefs.view.waveform-colour"; options: [@tr("3-BAND"), @tr("ONE COLOUR"), "RGB"]; selected: root.waveform; picked(i) => { root.choose("view.waveform", i); } } if root.waveform == 0: PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-customise"; label: @tr("OWN COLOURS"); active: root.waveform-own; clicked => { root.waveform-own = !root.waveform-own; } } } }
+                        if root.waveform == 0 && root.waveform-own: Row { label: @tr("Lows"); Swatches { key: "prefs.view.waveform-low"; colours: root.waveform-swatches; selected: root.waveform-low; picked(i) => { root.choose("view.waveform-low", i); } } }
+                        if root.waveform == 0 && root.waveform-own: Row { label: @tr("Mids"); Swatches { key: "prefs.view.waveform-mid"; colours: root.waveform-swatches; selected: root.waveform-mid; picked(i) => { root.choose("view.waveform-mid", i); } } }
+                        if root.waveform == 0 && root.waveform-own: Row { label: @tr("Highs"); Swatches { key: "prefs.view.waveform-high"; colours: root.waveform-swatches; selected: root.waveform-high; picked(i) => { root.choose("view.waveform-high", i); } } }
+                        if root.waveform == 0 && root.waveform-own: Row { label: ""; HorizontalLayout { alignment: start; PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-reset"; label: @tr("STANDARD COLOURS"); clicked => { root.choose("view.waveform-reset", 0); } } } }
                         Row { label: @tr("Waveform zoom"); Choice { accessible-label: "prefs.view.zoom"; options: [@tr("4 S"), @tr("8 S"), @tr("16 S"), @tr("32 S")]; selected: root.zoom-span; picked(i) => { root.choose("view.zoom", i); } } }
                         Row { label: @tr("Remaining time"); Choice { accessible-label: "prefs.view.deck-time"; options: [@tr("TRACK TIME"), @tr("REAL TIME AT TEMPO"), @tr("BOTH")]; selected: root.deck-time; picked(i) => { root.choose("view.deck-time", i); } } }
                         Row { label: @tr("Bar counter"); Choice { accessible-label: "prefs.view.bar-counter"; options: [@tr("TO PHRASE END"), @tr("TO NEXT MEMORY CUE"), @tr("COUNT UP")]; selected: root.bar-counter; picked(i) => { root.choose("view.bar-counter", i); } } }

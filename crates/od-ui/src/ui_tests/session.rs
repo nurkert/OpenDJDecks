@@ -76,6 +76,29 @@ fn retype(ui: &Ui, label: &str, text: &str) {
 /// Grid editor: in EDIT GRID a typed BPM and TAP set the tempo (about the
 /// cursor); DONE stores it and the track's BPM follows.
 #[test]
+fn waveform_band_colours_can_be_chosen() {
+    let ui = Ui::open((1440, 900));
+    let w = prefs(&ui, "view");
+    assert!(
+        ElementHandle::find_by_accessible_label(&w, "prefs.view.waveform-low.3")
+            .next()
+            .is_none(),
+        "the colour rows start folded away"
+    );
+    prefs_el(&w, "prefs.view.waveform-customise").mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    let before = crate::render::waveform_generation();
+    prefs_el(&w, "prefs.view.waveform-low.3").mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert_eq!(stored(&ui).view.waveform_low, crate::settings::WAVEFORM_SWATCHES[3]);
+    assert_eq!(w.get_waveform_low(), 3);
+    assert!(crate::render::waveform_generation() > before, "cached waveforms are redrawn");
+    prefs_el(&w, "prefs.view.waveform-reset").mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert_eq!(stored(&ui).view.waveform_low, "");
+}
+
+#[test]
 fn grid_editor_typed_bpm_and_tap_tempo() {
     let ui = Ui::open((1440, 900));
     let (id, _) = ui.fx.tracks[0].clone();

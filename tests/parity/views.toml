@@ -201,9 +201,9 @@ place = "left deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck1.stem.vocal",
-  "deck1.stem.inst",
   "deck1.stem.drums",
   "deck1.stem.bass",
+  "deck1.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -352,9 +352,9 @@ place = "right deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck2.stem.vocal",
-  "deck2.stem.inst",
   "deck2.stem.drums",
   "deck2.stem.bass",
+  "deck2.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -816,9 +816,9 @@ place = "left deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck1.stem.vocal",
-  "deck1.stem.inst",
   "deck1.stem.drums",
   "deck1.stem.bass",
+  "deck1.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -935,9 +935,9 @@ place = "left deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck3.stem.vocal",
-  "deck3.stem.inst",
   "deck3.stem.drums",
   "deck3.stem.bass",
+  "deck3.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -1118,9 +1118,9 @@ place = "right deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck2.stem.vocal",
-  "deck2.stem.inst",
   "deck2.stem.drums",
   "deck2.stem.bass",
+  "deck2.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -1237,9 +1237,9 @@ place = "right deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck4.stem.vocal",
-  "deck4.stem.inst",
   "deck4.stem.drums",
   "deck4.stem.bass",
+  "deck4.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -1722,9 +1722,9 @@ place = "left deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck1.stem.vocal",
-  "deck1.stem.inst",
   "deck1.stem.drums",
   "deck1.stem.bass",
+  "deck1.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -1873,9 +1873,9 @@ place = "right deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck2.stem.vocal",
-  "deck2.stem.inst",
   "deck2.stem.drums",
   "deck2.stem.bass",
+  "deck2.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -2315,9 +2315,9 @@ place = "left deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck1.stem.vocal",
-  "deck1.stem.inst",
   "deck1.stem.drums",
   "deck1.stem.bass",
+  "deck1.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -2434,9 +2434,9 @@ place = "left deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck3.stem.vocal",
-  "deck3.stem.inst",
   "deck3.stem.drums",
   "deck3.stem.bass",
+  "deck3.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -2617,9 +2617,9 @@ place = "right deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck2.stem.vocal",
-  "deck2.stem.inst",
   "deck2.stem.drums",
   "deck2.stem.bass",
+  "deck2.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -2736,9 +2736,9 @@ place = "right deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck4.stem.vocal",
-  "deck4.stem.inst",
   "deck4.stem.drums",
   "deck4.stem.bass",
+  "deck4.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -3207,9 +3207,9 @@ place = "left deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck1.stem.vocal",
-  "deck1.stem.inst",
   "deck1.stem.drums",
   "deck1.stem.bass",
+  "deck1.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -3250,9 +3250,9 @@ place = "right deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck2.stem.vocal",
-  "deck2.stem.inst",
   "deck2.stem.drums",
   "deck2.stem.bass",
+  "deck2.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -3461,9 +3461,9 @@ place = "left deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck1.stem.vocal",
-  "deck1.stem.inst",
   "deck1.stem.drums",
   "deck1.stem.bass",
+  "deck1.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -3580,9 +3580,9 @@ place = "right deck, under the overview, right-aligned, 21 pt"
 order = "row"
 elements = [
   "deck2.stem.vocal",
-  "deck2.stem.inst",
   "deck2.stem.drums",
   "deck2.stem.bass",
+  "deck2.stem.inst",
 ]
 note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
 
@@ -4374,16 +4374,16 @@ note = "UX §1.2: Export has a single RECORDING toggle"
 [[view.region]]
 id = "player1.transport"
 band = "player"
-place = "bottom dock: CUE / PLAY left, loop and jump keys at the right end of the tab line"
+place = "bottom dock: loop and jump keys on the tab line, CUE / PLAY at the right end"
 order = "row"
 elements = [
-  "player1.cue",
-  "player1.play",
   "player1.loop-in",
   "player1.loop-out",
   "player1.jump-back",
   "player1.jump-forward",
   "player1.jump-size",
+  "player1.cue",
+  "player1.play",
 ]
 
 [[view.region]]
@@ -4418,11 +4418,11 @@ band = "player"
 place = "waveform block"
 order = "column"
 elements = [
-  "player1.overview",
   "player1.zoom-in",
   "player1.zoom-reset",
   "player1.zoom-out",
   "player1.enlarged",
+  "player1.overview",
 ]
 note = "overview, then zoom column + enlarged waveform"
 
@@ -4686,16 +4686,16 @@ note = "UX §1.2: Export has a single RECORDING toggle"
 [[view.region]]
 id = "player1.transport"
 band = "player"
-place = "bottom dock: CUE / PLAY left, loop and jump keys at the right end of the tab line"
+place = "bottom dock: loop and jump keys on the tab line, CUE / PLAY at the right end"
 order = "row"
 elements = [
-  "player1.cue",
-  "player1.play",
   "player1.loop-in",
   "player1.loop-out",
   "player1.jump-back",
   "player1.jump-forward",
   "player1.jump-size",
+  "player1.cue",
+  "player1.play",
 ]
 
 [[view.region]]
@@ -4730,11 +4730,11 @@ band = "player"
 place = "waveform block"
 order = "column"
 elements = [
-  "player1.overview",
   "player1.zoom-in",
   "player1.zoom-reset",
   "player1.zoom-out",
   "player1.enlarged",
+  "player1.overview",
 ]
 note = "overview, then zoom column + enlarged waveform"
 

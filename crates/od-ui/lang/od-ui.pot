@@ -1167,7 +1167,7 @@ msgstr ""
 
 #: ui/preferences.slint:336
 msgctxt "PreferencesWindow"
-msgid "BLUE"
+msgid "ONE COLOUR"
 msgstr ""
 
 #: ui/preferences.slint:338
@@ -2196,4 +2196,24 @@ msgstr ""
 #: ui/update.slint:49
 msgctxt "UpdateBar"
 msgid "CLOSE"
+msgstr ""
+
+msgctxt "PreferencesWindow"
+msgid "Lows"
+msgstr ""
+
+msgctxt "PreferencesWindow"
+msgid "Mids"
+msgstr ""
+
+msgctxt "PreferencesWindow"
+msgid "Highs"
+msgstr ""
+
+msgctxt "PreferencesWindow"
+msgid "STANDARD COLOURS"
+msgstr ""
+
+msgctxt "PreferencesWindow"
+msgid "OWN COLOURS"
 msgstr ""

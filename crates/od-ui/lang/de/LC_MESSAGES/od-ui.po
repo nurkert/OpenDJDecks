@@ -2230,8 +2230,8 @@ msgstr "3 BÄNDER"
 
 #: ui/preferences.slint:392
 msgctxt "PreferencesWindow"
-msgid "BLUE"
-msgstr "BLAU"
+msgid "ONE COLOUR"
+msgstr "EINFARBIG"
 
 #: ui/preferences.slint:394
 msgctxt "PreferencesWindow"
@@ -5707,3 +5707,23 @@ msgstr "Du brauchst den Schlüssel für deine eigene Bibliothek. OpenDJDecks ent
 msgctxt "AppWindow"
 msgid "CANCEL"
 msgstr "ABBRECHEN"
+
+msgctxt "PreferencesWindow"
+msgid "Lows"
+msgstr "Tiefen"
+
+msgctxt "PreferencesWindow"
+msgid "Mids"
+msgstr "Mitten"
+
+msgctxt "PreferencesWindow"
+msgid "Highs"
+msgstr "Höhen"
+
+msgctxt "PreferencesWindow"
+msgid "STANDARD COLOURS"
+msgstr "STANDARDFARBEN"
+
+msgctxt "PreferencesWindow"
+msgid "OWN COLOURS"
+msgstr "EIGENE FARBEN"

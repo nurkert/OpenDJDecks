@@ -316,7 +316,7 @@ impl Default for Decks {
 #[derive(Default)]
 struct LaneScroll {
     /// What the tiles were rendered for: track, span (ms), size, phrases.
-    key: Option<(TrackId, i64, u32, u32, bool, bool, bool)>,
+    key: Option<(TrackId, i64, u32, u32, bool, bool, bool, u32)>,
     tiles: HashMap<i64, Image>,
     first: Option<i64>,
     sent_pos: f64,
@@ -359,6 +359,7 @@ impl LaneScroll {
             i.phrases,
             crate::appearance::is_light(),
             i.vertical,
+            render::waveform_generation(),
         );
         let mut force = !self.loaded;
         if self.key != Some(key) {
@@ -819,6 +820,29 @@ pub(crate) fn parse_autoload(spec: &str) -> Vec<(usize, TrackId, Option<f64>)> {
         })
         .filter(|(d, _, _)| (1..=DECKS).contains(d))
         .collect()
+}
+
+/// Redraws the overviews of the loaded tracks after a change of waveform colours.
+pub(crate) fn redraw_overviews(app: &App) {
+    let scale = app.ui.window().scale_factor();
+    let st = app.state.borrow();
+    let mut d = app.decks.borrow_mut();
+    for i in 0..DECKS {
+        let Some(m) = d.loaded[i].as_mut() else {
+            continue;
+        };
+        let Ok(track) = st.src().track(m.id) else {
+            continue;
+        };
+        m.overview = render::overview(
+            &m.waveform,
+            &m.grid,
+            track.duration,
+            (900.0 * scale) as u32,
+            (30.0 * scale) as u32,
+        );
+        d.views.lanes[i].track = None;
+    }
 }
 
 /// After analysis: tracks that were loaded before their analysis existed

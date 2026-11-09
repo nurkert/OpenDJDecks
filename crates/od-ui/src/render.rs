@@ -1,17 +1,21 @@
 //! CPU rendering of waveforms and the ground texture. Waveforms use the
 //! three-band convention DJs read at a glance: each column draws the low band
-//! (blue), then the mids (amber) and the highs (bone) on top, each at its own
-//! amplitude, so kicks, basslines, vocals and hats separate visually.
+//! (violet), then the mids (teal) and the highs (sodium) on top, each at its
+//! own amplitude, so kicks, basslines, vocals and hats separate visually. The
+//! three colours can be changed in Preferences > View.
 
 use od_analysis::transients::{BeatError, Transient};
 use od_core::{Beatgrid, Phrase, PhraseKind, Waveform, WaveformColumn};
 use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 
 const GROUND: [u8; 3] = [0x1A, 0x1A, 0x19];
-/// Band colours: low ≈ 450 nm blue, mid = 589 nm amber, high = bone.
-const LOW: [u8; 3] = [0x2F, 0x6F, 0xF2];
-const MID: [u8; 3] = [0xE8, 0xA1, 0x3A];
-const HIGH: [u8; 3] = [0xF2, 0xEE, 0xE4];
+/// Band colours of the emission-line palette, as stored in the settings.
+pub const LOW_HEX: &str = "#8B6CFF";
+pub const MID_HEX: &str = "#2FC4B2";
+pub const HIGH_HEX: &str = "#F5CE4A";
+const LOW: [u8; 3] = [0x8B, 0x6C, 0xFF];
+const MID: [u8; 3] = [0x2F, 0xC4, 0xB2];
+const HIGH: [u8; 3] = [0xF5, 0xCE, 0x4A];
 /// Colour-blind-safe bands (Okabe–Ito blue, orange, white).
 const LOW_CB: [u8; 3] = [0x00, 0x72, 0xB2];
 const MID_CB: [u8; 3] = [0xE6, 0x9F, 0x00];
@@ -19,17 +23,54 @@ const HIGH_CB: [u8; 3] = [0xFF, 0xFF, 0xFF];
 
 static COLORBLIND: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-/// Waveform style: 0 = three bands, 1 = blue, 2 = RGB.
+/// The user's band colours (low, mid, high): 0 keeps the palette's colour,
+/// otherwise 0x01RRGGBB.
+static CUSTOM: [std::sync::atomic::AtomicU32; 3] = [
+    std::sync::atomic::AtomicU32::new(0),
+    std::sync::atomic::AtomicU32::new(0),
+    std::sync::atomic::AtomicU32::new(0),
+];
+
+/// Waveform style: 0 = three bands, 1 = one colour, 2 = RGB.
 static STYLE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
-/// Waveform style by its settings name ("3band", "blue", "rgb").
+/// Counts changes of waveform style and colours, so cached tiles can tell.
+static GENERATION: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// The current generation of waveform style and colours.
+pub fn waveform_generation() -> u32 {
+    GENERATION.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Waveform style by its settings name ("3band", "mono", "rgb").
 pub fn set_waveform_style(name: &str) {
     let v = match name {
-        "blue" => 1,
+        "mono" => 1,
         "rgb" => 2,
         _ => 0,
     };
-    STYLE.store(v, std::sync::atomic::Ordering::Relaxed);
+    if STYLE.swap(v, std::sync::atomic::Ordering::Relaxed) != v {
+        GENERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+/// `#RRGGBB` as bytes.
+pub fn parse_hex(hex: &str) -> Option<[u8; 3]> {
+    let digits = hex.strip_prefix('#').filter(|d| d.len() == 6)?;
+    let value = u32::from_str_radix(digits, 16).ok()?;
+    Some([(value >> 16) as u8, (value >> 8) as u8, value as u8])
+}
+
+/// The user's band colours; an empty or invalid entry keeps the palette's.
+pub fn set_waveform_colours(colours: [&str; 3]) {
+    for (slot, hex) in CUSTOM.iter().zip(colours) {
+        let value = parse_hex(hex).map_or(0, |[r, g, b]| {
+            0x0100_0000 | u32::from(r) << 16 | u32::from(g) << 8 | u32::from(b)
+        });
+        if slot.swap(value, std::sync::atomic::Ordering::Relaxed) != value {
+            GENERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
 }
 
 /// Switches waveform bands to the colour-blind-safe palette.
@@ -74,15 +115,15 @@ const DARK: Pal = Pal {
     transient: [0xB7, 0xB1, 0xA4],
 };
 
-/// Light appearance: paper ground, deep blue lows, burnt-orange mids and
-/// soft slate highs (ink-dark highs read as heavy black slabs on paper).
+/// Light appearance: paper ground, deep violet lows, dark teal mids and
+/// ochre highs.
 const LIGHT: Pal = Pal {
     ground: [0xE9, 0xE5, 0xDA],
     downbeat: [0x6E, 0x6A, 0x62],
     downbeat_mark: [0x1D, 0x1C, 0x1A],
     phrase_mark: [0x85, 0x63, 0x00],
     tick: [0xB0, 0x8A, 0x2A],
-    bands: [[0x1F, 0x4F, 0xC8], [0xD0, 0x76, 0x1A], [0x9A, 0xA3, 0xB6]],
+    bands: [[0x5B, 0x3F, 0xC8], [0x0E, 0x8A, 0x7D], [0xB0, 0x84, 0x10]],
     bands_cb: [[0x00, 0x5F, 0xA0], [0xD5, 0x7A, 0x00], [0xA0, 0xA0, 0xA0]],
     fit_ok: [0x1D, 0x1C, 0x1A],
     fit_warn: [0x85, 0x63, 0x00],
@@ -101,10 +142,16 @@ fn pal() -> &'static Pal {
 fn bands() -> [[u8; 3]; 3] {
     let p = pal();
     if COLORBLIND.load(std::sync::atomic::Ordering::Relaxed) {
-        p.bands_cb
-    } else {
-        p.bands
+        return p.bands_cb;
     }
+    let mut bands = p.bands;
+    for (band, slot) in bands.iter_mut().zip(&CUSTOM) {
+        let value = slot.load(std::sync::atomic::Ordering::Relaxed);
+        if value != 0 {
+            *band = [(value >> 16) as u8, (value >> 8) as u8, value as u8];
+        }
+    }
+    bands
 }
 
 /// Colour of a phrase kind (shared by the phrase bar in the UI).
@@ -246,7 +293,7 @@ fn styled_column(
     }
 }
 
-/// Blue style: one envelope in blue, the highs lighter on top.
+/// One-colour style: one envelope in the low band's colour, the highs lighter on top.
 fn mono_column(
     buf: &mut SharedPixelBuffer<Rgba8Pixel>,
     x: u32,
@@ -900,8 +947,8 @@ mod tests {
             rgb[0] == 255 && rgb[1] < 100 && rgb[2] < 100,
             "bass-heavy column is red in RGB: {rgb:?}"
         );
-        let blue = px(1);
-        assert!(blue[2] > blue[0], "blue style: {blue:?}");
+        let mono = px(1);
+        assert_ne!(mono, px(0), "one-colour style differs");
         assert_ne!(px(0), rgb);
     }
 

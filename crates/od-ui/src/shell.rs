@@ -164,6 +164,11 @@ pub(crate) fn apply_theme(theme: &crate::Theme<'_>, settings: &Settings, lite: b
     crate::appearance::apply(theme, &settings.view.appearance);
     crate::render::set_colorblind_safe(settings.view.colorblind_safe);
     crate::render::set_waveform_style(&settings.view.waveform);
+    crate::render::set_waveform_colours([
+        settings.view.waveform_low.as_str(),
+        settings.view.waveform_mid.as_str(),
+        settings.view.waveform_high.as_str(),
+    ]);
 }
 
 /// Parses a stored pane size.
