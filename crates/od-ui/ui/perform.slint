@@ -61,7 +61,8 @@ export component Pad inherits Rectangle {
     }
     Text {
         x: 24px; width: parent.width - 28px; height: parent.height;
-        text: root.cue.label != "" ? root.cue.label : root.cue.time;
+        // The time only where it fits; a narrow pad shows just the letter.
+        text: parent.width < 96px ? "" : root.cue.label != "" ? root.cue.label : root.cue.time;
         font-family: Theme.family; font-size: Theme.control;
         color: root.cue.set ? Theme.ink-on : Theme.bone-3; vertical-alignment: center; overflow: elide;
     }
@@ -1711,7 +1712,7 @@ component GlobalBar inherits Rectangle {
             alignment: end;
             spacing: Theme.s3;
             padding-left: Theme.s4;
-            if root.show-rec: RecStrip { tall: root.touch-size; }
+            if root.show-rec: RecStrip { tall: root.touch-size; compact: root.width < 1000px; }
             // Recording, one click away.
             if root.show-rec: Rectangle {
                 width: 30px;

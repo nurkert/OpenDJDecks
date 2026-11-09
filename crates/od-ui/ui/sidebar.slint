@@ -267,6 +267,8 @@ export component Sidebar inherits Rectangle {
     callback open-sampler();
     // A controller's browse encoder moves through the tree.
     in property <bool> browse-focus;
+    // Narrow window (or a panel open): the rail shortens to its short forms.
+    in property <bool> tight;
     background: Theme.ground-band; border-radius: Theme.r-panel;
 
     property <[{ a11y: string, label: string, short: string, tone: color, tip: string }]> rail-items: [
@@ -342,11 +344,11 @@ export component Sidebar inherits Rectangle {
     HorizontalLayout {
       // Source rail (UX §1.6 order, without the streaming and cloud sources).
       if !Theme.touch: VerticalLayout {
-        width: Theme.rail;
+        width: root.tight ? 44px : Theme.rail;
         padding-top: 0px;
         spacing: 0px;
         for it[i] in root.rail-items: RailItem {
-            accessible-label: it.a11y; label: it.label; tone: it.tone; tooltip: it.tip;
+            accessible-label: it.a11y; label: root.tight ? it.short : it.label; tone: it.tone; tooltip: it.tip;
             command: i == 7 ? "section.recordings" : "";
             current: root.rail-current(i);
             clicked => { root.rail-click(i); }

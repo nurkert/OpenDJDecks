@@ -275,9 +275,9 @@ export component ClubPlayer inherits Rectangle {
             DisplayValue { caption: DeckTime.label(); value: DeckTime.main(root.deck); value-label: "deck\{root.n}.club.time"; template: "-00:00.0"; font-size: root.readout; align: right; }
             HeaderRule { }
             DisplayValue { caption: "BPM"; value: root.deck.bpm; value-label: "deck\{root.n}.club.bpm"; template: "000.00"; font-size: root.readout; align: right; }
-            DisplayValue { caption: @tr("TEMPO"); value: root.deck.tempo; value-label: "deck\{root.n}.club.tempo-value"; template: "+00.0%"; font-size: root.readout; align: right; }
+            DisplayValue { caption: @tr("TEMPO"); value: root.deck.tempo; value-label: "deck\{root.n}.club.tempo-value"; template: "+00.0%"; font-size: Theme.heading; align: right; }
             HeaderRule { }
-            DisplayValue { caption: @tr("KEY"); value: root.deck.key; value-label: "deck\{root.n}.club.key"; template: "00A"; font-size: root.readout; align: right; }
+            DisplayValue { caption: @tr("KEY"); value: root.deck.key; value-label: "deck\{root.n}.club.key"; template: "00A"; font-size: Theme.heading; align: right; }
             VerticalLayout {
                 alignment: center;
                 Key {
@@ -406,6 +406,7 @@ export component ClubPlayer inherits Rectangle {
                         border-color: root.deck.playing ? root.tone.with-alpha(0.7) : Theme.rule;
                     }
                     Jog {
+                        hero-from: 190px;
                         accessible-label: "deck\{root.n}.club.jog"; accessible-role: image;
                         size: max(0px, parent.d - 10px);
                         x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;

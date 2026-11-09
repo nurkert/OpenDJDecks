@@ -89,6 +89,7 @@ component Level inherits Rectangle {
 export component RecStrip inherits HorizontalLayout {
     // Kiosk: 44 px touch targets.
     in property <bool> tall;
+    in property <bool> compact;
     spacing: Theme.s2;
     alignment: end;
     Caps {
@@ -99,7 +100,8 @@ export component RecStrip inherits HorizontalLayout {
         alignment: center;
         Level { accessible-label: "rec.level"; tall: root.tall; }
     }
-    VerticalLayout {
+    // Small windows: the elapsed time stays, the meter gives way.
+    if !root.compact: VerticalLayout {
         alignment: center;
         Meter { accessible-role: progress-indicator; accessible-label: "rec.meter"; accessible-value: round(Rec.level * 100) + "%"; width: 72px; level: Rec.level; clipping: Rec.clip; }
     }

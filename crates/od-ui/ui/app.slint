@@ -870,6 +870,7 @@ export component AppWindow inherits Window {
                 HorizontalLayout {
                 Sidebar {
                     width: root.kiosk ? 190px : root.list-tight ? min(root.sidebar-width, 240px) : root.sidebar-width;
+                    tight: root.list-tight;
                     tree: root.tree;
                     selected-node: root.selected-node;
                     section: root.section;

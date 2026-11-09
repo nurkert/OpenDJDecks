@@ -490,6 +490,8 @@ export component Jog inherits Rectangle {
     // The BPM in the centre can be typed (target tempo) and the tempo range
     // under it clicked through.
     in property <bool> editable;
+    // Below this platter size the centre value steps down a rank.
+    in property <length> hero-from: 150px;
     // Accessible label prefix of the BPM field and the range key ("deck1").
     in property <string> a11y-prefix;
     callback touched();
@@ -532,7 +534,7 @@ export component Jog inherits Rectangle {
         alignment: center;
         spacing: 0;
         Text { text: root.top-text; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px; color: Theme.bone-3; horizontal-alignment: center; }
-        Text { text: root.main-text; font-family: Theme.family; font-size: root.size > 120px ? Theme.hero : Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: center; }
+        Text { text: root.main-text; font-family: Theme.family; font-size: root.size >= root.hero-from ? Theme.hero : Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: center; }
         Text { text: root.sub-text; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: center; }
     }
     TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.touched(); } }
