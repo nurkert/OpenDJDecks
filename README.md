@@ -15,7 +15,7 @@
   <a href="https://opendjdecks.de">Website</a> ·
   <a href="https://github.com/nurkert/OpenDJDecks/releases/latest">Download</a> ·
   <a href="docs/SPEC.md">Specification</a> ·
-  <a href="docs/feature-matrix.md">Feature parity</a> ·
+  <a href="docs/feature-matrix.md">Feature list</a> ·
   <a href="docs/keyboard.md">Keyboard shortcuts</a> ·
   <a href="docs/parity.md">Verification</a>
 </p>

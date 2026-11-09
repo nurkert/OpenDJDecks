@@ -2,6 +2,7 @@
 // The download page: the visitor's system first and alone, with one button and its install
 // steps; the other systems sit behind quiet tabs. Version and download count are read from
 // GitHub at build time. Without JavaScript every system is shown, one below the other.
+import { existsSync } from 'node:fs';
 import { Picture } from 'astro:assets';
 
 import '../../styles/download.css';
@@ -53,6 +54,10 @@ const panels = order.map((id) => {
   const more = id === 'macos' ? main : files.filter((asset) => !main.includes(asset));
   return { id, main, more };
 });
+
+// Only reference the video once its files exist, so no visitor ever requests a missing file.
+const publicDir = new URL('../../../public/media/', import.meta.url);
+const hasVideo = existsSync(new URL('perform.webm', publicDir)) && existsSync(new URL('perform.mp4', publicDir));
 
 const counts = release ? order.map((id) => ({ id, name: d.platforms[id], count: release.downloads[id] })).filter((p) => p.count > 0) : [];
 const total = counts.reduce((sum, p) => sum + p.count, 0);
@@ -167,6 +172,11 @@ const total = counts.reduce((sum, p) => sum + p.count, 0);
 
         <figure class="dl__win">
           <Picture src={perform} alt={t.stage.windowPerform} formats={['avif', 'webp']} fallbackFormat="webp" widths={[640, 960, 1280]} sizes="(max-width: 56rem) 92vw, 52vw" loading="eager" decoding="async" />
+          {
+            hasVideo && (
+              <video class="win__video" data-stage-video data-webm="/media/perform.webm" data-mp4="/media/perform.mp4" muted loop playsinline preload="none" aria-label={t.stage.videoAlt} />
+            )
+          }
         </figure>
       </div>
 
@@ -275,4 +285,5 @@ const total = counts.reduce((sum, p) => sum + p.count, 0);
 
 <script>
   import '../../scripts/download';
+  import '../../scripts/stage-video';
 </script>

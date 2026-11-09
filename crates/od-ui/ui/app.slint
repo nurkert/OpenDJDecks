@@ -1,6 +1,6 @@
 import { Theme } from "tokens.slint";
 import { VLine, HLine, ProgressLine } from "lines.slint";
-import { UpdateBar } from "update.slint";
+import { UpdateBar, UpdatePrompt } from "update.slint";
 import { DragGhost, DragState } from "drag.slint";
 export { DragState }
 export { PopupPlace }
@@ -218,6 +218,9 @@ export component AppWindow inherits Window {
     in property <string> update-state;
     in property <string> update-text;
     in property <float> update-progress;
+    in property <bool> update-prompt;
+    in property <string> update-prompt-title;
+    in property <string> update-prompt-notes;
     callback update-action(string);
     in property <[LaneMotion]> lane-motion;
     callback deck-zoom(int, float);
@@ -1424,6 +1427,13 @@ export component AppWindow inherits Window {
                 }
             }
         }
+    }
+    if root.update-prompt: UpdatePrompt {
+        width: 100%;
+        height: 100%;
+        title: root.update-prompt-title;
+        notes: root.update-prompt-notes;
+        act(what) => { root.update-action(what); }
     }
     TooltipLayer { }
 }

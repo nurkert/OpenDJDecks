@@ -165,6 +165,18 @@ impl Updater {
         })
     }
 
+    /// An updater for an explicit version and install (for tests against the
+    /// real releases).
+    pub fn with_target(cache: PathBuf, current: Version, target: Target) -> Self {
+        Self {
+            http: Arc::new(UreqHttp::new(&current.to_string())),
+            current,
+            target,
+            cache,
+            api_url: RELEASES_API.into(),
+        }
+    }
+
     /// Downloads, verifies and stages `update`. Nothing of the running
     /// version changes here; on error everything staged is removed.
     pub fn prepare(
@@ -252,7 +264,53 @@ impl Updater {
                     relaunch,
                 }))
             }
+            Strategy::SwapPortable { dir } => {
+                let archive = self.cache.join(&asset.name);
+                fetch(&archive, progress)?;
+                let staging = install::staging_path(dir, &v);
+                let exe = format!("opendjdecks{}", std::env::consts::EXE_SUFFIX);
+                install::stage_archive(&archive, &staging, &exe)?;
+                let _ = std::fs::remove_file(&archive);
+                let mut relaunch = vec![dir.join(&exe).into_os_string()];
+                relaunch.extend(self.target.args.iter().cloned());
+                Ok(Prepared::Restart(Finish {
+                    mode: "swap",
+                    current: dir.clone(),
+                    new: staging,
+                    relaunch,
+                }))
+            }
             Strategy::OpenReleasePage => unreachable!(),
+        }
+    }
+
+    /// Removes what an earlier update left behind next to this install: a
+    /// staged version that was never swapped in, or an interrupted unpacking.
+    pub fn remove_leftovers(&self) {
+        let current = match &self.target.kind {
+            InstallKind::MacBundle { bundle } => bundle,
+            InstallKind::AppImage { path } => path,
+            InstallKind::Portable { dir } => dir,
+            _ => return,
+        };
+        let (Some(parent), Some(name)) = (current.parent(), current.file_name()) else {
+            return;
+        };
+        let prefix = format!(".{}.update-", name.to_string_lossy());
+        let Ok(entries) = std::fs::read_dir(parent) else {
+            return;
+        };
+        for path in entries.filter_map(|e| e.ok().map(|e| e.path())) {
+            let leftover = path
+                .file_name()
+                .is_some_and(|n| n.to_string_lossy().starts_with(&prefix));
+            if leftover {
+                let _ = if path.is_dir() {
+                    std::fs::remove_dir_all(&path)
+                } else {
+                    std::fs::remove_file(&path)
+                };
+            }
         }
     }
 

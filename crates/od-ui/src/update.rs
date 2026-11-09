@@ -22,6 +22,9 @@ const FIRST_CHECK: Duration = Duration::from_secs(10);
 const INTERVAL: Duration = Duration::from_secs(6 * 3600);
 /// A check due while a deck plays in Perform waits this long.
 const DEFER: Duration = Duration::from_secs(60);
+/// After a failed check: soon again, so that one bad moment does not cost
+/// the whole session.
+const RETRY: Duration = Duration::from_secs(15 * 60);
 
 /// What the update machinery is doing.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -57,6 +60,12 @@ enum Msg {
 pub(crate) struct UpdateRuntime {
     pub phase: Phase,
     next_check: Instant,
+    /// The version the user was already asked about in this session.
+    prompted: Option<od_update::Version>,
+    /// The dialog is open.
+    prompt_open: bool,
+    /// Why the last check failed; shown in Preferences.
+    last_error: Option<String>,
     tx: Sender<Msg>,
     rx: Receiver<Msg>,
     cancel: Arc<AtomicBool>,
@@ -68,6 +77,9 @@ impl Default for UpdateRuntime {
         Self {
             phase: Phase::Idle,
             next_check: Instant::now() + FIRST_CHECK,
+            prompted: None,
+            prompt_open: false,
+            last_error: None,
             tx,
             rx,
             cancel: Arc::new(AtomicBool::new(false)),
@@ -99,6 +111,34 @@ pub(crate) fn gate(auto: bool, kiosk: bool, due: bool, idle: bool, performing: b
 /// Restarting by itself is fine only when nothing is going on.
 pub(crate) fn may_restart_now(mode_perform: bool, playing: bool, recording: bool) -> bool {
     !mode_perform && !playing && !recording
+}
+
+/// Whether to ask about `update` now: once per version and session, and
+/// never while music is playing or a mix is being recorded.
+pub(crate) fn should_prompt(
+    update: &Update,
+    prompted: Option<&od_update::Version>,
+    kiosk: bool,
+    playing: bool,
+    recording: bool,
+) -> bool {
+    !kiosk && !playing && !recording && prompted != Some(&update.version)
+}
+
+/// Release notes as plain text for the dialog: without Markdown marks, and
+/// short enough to read at a glance.
+pub(crate) fn short_notes(notes: &str) -> String {
+    const MAX_LINES: usize = 8;
+    let lines: Vec<String> = notes
+        .lines()
+        .map(|l| l.trim().trim_start_matches('#').trim().replace("**", "").replace('`', ""))
+        .filter(|l| !l.is_empty())
+        .collect();
+    let mut text = lines.iter().take(MAX_LINES).cloned().collect::<Vec<_>>().join("\n");
+    if lines.len() > MAX_LINES {
+        text.push_str("\n…");
+    }
+    text
 }
 
 /// "Last checked" for Preferences: relative, no time zone needed.
@@ -187,6 +227,59 @@ pub(crate) fn refresh(app: &App) {
     app.ui.set_update_state(state.into());
     app.ui.set_update_text(text.into());
     app.ui.set_update_progress(progress);
+    let u = app.update.borrow();
+    match (&u.phase, u.prompt_open) {
+        (Phase::Available(update), true) => {
+            app.ui.set_update_prompt_title(
+                od_i18n::trf("OpenDJDecks {} is available", &[&update.version]).into(),
+            );
+            app.ui.set_update_prompt_notes(short_notes(&update.notes).into());
+            app.ui.set_update_prompt(true);
+        }
+        _ => app.ui.set_update_prompt(false),
+    }
+}
+
+/// Opens the dialog when a new version is waiting and the moment is right.
+fn prompt_if_due(app: &App) {
+    let due = {
+        let u = app.update.borrow();
+        let Phase::Available(update) = &u.phase else {
+            return;
+        };
+        should_prompt(
+            update,
+            u.prompted.as_ref(),
+            app.state.borrow().config.kiosk,
+            playing(app),
+            app.recorder.borrow().is_recording(),
+        )
+        .then(|| update.version.clone())
+    };
+    if let Some(version) = due {
+        {
+            let mut u = app.update.borrow_mut();
+            u.prompted = Some(version);
+            u.prompt_open = true;
+        }
+        refresh(app);
+    }
+}
+
+/// Applies an update that was downloaded but not restarted for. Called when
+/// the app quits: the next start is already the new version.
+pub(crate) fn apply_on_quit(app: &App) {
+    let finish = match &app.update.borrow().phase {
+        Phase::Ready(_, f) => f.clone(),
+        _ => return,
+    };
+    let finish = od_update::Finish {
+        relaunch: Vec::new(),
+        ..finish
+    };
+    if let Err(e) = Updater::new(cache_dir()).finish(&finish) {
+        tracing::warn!(error = %e, "could not apply the update on quit");
+    }
 }
 
 /// Preferences > Advanced: the last check.
@@ -203,6 +296,12 @@ pub(crate) fn last_checked_text(app: &App) -> String {
         return od_i18n::trf(
             "Version {} · {} is available",
             &[&env!("CARGO_PKG_VERSION"), &u.version],
+        );
+    }
+    if let Some(error) = &app.update.borrow().last_error {
+        return od_i18n::trf(
+            "Version {} · the last check failed: {}",
+            &[&env!("CARGO_PKG_VERSION"), error],
         );
     }
     if st.settings.update.last_check == 0 {
@@ -313,6 +412,8 @@ fn restart(app: &App) {
     match Updater::new(cache_dir()).finish(&finish) {
         Ok(()) => {
             tracing::info!("update staged, restarting");
+            // Handed over: quitting must not start the helper a second time.
+            app.update.borrow_mut().phase = Phase::Idle;
             let _ = slint::quit_event_loop();
         }
         Err(e) => set_phase(
@@ -335,8 +436,11 @@ fn open_page(url: &str) {
 /// A button of the bar.
 fn act(app: &App, what: &str) {
     let phase = app.update.borrow().phase.clone();
+    app.update.borrow_mut().prompt_open = false;
     match (what, &phase) {
         ("install", Phase::Available(_)) => install(app),
+        // The dialog closes; the bar keeps offering the update.
+        ("dismiss", Phase::Available(_)) => refresh(app),
         ("notes", Phase::Available(u)) => open_page(&u.page_url),
         ("later", Phase::Available(_)) => set_phase(app, Phase::Idle),
         ("skip", Phase::Available(u)) => {
@@ -372,6 +476,7 @@ pub(crate) fn poll(app: &App) {
     for m in msgs {
         receive(app, m);
     }
+    prompt_if_due(app);
     let (due, idle) = {
         let u = app.update.borrow();
         (
@@ -400,6 +505,7 @@ fn receive(app: &App, m: Msg) {
         Msg::Checked { manual, result } => {
             match result {
                 Ok(found) => {
+                    app.update.borrow_mut().last_error = None;
                     app.state
                         .borrow_mut()
                         .change_settings(|s| s.update.last_check = unix_now());
@@ -420,7 +526,12 @@ fn receive(app: &App, m: Msg) {
                     }
                 }
                 Err(e) => {
-                    tracing::info!(error = %e, "update check failed");
+                    tracing::warn!(error = %e, "update check failed");
+                    {
+                        let mut u = app.update.borrow_mut();
+                        u.last_error = Some(e.clone());
+                        u.next_check = Instant::now() + RETRY;
+                    }
                     set_phase(app, Phase::Idle);
                     if manual {
                         app.status(od_i18n::trf("Could not check for updates: {}", &[&e]));
@@ -502,6 +613,9 @@ pub(crate) fn wire(app: &Rc<App>) {
     app.ui
         .on_check_updates(handler!(app, |a| check_now(&a, true)));
     refresh(app);
+    let _ = std::thread::Builder::new()
+        .name("update-cleanup".into())
+        .spawn(|| Updater::new(cache_dir()).remove_leftovers());
 }
 
 #[cfg(test)]
@@ -627,5 +741,25 @@ mod tests {
         assert_eq!(ago(1_000_000, 1_000_000 - 3 * 86_400), "3 days ago");
         // A clock that went backwards.
         assert_eq!(ago(1000, 2000), "just now");
+    }
+
+    #[test]
+    fn asks_once_per_version_and_never_during_music() {
+        let u = update(false);
+        assert!(should_prompt(&u, None, false, false, false));
+        assert!(!should_prompt(&u, Some(&u.version), false, false, false), "already asked");
+        assert!(should_prompt(&u, Some(&Version::new(0, 1, 0)), false, false, false), "a newer one");
+        assert!(!should_prompt(&u, None, false, true, false), "a deck is playing");
+        assert!(!should_prompt(&u, None, false, false, true), "recording");
+        assert!(!should_prompt(&u, None, true, false, false), "standalone unit");
+    }
+
+    #[test]
+    fn release_notes_become_short_plain_text() {
+        assert_eq!(short_notes("## What is new\n\n- **Faster** `sync`\n"), "What is new\n- Faster sync");
+        let long = (0..12).map(|i| format!("line {i}")).collect::<Vec<_>>().join("\n");
+        let short = short_notes(&long);
+        assert_eq!(short.lines().count(), 9);
+        assert!(short.ends_with('…'));
     }
 }

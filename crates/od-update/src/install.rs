@@ -27,6 +27,9 @@ pub enum Strategy {
     SwapAppImage { path: PathBuf },
     /// Hand the `.deb` to the system installer through pkexec.
     InstallDeb { tool: DebTool },
+    /// Unpack the Windows zip or Linux tar.gz next to the program folder,
+    /// swap the folders after quit.
+    SwapPortable { dir: PathBuf },
     /// Nothing we can do in place: open the release page.
     OpenReleasePage,
 }
@@ -53,6 +56,7 @@ impl Probe {
         let dir = match kind {
             InstallKind::MacBundle { bundle } => bundle.parent().filter(|_| !translocated(bundle)),
             InstallKind::AppImage { path } => path.parent(),
+            InstallKind::Portable { dir } => dir.parent(),
             _ => None,
         };
         Probe {
@@ -79,6 +83,10 @@ pub fn strategy(kind: &InstallKind, has_asset: bool, probe: Probe) -> Strategy {
             Strategy::SwapAppImage { path: path.clone() }
         }
         InstallKind::AppImage { .. } => Strategy::OpenReleasePage,
+        InstallKind::Portable { dir } if probe.dir_writable => {
+            Strategy::SwapPortable { dir: dir.clone() }
+        }
+        InstallKind::Portable { .. } => Strategy::OpenReleasePage,
         InstallKind::Deb if probe.pkexec && probe.apt_get => Strategy::InstallDeb {
             tool: DebTool::AptGet,
         },
@@ -192,6 +200,24 @@ impl Finish {
     /// process to exit. The caller quits right after.
     pub fn spawn(&self, dir: &Path) -> Result<(), Error> {
         std::fs::create_dir_all(dir)?;
+        #[cfg(windows)]
+        {
+            std::fs::write(
+                dir.join(WINDOWS_HELPER_NAME),
+                windows_helper(self, std::process::id()),
+            )?;
+            let mut cmd = windows_helper_command(dir);
+            detach(&mut cmd);
+            cmd.spawn()
+                .map_err(|e| Error::Install(format!("could not start the update helper: {e}")))?;
+            Ok(())
+        }
+        #[cfg(not(windows))]
+        self.spawn_unix(dir)
+    }
+
+    #[cfg(not(windows))]
+    fn spawn_unix(&self, dir: &Path) -> Result<(), Error> {
         let script = dir.join("update-helper.sh");
         std::fs::write(&script, HELPER_SCRIPT)?;
         let mut cmd = Command::new("/bin/sh");
@@ -206,6 +232,135 @@ impl Finish {
             .map_err(|e| Error::Install(format!("could not start the update helper: {e}")))?;
         Ok(())
     }
+}
+
+/// File name of the Windows helper. It is started by this relative name from
+/// its own folder, because `cmd /c` mangles a quoted path with spaces when
+/// arguments follow.
+pub const WINDOWS_HELPER_NAME: &str = "update-helper.cmd";
+
+/// Starts the Windows helper in `dir`.
+#[cfg(windows)]
+fn windows_helper_command(dir: &Path) -> Command {
+    let shell = std::env::var_os("ComSpec").unwrap_or_else(|| "cmd.exe".into());
+    let mut cmd = Command::new(shell);
+    cmd.args(["/d", "/c", WINDOWS_HELPER_NAME]).current_dir(dir);
+    cmd
+}
+
+/// `%` is the only character a quoted `set` value has to escape in a batch file.
+fn batch_quoted(value: &std::ffi::OsStr) -> String {
+    value.to_string_lossy().replace('%', "%%")
+}
+
+/// The Windows counterpart of [`HELPER_SCRIPT`], for `pid` to wait on: swaps
+/// the program folders, restores the old one if that fails, and starts the
+/// app again. Paths are part of the script because of [`WINDOWS_HELPER_NAME`].
+pub fn windows_helper(finish: &Finish, pid: u32) -> String {
+    let start = finish
+        .relaunch
+        .iter()
+        .map(|arg| format!("\"{}\"", batch_quoted(arg)))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let script = format!(
+        r#"@echo off
+chcp 65001 >nul
+setlocal DisableDelayedExpansion
+set "CUR={cur}"
+set "NEW={new}"
+set "OLD=%CUR%.old-update"
+set "STATUS=0"
+set /a WAITED=0
+:wait
+tasklist /FI "PID eq {pid}" /FO CSV /NH 2>nul | find """{pid}""" >nul
+if errorlevel 1 goto swap
+set /a WAITED+=1
+if %WAITED% gtr 120 exit /b 2
+ping -n 2 127.0.0.1 >nul
+goto wait
+:swap
+if not exist "%NEW%" goto failed
+if exist "%OLD%" rmdir /s /q "%OLD%"
+set /a TRIES=0
+:movecurrent
+move "%CUR%" "%OLD%" >nul 2>&1
+if not errorlevel 1 goto movenew
+set /a TRIES+=1
+if %TRIES% gtr 30 goto failed
+ping -n 2 127.0.0.1 >nul
+goto movecurrent
+:movenew
+move "%NEW%" "%CUR%" >nul 2>&1
+if not errorlevel 1 goto done
+move "%OLD%" "%CUR%" >nul 2>&1
+goto failed
+:done
+rmdir /s /q "%OLD%"
+goto relaunch
+:failed
+set "STATUS=1"
+if exist "%NEW%" rmdir /s /q "%NEW%"
+:relaunch
+{relaunch}
+exit /b %STATUS%
+"#,
+        cur = batch_quoted(finish.current.as_os_str()),
+        new = batch_quoted(finish.new.as_os_str()),
+        relaunch = if start.is_empty() {
+            String::new()
+        } else {
+            format!("start \"\" {start}")
+        },
+    );
+    script.replace('\n', "\r\n")
+}
+
+/// The system's `tar`: GNU or BSD on Unix, the bsdtar of Windows 10 and later,
+/// which also reads zip files. By full path on Windows, so that a file in the
+/// current folder is never run instead.
+fn tar_program() -> PathBuf {
+    match std::env::var_os("SystemRoot") {
+        Some(root) if cfg!(windows) => Path::new(&root).join("System32").join("tar.exe"),
+        _ => PathBuf::from("tar"),
+    }
+}
+
+/// Unpacks the verified `archive` and leaves the program folder that holds
+/// `exe` at `staging`, next to the installed one.
+pub fn stage_archive(archive: &Path, staging: &Path, exe: &str) -> Result<(), Error> {
+    let unpack = staging.with_file_name(format!(
+        "{}.unpack",
+        staging.file_name().unwrap_or_default().to_string_lossy()
+    ));
+    let _ = std::fs::remove_dir_all(staging);
+    let _ = std::fs::remove_dir_all(&unpack);
+    std::fs::create_dir_all(&unpack)?;
+    let result = (|| {
+        run(
+            Command::new(tar_program())
+                .arg("-xf")
+                .arg(archive)
+                .arg("-C")
+                .arg(&unpack),
+            "tar",
+        )?;
+        let root = if unpack.join(exe).is_file() {
+            unpack.clone()
+        } else {
+            std::fs::read_dir(&unpack)?
+                .filter_map(|e| e.ok().map(|e| e.path()))
+                .find(|p| p.join(exe).is_file())
+                .ok_or_else(|| Error::Install(format!("the archive holds no {exe}")))?
+        };
+        std::fs::rename(&root, staging)?;
+        Ok(())
+    })();
+    let _ = std::fs::remove_dir_all(&unpack);
+    if result.is_err() {
+        let _ = std::fs::remove_dir_all(staging);
+    }
+    result
 }
 
 /// No terminal, own process group: survives the app quitting.
@@ -706,5 +861,119 @@ mod tests {
         app.wait().unwrap();
         assert!(h.wait().unwrap().success());
         assert_eq!(std::fs::read_to_string(&cur).unwrap(), "new");
+    }
+
+    fn portable_finish() -> Finish {
+        Finish {
+            mode: "swap",
+            current: p(r"C:\Users\Jo 100%\OpenDJDecks"),
+            new: p(r"C:\Users\Jo 100%\.OpenDJDecks.update-0.6.0"),
+            relaunch: vec![r"C:\Users\Jo 100%\OpenDJDecks\opendjdecks.exe".into(), "--lang".into()],
+        }
+    }
+
+    #[test]
+    fn windows_helper_escapes_paths_and_uses_crlf() {
+        let s = windows_helper(&portable_finish(), 4242);
+        assert!(s.contains(r#"set "CUR=C:\Users\Jo 100%%\OpenDJDecks""#));
+        assert!(s.contains("PID eq 4242"));
+        assert!(s.contains(r#"find """4242""""#));
+        assert!(s.contains(r#"start "" "C:\Users\Jo 100%%\OpenDJDecks\opendjdecks.exe" "--lang""#));
+        assert_eq!(s.matches('\n').count(), s.matches("\r\n").count());
+    }
+
+    #[test]
+    fn strategy_for_a_portable_folder() {
+        let kind = InstallKind::Portable { dir: p("/od") };
+        let writable = Probe {
+            dir_writable: true,
+            ..Default::default()
+        };
+        assert_eq!(strategy(&kind, true, writable), Strategy::SwapPortable { dir: p("/od") });
+        assert_eq!(strategy(&kind, true, Probe::default()), Strategy::OpenReleasePage);
+        assert_eq!(strategy(&kind, false, writable), Strategy::OpenReleasePage);
+    }
+
+    const EXE: &str = if cfg!(windows) { "opendjdecks.exe" } else { "opendjdecks" };
+
+    /// An archive as the release workflow builds it: one top-level folder.
+    fn archive_with_folder(dir: &Path) -> PathBuf {
+        let name = "OpenDJDecks-0.6.0";
+        let root = dir.join("src").join(name);
+        std::fs::create_dir_all(root.join("mappings")).unwrap();
+        std::fs::write(root.join(EXE), b"new").unwrap();
+        let archive = dir.join(if cfg!(windows) { "a.zip" } else { "a.tar.gz" });
+        let mut tar = Command::new(tar_program());
+        tar.arg(if cfg!(windows) { "-a" } else { "-z" });
+        let status = tar
+            .arg("-cf")
+            .arg(&archive)
+            .arg("-C")
+            .arg(dir.join("src"))
+            .arg(name)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        archive
+    }
+
+    #[test]
+    fn stage_archive_leaves_the_program_folder_at_staging() {
+        let d = tempfile::tempdir().unwrap();
+        let archive = archive_with_folder(d.path());
+        let staging = d.path().join(".od.update-0.6.0");
+        stage_archive(&archive, &staging, EXE).unwrap();
+        assert_eq!(std::fs::read(staging.join(EXE)).unwrap(), b"new");
+        assert!(staging.join("mappings").is_dir());
+        assert!(!d.path().join(".od.update-0.6.0.unpack").exists());
+    }
+
+    #[test]
+    fn stage_archive_without_the_program_fails_cleanly() {
+        let d = tempfile::tempdir().unwrap();
+        let archive = archive_with_folder(d.path());
+        let staging = d.path().join(".od.update-0.6.0");
+        assert!(stage_archive(&archive, &staging, "other-program").is_err());
+        assert!(!staging.exists());
+    }
+
+    /// Runs the real batch file: spaces, a non-ASCII name and a finished process.
+    #[cfg(windows)]
+    #[test]
+    fn windows_helper_swaps_the_folders_and_relaunches() {
+        let d = tempfile::tempdir().unwrap();
+        let base = d.path().join("Jürgen 100% Müller");
+        let (cur, new) = (base.join("OpenDJDecks"), base.join(".OpenDJDecks.update-0.6.0"));
+        std::fs::create_dir_all(&cur).unwrap();
+        std::fs::create_dir_all(&new).unwrap();
+        std::fs::write(cur.join("version"), "old").unwrap();
+        std::fs::write(new.join("version"), "new").unwrap();
+        let mut child = Command::new("cmd").args(["/c", "exit"]).spawn().unwrap();
+        let pid = child.id();
+        child.wait().unwrap();
+        let marker = base.join("relaunched.txt");
+        let finish = Finish {
+            mode: "swap",
+            current: cur.clone(),
+            new: new.clone(),
+            relaunch: vec![
+                "cmd.exe".into(),
+                "/c".into(),
+                format!("echo ok> \"{}\"", marker.display()).into(),
+            ],
+        };
+        std::fs::write(d.path().join(WINDOWS_HELPER_NAME), windows_helper(&finish, pid)).unwrap();
+        let out = windows_helper_command(d.path()).output().unwrap();
+        assert!(out.status.success(), "{out:?}");
+        assert_eq!(std::fs::read_to_string(cur.join("version")).unwrap(), "new");
+        assert!(!new.exists());
+        assert!(!base.join("OpenDJDecks.old-update").exists());
+        for _ in 0..50 {
+            if marker.exists() {
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+        panic!("the app was not started again");
     }
 }
