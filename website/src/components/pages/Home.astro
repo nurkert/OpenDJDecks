@@ -11,9 +11,9 @@ import TeaserArt from '../home/TeaserArt.astro';
 import { path, repoUrl, ui, type Lang } from '../../i18n/ui';
 import { wikiHome, guideHref } from '../../lib/docs-catalog.mjs';
 
-import perform from '../../../../docs/assets/screenshots/perform.png';
-import prepare from '../../../../docs/assets/screenshots/prepare.png';
-import clubMode from '../../../../docs/assets/screenshots/club-mode.png';
+import perform from '../../assets/stage/perform.png';
+import prepare from '../../assets/stage/prepare.png';
+import clubMode from '../../assets/stage/club.png';
 
 interface Props {
   lang: Lang;
@@ -37,6 +37,8 @@ const teaserArt: Record<string, string> = {
   recording: 'recording',
   lights: 'lighting',
 };
+// Teasers that also have a short clip of the app (public/media/clips).
+const teaserClip: Record<string, string> = { beatgrid: 'beatgrid', stems: 'stems', fx: 'teaser-fx', lights: 'lighting' };
 const teasers = t.teasers.map((teaser) => ({
   ...teaser,
   image: teaserArt[teaser.id] ? teaserImage(teaserArt[teaser.id]) : undefined,
@@ -46,6 +48,20 @@ const teasers = t.teasers.map((teaser) => ({
 const publicDir = new URL('../../../public/media/', import.meta.url);
 const hasVideo = existsSync(new URL('perform.webm', publicDir)) && existsSync(new URL('perform.mp4', publicDir));
 const formats = ['avif', 'webp'] as const;
+
+// The background: a spectrum of emission lines that breathes in a seamless loop, drawn by CSS,
+// so it stays sharp on any screen and costs no download. The numbers are fixed for a stable build.
+const lineTones = ['--blue', '--violet', '--sodium', '--orange', '--green'];
+const skyLines = Array.from({ length: 72 }, (_, i) => {
+  const wobble = (Math.sin(i * 12.9898) * 43758.5453) % 1;
+  const shape = Math.abs(Math.sin(i * 0.31)) * 0.55 + Math.abs(wobble) * 0.45;
+  return {
+    height: Math.round(18 + shape * 74),
+    delay: -(Math.abs(wobble) * 4).toFixed(2),
+    period: (1.94 * (1 + (i % 3))).toFixed(2),
+    tone: lineTones[i % 5 === 0 ? 2 : Math.abs(Math.round(wobble * 10)) % 5],
+  };
+});
 ---
 
 <Base lang={lang} page="home" title={t.meta.title} description={t.meta.description}>
@@ -54,6 +70,9 @@ const formats = ['avif', 'webp'] as const;
       <div class="scene__sticky">
         <div class="sky" aria-hidden="true">
           <div class="sky__glow" data-glow></div>
+          <div class="sky__loop">
+            {skyLines.map((line) => <i style={`--h: ${line.height}%; --d: ${line.delay}s; --t: ${line.period}s; --c: var(${line.tone})`} />)}
+          </div>
           <div class="sky__line"></div>
         </div>
 
@@ -81,13 +100,13 @@ const formats = ['avif', 'webp'] as const;
         <div class="world" data-world>
           <div class="rig">
             <figure class="win win--prepare" data-win="prepare">
-              <Picture src={prepare} alt={s.windowPrepare} formats={formats} fallbackFormat="webp" widths={[640, 1024]} sizes="(max-width: 55rem) 60vw, 34vw" loading="eager" decoding="async" />
+              <Picture src={prepare} alt={s.windowPrepare} formats={formats} fallbackFormat="webp" widths={[640, 1024, 1600]} sizes="(max-width: 55rem) 60vw, 60vw" loading="eager" decoding="async" />
             </figure>
             <figure class="win win--club" data-win="club">
-              <Picture src={clubMode} alt={s.windowClub} formats={formats} fallbackFormat="webp" widths={[640, 1024]} sizes="(max-width: 55rem) 60vw, 34vw" loading="eager" decoding="async" />
+              <Picture src={clubMode} alt={s.windowClub} formats={formats} fallbackFormat="webp" widths={[640, 1024, 1600]} sizes="(max-width: 55rem) 60vw, 60vw" loading="eager" decoding="async" />
             </figure>
             <figure class="win win--perform" data-win="perform">
-              <Picture src={perform} alt={s.windowPerform} formats={formats} fallbackFormat="webp" widths={[640, 960, 1280, 1800]} sizes="(max-width: 55rem) 92vw, min(70vw, 76rem)" loading="eager" fetchpriority="high" decoding="async" />
+              <Picture src={perform} alt={s.windowPerform} formats={formats} fallbackFormat="webp" widths={[640, 960, 1280, 1800, 2560]} sizes="(max-width: 55rem) 92vw, 70vw" loading="eager" fetchpriority="high" decoding="async" />
               {
                 hasVideo && (
                   <video
@@ -133,6 +152,19 @@ const formats = ['avif', 'webp'] as const;
                     <Picture src={teaser.image} alt={teaser.title} formats={formats} fallbackFormat="webp" widths={[480, 720, 1080]} sizes="(max-width: 56rem) 92vw, 50vw" loading="lazy" decoding="async" />
                   ) : (
                     <TeaserArt kind={teaser.id} title={teaser.title} />
+                  )}
+                  {teaserClip[teaser.id] && (
+                    <video
+                      class="win__video"
+                      data-stage-video
+                      data-webm={`/media/clips/${teaserClip[teaser.id]}.webm`}
+                      data-mp4={`/media/clips/${teaserClip[teaser.id]}.mp4`}
+                      muted
+                      loop
+                      playsinline
+                      preload="none"
+                      aria-label={teaser.title}
+                    />
                   )}
                 </div>
               </article>
