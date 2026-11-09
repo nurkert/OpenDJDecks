@@ -185,6 +185,7 @@ impl App {
     pub fn run(self: &Rc<Self>) -> anyhow::Result<()> {
         self.ui.run()?;
         shell::remember_view(self);
+        update::apply_on_quit(self);
         Ok(())
     }
 

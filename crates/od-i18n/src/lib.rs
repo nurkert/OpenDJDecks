@@ -208,6 +208,10 @@ const DE: &[(&str, &str)] = &[
         "OpenDJDecks {} wird geladen …",
     ),
     (
+        "Version {} · the last check failed: {}",
+        "Version {} · die letzte Prüfung ist fehlgeschlagen: {}",
+    ),
+    (
         "OpenDJDecks {} is ready — restart to finish",
         "OpenDJDecks {} ist bereit — zum Abschließen neu starten",
     ),

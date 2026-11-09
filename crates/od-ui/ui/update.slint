@@ -50,3 +50,56 @@ export component UpdateBar inherits Rectangle {
         if root.state == "info" || root.state == "error": PlateButton { accessible-label: "app.update.close"; accessible-role: button; compact: true; label: @tr("CLOSE"); clicked => { root.act("close"); } }
     }
 }
+
+// Asks once per version, and only while no music plays: the update starts
+// after one click and restarts the app by itself.
+export component UpdatePrompt inherits Rectangle {
+    in property <string> title;
+    in property <string> notes;
+    // "install" | "notes" | "dismiss" | "skip"
+    callback act(string);
+
+    background: #00000099;
+    accessible-role: groupbox;
+    accessible-label: "app.update.prompt";
+    TouchArea { }
+
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: min(parent.width - 48px, 520px);
+        height: card.preferred-height;
+        background: Theme.ground-band;
+        border-width: 1px;
+        border-color: Theme.rule-strong;
+        card := VerticalLayout {
+            padding: 22px;
+            spacing: 14px;
+            Text {
+                text: root.title;
+                font-family: Theme.family; font-size: 22px; font-weight: 600; color: Theme.bone;
+                wrap: word-wrap;
+            }
+            Text {
+                text: @tr("Update now? OpenDJDecks downloads the new version, checks it and restarts. Your library and settings stay as they are.");
+                font-family: Theme.family; font-size: 14px; color: Theme.bone-2;
+                wrap: word-wrap;
+            }
+            if root.notes != "": Text {
+                text: root.notes;
+                font-family: Theme.family; font-size: 13px; color: Theme.bone-3;
+                wrap: word-wrap;
+                max-height: 170px;
+                overflow: elide;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: end;
+                PlateButton { accessible-label: "app.update.prompt.skip"; accessible-role: button; compact: true; label: @tr("SKIP THIS VERSION"); clicked => { root.act("skip"); } }
+                PlateButton { accessible-label: "app.update.prompt.notes"; accessible-role: button; compact: true; label: @tr("RELEASE NOTES"); clicked => { root.act("notes"); } }
+                PlateButton { accessible-label: "app.update.prompt.later"; accessible-role: button; compact: true; label: @tr("LATER"); clicked => { root.act("dismiss"); } }
+                PlateButton { accessible-label: "app.update.prompt.install"; accessible-role: button; compact: true; active: true; tone: Theme.attention; label: @tr("UPDATE NOW"); clicked => { root.act("install"); } }
+            }
+        }
+    }
+}

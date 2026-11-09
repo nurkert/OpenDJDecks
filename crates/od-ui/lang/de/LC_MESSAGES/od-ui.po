@@ -5727,3 +5727,27 @@ msgstr "STANDARDFARBEN"
 msgctxt "PreferencesWindow"
 msgid "OWN COLOURS"
 msgstr "EIGENE FARBEN"
+
+msgctxt "UpdatePrompt"
+msgid "Update now? OpenDJDecks downloads the new version, checks it and restarts. Your library and settings stay as they are."
+msgstr "Jetzt aktualisieren? OpenDJDecks lädt die neue Version, prüft sie und startet neu. Deine Bibliothek und Einstellungen bleiben, wie sie sind."
+
+
+msgctxt "UpdatePrompt"
+msgid "SKIP THIS VERSION"
+msgstr "DIESE VERSION ÜBERSPRINGEN"
+
+
+msgctxt "UpdatePrompt"
+msgid "RELEASE NOTES"
+msgstr "VERSIONSHINWEISE"
+
+
+msgctxt "UpdatePrompt"
+msgid "LATER"
+msgstr "SPÄTER"
+
+
+msgctxt "UpdatePrompt"
+msgid "UPDATE NOW"
+msgstr "JETZT AKTUALISIEREN"

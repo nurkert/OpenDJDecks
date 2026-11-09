@@ -2217,3 +2217,27 @@ msgstr ""
 msgctxt "PreferencesWindow"
 msgid "OWN COLOURS"
 msgstr ""
+
+msgctxt "UpdatePrompt"
+msgid "Update now? OpenDJDecks downloads the new version, checks it and restarts. Your library and settings stay as they are."
+msgstr ""
+
+
+msgctxt "UpdatePrompt"
+msgid "SKIP THIS VERSION"
+msgstr ""
+
+
+msgctxt "UpdatePrompt"
+msgid "RELEASE NOTES"
+msgstr ""
+
+
+msgctxt "UpdatePrompt"
+msgid "LATER"
+msgstr ""
+
+
+msgctxt "UpdatePrompt"
+msgid "UPDATE NOW"
+msgstr ""

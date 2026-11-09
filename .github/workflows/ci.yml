@@ -91,6 +91,8 @@ jobs:
           "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin" >> $env:GITHUB_PATH
       - name: Test
         run: cargo test --workspace --locked --no-fail-fast
+      - name: Update from the real release
+        run: cargo test -p od-update --locked --test live -- --ignored --nocapture
       - name: Build release
         run: cargo build --release --locked -p opendjdecks -p od-cli
 

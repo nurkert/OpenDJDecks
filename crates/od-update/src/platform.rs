@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 pub enum Os {
     MacOs,
     Linux,
+    Windows,
     Other,
 }
 
@@ -30,6 +31,7 @@ impl Os {
         match std::env::consts::OS {
             "macos" => Os::MacOs,
             "linux" => Os::Linux,
+            "windows" => Os::Windows,
             _ => Os::Other,
         }
     }
@@ -54,6 +56,8 @@ pub enum InstallKind {
     AppImage { path: PathBuf },
     /// The Debian package `opendjdecks`.
     Deb,
+    /// The folder of the Windows zip or the Linux tar.gz.
+    Portable { dir: PathBuf },
     /// Not updatable in place: open the release page.
     Unknown,
 }
@@ -104,7 +108,21 @@ pub fn install_kind(
             }
             InstallKind::Unknown
         }
-        Os::Other => InstallKind::Unknown,
+        Os::Windows | Os::Other => InstallKind::Unknown,
+    }
+}
+
+/// A program folder from the Windows zip or the Linux tar.gz turns an otherwise
+/// unknown install into a portable one (pure; `has_bundle`: the folder of `exe`
+/// holds the `mappings` folder that both archives ship).
+pub fn portable_kind(kind: InstallKind, os: Os, exe: &Path, has_bundle: bool) -> InstallKind {
+    match (&kind, os, exe.parent()) {
+        (InstallKind::Unknown, Os::Windows | Os::Linux, Some(dir)) if has_bundle => {
+            InstallKind::Portable {
+                dir: dir.to_path_buf(),
+            }
+        }
+        _ => kind,
     }
 }
 
@@ -117,7 +135,7 @@ pub fn detect() -> InstallKind {
     let appimage = std::env::var_os("APPIMAGE")
         .map(PathBuf::from)
         .filter(|p| p.is_file());
-    install_kind(Os::current(), &exe, appimage.as_deref(), |exe| {
+    let kind = install_kind(Os::current(), &exe, appimage.as_deref(), |exe| {
         if let Ok(list) = std::fs::read_to_string(DPKG_LIST) {
             return dpkg_list_owns(&list, exe);
         }
@@ -133,7 +151,9 @@ pub fn detect() -> InstallKind {
                         .lines()
                         .any(|l| l.split(':').next() == Some(DEB_PACKAGE))
             })
-    })
+    });
+    let has_bundle = exe.parent().is_some_and(|d| d.join("mappings").is_dir());
+    portable_kind(kind, Os::current(), &exe, has_bundle)
 }
 
 /// The file-name prefix and suffix of the asset for this install, as
@@ -163,6 +183,18 @@ pub fn asset_pattern(os: Os, arch: Arch, kind: &InstallKind) -> Option<(&'static
                 Arch::Other => return None,
             };
             Some(("opendjdecks_", format!("_{a}.deb")))
+        }
+        (InstallKind::Portable { .. }, Os::Windows) => match arch {
+            Arch::X86_64 => Some(("OpenDJDecks-", "-windows-x86_64.zip".to_string())),
+            _ => None,
+        },
+        (InstallKind::Portable { .. }, Os::Linux) => {
+            let a = match arch {
+                Arch::Aarch64 => "aarch64",
+                Arch::X86_64 => "x86_64",
+                Arch::Other => return None,
+            };
+            Some(("opendjdecks-", format!("-linux-{a}.tar.gz")))
         }
         _ => None,
     }
@@ -362,5 +394,30 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn program_folders_are_portable_installs() {
+        let exe = p("/home/me/od/opendjdecks");
+        let portable = InstallKind::Portable { dir: p("/home/me/od") };
+        assert_eq!(portable_kind(InstallKind::Unknown, Os::Linux, &exe, true), portable);
+        assert_eq!(portable_kind(InstallKind::Unknown, Os::Windows, &exe, true), portable);
+        assert_eq!(portable_kind(InstallKind::Unknown, Os::Linux, &exe, false), InstallKind::Unknown);
+        assert_eq!(portable_kind(InstallKind::Deb, Os::Linux, &exe, true), InstallKind::Deb);
+        assert_eq!(portable_kind(InstallKind::Unknown, Os::MacOs, &exe, true), InstallKind::Unknown);
+    }
+
+    #[test]
+    fn portable_assets_are_found_by_name() {
+        let kind = InstallKind::Portable { dir: p("/od") };
+        assert_eq!(
+            asset_pattern(Os::Windows, Arch::X86_64, &kind),
+            Some(("OpenDJDecks-", "-windows-x86_64.zip".to_string()))
+        );
+        assert_eq!(asset_pattern(Os::Windows, Arch::Aarch64, &kind), None);
+        assert_eq!(
+            asset_pattern(Os::Linux, Arch::Aarch64, &kind),
+            Some(("opendjdecks-", "-linux-aarch64.tar.gz".to_string()))
+        );
     }
 }

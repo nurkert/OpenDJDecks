@@ -84,6 +84,7 @@ const jsonLd = {
       <div class="nav__bar">
         <a class="nav__brand" href={home} aria-label={t.nav.home}>
           <Logo />
+          <span class="nav__beta" aria-hidden="true">Beta</span>
           <span class="nav__word" aria-hidden="true">OPEN<b>DJ</b>DECKS</span>
         </a>
         <nav class="nav__links" aria-label={t.nav.menu}>
@@ -174,6 +175,16 @@ const jsonLd = {
     min-height: 2.75rem;
     color: var(--bone);
     text-decoration: none;
+  }
+  .nav__beta {
+    padding: 0.05rem 0.4rem;
+    border: 1px solid var(--sodium);
+    color: var(--sodium);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    line-height: 1.4;
+    text-transform: uppercase;
   }
   .nav__brand :global(svg) {
     width: 1.5rem;
