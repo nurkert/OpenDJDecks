@@ -3239,3 +3239,17 @@ prio = "P2"
 tests = ["od-ui::ui_tests::perform::view_menu_picks_deck_count_and_direction"]
 evidence = ["ui/topbar.slint::ViewMenu", "decks.rs::set_perform_view"]
 note = "One menu in the top bar with a picture per view; the deck count is kept across starts"
+
+[[feature]]
+id = "export-sync-all"
+area = "export"
+name = "Sync all sticks at once, with eject when done"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-devices::manager::tests::sync_all_runs_sticks_together_and_a_failure_stays_on_its_stick",
+  "od-ui::ui_tests::features::sync_all_sticks_runs_every_stick_and_ejects_when_done",
+]
+evidence = ["manager.rs::sync_all", "manager.rs::sync_stick", "devices.rs::wire"]
+note = "SYNC ALL STICKS (and the sync key in the DEVICES heading) runs every plugged-in stick on its own thread with its own progress line. A stored Eject when done ejects each stick once its sync has finished; a stick that fails keeps its error and stays mounted, the others carry on"

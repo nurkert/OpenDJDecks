@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 216 features; 210 in scope: 210 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 217 features; 211 in scope: 211 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -259,6 +259,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | OpenDJDecks native stick format | DONE | `od-format-native` | 3 |  |
 | Club player USB export (`export.pdb` + ANLZ DAT/EXT/2EX) | DONE | `od-format-clubusb`, `od-devices/src/club_usb.rs`; per-stick choice in the stick board (own format stays the default) | 9 |  |
 | Player settings on Club player USB (`MYSETTING`) | DONE | `od-format-clubusb/src/mysetting.rs`, `od-devices/src/club_usb.rs::player_settings`; `/PIONEER/MYSETTING.DAT` written on every Club player USB sync from the deck defaults (quantize, auto cue, tempo range, jog mode, language); other settings get the documented defaults | 5 | P3 |
+| Sync all sticks at once, with eject when done | DONE | `manager.rs::sync_all`, `manager.rs::sync_stick`, `devices.rs::wire`; SYNC ALL STICKS (and the sync key in the DEVICES heading) runs every plugged-in stick on its own thread with its own progress line. A stored Eject when done ejects each stick once its sync has finished; a stick that fails keeps its error and stays mounted, the others carry on | 2 | P2 |
 
 ## 11. Preferences, audio and controllers
 
@@ -325,13 +326,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 210 |
+| DONE | 211 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **216** |
+| **Total** | **217** |
 
 ## P1 gaps and implementation notes
 

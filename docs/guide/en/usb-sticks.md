@@ -2,7 +2,7 @@
 title: USB sticks and sync
 description: Register a stick once. From then on every change reaches it automatically and incrementally, ready for OpenDJDecks on another computer or the Raspberry Pi.
 keywords: [usb, stick, sticks, usb stick, sync, synchronise, export, export stick, register, eject, rebuild, stick status, device, sync manager]
-features: [export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
+features: [export-sync-all, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
 ---
 
 The stick is a mirror of your library. Register it once with the lists that belong on it, and every changed cue, playlist or beatgrid reaches it within seconds, while it is plugged in. There is no export step to remember.
@@ -21,6 +21,17 @@ The stick board shows its state, what is pending, and the progress of the sync.
 - **REBUILD STICK** writes the whole stick again from your library.
 - **EJECT** (`⌘E`) ejects it safely. Wait for that before you pull it out.
 - **FORGET** stops keeping that stick in sync.
+
+## Sync all sticks at once (from version 0.6)
+
+Have several sticks to fill, say a set of backups for a tour? Plug them all in and open the stick board:
+
+1. Press **SYNC ALL STICKS**. Every stick that is plugged in starts syncing at the same time, each with its own progress line.
+2. Turn on **Eject when done** and each stick ejects itself as soon as it has finished, so you can pull them out one by one. This choice stays on until you turn it off.
+
+If something goes wrong with one stick, for example it is full, the error shows on that stick only and the others keep going. A stick that failed is not ejected, so you can read the message and try again.
+
+The small sync arrow next to **DEVICES** in the tree does the same with the same setting.
 
 ## What is on the stick
 

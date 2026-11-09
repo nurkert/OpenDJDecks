@@ -12,8 +12,8 @@ use crossbeam_channel::{Receiver, Sender, select, tick, unbounded};
 use od_core::DeviceId;
 use od_library::{Device, DeviceFormats, Library, NodeId};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
@@ -75,6 +75,12 @@ pub enum Command {
         formats: DeviceFormats,
     },
     SyncNow(DeviceId),
+    /// Syncs every connected registered stick at once, each on its own
+    /// thread. With `eject` a stick is ejected as soon as its own sync has
+    /// finished. A stick that fails shows its error; the others carry on.
+    SyncAll {
+        eject: bool,
+    },
     /// Rewrites everything on the stick.
     Rebuild(DeviceId),
     Eject(DeviceId),
@@ -321,60 +327,74 @@ impl Worker {
             return;
         };
         self.cancel.store(false, Ordering::Relaxed);
-        let mut writers = (self.config.writers)(&device.formats);
+        let writers = (self.config.writers)(&device.formats);
         let events = self.events.clone();
         let mut status = self.last_status.clone();
-        let mut last_emit = Instant::now() - Duration::from_secs(1);
-        let result = sync_device(
+        let result = run_sync(
             &mut self.library,
+            writers,
             id,
             &volume.mount_point,
-            &mut writers,
-            &SyncOptions { force_full: full },
+            full,
             &self.cancel,
-            |p| {
-                // Rate-limit progress events to ~10 per second.
-                if last_emit.elapsed() < Duration::from_millis(100)
-                    && matches!(p, Progress::Copying { .. })
-                {
-                    return;
-                }
-                last_emit = Instant::now();
+            &mut |state| {
                 if let Some(s) = status.iter_mut().find(|s| s.device.id == id) {
-                    s.state = DeviceState::Syncing(p);
+                    s.state = state;
                 }
                 let _ = events.send(Event::Status(status.clone()));
             },
         );
-        match result {
-            Ok(report) => {
-                self.errors.remove(&id);
-                if !report.proposals.is_empty() {
-                    self.emit(Event::Proposals {
-                        device: id,
-                        proposals: report.proposals.clone(),
-                    });
-                }
-                tracing::info!(device = %id, copied = report.copied, updated = report.updated, "sync finished");
-                self.emit(Event::SyncFinished { device: id, report });
-                self.set_state(id, DeviceState::InSync);
-            }
-            Err(e) => {
-                let msg = e.to_string();
-                tracing::warn!(device = %id, error = %msg, "sync failed");
-                let _ = self.library.mark_device_error(id, &msg);
-                if !matches!(e, crate::SyncError::Cancelled) {
-                    self.errors.insert(id, msg.clone());
-                }
-                self.emit(Event::SyncFailed {
-                    device: id,
-                    error: msg.clone(),
-                });
-                self.set_state(id, DeviceState::Error(msg));
+        let (state, error) = finish_sync(&mut self.library, &self.events, id, result);
+        match error {
+            Some(e) => self.errors.insert(id, e),
+            None => self.errors.remove(&id),
+        };
+        self.set_state(id, state);
+        // Force the next poll to re-evaluate.
+        self.last_status.clear();
+    }
+
+    /// Syncs every connected stick in parallel; returns when all are done.
+    fn sync_all(&mut self, eject: bool) {
+        let sticks: Vec<(Device, Volume)> = self
+            .connected()
+            .0
+            .into_iter()
+            .filter_map(|(d, v)| v.map(|v| (d, v)))
+            .collect();
+        if sticks.is_empty() {
+            return;
+        }
+        self.cancel.store(false, Ordering::Relaxed);
+        let status = Mutex::new(self.last_status.clone());
+        let ids: Vec<DeviceId> = sticks.iter().map(|(d, _)| d.id).collect();
+        for id in &ids {
+            self.errors.remove(id);
+        }
+        let (config, events, cancel) = (&self.config, &self.events, &self.cancel);
+        let outcomes: Vec<Option<String>> = std::thread::scope(|scope| {
+            let handles: Vec<_> = sticks
+                .into_iter()
+                .map(|(device, volume)| {
+                    let status = &status;
+                    scope.spawn(move || {
+                        sync_stick(config, device, volume, eject, events, status, cancel)
+                    })
+                })
+                .collect();
+            handles
+                .into_iter()
+                .map(|h| h.join().unwrap_or_else(|_| Some("sync crashed".to_string())))
+                .collect()
+        });
+        for (id, error) in ids.into_iter().zip(outcomes) {
+            if let Some(e) = error {
+                self.errors.insert(id, e);
             }
         }
         // Force the next poll to re-evaluate.
         self.last_status.clear();
+        self.poll();
     }
 
     fn handle(&mut self, cmd: Command) {
@@ -422,6 +442,7 @@ impl Worker {
                 self.errors.remove(&id);
                 self.sync(id, false);
             }
+            Command::SyncAll { eject } => self.sync_all(eject),
             Command::Rebuild(id) => {
                 self.errors.remove(&id);
                 let _ = self.library.reset_device_sync(id);
@@ -452,16 +473,151 @@ impl Worker {
     }
 }
 
+/// One sync with its progress reported (at most ~10 times per second).
+fn run_sync(
+    lib: &mut Library,
+    mut writers: Vec<Box<dyn FormatWriter + Send>>,
+    id: DeviceId,
+    root: &Path,
+    full: bool,
+    cancel: &AtomicBool,
+    state: &mut dyn FnMut(DeviceState),
+) -> crate::sync::Result<SyncReport> {
+    let mut last_emit = Instant::now() - Duration::from_secs(1);
+    sync_device(
+        lib,
+        id,
+        root,
+        &mut writers,
+        &SyncOptions { force_full: full },
+        cancel,
+        |p| {
+            // Rate-limit progress events to ~10 per second.
+            if last_emit.elapsed() < Duration::from_millis(100)
+                && matches!(p, Progress::Copying { .. })
+            {
+                return;
+            }
+            last_emit = Instant::now();
+            state(DeviceState::Syncing(p));
+        },
+    )
+}
+
+/// Events for a finished sync. Returns the stick's new state and the error
+/// to keep showing on it.
+fn finish_sync(
+    lib: &mut Library,
+    events: &Sender<Event>,
+    id: DeviceId,
+    result: crate::sync::Result<SyncReport>,
+) -> (DeviceState, Option<String>) {
+    match result {
+        Ok(report) => {
+            if !report.proposals.is_empty() {
+                let _ = events.send(Event::Proposals {
+                    device: id,
+                    proposals: report.proposals.clone(),
+                });
+            }
+            tracing::info!(device = %id, copied = report.copied, updated = report.updated, "sync finished");
+            let _ = events.send(Event::SyncFinished { device: id, report });
+            (DeviceState::InSync, None)
+        }
+        Err(e) => {
+            let msg = e.to_string();
+            tracing::warn!(device = %id, error = %msg, "sync failed");
+            let _ = lib.mark_device_error(id, &msg);
+            let kept = (!matches!(e, crate::SyncError::Cancelled)).then(|| msg.clone());
+            let _ = events.send(Event::SyncFailed {
+                device: id,
+                error: msg.clone(),
+            });
+            (DeviceState::Error(msg), kept)
+        }
+    }
+}
+
+/// One stick of a parallel sync, on its own thread with its own library
+/// connection. Returns the error to keep showing on the stick.
+fn sync_stick(
+    config: &ManagerConfig,
+    device: Device,
+    volume: Volume,
+    eject: bool,
+    events: &Sender<Event>,
+    status: &Mutex<Vec<DeviceStatus>>,
+    cancel: &AtomicBool,
+) -> Option<String> {
+    let id = device.id;
+    let publish = |state: DeviceState| {
+        let mut all = status.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(s) = all.iter_mut().find(|s| s.device.id == id) {
+            s.state = state;
+        }
+        let _ = events.send(Event::Status(all.clone()));
+    };
+    let mut lib = match Library::open(&config.library_path) {
+        Ok(lib) => lib,
+        Err(e) => {
+            let msg = e.to_string();
+            let _ = events.send(Event::SyncFailed {
+                device: id,
+                error: msg.clone(),
+            });
+            publish(DeviceState::Error(msg.clone()));
+            return Some(msg);
+        }
+    };
+    let writers = (config.writers)(&device.formats);
+    let mut on_state = |state| publish(state);
+    let result = run_sync(
+        &mut lib,
+        writers,
+        id,
+        &volume.mount_point,
+        false,
+        cancel,
+        &mut on_state,
+    );
+    let synced = result.is_ok();
+    let (state, error) = finish_sync(&mut lib, events, id, result);
+    publish(state);
+    if eject && synced {
+        // Only a stick whose sync finished is ejected; a failed one stays
+        // mounted so its error can be read and the sync retried.
+        match volumes::eject(&volume) {
+            Ok(()) => {
+                let _ = events.send(Event::Ejected { device: id });
+            }
+            Err(e) => {
+                let _ = events.send(Event::EjectFailed {
+                    device: id,
+                    error: e.to_string(),
+                });
+            }
+        }
+    }
+    error
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sync::SyncContext;
     use od_core::{Cue, TrackTags};
     use od_library::{NewTrack, NodeKind};
+    use std::sync::atomic::AtomicUsize;
 
-    // Uses the OPENDJDECKS_VOLUMES_DIR test hook; the only test touching the
-    // environment in this crate.
+    /// The tests here share the OPENDJDECKS_VOLUMES_DIR test hook; one at a
+    /// time.
+    static VOLUMES_ENV: Mutex<()> = Mutex::new(());
+
+    // Uses the OPENDJDECKS_VOLUMES_DIR test hook; the tests touching the
+    // environment in this crate hold `VOLUMES_ENV`.
     #[test]
     fn registers_and_auto_syncs() {
+        let _env = VOLUMES_ENV.lock().unwrap_or_else(|e| e.into_inner());
         let dir = tempfile::tempdir().unwrap();
         let volumes_dir = dir.path().join("volumes");
         let stick = volumes_dir.join("STICK");
@@ -526,5 +682,162 @@ mod tests {
         );
         let s = od_format_native::Stick::open(&stick).unwrap().unwrap();
         assert_eq!(s.library.cues(a).unwrap()[0].start, 4.0);
+    }
+
+    /// Sticks sync at the same time: the writer waits until both are inside it.
+    struct MeetWriter {
+        inside: Arc<AtomicUsize>,
+    }
+
+    impl FormatWriter for MeetWriter {
+        fn name(&self) -> &'static str {
+            "meet"
+        }
+        fn write(&mut self, _ctx: &SyncContext) -> Result<(), String> {
+            self.inside.fetch_add(1, Ordering::SeqCst);
+            let deadline = Instant::now() + Duration::from_secs(20);
+            while self.inside.load(Ordering::SeqCst) < 2 {
+                if Instant::now() > deadline {
+                    return Err("the other stick never started".into());
+                }
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            Ok(())
+        }
+    }
+
+    struct FailingWriter;
+
+    impl FormatWriter for FailingWriter {
+        fn name(&self) -> &'static str {
+            "broken"
+        }
+        fn write(&mut self, _ctx: &SyncContext) -> Result<(), String> {
+            Err("this stick is broken".into())
+        }
+    }
+
+    #[test]
+    fn sync_all_runs_sticks_together_and_a_failure_stays_on_its_stick() {
+        let _env = VOLUMES_ENV.lock().unwrap_or_else(|e| e.into_inner());
+        let dir = tempfile::tempdir().unwrap();
+        let volumes_dir = dir.path().join("volumes");
+        // SAFETY: `VOLUMES_ENV` keeps the tests in this crate from racing.
+        unsafe { std::env::set_var("OPENDJDECKS_VOLUMES_DIR", &volumes_dir) };
+
+        let lib_path = dir.path().join("library.sqlite");
+        let mut lib = Library::open(&lib_path).unwrap();
+        let file = dir.path().join("a.mp3");
+        std::fs::write(&file, vec![1u8; 4096]).unwrap();
+        let a = lib
+            .add_track(&NewTrack {
+                content_hash: od_decode::content_hash(&file).unwrap(),
+                file_size: 4096,
+                path: file,
+                format: None,
+                duration: 1.0,
+                sample_rate: 44_100,
+                channels: 2,
+                bit_rate: None,
+                bits_per_sample: None,
+                tags: TrackTags::default(),
+                artwork: None,
+            })
+            .unwrap();
+        let pl = lib.create_node(None, NodeKind::Playlist, "P").unwrap();
+        lib.add_to_node(pl, &[a], None).unwrap();
+        // The club format selects the broken writer in the factory below.
+        let mut sticks = Vec::new();
+        for (name, club_usb) in [("ONE", false), ("TWO", false), ("BAD", true)] {
+            let stick = volumes_dir.join(name);
+            std::fs::create_dir_all(&stick).unwrap();
+            let uuid = format!("uuid-{name}");
+            let marker = od_format_native::DeviceMarker {
+                format_version: od_format_native::FORMAT_VERSION,
+                device_uuid: uuid.clone(),
+                name: name.into(),
+                created_by: "test".into(),
+            };
+            od_format_native::write_marker(&stick, &marker).unwrap();
+            let id = lib
+                .register_device(
+                    &uuid,
+                    name,
+                    DeviceFormats {
+                        club_usb,
+                        opendjdecks: !club_usb,
+                    },
+                )
+                .unwrap();
+            lib.set_device_nodes(id, &[pl]).unwrap();
+            sticks.push(id);
+        }
+        let (one, two, bad) = (sticks[0], sticks[1], sticks[2]);
+
+        let inside = Arc::new(AtomicUsize::new(0));
+        let inside2 = inside.clone();
+        let mut cfg = ManagerConfig::new(lib_path);
+        cfg.poll_interval = Duration::from_millis(50);
+        cfg.auto_sync = false;
+        cfg.writers = Arc::new(move |f: &DeviceFormats| {
+            let w: Box<dyn FormatWriter + Send> = if f.club_usb {
+                Box::new(FailingWriter)
+            } else {
+                Box::new(MeetWriter {
+                    inside: inside2.clone(),
+                })
+            };
+            vec![w]
+        });
+        let mgr = DeviceManager::start(cfg).unwrap();
+        // All three sticks seen as connected.
+        let deadline = Instant::now() + Duration::from_secs(30);
+        while Instant::now() < deadline {
+            if let Ok(Event::Status(s)) = mgr.events().recv_timeout(Duration::from_millis(100)) {
+                if s.iter().filter(|d| d.volume.is_some()).count() == 3 {
+                    break;
+                }
+            }
+        }
+        mgr.send(Command::SyncAll { eject: true });
+
+        let (mut finished, mut failed, mut ejected) = (Vec::new(), Vec::new(), Vec::new());
+        let mut last_status: Vec<DeviceStatus> = Vec::new();
+        let deadline = Instant::now() + Duration::from_secs(60);
+        while Instant::now() < deadline && (finished.len() < 2 || failed.is_empty() || ejected.len() < 2) {
+            match mgr.events().recv_timeout(Duration::from_millis(100)) {
+                Ok(Event::SyncFinished { device, .. }) => finished.push(device),
+                Ok(Event::SyncFailed { device, error }) => failed.push((device, error)),
+                Ok(Event::Ejected { device }) => ejected.push(device),
+                Ok(Event::Status(s)) => last_status = s,
+                _ => {}
+            }
+        }
+        finished.sort();
+        ejected.sort();
+        let mut expected = vec![one, two];
+        expected.sort();
+        assert_eq!(finished, expected, "both good sticks finished together");
+        assert_eq!(ejected, expected, "each finished stick is ejected");
+        assert_eq!(failed.len(), 1);
+        assert_eq!(failed[0].0, bad);
+        assert!(failed[0].1.contains("broken"), "{}", failed[0].1);
+        // The error stays visible on the stick that failed, and only there.
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let state_of = |all: &[DeviceStatus], id| {
+            all.iter()
+                .find(|d| d.device.id == id)
+                .map(|d| d.state.clone())
+        };
+        while !matches!(state_of(&last_status, bad), Some(DeviceState::Error(_))) {
+            assert!(Instant::now() < deadline, "error shown on the failed stick");
+            if let Ok(Event::Status(s)) = mgr.events().recv_timeout(Duration::from_millis(100)) {
+                last_status = s;
+            }
+        }
+        assert!(
+            !matches!(state_of(&last_status, one), Some(DeviceState::Error(_))),
+            "the other sticks do not show the error"
+        );
     }
 }

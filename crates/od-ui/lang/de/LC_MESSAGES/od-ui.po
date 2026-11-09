@@ -5751,3 +5751,19 @@ msgstr "SPÄTER"
 msgctxt "UpdatePrompt"
 msgid "UPDATE NOW"
 msgstr "JETZT AKTUALISIEREN"
+
+msgctxt "AppWindow"
+msgid "SYNC ALL STICKS"
+msgstr "ALLE STICKS SYNCHRONISIEREN"
+
+msgctxt "AppWindow"
+msgid "Sync every plugged-in stick at the same time"
+msgstr "Alle eingesteckten Sticks gleichzeitig synchronisieren"
+
+msgctxt "AppWindow"
+msgid "Eject when done"
+msgstr "Nach dem Sync auswerfen"
+
+msgctxt "AppWindow"
+msgid "Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"
+msgstr "Jeden Stick auswerfen, sobald sein Sync fertig ist (auch wenn der Sync über die Überschrift GERÄTE gestartet wurde)"

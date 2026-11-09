@@ -131,6 +131,7 @@ pub(crate) fn refresh(app: &App) {
         }
     }
     ui.set_devices(model(rows));
+    ui.set_eject_when_done(st.settings.devices.eject_when_done);
     let vols: Vec<VolumeRow> = st
         .devices
         .volumes
@@ -465,22 +466,18 @@ pub(crate) fn wire(app: &Rc<App>) {
     ui.on_sync_device(handler!(app, |a, id: i32| a
         .device_manager
         .send(Command::SyncNow(DeviceId(id as i64)))));
-    // DEVICES heading: sync every registered stick now (sticks that are not
-    // plugged in are skipped by the device manager).
+    // DEVICES heading and SYNC ALL STICKS: every plugged-in stick at once
+    // (the device manager skips sticks that are not plugged in).
     ui.on_sync_all_devices(handler!(app, |a| {
-        let ids: Vec<DeviceId> = a
-            .state
-            .borrow()
-            .lib
-            .devices()
-            .unwrap_or_default()
-            .iter()
-            .map(|d| d.id)
-            .collect();
-        for id in ids {
-            a.device_manager.send(Command::SyncNow(id));
-        }
+        let eject = a.state.borrow().settings.devices.eject_when_done;
+        a.device_manager.send(Command::SyncAll { eject });
         a.status("Syncing sticks…");
+    }));
+    ui.on_set_eject_when_done(handler!(app, |a, on: bool| {
+        a.state
+            .borrow_mut()
+            .change_settings(|s| s.devices.eject_when_done = on);
+        refresh(&a);
     }));
     ui.on_rebuild_device(handler!(app, |a, id: i32| {
         a.device_manager.send(Command::Rebuild(DeviceId(id as i64)));

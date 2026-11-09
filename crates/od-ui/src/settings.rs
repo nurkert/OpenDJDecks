@@ -27,6 +27,15 @@ pub struct Settings {
     pub deck: DeckSettings,
     /// Mixer behaviour (Preferences > Controller > Mixer).
     pub mixer: MixerSettings,
+    pub devices: DeviceSyncSettings,
+}
+
+/// "Sync all sticks" (Devices).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DeviceSyncSettings {
+    /// Eject each stick as soon as its own sync has finished.
+    pub eject_when_done: bool,
 }
 
 /// Deck defaults: sent to every deck when the engine starts and when they
@@ -357,6 +366,7 @@ impl Default for Settings {
             audio: AudioSettings::default(),
             view: ViewSettings::default(),
             analysis: AnalysisSettings::default(),
+            devices: DeviceSyncSettings::default(),
             controller: ControllerSettings::default(),
             recording: RecordingSettings::default(),
             advanced: AdvancedSettings::default(),

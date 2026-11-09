@@ -173,6 +173,7 @@ export component AppWindow inherits Window {
     in property <[NodeChoice]> device-content;
     in property <bool> device-club-usb;
     in property <bool> device-opendjdecks;
+    in property <bool> eject-when-done;
     in property <[ProposalRow]> proposals;
     // Encrypted library import dialog (the key is cleared after use).
     in property <bool> encrypted-import-open;
@@ -296,6 +297,7 @@ export component AppWindow inherits Window {
     callback sampler-bpm-scale(float);
     callback sampler-seq-save();
     callback sync-all-devices();
+    callback set-eject-when-done(bool);
     callback history-year-step(int);
     // Top bar MIXER, MIX PREVIEW and REC toggles (persisted in the settings).
     in property <bool> mixer-panel: true;
@@ -1126,6 +1128,13 @@ export component AppWindow inherits Window {
                         VerticalLayout {
                             width: 360px;
                             spacing: 6px;
+                            if root.devices.length > 0: HorizontalLayout {
+                                spacing: 14px;
+                                height: 30px;
+                                PlateButton { accessible-role: button; accessible-label: "devices.sync-all"; compact: true; label: @tr("SYNC ALL STICKS"); tone: Theme.live; tooltip: @tr("Sync every plugged-in stick at the same time"); clicked => { root.sync-all-devices(); } }
+                                LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-label: "devices.eject-when-done"; label: @tr("Eject when done"); tooltip: @tr("Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"); checked: root.eject-when-done; toggled(v) => { root.set-eject-when-done(v); } }
+                                Rectangle { horizontal-stretch: 1; }
+                            }
                             for d in root.devices: DeviceLine {
                                 device: d;
                                 roomy: true;

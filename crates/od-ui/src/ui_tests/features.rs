@@ -545,3 +545,65 @@ fn encrypted_import_dialog_clears_the_key() {
     assert!(!ui.app.ui.get_encrypted_import_open());
     assert_eq!(ui.app.ui.get_encrypted_import_key(), "");
 }
+
+/// SYNC ALL STICKS: every registered stick is synced at once; with the
+/// stored "eject when done" each is ejected once it has finished.
+#[test]
+fn sync_all_sticks_runs_every_stick_and_ejects_when_done() {
+    let ui = Ui::open((1440, 900));
+    let (pl, track) = (ui.fx.playlist, ui.fx.tracks[0].0);
+    let mut sticks = Vec::new();
+    {
+        let mut lib = ui.fx.lib();
+        for name in ["SYNCALL-A", "SYNCALL-B"] {
+            let stick = test_env().join("volumes").join(name);
+            let _ = std::fs::remove_dir_all(&stick);
+            std::fs::create_dir_all(&stick).unwrap();
+            let uuid = format!("uuid-{name}-{}", std::process::id());
+            let marker = od_format_native::DeviceMarker {
+                format_version: od_format_native::FORMAT_VERSION,
+                device_uuid: uuid.clone(),
+                name: name.into(),
+                created_by: "test".into(),
+            };
+            od_format_native::write_marker(&stick, &marker).unwrap();
+            let id = lib
+                .register_device(&uuid, name, od_library::DeviceFormats::default())
+                .unwrap();
+            lib.set_device_nodes(id, &[pl]).unwrap();
+            sticks.push(stick);
+        }
+    }
+    ui.app.device_manager.send(od_devices::Command::Refresh);
+    assert!(
+        ui.wait_until(10.0, |u| !u.app.state.borrow().devices.statuses.is_empty()),
+        "the registered sticks are known"
+    );
+    let first = ui.app.state.borrow().devices.statuses[0].device.id;
+    ui.app.ui.invoke_open_device(first.0 as i32);
+    assert!(
+        ui.wait_until(10.0, |u| u.has("devices.sync-all")),
+        "the action is offered once sticks are registered"
+    );
+
+    ui.click("devices.eject-when-done");
+    assert!(
+        ui.app.state.borrow().settings.devices.eject_when_done,
+        "the choice is stored"
+    );
+    ui.click("devices.sync-all");
+    let synced = ui.wait_until(40.0, |_| {
+        sticks.iter().all(|s| {
+            matches!(od_format_native::Stick::open(s),
+                Ok(Some(st)) if st.library.track(track).is_ok())
+        })
+    });
+    assert!(synced, "both sticks reached the library's tracks");
+    let msg = ui.wait_until(20.0, |u| {
+        u.app.state.borrow().devices.statuses.iter().all(|s| s.device.last_sync.is_some())
+    });
+    assert!(msg, "every stick records its finished sync");
+    for s in &sticks {
+        let _ = std::fs::remove_dir_all(s);
+    }
+}
