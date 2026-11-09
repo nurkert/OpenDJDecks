@@ -326,6 +326,10 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
             stem: stem_of(stem),
             level,
         }),
+        DeckAction::StemMuteToggle { .. } if !s.stems_available => {
+            crate::stems_model::part_pressed(app, d);
+            None
+        }
         DeckAction::StemMuteToggle { stem } => {
             let st = stem_of(stem);
             Some(DeckCommand::SetStemLevel {

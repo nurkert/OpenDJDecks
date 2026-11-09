@@ -5799,3 +5799,87 @@ msgstr "Tonarten nach Quintenzirkel sortieren"
 msgctxt "TrackTable"
 msgid "Sort keys alphabetically"
 msgstr "Tonarten alphabetisch sortieren"
+
+msgctxt "StemsModelBar"
+msgid "DOWNLOAD NOW"
+msgstr "JETZT LADEN"
+
+msgctxt "StemsModelBar"
+msgid "NOT NOW"
+msgstr "JETZT NICHT"
+
+msgctxt "StemsModelBar"
+msgid "CANCEL"
+msgstr "ABBRECHEN"
+
+msgctxt "StemsModelBar"
+msgid "RETRY"
+msgstr "NOCHMAL"
+
+msgctxt "StemsModelBar"
+msgid "HELP"
+msgstr "HILFE"
+
+msgctxt "StemsModelBar"
+msgid "CLOSE"
+msgstr "SCHLIESSEN"
+
+msgctxt "StemsModelPrompt"
+msgid "NOT NOW"
+msgstr "JETZT NICHT"
+
+msgctxt "StemsModelPrompt"
+msgid "DOWNLOAD NOW"
+msgstr "JETZT LADEN"
+
+msgctxt "StemsModelPrompt"
+msgid "To split tracks into vocals, instruments, drums and bass, OpenDJDecks needs a separation model of {} MB. It is downloaded once; after that stems work without internet. Your music stays on this computer."
+msgstr "Um Tracks in Vocals, Instrumente, Drums und Bass zu trennen, braucht OpenDJDecks ein Trennmodell von {} MB. Es wird einmalig geladen; danach funktionieren Stems ohne Internet. Deine Musik bleibt auf diesem Computer."
+
+msgctxt "PreferencesWindow"
+msgid "Stems"
+msgstr "Stems"
+
+msgctxt "PreferencesWindow"
+msgid "Separation model"
+msgstr "Trennmodell"
+
+msgctxt "PreferencesWindow"
+msgid "DOWNLOAD"
+msgstr "HERUNTERLADEN"
+
+msgctxt "PreferencesWindow"
+msgid "Download the stem model once (it stays on this computer)"
+msgstr "Das Stem-Modell einmalig laden (es bleibt auf diesem Computer)"
+
+msgctxt "PreferencesWindow"
+msgid "HELP"
+msgstr "HILFE"
+
+msgctxt "PreferencesWindow"
+msgid "Open the guide section on fixing this"
+msgstr "Den Abschnitt der Anleitung zur Behebung öffnen"
+
+msgctxt "PreferencesWindow"
+msgid "Repair"
+msgstr "Reparieren"
+
+msgctxt "PreferencesWindow"
+msgid "DELETE AND DOWNLOAD AGAIN"
+msgstr "LÖSCHEN UND NEU LADEN"
+
+msgctxt "PreferencesWindow"
+msgid "Delete the model and every leftover, then download it from the start"
+msgstr "Das Modell und alle Reste löschen und von Anfang an neu laden"
+
+msgctxt "PreferencesWindow"
+msgid "REMOVE MODEL"
+msgstr "MODELL ENTFERNEN"
+
+msgctxt "PreferencesWindow"
+msgid "Delete the model from this computer (stems you already separated stay)"
+msgstr "Das Modell von diesem Computer löschen (bereits getrennte Stems bleiben)"
+
+msgctxt "PreferencesWindow"
+msgid "The model is downloaded once and stays on this computer; your music never leaves it. Removing the model does not remove stems you already separated."
+msgstr "Das Modell wird einmalig geladen und bleibt auf diesem Computer; deine Musik verlässt ihn nie. Das Entfernen des Modells entfernt bereits getrennte Stems nicht."

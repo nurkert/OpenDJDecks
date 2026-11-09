@@ -8,7 +8,7 @@ use crate::state::{AppConfig, AppState};
 use crate::workers::{AnalysisWorker, WorkerEvent};
 use crate::{
     AppWindow, browser, controller, decks, devices, engine, explorer, fx, mixer, player,
-    deck_grid, preferences, recorder, sampler, shell, update,
+    deck_grid, preferences, recorder, sampler, shell, stems_model, update,
 };
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use od_devices::{DeviceManager, ManagerConfig};
@@ -61,6 +61,8 @@ pub struct App {
     pub(crate) held: RefCell<Vec<(String, usize)>>,
     /// Update check and install (SPEC §14.1).
     pub(crate) update: RefCell<update::UpdateRuntime>,
+    /// The stem separation model: asked for, downloaded, repaired.
+    pub(crate) stems_model: RefCell<stems_model::StemsModel>,
     /// DMX rig and show (SPEC §10.5).
     pub(crate) lighting: RefCell<crate::lighting::LightingRuntime>,
     /// The LIGHTING view detached into its own window.
@@ -110,6 +112,7 @@ impl App {
             prefs: RefCell::new(preferences::Prefs::default()),
             held: RefCell::new(Vec::new()),
             update: RefCell::new(update::UpdateRuntime::default()),
+            stems_model: RefCell::new(stems_model::StemsModel::default()),
             lighting: RefCell::new(lighting),
             lighting_window: RefCell::new(None),
             club: RefCell::new(crate::club::ClubRuntime::default()),
@@ -148,6 +151,7 @@ impl App {
         preferences::wire(&app);
         crate::appearance::wire(&app);
         update::wire(&app);
+        stems_model::wire(&app);
         crate::lighting::wire(&app);
         crate::club::wire(&app);
         crate::mic::wire(&app);
@@ -242,6 +246,7 @@ impl App {
         if !self.state.borrow().config.headless {
             update::poll(self);
         }
+        stems_model::poll(self);
         if devices::poll(self) {
             need_refresh = true;
         }

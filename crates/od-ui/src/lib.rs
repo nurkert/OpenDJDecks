@@ -49,6 +49,7 @@ mod shell;
 mod smart_text;
 mod state;
 mod stems_batch;
+mod stems_model;
 mod track_edit;
 mod transients;
 mod update;

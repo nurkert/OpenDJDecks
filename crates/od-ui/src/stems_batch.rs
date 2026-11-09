@@ -45,11 +45,18 @@ struct Batch {
     queued: Vec<TrackId>,
     count: BatchCount,
     last_error: String,
+    /// The worker found the model damaged; stems_model.rs takes this up.
+    damaged: bool,
 }
 
 thread_local! {
     static BATCH: RefCell<Batch> = RefCell::new(Batch::default());
     static TIMER: slint::Timer = slint::Timer::default();
+}
+
+/// Whether the worker found the model damaged since the last call.
+pub(crate) fn take_damaged() -> bool {
+    BATCH.with(|b| std::mem::take(&mut b.borrow_mut().damaged))
 }
 
 /// The current batch count (tests, status).
@@ -71,6 +78,16 @@ pub(crate) fn separate(app: &App, _ids: &[TrackId]) {
     app.status("This build separates no parts (feature separation)");
 }
 
+/// Stops the running and queued batch (the model is about to go).
+pub(crate) fn cancel_all() {
+    #[cfg(feature = "separation")]
+    BATCH.with(|b| {
+        if let Some(w) = &b.borrow().worker {
+            w.cancel_all();
+        }
+    });
+}
+
 /// Queues `ids` (tracks already queued are skipped).
 #[cfg(feature = "separation")]
 pub(crate) fn separate(app: &App, ids: &[TrackId]) {
@@ -82,7 +99,11 @@ pub(crate) fn separate(app: &App, ids: &[TrackId]) {
         app.status("Parts are separated on a desktop computer; the stick brings them along");
         return;
     }
-    let fetch_model = !app.state.borrow().config.headless;
+    // The model comes first; the tracks wait for it (nothing downloads
+    // until the user has been asked, see stems_model.rs).
+    if !crate::stems_model::request(app, ids) {
+        return;
+    }
     let jobs: Vec<od_stems::StemJob> = {
         let st = app.state.borrow();
         ids.iter()
@@ -104,10 +125,7 @@ pub(crate) fn separate(app: &App, ids: &[TrackId]) {
         let worker = b.worker.get_or_insert_with(|| {
             od_stems::StemWorker::spawn(
                 od_stems::StemCache::open_default(),
-                od_stems::StemWorkerOptions {
-                    fetch_model,
-                    ..Default::default()
-                },
+                od_stems::StemWorkerOptions::default(),
             )
         });
         let mut added = Vec::new();
@@ -175,15 +193,15 @@ fn poll() -> (bool, String, bool) {
                     b.count.failed += 1;
                     changed = true;
                 }
-                StemEvent::ModelDownload { done, total } => {
-                    let pct = if total > 0 { done * 100 / total } else { 0 };
-                    return (
-                        true,
-                        od_i18n::trf("Downloading the stem model … {} %", &[&pct]),
-                        false,
-                    );
+                StemEvent::ModelDamaged { .. } => {
+                    b.count.failed += 1;
+                    b.last_error = od_i18n::tr("The stem model is damaged").to_string();
+                    b.damaged = true;
+                    changed = true;
                 }
-                StemEvent::Started { .. } | StemEvent::Progress { .. } => {}
+                StemEvent::ModelDownload { .. }
+                | StemEvent::Started { .. }
+                | StemEvent::Progress { .. } => {}
             }
         }
         let msg = b.count.message(&b.last_error);

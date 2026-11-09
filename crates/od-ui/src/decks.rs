@@ -282,6 +282,15 @@ pub(crate) struct Decks {
     engine_data: [Option<Arc<od_engine::TrackData>>; DECKS],
 }
 
+impl Decks {
+    /// Parts of the track on `deck` are being separated.
+    pub(crate) fn stems_pending(&self, deck: usize) -> bool {
+        self.loaded[deck]
+            .as_ref()
+            .is_some_and(|m| self.stem_progress.contains_key(&m.id))
+    }
+}
+
 impl Default for Decks {
     fn default() -> Self {
         let (tx, rx) = unbounded();
@@ -931,27 +940,21 @@ impl Decks {
     }
 }
 
-/// Queues stem separation of a loaded track (desktop profile only).
+/// Queues stem separation of a loaded track (desktop profile only). Without
+/// the model nothing happens: loading a track never asks for a download;
+/// a part key does ([`crate::stems_model::request`]).
 #[cfg(feature = "separation")]
 fn request_stems(app: &App, track: TrackId, src: &TrackSource) {
-    if app.state.borrow().config.lite {
+    if app.state.borrow().config.lite || !crate::stems_model::ready(app) {
         return;
     }
-    // Headless runs (UI tests) never download the model.
-    let fetch_model = !app.state.borrow().config.headless;
     let mut d = app.decks.borrow_mut();
     if d.stem_progress.contains_key(&track) {
         return;
     }
     let cache = d.stem_cache.clone();
     let worker = d.stem_worker.get_or_insert_with(|| {
-        od_stems::StemWorker::spawn(
-            cache,
-            od_stems::StemWorkerOptions {
-                fetch_model,
-                ..Default::default()
-            },
-        )
+        od_stems::StemWorker::spawn(cache, od_stems::StemWorkerOptions::default())
     });
     worker.enqueue(od_stems::StemJob {
         track,
@@ -964,6 +967,31 @@ fn request_stems(app: &App, track: TrackId, src: &TrackSource) {
 
 #[cfg(not(feature = "separation"))]
 fn request_stems(_app: &App, _track: TrackId, _src: &TrackSource) {}
+
+/// Queues the tracks on `deck` (all decks: `None`) that have no parts yet.
+pub(crate) fn request_loaded_stems(app: &App, deck: Option<usize>) {
+    let wanted: Vec<(TrackId, TrackSource)> = {
+        let d = app.decks.borrow();
+        (0..DECKS)
+            .filter(|i| deck.is_none_or(|x| x == *i) && *i != PREVIEW_DECK)
+            .filter(|i| d.engine_data[*i].as_ref().is_some_and(|t| !t.has_stems()))
+            .filter_map(|i| d.loaded[i].as_ref().map(|m| (m.id, m.source.clone())))
+            .collect()
+    };
+    for (id, source) in wanted {
+        request_stems(app, id, &source);
+    }
+}
+
+/// Stops the running and queued separations (the model is about to go).
+pub(crate) fn cancel_stem_jobs(app: &App) {
+    #[cfg(feature = "separation")]
+    if let Some(w) = &app.decks.borrow().stem_worker {
+        w.cancel_all();
+    }
+    #[cfg(not(feature = "separation"))]
+    let _ = app;
+}
 
 /// Separation of `track` is `fraction` (0..1) done: the decks holding it
 /// fill their part keys that far.
@@ -984,10 +1012,8 @@ pub(crate) fn poll_stems(app: &App) {
         .unwrap_or_default();
     for ev in events {
         match ev {
-            StemEvent::ModelDownload { done, total } => {
-                let pct = if total > 0 { done * 100 / total } else { 0 };
-                app.status(format!("Downloading the stem model … {pct} %"));
-            }
+            // The UI worker never downloads; stems_model.rs does, by request.
+            StemEvent::ModelDownload { .. } => {}
             StemEvent::Started { track } => {
                 app.decks.borrow_mut().stem_progress.insert(track, 0.0);
             }
@@ -998,6 +1024,10 @@ pub(crate) fn poll_stems(app: &App) {
             StemEvent::Failed { track, error } => {
                 app.decks.borrow_mut().stem_progress.remove(&track);
                 app.status(format!("Stem separation failed: {error}"));
+            }
+            StemEvent::ModelDamaged { track } => {
+                app.decks.borrow_mut().stem_progress.remove(&track);
+                crate::stems_model::damaged(app);
             }
             StemEvent::Cancelled { track } => {
                 app.decks.borrow_mut().stem_progress.remove(&track);
@@ -1814,6 +1844,13 @@ pub(crate) fn pad_rows(app: &App, d: usize, state: &EngineState) -> Vec<PadView>
 
 /// Pad `index` (0..8) of deck `d` pressed or released, in the deck's mode.
 pub(crate) fn pad(app: &App, d: usize, index: usize, pressed: bool) {
+    if pressed
+        && app.decks.borrow().pad_mode[d] == PadMode::Stems
+        && !deck_state(app, d).is_some_and(|st| st.stems_available)
+    {
+        crate::stems_model::part_pressed(app, d);
+        return;
+    }
     match app.decks.borrow().pad_mode[d] {
         PadMode::Lighting => {
             crate::lighting::pad(app, index, pressed);
@@ -2272,6 +2309,11 @@ pub(crate) fn wire(app: &Rc<App>) {
     ui.on_deck_stem(handler!(app, |a, d: i32, stem: SharedString| {
         engine::ensure_engine(&a);
         let d = idx(d);
+        // Not separated yet: the press is a request for parts.
+        if !deck_state(&a, d).is_some_and(|st| st.stems_available) {
+            crate::stems_model::part_pressed(&a, d);
+            return;
+        }
         let s = match stem.as_str() {
             "vocal" => od_engine::Stem::Vocals,
             "drums" => od_engine::Stem::Drums,

@@ -81,6 +81,7 @@ fn new_pad_modes_are_selectable() {
 fn mixer_stem_button_turns_eq_into_parts() {
     let ui = Ui::open((1440, 900));
     perform(&ui);
+    crate::stems_model::assume_model_installed(&ui.app);
     assert!(ui.wait_until(5.0, |u| u.has("mixer.ch1.stem")));
     ui.click("mixer.ch1.stem");
     assert!(ui.app.mixer.parts.get()[0]);

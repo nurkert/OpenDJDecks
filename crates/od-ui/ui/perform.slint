@@ -726,6 +726,15 @@ component StemKey inherits Rectangle {
         tooltip: @tr("Lit = audible · click: mute / unmute · wheel: level");
         clicked => { root.toggle(); }
     }
+    // Not separated: a press asks for the parts (and, the first time, for
+    // the model's download) instead of doing nothing.
+    if !root.enabled && !root.busy: TouchArea {
+        accessible-role: button;
+        accessible-label: "deck\{root.deck}.stem.\{root.stem}.request";
+        accessible-action-default => { root.toggle(); }
+        mouse-cursor: pointer;
+        clicked => { root.toggle(); }
+    }
     // Separation progress: this key's share, in the part colour.
     if root.busy: Rectangle {
         accessible-role: progress-indicator; accessible-label: "deck\{root.deck}.stem.\{root.stem}.progress"; accessible-value: Math.round(root.fill * 100) + " %";

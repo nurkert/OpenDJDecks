@@ -308,6 +308,10 @@ export component PreferencesWindow inherits Window {
     in property <bool> update-auto;
     in property <bool> update-prereleases;
     in property <string> update-status;
+    // "missing" | "partial" | "downloading" | "installed" | "damaged" | "unsupported"
+    in property <string> stems-state: "missing";
+    in property <string> stems-status;
+    in property <bool> stems-help;
 
     callback select-page(string);
     // Choices by key ("audio.device", "view.language", …) and index.
@@ -471,6 +475,21 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Cue points"); Switch { accessible-label: "prefs.analysis.auto-cues"; label: @tr("Set cues like my other tracks"); on: root.auto-cues; toggled(v) => { root.flag("analysis.auto-cues", v); } } }
                         Note { text: @tr("Learns where you put hot cues and memory cues — by bars from the first downbeat, the phrases and the end — and places them, with their names and colours, on newly analysed tracks that have no cues. Each placement is one undo step. The row menu offers it for any selected track."); }
                         Note { text: @tr("Changes apply to tracks analysed from now on. Use ANALYSE in the player to analyse a track again."); }
+                        if root.stems-state != "unsupported": Heading { text: @tr("Stems"); }
+                        if root.stems-state != "unsupported": Row {
+                            label: @tr("Separation model");
+                            Text { accessible-label: "prefs.analysis.stems-status"; accessible-value: self.text; horizontal-stretch: 1; text: root.stems-status; font-family: Theme.family; font-size: 13px; color: Theme.bone-2; vertical-alignment: center; wrap: word-wrap; }
+                            if root.stems-state == "missing" || root.stems-state == "partial": Button { a11y-label: "prefs.analysis.stems-download"; label: @tr("DOWNLOAD"); tone: Theme.live; tooltip: @tr("Download the stem model once (it stays on this computer)"); clicked => { root.act("stems.download"); } }
+                            if root.stems-state == "downloading": Button { a11y-label: "prefs.analysis.stems-cancel"; label: @tr("CANCEL"); clicked => { root.act("stems.cancel"); } }
+                            if root.stems-help: Button { a11y-label: "prefs.analysis.stems-help"; label: @tr("HELP"); tooltip: @tr("Open the guide section on fixing this"); clicked => { root.act("stems.help"); } }
+                        }
+                        if root.stems-state == "partial" || root.stems-state == "installed" || root.stems-state == "damaged": Row {
+                            label: @tr("Repair");
+                            Rectangle { horizontal-stretch: 1; }
+                            Button { a11y-label: "prefs.analysis.stems-redownload"; label: @tr("DELETE AND DOWNLOAD AGAIN"); tooltip: @tr("Delete the model and every leftover, then download it from the start"); clicked => { root.act("stems.redownload"); } }
+                            Button { a11y-label: "prefs.analysis.stems-remove"; label: @tr("REMOVE MODEL"); tone: Theme.fault; tooltip: @tr("Delete the model from this computer (stems you already separated stay)"); clicked => { root.act("stems.remove"); } }
+                        }
+                        if root.stems-state != "unsupported": Note { text: @tr("The model is downloaded once and stays on this computer; your music never leaves it. Removing the model does not remove stems you already separated."); }
                     }
                 }
 

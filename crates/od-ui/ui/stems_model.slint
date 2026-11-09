@@ -1,0 +1,95 @@
+// The stem separation model: the slim notice under the top bar (never over
+// the decks) and the dialog that asks before anything is downloaded, in the
+// look of the update prompt. The line on the left carries the state.
+
+import { Theme } from "tokens.slint";
+import { VLine, HLine, ProgressLine } from "lines.slint";
+import { PlateButton } from "controls.slint";
+
+export component StemsModelBar inherits Rectangle {
+    // "offer" | "downloading" | "error"
+    in property <string> state;
+    in property <string> text;
+    in property <float> progress;
+    // "download" | "later" | "cancel" | "retry" | "help" | "close"
+    callback act(string);
+
+    property <color> tone: root.state == "error" ? Theme.fault : root.state == "offer" ? Theme.attention : Theme.live;
+    height: 34px;
+    background: Theme.ground-band;
+    accessible-role: groupbox;
+    accessible-label: "app.stems";
+    accessible-value: root.text;
+
+    HLine { y: parent.height - self.height; width: parent.width; tone: Theme.rule; }
+    if root.state == "downloading": ProgressLine { x: 0; y: parent.height - 2px; width: parent.width; height: 2px; progress: root.progress; tone: Theme.live; }
+
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 12px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        spacing: 8px;
+        VLine { weight: 2px; tone: root.tone; form: root.state == "offer" ? "double" : "solid"; }
+        Text {
+            horizontal-stretch: 1;
+            text: root.text;
+            font-family: Theme.family; font-size: 13px; color: Theme.bone;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        if root.state == "offer": PlateButton { accessible-label: "app.stems.download"; accessible-role: button; compact: true; label: @tr("DOWNLOAD NOW"); tone: Theme.attention; clicked => { root.act("download"); } }
+        if root.state == "offer": PlateButton { accessible-label: "app.stems.later"; accessible-role: button; compact: true; label: @tr("NOT NOW"); clicked => { root.act("later"); } }
+        if root.state == "downloading": PlateButton { accessible-label: "app.stems.cancel"; accessible-role: button; compact: true; label: @tr("CANCEL"); clicked => { root.act("cancel"); } }
+        if root.state == "error": PlateButton { accessible-label: "app.stems.retry"; accessible-role: button; compact: true; label: @tr("RETRY"); tone: Theme.attention; clicked => { root.act("retry"); } }
+        if root.state == "error": PlateButton { accessible-label: "app.stems.help"; accessible-role: button; compact: true; label: @tr("HELP"); clicked => { root.act("help"); } }
+        if root.state == "error": PlateButton { accessible-label: "app.stems.close"; accessible-role: button; compact: true; label: @tr("CLOSE"); clicked => { root.act("close"); } }
+    }
+}
+
+// Asks before the download: what is needed and why, the size, that it
+// happens once, and that the music stays on this computer. Only ever up
+// while no music plays and no mix records.
+export component StemsModelPrompt inherits Rectangle {
+    in property <string> title;
+    in property <int> size-mb;
+    // "download" | "later"
+    callback act(string);
+
+    background: #00000099;
+    accessible-role: groupbox;
+    accessible-label: "app.stems.prompt";
+    TouchArea { }
+
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: min(parent.width - 48px, 520px);
+        height: card.preferred-height;
+        background: Theme.ground-band;
+        border-width: 1px;
+        border-color: Theme.rule-strong;
+        card := VerticalLayout {
+            padding: 22px;
+            spacing: 14px;
+            Text {
+                text: root.title;
+                font-family: Theme.family; font-size: 22px; font-weight: 600; color: Theme.bone;
+                wrap: word-wrap;
+            }
+            Text {
+                accessible-label: "app.stems.prompt.text";
+                accessible-value: self.text;
+                text: @tr("To split tracks into vocals, instruments, drums and bass, OpenDJDecks needs a separation model of {} MB. It is downloaded once; after that stems work without internet. Your music stays on this computer.", root.size-mb);
+                font-family: Theme.family; font-size: 14px; color: Theme.bone-2;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: end;
+                PlateButton { accessible-label: "app.stems.prompt.later"; accessible-role: button; compact: true; label: @tr("NOT NOW"); clicked => { root.act("later"); } }
+                PlateButton { accessible-label: "app.stems.prompt.download"; accessible-role: button; compact: true; active: true; tone: Theme.attention; label: @tr("DOWNLOAD NOW"); clicked => { root.act("download"); } }
+            }
+        }
+    }
+}

@@ -9,7 +9,7 @@ license.workspace = true
 default = ["separation"]
 # Neural separation (ONNX Runtime + model download). Without it (e.g. the
 # Raspberry Pi Lite build) the crate still reads cached stems.
-separation = ["dep:ort", "dep:ureq", "dep:sha2"]
+separation = ["dep:ort", "dep:sha2", "dep:od-update", "dep:od-devices"]
 
 [dependencies]
 od-core.workspace = true
@@ -21,14 +21,15 @@ tracing.workspace = true
 crossbeam-channel.workspace = true
 parking_lot.workspace = true
 zstd = { version = "0.13", features = ["zstdmt"] }
-# rustls for the build-time binary download: the native-tls/platform-verifier
-# path hung in our sandboxed build environment.
-ureq = { version = "3", optional = true }
+od-update = { workspace = true, optional = true }
+od-devices = { workspace = true, optional = true }
 sha2 = { version = "0.10", optional = true }
 
 [dev-dependencies]
 tempfile.workspace = true
 hound = "3"
+od-update.workspace = true
+sha2 = "0.10"
 
 # ONNX Runtime has no prebuilt binaries for Intel Macs (see build.rs).
 [target.'cfg(not(all(target_os = "macos", target_arch = "x86_64")))'.dependencies]

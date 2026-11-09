@@ -2184,6 +2184,37 @@ evidence = ["crates/od-stems/src/model.rs"]
 spec = "SPEC §10.3"
 
 [[feature]]
+id = "stems-model-setup"
+area = "stems"
+name = "Stem model workflow: asked before downloading, progress, resume, plain errors with HELP, Preferences repair"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-stems::model::an_interrupted_download_resumes_with_a_range",
+  "od-stems::model::a_bad_checksum_discards_the_file_and_never_installs_it",
+  "od-stems::model::a_full_disk_is_found_before_anything_is_requested",
+  "od-stems::model::delete_and_redownload_removes_every_leftover_first",
+  "od-stems::model::removing_the_model_keeps_stems_already_separated",
+  "od-stems::model::damage_shows_in_the_status_and_is_never_trusted",
+  "od-stems::model_worker::a_damaged_model_is_reported_and_never_loaded",
+  "od-ui::stems_model::tests::asks_with_a_dialog_only_in_silence",
+  "od-ui::stems_model::tests::every_failure_is_one_short_sentence_in_both_languages",
+  "od-ui::stems_model::tests::help_anchors_exist_in_the_guides",
+  "od-ui::ui_tests::stems_model::loading_a_track_never_asks",
+  "od-ui::ui_tests::stems_model::a_part_key_opens_the_dialog_and_not_now_is_respected",
+  "od-ui::ui_tests::stems_model::while_music_plays_only_a_notice_then_the_dialog",
+  "od-ui::ui_tests::stems_model::download_runs_in_the_background_and_ends_installed",
+  "od-ui::ui_tests::stems_model::a_failed_download_offers_retry_and_help",
+  "od-ui::ui_tests::stems_model::preferences_show_and_repair_the_model",
+  "od-ui::ui_tests::stems_model::batch_separation_asks_and_goes_ahead_after_the_download",
+  "od-ui::ui_tests::stems_model::the_kiosk_never_shows_a_dialog",
+]
+evidence = ["crates/od-stems/src/model.rs", "crates/od-ui/src/stems_model.rs", "crates/od-ui/ui/stems_model.slint"]
+note = "No implicit download: a part key, the STEM switch or batch separation asks (dialog when quiet, notice while music plays or records, dialog after it stops); NOT NOW holds for the session. Resumable download with percent and size, cancellable, SHA-256 verified, free space checked first. Plain failures with RETRY and HELP. Preferences › Analysis › Stems: status, size, DOWNLOAD, DELETE AND DOWNLOAD AGAIN, REMOVE MODEL. Kiosk and builds without separation never ask"
+spec = "SPEC §10.3"
+
+[[feature]]
 id = "stems-status-on-deck"
 area = "stems"
 name = "Deck shows separation progress; stem controls visible (dimmed) while separating"
