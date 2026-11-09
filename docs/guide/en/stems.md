@@ -20,7 +20,7 @@ There are two ways:
 
 Each deck has **VOCAL**, **INST**, **DRUMS** and **BASS** under the waveform.
 
-- Click a key to mute or unmute the part. Lit means audible.
+- Click a key to mute or unmute the stem. Filled means muted.
 - Turn the wheel over a key to set the part's level; the line under the key shows it.
 
 For hands-on mixing, press **STEM** on a mixer channel: **HI** becomes the vocals, **MID** the instruments and **LOW** the drums. The **STEMS** pad mode gives you the part mutes and stem effects on the pads.

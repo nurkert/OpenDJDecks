@@ -29,13 +29,13 @@ component Category inherits Rectangle {
     accessible-item-selectable: true;
     accessible-item-selected: root.current;
     height: 34px;
-    background: touch.has-hover && !root.current ? Theme.ground-band : transparent;
-    VLine { x: 12px; y: 7px; height: parent.height - 14px; weight: 2px; tone: root.current ? Theme.attention : transparent; form: "double"; }
+    border-radius: Theme.r-control;
+    background: root.current ? Theme.bone : touch.has-hover ? Theme.plate-raised : transparent;
     Text {
-        x: 28px; height: parent.height;
+        x: 16px; height: parent.height;
         text: root.label;
         font-family: Theme.family; font-size: 13px; font-weight: 600; letter-spacing: 2.2px;
-        color: root.current ? Theme.bone : Theme.bone-2;
+        color: root.current ? Theme.ground : Theme.bone-2;
         vertical-alignment: center;
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
@@ -111,8 +111,7 @@ component Choice inherits HorizontalLayout {
     for o[i] in root.options: PlateButton {
         compact: true;
         label: o;
-        active: i == root.selected;
-        tone: i == root.selected ? Theme.attention : Theme.bone-3;
+        selected: i == root.selected;
         clicked => { root.picked(i); }
     }
 }
@@ -126,10 +125,19 @@ component Switch inherits Rectangle {
     accessible-checkable: true;
     accessible-checked: root.on;
     height: 28px;
-    min-width: t.preferred-width + 24px;
-    VLine { x: 2px; y: 5px; height: parent.height - 10px; weight: 2px; tone: root.on ? Theme.live : Theme.rule-strong; form: root.on ? "solid" : "half"; }
+    min-width: t.preferred-width + 44px;
+    // A filled track with a thumb (DESIGN.md, Toggles and status lines).
+    Rectangle {
+        x: 0; y: (parent.height - 14px) / 2; width: 26px; height: 14px; border-radius: 7px;
+        background: root.on ? Theme.live : Theme.plate-raised;
+        Rectangle {
+            y: (parent.height - 10px) / 2; x: root.on ? parent.width - self.width - 2px : 2px;
+            width: 10px; height: 10px; border-radius: 5px; background: root.on ? Theme.ink-on : Theme.bone-3;
+            animate x { duration: Theme.motion ? 90ms : 0ms; }
+        }
+    }
     t := Text {
-        x: 16px; height: parent.height;
+        x: 34px; height: parent.height;
         text: root.label;
         font-family: Theme.family; font-size: 14px;
         color: root.on ? Theme.bone : Theme.bone-2;
@@ -440,7 +448,7 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Phrases"); Switch { accessible-label: "prefs.view.phrase-enlarged"; label: @tr("Show phrases on the enlarged waveforms"); on: root.phrases; toggled(v) => { root.flag("view.phrases", v); } } }
                         Row { label: ""; Switch { accessible-label: "prefs.view.phrase-overview"; label: @tr("Show the phrase bar under the overviews"); on: root.phrases-overview; toggled(v) => { root.flag("view.phrases-overview", v); } } }
                         Row { label: @tr("Phrase types"); Choice { accessible-label: "prefs.view.phrase-types"; options: [@tr("NAMES"), @tr("COLOURS ONLY")]; selected: root.phrase-types; picked(i) => { root.choose("view.phrase-types", i); } } }
-                        Row { label: @tr("Waveform colour"); HorizontalLayout { alignment: start; spacing: Theme.s4; Choice { accessible-label: "prefs.view.waveform-colour"; options: [@tr("3-BAND"), @tr("ONE COLOUR"), "RGB"]; selected: root.waveform; picked(i) => { root.choose("view.waveform", i); } } if root.waveform == 0: PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-customise"; label: @tr("OWN COLOURS"); active: root.waveform-own; clicked => { root.waveform-own = !root.waveform-own; } } } }
+                        Row { label: @tr("Waveform colour"); HorizontalLayout { alignment: start; spacing: Theme.s4; Choice { accessible-label: "prefs.view.waveform-colour"; options: [@tr("3-BAND"), @tr("ONE COLOUR"), "RGB"]; selected: root.waveform; picked(i) => { root.choose("view.waveform", i); } } if root.waveform == 0: PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-customise"; label: @tr("OWN COLOURS"); selected: root.waveform-own; clicked => { root.waveform-own = !root.waveform-own; } } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Lows"); Swatches { key: "prefs.view.waveform-low"; colours: root.waveform-swatches; selected: root.waveform-low; picked(i) => { root.choose("view.waveform-low", i); } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Mids"); Swatches { key: "prefs.view.waveform-mid"; colours: root.waveform-swatches; selected: root.waveform-mid; picked(i) => { root.choose("view.waveform-mid", i); } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Highs"); Swatches { key: "prefs.view.waveform-high"; colours: root.waveform-swatches; selected: root.waveform-high; picked(i) => { root.choose("view.waveform-high", i); } } }

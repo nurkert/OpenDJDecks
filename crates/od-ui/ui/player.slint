@@ -24,14 +24,12 @@ component Tab inherits Rectangle {
     accessible-item-selected: root.current;
     min-width: t.preferred-width + root.pad;
     height: 26px;
-    background: root.current ? Theme.plate : touch.has-hover ? Theme.ground-band : transparent;
-    border-width: 1px;
-    border-color: root.current ? Theme.rule-strong : transparent;
-    Rectangle { y: 0; height: 2px; background: root.current ? Theme.attention : transparent; }
+    border-radius: Theme.r-control;
+    background: root.current ? Theme.bone : touch.pressed || touch.has-hover ? Theme.plate-raised : Theme.plate;
     t := Text {
         text: root.label;
         font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
-        color: root.current ? Theme.bone : Theme.bone-3;
+        color: root.current ? Theme.ground : touch.has-hover ? Theme.bone : Theme.bone-2;
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
@@ -807,8 +805,8 @@ export component PreparePlayer inherits Rectangle {
                     Rectangle { horizontal-stretch: 1; min-width: 16px; }
                     HorizontalLayout {
                         spacing: Theme.s1;
-                        Toggle { accessible-label: "player1.loop-in"; accessible-role: button; size: 30px; min-w: 44px; label: "IN"; on: root.loop-in-set; tone: Theme.w615; tooltip: @tr("Loop in point at the playhead (while the track plays)"); enabled: root.has-track; clicked => { root.act("loop-in"); } }
-                        Toggle { accessible-label: "player1.loop-out"; accessible-role: button; size: 30px; min-w: 44px; label: "OUT"; on: root.looping; tone: Theme.w615; tooltip: @tr("Loop out point: the loop starts"); enabled: root.has-track; clicked => { root.act("loop-out"); } }
+                        Toggle { accessible-label: "player1.loop-in"; accessible-role: button; size: 30px; min-w: 44px; label: "IN"; on: root.loop-in-set; tone: Theme.attention; tooltip: @tr("Loop in point at the playhead (while the track plays)"); enabled: root.has-track; clicked => { root.act("loop-in"); } }
+                        Toggle { accessible-label: "player1.loop-out"; accessible-role: button; size: 30px; min-w: 44px; label: "OUT"; on: root.looping; tone: Theme.attention; tooltip: @tr("Loop out point: the loop starts"); enabled: root.has-track; clicked => { root.act("loop-out"); } }
                     }
                     Rectangle { width: Theme.s3; }
                     HorizontalLayout {
@@ -844,17 +842,17 @@ export component PreparePlayer inherits Rectangle {
                             Toggle { accessible-role: button; accessible-label: "player1.memory.next"; size: 30px; width: 26px; label: "›"; tooltip: @tr("Next cue"); enabled: root.has-track; clicked => { root.act("memory-next"); } }
                             Toggle { accessible-role: button; accessible-label: "player1.memory.delete"; size: 30px; label: @tr("DEL"); tone: Theme.fault; tooltip: @tr("Delete the memory cue at the cursor"); enabled: root.has-track && !root.read-only; clicked => { root.act("memory-delete"); } }
                             Rectangle { width: Theme.s2; }
-                            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.looping; accessible-label: "player1.loop.auto"; size: 30px; label: "LOOP"; on: root.looping; tone: Theme.w615; tooltip: @tr("Auto loop of the shown length while the track plays; again to leave"); enabled: root.has-track; clicked => { root.act("loop-auto"); } }
-                            Toggle { accessible-role: button; accessible-label: "player1.loop.manual"; size: 30px; label: root.looping ? @tr("EXIT") : root.loop-in-set ? @tr("OUT") : @tr("IN"); on: root.loop-in-set; tone: Theme.w615; tooltip: @tr("Manual loop: in point, then out point; again to leave"); enabled: root.has-track; clicked => { root.act("loop-manual"); } }
+                            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.looping; accessible-label: "player1.loop.auto"; size: 30px; label: "LOOP"; on: root.looping; tone: Theme.attention; tooltip: @tr("Auto loop of the shown length while the track plays; again to leave"); enabled: root.has-track; clicked => { root.act("loop-auto"); } }
+                            Toggle { accessible-role: button; accessible-label: "player1.loop.manual"; size: 30px; label: root.looping ? @tr("EXIT") : root.loop-in-set ? @tr("OUT") : @tr("IN"); armed: root.loop-in-set && !root.looping; tone: Theme.attention; tooltip: @tr("Manual loop: in point, then out point; again to leave"); enabled: root.has-track; clicked => { root.act("loop-manual"); } }
                             Toggle { accessible-role: button; accessible-label: "player1.loop.halve"; size: 30px; width: 26px; label: "½"; tooltip: @tr("Halve the loop"); clicked => { root.act("loop-halve"); } }
                             Rectangle {
                                 accessible-role: text; accessible-label: "player1.loop.size"; accessible-value: root.loop-size;
                                 width: 34px;
-                                background: Theme.plate; border-width: 1px; border-color: root.looping ? Theme.w615 : Theme.rule;
+                                background: Theme.plate; border-radius: Theme.r-control;
                                 Text { text: root.loop-size; font-family: Theme.family; font-size: 13px; font-weight: 600; color: Theme.bone; }
                             }
                             Toggle { accessible-role: button; accessible-label: "player1.loop.double"; size: 30px; width: 26px; label: "2×"; tooltip: @tr("Double the loop"); clicked => { root.act("loop-double"); } }
-                            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.quantize; accessible-label: "player1.quantize"; size: 30px; width: 28px; label: "Q"; on: root.quantize; tone: Theme.attention; tooltip: @tr("Quantize loops and cues to the beat"); clicked => { root.act("quantize"); } }
+                            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.quantize; accessible-label: "player1.quantize"; size: 30px; width: 28px; label: "Q"; on: root.quantize; tone: Theme.setup-on; tooltip: @tr("Quantize loops and cues to the beat"); clicked => { root.act("quantize"); } }
                             player-menu := ContextMenuArea {
                                 width: 28px;
                                 Menu {

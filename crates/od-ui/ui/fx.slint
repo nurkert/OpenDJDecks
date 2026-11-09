@@ -41,19 +41,17 @@ export component ChoiceList inherits Rectangle {
     callback chosen(int);
     width: root.columns * root.cell-w + 2px;
     height: Math.ceil(root.items.length / root.columns) * root.cell-h + 2px;
-    background: Theme.plate;
-    border-width: 1px;
-    border-color: Theme.rule-strong;
+    background: Theme.plate; border-radius: Theme.r-overlay;
     for name[i] in root.items: Rectangle {
         x: 1px + Math.mod(i, root.columns) * root.cell-w;
         y: 1px + Math.floor(i / root.columns) * root.cell-h;
         width: root.cell-w; height: root.cell-h;
-        background: i == root.current ? Theme.attention.with-alpha(0.16) : ta.has-hover ? Theme.plate-raised : transparent;
-        Rectangle { x: 0; width: 2px; background: i == root.current ? Theme.attention : transparent; }
+        border-radius: Theme.r-control;
+        background: i == root.current ? Theme.bone : ta.has-hover ? Theme.plate-raised : transparent;
         Text {
             x: 10px; text: name;
             font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1px;
-            color: i == root.current ? Theme.bone : Theme.bone-2; vertical-alignment: center;
+            color: i == root.current ? Theme.ground : Theme.bone-2; vertical-alignment: center;
         }
         ta := TouchArea { mouse-cursor: pointer; clicked => { root.chosen(i); } }
     }
@@ -263,7 +261,7 @@ component FxUnit inherits Rectangle {
                     Toggle {
                         accessible-role: button;
                         accessible-label: "fx.unit\{root.u.unit}.tap";
-                        size: Theme.target; min-w: Theme.target; label: "TAP"; on: root.u.tapped; tone: Theme.w486;
+                        size: Theme.target; min-w: Theme.target; label: "TAP"; on: root.u.tapped; tone: Theme.attention;
                         tooltip: @tr("Tap the tempo of the effect; AUTO returns to the deck tempo");
                         command: "fx" + root.u.unit + ".tap";
                         clicked => { root.tap(); }

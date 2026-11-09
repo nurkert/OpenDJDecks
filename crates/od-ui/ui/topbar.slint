@@ -16,25 +16,28 @@ component ModeTab inherits Rectangle {
     in property <string> command;
     callback clicked();
     min-width: t.preferred-width + (root.narrow ? 18px : 32px);
-    background: root.current ? Theme.plate : touch.has-hover ? Theme.ground-band : transparent;
+    // One segmented control: the current mode is the filled segment.
     Rectangle {
-        y: parent.height - 2px; height: 2px;
-        background: root.current ? Theme.attention : transparent;
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: root.current ? Theme.bone : touch.pressed || touch.has-hover ? Theme.plate-raised : Theme.plate;
     }
     t := Text {
         text: root.label;
         font-family: Theme.family; font-size: 13px; font-weight: 600; letter-spacing: root.narrow ? 1.2px : 2.4px;
-        color: root.current ? Theme.bone : Theme.bone-3;
+        color: root.current ? Theme.ground : touch.has-hover ? Theme.bone : Theme.bone-2;
+        vertical-alignment: center;
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
-// Panel switch in the bar (FX, SAMPLER): an outlined label whose line
-// lights while the panel is open.
+// Panel switch in the bar: an ash plate, filled while the panel is open, in
+// red while recording. The legend stays.
 component PanelToggle inherits Rectangle {
     in property <bool> narrow;
     in property <string> label;
     in property <bool> on;
+    in property <bool> running;
     in property <string> tooltip;
     in property <string> command;
     // Smallest width (44 px touch keys in the kiosk) and availability.
@@ -43,16 +46,15 @@ component PanelToggle inherits Rectangle {
     callback clicked();
     width: max(root.min-w, t.preferred-width + (root.narrow ? 14px : 22px));
     Rectangle {
-        y: 9px; height: parent.height - 18px;
-        border-width: 1px;
-        border-color: root.on ? Theme.attention.with-alpha(0.8) : Theme.rule-strong;
-        background: root.on ? Theme.attention.with-alpha(0.14) : touch.has-hover ? Theme.plate : transparent;
-        Rectangle { y: 0; height: 2px; background: root.on ? Theme.attention : transparent; }
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: Theme.face(root.enabled, touch.pressed, touch.has-hover, false, root.on || root.running, root.running ? Theme.fault : Theme.setup-on);
+        animate background { duration: Theme.motion ? 90ms : 0ms; }
     }
     t := Text {
         text: root.label;
         font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.6px;
-        color: !root.enabled ? Theme.bone-3.with-alpha(0.55) : root.on ? Theme.bone : touch.has-hover ? Theme.bone : Theme.bone-2;
+        color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, false, root.on || root.running);
         horizontal-alignment: center; vertical-alignment: center;
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
@@ -89,9 +91,9 @@ component ViewMenu inherits Rectangle {
     property <string> current: root.layout == "browse" ? "browse" : (root.deck-count >= 4 ? "4" : "2") + (root.layout == "vertical" ? "v" : "h");
     width: max(root.narrow ? 52px : 64px, row.preferred-width + (root.narrow ? 14px : 22px));
     Rectangle {
-        y: 9px; height: parent.height - 18px;
-        border-width: 1px; border-color: touch.has-hover ? Theme.rule-strong : Theme.rule;
-        background: touch.has-hover ? Theme.plate : transparent;
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: touch.has-hover ? Theme.plate-raised : Theme.plate;
         row := HorizontalLayout {
             alignment: center; spacing: Theme.s2;
             VerticalLayout { alignment: center; ViewIcon { view: root.current; tone: Theme.bone; } }
@@ -109,7 +111,7 @@ component ViewMenu inherits Rectangle {
         y: PopupPlace.y(root.absolute-position.y, root.height - 6px, -5 * 36px - 2px, 5 * 36px + 2px);
         width: 220px; height: 5 * 36px + 2px;
         Rectangle {
-            background: Theme.plate; border-width: 1px; border-color: Theme.rule-strong;
+            background: Theme.plate; border-radius: Theme.r-control;
             VerticalLayout {
                 padding: Theme.key-gap;
                 for v in [
@@ -322,6 +324,7 @@ export component TopBar inherits Rectangle {
                 accessible-value: root.recording ? root.recording-time : "";
                 label: root.recording ? @tr("REC {}", root.recording-time) : "REC";
                 on: root.rec-panel;
+                running: root.recording;
                 tooltip: root.rec-panel ? @tr("Hide the recording section") : @tr("Show the recording section: level, meter and the record button");
                 command: "view.panel.rec";
                 clicked => { root.toggle-rec-panel(); }
@@ -421,19 +424,18 @@ export component TopBar inherits Rectangle {
                 width: rec.preferred-width + 44px;
                 Rectangle {
                     y: 8px; height: parent.height - 16px;
-                    border-width: 1px;
-                    border-color: root.recording ? Theme.fault : Theme.rule-strong;
-                    background: root.recording ? Theme.fault.with-alpha(0.12) : rt.has-hover ? Theme.plate : transparent;
+                    border-radius: Theme.r-control;
+                    background: Theme.face(true, rt.pressed, rt.has-hover, false, root.recording, Theme.fault);
                 }
                 Rectangle {
                     x: 12px; y: (parent.height - 8px) / 2; width: 8px; height: 8px; border-radius: 4px;
-                    background: root.recording ? Theme.fault : Theme.bone-3;
+                    background: Theme.ink(true, rt.pressed, rt.has-hover, false, root.recording);
                 }
                 rec := Text {
                     x: 28px; height: parent.height;
                     text: root.recording ? @tr("REC {}", root.recording-time) : @tr("RECORD");
                     font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 1.8px;
-                    color: root.recording ? Theme.bone : Theme.bone-2; vertical-alignment: center;
+                    color: Theme.ink(true, rt.pressed, rt.has-hover, false, root.recording); vertical-alignment: center;
                 }
                 rt := TipArea { tooltip: root.recording ? @tr("Stop recording") : @tr("Record the master output"); command: "record.toggle"; mouse-cursor: pointer; clicked => { root.toggle-recording(); } }
             }
@@ -447,16 +449,15 @@ export component TopBar inherits Rectangle {
         Rectangle {
             accessible-label: "topbar.mode"; accessible-role: combobox; accessible-value: root.mode;
             width: max(84px, mk.preferred-width + 20px);
-            background: kmode.has-hover ? Theme.plate : transparent;
-            Rectangle { y: parent.height - 2px; height: 2px; background: Theme.attention; }
-            mk := Text { text: root.mode == "prepare" ? @tr("PREPARE") : root.mode == "lighting" ? @tr("LIGHTING") : @tr("PERFORM"); font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 1.2px; color: Theme.bone; }
+            background: Theme.bone;
+            mk := Text { text: root.mode == "prepare" ? @tr("PREPARE") : root.mode == "lighting" ? @tr("LIGHTING") : @tr("PERFORM"); font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 1.2px; color: Theme.ground; }
             kmode := TipArea { tooltip: @tr("Work mode"); mouse-cursor: pointer; clicked => { modes.show(); } }
             modes := PopupWindow {
                 x: PopupPlace.x(parent.absolute-position.x, 0, 140px);
                 y: PopupPlace.y(parent.absolute-position.y, parent.height, -3 * 44px, 3 * 44px);
                 width: 140px; height: 3 * 44px;
                 Rectangle {
-                    background: Theme.plate; border-width: 1px; border-color: Theme.rule-strong;
+                    background: Theme.plate; border-radius: Theme.r-control;
                     VerticalLayout {
                         width: 140px;
                         for m[i] in [{ id: "prepare", label: @tr("PREPARE") }, { id: "perform", label: @tr("PERFORM") }, { id: "lighting", label: @tr("LIGHTING") }]: Rectangle {
@@ -513,6 +514,7 @@ export component TopBar inherits Rectangle {
             narrow: true; min-w: 44px;
             label: root.recording ? @tr("REC {}", root.recording-time) : "REC";
             on: root.rec-panel;
+            running: root.recording;
             tooltip: root.rec-panel ? @tr("Hide the recording section") : @tr("Show the recording section: level, meter and the record button");
             clicked => { root.toggle-rec-panel(); }
         }

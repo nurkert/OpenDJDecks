@@ -56,10 +56,21 @@ export global Theme {
     out property <color> w615: light ? (colorblind-safe ? #935D00 : #A54E0E) : (colorblind-safe ? #E69F00 : #F39047);
     out property <color> w656: light ? (colorblind-safe ? #B34E00 : #C23434) : (colorblind-safe ? #D55E00 : #EF5A5A);
 
-    // Semantic lines.
+    // Semantic lines: one job per colour (DESIGN.md, State Language).
+    // Sodium: now and attention. Green: playing and in sync. Red: recording,
+    // clash, danger. Cyan, orange, green and violet also name decks 1-4.
     out property <color> live: w546;
     out property <color> attention: w589;
     out property <color> fault: w656;
+    // Neutral fill of a setup control that is on (quantize, stem isolation):
+    // filled like any on state, but without a colour of its own.
+    out property <color> setup-on: bone-2;
+    // Ink on anything filled in a tone.
+    out property <color> ink-on: ground;
+    // The focus ring: bone, 2px, 2px offset, used for nothing else.
+    out property <color> focus: bone;
+    out property <length> focus-width: 2px;
+    out property <length> focus-offset: 2px;
 
     // State changes slide with one damped overshoot.
     out property <easing> spring: cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -134,6 +145,27 @@ export global Theme {
         if (slot == 4) { return w589; }
         if (slot == 5) { return w436; }
         if (slot == 6) { return w656; }
+        return bone-2;
+    }
+
+    // ── State language (DESIGN.md, State Language) ──
+    // Off, hover and pressed, selected, on, running, disabled, as one table.
+
+    // Surface of a control.
+    public pure function face(enabled: bool, pressed: bool, hover: bool, selected: bool, on: bool, tone: color) -> color {
+        if (selected) { return bone; }
+        if (on) { return tone; }
+        if (!enabled) { return ground-band; }
+        if (pressed || hover) { return plate-raised; }
+        return plate;
+    }
+
+    // Ink of a control's legend.
+    public pure function ink(enabled: bool, pressed: bool, hover: bool, selected: bool, on: bool) -> color {
+        if (selected) { return ground; }
+        if (on) { return ink-on; }
+        if (!enabled) { return bone-3; }
+        if (pressed || hover) { return bone; }
         return bone-2;
     }
 }

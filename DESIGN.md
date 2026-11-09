@@ -185,17 +185,17 @@ The world refuses grey dashboards, neon glow and boxed widgets on boxed widgets.
 A charcoal continuum with bone ink and seven narrow spectral lines; each wavelength is a fixed role, not a decoration.
 
 ### Primary
-- **Sodium 589** (w589-sodium): the attention line. Playheads and preview cursors (doubled), selection ticks, pending sync (dashed), loaded-on-deck marker (doubled), current mode tab underline, set kind marker, LOCKED legend, CUE and LOCK plate leads, analysis progress.
+- **Sodium 589** (w589-sodium): the attention line. Playheads and preview cursors (doubled), selection ticks, pending sync (dashed), loaded-on-deck marker (doubled), set kind marker, LOCKED legend, armed keys, muted stems and loops that are running, analysis progress.
 
 ### Secondary
 - **Green 546** (w546-green): the live line. In-sync sticks (solid), syncing fill, PLAY, ADD MUSIC / SYNC / REGISTER plate leads, harmonic-fit marks in the KEY column, on-device dot in the tree, deck 3, hot cue A.
 - **Deep Red 656** (w656-deep-red): the fault line. Struck crossbars, error detail text, missing files, DELETE / FORGET / RECORD plates, recordings, level-meter clip, hot cue G.
 
 ### Tertiary (deck and cue wavelengths)
-- **Cyan 486** (w486-cyan): deck 1; LIBRARY section; SYNC state; field focus default; selection highlight in text inputs (35% alpha); hot cue B.
-- **Orange 615** (w615-orange): deck 2; LOOP state; hot cue C.
-- **Violet 405** (w405-violet): deck 4; SLIP state; hot cue D.
-- **Indigo 436** (w436-indigo): smart lists (dashed marker, rule field focus), KEYLOCK state, hot cue F. It has no colour-blind variant in the build.
+- **Cyan 486** (w486-cyan): deck 1; LIBRARY section; selection highlight in text inputs (35% alpha); hot cue B.
+- **Orange 615** (w615-orange): deck 2; hot cue C.
+- **Violet 405** (w405-violet): deck 4; hot cue D.
+- **Indigo 436** (w436-indigo): smart lists (dashed marker), key functions (KEY SYNC, key shift, keylock), hot cue F. It has no colour-blind variant in the build.
 - Hot cue E is sodium; hot cue H falls back to bone-2.
 
 ### Neutral

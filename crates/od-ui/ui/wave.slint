@@ -129,7 +129,7 @@ export component WaveLane inherits Rectangle {
         if root.deck.master: Text {
             x: 8px; width: root.gutter - 12px; y: parent.height - 16px;
             text: "M";
-            font-family: Theme.family; font-size: 10px; font-weight: 600; color: Theme.attention;
+            font-family: Theme.family; font-size: 10px; font-weight: 600; color: root.tone;
             horizontal-alignment: center;
         }
         // Tall lanes: GRID opens the deck's track in EDIT GRID (Prepare).

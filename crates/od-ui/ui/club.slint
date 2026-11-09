@@ -70,14 +70,12 @@ component Key inherits Rectangle {
     callback held(bool);
     min-width: max(44px, t.preferred-width + 20px);
     height: root.key-h;
-    background: root.on ? root.tone.with-alpha(0.2) : ta.pressed ? Theme.plate-raised : ta.has-hover ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate;
-    border-width: 1px;
-    border-color: root.on ? root.tone.with-alpha(0.8) : Theme.rule;
-    Rectangle { y: 0; height: 2px; background: root.on || ta.pressed ? root.tone : transparent; }
+    background: Theme.face(true, ta.pressed, ta.has-hover, false, root.on, root.tone);
+    border-radius: Theme.r-control;
     t := Text {
         text: root.label;
         font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
-        color: root.on ? Theme.bone : Theme.bone-2;
+        color: Theme.ink(true, ta.pressed, ta.has-hover, false, root.on);
         horizontal-alignment: center; vertical-alignment: center;
     }
     ta := TipArea {
@@ -97,16 +95,14 @@ component HotCueKey inherits Rectangle {
     property <color> tone: Theme.cue-color(root.pad.cue-slot >= 0 ? root.pad.cue-slot : root.pad.index);
     height: 30px;
     min-width: 28px;
-    background: root.pad.set
-        ? root.tone.with-alpha(ta.pressed ? 0.5 : ta.has-hover ? 0.34 : 0.24)
-        : (ta.pressed ? Theme.plate-raised : ta.has-hover ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate);
-    border-width: 1px;
-    border-color: root.pad.set ? root.tone.with-alpha(0.85) : Theme.rule;
-    Rectangle { y: 0; height: 2px; background: root.pad.set ? root.tone : transparent; }
+    background: root.pad.set ? root.tone : transparent;
+    border-width: root.pad.set ? 0px : 1px;
+    border-color: ta.has-hover ? Theme.bone : Theme.bone-3;
+    border-radius: Theme.r-control;
     Text {
         text: root.pad.caption;
         font-family: Theme.family; font-size: 13px; font-weight: 600;
-        color: root.pad.set ? Theme.bone : Theme.bone-3;
+        color: root.pad.set ? Theme.ink-on : Theme.bone-3;
         horizontal-alignment: center; vertical-alignment: center;
     }
     ta := TipArea {
@@ -130,19 +126,17 @@ component BigButton inherits Rectangle {
     callback pressed(bool);
     width: root.size; height: root.size;
     border-radius: root.size / 2;
-    border-width: 2px;
-    border-color: root.lit ? root.tone : ta.has-hover ? Theme.bone-3 : Theme.rule-strong;
-    background: ta.pressed ? root.tone.with-alpha(0.24) : root.lit ? root.tone.with-alpha(0.12) : Theme.plate;
+    background: Theme.face(true, ta.pressed, ta.has-hover, false, root.lit, root.tone);
     if root.kind == "cue": Text {
         text: "CUE";
         font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1px;
-        color: root.lit ? root.tone : Theme.bone-2;
+        color: Theme.ink(true, ta.pressed, ta.has-hover, false, root.lit);
     }
     if root.kind != "cue": Glyph {
         x: (parent.width - 12px) / 2 + 1px; y: (parent.height - 12px) / 2;
         width: 12px; height: 12px;
         kind: root.lit ? "pause" : "play";
-        tone: root.lit ? root.tone : Theme.bone-2;
+        tone: Theme.ink(true, ta.pressed, ta.has-hover, false, root.lit);
     }
     ta := TouchArea {
         mouse-cursor: pointer;

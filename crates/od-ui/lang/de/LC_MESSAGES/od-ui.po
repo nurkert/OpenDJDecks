@@ -3912,8 +3912,8 @@ msgid "audible"
 msgstr "hörbar"
 
 msgctxt "StemKey"
-msgid "Lit = audible · click: mute / unmute · wheel: level"
-msgstr "Leuchtet = hörbar · Klick: stumm / laut · Mausrad: Pegel"
+msgid "Filled = muted · click: mute / unmute · wheel: level"
+msgstr "Gefüllt = stumm · Klick: stumm / laut · Mausrad: Pegel"
 
 msgctxt "StemStrip"
 msgid "STEMS"

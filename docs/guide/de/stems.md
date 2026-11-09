@@ -20,7 +20,7 @@ Es gibt zwei Wege:
 
 Jedes Deck hat **VOCAL**, **INST**, **DRUMS** und **BASS** unter der Wellenform.
 
-- Ein Klick schaltet den Part stumm oder laut. Leuchtet heißt hörbar.
+- Ein Klick schaltet den Stem stumm oder laut. Gefüllt heißt stumm.
 - Das Mausrad über einer Taste stellt den Pegel des Stems ein; die Linie unter der Taste zeigt ihn.
 
 Zum Mischen drücke **STEM** an einem Mixer-Kanal: **HI** wird zu den Vocals, **MID** zu den Instrumenten und **LOW** zu den Drums. Der Pad-Modus **STEMS** legt dir die Stem-Mutes und Stem-Effekte auf die Pads.

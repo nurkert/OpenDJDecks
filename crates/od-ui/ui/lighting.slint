@@ -118,10 +118,9 @@ component Swatches inherits HorizontalLayout {
     Rectangle {
         accessible-label: "lighting.swatch.track"; accessible-role: button;
         width: 40px;
-        border-width: 1px;
-        border-color: root.current == -1 ? Theme.attention : Theme.rule;
-        background: root.current == -1 ? Theme.attention.with-alpha(0.16) : Theme.plate;
-        Text { text: @tr("TRACK"); font-family: Theme.family; font-size: 9px; font-weight: 600; letter-spacing: 1px; color: Theme.bone-2; horizontal-alignment: center; vertical-alignment: center; }
+        border-radius: Theme.r-control;
+        background: root.current == -1 ? Theme.bone : Theme.plate;
+        Text { text: @tr("TRACK"); font-family: Theme.family; font-size: 9px; font-weight: 600; letter-spacing: 1px; color: root.current == -1 ? Theme.ground : Theme.bone-2; horizontal-alignment: center; vertical-alignment: center; }
         TouchArea { mouse-cursor: pointer; clicked => { root.chosen(-1); } }
     }
     for c[i] in Lighting.swatches: Rectangle {
@@ -252,7 +251,7 @@ component RigPanel inherits VerticalLayout {
         spacing: Theme.s1;
         for k[i] in [{ id: "artnet", label: "ART-NET" }, { id: "sacn", label: "SACN" }, { id: "enttec", label: "USB-DMX" }]: PlateButton {
             accessible-label: "lighting.output." + k.id; accessible-role: tab;
-            compact: true; label: k.label; active: root.output-kind == k.id;
+            compact: true; label: k.label; selected: root.output-kind == k.id;
             tooltip: @tr("Choose how universe 1 leaves the computer");
             clicked => { root.output-kind = k.id; }
         }
@@ -302,7 +301,7 @@ component ShowPanel inherits VerticalLayout {
         spacing: Theme.s1;
         for m in [{ id: "auto", label: "AUTO" }, { id: "easy", label: "EASY" }, { id: "pro", label: "PRO" }]: PlateButton {
             accessible-label: "lighting.mode." + m.id; accessible-role: tab;
-            label: m.label; active: Lighting.mode == m.id; horizontal-stretch: 1;
+            label: m.label; selected: Lighting.mode == m.id; horizontal-stretch: 1;
             tooltip: m.id == "auto" ? @tr("The show follows phrases, beat and the mix")
                 : m.id == "easy" ? @tr("One look for the whole rig, locked to the beat")
                 : @tr("Programs and colours per group, cue stack");
@@ -352,7 +351,7 @@ component ShowPanel inherits VerticalLayout {
                 spacing: Theme.s2;
                 HoldButton {
                     accessible-label: "lighting.fog"; accessible-role: button;
-                    label: @tr("FOG"); on: Lighting.fog; size: 30px; tone: Theme.w486; horizontal-stretch: 1;
+                    label: @tr("FOG"); on: Lighting.fog; size: 30px; tone: Theme.attention; horizontal-stretch: 1;
                     tooltip: @tr("Fog machines on while held");
                     pressed => { Lighting.fog-held(true); }
                     released => { Lighting.fog-held(false); }
@@ -396,13 +395,13 @@ component ShowPanel inherits VerticalLayout {
                 spacing: Theme.key-gap;
                 PlateButton {
                     accessible-label: "lighting.pro.group" + gi + ".follow"; accessible-role: button;
-                    compact: true; label: @tr("MUSIC"); active: g.program < 0;
+                    compact: true; label: @tr("MUSIC"); selected: g.program < 0;
                     tooltip: @tr("Follow the music");
                     clicked => { Lighting.group-program(gi, -1); }
                 }
                 for p[pi] in Lighting.programs: PlateButton {
                     accessible-label: "lighting.pro.group" + gi + ".program" + pi; accessible-role: button;
-                    compact: true; label: p; active: g.program == pi;
+                    compact: true; label: p; selected: g.program == pi;
                     clicked => { Lighting.group-program(gi, pi); }
                 }
             }
@@ -467,7 +466,7 @@ component ShowPanel inherits VerticalLayout {
         for c[ci] in Lighting.cues: Rectangle {
             accessible-label: "lighting.cue" + ci; accessible-role: list-item; accessible-value: c;
             height: 24px;
-            background: ci == Lighting.active-cue ? Theme.attention.with-alpha(0.16) : transparent;
+            background: transparent;
             Rectangle { x: 0; width: 2px; background: ci == Lighting.active-cue ? Theme.attention : transparent; }
             HorizontalLayout {
                 padding-left: Theme.s2; spacing: Theme.s2;
@@ -539,7 +538,7 @@ export component LightingStrip inherits Rectangle {
                 spacing: Theme.s1;
                 for m in [{ id: "auto", label: "AUTO" }, { id: "easy", label: "EASY" }, { id: "pro", label: "PRO" }]: PlateButton {
                     accessible-label: "lighting.strip.mode." + m.id; accessible-role: tab;
-                    compact: true; label: m.label; active: Lighting.mode == m.id; horizontal-stretch: 1;
+                    compact: true; label: m.label; selected: Lighting.mode == m.id; horizontal-stretch: 1;
                     clicked => { Lighting.set-mode(m.id); }
                 }
                 LineToggle {

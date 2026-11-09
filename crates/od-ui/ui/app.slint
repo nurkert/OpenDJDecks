@@ -970,7 +970,7 @@ export component AppWindow inherits Window {
                                     accessible-checkable: true; accessible-checked: root.similar-source == d;
                                     horizontal-stretch: 0; compact: true;
                                     label: i == 0 ? @tr("MASTER") : d;
-                                    active: root.similar-source == d; tone: Theme.w546;
+                                    selected: root.similar-source == d;
                                     tooltip: i == 0 ? @tr("Tracks that fit after the master deck") : @tr("Tracks that fit after deck {}", d);
                                     clicked => { root.similar-source-set(d); }
                                 }
@@ -1027,7 +1027,7 @@ export component AppWindow inherits Window {
                             accessible-checkable: true; accessible-checked: root.similar-source == d;
                             horizontal-stretch: 0; tall: true;
                             label: i == 0 ? @tr("MASTER") : d;
-                            active: root.similar-source == d; tone: Theme.w546;
+                            selected: root.similar-source == d;
                             tooltip: i == 0 ? @tr("Tracks that fit after the master deck") : @tr("Tracks that fit after deck {}", d);
                             clicked => { root.similar-source-set(d); }
                         }

@@ -176,10 +176,8 @@ component NewListKey inherits Rectangle {
     callback clicked();
     accessible-role: button;
     min-width: 44px; height: 44px;
-    background: touch.pressed ? Theme.plate-raised : Theme.plate;
-    border-width: 1px;
-    border-color: Theme.rule;
-    Rectangle { y: 0; height: 2px; background: root.tone; }
+    background: touch.pressed || touch.has-hover ? Theme.plate-raised : Theme.plate;
+    border-radius: Theme.r-control;
     Glyph { x: (parent.width - 10px) / 2; y: 10px; width: 10px; height: 10px; kind: "plus"; tone: root.tone; }
     Text {
         y: 25px; width: parent.width; height: 12px;
@@ -206,17 +204,17 @@ export component RailItem inherits Rectangle {
     // 44 px keys on the touch screen.
     min-height: Theme.target; preferred-height: Theme.touch ? 44px : 32px; max-height: Theme.touch ? 44px : 32px;
     min-width: Theme.touch ? 44px : 0px;
-    background: touch.has-hover ? Theme.plate : transparent;
     Rectangle {
-        x: 0; y: 4px; width: root.current ? 3px : 1px; height: parent.height - 8px;
-        background: root.current ? root.tone : Theme.rule-strong;
+        y: 2px; height: parent.height - 4px;
+        border-radius: Theme.r-control;
+        background: root.current ? Theme.bone : touch.pressed || touch.has-hover ? Theme.plate-raised : transparent;
     }
     Text {
         x: 4px; width: parent.width - 6px;
         text: root.label;
         font-family: Theme.family; font-size: 9px; font-weight: 600; letter-spacing: 0.6px;
         wrap: word-wrap;
-        color: !root.enabled ? Theme.bone-3.with-alpha(0.5) : root.current ? Theme.bone : Theme.bone-3;
+        color: !root.enabled ? Theme.bone-3 : root.current ? Theme.ground : Theme.bone-3;
         horizontal-alignment: center; vertical-alignment: center;
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
