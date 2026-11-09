@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { arrival, clamp01, ease, glowAt, heroAt, liveMinHeight, liveMinWidth, liveQuery, poseAt, progress, scrollRange, transformOf, windows } from '../src/lib/stage-math.mjs';
+import { clamp01, ease, glowAt, heroAt, liveMinHeight, liveMinWidth, liveQuery, poseAt, progress, scrollRange, sideSpread, softAt, transformOf, windows } from '../src/lib/stage-math.mjs';
 
 test('progress is clamped to the pinned stretch', () => {
   assert.equal(progress(0, 100, 500), 0);
@@ -46,12 +46,31 @@ test('the front window ends flat, facing the viewer', () => {
   assert.ok(end.s >= start.s);
 });
 
-test('all windows share one vertical line and arrive before the scroll ends', () => {
+test('all windows share one vertical line at both ends', () => {
   for (const name of windows) {
     assert.equal(poseAt(name, 0, 1000, 300, 30).y, 300);
-    assert.equal(poseAt(name, arrival, 1000, 300, 30).y, 30);
-    assert.deepEqual(poseAt(name, 1, 1000, 300, 30), poseAt(name, arrival, 1000, 300, 30));
+    assert.equal(poseAt(name, 1, 1000, 300, 30).y, 30);
   }
+});
+
+test('the windows are still moving when the pin ends', () => {
+  const near = poseAt('perform', 0.97, 1000, 300, 30);
+  const end = poseAt('perform', 1, 1000, 300, 30);
+  assert.ok(near.y - end.y > 3, `moved ${near.y - end.y}px in the last 3% of the scroll`);
+});
+
+test('the side windows use a wide screen and stay on a normal one', () => {
+  assert.equal(sideSpread(1000, 900), 0.27);
+  const wide = sideSpread(3440, 2100);
+  assert.ok(wide > 0.3 && wide <= 0.62);
+  const end = poseAt('club', 1, 2100, 0, 0, wide);
+  assert.ok(Math.abs(end.x - wide * 2100) < 1e-6);
+  assert.ok(Math.abs(end.ry) < 1e-9, 'flat at the end');
+  assert.ok(Math.abs(poseAt('club', 0.5, 2100, 0, 0, wide).ry) > 20, 'swings in flight');
+});
+
+test('phones get a transform for every window', () => {
+  for (const name of windows) assert.match(softAt(name, 0.5), /^translate3d\(/);
 });
 
 test('the stylesheet goes live under the same condition as the script', () => {
@@ -71,5 +90,5 @@ test('hero leaves in the first half, the glow opens with the scroll', () => {
 
 test('a transform is a single translate3d + rotations + scale string', () => {
   const css = transformOf(poseAt('perform', 0.5, 1000));
-  assert.match(css, /^translate\(-50%, -50%\) translate3d\([^)]+px\) rotateX\([^)]+deg\) scale\([^)]+\)$/);
+  assert.match(css, /^translate\(-50%, -50%\) translate3d\([^)]+px\) rotateX\([^)]+deg\) rotateY\([^)]+deg\) scale\([^)]+\)$/);
 });

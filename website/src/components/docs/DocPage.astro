@@ -4,7 +4,7 @@ import { render } from 'astro:content';
 import Docs from '../../layouts/Docs.astro';
 import { guideEntry, guideNeighbours, guideTitle, devAlternates, devNeighbours, guideAlternates, type Lang } from '../../lib/docs';
 import { devDocs, devHref, githubBlob, guideGroups, guideHref, wikiHome } from '../../lib/docs-catalog.mjs';
-import { ui } from '../../i18n/ui';
+import { path, ui } from '../../i18n/ui';
 
 interface Props {
   lang: Lang;
@@ -50,6 +50,27 @@ const canonicalHref = isGuide ? undefined : devHref(slug, 'en');
 const contentLang = isGuide ? lang : 'en';
 const showNotice = !isGuide && lang === 'de';
 const pageTitle = `${title} · ${t.docs.title} · OpenDJDecks`;
+const site = Astro.site!;
+const structured = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'TechArticle',
+      headline: title,
+      description: description.slice(0, 160),
+      inLanguage: contentLang,
+      url: new URL(Astro.url.pathname, site).toString(),
+      about: { '@type': 'SoftwareApplication', name: 'OpenDJDecks' },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: t.docs.title, item: new URL(wikiHome(lang), site).toString() },
+        { '@type': 'ListItem', position: 2, name: title, item: new URL(Astro.url.pathname, site).toString() },
+      ],
+    },
+  ],
+};
 ---
 
 <Docs
@@ -78,6 +99,13 @@ const pageTitle = `${title} · ${t.docs.title} · OpenDJDecks`;
       {showNotice && <p class="docs__notice" lang="de">{t.docs.englishOnly}</p>}
     </header>
     <Content />
+    <div class="docs__get">
+      <div>
+        <strong>{t.docs.getTitle}</strong>
+        <p>{t.docs.getText}</p>
+      </div>
+      <a class="plate-btn plate-btn--primary" href={path('download', lang)}>{t.docs.getCta}</a>
+    </div>
     <nav class="docs__pager" aria-label={lang === 'de' ? 'Weitere Seiten' : 'More pages'}>
       {
         prev && (
@@ -97,5 +125,6 @@ const pageTitle = `${title} · ${t.docs.title} · OpenDJDecks`;
       }
     </nav>
     <p class="docs__edit"><a href={`${githubBlob}${sourcePath}`}>{t.docs.edit}</a></p>
+    <script type="application/ld+json" set:html={JSON.stringify(structured)} />
   </article>
 </Docs>

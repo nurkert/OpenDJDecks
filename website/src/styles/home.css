@@ -295,11 +295,12 @@
     inset: 0 0 auto;
     top: var(--nav-h);
     padding-top: clamp(1.5rem, 5vh, 3.25rem);
+    width: 100%;
   }
 
   /* One line across the stage, sized so that it also fits a low window. */
   :root .hero__title {
-    font-size: clamp(3rem, min(6.2vw, 11.5svh), 6rem);
+    font-size: clamp(3rem, min(6.2vw, 11.5svh), 9rem);
     line-height: 1;
   }
 
@@ -337,7 +338,7 @@
     position: absolute;
     left: 50%;
     top: 50%;
-    width: min(70vw, 76rem, calc((100svh - 7.75rem) * 1.6));
+    width: min(70vw, calc((100svh - 7.75rem) * 1.6));
     will-change: transform, opacity;
     transform: translate(-50%, -50%);
     opacity: 1;

@@ -11,9 +11,9 @@ import TeaserArt from '../home/TeaserArt.astro';
 import { path, repoUrl, ui, type Lang } from '../../i18n/ui';
 import { wikiHome, guideHref } from '../../lib/docs-catalog.mjs';
 
-import perform from '../../../../docs/assets/screenshots/perform.png';
-import prepare from '../../../../docs/assets/screenshots/prepare.png';
-import clubMode from '../../../../docs/assets/screenshots/club-mode.png';
+import perform from '../../assets/stage/perform.png';
+import prepare from '../../assets/stage/prepare.png';
+import clubMode from '../../assets/stage/club.png';
 
 interface Props {
   lang: Lang;
@@ -81,13 +81,13 @@ const formats = ['avif', 'webp'] as const;
         <div class="world" data-world>
           <div class="rig">
             <figure class="win win--prepare" data-win="prepare">
-              <Picture src={prepare} alt={s.windowPrepare} formats={formats} fallbackFormat="webp" widths={[640, 1024]} sizes="(max-width: 55rem) 60vw, 34vw" loading="eager" decoding="async" />
+              <Picture src={prepare} alt={s.windowPrepare} formats={formats} fallbackFormat="webp" widths={[640, 1024, 1600]} sizes="(max-width: 55rem) 60vw, 60vw" loading="eager" decoding="async" />
             </figure>
             <figure class="win win--club" data-win="club">
-              <Picture src={clubMode} alt={s.windowClub} formats={formats} fallbackFormat="webp" widths={[640, 1024]} sizes="(max-width: 55rem) 60vw, 34vw" loading="eager" decoding="async" />
+              <Picture src={clubMode} alt={s.windowClub} formats={formats} fallbackFormat="webp" widths={[640, 1024, 1600]} sizes="(max-width: 55rem) 60vw, 60vw" loading="eager" decoding="async" />
             </figure>
             <figure class="win win--perform" data-win="perform">
-              <Picture src={perform} alt={s.windowPerform} formats={formats} fallbackFormat="webp" widths={[640, 960, 1280, 1800]} sizes="(max-width: 55rem) 92vw, min(70vw, 76rem)" loading="eager" fetchpriority="high" decoding="async" />
+              <Picture src={perform} alt={s.windowPerform} formats={formats} fallbackFormat="webp" widths={[640, 960, 1280, 1800, 2560]} sizes="(max-width: 55rem) 92vw, 70vw" loading="eager" fetchpriority="high" decoding="async" />
               {
                 hasVideo && (
                   <video

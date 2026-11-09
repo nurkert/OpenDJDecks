@@ -40,6 +40,10 @@ const jsonLd = {
   license: 'https://www.gnu.org/licenses/gpl-3.0.html',
   codeRepository: repoUrl,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+  isAccessibleForFree: true,
+  downloadUrl: new URL(path('download', lang), site).toString(),
+  screenshot: new URL('/og.jpg', site).toString(),
+  inLanguage: ['de', 'en'],
   image: new URL('/og.jpg', site).toString(),
 };
 ---

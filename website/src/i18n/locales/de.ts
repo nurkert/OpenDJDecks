@@ -2,7 +2,7 @@ import type en from './en';
 
 const de: typeof en = {
   meta: {
-    title: 'OpenDJDecks · Open-Source-DJ-Software',
+    title: 'OpenDJDecks · Kostenlose DJ-Software für Mac, Windows und Linux',
     description:
       'Vorbereiten, synchronisieren, auflegen: freie Open-Source-DJ-Software für macOS, Linux, Windows und den Raspberry Pi. Mit Stems, Effekten, Sampler, Aufnahme und USB-Sticks, die von selbst aktuell bleiben.',
   },
@@ -146,7 +146,7 @@ const de: typeof en = {
   },
   download: {
     title: 'Download',
-    metaTitle: 'Download · OpenDJDecks',
+    metaTitle: 'OpenDJDecks herunterladen · Kostenlose DJ-Software',
     metaDescription: 'OpenDJDecks für macOS, Windows, Linux und Raspberry Pi herunterladen, mit Installationsanleitungen Schritt für Schritt.',
     get: 'Herunterladen',
     systems: 'Betriebssystem wählen',
@@ -262,6 +262,9 @@ const de: typeof en = {
     menu: 'Alle Anleitungen',
     englishOnly: 'Diese Seite gibt es nur auf Englisch.',
     edit: 'Diese Seite auf GitHub bearbeiten',
+    getTitle: 'OpenDJDecks noch nicht installiert?',
+    getText: 'Kostenlos und ohne Konto, für Mac, Windows, Linux und den Raspberry Pi.',
+    getCta: 'Zum Download',
   },
 };
 
