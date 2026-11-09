@@ -265,6 +265,17 @@ const de: typeof en = {
     getTitle: 'OpenDJDecks noch nicht installiert?',
     getText: 'Kostenlos und ohne Konto, für Mac, Windows, Linux und den Raspberry Pi.',
     getCta: 'Zum Download',
+    homeTitle: 'So funktioniert OpenDJDecks',
+    startHere: 'Erste Schritte',
+    groupIntros: {
+      start: 'Installieren, Musik hinzufügen, loslegen.',
+      library: 'Bring Ordnung in deine Musik und plane deine Sets.',
+      prepare: 'Setz Cues, prüf den Takt und schneide Tracks zu.',
+      sticks: 'Nimm deine Musik und alles Vorbereitete mit.',
+      perform: 'Alles für den Moment am Pult.',
+      setup: 'Controller, Licht und deine Einstellungen.',
+      more: 'Wenn etwas hakt oder du tiefer einsteigen willst.',
+    },
   },
 };
 

@@ -1,16 +1,16 @@
 ---
 name: OpenDJDecks
-description: A DJ library and performance instrument where every signal is a hairline emission line on a charcoal continuum.
+description: A DJ instrument of quiet charcoal surfaces where every signal is a lit emission line.
 colors:
   ground: "#151514"
   ground-band: "#1A1A19"
-  plate: "#21211F"
-  plate-raised: "#2A2A27"
+  plate: "#262624"
+  plate-raised: "#32322F"
   rule: "#33322F"
   rule-strong: "#4B4A46"
   bone: "#E6E0D2"
-  bone-2: "#B7B1A4"
-  bone-3: "#8B867B"
+  bone-2: "#BDB7AA"
+  bone-3: "#A29C90"
   w405-violet: "#9B7BFF"
   w436-indigo: "#7C83FF"
   w486-cyan: "#4FB8F0"
@@ -73,6 +73,9 @@ typography:
     letterSpacing: "1.6px"
 rounded:
   none: "0px"
+  control: "4px"
+  panel: "8px"
+  overlay: "10px"
   rail-node: "3.5px"
 spacing:
   s1: "4px"
@@ -86,35 +89,40 @@ spacing:
   row-kiosk: "44px"
 components:
   button-plate:
-    backgroundColor: "transparent"
-    textColor: "{colors.bone}"
+    backgroundColor: "{colors.plate}"
+    textColor: "{colors.bone-2}"
     typography: "{typography.button-label}"
-    rounded: "{rounded.none}"
-    padding: "0 30px 0 22px"
+    rounded: "{rounded.control}"
+    padding: "0 14px"
     height: "32px"
   button-plate-compact:
-    backgroundColor: "transparent"
-    textColor: "{colors.bone}"
-    rounded: "{rounded.none}"
+    backgroundColor: "{colors.plate}"
+    textColor: "{colors.bone-2}"
+    rounded: "{rounded.control}"
     height: "26px"
   button-plate-tall:
-    backgroundColor: "transparent"
-    textColor: "{colors.bone}"
-    rounded: "{rounded.none}"
+    backgroundColor: "{colors.plate}"
+    textColor: "{colors.bone-2}"
+    rounded: "{rounded.control}"
     height: "44px"
   button-plate-hover:
-    backgroundColor: "{colors.plate}"
-  button-plate-pressed:
     backgroundColor: "{colors.plate-raised}"
+    textColor: "{colors.bone}"
+  button-plate-selected:
+    backgroundColor: "{colors.bone}"
+    textColor: "{colors.ground}"
+  button-plate-on:
+    backgroundColor: "{colors.w589-sodium}"
+    textColor: "{colors.ground}"
   button-plate-disabled:
-    backgroundColor: "transparent"
+    backgroundColor: "{colors.ground-band}"
     textColor: "{colors.bone-3}"
   field:
     backgroundColor: "{colors.plate}"
     textColor: "{colors.bone}"
     typography: "{typography.body}"
-    rounded: "{rounded.none}"
-    padding: "0 8px 0 22px"
+    rounded: "{rounded.control}"
+    padding: "0 10px"
     height: "32px"
   field-kiosk:
     backgroundColor: "{colors.plate}"
@@ -156,21 +164,21 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Emission-Line Rail"**
+**Creative North Star: "The Lit Instrument"**
 
-OpenDJDecks is a calibrated instrument, not a dashboard. Every surface registers against one vertical rail set off-centre at the left edge (28px in from the window), and every signal (deck, cue point, sync state, harmonic fit, transition clash) appears as a 1 to 2px emission line at one of seven fixed wavelengths on a charcoal continuum. Bone legends set in one condensed grotesque carry the words; the lines carry the state. The result reads like a spectrograph plate: dense, quiet, and exact, legible in a dark club, on a bright terrace (high-contrast variant), and on a 7" Pi touchscreen.
+OpenDJDecks is a calibrated instrument in a dark room. Quiet charcoal surfaces give it structure, and light is reserved for what is happening: the emission lines, the waveforms, the platter ring and whatever a DJ has switched on. When a screen is at rest it is calm; when something is live, it is the brightest thing there.
 
-State is carried by the form of a line, never by its hue alone. Solid means live or in sync, dashed means pending or out of date, half-height means stale or missing, struck (dimmed line crossed by a deep-red tick) means error or disabled, and doubled means the element outranks its neighbours. Colour is a second, redundant channel, and every deck colour sits next to its numeral, every cue colour next to its letter.
+The product is judged in seconds by its hierarchy and finish, and it is used in the dark at arm's length. So surfaces separate groups without outlining everything, one thing per area is clearly the most important, and a control that is on can never be mistaken for one that is off. Emission lines keep carrying signal and status, where their form still says what state a signal is in. Controls no longer speak in line forms: they are surfaces that fill.
 
-The world refuses the category default of grey panels, glowing neon waveforms, gradients and boxed widgets. Containers are not drawn; columns are separated by single hairline rules and alignment. Waveforms are bone hairline columns with charcoal gaps; colour enters them only as a 1px band mark where one frequency band clearly dominates.
+The world refuses grey dashboards, neon glow and boxed widgets on boxed widgets. It also refuses the engineer's panel: dozens of identical outlined rectangles of equal weight.
 
 **Key Characteristics:**
-- One off-centre rail that brand, sections, the library tree and selection ticks all hang from.
-- Colour only as hairline emission lines, deck numerals, cue letters and short semantic legends.
-- State by line form: solid, dashed, half, struck, double.
-- Outlined plates, never filled buttons or rounded cards; square corners everywhere except the rail's two terminal nodes.
-- One family (Barlow Semi Condensed), ranked by size, tracking and ink.
-- Flat: no shadows, no glow, no gradients; depth is three steps of charcoal.
+- Three surface levels and one spacing scale carry the structure.
+- Light means live: colour appears as emission lines, deck identity, cue identity and things that are on.
+- One state language for every control: off, hover, selected, on, armed, disabled, focused.
+- Soft small radii on controls and panels, and the circle of the platter as the signature form.
+- One family (Barlow Semi Condensed) in five sizes and two weights, with live values as the largest thing on a deck.
+- Flat at rest. Only dialogs and menus lift, and only the platter ring and playhead may glow.
 
 ## Colors
 
@@ -192,11 +200,11 @@ A charcoal continuum with bone ink and seven narrow spectral lines; each wavelen
 
 ### Neutral
 - **Charcoal Ground** (ground): the window. Overlaid at start-up by a 640x4 texture that random-walks ±3 levels around the ground value, giving faint vertical banding.
-- **Band Charcoal** (ground-band): waveform wells, track-row hover, rendered waveform background.
-- **Ash Plate** (plate): field backgrounds and plate-button / tree hover.
-- **Raised Ash** (plate-raised): pressed plate buttons and the tree's hover add-target.
+- **Band Charcoal** (ground-band): the panel surface. Decks, the mixer, the browser, waveform wells.
+- **Ash Plate** (plate): the control surface. Every button, key and field at rest.
+- **Raised Ash** (plate-raised): the control surface under hover and press, and the tree's hover add-target.
 - **Rule** (rule) and **Strong Rule** (rule-strong): hairline dividers; strong rule for plate outlines, the rail itself, rulers, off-state lines.
-- **Bone, Bone 2, Bone 3** (bone, bone-2, bone-3): three inks at 13.6:1, 8.7:1 and 5.0:1 on ground. Bone for titles and selected/primary values, bone-2 for secondary text and unselected rows, bone-3 for caps labels, metadata and disabled text.
+- **Bone, Bone 2, Bone 3** (bone, bone-2, bone-3): three inks, each at 4.5:1 or better on every surface it may sit on, including plate and raised ash. Bone for titles and selected/primary values, bone-2 for secondary text and unselected rows, bone-3 for caps labels, metadata and disabled text.
 
 ### Accessibility variants
 - **Colour-blind safe** (the `-cb` tokens): the Okabe-Ito set replaces 405, 486, 546, 589, 615 and 656; 436 is unchanged.
@@ -211,22 +219,26 @@ A charcoal continuum with bone ink and seven narrow spectral lines; each wavelen
 
 ## Typography
 
-**Display Font:** Barlow Semi Condensed (bundled Regular 400, Medium 500, SemiBold 600)
-**Label/Mono Font:** the same family; numerals sit in right-aligned fixed-width columns rather than a separate mono face.
+**Font:** Barlow Semi Condensed (bundled Regular 400, Medium 500, SemiBold 600), with figures in fixed-width columns.
 
-**Character:** One condensed grotesque doing all the work, ranked by size, tracking and ink rather than by family or weight contrast. Uppercase tracked caps are the instrument's legends; mixed case is reserved for content (titles, artists, prose).
+**Character:** One condensed grotesque doing all the work. Tracked capitals are for short control names and legends. Sentences, hints, names and anything longer than a few words use sentence case.
 
-### Hierarchy
-- **Display** (600, 34px): deck numerals on wide deck plates (26px compact) and the large BPM / REMAIN readouts in kiosk (34px). Readout values otherwise run 28px / 24px / 18px at weight 500.
-- **Headline** (600, 24px): the list title (editable in place), section titles, the PERFORM title (4px tracking; 17px / 3px on tight screens). Track-plate readings use 24px at 500.
-- **Title** (600, 17px): the selected track on the track plate; deck titles 18px (15px compact); stick and recording names 15px.
-- **Body** (400, 14px): track table cells, tree names (600 for folders and sticks), prose. Genre drops to 13px, position and status text to 12px.
-- **Nav** (600, 13px, 2.2px tracking, caps): rail section labels. The brand is 20px / 600 / 3px.
-- **Button label** (500, 12px, 1.8px tracking, caps; compact 11px / 1.4px).
-- **Label** (500, 11px, 1.6px tracking, caps, bone-3): table headers, readout labels, metadata (10px under rail ticks and on devices; 9px for the set-flow legend).
+### Scale
+
+Only these five sizes and two weights (500 and 600) are used. A font size outside this list is a defect.
+
+| Rank | Size | Used for |
+|---|---|---|
+| Hero | 32px, 600 | BPM and remaining time on a deck, the platter centre |
+| Heading | 22px, 600 | Deck numerals, screen and section titles, track title on the player |
+| Body | 15px, 500 | Track names, table cells, tree items, prose |
+| Control | 13px, 600 | Button labels and tabs in tracked caps |
+| Label | 11px, 500 | Readout labels and legends |
+
+**Floor:** nothing is smaller than 11px, nothing read live or touched is smaller than 12px, and the Raspberry Pi kiosk uses 12px as its smallest size. The text size preference scales the deck and mixer as well as the list.
 
 ### Named Rules
-**The Ink Rank Rule.** Hierarchy is size, tracking and ink (bone, bone-2, bone-3), not colour. Coloured text is limited to deck numerals, fault messages and short semantic legends such as LOCKED.
+**The Ink Rank Rule.** Hierarchy is size, weight and ink (bone, bone-2, bone-3), not colour. Coloured text is limited to deck numerals, fault messages and short semantic legends such as LOCKED.
 
 **The Tabular Column Rule.** BPM, KEY, TIME and RATING sit right-aligned in fixed columns (58, 46, 52, 74px) so values read down the page like a register.
 
@@ -245,14 +257,22 @@ Rhythm is a 4px grid (s1 to s6: 4, 8, 12, 16, 24, 32). Desktop rows are 28px tal
 
 ## Elevation & Depth
 
-Completely flat. There are no shadows, glows or gradients anywhere in the build. Depth is three charcoal steps (ground, ground-band, plate, with plate-raised for press) plus hairline rules. The only translucency is functional: the played portion of a deck overview is veiled with ground at 55% alpha, loop regions are a 3px bar at 60% alpha, and struck lines dim to 45%.
+Depth is surface first. The window is ground, panels are band charcoal, controls are ash plate, and hover and press move to raised ash. Groups are separated by surface and by space, and hairline rules appear only where a surface change is not available, such as table rows.
+
+Dialogs and menus are the only things that lift, with one soft shadow (0 16px 48px at 50% black) over a dimmed window.
+
+Light is the other axis. The platter ring and the playhead may glow softly because they are the live centre of the screen. Nothing else emits light, and gradients stay out of controls and panels.
 
 ### Named Rules
-**The Flat Plate Rule.** Surfaces never lift. A press darkens to raised ash; a hover warms to ash plate; nothing casts a shadow or emits light.
+**The Quiet Surface Rule.** A surface never competes with a signal. If removing a border loses nothing, the border goes.
+
+**The Live Light Rule.** If it is not live, it is not lit.
 
 ## Shapes
 
-Square corners throughout (0px). Borders are 1px hairlines (2px in high contrast), drawn solid at rest and as 4px-on / 3px-off dashes when active or focused. The only curves are the rail's two 7px terminal nodes (3.5px radius). Glyphs are hand-drawn 10x10 hairline paths (plus, minus, up, down, close, arrow) at 1.2px stroke, never typed symbols or an icon font. Rating is five 6px outlined cells, filled bone-2 to the rating.
+Controls have a 4px radius, panels 8px, dialogs and menus 10px. The platter and the round transport keys are full circles and stay the signature shape. Status lines and rail nodes keep their own geometry. Waveform wells and table rows stay square, because they are measuring surfaces.
+
+Borders are the exception: focus, the on-state of a key that sits on a coloured area, and hollow empty slots such as an unset hot cue.
 
 ## Components
 
@@ -261,26 +281,42 @@ Square corners throughout (0px). Borders are 1px hairlines (2px in high contrast
 - **Weights:** hair 1px (2px high contrast); line 2px; 3px only for the selected set-flow position.
 - **Progress:** a dashed line at 50% alpha filled solid from the start by progress, 180ms ease-out.
 
+### State Language
+
+Every interactive control uses exactly these states, in Perform, Prepare, Lighting, effects and Preferences alike.
+
+| State | Surface | Text | Second cue |
+|---|---|---|---|
+| Off | Ash plate | Bone 2 | |
+| Hover | Raised ash | Bone | |
+| Pressed | Raised ash, 1px down | Bone | |
+| Selected (one of several) | Bone fill | Ground | Filled segment |
+| On (a function is active) | Filled in its tone | Ground | Fill itself, and the label stays |
+| Armed (will act on the next event) | Ash plate with a 2px outline in its tone, slow pulse | Bone | Pulse, off when motion is off |
+| Running (recording, syncing) | Filled in its tone with a timer or percent | Ground | Moving value |
+| Disabled | Band charcoal | Bone 3 | No hover |
+| Focused | Any of the above | | 2px bone ring, 2px offset, used for nothing else |
+
+**One job per colour.** Sodium: now and attention, meaning playheads, the selected item in a list, and things that need you. Green: playing, and in sync. Red: recording, clash, danger. Cyan, orange, green and violet also name decks 1 to 4, and appear on a deck only as that deck's identity. Master is shown by the deck's own line doubled and a MASTER key filled in the deck colour.
+
 ### Buttons (plate buttons)
-- **Shape:** an outlined rectangle, square (0px), hairline strong-rule outline, transparent at rest.
-- **Lead line:** a 2px vertical emission line 10px in from the left, inset 6px top and bottom, in the plate's wavelength; the caps label starts at 22px. An optional hairline glyph sits 20px from the right.
-- **Sizes:** 32px default, 26px compact, 44px tall (kiosk touch).
-- **Hover / Press:** background eases to ash plate (hover) or raised ash (press) over 90ms.
-- **Active (toggled on):** the outline turns dashed in the plate's tone (PLAY, SYNC, LOCK, RECORD, deck count, BROWSE).
-- **Disabled:** the lead line is struck and the label drops to bone-3.
+- **Shape:** ash plate, 4px radius, no outline at rest. Label in Control rank. A hairline glyph is optional.
+- **Sizes:** 32px default, 26px compact, 44px tall on touch. Keys inside a group touch with 2px gaps, and groups are separated by 12px or more.
+- **Grouped choices** (pad mode, tempo range, tabs) are one segmented control with a filled current segment.
+- **Motion:** background over 90ms, gated on the motion switch.
 
 ### Inputs / Fields
-- **Style:** ash plate fill, 1px rule outline, a hairline bone-3 lead line at 10px, 22px text inset, 32px tall (44px in the kiosk browser). Placeholder in 12px caps at 1.4px tracking, bone-3.
-- **Focus:** the outline turns dashed and the lead line takes the field's tone (cyan by default, indigo for smart rules, sodium for transition notes).
-- **Error:** a 12px deep-red message below the field.
+- **Style:** ash plate, 4px radius, 32px tall (44px on touch), text in Body rank, placeholder in bone 3.
+- **Focus:** the focus ring.
+- **Error:** a 12px deep-red message below the field that says what to do next.
 
-### Toggles (line toggles)
-- A 2px vertical line plus a 13px label: solid in its tone when on, half-height strong-rule when off. Perform state marks (PLAY, SYNC, MASTER, KEYLOCK, LOOP, SLIP) use the same grammar at 11px / 600 / 1.5px caps.
+### Toggles and status lines
+- Switches in settings are filled tracks with a thumb. Status marks in lists keep the emission-line grammar: a 2px vertical line plus a label, solid in its tone when on, half-height strong-rule when off. Perform state marks (PLAY, SYNC, MASTER, KEYLOCK, LOOP, SLIP) use the same grammar at 11px / 600 / 1.5px caps.
 
 ### Navigation (sidebar and top bar)
 - **Sidebar sections:** caps headings (COLLECTION, PLAYLISTS, DEVICES, RECORDINGS) with a hairline plus glyph for creation where it applies.
 - **Tree:** 26px rows indented 14px per level; kind marker lines left of the name (sticks solid green 2px, sets solid sodium 1px, smart lists dashed indigo 1px); a 1px strong-rule length bar under each list proportional to its playing time; counts right-aligned in bone-3. Selection is an 8px sodium tick at the left edge, never a fill.
-- **Mode tabs:** PREPARE / PERFORM in the top bar; the current one sits on plate with a 2px sodium underline.
+- **Top bar:** three zones with more space between them than inside them: modes as a segmented control with a filled current mode, panel toggles as one group, status at the right. Live values have fixed widths and are never cut off.
 
 ### Track Table
 - No boxes, no zebra fills. Caps header with a bone sort label and hairline arrow, 1px rule beneath.
@@ -291,8 +327,8 @@ Square corners throughout (0px). Borders are 1px hairlines (2px in high contrast
 
 ### Track Plate and Hot Cue Ruler
 - Title (17px), artist, then BPM / KEY / TIME readings (11px caps over 24px values).
-- **Overview well:** 92px of band charcoal; bone hairline columns every 2px with 1px band marks (656 low, 546 mid, 486 high) where one band holds over 55% of the energy; dimmed sodium phrase ticks every 16 bars in the top and bottom margins; cue lines (2px solid in cue colour with their letter, 1px dashed bone for memory cues); the cursor as doubled sodium.
-- **Hot cue ruler:** letters A to H on a strong-rule baseline 18px from the bottom. A set cue is a 2px solid line in its colour with a bone letter and its time; an empty slot is a 1px dashed bone-3 line.
+- **Overview well:** 92px of band charcoal; three-band columns in violet, teal and sodium by default, which the user can change in Preferences; dimmed sodium phrase ticks every 16 bars in the top and bottom margins; cue lines (2px solid in cue colour with their letter, 1px dashed bone for memory cues); the cursor as doubled sodium.
+- **Hot cue ruler:** letters A to H on a strong-rule baseline 18px from the bottom. A set cue is a 2px solid line in its colour with a bone letter and its time; an empty slot is a hollow outline in bone 3, and a set one is filled in its cue colour.
 - **Beatgrid:** compact plates, struck while the grid is locked; LOCK goes dashed-active in sodium with a LOCKED caps legend.
 
 ### Device Line (signature)
@@ -316,20 +352,19 @@ Square corners throughout (0px). Borders are 1px hairlines (2px in high contrast
 ## Do's and Don'ts
 
 ### Do:
-- **Do** carry every state in line form first (solid live, dashed pending, half stale/missing, struck error/disabled, double outranks) and in colour second.
+- **Do** let surfaces and space make the groups, and keep one clearly dominant thing in each area.
+- **Do** use the state table for every control, and keep a filled state plus its label for anything that is on.
+- **Do** make BPM and remaining time the largest values on a deck, and keep play, cue, sync and faders the strongest controls.
 - **Do** pair every deck colour with its numeral and every cue colour with its letter.
-- **Do** mark selection with a sodium tick on the rail side, not a background.
-- **Do** build buttons as outlined square plates led by a short emission line; show the active state with a dashed outline.
-- **Do** keep text in the three bone inks and rank it by size and tracking; set legends in tracked caps.
-- **Do** draw glyphs as hairline paths and waveforms as bone hairline columns with 1px band marks.
-- **Do** raise touch targets to 44px in kiosk (rows, perform header plates, kiosk browser field).
-- **Do** gate every animation on the motion switch, at 0ms when off.
+- **Do** keep status lines in lists, devices and Set Flow in the line grammar: solid live, dashed pending, half stale, struck error, double outranks.
+- **Do** keep text at the type scale, and at 4.5:1 on the surface it sits on.
+- **Do** raise touch targets to 44px on touch screens.
+- **Do** gate every animation on the motion switch, and leave playheads and meters unsmoothed.
 
 ### Don't:
-- **Don't** use gradients, glow, blur or drop shadows anywhere, including on waveforms and playheads.
-- **Don't** box content into cards or panels, and don't round corners; columns are separated by hairline rules only.
-- **Don't** fill a waveform with colour or tint it by frequency; colour enters only as a 1px mark on dominant-band columns.
-- **Don't** let colour be the only carrier of state, and don't add a hue outside the seven wavelengths.
-- **Don't** use doubled sodium for anything other than playheads and cursors, a track loaded on a deck, or something that needs the DJ's attention.
-- **Don't** use typed symbols or an icon font for glyphs; draw hairline paths.
-- **Don't** resemble the visual identity of any other DJ product.
+- **Don't** draw an outline around every control, or stack panels inside panels.
+- **Don't** use a dashed outline to mean selected or active.
+- **Don't** use a colour for a second job, or show an idle control as lit.
+- **Don't** use a font size outside the scale, or text below 11px.
+- **Don't** use gradients, blur or glow, except the soft glow of the platter ring and playhead.
+- **Don't** copy the look, layout details, names or colours of other DJ products.
