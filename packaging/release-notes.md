@@ -1,19 +1,23 @@
-OpenDJDecks 0.5.0, the open-source DJ software for macOS, Linux, Windows and the Raspberry Pi. Website and guides: [opendjdecks.de](https://opendjdecks.de).
+OpenDJDecks 0.6.0, the open-source DJ software for macOS, Linux, Windows and the Raspberry Pi. Website and guides: [opendjdecks.de](https://opendjdecks.de).
 
-## New in 0.5.0
+## New in 0.6.0
 
-- **New website** with a download page, step-by-step installation and a searchable wiki explaining every feature, in English and German
-- **USB sticks** now use OpenDJDecks' own format only. They stay in sync automatically and play on any device running OpenDJDecks, including the Raspberry Pi unit. They cannot be played on club players.
-- **Importing your library** now works through a library XML file. Import of an existing music library database and of sticks from other software has been removed.
-- **New feature names:** Club mode, Mix Preview, Tempo FX, Channel FX, Exit FX, Hold FX, Tags, Auto Fader, Pattern Recall, Timed Censor and Similar Tracks
-- Controller hardware settings over USB have been removed. MIDI mappings and MIDI learn are unchanged.
+- **Updates in one step:** OpenDJDecks asks when a new version is out, never while music plays, then downloads it, checks it and restarts. This now also works for the Windows zip and the Linux tar.gz.
+- **Club player USB:** a stick can also be written in the format of Pioneer DJ players, chosen per stick. Sticks written by other software can be imported, and cues and histories changed on a player come back as suggestions.
+- **Maximum compatibility:** for older club players, FLAC and M4A tracks can be written to the stick as WAV.
+- **Sync all sticks at once**, with an optional eject as soon as each stick is done.
+- **Hear a track at another tempo or key** in the Prepare player before you load it.
+- **Encrypted library import (advanced):** optional and read-only. You enter the key for your own library yourself. OpenDJDecks neither contains nor fetches one.
+- **Your own waveform colours:** three new default colours, and each band can be changed in Preferences.
+- **Prepare** has a new arrangement, and the part keys have new colours and a new order.
+- **BPM ranges** for the analysis and a musical sort order for the KEY column.
 
 ## Before you update
 
-Saved keyboard shortcuts or MIDI mappings of your own that use a renamed function need to be set again. Sticks written by earlier versions need to be registered and synced again.
+Versions before 0.5.0 cannot update themselves to this one. Please install it once by hand from the [download page](https://opendjdecks.de/download/).
 
 ## Good to know
 
-Windows, the Raspberry Pi unit and the controller mappings have not all been verified on real hardware yet. Try your setup before a gig.
+Club player USB has not been confirmed on real players yet, and Windows, the Raspberry Pi unit and the controller mappings have not all been verified on real hardware. Try your setup before a gig.
 
-All trademarks belong to their respective owners. OpenDJDecks is an independent project, not affiliated with or endorsed by any maker of DJ hardware or software.
+OpenDJDecks is an independent project, not affiliated with or endorsed by AlphaTheta Corporation or any other manufacturer. rekordbox and Pioneer DJ are trademarks of AlphaTheta Corporation; names are used only to state compatibility.
