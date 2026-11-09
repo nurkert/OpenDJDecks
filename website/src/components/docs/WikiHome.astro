@@ -1,21 +1,45 @@
 ---
+// The wiki's front door: a clear first step, then the guides along one emission line, in the
+// order a DJ meets them, with a moving picture wherever the app has one to show.
+import { Picture } from 'astro:assets';
+
 import '../../styles/prose.css';
 import '../../styles/docs.css';
 
 import Base from '../../layouts/Base.astro';
 import DocsSearch from './DocsSearch.astro';
+import { path, ui } from '../../i18n/ui';
 import { devDocs, devHref, guideGroups, guideHref, wikiHome } from '../../lib/docs-catalog.mjs';
 import { guideEntry, type Lang } from '../../lib/docs';
-import { ui } from '../../i18n/ui';
+
+import perform from '../../assets/stage/perform.png';
 
 interface Props {
   lang: Lang;
 }
 const { lang } = Astro.props;
 const t = ui[lang];
+
+const guideImages = import.meta.glob<{ default: ImageMetadata }>('../../../../docs/guide/img/*.png', { eager: true });
+const guideImage = (name: string) => Object.entries(guideImages).find(([file]) => file.endsWith(`/${name}.png`))?.[1].default;
+
+/** Per chapter: the tone of its node and what it shows; `clip` also plays. */
+const chapters: Record<string, { tone: string; image?: string; clip?: boolean }> = {
+  start: { tone: '--sodium' },
+  library: { tone: '--blue', image: 'library' },
+  prepare: { tone: '--green', image: 'beatgrid', clip: true },
+  sticks: { tone: '--violet', image: 'usb' },
+  perform: { tone: '--orange', image: 'stems', clip: true },
+  setup: { tone: '--red', image: 'lighting', clip: true },
+  more: { tone: '--bone-3' },
+};
+
 const groups = await Promise.all(
   guideGroups.map(async (group) => ({
+    key: group.key,
     title: group.title[lang],
+    intro: t.docs.groupIntros[group.key as keyof typeof t.docs.groupIntros],
+    ...chapters[group.key],
     guides: await Promise.all(
       group.slugs.map(async (slug) => {
         const entry = await guideEntry(slug, lang);
@@ -28,45 +52,75 @@ const alternates = [
   { lang: 'de' as const, href: wikiHome('de') },
   { lang: 'en' as const, href: wikiHome('en') },
 ];
+const formats = ['avif', 'webp'] as const;
 ---
 
-<Base lang={lang} title={`${t.docs.title} · OpenDJDecks`} description={t.docs.metaDescription} alternates={alternates}>
+<Base lang={lang} title={`OpenDJDecks Wiki · ${t.docs.guides}`} description={t.docs.metaDescription} alternates={alternates}>
   <main id="main" class="page">
     <div class="container wikihome">
       <header class="wikihome__head">
-        <h1 class="page-title">{t.docs.title}</h1>
-        <p class="docs__lede">{t.docs.guidesLede}</p>
-        <DocsSearch lang={lang} id="search-home" />
+        <div class="wikihome__copy">
+          <h1 class="wikihome__title">{t.docs.homeTitle}</h1>
+          <p class="wikihome__lede">{t.docs.guidesLede}</p>
+          <DocsSearch lang={lang} id="search-home" />
+          <div class="wikihome__actions">
+            <a class="plate-btn plate-btn--primary" href={guideHref('getting-started', lang)}>{t.docs.startHere}</a>
+            <a class="plate-btn" href={path('download', lang)}>{t.docs.getCta}</a>
+          </div>
+        </div>
+        <figure class="wikihome__win clip">
+          <Picture src={perform} alt={t.stage.windowPerform} formats={formats} fallbackFormat="webp" widths={[640, 960, 1280]} sizes="(max-width: 56rem) 92vw, 46vw" loading="eager" decoding="async" />
+          <video class="win__video" data-stage-video data-webm="/media/perform.webm" data-mp4="/media/perform.mp4" muted loop playsinline preload="none" aria-label={t.stage.videoAlt}></video>
+        </figure>
       </header>
 
-      {
-        groups.map((group) => (
-          <section class="wikihome__group">
-            <h2>{group.title}</h2>
-            <div class="wikihome__cards">
-              {group.guides.map((guide) => (
-                <a class="wikihome__card" href={guideHref(guide.slug, lang)}>
-                  <strong>{guide.title}</strong>
-                  <span>{guide.description}</span>
-                </a>
-              ))}
-            </div>
-          </section>
-        ))
-      }
+      <div class="wikimap">
+        {
+          groups.map((group) => {
+            const image = group.image ? guideImage(group.image) : undefined;
+            return (
+              <section class:list={['chapter', { 'chapter--plain': !image }]} style={`--tone: var(${group.tone})`} aria-labelledby={`chapter-${group.key}`}>
+                <header class="chapter__head">
+                  <span class="chapter__node" aria-hidden="true" />
+                  <h2 id={`chapter-${group.key}`}>{group.title}</h2>
+                  <p>{group.intro}</p>
+                </header>
+                <ul class="chapter__guides">
+                  {group.guides.map((guide) => (
+                    <li>
+                      <a href={guideHref(guide.slug, lang)}>
+                        <strong>{guide.title}</strong>
+                        <span>{guide.description}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                {image && (
+                  <figure class="chapter__media clip">
+                    <Picture src={image} alt="" formats={formats} fallbackFormat="webp" widths={[480, 800]} sizes="(max-width: 64rem) 92vw, 24rem" loading="lazy" decoding="async" />
+                    {group.clip && (
+                      <video class="win__video" data-stage-video data-webm={`/media/clips/${group.image}.webm`} data-mp4={`/media/clips/${group.image}.mp4`} muted loop playsinline preload="none" aria-hidden="true" />
+                    )}
+                  </figure>
+                )}
+              </section>
+            );
+          })
+        }
+      </div>
 
-      <section class="wikihome__group">
-        <h2>{t.docs.developers}</h2>
-        <p class="docs__lede" style="margin:0 0 0.9rem;font-size:1.05rem">{t.docs.developersLede}</p>
-        <div class="wikihome__cards">
+      <section class="wikidev" aria-labelledby="wikidev-title">
+        <h2 id="wikidev-title">{t.docs.developers}</h2>
+        <p>{t.docs.developersLede}</p>
+        <ul>
           {
             devDocs.map((doc) => (
-              <a class="wikihome__card" href={devHref(doc.slug, lang)}>
-                <strong>{doc.label}</strong>
-              </a>
+              <li>
+                <a href={devHref(doc.slug, lang)}>{doc.label}</a>
+              </li>
             ))
           }
-        </div>
+        </ul>
       </section>
     </div>
   </main>
@@ -74,4 +128,5 @@ const alternates = [
 
 <script>
   import '../../scripts/search';
+  import '../../scripts/stage-video';
 </script>
