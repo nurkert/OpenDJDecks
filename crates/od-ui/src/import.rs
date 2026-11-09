@@ -1,7 +1,10 @@
 //! File menu actions on the whole library and files dropped on the window.
+//! Library imports run in the background on their own library connection;
+//! the UI picks up the result through the change log.
 
 use crate::app::App;
 use crate::workers::WorkerEvent;
+use od_import::{ImportOptions, Source};
 use slint::ComponentHandle;
 use std::path::Path;
 
@@ -76,6 +79,20 @@ pub(crate) fn library_action(app: &App, id: &str) {
             return;
         }
         "library.import.settings" => import_settings(app, None),
+        "library.import.club-usb" => {
+            let Some(dir) = rfd::FileDialog::new()
+                .set_title(od_i18n::tr("Choose a Club player USB"))
+                .pick_folder()
+            else {
+                return;
+            };
+            if !dir.join("PIONEER/rekordbox/export.pdb").is_file() {
+                app.status(od_i18n::tr("This folder is not a Club player USB"));
+                return;
+            }
+            run_library_import(app, Source::ClubStick { root: dir });
+            return;
+        }
         "library.import.itunes" => {
             let Some(f) = rfd::FileDialog::new()
                 .set_title(od_i18n::tr("Import a Music / iTunes library"))
@@ -90,6 +107,62 @@ pub(crate) fn library_action(app: &App, id: &str) {
     };
     app.status(message);
     crate::covers::spawn_backfill(app);
+}
+
+/// Imports `source` in the background: reports progress and the result on
+/// the status line and wakes the analysis for tracks that need it.
+fn run_library_import(app: &App, source: Source) {
+    let library = app.state.borrow().config.library_path.clone();
+    let tx = app.worker_tx.clone();
+    let wake = app.analysis.wake.clone();
+    app.status("Reading the library…");
+    std::thread::spawn(move || {
+        let say = |m: String| {
+            let _ = tx.send(WorkerEvent::Message(m));
+        };
+        let preview = match od_import::preview(&source) {
+            Ok(p) => p,
+            Err(e) => return say(od_i18n::trf("Library import failed: {}", &[&e])),
+        };
+        say(od_i18n::trf(
+            "Importing {} tracks, {} playlists and {} cues (the source is not changed)…",
+            &[&preview.tracks, &preview.playlists, &preview.cues],
+        ));
+        let mut lib = match od_library::Library::open(&library) {
+            Ok(l) => l,
+            Err(e) => return say(od_i18n::trf("Cannot open library: {}", &[&e])),
+        };
+        let opts = ImportOptions {
+            include_history: true,
+            copy_audio_to: None,
+            analyse_missing: true,
+        };
+        let mut last = std::time::Instant::now();
+        let result = od_import::import(&source, &mut lib, &opts, |p| {
+            if last.elapsed().as_millis() > 200 {
+                last = std::time::Instant::now();
+                say(od_i18n::trf("Library import: {}/{}", &[&p.done, &p.total]));
+            }
+            true
+        });
+        match result {
+            Ok(r) => {
+                let mut m = od_i18n::trf(
+                    "Library import done: {} tracks added, {} playlists, {} cues, {} beatgrids",
+                    &[&r.tracks_added, &r.playlists, &r.cues, &r.grids],
+                );
+                if !r.missing_files.is_empty() {
+                    m.push_str(&od_i18n::trf(
+                        ", {} files not found",
+                        &[&r.missing_files.len()],
+                    ));
+                }
+                say(m);
+                let _ = wake.send(());
+            }
+            Err(e) => say(od_i18n::trf("Library import failed: {}", &[&e])),
+        }
+    });
 }
 
 /// Writes the library as XML (rekordbox-compatible).

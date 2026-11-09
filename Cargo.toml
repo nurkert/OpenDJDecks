@@ -16,6 +16,7 @@ od-decode = { path = "crates/od-decode" }
 od-analysis = { path = "crates/od-analysis" }
 od-import = { path = "crates/od-import" }
 od-format-native = { path = "crates/od-format-native" }
+od-format-clubusb = { path = "crates/od-format-clubusb" }
 od-devices = { path = "crates/od-devices" }
 od-audio-io = { path = "crates/od-audio-io" }
 od-engine = { path = "crates/od-engine" }

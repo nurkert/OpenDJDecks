@@ -21,6 +21,7 @@ od-decode.workspace = true
 od-analysis.workspace = true
 od-devices.workspace = true
 od-format-native.workspace = true
+od-format-clubusb.workspace = true
 # unstable-winit-030: files dropped from Finder / the file manager (winit
 # window events) until the winit backend delivers OS drops to `DropArea`.
 slint = { version = "1.18", features = ["unstable-winit-030"] }

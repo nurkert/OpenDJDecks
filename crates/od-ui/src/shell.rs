@@ -332,6 +332,7 @@ pub(crate) fn wire(app: &Rc<App>) {
     wire_tooltips(app, &ui.global::<crate::TooltipState>());
     apply_panels(app);
     crate::mix_preview::wire(app);
+    crate::preferences::store_stick_settings(app);
     ui.on_select_section(handler!(app, |a, s: SharedString| {
         a.ui.set_section(s.clone());
         match s.as_str() {

@@ -5592,3 +5592,73 @@ msgstr "BEARBEITEN …"
 msgctxt "GridPanel"
 msgid "Open the track in the grid editor (Prepare)"
 msgstr "Track im Grid-Editor öffnen (Prepare)"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Import a Club Player USB…"
+msgstr "Club-Player-USB importieren…"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "FORMATS"
+msgstr "FORMATE"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Club player USB (export.pdb)"
+msgstr "Club-Player-USB (export.pdb)"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Also write the database Club players read (compatible with Pioneer DJ players)"
+msgstr "Zusätzlich die Datenbank schreiben, die Club-Player lesen (kompatibel mit Pioneer-DJ-Playern)"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "OpenDJDecks"
+msgstr "OpenDJDecks"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Write the OpenDJDecks library for other OpenDJDecks setups"
+msgstr "Die OpenDJDecks-Bibliothek für andere OpenDJDecks-Geräte schreiben"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "CHANGES MADE ON PLAYERS — REVIEW"
+msgstr "ÄNDERUNGEN AN PLAYERN — PRÜFEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "TAKE STICK CUES"
+msgstr "STICK-CUES ÜBERNEHMEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "DISMISS"
+msgstr "VERWERFEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "KEEP LIBRARY"
+msgstr "BIBLIOTHEK BEHALTEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Import the play history from the stick"
+msgstr "Die Wiedergabe-Historie vom Stick importieren"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Replace the library cues with the ones edited on the players"
+msgstr "Bibliotheks-Cues durch die auf den Playern bearbeiteten ersetzen"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Ignore this history"
+msgstr "Diese Historie ignorieren"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Keep the library cues; the stick gets them at the next sync"
+msgstr "Bibliotheks-Cues behalten; der Stick bekommt sie beim nächsten Sync"

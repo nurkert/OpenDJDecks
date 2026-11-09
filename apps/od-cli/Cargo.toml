@@ -16,6 +16,7 @@ od-decode.workspace = true
 od-analysis.workspace = true
 od-devices.workspace = true
 od-format-native.workspace = true
+od-format-clubusb.workspace = true
 od-import.workspace = true
 od-lighting.workspace = true
 od-stems = { workspace = true, features = ["separation"] }

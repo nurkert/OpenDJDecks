@@ -58,7 +58,7 @@ export component DeviceLine inherits Rectangle {
     }
     Caps {
         x: 18px; y: 46px;
-        text: root.device.space;
+        text: root.device.space + (root.device.formats == "" ? "" : "  ·  " + root.device.formats);
         font-size: 10px;
     }
     HorizontalLayout {

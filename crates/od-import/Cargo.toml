@@ -9,6 +9,7 @@ license.workspace = true
 od-core.workspace = true
 od-library.workspace = true
 od-decode.workspace = true
+od-format-clubusb.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 quick-xml = "0.37"

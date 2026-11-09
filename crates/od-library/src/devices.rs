@@ -4,13 +4,34 @@ use crate::nodes::{NodeId, NodeKind, descendants};
 use crate::{Library, LibraryError, NOW, Result, TrackRecord};
 use od_core::{DeviceId, TrackId};
 use rusqlite::{OptionalExtension, params};
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashSet};
+
+/// Export formats enabled for a device.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DeviceFormats {
+    /// Club player USB export (`export.pdb` + ANLZ).
+    pub club_usb: bool,
+    /// OpenDJDecks native format.
+    pub opendjdecks: bool,
+}
+
+impl Default for DeviceFormats {
+    fn default() -> Self {
+        Self {
+            club_usb: false,
+            opendjdecks: true,
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Device {
     pub id: DeviceId,
     pub volume_uuid: String,
     pub name: String,
+    pub formats: DeviceFormats,
     /// Change-log position the device was last synced to.
     pub synced_seq: i64,
     pub last_sync: Option<String>,
@@ -39,28 +60,35 @@ impl PendingChanges {
 }
 
 fn device_from_row(r: &rusqlite::Row) -> rusqlite::Result<Device> {
+    let formats: String = r.get(3)?;
     Ok(Device {
         id: DeviceId(r.get(0)?),
         volume_uuid: r.get(1)?,
         name: r.get(2)?,
-        synced_seq: r.get(3)?,
-        last_sync: r.get(4)?,
-        last_error: r.get(5)?,
+        formats: serde_json::from_str(&formats).unwrap_or_default(),
+        synced_seq: r.get(4)?,
+        last_sync: r.get(5)?,
+        last_error: r.get(6)?,
     })
 }
 
-const DEVICE_COLUMNS: &str = "id, volume_uuid, name, synced_seq, last_sync, last_error";
+const DEVICE_COLUMNS: &str = "id, volume_uuid, name, formats, synced_seq, last_sync, last_error";
 
 impl Library {
     /// Registers a device. Returns the existing device if the volume is
     /// already known.
-    pub fn register_device(&mut self, volume_uuid: &str, name: &str) -> Result<DeviceId> {
+    pub fn register_device(
+        &mut self,
+        volume_uuid: &str,
+        name: &str,
+        formats: DeviceFormats,
+    ) -> Result<DeviceId> {
         if let Some(d) = self.device_by_uuid(volume_uuid)? {
             return Ok(d.id);
         }
         self.conn.execute(
-            "INSERT INTO device (volume_uuid, name, formats) VALUES (?1, ?2, '{}')",
-            params![volume_uuid, name],
+            "INSERT INTO device (volume_uuid, name, formats) VALUES (?1, ?2, ?3)",
+            params![volume_uuid, name, serde_json::to_string(&formats)?],
         )?;
         Ok(DeviceId(self.conn.last_insert_rowid()))
     }
@@ -96,10 +124,15 @@ impl Library {
             .optional()?)
     }
 
-    pub fn update_device(&mut self, id: DeviceId, name: &str) -> Result<()> {
+    pub fn update_device(
+        &mut self,
+        id: DeviceId,
+        name: &str,
+        formats: DeviceFormats,
+    ) -> Result<()> {
         self.conn.execute(
-            "UPDATE device SET name = ?2, synced_seq = 0 WHERE id = ?1",
-            params![id.0, name],
+            "UPDATE device SET name = ?2, formats = ?3, synced_seq = 0 WHERE id = ?1",
+            params![id.0, name, serde_json::to_string(&formats)?],
         )?;
         Ok(())
     }
@@ -260,10 +293,10 @@ mod tests {
         let pl = lib.create_node(None, NodeKind::Playlist, "Gig").unwrap();
         lib.add_to_node(pl, &[a, b], None).unwrap();
         let dev = lib
-            .register_device("UUID-1", "Red stick")
+            .register_device("UUID-1", "Red stick", DeviceFormats::default())
             .unwrap();
         assert_eq!(
-            lib.register_device("UUID-1", "x")
+            lib.register_device("UUID-1", "x", DeviceFormats::default())
                 .unwrap(),
             dev
         );
@@ -301,7 +334,7 @@ mod tests {
         let pl = lib.create_node(Some(f), NodeKind::Playlist, "P").unwrap();
         lib.add_to_node(pl, &[a, a], None).unwrap();
         let dev = lib
-            .register_device("U", "S")
+            .register_device("U", "S", DeviceFormats::default())
             .unwrap();
         lib.set_device_nodes(dev, &[f]).unwrap();
         assert_eq!(lib.device_tracks(dev).unwrap().len(), 1);

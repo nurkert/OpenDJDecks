@@ -1098,6 +1098,7 @@ fn apply_live(app: &App) {
 
 fn change(app: &App, f: impl Fn(&mut Settings)) {
     app.state.borrow_mut().change_settings(f);
+    store_stick_settings(app);
     apply_live(app);
     refresh(app);
 }
@@ -1111,6 +1112,23 @@ pub(crate) fn cycle_line_spacing(app: &App) {
             .unwrap_or(1);
         s.browser.line_spacing = LINE_SPACINGS[(i + 1) % LINE_SPACINGS.len()].to_string();
     });
+}
+
+/// Keeps the player preferences that sticks carry (`MYSETTING.DAT`, written
+/// by the Club player USB sync) in step with the settings.
+pub(crate) fn store_stick_settings(app: &App) {
+    let mut st = app.state.borrow_mut();
+    let json = crate::settings::stick_player_settings(&st.settings);
+    if st
+        .lib
+        .meta(od_devices::club_usb::MYSETTING_META)
+        .ok()
+        .flatten()
+        .as_deref()
+        != Some(json.as_str())
+    {
+        let _ = st.lib.set_meta(od_devices::club_usb::MYSETTING_META, &json);
+    }
 }
 
 /// Applies settings changed outside the window (an import) everywhere.

@@ -1067,6 +1067,20 @@ const DE: &[(&str, &str)] = &[
     ("Edit grid: cancel", "Grid bearbeiten: abbrechen"),
     ("Edit grid: undo", "Grid bearbeiten: widerrufen"),
     ("Edit grid: redo", "Grid bearbeiten: wiederholen"),
+    ("Import a Club player USB", "Club-Player-USB importieren"),
+    ("Choose a Club player USB", "Club-Player-USB auswählen"),
+    ("This folder is not a Club player USB", "Dieser Ordner ist kein Club-Player-USB"),
+    ("Reading the library…", "Bibliothek wird gelesen…"),
+    ("Importing {} tracks, {} playlists and {} cues (the source is not changed)…", "{} Tracks, {} Playlists und {} Cues werden importiert (die Quelle bleibt unverändert)…"),
+    ("Library import failed: {}", "Bibliotheksimport fehlgeschlagen: {}"),
+    ("Library import: {}/{}", "Bibliotheksimport: {}/{}"),
+    ("Library import done: {} tracks added, {} playlists, {} cues, {} beatgrids", "Bibliotheksimport fertig: {} Tracks hinzugefügt, {} Playlists, {} Cues, {} Beatgrids"),
+    (", {} files not found", ", {} Dateien nicht gefunden"),
+    ("Cannot open library: {}", "Bibliothek kann nicht geöffnet werden: {}"),
+    ("Player set {} cue(s); library has {}", "Player hat {} Cue(s) gesetzt; Bibliothek hat {}"),
+    ("History: {}", "Historie: {}"),
+    ("{} tracks played", "{} Tracks gespielt"),
+    ("A player changed cues or wrote history on a stick — review it under Devices", "Ein Player hat auf einem Stick Cues geändert oder eine Historie geschrieben — unter Geräte prüfen"),
 ];
 
 /// Whether `english` has a German translation (independent of the

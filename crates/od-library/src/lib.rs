@@ -26,7 +26,7 @@ pub mod smart_text;
 pub mod tracks;
 
 pub use datadir::data_dir;
-pub use devices::{Device, PendingChanges};
+pub use devices::{Device, DeviceFormats, PendingChanges};
 pub use journal::{EntityState, JournalEntry};
 pub use mirror::MirrorTrack;
 pub use user_tags::UserTag;

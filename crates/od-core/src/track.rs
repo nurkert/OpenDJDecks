@@ -87,6 +87,11 @@ impl AudioFormat {
         })
     }
 
+    /// Whether Club players can play files of this format.
+    pub fn club_usb_playable(self) -> bool {
+        !matches!(self, Self::Ogg | Self::Opus)
+    }
+
     pub fn is_supported_extension(path: &Path) -> bool {
         Self::from_path(path).is_some()
     }

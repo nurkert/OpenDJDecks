@@ -187,6 +187,20 @@ pub struct AnalysisSettings {
     pub auto_cues: bool,
 }
 
+/// The player preferences sticks carry, as the JSON the Club player USB
+/// sync reads (`od_devices::club_usb::StickPlayerSettings`).
+pub(crate) fn stick_player_settings(s: &Settings) -> String {
+    let p = od_devices::club_usb::StickPlayerSettings {
+        quantize: s.deck.quantize,
+        auto_cue: s.deck.auto_cue,
+        master_tempo: false,
+        tempo_range: s.deck.tempo_range.clone(),
+        jog_vinyl: s.deck.jog_mode != "bend",
+        language: s.language(),
+    };
+    serde_json::to_string(&p).unwrap_or_default()
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct ControllerSettings {
@@ -781,6 +795,22 @@ pub fn library_path(flag: Option<PathBuf>) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn stick_player_settings_follow_the_deck_defaults() {
+        let mut s = Settings::default();
+        s.deck.quantize = false;
+        s.deck.tempo_range = "sixteen".into();
+        s.deck.jog_mode = "bend".into();
+        s.view.language = "de".into();
+        let p = od_devices::club_usb::player_settings(Some(&stick_player_settings(&s)));
+        assert!(!p.quantize && !p.jog_vinyl && p.auto_cue);
+        assert_eq!(
+            p.tempo_range,
+            od_format_clubusb::mysetting::TempoRange::Sixteen
+        );
+        assert_eq!(p.language, od_format_clubusb::mysetting::Language::German);
+    }
 
     #[test]
     fn older_column_choice_gets_the_artwork_column_once() {

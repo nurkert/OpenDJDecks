@@ -65,6 +65,10 @@ pub struct SyncContext<'a> {
 pub trait FormatWriter {
     fn name(&self) -> &'static str;
     fn write(&mut self, ctx: &SyncContext) -> std::result::Result<(), String>;
+    /// Changes found on the stick that need a user decision.
+    fn proposals(&mut self) -> Vec<crate::club_usb::Proposal> {
+        Vec::new()
+    }
 }
 
 /// Progress reported during a sync.
@@ -92,6 +96,7 @@ pub struct SyncReport {
     pub skipped_missing: Vec<TrackId>,
     pub full: bool,
     pub seconds: f64,
+    pub proposals: Vec<crate::club_usb::Proposal>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -396,6 +401,7 @@ pub fn sync_device(
             format: w.name(),
             message,
         })?;
+        report.proposals.extend(w.proposals());
     }
     report.updated = changed.len();
     report.tracks = placed.len();
@@ -510,7 +516,7 @@ impl FormatWriter for NativeWriter {
 mod tests {
     use super::*;
     use od_core::{ContentHash, Cue, TrackTags};
-    use od_library::NewTrack;
+    use od_library::{DeviceFormats, NewTrack};
 
     struct Fixture {
         _dir: tempfile::TempDir,
@@ -583,7 +589,7 @@ mod tests {
         f.lib.add_to_node(pl, &[a, b], None).unwrap();
         let dev = f
             .lib
-            .register_device("uuid", "Stick")
+            .register_device("uuid", "Stick", DeviceFormats::default())
             .unwrap();
         f.lib.set_device_nodes(dev, &[pl]).unwrap();
 
@@ -644,7 +650,7 @@ mod tests {
         f.lib.add_to_node(pl, &[a, b], None).unwrap();
         let dev = f
             .lib
-            .register_device("uuid", "Stick")
+            .register_device("uuid", "Stick", DeviceFormats::default())
             .unwrap();
         f.lib.set_device_nodes(dev, &[pl]).unwrap();
         // Only Alpha has separated stems on the desktop.
@@ -690,7 +696,7 @@ mod tests {
         f.lib.add_to_node(pl, &[a], None).unwrap();
         let dev = f
             .lib
-            .register_device("u", "S")
+            .register_device("u", "S", DeviceFormats::default())
             .unwrap();
         f.lib.set_device_nodes(dev, &[pl]).unwrap();
         run(&mut f, dev);
@@ -714,7 +720,7 @@ mod tests {
         f.lib.add_to_node(pl, &[a], None).unwrap();
         let dev = f
             .lib
-            .register_device("u", "S")
+            .register_device("u", "S", DeviceFormats::default())
             .unwrap();
         f.lib.set_device_nodes(dev, &[pl]).unwrap();
         let r = run(&mut f, dev);
@@ -730,7 +736,7 @@ mod tests {
         let smart = f.lib.create_node(None, NodeKind::Smart, "All").unwrap();
         let dev = f
             .lib
-            .register_device("u", "S")
+            .register_device("u", "S", DeviceFormats::default())
             .unwrap();
         f.lib.set_device_nodes(dev, &[smart]).unwrap();
         let on: HashSet<TrackId> = [a].into_iter().collect();
