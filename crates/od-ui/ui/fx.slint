@@ -289,7 +289,7 @@ component FxUnit inherits Rectangle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.part == p.i;
                     accessible-label: "fx.unit\{root.u.unit}.part." + p.id;
                     size: 24px; width: 40px; label: p.label; on: root.u.part == p.i; tone: Theme.w656;
-                    tooltip: p.i < 0 ? @tr("The effect takes the whole channel") : @tr("Stem FX: the effect takes only this part of the channel");
+                    tooltip: p.i < 0 ? @tr("The effect takes the whole channel") : @tr("Stem FX: the effect takes only this stem of the channel");
                     clicked => { FxSlots.part(root.u.unit, p.i); }
                 }
             }

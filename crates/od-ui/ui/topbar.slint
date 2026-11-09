@@ -268,7 +268,7 @@ export component TopBar inherits Rectangle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.light"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: self.on;
-                label: "LIGHT"; on: Lighting.panel;
+                label: root.narrow ? @tr("STRIP") : @tr("LIGHT STRIP"); on: Lighting.panel;
                 tooltip: Lighting.panel ? @tr("Hide the lighting strip") : @tr("Show the lighting strip");
                 command: "perform.light.panel";
                 clicked => { Lighting.panel = !Lighting.panel; }

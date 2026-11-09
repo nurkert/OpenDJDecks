@@ -225,7 +225,7 @@ component TrackLine inherits Rectangle {
             MenuSeparator { }
             MenuItem { title: @tr("Analyse"); activated => { root.menu("analyse"); } }
             MenuItem { title: @tr("Lock / unlock analysis"); activated => { root.menu("analysis-lock"); } }
-            MenuItem { title: @tr("Separate parts"); activated => { root.menu("stems"); } }
+            MenuItem { title: @tr("Separate stems"); activated => { root.menu("stems"); } }
             MenuSeparator { }
             // The lists added to last, one click away; every list in the submenu.
             for p in root.recent: MenuItem { title: @tr("Add to “{}”", p.name); activated => { root.menu("playlist:" + p.id); } }

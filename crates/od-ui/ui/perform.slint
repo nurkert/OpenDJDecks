@@ -658,7 +658,7 @@ component StateColumn inherits VerticalLayout {
     Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: root.ctl-h; label: "SLIP"; on: root.deck.slip; tone: Theme.w405; clicked => { root.slip(); } }
     Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: root.ctl-h; label: "Q"; on: root.deck.quantize; tone: Theme.attention; clicked => { root.quantize(); } }
     Rectangle { vertical-stretch: 1; }
-    Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.master-tempo"; size: root.ctl-h; label: "MT"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
+    Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; size: root.ctl-h; label: "LOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
 }
 
 // Slim tempo fader (for mouse use without a controller).
@@ -757,7 +757,7 @@ component StemStrip inherits HorizontalLayout {
     callback stem(string);
     callback stem-level(string, float);
     property <bool> busy: root.deck.stems-busy;
-    property <string> caption: root.busy ? Math.round(root.deck.split-progress * 100) + "%" : @tr("PARTS");
+    property <string> caption: root.busy ? Math.round(root.deck.split-progress * 100) + "%" : @tr("STEMS");
     spacing: Theme.s1;
     if root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: 10px; vertical-alignment: center; color: Theme.bone-3; }
     if !root.mirror && !root.compact: Rectangle { horizontal-stretch: 1; }
@@ -977,13 +977,13 @@ component StateRows inherits VerticalLayout {
     callback slip();
     callback quantize();
     callback keylock();
-    width: 58px;
+    width: 80px;
     spacing: Theme.s1;
     GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; width: parent.width; size: parent.height; label: "SLIP"; on: root.deck.slip; tone: Theme.w405; clicked => { root.slip(); } } }
     GridRow { base: root.base; }
-    GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; width: parent.width; size: parent.height; label: "Q"; on: root.deck.quantize; tone: Theme.attention; clicked => { root.quantize(); } } }
+    GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; width: parent.width; size: parent.height; label: "QUANTIZE"; on: root.deck.quantize; tone: Theme.attention; clicked => { root.quantize(); } } }
     GridRow { base: root.base; }
-    GridRow { base: root.base; grows: 0; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.master-tempo"; width: parent.width; size: parent.height; label: "MT"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } } }
+    GridRow { base: root.base; grows: 0; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; width: parent.width; size: parent.height; label: "KEYLOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } } }
 }
 
 // Full deck controls on one five-row grid: pads (four rows and the pad
@@ -1135,11 +1135,11 @@ component KioskDeck inherits Rectangle {
                     HorizontalLayout { alignment: center; VerticalLayout { alignment: center; PlateButton { tall: true; label: @tr("LOAD SELECTED"); tone: root.tone; clicked => { root.load(); } } } }
                 }
             }
-            for st[i] in [{ id: "vocal", label: "VOC", tone: Theme.w589 }, { id: "drums", label: "DRM", tone: Theme.w615 }, { id: "bass", label: "BASS", tone: Theme.w405 }, { id: "inst", label: "INST", tone: Theme.w486 }]: StemKey {
+            for st[i] in [{ id: "vocal", label: "VOCAL", tone: Theme.w589 }, { id: "drums", label: "DRUMS", tone: Theme.w615 }, { id: "bass", label: "BASS", tone: Theme.w405 }, { id: "inst", label: "INST", tone: Theme.w486 }]: StemKey {
                 deck: root.deck.deck; stem: st.id; label: st.label; tone: st.tone;
                 muted: st.id == "vocal" ? root.deck.mute-vocal : st.id == "inst" ? root.deck.mute-inst : st.id == "drums" ? root.deck.mute-drums : root.deck.mute-bass;
                 level: st.id == "vocal" ? root.deck.level-vocal : st.id == "inst" ? root.deck.level-inst : st.id == "drums" ? root.deck.level-drums : root.deck.level-bass;
-                size: 44px; key-width: 46px; enabled: root.deck.stems-available;
+                size: 44px; key-width: 56px; enabled: root.deck.stems-available;
                 busy: root.deck.stems-busy; fill: StemFill.of(root.deck.split-progress, i);
                 toggle => { root.stem(st.id); }
                 set-level(v) => { root.stem-level(st.id, v); }
@@ -1153,12 +1153,12 @@ component KioskDeck inherits Rectangle {
             Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; size: 44px; clicked => { root.toggle-play(); } }
             Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: 44px; width: 48px; label: "SLIP"; on: root.deck.slip; tone: Theme.w405; clicked => { root.slip(); } }
             Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: 44px; width: 44px; label: "Q"; on: root.deck.quantize; tone: Theme.attention; clicked => { root.quantize(); } }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.master-tempo"; size: 44px; width: 44px; label: "MT"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; size: 44px; width: 72px; label: "KEYLOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
             Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.parts;
                 accessible-label: "mixer.ch\{root.deck.deck}.stem";
                 size: 44px; width: 52px; label: "STEM"; on: root.parts; tone: Theme.w656;
-                tooltip: @tr("The channel's EQ knobs control the parts: HI vocals, MID inst, LOW drums");
+                tooltip: @tr("The channel's EQ knobs control the stems: HI vocals, MID inst, LOW drums");
                 clicked => { MixerParts.toggle(root.deck.deck); }
             }
             Rectangle {
@@ -1397,7 +1397,7 @@ export component DeckPanel inherits Rectangle {
                 Rectangle { width: Theme.s1; }
                 Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: root.ctl-h; label: "SLIP"; on: root.deck.slip; tone: Theme.w405; clicked => { root.slip(); } }
                 Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: root.ctl-h; label: "Q"; on: root.deck.quantize; tone: Theme.attention; clicked => { root.quantize(); } }
-                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.master-tempo"; size: root.ctl-h; label: "MT"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
+                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; size: root.ctl-h; label: "LOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
                 Rectangle { width: Theme.s1; }
                 // Platter readout: tempo of the deck and its pitch with the range.
                 Rectangle {
@@ -1418,7 +1418,7 @@ export component DeckPanel inherits Rectangle {
                     accessible-role: slider;
                     accessible-label: "deck\{root.deck.deck}.pitch";
                     accessible-value: root.deck.tempo;
-                    horizontal-stretch: 1; min-width: 48px;
+                    horizontal-stretch: 1; min-width: 36px;
                     height: root.ctl-h;
                     value: (root.deck.tempo-value + 1) / 2;
                     changed(v) => { root.tempo(v * 2 - 1); }
@@ -1524,15 +1524,15 @@ component ChannelStrip inherits Rectangle {
         spacing: Theme.key-gap;
         Text { text: root.ch.channel; font-family: Theme.family; font-size: 14px; font-weight: 600; color: root.tone; horizontal-alignment: center; }
         HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.trim"; accessible-value: root.ch.trim; label: "TRIM"; value: root.ch.trim; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; changed(v) => { root.trim(v); } } }
-        HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-high"; accessible-value: root.ch.high; label: root.ch.parts ? "VOC" : "HI"; value: root.ch.high; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w486; changed(v) => { root.eq(2, v); } } }
+        HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-high"; accessible-value: root.ch.high; label: root.ch.parts ? "VOCAL" : "HI"; value: root.ch.high; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w486; changed(v) => { root.eq(2, v); } } }
         HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-mid"; accessible-value: root.ch.mid; label: root.ch.parts ? "INST" : "MID"; value: root.ch.mid; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w546; changed(v) => { root.eq(1, v); } } }
-        HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-low"; accessible-value: root.ch.low; label: root.ch.parts ? "DRUM" : "LOW"; value: root.ch.low; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w656; changed(v) => { root.eq(0, v); } } }
+        HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-low"; accessible-value: root.ch.low; label: root.ch.parts ? "DRUMS" : "LOW"; value: root.ch.low; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w656; changed(v) => { root.eq(0, v); } } }
         HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "fx.channel-fx.ch\{root.ch.channel}"; accessible-value: root.ch.channel-fx; label: "CH FX"; value: root.ch.channel-fx; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w405; changed(v) => { root.channel-fx-amount(v); } } }
         Toggle {
             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.parts;
             accessible-label: "mixer.ch\{root.ch.channel}.stem";
             size: 24px; label: "STEM"; on: root.ch.parts; tone: Theme.w656;
-            tooltip: @tr("EQ knobs control the parts: HI vocals, MID inst, LOW drums");
+            tooltip: @tr("EQ knobs control the stems: HI vocals, MID inst, LOW drums");
             clicked => { MixerParts.toggle(root.ch.channel); }
         }
         Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.cue; accessible-label: "mixer.ch\{root.ch.channel}.cue"; size: 24px; label: "CUE"; on: root.ch.cue; tone: Theme.attention; clicked => { root.cue(); } }

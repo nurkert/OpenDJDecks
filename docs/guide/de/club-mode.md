@@ -13,7 +13,7 @@ Wenn du auf dem Controller gelernt hast und dich auf Club-Player vorbereiten wil
 
 - Jedes Deck zeigt einen Player-Bildschirm: die Wellenform, eine Übersicht zum Suchen per Klick, die Jog-Anzeige mit Restzeit, Taktzähler und Phrase, und eine vierteilige Beat-Position unter der Wellenform, mit der du zwei Decks optisch abgleichst. **Einstellungen › Ansicht** kann dort auch den Takt des anderen Decks zeigen.
 - **BROWSE** öffnet einen Browser wie am Player: Quelle, dann Playlists, dann Tracks, aus deiner Bibliothek oder von einem Stick.
-- Hot Cues arbeiten mit Halten, Memory Cues werden mit **CALL** aufgerufen, und **IN**, **OUT**, **RELOOP** / **EXIT**, **4 BEAT**, **JUMP**, die Suchtasten ◀◀ und ▶▶, der Tempobereich und **MASTER TEMPO** stehen auf dem Bildschirm.
+- Hot Cues arbeiten mit Halten, Memory Cues werden mit **CALL** aufgerufen, und **IN**, **OUT**, **RELOOP** / **EXIT**, **4 BEAT**, **JUMP**, die Suchtasten ◀◀ und ▶▶, der Tempobereich und **KEYLOCK** stehen auf dem Bildschirm.
 - **Kein Sync auf dem Bildschirm.** Tempo oben ist langsamer, wie am Player.
 
 ## Die Checkliste

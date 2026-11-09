@@ -436,7 +436,7 @@ export component ClubPlayer inherits Rectangle {
                     base: root.base;
                     property <length> half: (self.width - root.kgap) / 2;
                     Key { accessible-label: "deck\{root.n}.club.tempo-range"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: root.deck.tempo-range; tooltip: @tr("Tempo range"); clicked => { Club.tempo-range(root.n); } }
-                    Key { accessible-label: "deck\{root.n}.club.master-tempo"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: "MT"; tooltip: @tr("Master tempo: the key stays when the tempo changes"); on: root.deck.keylock; tone: Theme.live; clicked => { Club.action(root.n, "keylock"); } }
+                    Key { accessible-label: "deck\{root.n}.club.keylock"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: "KEYLOCK"; tooltip: @tr("Keylock: the key stays when the tempo changes"); on: root.deck.keylock; tone: Theme.live; clicked => { Club.action(root.n, "keylock"); } }
                 }
                 // The tempo fader in a framed slot over rows 2–5, with its
                 // scale: − (slower) at the top, 0 in the middle, + below.

@@ -47,6 +47,29 @@ Klicke einen Track in der Liste an, er öffnet sich im Player oben in Prepare. M
 
 Hast du einen kompatiblen Controller, stecke ihn per USB ein; er wird in wenigen Sekunden erkannt und sein Audio-Interface automatisch benutzt. Siehe [Controller](controllers.md).
 
+## Begriffe in OpenDJDecks
+
+Die App benutzt für jede Sache ein Wort, in der Oberfläche und in diesen Anleitungen. Wo eine Taste für das ganze Wort zu klein ist, steht hier die Kurzform, und der Tooltip schreibt es aus.
+
+| Wort | Bedeutung | Kurzform |
+|---|---|---|
+| **Keylock** | Die Tonart bleibt gleich, wenn sich das Tempo ändert. | **LOCK** auf kleinen Decks |
+| **Quantize** | Hot Cues und Loops rasten auf den Beat. | **Q** auf kleinen Decks |
+| **Stems** | Die getrennten Anteile eines Tracks: **VOCAL**, **DRUMS**, **BASS** und **INST** (Instrumental). | |
+| **Sync** | Tempo und Beat folgen dem Master-Deck. | |
+| **Lighting** | Der Arbeitsmodus mit Rig, Bühne und Show. | |
+| **Lichtleiste** | Das kleine Licht-Panel in Perform, unter den Waveforms. | **LEISTE** in einer schmalen oberen Leiste |
+| **Laden auf** | Wohin ein Doppelklick einen Track in Perform lädt: auf das freie Deck oder ein festes Deck. | **LADEN: FREI**, wenn ein Seitenpanel offen ist |
+| **Zeilen** | Wie hoch die Zeilen der Trackliste sind: kompakt, normal oder großzügig. | **ZEILEN**, wenn ein Seitenpanel offen ist |
+| **Seitenleisten** | Die hohen Streifen neben dem Browser: Quellen links (**ALLE**, **LISTEN**, **ÄHNLICH**, **SAMPLER**, **DATEIEN**, **USB**, **VERLAUF**, **AUFNAHMEN**, **TAG-LISTE**), Panels rechts (**TAGS**, **ÄHNLICH**, **SAMPLER**, **INFO**, **SUB-BROWSER**). | Kurzformen im Touch-Layout |
+| **Tag-Liste** | Tracks, die du für später sammelst. | |
+| **Set** | Eine geordnete Liste, vorbereitet für einen Gig. | |
+| **Ähnlich** | Tracks, die nach dem laufenden passen. | |
+| **Sub-Browser** | Ein zweiter Baum mit Liste unter dem Browser, um Tracks zwischen Listen zu ziehen. | |
+| **Channel FX** | Der Effekt auf einem Mixer-Kanal, mit dem **CH FX**-Regler. | |
+| **Hot Cue** / **Memory Cue** | Ein gespeicherter Punkt auf einem Pad / ein gespeicherter Punkt, den du auf der Waveform ansteuerst. | |
+| **Beatgrid** | Die Beat-Marken eines Tracks. | |
+
 ## Wie es weitergeht
 
 - [Bibliothek und Playlists](library.md): Tracks sortieren und finden

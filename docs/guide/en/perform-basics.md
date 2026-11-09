@@ -25,7 +25,7 @@ Above the decks, the wide zone shows one scrolling waveform per deck. Turn the w
 
 The view button at the top of Perform opens a menu with a picture of each view: **2 Decks** or **4 Decks**, each **horizontal** or **vertical**, and **Browse**, which keeps the decks small and gives the browser the room. Shortcuts: `⌥⌘V` for vertical waveforms and `⌥⌘B` for Browse. A four-deck controller switches to four decks automatically.
 
-The top bar also shows or hides the panels: **FX**, **PREVIEW**, **SAMPLER**, **MIXER** and **REC**, plus **CLUB** and **LIGHT**. Drag the separator bars between the areas to resize them, double-click to reset.
+The top bar also shows or hides the panels: **FX**, **PREVIEW**, **SAMPLER**, **MIXER** and **REC**, plus **CLUB** and **LIGHT STRIP**. Drag the separator bars between the areas to resize them, double-click to reset.
 
 ## Tempo and sync
 
@@ -34,7 +34,7 @@ The top bar also shows or hides the panels: **FX**, **PREVIEW**, **SAMPLER**, **
 - **Q** (quantize) makes cues, loops and jumps land on the beat.
 - **KEY SYNC** moves the deck to the key of the master deck.
 - **‹ ±0 ›** in the deck header shifts the key a semitone at a time; click the value to reset.
-- **MT** is master tempo (keylock): the key stays the same when the tempo changes.
+- **KEYLOCK** keeps the key the same when the tempo changes (also known as master tempo).
 - Keyboard bend: `W` / `E` and `U` / `I` while held.
 
 ## Jog wheels
@@ -67,7 +67,7 @@ The sixteen pads at the left of each deck change meaning with the mode. Pick a m
 | **KEYBOARD** | Play the chosen hot cue at −3 to +4 semitones |
 | **KEY SHIFT** | Set the key shift from −3 to +4 |
 | **SLICER** | Play one of eight slices while held; domain 4 to 64 beats |
-| **STEMS** | Mute and shape the separated parts, see [Stems](stems.md) |
+| **STEMS** | Mute and shape the stems, see [Stems](stems.md) |
 | **MEMORY CUE** | Jump to the memory cues of the track |
 | **CENSOR** | Censor for ¼ to 32 beats, then carry on where it would be |
 | **PATTERN** | Store and recall sampler sequences |

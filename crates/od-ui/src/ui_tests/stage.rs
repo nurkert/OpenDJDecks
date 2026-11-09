@@ -436,7 +436,7 @@ fn club_players_fit_side_by_side() {
         for n in [1, 2] {
             let player = Rect::of(&ui.get(&format!("deck{n}.club")));
             assert!(win.contains(&player, 0.5), "{size:?} player {n} in the window");
-            for part in ["browse", "overview", "search-back", "search-fwd", "call-prev", "call-next", "time", "bpm", "loop-in", "loop-out", "reloop", "loop-4", "jump-back", "jump-fwd", "cue", "play", "jog", "tempo-range", "master-tempo", "tempo"] {
+            for part in ["browse", "overview", "search-back", "search-fwd", "call-prev", "call-next", "time", "bpm", "loop-in", "loop-out", "reloop", "loop-4", "jump-back", "jump-fwd", "cue", "play", "jog", "tempo-range", "keylock", "tempo"] {
                 let r = Rect::of(&ui.get(&format!("deck{n}.club.{part}")));
                 assert!(player.contains(&r, 0.5) && r.w > 1.0, "{size:?} deck{n}.club.{part} at {:?} outside its player {:?}", (r.x, r.y, r.w, r.h), (player.x, player.y, player.w, player.h));
             }

@@ -47,6 +47,29 @@ Click a track in the list to open it in the player at the top of Prepare. Press 
 
 If you own a compatible controller, plug it in by USB; it is picked up within a few seconds and its audio interface is used automatically. See [Controllers](controllers.md).
 
+## Words used in OpenDJDecks
+
+The app uses one name for each thing, in the interface and in these guides. Where a key is too small for the full word, the short form is listed here and the tooltip spells it out.
+
+| Word | What it means | Short form |
+|---|---|---|
+| **Keylock** | The key stays the same when the tempo changes. | **LOCK** on small decks |
+| **Quantize** | Hot cues and loops snap to the beat. | **Q** on small decks |
+| **Stems** | The stems of a track: **VOCAL**, **DRUMS**, **BASS** and **INST** (instrumental). | |
+| **Sync** | Tempo and beat follow the master deck. | |
+| **Lighting** | The work mode with the rig, stage and show. | |
+| **Light strip** | The small lighting panel inside Perform, under the waveforms. | **STRIP** in a narrow top bar |
+| **Load to** | Where a double-click loads a track in Perform: the free deck, or a fixed deck. | **LOAD: FREE** when a side panel is open |
+| **Rows** | How tall the rows of the track list are: compact, normal or roomy. | **ROWS** when a side panel is open |
+| **Side rails** | The tall strips beside the browser: sources on the left (**ALL**, **LISTS**, **SIMILAR**, **SAMPLER**, **FILES**, **USB**, **HISTORY**, **RECORDINGS**, **TAG LIST**), panels on the right (**TAGS**, **SIMILAR**, **SAMPLER**, **INFO**, **SUB BROWSER**). | Short forms in the touch layout |
+| **Tag list** | Tracks you are collecting for later. | |
+| **Set** | An ordered list prepared for a gig. | |
+| **Similar** | Tracks that fit after the one that is playing. | |
+| **Sub browser** | A second tree and list under the browser, for dragging tracks between lists. | |
+| **Channel FX** | The effect on a mixer channel, set with the **CH FX** knob. | |
+| **Hot cue** / **Memory cue** | A stored point on a pad / a stored point you jump to on the waveform. | |
+| **Beatgrid** | The beat markers of a track. | |
+
 ## Where next
 
 - [Library and playlists](library.md): sorting and finding tracks

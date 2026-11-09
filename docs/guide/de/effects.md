@@ -1,6 +1,6 @@
 ---
 title: Tempo FX, Channel FX, Remix und Hold FX
-description: Zwei Tempo-FX-Einheiten mit bis zu drei Effekten in Reihe, Exit FX, Channel FX an den Kanälen, Remix-Effekte und Effekte auf einzelnen Parts.
+description: Zwei Tempo-FX-Einheiten mit bis zu drei Effekten in Reihe, Exit FX, Channel FX an den Kanälen, Remix-Effekte und Effekte auf einzelnen Stems.
 keywords: [effekte, fx, tempo fx, channel fx, echo, delay, reverb, hall, flanger, phaser, roll, filter, trans, vinyl brake, backspin, echo out, exit fx, build up, breakdown, reverse roll, hold fx, stem fx, tap, multi]
 features: [fx-tempo-fx, fx-tempo-fx-controls, fx-tempo-fx-catalogue, fx-channel-fx-select, fx-exit-fx, fx-hold-fx, fx-stem-fx, fx-panel, fx-channel-fx-extended, fx-remix, pad-mode-hold-fx]
 ---
@@ -48,4 +48,4 @@ Der Pad-Modus **HOLD FX** legt acht Presets auf die Pads, Beat- und Release-Effe
 
 ## Stem FX
 
-Unter der Kanalzuweisung einer Einheit begrenzen die Tasten **ALL**, **VOC**, **DRUM**, **BASS** und **INST** sie auf einen Part des Kanals: Die Einheit bearbeitet nur diesen Part, der vor EQ und Fader wieder in den Kanal zurückkehrt. Dafür braucht der Track [getrennte Parts](stems.md).
+Unter der Kanalzuweisung einer Einheit begrenzen die Tasten **ALL**, **VOC**, **DRUM**, **BASS** und **INST** sie auf einen Stem des Kanals: Die Einheit bearbeitet nur diesen Stem, der vor EQ und Fader wieder in den Kanal zurückkehrt. Dafür braucht der Track [getrennte Stems](stems.md).

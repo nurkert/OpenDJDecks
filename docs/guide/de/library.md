@@ -11,7 +11,7 @@ Der Browser ist in Prepare und Perform derselbe. Links liegen deine Quellen und 
 
 ## Die Quellen links
 
-Die schmale Leiste schaltet, was der Baum zeigt: **ALLE** (die ganze Sammlung), **LISTEN** (Playlists, Sets und Smart-Listen), **PASST** (passende Tracks), **SMPL** (das Sampler-Panel in Perform), **DATEIEN** (der Explorer), **USB** (deine Sticks), **VERL** (Verläufe), **REC** (Aufnahmen) und **TAG** (die Tag-Liste).
+Die schmale Leiste schaltet, was der Baum zeigt: **ALLE** (die ganze Sammlung), **LISTEN** (Playlists, Sets und Smart-Listen), **ÄHNLICH** (passende Tracks), **SAMPLER** (das Sampler-Panel in Perform), **DATEIEN** (der Explorer), **USB** (deine Sticks), **VERLAUF** (Verläufe), **AUFNAHMEN** (Aufnahmen) und **TAG-LISTE** (die Tag-Liste).
 
 ## Nach Tonart sortieren (ab Version 0.6)
 
@@ -89,7 +89,7 @@ Ein Rechtsklick auf eine Zeile bietet alles Weitere: **Auf Deck laden**, **Analy
 
 ## Tracks laden
 
-- Doppelklick auf eine Zeile: auf ein freies Deck in Perform, in den Player in Prepare. **LADEN → FREI** über der Liste legt fest, wohin ein Doppelklick lädt; ein Klick wählt ein festes Deck.
+- Doppelklick auf eine Zeile: auf ein freies Deck in Perform, in den Player in Prepare. **LADEN AUF: FREIES DECK** über der Liste sagt, wohin ein Doppelklick lädt; ein Klick wählt ein festes Deck. **ZEILEN: NORMAL** daneben stellt die Zeilenhöhe der Liste ein.
 - Ziehe eine Zeile auf ein Deck oder einen Prepare-Player, aus der Liste, dem Explorer oder aus Finder und Dateimanager.
 - `⇧←` / `⇧→` laden die Auswahl auf Deck 1 und 2, `⌥⇧←` / `⌥⇧→` auf Deck 3 und 4, und `Return` auf ein freies Deck.
 

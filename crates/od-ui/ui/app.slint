@@ -100,6 +100,8 @@ export component AppWindow inherits Window {
     default-font-family: Theme.family;
     default-font-size: Theme.body;
 
+    // The list header's keys shorten when a panel takes the room (small window).
+    property <bool> list-tight: root.width < 1500px && (root.info-open || root.user-tag-open || root.similar-open);
     in-out property <string> mode: "prepare";
     in-out property <string> section: "library";
     in property <bool> kiosk;
@@ -143,7 +145,7 @@ export component AppWindow inherits Window {
     in property <[HotCueSlot]> hot-cues-bottom;
     in property <[PhraseMark]> track-phrases;
     // Pane sizes, set by the splitters and restored from the library.
-    in-out property <length> sidebar-width: 260px;
+    in-out property <length> sidebar-width: 294px;
     in-out property <length> upper-height: 0px;
     in property <[HotCueSlot]> hot-cues;
     in property <image> track-detail;
@@ -679,7 +681,7 @@ export component AppWindow inherits Window {
                 phrases: root.show-phrases-overview ? root.track-phrases : [];
                 info-width: root.sidebar-width;
                 info-dragged(d) => { root.sidebar-width = clamp(root.sidebar-width + d, 180px, 480px); }
-                info-reset => { root.sidebar-width = 260px; }
+                info-reset => { root.sidebar-width = 294px; }
                 has-track: root.has-track;
                 title: root.track-title;
                 artist: root.track-artist;
@@ -865,7 +867,7 @@ export component AppWindow inherits Window {
                 background: Theme.ground-band; border-radius: Theme.r-panel;
                 HorizontalLayout {
                 Sidebar {
-                    width: root.kiosk ? 190px : root.sidebar-width;
+                    width: root.kiosk ? 190px : root.list-tight ? min(root.sidebar-width, 240px) : root.sidebar-width;
                     tree: root.tree;
                     selected-node: root.selected-node;
                     section: root.section;
@@ -913,7 +915,7 @@ export component AppWindow inherits Window {
                     horizontal: false;
                     tooltip: @tr("Drag to resize, double-click to reset");
                     dragged(d) => { root.sidebar-width = clamp(root.sidebar-width + d, 180px, 480px); }
-                    reset => { root.sidebar-width = 260px; }
+                    reset => { root.sidebar-width = 294px; }
                 }
                 VerticalLayout {
                     horizontal-stretch: 1;
@@ -986,7 +988,7 @@ export component AppWindow inherits Window {
                             accessible-value: root.load-target == 0 ? "auto" : root.load-target;
                             horizontal-stretch: 0; compact: !root.kiosk; tall: root.kiosk;
                             enabled: root.mode == "perform";
-                            label: root.load-target == 0 ? @tr("LOAD → FREE") : @tr("LOAD → {}", root.load-target);
+                            label: root.list-tight ? (root.load-target == 0 ? @tr("LOAD: FREE") : @tr("LOAD: {}", root.load-target)) : root.load-target == 0 ? @tr("LOAD TO: FREE DECK") : @tr("LOAD TO: DECK {}", root.load-target);
                             active: root.load-target > 0; tone: Theme.deck-color(root.load-target);
                             tooltip: root.mode == "perform" ? @tr("Where a double-click loads: the free deck or a fixed deck — click for the next") : @tr("In Prepare a double-click opens the track in the player");
                             clicked => { root.load-target = Math.mod(root.load-target + 1, max(2, root.decks.length) + 1); }
@@ -998,7 +1000,7 @@ export component AppWindow inherits Window {
                             horizontal-stretch: 0; compact: !root.kiosk; tall: root.kiosk;
                             // The touch screen keeps its 44 px rows.
                             enabled: !root.kiosk;
-                            label: root.density == "compact" ? @tr("COMPACT") : root.density == "roomy" ? @tr("ROOMY") : @tr("NORMAL");
+                            label: root.list-tight ? @tr("ROWS") : root.density == "compact" ? @tr("ROWS: COMPACT") : root.density == "roomy" ? @tr("ROWS: ROOMY") : @tr("ROWS: NORMAL");
                             tooltip: @tr("Row spacing of the list: compact, normal, roomy — click for the next");
                             clicked => { root.cycle-density(); }
                         } }
@@ -1277,7 +1279,7 @@ export component AppWindow inherits Window {
                 HorizontalLayout {
                     VLine { weight: 1px; tone: Theme.rule; }
                     VerticalLayout {
-                        width: root.kiosk ? 44px : 38px;
+                        width: root.kiosk || root.list-tight ? 44px : Theme.rail;
                         padding-top: root.kiosk ? 0px : Theme.s2;
                         spacing: 0px;
                         // Kiosk browse screen: back to the decks.
@@ -1293,13 +1295,13 @@ export component AppWindow inherits Window {
                             clicked => { root.user-tag-open = !root.user-tag-open; root.panels-changed(); }
                         }
                         RailItem {
-                            accessible-label: "browser.panel.similar"; label: @tr("SIM"); tone: Theme.w546;
+                            accessible-label: "browser.panel.similar"; label: root.kiosk || root.list-tight ? @tr("SIM") : @tr("SIMILAR"); tone: Theme.w546;
                             current: root.similar-open;
                             tooltip: @tr("Similar: tracks that fit after the selected one");
                             clicked => { root.similar-open = !root.similar-open; root.panels-changed(); }
                         }
                         RailItem {
-                            accessible-label: "browser.panel.sampler"; label: @tr("SMPL"); tone: Theme.w656;
+                            accessible-label: "browser.panel.sampler"; label: root.kiosk || root.list-tight ? @tr("SMPL") : @tr("SAMPLER"); tone: Theme.w656;
                             current: root.sampler-panel && root.mode == "perform";
                             enabled: root.mode == "perform";
                             tooltip: root.mode == "perform" ? @tr("Show or hide the sampler panel") : @tr("The sampler panel is part of Perform");
@@ -1312,7 +1314,7 @@ export component AppWindow inherits Window {
                             clicked => { root.info-open = !root.info-open; }
                         }
                         RailItem {
-                            accessible-label: "browser.panel.sub-browser"; label: @tr("SUB"); tone: Theme.attention;
+                            accessible-label: "browser.panel.sub-browser"; label: root.kiosk || root.list-tight ? @tr("SUB") : @tr("SUB BROWSER"); tone: Theme.attention;
                             current: root.sub-browser-open;
                             tooltip: @tr("Sub browser: a second tree and list under this one, to drag tracks between lists");
                             command: "view.panel.sub-browser";

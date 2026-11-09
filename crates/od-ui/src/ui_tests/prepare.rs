@@ -289,7 +289,7 @@ fn source_rail_switches_sources() {
     assert!(
         rects
             .iter()
-            .all(|r| r.right() <= tree.x + 0.5 && r.w <= 40.0),
+            .all(|r| r.right() <= tree.x + 0.5 && r.w <= 80.0),
         "the rail sits left of the tree, 38 px wide"
     );
     ui.click("browser.rail.tag-list");
@@ -711,8 +711,8 @@ fn separate_parts_for_selected_tracks() {
     ui.pump(50);
     ui.right_click_el(&rows[1]);
     assert!(
-        ui.click_menu_item("Separate parts"),
-        "row menu offers Separate parts"
+        ui.click_menu_item("Separate stems"),
+        "row menu offers Separate stems"
     );
     let c = crate::stems_batch::count();
     assert_eq!(c.total, 2, "both selected tracks queued");

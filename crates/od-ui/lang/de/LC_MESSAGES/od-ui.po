@@ -627,11 +627,6 @@ msgctxt "ClubPlayer"
 msgid "Tempo range"
 msgstr "Tempobereich"
 
-#: ui/club.slint:259
-msgctxt "ClubPlayer"
-msgid "MASTER TEMPO"
-msgstr "MASTER TEMPO"
-
 #: ui/club.slint:266
 msgctxt "ClubPlayer"
 msgid "Tempo (up = slower, like a player)"
@@ -1727,8 +1722,8 @@ msgstr "Pad-Modus: klicken für den nächsten"
 
 #: ui/perform.slint:688
 msgctxt "ChannelStrip"
-msgid "EQ knobs control the parts: HI vocals, MID inst, LOW drums"
-msgstr "EQ-Regler steuern die Parts: HI Vocals, MID Inst, LOW Drums"
+msgid "EQ knobs control the stems: HI vocals, MID inst, LOW drums"
+msgstr "EQ-Regler steuern die Stems: HI Vocals, MID Inst, LOW Drums"
 
 #: ui/perform.slint:802
 msgctxt "GlobalBar"
@@ -3619,7 +3614,7 @@ msgstr "Analysieren"
 
 #: ui/table.slint:193
 msgctxt "TrackLine"
-msgid "Separate parts"
+msgid "Separate stems"
 msgstr "Stems trennen"
 
 #: ui/table.slint:194
@@ -3921,8 +3916,8 @@ msgid "Lit = audible · click: mute / unmute · wheel: level"
 msgstr "Leuchtet = hörbar · Klick: stumm / laut · Mausrad: Pegel"
 
 msgctxt "StemStrip"
-msgid "PARTS"
-msgstr "PARTS"
+msgid "STEMS"
+msgstr "STEMS"
 
 msgctxt "PhraseStrip"
 msgid "No phrases — analyse the track, or pick a type in the PHRASE tab"
@@ -3997,8 +3992,8 @@ msgid "BEAT JUMP"
 msgstr "BEAT JUMP"
 
 msgctxt "ClubPlayer"
-msgid "Master tempo: the key stays when the tempo changes"
-msgstr "Master Tempo: die Tonart bleibt, wenn sich das Tempo ändert"
+msgid "Keylock: the key stays when the tempo changes"
+msgstr "Keylock: die Tonart bleibt, wenn sich das Tempo ändert"
 
 msgctxt "ClubPlayer"
 msgid "KEY"
@@ -4485,12 +4480,12 @@ msgstr "Der Effekt nimmt den ganzen Kanal"
 
 #: ui/fx.slint
 msgctxt "FxUnit"
-msgid "Stem FX: the effect takes only this part of the channel"
-msgstr "Stem FX: Der Effekt nimmt nur diesen Part des Kanals"
+msgid "Stem FX: the effect takes only this stem of the channel"
+msgstr "Stem FX: der Effekt nimmt nur diesen Stem des Kanals"
 
 msgctxt "AppWindow"
-msgid "COMPACT"
-msgstr "KOMPAKT"
+msgid "ROWS: COMPACT"
+msgstr "ZEILEN: KOMPAKT"
 
 msgctxt "AppWindow"
 msgid "Full Screen"
@@ -4505,28 +4500,28 @@ msgid "Info: the tags and file details of the selected track"
 msgstr "Info: Tags und Dateidetails des gewählten Tracks"
 
 msgctxt "AppWindow"
-msgid "LOAD → FREE"
-msgstr "LADEN → FREI"
+msgid "LOAD TO: FREE DECK"
+msgstr "LADEN AUF: FREIES DECK"
 
 msgctxt "AppWindow"
-msgid "LOAD → {}"
-msgstr "LADEN → {}"
+msgid "LOAD TO: DECK {}"
+msgstr "LADEN AUF: DECK {}"
 
 msgctxt "AppWindow"
 msgid "Tags: tag the selected tracks with your own categories"
 msgstr "Tags: die gewählten Tracks mit eigenen Kategorien taggen"
 
 msgctxt "AppWindow"
-msgid "NORMAL"
-msgstr "NORMAL"
+msgid "ROWS: NORMAL"
+msgstr "ZEILEN: NORMAL"
 
 msgctxt "AppWindow"
 msgid "SIM"
 msgstr "VERW"
 
 msgctxt "AppWindow"
-msgid "ROOMY"
-msgstr "LUFTIG"
+msgid "ROWS: ROOMY"
+msgstr "ZEILEN: GROSSZÜGIG"
 
 msgctxt "AppWindow"
 msgid "Similar: tracks that fit after the selected one"
@@ -4950,8 +4945,8 @@ msgid "Not loaded"
 msgstr "Nicht geladen"
 
 msgctxt "KioskDeck"
-msgid "The channel's EQ knobs control the parts: HI vocals, MID inst, LOW drums"
-msgstr "Die EQ-Regler des Kanals steuern die Parts: HI Vocals, MID Instrumente, LOW Drums"
+msgid "The channel's EQ knobs control the stems: HI vocals, MID inst, LOW drums"
+msgstr "Die EQ-Regler des Kanals steuern die Stems: HI Vocals, MID Instrumente, LOW Drums"
 
 msgctxt "SamplerPanel"
 msgid "LOAD"
@@ -5883,3 +5878,47 @@ msgstr "Das Modell von diesem Computer löschen (bereits getrennte Stems bleiben
 msgctxt "PreferencesWindow"
 msgid "The model is downloaded once and stays on this computer; your music never leaves it. Removing the model does not remove stems you already separated."
 msgstr "Das Modell wird einmalig geladen und bleibt auf diesem Computer; deine Musik verlässt ihn nie. Das Entfernen des Modells entfernt bereits getrennte Stems nicht."
+
+msgctxt "AppWindow"
+msgid "SAMPLER"
+msgstr "SAMPLER"
+
+msgctxt "AppWindow"
+msgid "SUB BROWSER"
+msgstr "SUB-BROWSER"
+
+msgctxt "Sidebar"
+msgid "SIMILAR"
+msgstr "ÄHNLICH"
+
+msgctxt "Sidebar"
+msgid "SAMPLER"
+msgstr "SAMPLER"
+
+msgctxt "Sidebar"
+msgid "HISTORY"
+msgstr "VERLAUF"
+
+msgctxt "TopBar"
+msgid "LIGHT STRIP"
+msgstr "LICHTLEISTE"
+
+msgctxt "MicControls"
+msgid "INPUT"
+msgstr "EINGANG"
+
+msgctxt "AppWindow"
+msgid "LOAD: FREE"
+msgstr "LADEN: FREI"
+
+msgctxt "AppWindow"
+msgid "LOAD: {}"
+msgstr "LADEN: {}"
+
+msgctxt "AppWindow"
+msgid "ROWS"
+msgstr "ZEILEN"
+
+msgctxt "TopBar"
+msgid "STRIP"
+msgstr "LEISTE"

@@ -225,7 +225,7 @@ fn splitters_drag_persist_reset() {
         "double-click resets to the default"
     );
     ui.double_click("browser.splitter");
-    assert_eq!(ui.app.ui.get_sidebar_width(), 260.0);
+    assert_eq!(ui.app.ui.get_sidebar_width(), 294.0);
 }
 
 /// Preferences > View: colour-blind palette and high contrast switch the

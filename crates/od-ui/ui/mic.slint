@@ -84,7 +84,7 @@ export component MicControls inherits HorizontalLayout {
         alignment: center;
         Chip {
             accessible-label: "global.mic.device"; accessible-role: button;
-            label: "IN"; tooltip: @tr("Next input device");
+            label: @tr("INPUT"); tooltip: @tr("Next input device");
             clicked => { Mic.next-device(); }
         }
     }

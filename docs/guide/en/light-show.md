@@ -30,5 +30,5 @@ On the decks the **LIGHTING** pad mode gives you looks A to F, strobe (G) and fl
 
 ## Where to see it
 
-- The **LIGHT** button (`⌥⌘K`) in Perform shows a lighting strip.
+- The **LIGHT STRIP** button (`⌥⌘K`) in Perform shows a lighting strip.
 - **WINDOW** opens the lighting view in its own window, for a second screen.
