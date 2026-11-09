@@ -3253,3 +3253,20 @@ tests = [
 ]
 evidence = ["manager.rs::sync_all", "manager.rs::sync_stick", "devices.rs::wire"]
 note = "SYNC ALL STICKS (and the sync key in the DEVICES heading) runs every plugged-in stick on its own thread with its own progress line. A stored Eject when done ejects each stick once its sync has finished; a stick that fails keeps its error and stays mounted, the others carry on"
+
+[[feature]]
+id = "export-club-usb-compat"
+area = "export"
+name = "Maximum compatibility: FLAC and AAC/ALAC as 16-bit WAV on Club player USB sticks"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-devices::club_usb::tests::lossless_tracks_go_to_the_stick_as_16_bit_wav",
+  "od-devices::club_usb::tests::the_own_stick_format_keeps_the_original_file",
+  "od-devices::club_usb::tests::nothing_is_converted_without_the_option",
+  "od-devices::convert::tests::writes_a_16_bit_wav_and_leaves_the_source_alone",
+  "od-ui::ui_tests::features::max_compatibility_is_a_per_stick_option",
+]
+evidence = ["convert.rs::write_wav", "sync.rs::sync_device", "club_usb.rs::ClubUsbWriter", "placement.rs::WavCopy"]
+note = "Off by default, per stick. FLAC, AAC and ALAC tracks are written as stereo 16-bit WAV for Club player USB (sample rates above 48 kHz are reduced); the export and analysis files name the .wav, a conversion is only redone when the source changes and removed when it is stale. Sticks that also carry the OpenDJDecks format keep the original file for it. Originals in the library are never touched."

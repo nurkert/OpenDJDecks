@@ -15,6 +15,9 @@ pub struct DeviceFormats {
     pub club_usb: bool,
     /// OpenDJDecks native format.
     pub opendjdecks: bool,
+    /// Maximum compatibility for Club player USB: tracks in formats older
+    /// club players cannot read are written to the stick as 16-bit WAV.
+    pub club_usb_compat: bool,
 }
 
 impl Default for DeviceFormats {
@@ -22,6 +25,7 @@ impl Default for DeviceFormats {
         Self {
             club_usb: false,
             opendjdecks: true,
+            club_usb_compat: false,
         }
     }
 }

@@ -766,6 +766,7 @@ mod tests {
                     DeviceFormats {
                         club_usb,
                         opendjdecks: !club_usb,
+                        ..Default::default()
                     },
                 )
                 .unwrap();

@@ -18,6 +18,23 @@ pub struct Placement {
     pub path: String,
     pub hash: ContentHash,
     pub size: u64,
+    /// The track's 16-bit WAV copy for Club player USB (`None` = not
+    /// converted). Stored next to the original when the stick also carries
+    /// the OpenDJDecks format.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wav: Option<WavCopy>,
+}
+
+/// A track converted to 16-bit WAV on the stick.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WavCopy {
+    /// Stick-relative path starting with `/Contents/`.
+    pub path: String,
+    /// Content hash of the source it was converted from; it is only redone
+    /// when this differs from the source.
+    pub hash: ContentHash,
+    pub size: u64,
+    pub sample_rate: u32,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,6 +108,22 @@ pub fn contents_path(t: &TrackRecord, taken: &HashSet<String>) -> String {
     candidate
 }
 
+/// Stick path for a track's WAV copy: the original's path with a `.wav`
+/// extension, made unique (case-insensitively) against `taken`.
+pub fn wav_path(original: &str, taken: &HashSet<String>) -> String {
+    let stem = original
+        .rsplit_once('.')
+        .map(|(s, _)| s)
+        .unwrap_or(original);
+    let mut candidate = format!("{stem}.wav");
+    let mut n = 2;
+    while taken.contains(&candidate.to_lowercase()) {
+        candidate = format!("{stem} ({n}).wav");
+        n += 1;
+    }
+    candidate
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -146,9 +179,24 @@ mod tests {
                 path: "/Contents/a.mp3".into(),
                 hash: ContentHash("h".into()),
                 size: 3,
+                wav: None,
             },
         );
         m.save(root.path()).unwrap();
         assert_eq!(PlacementMap::load(root.path()), m);
+    }
+
+    #[test]
+    fn wav_paths_replace_the_extension_and_stay_unique() {
+        let mut taken = HashSet::new();
+        assert_eq!(
+            wav_path("/Contents/A/B/Song.flac", &taken),
+            "/Contents/A/B/Song.wav"
+        );
+        taken.insert("/contents/a/b/song.wav".to_string());
+        assert_eq!(
+            wav_path("/Contents/A/B/Song.flac", &taken),
+            "/Contents/A/B/Song (2).wav"
+        );
     }
 }

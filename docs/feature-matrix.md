@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 217 features; 211 in scope: 211 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 218 features; 212 in scope: 212 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -260,6 +260,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Club player USB export (`export.pdb` + ANLZ DAT/EXT/2EX) | DONE | `od-format-clubusb`, `od-devices/src/club_usb.rs`; per-stick choice in the stick board (own format stays the default) | 9 |  |
 | Player settings on Club player USB (`MYSETTING`) | DONE | `od-format-clubusb/src/mysetting.rs`, `od-devices/src/club_usb.rs::player_settings`; `/PIONEER/MYSETTING.DAT` written on every Club player USB sync from the deck defaults (quantize, auto cue, tempo range, jog mode, language); other settings get the documented defaults | 5 | P3 |
 | Sync all sticks at once, with eject when done | DONE | `manager.rs::sync_all`, `manager.rs::sync_stick`, `devices.rs::wire`; SYNC ALL STICKS (and the sync key in the DEVICES heading) runs every plugged-in stick on its own thread with its own progress line. A stored Eject when done ejects each stick once its sync has finished; a stick that fails keeps its error and stays mounted, the others carry on | 2 | P2 |
+| Maximum compatibility: FLAC and AAC/ALAC as 16-bit WAV on Club player USB sticks | DONE | `convert.rs::write_wav`, `sync.rs::sync_device`, `club_usb.rs::ClubUsbWriter`, `placement.rs::WavCopy`; Off by default, per stick. FLAC, AAC and ALAC tracks are written as stereo 16-bit WAV for Club player USB (sample rates above 48 kHz are reduced); the export and analysis files name the .wav, a conversion is only redone when the source changes and removed when it is stale. Sticks that also carry the OpenDJDecks format keep the original file for it. Originals in the library are never touched. | 5 | P2 |
 
 ## 11. Preferences, audio and controllers
 
@@ -326,13 +327,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 211 |
+| DONE | 212 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **217** |
+| **Total** | **218** |
 
 ## P1 gaps and implementation notes
 

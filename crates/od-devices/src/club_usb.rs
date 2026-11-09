@@ -251,7 +251,13 @@ impl ClubUsbWriter {
         let mut new_state_tracks = BTreeMap::new();
         for t in sorted {
             let id = t.record.id;
-            let dat = slots.assign(&t.stick_path);
+            if t.skip_club_usb {
+                continue;
+            }
+            // With maximum compatibility the converted WAV is the file
+            // players get.
+            let device_path = t.wav.as_ref().map_or(&t.stick_path, |w| &w.path);
+            let dat = slots.assign(device_path);
             let previous = state.tracks.get(&id);
             let path_moved = previous.is_none_or(|p| p.dat != dat);
             let files_missing = !stick_file(ctx.root, &dat).exists();
@@ -265,7 +271,7 @@ impl ClubUsbWriter {
                 let analysis = lib.analysis(id).map_err(|e| e.to_string())?;
                 let cues = lib.cues(id).map_err(|e| e.to_string())?;
                 let set = build_anlz(&AnlzInput {
-                    device_path: &t.stick_path,
+                    device_path,
                     duration: t.record.duration,
                     beatgrid: &analysis.beatgrid,
                     cues: &cues,
@@ -297,15 +303,31 @@ impl ClubUsbWriter {
             let Some(format) = r.format.filter(|f| f.club_usb_playable()) else {
                 continue;
             };
+            let (format, sample_rate, bit_rate_kbps, bits_per_sample, file_size) = match &t.wav {
+                Some(w) => (
+                    od_core::AudioFormat::Wav,
+                    w.sample_rate,
+                    w.sample_rate * 16 * 2 / 1000,
+                    16,
+                    w.size,
+                ),
+                None => (
+                    format,
+                    r.sample_rate,
+                    r.bit_rate.unwrap_or(0),
+                    r.bits_per_sample.unwrap_or(16) as u16,
+                    r.file_size,
+                ),
+            };
             export_tracks.push(ExportTrack {
                 id: id.0 as u32,
-                device_path: t.stick_path.clone(),
+                device_path: device_path.clone(),
                 tags: r.tags.clone(),
                 duration: r.duration,
-                sample_rate: r.sample_rate,
-                bit_rate_kbps: r.bit_rate.unwrap_or(0),
-                bits_per_sample: r.bits_per_sample.unwrap_or(16) as u16,
-                file_size: r.file_size,
+                sample_rate,
+                bit_rate_kbps,
+                bits_per_sample,
+                file_size,
                 format,
                 bpm: lib
                     .beatgrid(id)
@@ -558,6 +580,245 @@ mod tests {
             .unwrap()
             .cues();
         assert!((cues[0].start - 22.0).abs() < 0.002);
+    }
+
+    /// A track in a lossless container. The decoder goes by content, so a
+    /// short WAV stands in for the file; only the library's format differs.
+    fn add_lossless(lib: &mut Library, dir: &Path, format: AudioFormat) -> TrackId {
+        let file = dir.join("lossless.flac");
+        write_wav(&file, 1_000, 0.25);
+        let id = lib
+            .add_track(&NewTrack {
+                content_hash: od_decode::content_hash(&file).unwrap(),
+                file_size: std::fs::metadata(&file).unwrap().len(),
+                path: file,
+                format: Some(format),
+                duration: 2.0,
+                sample_rate: 44_100,
+                channels: 2,
+                bit_rate: None,
+                bits_per_sample: Some(24),
+                tags: TrackTags {
+                    title: "Lossless".into(),
+                    artist: "Someone".into(),
+                    ..Default::default()
+                },
+                artwork: None,
+            })
+            .unwrap();
+        lib.set_beatgrid(id, Beatgrid::constant(120.0, 0.0, 1, 2.0))
+            .unwrap();
+        id
+    }
+
+    fn write_wav(path: &Path, frames: usize, level: f32) {
+        let spec = hound::WavSpec {
+            channels: 2,
+            sample_rate: 44_100,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut w = hound::WavWriter::create(path, spec).unwrap();
+        for i in 0..frames {
+            let v = ((i as f32 * 0.05).sin() * level * 32767.0) as i16;
+            w.write_sample(v).unwrap();
+            w.write_sample(v).unwrap();
+        }
+        w.finalize().unwrap();
+    }
+
+    fn enable_compat(lib: &mut Library, dev: od_core::DeviceId, opendjdecks: bool) {
+        lib.update_device(
+            dev,
+            "S",
+            DeviceFormats {
+                club_usb: true,
+                opendjdecks,
+                club_usb_compat: true,
+            },
+        )
+        .unwrap();
+    }
+
+    fn sync_formats(
+        lib: &mut Library,
+        dev: od_core::DeviceId,
+        stick: &Path,
+    ) -> crate::sync::SyncReport {
+        let formats = lib.device(dev).unwrap().formats;
+        let mut writers: Vec<Box<dyn FormatWriter + Send>> = Vec::new();
+        if formats.opendjdecks {
+            writers.push(Box::new(NativeWriter { stems: None }));
+        }
+        if formats.club_usb {
+            writers.push(Box::new(ClubUsbWriter::default()));
+        }
+        sync_device(
+            lib,
+            dev,
+            stick,
+            &mut writers,
+            &SyncOptions::default(),
+            &AtomicBool::new(false),
+            |_| {},
+        )
+        .unwrap()
+    }
+
+    /// Club-only stick: the FLAC goes on the stick as 16-bit WAV only, the
+    /// export names it, and it is only redone when the source changes.
+    #[test]
+    fn lossless_tracks_go_to_the_stick_as_16_bit_wav() {
+        let (dir, mut lib, stick, _mp3, dev) = setup();
+        let id = add_lossless(&mut lib, dir.path(), AudioFormat::Alac);
+        let pl = lib.create_node(None, NodeKind::Playlist, "Compat").unwrap();
+        lib.add_to_node(pl, &[id], None).unwrap();
+        lib.set_device_nodes(dev, &[pl]).unwrap();
+        enable_compat(&mut lib, dev, false);
+
+        let report = sync_formats(&mut lib, dev, &stick);
+        assert_eq!(report.converted, 1);
+        let wav = stick.join("Contents/Someone/Unknown Album/lossless.wav");
+        assert!(wav.exists(), "converted file is on the stick");
+        assert!(
+            !stick
+                .join("Contents/Someone/Unknown Album/lossless.flac")
+                .exists(),
+            "no original needed on a Club-only stick"
+        );
+        let reader = hound::WavReader::open(&wav).unwrap();
+        assert_eq!(reader.spec().bits_per_sample, 16);
+        let pdb = ExportDatabase::parse(&std::fs::read(stick.join(PDB_PATH)).unwrap()).unwrap();
+        let row = pdb.tracks.iter().find(|t| t.id == id.0 as u32).unwrap();
+        assert_eq!(row.device_path, "/Contents/Someone/Unknown Album/lossless.wav");
+        assert_eq!(row.format, AudioFormat::Wav);
+        assert_eq!(row.bits_per_sample, 16);
+        assert_eq!(row.file_size, std::fs::metadata(&wav).unwrap().len());
+        // The analysis files name the WAV too.
+        let dat = stick.join(row.anlz_path.trim_start_matches('/'));
+        let anlz = AnlzFile::parse(&std::fs::read(&dat).unwrap()).unwrap();
+        assert_eq!(
+            anlz.path().as_deref(),
+            Some("/Contents/Someone/Unknown Album/lossless.wav")
+        );
+
+        // A cue edit rewrites the analysis, not the audio.
+        let stamp = |p: &Path| std::fs::metadata(p).unwrap().modified().unwrap();
+        let before = stamp(&wav);
+        std::thread::sleep(std::time::Duration::from_millis(30));
+        lib.set_cues(id, vec![Cue::hot(0, 0.5)]).unwrap();
+        let report = sync_formats(&mut lib, dev, &stick);
+        assert_eq!(report.converted, 0, "converted only when the source changes");
+        assert_eq!(stamp(&wav), before);
+        let ext = dat.with_extension("EXT");
+        assert_eq!(
+            AnlzFile::parse(&std::fs::read(&ext).unwrap())
+                .unwrap()
+                .cues()
+                .len(),
+            1
+        );
+
+        // A changed source is converted again; the bytes change.
+        let src = dir.path().join("lossless.flac");
+        write_wav(&src, 1_500, 0.75);
+        let mut data = lib.mirror_track_data(id).unwrap();
+        data.record.content_hash = od_decode::content_hash(&src).unwrap();
+        data.record.file_size = std::fs::metadata(&src).unwrap().len();
+        lib.mirror_put_track(&data).unwrap();
+        let old = std::fs::read(&wav).unwrap();
+        let report = sync_formats(&mut lib, dev, &stick);
+        assert_eq!(report.converted, 1);
+        assert_ne!(std::fs::read(&wav).unwrap(), old);
+
+        // Off again: the conversion leaves, the original takes its place.
+        lib.update_device(
+            dev,
+            "S",
+            DeviceFormats {
+                club_usb: true,
+                opendjdecks: false,
+                club_usb_compat: false,
+            },
+        )
+        .unwrap();
+        sync_formats(&mut lib, dev, &stick);
+        assert!(!wav.exists(), "stale conversion removed");
+        let flac = stick.join("Contents/Someone/Unknown Album/lossless.flac");
+        assert!(flac.exists());
+        let pdb = ExportDatabase::parse(&std::fs::read(stick.join(PDB_PATH)).unwrap()).unwrap();
+        assert_eq!(
+            pdb.tracks[0].device_path,
+            "/Contents/Someone/Unknown Album/lossless.flac"
+        );
+
+        // A track leaving the stick takes its WAV with it.
+        enable_compat(&mut lib, dev, false);
+        sync_formats(&mut lib, dev, &stick);
+        assert!(wav.exists());
+        lib.set_device_nodes(dev, &[]).unwrap();
+        lib.update_device(
+            dev,
+            "S",
+            DeviceFormats {
+                club_usb: true,
+                opendjdecks: false,
+                club_usb_compat: true,
+            },
+        )
+        .unwrap();
+        sync_formats(&mut lib, dev, &stick);
+        assert!(!wav.exists(), "removed with its track");
+    }
+
+    /// A stick that also carries the OpenDJDecks format keeps the original
+    /// for it: the WAV is only for Club player USB.
+    #[test]
+    fn the_own_stick_format_keeps_the_original_file() {
+        let (dir, mut lib, stick, _mp3, dev) = setup();
+        let id = add_lossless(&mut lib, dir.path(), AudioFormat::Flac);
+        let pl = lib.create_node(None, NodeKind::Playlist, "Compat").unwrap();
+        lib.add_to_node(pl, &[id], None).unwrap();
+        lib.set_device_nodes(dev, &[pl]).unwrap();
+        enable_compat(&mut lib, dev, true);
+        sync_formats(&mut lib, dev, &stick);
+
+        let flac = "/Contents/Someone/Unknown Album/lossless.flac";
+        assert!(stick.join(flac.trim_start_matches('/')).exists());
+        assert!(
+            stick
+                .join("Contents/Someone/Unknown Album/lossless.wav")
+                .exists()
+        );
+        let s = od_format_native::Stick::open(&stick).unwrap().unwrap();
+        assert_eq!(s.library.track(id).unwrap().path, PathBuf::from(flac));
+        let pdb = ExportDatabase::parse(&std::fs::read(stick.join(PDB_PATH)).unwrap()).unwrap();
+        let row = pdb.tracks.iter().find(|t| t.id == id.0 as u32).unwrap();
+        assert!(row.device_path.ends_with(".wav"));
+    }
+
+    /// Without the option nothing is converted; an MP3 is left alone either way.
+    #[test]
+    fn nothing_is_converted_without_the_option() {
+        let (dir, mut lib, stick, mp3, dev) = setup();
+        let id = add_lossless(&mut lib, dir.path(), AudioFormat::Flac);
+        let pl = lib.create_node(None, NodeKind::Playlist, "Compat").unwrap();
+        lib.add_to_node(pl, &[id, mp3], None).unwrap();
+        lib.set_device_nodes(dev, &[pl]).unwrap();
+        lib.update_device(
+            dev,
+            "S",
+            DeviceFormats {
+                club_usb: true,
+                opendjdecks: true,
+                club_usb_compat: false,
+            },
+        )
+        .unwrap();
+        let report = sync_formats(&mut lib, dev, &stick);
+        assert_eq!(report.converted, 0);
+        let pdb = ExportDatabase::parse(&std::fs::read(stick.join(PDB_PATH)).unwrap()).unwrap();
+        assert!(pdb.tracks.iter().all(|t| !t.device_path.ends_with(".wav")));
     }
 
     #[test]

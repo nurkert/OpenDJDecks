@@ -2,7 +2,7 @@
 title: USB sticks and sync
 description: Register a stick once. From then on every change reaches it automatically and incrementally, ready for OpenDJDecks on another computer or the Raspberry Pi.
 keywords: [usb, stick, sticks, usb stick, sync, synchronise, export, export stick, register, eject, rebuild, stick status, device, sync manager]
-features: [export-sync-all, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
+features: [export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
 ---
 
 The stick is a mirror of your library. Register it once with the lists that belong on it, and every changed cue, playlist or beatgrid reaches it within seconds, while it is plugged in. There is no export step to remember.
@@ -46,6 +46,20 @@ Open a stick in the tree to browse and load from it directly, read-only. This is
 From version 0.6, a stick can also carry the Club player USB format, which is compatible with Pioneer DJ players. You choose this per stick: select the stick and turn on **Club player USB (export.pdb)** under **FORMATS**. OpenDJDecks' own format stays on by default and you can keep both.
 
 With the format on, every sync also writes the database and the analysis the players read, with your playlists, cues, beatgrids and waveforms, and takes over your default player settings (quantize, auto cue, tempo range, jog mode, language). Only changed tracks are rewritten. Ogg and Opus files are left out because players cannot play them.
+
+### Maximum compatibility for older club players (from version 0.6)
+
+Older club players often cannot read FLAC or M4A files (AAC and ALAC). If you carry a stick for those, turn on **Maximum compatibility (WAV for older club players)** for it. The option appears under **FORMATS** once **Club player USB** is on, and it applies only to that stick.
+
+With the option on:
+
+- Those tracks are written to the stick as 16-bit WAV files, in a file with the `.wav` ending. Very high-resolution tracks above 48 kHz are also brought down so they play everywhere. MP3 and WAV tracks are left as they are.
+- Your original files in your library are never changed.
+- A track is only converted once. It is converted again only if the original file changes; editing cues or a beatgrid just updates the stick's analysis.
+- If you turn the option off, or a track leaves the stick, its WAV file is removed from the stick.
+- A WAV file is larger than the original, so plan a little more room on the stick.
+
+If a stick also carries the OpenDJDecks format, it keeps the original next to the WAV, so nothing changes for playing that stick in OpenDJDecks.
 
 ### Cues and histories from the players
 

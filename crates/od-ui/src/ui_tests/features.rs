@@ -607,3 +607,45 @@ fn sync_all_sticks_runs_every_stick_and_ejects_when_done() {
         let _ = std::fs::remove_dir_all(s);
     }
 }
+
+/// Maximum compatibility is a per-stick option, off by default, offered
+/// only for sticks that carry the Club player USB format.
+#[test]
+fn max_compatibility_is_a_per_stick_option() {
+    let ui = Ui::open((1440, 900));
+    let name = "COMPAT-STICK";
+    let stick = test_env().join("volumes").join(name);
+    let _ = std::fs::remove_dir_all(&stick);
+    std::fs::create_dir_all(&stick).unwrap();
+    let uuid = format!("uuid-{name}-{}", std::process::id());
+    let marker = od_format_native::DeviceMarker {
+        format_version: od_format_native::FORMAT_VERSION,
+        device_uuid: uuid.clone(),
+        name: name.into(),
+        created_by: "test".into(),
+    };
+    od_format_native::write_marker(&stick, &marker).unwrap();
+    let mut lib = ui.fx.lib();
+    let id = lib
+        .register_device(
+            &uuid,
+            name,
+            od_library::DeviceFormats {
+                club_usb: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    ui.app.device_manager.send(od_devices::Command::Refresh);
+    assert!(ui.wait_until(10.0, |u| !u.app.state.borrow().devices.statuses.is_empty()));
+    ui.app.ui.invoke_open_device(id.0 as i32);
+    ui.pump(200);
+    assert!(ui.has("devices.club-usb-compat"), "offered for club sticks");
+    assert!(!lib.device(id).unwrap().formats.club_usb_compat, "off by default");
+    ui.click("devices.club-usb-compat");
+    assert!(
+        ui.wait_until(5.0, |_| lib.device(id).unwrap().formats.club_usb_compat),
+        "stored per stick"
+    );
+    let _ = std::fs::remove_dir_all(&stick);
+}
