@@ -30,6 +30,13 @@ env:
   OD_PARITY_STRICT: "1"
 
 jobs:
+  # Repository rules from CONTRIBUTING.md, "Independence".
+  rules:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: packaging/ci/check-legal.sh
+
   test:
     strategy:
       fail-fast: false

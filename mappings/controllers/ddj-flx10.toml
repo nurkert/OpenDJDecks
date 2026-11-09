@@ -10,7 +10,8 @@
 # mode).
 #
 # The unit was not connected while this file was written, so nothing here
-# has been confirmed live. Entries marked `verify = true` are inferred.
+# has been confirmed live. Entries marked `verify = true` are not backed by a
+# public source yet and need a check on real hardware.
 # Confirm everything with:
 #   cargo run -p od-controller --example midi_monitor -- --mapping mappings/controllers/ddj-flx10.toml
 #
@@ -116,6 +117,7 @@ channel = 6
 action = "browse.back"
 
 [[input]]
+verify = true
 name = "Back (shift)"
 note = 0x66
 channel = 6
@@ -129,12 +131,14 @@ channel = 6
 action = "browse.view_toggle"
 
 [[input]]
+verify = true
 name = "Browse view (long press)"
 note = 0x67
 channel = 6
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Browse view (shift)"
 note = 0x68
 channel = 6
@@ -186,6 +190,7 @@ channel = "deck"
 action = "deck.play_pause"
 
 [[input]]
+verify = true
 name = "Play/Pause (shift)"
 note = 0x47
 channel = "deck"
@@ -198,6 +203,7 @@ channel = "deck"
 action = "deck.cue"
 
 [[input]]
+verify = true
 name = "Cue (shift)"
 note = 0x48
 channel = "deck"
@@ -210,12 +216,14 @@ channel = "deck"
 action = "deck.sync"
 
 [[input]]
+verify = true
 name = "Sync (long press)"
 note = 0x78
 channel = "deck"
 action = "deck.sync_off"
 
 [[input]]
+verify = true
 name = "Sync (shift)"
 note = 0x5C
 channel = "deck"
@@ -264,6 +272,7 @@ channel = "deck"
 action = "deck.quantize"
 
 [[input]]
+verify = true
 name = "Quantize (shift)"
 note = 0x68
 channel = "deck"
@@ -276,6 +285,7 @@ channel = "deck"
 action = "deck.slip"
 
 [[input]]
+verify = true
 name = "Slip (shift)"
 note = 0x17
 channel = "deck"
@@ -288,6 +298,7 @@ channel = "deck"
 action = "deck.censor"
 
 [[input]]
+verify = true
 name = "Slip reverse (shift)"
 note = 0x38
 channel = "deck"
@@ -361,21 +372,25 @@ action = "deck.memory_cue_delete"
 
 # Mix point and stem part buttons: no OpenDJDecks function in v1.
 [[input]]
+verify = true
 name = "Mix point / part buttons"
 note = 0x59
 channel = "deck"
 action = "ignore"
 [[input]]
+verify = true
 name = "Mix point / part buttons"
 note = 0x5A
 channel = "deck"
 action = "ignore"
 [[input]]
+verify = true
 name = "Mix point / part buttons"
 note = 0x49
 channel = "deck"
 action = "ignore"
 [[input]]
+verify = true
 name = "Mix point / part buttons"
 note = 0x42
 channel = "deck"
@@ -386,6 +401,7 @@ note = 0x4A
 channel = "deck"
 action = "ignore"
 [[input]]
+verify = true
 name = "Mix point / part buttons"
 note = 0x43
 channel = "deck"
@@ -509,6 +525,7 @@ action = "deck.auto_loop"
 args = { beats = 4.0 }
 
 [[input]]
+verify = true
 name = "4 beat loop (shift)"
 note = 0x50
 channel = "deck"
@@ -663,18 +680,21 @@ channel = "deck"
 action = "mixer.cue"
 
 [[input]]
+verify = true
 name = "Headphone cue (shift)"
 note = 0x39
 channel = "deck"
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Master cue"
 note = 0x63
 channel = 6
 action = "master_cue"
 
 [[input]]
+verify = true
 name = "Master cue (shift)"
 note = 0x62
 channel = 6
@@ -705,6 +725,7 @@ args = { side = "b" }
 verify = true
 
 [[input]]
+verify = true
 name = "Input select / fader start"
 note = 0x55
 repeat = 3
@@ -718,6 +739,7 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Fader start (cue)"
 note = 0x52
 channel = "deck"
@@ -734,6 +756,7 @@ args = { effect = ["space", "dub_echo", "sweep", "noise", "crush", "filter"] }
 verify = true
 
 [[input]]
+verify = true
 name = "CH FX select (shift)"
 note = 0x08
 repeat = 6
@@ -755,6 +778,7 @@ channel = 6
 action = "sampler.volume"
 
 [[input]]
+verify = true
 name = "Sampler cue"
 note = 0x69
 channel = 6
@@ -762,24 +786,28 @@ action = "sampler.cue"
 
 # ---------------------------------------------------------------- tempo FX
 [[input]]
+verify = true
 name = "Tempo FX beat down"
 note = 0x4A
 channel = 4
 action = "tempo_fx.beat_down"
 
 [[input]]
+verify = true
 name = "Tempo FX beat up"
 note = 0x4B
 channel = 4
 action = "tempo_fx.beat_up"
 
 [[input]]
+verify = true
 name = "Tempo FX auto beat (shift)"
 note = 0x66
 channel = 4
 action = "tempo_fx.auto_beat"
 
 [[input]]
+verify = true
 name = "Tempo FX tap (shift)"
 note = 0x6B
 channel = 4
@@ -833,6 +861,7 @@ action = "tempo_fx.toggle"
 verify = true
 
 [[input]]
+verify = true
 name = "Tempo FX release (shift)"
 note = 0x43
 channel = 4
@@ -840,6 +869,7 @@ action = "tempo_fx.release"
 
 # ---------------------------------------------------------------- pad modes
 [[input]]
+verify = true
 name = "Pad mode hot cue"
 note = 0x1B
 channel = "deck"
@@ -854,6 +884,7 @@ action = "deck.pad_mode"
 args = { mode = "keyboard" }
 
 [[input]]
+verify = true
 name = "Pad mode hold FX 1"
 note = 0x1E
 channel = "deck"
@@ -861,6 +892,7 @@ action = "deck.pad_mode"
 args = { mode = "hold_fx1" }
 
 [[input]]
+verify = true
 name = "Pad mode hold FX 2 (shift)"
 note = 0x6B
 channel = "deck"
@@ -868,6 +900,7 @@ action = "deck.pad_mode"
 args = { mode = "hold_fx2" }
 
 [[input]]
+verify = true
 name = "Pad mode beat jump"
 note = 0x20
 channel = "deck"
@@ -875,6 +908,7 @@ action = "deck.pad_mode"
 args = { mode = "beat_jump" }
 
 [[input]]
+verify = true
 name = "Pad mode beat loop (shift)"
 note = 0x6D
 channel = "deck"
@@ -889,6 +923,7 @@ action = "deck.pad_mode"
 args = { mode = "sampler" }
 
 [[input]]
+verify = true
 name = "Pad mode key shift (shift)"
 note = 0x6F
 channel = "deck"
@@ -898,6 +933,7 @@ args = { mode = "key_shift" }
 # Parameter page buttons left/right of the pads (0x24–0x2B left,
 # 0x2C–0x33 right, one per pad mode). Only the sampler bank pages are used.
 [[input]]
+verify = true
 name = "Pad page left"
 note = 0x24
 repeat = 3
@@ -905,6 +941,7 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Pad page left"
 note = 0x28
 repeat = 4
@@ -912,6 +949,7 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Pad page right"
 note = 0x2C
 repeat = 3
@@ -919,6 +957,7 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Pad page right"
 note = 0x30
 repeat = 4
@@ -926,12 +965,14 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Sampler bank down"
 note = 0x27
 channel = "deck"
 action = "sampler.bank_prev"
 
 [[input]]
+verify = true
 name = "Sampler bank up"
 note = 0x2F
 channel = "deck"
@@ -963,6 +1004,7 @@ channel = "pad"
 action = "deck.pad"
 
 [[input]]
+verify = true
 name = "Beat jump pad"
 note = 0x20
 repeat = 8
@@ -971,6 +1013,7 @@ action = "deck.beat_jump"
 args = { beats = [-1.0, 1.0, -2.0, 2.0, -4.0, 4.0, -8.0, 8.0] }
 
 [[input]]
+verify = true
 name = "Sampler pad"
 note = 0x30
 repeat = 8
@@ -979,6 +1022,7 @@ channel = "pad"
 action = "sampler.pad"
 
 [[input]]
+verify = true
 name = "Sampler pad (shift)"
 note = 0x30
 repeat = 8
@@ -987,6 +1031,7 @@ channel = "pad_shift"
 action = "sampler.stop"
 
 [[input]]
+verify = true
 name = "Keyboard pad"
 note = 0x40
 repeat = 8
@@ -1003,6 +1048,7 @@ channel = "pad"
 action = "deck.pad"
 
 [[input]]
+verify = true
 name = "Beat loop pad"
 note = 0x60
 repeat = 8
@@ -1011,6 +1057,7 @@ action = "deck.loop_roll"
 args = { beats = [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0] }
 
 [[input]]
+verify = true
 name = "Key shift pad"
 note = 0x70
 repeat = 8
@@ -1035,6 +1082,7 @@ note = 0x58
 channel = "deck"
 
 [[output]]
+verify = true
 target = "deck.master"
 note = 0x5C
 channel = "deck"
@@ -1070,6 +1118,7 @@ note = 0x40
 channel = "deck"
 
 [[output]]
+verify = true
 target = "deck.vinyl"
 note = 0x17
 channel = "deck"
@@ -1080,6 +1129,7 @@ note = 0x15
 channel = "deck"
 
 [[output]]
+verify = true
 target = "deck.reverse"
 note = 0x38
 channel = "deck"
@@ -1105,6 +1155,7 @@ note = 0x14
 channel = "deck"
 
 [[output]]
+verify = true
 target = "deck.loop_active"
 note = 0x50
 channel = "deck"
@@ -1115,53 +1166,63 @@ note = 0x54
 channel = "deck"
 
 [[output]]
+verify = true
 target = "mixer.vu"
 cc = 0x02
 channel = "deck"
 
 [[output]]
+verify = true
 target = "deck.loaded"
 note = 0x00
 channel = 15
 deck = 1
 [[output]]
+verify = true
 target = "deck.loaded"
 note = 0x01
 channel = 15
 deck = 2
 [[output]]
+verify = true
 target = "deck.loaded"
 note = 0x02
 channel = 15
 deck = 3
 [[output]]
+verify = true
 target = "deck.loaded"
 note = 0x03
 channel = 15
 deck = 4
 
 [[output]]
+verify = true
 target = "deck.loop_active"
 note = 0x04
 channel = 15
 deck = 1
 [[output]]
+verify = true
 target = "deck.loop_active"
 note = 0x05
 channel = 15
 deck = 2
 [[output]]
+verify = true
 target = "deck.loop_active"
 note = 0x06
 channel = 15
 deck = 3
 [[output]]
+verify = true
 target = "deck.loop_active"
 note = 0x07
 channel = 15
 deck = 4
 
 [[output]]
+verify = true
 target = "deck.pad_mode"
 note = 0x1B
 channel = "deck"
@@ -1174,24 +1235,28 @@ channel = "deck"
 args = { mode = "keyboard" }
 
 [[output]]
+verify = true
 target = "deck.pad_mode"
 note = 0x1E
 channel = "deck"
 args = { mode = "hold_fx1" }
 
 [[output]]
+verify = true
 target = "deck.pad_mode"
 note = 0x6B
 channel = "deck"
 args = { mode = "hold_fx2" }
 
 [[output]]
+verify = true
 target = "deck.pad_mode"
 note = 0x20
 channel = "deck"
 args = { mode = "beat_jump" }
 
 [[output]]
+verify = true
 target = "deck.pad_mode"
 note = 0x6D
 channel = "deck"
@@ -1204,6 +1269,7 @@ channel = "deck"
 args = { mode = "sampler" }
 
 [[output]]
+verify = true
 target = "deck.pad_mode"
 note = 0x6F
 channel = "deck"
@@ -1229,6 +1295,7 @@ channel = "pad"
 args = { mode = "hold_fx1" }
 
 [[output]]
+verify = true
 target = "deck.pad"
 note = 0x20
 repeat = 8
@@ -1247,6 +1314,7 @@ palette = "pads"
 verify = true
 
 [[output]]
+verify = true
 target = "deck.pad"
 note = 0x40
 repeat = 8
@@ -1263,6 +1331,7 @@ channel = "pad"
 args = { mode = "hold_fx2" }
 
 [[output]]
+verify = true
 target = "deck.pad"
 note = 0x60
 repeat = 8
@@ -1271,6 +1340,7 @@ channel = "pad"
 args = { mode = "beat_loop" }
 
 [[output]]
+verify = true
 target = "deck.pad"
 note = 0x70
 repeat = 8
@@ -1279,6 +1349,7 @@ channel = "pad"
 args = { mode = "key_shift" }
 
 [[output]]
+verify = true
 target = "master_cue"
 note = 0x63
 channel = 6
@@ -1320,11 +1391,13 @@ note = 0x47
 channel = 4
 
 [[output]]
+verify = true
 target = "tempo_fx.release"
 note = 0x43
 channel = 4
 
 [[output]]
+verify = true
 target = "sampler.cue"
 note = 0x69
 channel = 6

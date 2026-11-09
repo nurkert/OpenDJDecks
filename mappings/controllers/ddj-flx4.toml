@@ -8,7 +8,8 @@
 # MIDI message facts: [M] Mixxx project, DDJ-FLX4 mapping (GPL-2.0-or-later),
 # used as a reference for jog encoding (offset 64), 14-bit LSB numbers
 # (MSB + 0x20), beat jump pad sizes, VU meter range and keepalive.
-# Entries with `verify = true` have not been confirmed on a real unit yet.
+# Entries with `verify = true` are not backed by a public source yet and have
+# not been confirmed on a real unit.
 # Check them with: cargo run -p od-controller --example midi_monitor
 #
 # Wire channels: deck 1 = 0, deck 2 = 1; pads deck 1 = 7 (shift 8),
@@ -97,12 +98,14 @@ deck = 2
 action = "deck.load"
 
 [[input]]
+verify = true
 name = "Load deck 1 (shift)"
 note = 0x68
 channel = 6
 action = "browse.similar"
 
 [[input]]
+verify = true
 name = "Load deck 2 (shift)"
 note = 0x7A
 channel = 6
@@ -392,36 +395,42 @@ channel = "deck"
 action = "deck.tap_bpm"
 
 [[input]]
+verify = true
 name = "Auto Channel FX"
 note = 0x00
 channel = 6
 action = "channel_fx.toggle"
 
 [[input]]
+verify = true
 name = "Auto Channel FX select"
 note = 0x08
 channel = 6
 action = "channel_fx.next"
 
 [[input]]
+verify = true
 name = "Auto fader"
 note = 0x01
 channel = 6
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Master cue (shift)"
 note = 0x78
 channel = 6
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Fader start (play)"
 note = 0x66
 channel = "deck"
 action = "ignore"
 
 [[input]]
+verify = true
 name = "Fader start (cue)"
 note = 0x52
 channel = "deck"
@@ -453,6 +462,7 @@ channel = 4
 action = "tempo_fx.beat_down"
 
 [[input]]
+verify = true
 name = "Tempo FX beat down (lever CH2)"
 note = 0x4A
 channel = 5
@@ -465,18 +475,21 @@ channel = 4
 action = "tempo_fx.beat_up"
 
 [[input]]
+verify = true
 name = "Tempo FX beat up (lever CH2)"
 note = 0x4B
 channel = 5
 action = "tempo_fx.beat_up"
 
 [[input]]
+verify = true
 name = "Tempo FX auto beat (shift)"
 note = 0x66
 channel = 4
 action = "tempo_fx.auto_beat"
 
 [[input]]
+verify = true
 name = "Tempo FX tap (shift)"
 note = 0x6B
 channel = 4
@@ -502,6 +515,7 @@ channel = 4
 action = "tempo_fx.level"
 
 [[input]]
+verify = true
 name = "Tempo FX level (lever CH2)"
 cc = 0x02
 lsb = 0x22
@@ -608,6 +622,7 @@ channel = "pad_shift"
 action = "deck.hot_cue_delete"
 
 [[input]]
+verify = true
 name = "Hold FX 1 pad"
 note = 0x10
 repeat = 8
@@ -648,6 +663,7 @@ channel = "pad"
 action = "deck.pad"
 
 [[input]]
+verify = true
 name = "Hold FX 2 pad"
 note = 0x50
 repeat = 8
@@ -724,17 +740,20 @@ note = 0x54
 channel = "deck"
 
 [[output]]
+verify = true
 target = "mixer.vu"
 cc = 0x02
 channel = "deck"
 
 [[output]]
+verify = true
 target = "deck.loaded"
 note = 0x00
 channel = 15
 deck = 1
 
 [[output]]
+verify = true
 target = "deck.loaded"
 note = 0x01
 channel = 15
@@ -812,6 +831,7 @@ channel = "pad"
 args = { mode = "hot_cue" }
 
 [[output]]
+verify = true
 target = "deck.pad"
 note = 0x10
 repeat = 8
@@ -844,6 +864,7 @@ channel = "pad"
 args = { mode = "keyboard" }
 
 [[output]]
+verify = true
 target = "deck.pad"
 note = 0x50
 repeat = 8
@@ -878,6 +899,7 @@ note = 0x43
 channel = 4
 
 [[output]]
+verify = true
 target = "channel_fx"
 note = 0x00
 channel = 6
