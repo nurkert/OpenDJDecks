@@ -951,16 +951,15 @@ mod tests {
         let mut child = Command::new("cmd").args(["/c", "exit"]).spawn().unwrap();
         let pid = child.id();
         child.wait().unwrap();
+        // The relaunched "program" sits in a path as awkward as the install's.
         let marker = base.join("relaunched.txt");
+        let program = base.join("relaunch.cmd");
+        std::fs::write(&program, "@echo ok> \"%~dp0relaunched.txt\"\r\n@exit\r\n").unwrap();
         let finish = Finish {
             mode: "swap",
             current: cur.clone(),
             new: new.clone(),
-            relaunch: vec![
-                "cmd.exe".into(),
-                "/c".into(),
-                format!("echo ok> \"{}\"", marker.display()).into(),
-            ],
+            relaunch: vec![program.into_os_string()],
         };
         std::fs::write(d.path().join(WINDOWS_HELPER_NAME), windows_helper(&finish, pid)).unwrap();
         let out = windows_helper_command(d.path()).output().unwrap();
