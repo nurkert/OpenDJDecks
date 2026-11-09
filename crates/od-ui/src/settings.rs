@@ -113,6 +113,12 @@ pub const CROSSFADER_CURVES: [&str; 3] = ["constant_power", "linear", "cut"];
 /// Track table text sizes (px) and row heights (px) of Preferences > View.
 pub const FONT_SIZES: [u32; 4] = [12, 14, 16, 18];
 pub const LINE_SPACINGS: [&str; 3] = ["compact", "normal", "roomy"];
+/// Colours offered for the waveform bands (Preferences > View).
+pub const WAVEFORM_SWATCHES: [&str; 12] = [
+    "#8B6CFF", "#C678F2", "#EF5A8C", "#EF5A5A", "#F39047", "#F5CE4A", "#82D16B", "#2FC4B2",
+    "#4FB8F0", "#2F6FF2", "#E6E0D2", "#FFFFFF",
+];
+
 /// Seconds across the Prepare player's zoomed waveform (Preferences > View).
 pub const ZOOM_SPANS: [f32; 4] = [4.0, 8.0, 16.0, 32.0];
 /// Recording gain steps (dB) of Preferences > Recording.
@@ -146,8 +152,12 @@ pub struct ViewSettings {
     pub reduced_motion: bool,
     /// "dark", "light" or "system" (follow the OS appearance).
     pub appearance: String,
-    /// "3band", "blue" or "rgb".
+    /// "3band", "mono" or "rgb".
     pub waveform: String,
+    /// Colours of the three bands as `#RRGGBB`; empty keeps the palette's.
+    pub waveform_low: String,
+    pub waveform_mid: String,
+    pub waveform_high: String,
     /// Phrases on the enlarged (zoomed) waveforms: a colour strip along
     /// the bottom.
     pub phrases: bool,
@@ -185,6 +195,20 @@ pub struct AnalysisSettings {
     /// Analysed tracks without cues get cues placed like the user's other
     /// tracks (learned pattern, `od_library::autocue`). Off by default.
     pub auto_cues: bool,
+}
+
+/// The player preferences sticks carry, as the JSON the Club player USB
+/// sync reads (`od_devices::club_usb::StickPlayerSettings`).
+pub(crate) fn stick_player_settings(s: &Settings) -> String {
+    let p = od_devices::club_usb::StickPlayerSettings {
+        quantize: s.deck.quantize,
+        auto_cue: s.deck.auto_cue,
+        master_tempo: false,
+        tempo_range: s.deck.tempo_range.clone(),
+        jog_vinyl: s.deck.jog_mode != "bend",
+        language: s.language(),
+    };
+    serde_json::to_string(&p).unwrap_or_default()
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
@@ -367,6 +391,9 @@ impl Default for ViewSettings {
             reduced_motion: false,
             appearance: "dark".into(),
             waveform: "3band".into(),
+            waveform_low: String::new(),
+            waveform_mid: String::new(),
+            waveform_high: String::new(),
             phrases: true,
             phrases_overview: true,
             phrase_types: "names".into(),
@@ -472,8 +499,13 @@ impl Settings {
         if !APPEARANCES.contains(&v.appearance.as_str()) {
             v.appearance = "dark".into();
         }
-        if !["3band", "blue", "rgb"].contains(&v.waveform.as_str()) {
+        if !["3band", "mono", "rgb"].contains(&v.waveform.as_str()) {
             v.waveform = "3band".into();
+        }
+        for band in [&mut v.waveform_low, &mut v.waveform_mid, &mut v.waveform_high] {
+            if crate::render::parse_hex(band).is_none() {
+                band.clear();
+            }
         }
         if !PHRASE_TYPES.contains(&v.phrase_types.as_str()) {
             v.phrase_types = "names".into();
@@ -586,9 +618,18 @@ impl Settings {
                     .contains(&v.as_str())
                     .then(|| self.view.key_notation = v.clone())
                     .is_some(),
-                "view.waveform" => ["3band", "blue", "rgb"]
+                "view.waveform" => ["3band", "mono", "rgb"]
                     .contains(&v.as_str())
                     .then(|| self.view.waveform = v.clone())
+                    .is_some(),
+                "view.waveform_low" => crate::render::parse_hex(v)
+                    .map(|_| self.view.waveform_low = v.clone())
+                    .is_some(),
+                "view.waveform_mid" => crate::render::parse_hex(v)
+                    .map(|_| self.view.waveform_mid = v.clone())
+                    .is_some(),
+                "view.waveform_high" => crate::render::parse_hex(v)
+                    .map(|_| self.view.waveform_high = v.clone())
                     .is_some(),
                 "view.phrases" => flag(v).map(|b| self.view.phrases = b).is_some(),
                 "view.bar_counter" => BAR_COUNTERS
@@ -781,6 +822,22 @@ pub fn library_path(flag: Option<PathBuf>) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn stick_player_settings_follow_the_deck_defaults() {
+        let mut s = Settings::default();
+        s.deck.quantize = false;
+        s.deck.tempo_range = "sixteen".into();
+        s.deck.jog_mode = "bend".into();
+        s.view.language = "de".into();
+        let p = od_devices::club_usb::player_settings(Some(&stick_player_settings(&s)));
+        assert!(!p.quantize && !p.jog_vinyl && p.auto_cue);
+        assert_eq!(
+            p.tempo_range,
+            od_format_clubusb::mysetting::TempoRange::Sixteen
+        );
+        assert_eq!(p.language, od_format_clubusb::mysetting::Language::German);
+    }
 
     #[test]
     fn older_column_choice_gets_the_artwork_column_once() {

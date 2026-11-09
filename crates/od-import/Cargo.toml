@@ -9,10 +9,22 @@ license.workspace = true
 od-core.workspace = true
 od-library.workspace = true
 od-decode.workspace = true
+od-format-clubusb.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 quick-xml = "0.37"
 tracing.workspace = true
+# Plain bundled SQLite, same features as od-library. The SQLCipher layer of an
+# encrypted library database is removed by our own pure-Rust page decryption
+# (see `sqlcipher.rs`), so the workspace never links a second SQLite flavour.
+rusqlite = { workspace = true }
+tempfile.workspace = true
+# Pure-Rust crypto for SQLCipher 4 pages (AES-256-CBC, HMAC-SHA512, PBKDF2).
+aes = "0.8"
+cbc = "0.1"
+hmac = "0.12"
+sha2 = "0.10"
+pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
+zeroize = "1"
 
 [dev-dependencies]
-tempfile.workspace = true

@@ -45,6 +45,14 @@ export { PreferencesWindow, KeyRow }
 // Perform panels (FX, sampler, pad modes).
 import { FxUnitView, FxSlotView, SamplerPadView, SamplerView } from "structs.slint";
 export { FxUnitView, FxSlotView, SamplerPadView, SamplerView }
+export struct ProposalRow {
+    index: int,
+    title: string,
+    detail: string,
+    // "cues" | "history"
+    kind: string,
+}
+
 export { Theme, TooltipState, TreeRow, TrackRow, CueMark, HotCueSlot, DeviceRow, VolumeRow, FlowPoint, DeckView, ChannelView, PhraseMark, ExplorerRow, LaneMotion, MenuTarget, TrackInfo }
 
 export struct NodeChoice {
@@ -163,6 +171,15 @@ export component AppWindow inherits Window {
     in property <int> device-selected: -1;
     in property <string> device-name;
     in property <[NodeChoice]> device-content;
+    in property <bool> device-club-usb;
+    in property <bool> device-opendjdecks;
+    in property <[ProposalRow]> proposals;
+    // Encrypted library import dialog (the key is cleared after use).
+    in property <bool> encrypted-import-open;
+    in property <bool> encrypted-import-busy;
+    in property <string> encrypted-import-file;
+    in-out property <string> encrypted-import-key;
+    in property <string> encrypted-import-error;
 
     // Recordings.
     in property <[RecordingRow]> recordings;
@@ -427,6 +444,12 @@ export component AppWindow inherits Window {
     callback forget-device(int);
     callback register-volume(int);
     callback set-device-node(int, bool);
+    callback set-device-formats(bool, bool);
+    callback pick-encrypted-import-file();
+    callback run-encrypted-import();
+    callback cancel-encrypted-import();
+    callback accept-proposal(int);
+    callback reject-proposal(int);
     callback rename-device(string);
     callback undo();
     callback redo();
@@ -508,6 +531,8 @@ export component AppWindow inherits Window {
             MenuItem { title: @tr("Import Library XML (rekordbox-compatible)…"); activated => { root.menu-action("library.import.xml"); } }
             MenuItem { title: @tr("Export Library XML (rekordbox-compatible)…"); activated => { root.menu-action("library.export.xml"); } }
             MenuItem { title: @tr("Import Music / iTunes Library XML…"); activated => { root.menu-action("library.import.itunes"); } }
+            MenuItem { title: @tr("Import a Club Player USB…"); activated => { root.menu-action("library.import.club-usb"); } }
+            MenuItem { title: @tr("Import an Encrypted Library Database…"); activated => { root.menu-action("library.import.encrypted"); } }
             MenuSeparator { }
             MenuItem { title: @tr("Export Library Archive…"); activated => { root.menu-action("library.export.archive"); } }
             MenuItem { title: @tr("Restore Library Archive…"); activated => { root.menu-action("library.restore.archive"); } }
@@ -1116,6 +1141,12 @@ export component AppWindow inherits Window {
                                 placeholder: @tr("STICK NAME");
                                 accepted(t) => { root.rename-device(t); }
                             }
+                            Caps { text: @tr("FORMATS"); }
+                            HorizontalLayout {
+                                spacing: 18px;
+                                LineToggle { label: @tr("Club player USB (export.pdb)"); tooltip: @tr("Also write the database Club players read (compatible with Pioneer DJ players)"); checked: root.device-club-usb; toggled(v) => { root.set-device-formats(v, root.device-opendjdecks); } }
+                                LineToggle { label: @tr("OpenDJDecks"); tooltip: @tr("Write the OpenDJDecks library for other OpenDJDecks setups"); checked: root.device-opendjdecks; toggled(v) => { root.set-device-formats(root.device-club-usb, v); } }
+                            }
                             Caps { text: @tr("CONTENT — LISTS ON THIS STICK"); }
                             Rectangle {
                                 vertical-stretch: 1;
@@ -1130,6 +1161,19 @@ export component AppWindow inherits Window {
                                         }
                                     }
                                 }
+                            }
+                            if root.proposals.length > 0: Caps { text: @tr("CHANGES MADE ON PLAYERS — REVIEW"); color: Theme.attention; }
+                            for p in root.proposals: HorizontalLayout {
+                                spacing: 10px;
+                                height: 44px;
+                                VLine { weight: 2px; form: "double"; tone: Theme.attention; }
+                                VerticalLayout {
+                                    horizontal-stretch: 1;
+                                    Text { text: p.title; font-family: Theme.family; font-size: 14px; font-weight: 600; color: Theme.bone; overflow: elide; }
+                                    Text { text: p.detail; font-family: Theme.family; font-size: 12px; color: Theme.bone-3; overflow: elide; }
+                                }
+                                PlateButton { compact: true; label: p.kind == "history" ? @tr("IMPORT") : @tr("TAKE STICK CUES"); tone: Theme.live; tooltip: p.kind == "history" ? @tr("Import the play history from the stick") : @tr("Replace the library cues with the ones edited on the players"); clicked => { root.accept-proposal(p.index); } }
+                                PlateButton { compact: true; label: p.kind == "history" ? @tr("DISMISS") : @tr("KEEP LIBRARY"); tooltip: p.kind == "history" ? @tr("Ignore this history") : @tr("Keep the library cues; the stick gets them at the next sync"); clicked => { root.reject-proposal(p.index); } }
                             }
                             HorizontalLayout {
                                 spacing: 8px;
@@ -1318,5 +1362,68 @@ export component AppWindow inherits Window {
     // The dragged track follows the pointer.
     DragGhost { }
     // Tooltips draw above everything.
+    // Encrypted library import: the user picks the file and types the key.
+    if root.encrypted-import-open: Rectangle {
+        background: #00000099;
+        TouchArea { }
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: min(560px, parent.width - 40px);
+            height: encrypted-layout.preferred-height;
+            background: Theme.plate;
+            border-width: 1px;
+            border-color: Theme.rule;
+            encrypted-layout := VerticalLayout {
+                padding: 20px;
+                spacing: 10px;
+                Caps { text: @tr("IMPORT AN ENCRYPTED LIBRARY DATABASE"); }
+                HorizontalLayout {
+                    spacing: 10px;
+                    Text {
+                        accessible-role: text;
+                        accessible-label: "import.encrypted.file";
+                        accessible-value: self.text;
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                        text: root.encrypted-import-file == "" ? @tr("No file chosen") : root.encrypted-import-file;
+                        font-family: Theme.family; font-size: 13px; color: Theme.bone-3;
+                        overflow: elide;
+                    }
+                    PlateButton { accessible-label: "import.encrypted.choose"; accessible-role: button; compact: true; label: @tr("CHOOSE FILE"); tooltip: @tr("Pick the library database file. Nothing is searched for on this computer."); clicked => { root.pick-encrypted-import-file(); } }
+                }
+                Caps { text: @tr("ADVANCED"); }
+                // No accessible-value here: the key stays out of the accessibility tree.
+                Field {
+                    accessible-role: text-input;
+                    accessible-label: "import.encrypted.key";
+                    placeholder: @tr("KEY FOR THIS LIBRARY");
+                    input-type: InputType.password;
+                    text <=> root.encrypted-import-key;
+                    accepted => { root.run-encrypted-import(); }
+                    cancelled => { root.cancel-encrypted-import(); }
+                }
+                Text {
+                    text: @tr("You need the key for your own library. OpenDJDecks neither contains nor fetches it, and the key is used for this import only: it is not stored or logged. The database itself is only read.");
+                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3;
+                    wrap: word-wrap;
+                }
+                if root.encrypted-import-error != "": Text {
+                    accessible-role: text;
+                    accessible-label: "import.encrypted.error";
+                    accessible-value: self.text;
+                    text: root.encrypted-import-error;
+                    font-family: Theme.family; font-size: 13px; color: Theme.fault;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: end;
+                    PlateButton { accessible-label: "import.encrypted.cancel"; accessible-role: button; compact: true; label: @tr("CANCEL"); clicked => { root.cancel-encrypted-import(); } }
+                    PlateButton { accessible-label: "import.encrypted.run"; accessible-role: button; compact: true; enabled: !root.encrypted-import-busy; label: @tr("IMPORT"); tone: Theme.live; clicked => { root.run-encrypted-import(); } }
+                }
+            }
+        }
+    }
     TooltipLayer { }
 }

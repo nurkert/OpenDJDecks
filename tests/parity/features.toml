@@ -2495,6 +2495,91 @@ tests = [
 note = "`od-format-native`"
 
 [[feature]]
+id = "export-club-usb"
+area = "export"
+name = "Club player USB export (`export.pdb` + ANLZ DAT/EXT/2EX)"
+scope = "in"
+status = "done"
+tests = [
+  "od-format-clubusb::pdb::tests::layout_matches_reference_export",
+  "od-format-clubusb::pdb::tests::round_trip_many_tracks",
+  "od-format-clubusb::anlz::tests::round_trip_every_tag",
+  "od-format-clubusb::anlz::tests::files_have_reference_tag_order",
+  "od-format-clubusb::cross_validate::rekordcrate_reads_our_pdb",
+  "od-format-clubusb::cross_validate::rekordcrate_reads_our_anlz",
+  "od-format-clubusb::cross_validate::empty_export_matches_reference",
+  "od-format-clubusb::anlz::hash::tests::matches_reference_export",
+  "od-devices::club_usb::tests::writes_pdb_and_anlz_and_detects_player_cues",
+]
+evidence = ["od-devices/src/club_usb.rs"]
+note = "`od-format-clubusb`, `od-devices/src/club_usb.rs`; per-stick choice in the stick board (own format stays the default)"
+
+[[feature]]
+id = "export-club-usb-mysetting"
+area = "export"
+name = "Player settings on Club player USB (`MYSETTING`)"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-format-clubusb::mysetting::tests::crc16_xmodem_check_value",
+  "od-format-clubusb::mysetting::tests::file_layout_matches_the_documentation",
+  "od-format-clubusb::mysetting::tests::settings_land_on_their_bytes",
+  "od-devices::club_usb::tests::writes_mysetting_from_the_library_settings",
+  "od-ui::settings::tests::stick_player_settings_follow_the_deck_defaults",
+]
+evidence = ["od-format-clubusb/src/mysetting.rs", "od-devices/src/club_usb.rs::player_settings"]
+note = "`/PIONEER/MYSETTING.DAT` written on every Club player USB sync from the deck defaults (quantize, auto cue, tempo range, jog mode, language); other settings get the documented defaults"
+
+[[feature]]
+id = "cues-from-players"
+area = "cues"
+name = "Cues and histories changed on players come back as proposals"
+scope = "in"
+status = "done"
+qualifier = "beyond the usual"
+tests = [
+  "od-devices::club_usb::tests::writes_pdb_and_anlz_and_detects_player_cues",
+  "od-devices::club_usb::tests::same_cues_ignores_order_and_sub_ms",
+]
+evidence = ["od-devices/src/club_usb.rs", "on_accept_proposal"]
+note = "`od-devices/src/club_usb.rs` proposals, reviewed in the stick board (`on_accept_proposal`)"
+
+[[feature]]
+id = "import-club-usb"
+area = "browser"
+name = "Import a Club player USB written by other software"
+scope = "in"
+status = "done"
+tests = [
+  "od-import::tests::stick_import_with_copy",
+  "od-import::tests::stick_history_is_imported_into_its_own_folder",
+  "od-import::tests::cancel_stops_import",
+]
+evidence = ["od-import/src/club_stick.rs", "od-ui/src/import.rs"]
+note = "`od-import` (`club_stick`, shared engine in `lib.rs`), File menu in `od-ui/src/import.rs`, `od-cli club-usb-import`"
+
+[[feature]]
+id = "import-encrypted-library"
+area = "browser"
+name = "Import an encrypted library database (opt-in, the user supplies the key)"
+scope = "in"
+status = "done"
+tests = [
+  "od-import::tests::library_database_import",
+  "od-import::tests::encrypted_library_import",
+  "od-import::tests::wrong_key_is_rejected_with_a_plain_message",
+  "od-import::tests::temporary_copy_is_removed_after_success_and_error",
+  "od-import::tests::key_is_never_printed",
+  "od-import::tests::changed_source_creates_second_folder",
+  "od-import::tests::rating_and_slots",
+  "od-import::smart::tests::parses_attributes",
+  "od-ui::ui_tests::features::encrypted_import_dialog_clears_the_key",
+]
+evidence = ["od-import/src/encrypted_library.rs", "od-import/src/sqlcipher.rs", "od-ui/src/import.rs::start_encrypted_import"]
+note = "The user picks the file and types the key under Advanced (or `od-cli encrypted-library-import`, `OD_ENCRYPTED_LIBRARY_KEY`). No key is contained, fetched, stored or logged; the source is read-only and the temporary decrypted copy is removed, also on error"
+
+[[feature]]
 id = "prefs-window"
 area = "preferences"
 name = "Preferences window"

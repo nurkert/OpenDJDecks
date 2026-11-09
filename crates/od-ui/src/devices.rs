@@ -1,13 +1,13 @@
 //! Devices: registered sticks, their sync state, new volumes, changes made
-//! and the browsable stick libraries.
+//! on players (proposals) and the browsable stick libraries.
 
 use crate::app::{App, handler};
 use crate::browser;
 use crate::models::model;
-use crate::{DeviceRow, NodeChoice, VolumeRow, format};
-use od_core::DeviceId;
-use od_devices::{Command, DeviceState, DeviceStatus, Event, Volume};
-use od_library::{Library, NodeId, NodeKind};
+use crate::{DeviceRow, NodeChoice, ProposalRow, VolumeRow, format};
+use od_core::{DeviceId, TrackId};
+use od_devices::{Command, DeviceState, DeviceStatus, Event, Proposal, Volume};
+use od_library::{DeviceFormats, Library, NodeId, NodeKind};
 use slint::SharedString;
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -18,6 +18,7 @@ pub(crate) struct DevicesState {
     pub selected: Option<DeviceId>,
     pub statuses: Vec<DeviceStatus>,
     pub volumes: Vec<Volume>,
+    pub proposals: Vec<(DeviceId, Proposal)>,
 }
 
 /// Selects the first registered stick when none is selected.
@@ -94,6 +95,13 @@ pub(crate) fn refresh(app: &App) {
         .iter()
         .map(|s| {
             let (state, detail, progress) = device_line(s);
+            let mut formats = Vec::new();
+            if s.device.formats.club_usb {
+                formats.push("CLUB USB");
+            }
+            if s.device.formats.opendjdecks {
+                formats.push("OPENDJDECKS");
+            }
             DeviceRow {
                 id: s.device.id.0 as i32,
                 name: s.device.name.clone().into(),
@@ -106,15 +114,14 @@ pub(crate) fn refresh(app: &App) {
                     .map(|v| space(v.free_bytes, v.total_bytes))
                     .unwrap_or_default()
                     .into(),
+                formats: formats.join(" + ").into(),
                 connected: s.volume.is_some(),
             }
         })
         .collect();
     // OPENDJDECKS_DEMO_SYNC=0.4 shows the first connected stick mid-sync
     // (documentation screenshots and design review).
-    if let Some(p) = od_core::env::var("DEMO_SYNC")
-        .and_then(|v| v.parse::<f32>().ok())
-    {
+    if let Some(p) = od_core::env::var("DEMO_SYNC").and_then(|v| v.parse::<f32>().ok()) {
         if let Some(r) = rows.iter_mut().find(|r| r.connected) {
             r.state = "syncing".into();
             r.progress = p.clamp(0.0, 1.0);
@@ -148,6 +155,8 @@ pub(crate) fn refresh(app: &App) {
     };
     ui.set_device_selected(id.0 as i32);
     ui.set_device_name(device.name.clone().into());
+    ui.set_device_club_usb(device.formats.club_usb);
+    ui.set_device_opendjdecks(device.formats.opendjdecks);
     let assigned: HashSet<NodeId> = st
         .lib
         .device_nodes(id)
@@ -176,6 +185,139 @@ pub(crate) fn refresh(app: &App) {
     }
     walk(&st.lib, None, 0, &assigned, &mut choices);
     ui.set_device_content(model(choices));
+    let props: Vec<ProposalRow> = st
+        .devices
+        .proposals
+        .iter()
+        .enumerate()
+        .filter(|(_, (d, _))| *d == id)
+        .map(|(i, (_, p))| match p {
+            Proposal::Cues {
+                track,
+                stick,
+                library,
+            } => {
+                let title = st
+                    .lib
+                    .track(*track)
+                    .map(|t| t.tags.title)
+                    .unwrap_or_else(|_| format!("Track {track}"));
+                ProposalRow {
+                    index: i as i32,
+                    title: title.into(),
+                    detail: od_i18n::trf(
+                        "Player set {} cue(s); library has {}",
+                        &[&stick.len(), &library.len()],
+                    )
+                    .into(),
+                    kind: "cues".into(),
+                }
+            }
+            Proposal::History { name, tracks } => ProposalRow {
+                index: i as i32,
+                title: od_i18n::trf("History: {}", &[name]).into(),
+                detail: od_i18n::trf("{} tracks played", &[&tracks.len()]).into(),
+                kind: "history".into(),
+            },
+        })
+        .collect();
+    ui.set_proposals(model(props));
+}
+
+fn same_target(a: &Proposal, b: &Proposal) -> bool {
+    match (a, b) {
+        (Proposal::Cues { track: x, .. }, Proposal::Cues { track: y, .. }) => x == y,
+        (
+            Proposal::History {
+                name: x,
+                tracks: tx,
+            },
+            Proposal::History {
+                name: y,
+                tracks: ty,
+            },
+        ) => x == y && tx == ty,
+        _ => false,
+    }
+}
+
+fn resolve_proposal(app: &App, index: usize, accept: bool) {
+    let entry = {
+        let mut st = app.state.borrow_mut();
+        if index >= st.devices.proposals.len() {
+            return;
+        }
+        st.devices.proposals.remove(index)
+    };
+    let (device, proposal) = entry;
+    let root = app
+        .state
+        .borrow()
+        .devices
+        .statuses
+        .iter()
+        .find(|s| s.device.id == device)
+        .and_then(|s| s.volume.as_ref().map(|v| v.mount_point.clone()));
+    match proposal {
+        Proposal::Cues { track, stick, .. } => {
+            if let Some(root) = &root {
+                let _ = od_devices::ClubUsbWriter::release(root, track);
+            }
+            let cues = if accept {
+                od_devices::club_usb::accepted_cues(&stick)
+            } else {
+                app.state.borrow().lib.cues(track).unwrap_or_default()
+            };
+            // Rejecting rewrites the library's cues to the stick.
+            let r = app.state.borrow_mut().lib.set_cues(track, cues);
+            app.report(r);
+        }
+        Proposal::History { name, tracks } => {
+            if accept {
+                let existing: Vec<TrackId> = tracks
+                    .into_iter()
+                    .filter(|t| app.state.borrow().lib.track(*t).is_ok())
+                    .collect();
+                let folder = {
+                    let st = app.state.borrow();
+                    st.lib
+                        .children(None)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .find(|n| n.kind == NodeKind::Folder && n.name == "History")
+                        .map(|n| n.id)
+                };
+                let folder = match folder {
+                    Some(f) => Some(f),
+                    None => {
+                        let r = app.state.borrow_mut().lib.create_node(
+                            None,
+                            NodeKind::Folder,
+                            "History",
+                        );
+                        app.report(r)
+                    }
+                };
+                if let Some(f) = folder {
+                    let r =
+                        app.state
+                            .borrow_mut()
+                            .lib
+                            .create_node(Some(f), NodeKind::Playlist, &name);
+                    if let Some(pl) = app.report(r) {
+                        let _ = app.state.borrow_mut().lib.add_to_node(pl, &existing, None);
+                    }
+                }
+            }
+        }
+    }
+    app.after_edit(if accept {
+        "Change taken over"
+    } else {
+        "Kept the library version"
+    });
+    refresh(app);
+    app.device_manager.send(Command::SyncNow(device));
 }
 
 /// Mounted sticks with an OpenDJDecks library, sorted and de-duplicated.
@@ -297,6 +439,18 @@ pub(crate) fn poll(app: &App) -> bool {
             }
             Event::EjectFailed { error, .. } => app.status(format!("Eject failed: {error}")),
             Event::Registered { .. } => need_refresh = true,
+            Event::Proposals { device, proposals } => {
+                {
+                    let mut st = app.state.borrow_mut();
+                    let p = &mut st.devices.proposals;
+                    p.retain(|(d, p)| *d != device || proposals.iter().all(|q| !same_target(p, q)));
+                    p.extend(proposals.into_iter().map(|p| (device, p)));
+                }
+                need_refresh = true;
+                app.status(
+                    "A player changed cues or wrote history on a stick — review it under Devices",
+                );
+            }
         }
     }
     if changed {
@@ -364,12 +518,36 @@ pub(crate) fn wire(app: &Rc<App>) {
             mount_point: v.mount_point.clone(),
             name: v.name.clone(),
             nodes: vec![n],
+            formats: DeviceFormats::default(),
         });
         a.status(format!(
             "Registering {} with {} — the first sync starts now",
             v.name,
             name.unwrap_or_default()
         ));
+    }));
+    ui.on_set_device_formats(handler!(app, |a, club_usb: bool, opendjdecks: bool| {
+        let id = a.state.borrow().devices.selected;
+        if let Some(id) = id {
+            let name = a
+                .state
+                .borrow()
+                .lib
+                .device(id)
+                .map(|d| d.name)
+                .unwrap_or_default();
+            let r = a.state.borrow_mut().lib.update_device(
+                id,
+                &name,
+                DeviceFormats {
+                    club_usb,
+                    opendjdecks,
+                },
+            );
+            if a.report(r).is_some() {
+                refresh(&a);
+            }
+        }
     }));
     ui.on_set_device_node(handler!(app, |a, node: i32, on: bool| {
         let id = a.state.borrow().devices.selected;
@@ -390,15 +568,28 @@ pub(crate) fn wire(app: &Rc<App>) {
     ui.on_rename_device(handler!(app, |a, name: SharedString| {
         let id = a.state.borrow().devices.selected;
         if let Some(id) = id {
+            let formats = a
+                .state
+                .borrow()
+                .lib
+                .device(id)
+                .map(|d| d.formats)
+                .unwrap_or_default();
             let r = a
                 .state
                 .borrow_mut()
                 .lib
-                .update_device(id, name.trim());
+                .update_device(id, name.trim(), formats);
             if a.report(r).is_some() {
                 a.device_manager.send(Command::Refresh);
             }
         }
     }));
 
+    ui.on_accept_proposal(handler!(app, |a, i: i32| resolve_proposal(
+        &a, i as usize, true
+    )));
+    ui.on_reject_proposal(handler!(app, |a, i: i32| resolve_proposal(
+        &a, i as usize, false
+    )));
 }

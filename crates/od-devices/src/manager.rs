@@ -10,7 +10,7 @@ use crate::sync::{FormatWriter, NativeWriter, Progress, SyncOptions, SyncReport,
 use crate::volumes::{self, Volume};
 use crossbeam_channel::{Receiver, Sender, select, tick, unbounded};
 use od_core::DeviceId;
-use od_library::{Device, Library, NodeId};
+use od_library::{Device, DeviceFormats, Library, NodeId};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -57,6 +57,11 @@ pub enum Event {
     Registered {
         device: DeviceId,
     },
+    /// Changes made on the stick by players (cues, history) to review.
+    Proposals {
+        device: DeviceId,
+        proposals: Vec<crate::club_usb::Proposal>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -67,6 +72,7 @@ pub enum Command {
         mount_point: PathBuf,
         name: String,
         nodes: Vec<NodeId>,
+        formats: DeviceFormats,
     },
     SyncNow(DeviceId),
     /// Rewrites everything on the stick.
@@ -80,7 +86,7 @@ pub enum Command {
 
 /// Produces the format writers for a device's enabled formats.
 pub type WriterFactory =
-    Arc<dyn Fn() -> Vec<Box<dyn FormatWriter + Send>> + Send + Sync>;
+    Arc<dyn Fn(&DeviceFormats) -> Vec<Box<dyn FormatWriter + Send>> + Send + Sync>;
 
 #[derive(Clone)]
 pub struct ManagerConfig {
@@ -99,7 +105,16 @@ impl ManagerConfig {
             poll_interval: Duration::from_millis(1000),
             debounce: Duration::from_secs(2),
             auto_sync: true,
-            writers: Arc::new(|| vec![Box::new(NativeWriter::default())]),
+            writers: Arc::new(|f: &DeviceFormats| {
+                let mut w: Vec<Box<dyn FormatWriter + Send>> = Vec::new();
+                if f.opendjdecks {
+                    w.push(Box::new(NativeWriter::default()));
+                }
+                if f.club_usb {
+                    w.push(Box::new(crate::club_usb::ClubUsbWriter::default()));
+                }
+                w
+            }),
         }
     }
 }
@@ -302,11 +317,11 @@ impl Worker {
         let Some(volume) = self.volume_of(id) else {
             return;
         };
-        if self.library.device(id).is_err() {
+        let Ok(device) = self.library.device(id) else {
             return;
-        }
+        };
         self.cancel.store(false, Ordering::Relaxed);
-        let mut writers = (self.config.writers)();
+        let mut writers = (self.config.writers)(&device.formats);
         let events = self.events.clone();
         let mut status = self.last_status.clone();
         let mut last_emit = Instant::now() - Duration::from_secs(1);
@@ -334,6 +349,12 @@ impl Worker {
         match result {
             Ok(report) => {
                 self.errors.remove(&id);
+                if !report.proposals.is_empty() {
+                    self.emit(Event::Proposals {
+                        device: id,
+                        proposals: report.proposals.clone(),
+                    });
+                }
                 tracing::info!(device = %id, copied = report.copied, updated = report.updated, "sync finished");
                 self.emit(Event::SyncFinished { device: id, report });
                 self.set_state(id, DeviceState::InSync);
@@ -362,6 +383,7 @@ impl Worker {
                 mount_point,
                 name,
                 nodes,
+                formats,
             } => {
                 let existing = od_format_native::read_marker(&mount_point).ok().flatten();
                 let uuid = existing
@@ -377,7 +399,7 @@ impl Worker {
                     .map_err(|e| e.to_string())
                     .and_then(|_| {
                         self.library
-                            .register_device(&uuid, &name)
+                            .register_device(&uuid, &name, formats)
                             .map_err(|e| e.to_string())
                     })
                     .and_then(|id| {
@@ -493,6 +515,7 @@ mod tests {
             mount_point: stick.clone(),
             name: "Stick".into(),
             nodes: vec![pl],
+            formats: DeviceFormats::default(),
         });
         wait_for(&|e| matches!(e, Event::SyncFinished { report, .. } if report.copied == 1));
 

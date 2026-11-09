@@ -519,3 +519,29 @@ fn crossfader_assign_keys() {
         "deck 1 back to THRU"
     );
 }
+
+/// The encrypted library dialog: the key is masked, stays out of the
+/// accessibility tree and is cleared as soon as the dialog uses it.
+#[test]
+fn encrypted_import_dialog_clears_the_key() {
+    let ui = Ui::start(Fixture::new(), (1400, 900), false);
+    ui.app.ui.invoke_menu_action("library.import.encrypted".into());
+    ui.pump(100);
+    assert!(ui.app.ui.get_encrypted_import_open());
+    ui.app.ui.set_encrypted_import_key("fake-key".into());
+    ui.pump(100);
+    assert_eq!(ui.value("import.encrypted.key"), "");
+
+    // No file chosen yet: asks for one and the key is gone.
+    ui.click("import.encrypted.run");
+    ui.pump(100);
+    assert_eq!(ui.app.ui.get_encrypted_import_key(), "");
+    assert!(ui.value("import.encrypted.error").contains("file"));
+
+    // Cancelling closes the dialog and clears it.
+    ui.app.ui.set_encrypted_import_key("fake-key".into());
+    ui.click("import.encrypted.cancel");
+    ui.pump(100);
+    assert!(!ui.app.ui.get_encrypted_import_open());
+    assert_eq!(ui.app.ui.get_encrypted_import_key(), "");
+}

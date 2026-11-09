@@ -17,7 +17,7 @@ Unter Windows läuft Audio über WASAPI, unter macOS über CoreAudio und unter L
 
 ## Ansicht
 
-Sprache, Tonart-Schreibweise (**Camelot**, **Open Key** oder **musikalisch**), die Darstellung (dunkel, hell oder wie das System), **Skalierung** von 75 bis 200 % (nach Neustart) und die **Wellenform-Farbe**: 3 Bänder, blau oder RGB.
+Sprache, Tonart-Schreibweise (**Camelot**, **Open Key** oder **musikalisch**), die Darstellung (dunkel, hell oder wie das System), **Skalierung** von 75 bis 200 % (nach Neustart) und die **Wellenform-Farbe**: 3 Bänder, einfarbig oder RGB. Unter **EIGENE FARBEN** wählst du die Farben für Tiefen, Mitten und Höhen selbst; **STANDARDFARBEN** stellt die vorgegebenen wieder her.
 
 - **Palette für Farbenblinde** und **Hoher Kontrast (helles Licht)** gelten sofort.
 - **Bewegung reduzieren** beruhigt die Oberfläche.

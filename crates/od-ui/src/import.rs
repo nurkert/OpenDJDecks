@@ -1,9 +1,13 @@
 //! File menu actions on the whole library and files dropped on the window.
+//! Library imports run in the background on their own library connection;
+//! the UI picks up the result through the change log.
 
-use crate::app::App;
+use crate::app::{App, handler};
 use crate::workers::WorkerEvent;
+use od_import::{ImportOptions, Source};
 use slint::ComponentHandle;
 use std::path::Path;
+use std::rc::Rc;
 
 /// File menu actions on the whole library: XML import / export, library
 /// archive, consolidate and the preferences import. Asks for
@@ -76,6 +80,29 @@ pub(crate) fn library_action(app: &App, id: &str) {
             return;
         }
         "library.import.settings" => import_settings(app, None),
+        "library.import.club-usb" => {
+            let Some(dir) = rfd::FileDialog::new()
+                .set_title(od_i18n::tr("Choose a Club player USB"))
+                .pick_folder()
+            else {
+                return;
+            };
+            if !dir.join("PIONEER/rekordbox/export.pdb").is_file() {
+                app.status(od_i18n::tr("This folder is not a Club player USB"));
+                return;
+            }
+            run_library_import(app, Source::ClubStick { root: dir }, false);
+            return;
+        }
+        "library.import.encrypted" => {
+            let ui = &app.ui;
+            ui.set_encrypted_import_file("".into());
+            ui.set_encrypted_import_key("".into());
+            ui.set_encrypted_import_error("".into());
+            ui.set_encrypted_import_busy(false);
+            ui.set_encrypted_import_open(true);
+            return;
+        }
         "library.import.itunes" => {
             let Some(f) = rfd::FileDialog::new()
                 .set_title(od_i18n::tr("Import a Music / iTunes library"))
@@ -90,6 +117,143 @@ pub(crate) fn library_action(app: &App, id: &str) {
     };
     app.status(message);
     crate::covers::spawn_backfill(app);
+}
+
+/// Imports `source` in the background: reports progress and the result on
+/// the status line and wakes the analysis for tracks that need it.
+fn run_library_import(app: &App, source: Source, dialog: bool) {
+    let library = app.state.borrow().config.library_path.clone();
+    let tx = app.worker_tx.clone();
+    let wake = app.analysis.wake.clone();
+    app.status("Reading the library…");
+    std::thread::spawn(move || {
+        let say = |m: String| {
+            let _ = tx.send(WorkerEvent::Message(m));
+        };
+        let preview = match od_import::preview(&source) {
+            Ok(p) => p,
+            Err(e) => {
+                let m = import_error_text(&e);
+                if dialog {
+                    let _ = tx.send(WorkerEvent::EncryptedImportFailed(m));
+                    return;
+                }
+                return say(m);
+            }
+        };
+        if dialog {
+            let _ = tx.send(WorkerEvent::EncryptedImportStarted);
+        }
+        say(od_i18n::trf(
+            "Importing {} tracks, {} playlists and {} cues (the source is not changed)…",
+            &[&preview.tracks, &preview.playlists, &preview.cues],
+        ));
+        let mut lib = match od_library::Library::open(&library) {
+            Ok(l) => l,
+            Err(e) => return say(od_i18n::trf("Cannot open library: {}", &[&e])),
+        };
+        let opts = ImportOptions {
+            include_history: true,
+            copy_audio_to: None,
+            analyse_missing: true,
+        };
+        let mut last = std::time::Instant::now();
+        let result = od_import::import(&source, &mut lib, &opts, |p| {
+            if last.elapsed().as_millis() > 200 {
+                last = std::time::Instant::now();
+                say(od_i18n::trf("Library import: {}/{}", &[&p.done, &p.total]));
+            }
+            true
+        });
+        match result {
+            Ok(r) => {
+                let mut m = od_i18n::trf(
+                    "Library import done: {} tracks added, {} playlists, {} cues, {} beatgrids",
+                    &[&r.tracks_added, &r.playlists, &r.cues, &r.grids],
+                );
+                if !r.missing_files.is_empty() {
+                    m.push_str(&od_i18n::trf(
+                        ", {} files not found",
+                        &[&r.missing_files.len()],
+                    ));
+                }
+                say(m);
+                let _ = wake.send(());
+            }
+            Err(e) => say(import_error_text(&e)),
+        }
+    });
+}
+
+/// The message shown when a library import fails. A key that was not
+/// accepted says just that.
+fn import_error_text(e: &od_import::ImportError) -> String {
+    use od_import::ImportError::{KeyNotAccepted, KeyRequired};
+    match e {
+        KeyNotAccepted => od_i18n::tr("The key was not accepted. Check it and try again.").into(),
+        KeyRequired => {
+            od_i18n::tr("This library database is encrypted. Enter its key under Advanced.").into()
+        }
+        e => od_i18n::trf("Library import failed: {}", &[e]),
+    }
+}
+
+/// Closes the encrypted import dialog and clears everything it held.
+pub(crate) fn close_encrypted_dialog(app: &App) {
+    let ui = &app.ui;
+    ui.set_encrypted_import_open(false);
+    ui.set_encrypted_import_busy(false);
+    ui.set_encrypted_import_key("".into());
+    ui.set_encrypted_import_file("".into());
+    ui.set_encrypted_import_error("".into());
+}
+
+/// Starts the import from the encrypted library dialog. The key leaves the
+/// window here: the field is cleared at once, and the key lives on only in
+/// the [`od_import::LibraryKey`] that is wiped when the import ends. It is
+/// not stored or logged.
+fn start_encrypted_import(app: &App) {
+    let ui = &app.ui;
+    let key = ui.get_encrypted_import_key().to_string();
+    ui.set_encrypted_import_key("".into());
+    let file = ui.get_encrypted_import_file().to_string();
+    if file.is_empty() {
+        ui.set_encrypted_import_error(od_i18n::tr("Choose the library database file first").into());
+        return;
+    }
+    let key = od_import::LibraryKey::new(key);
+    let key = (!key.is_empty()).then_some(key);
+    ui.set_encrypted_import_error("".into());
+    ui.set_encrypted_import_busy(true);
+    run_library_import(
+        app,
+        Source::EncryptedLibrary {
+            file: file.into(),
+            key,
+        },
+        true,
+    );
+}
+
+/// The file chooser of the encrypted library dialog. Nothing is searched for
+/// on disk; the user picks the database.
+fn pick_encrypted_file(app: &App) {
+    let Some(f) = rfd::FileDialog::new()
+        .set_title(od_i18n::tr("Choose the library database file"))
+        .pick_file()
+    else {
+        return;
+    };
+    app.ui
+        .set_encrypted_import_file(f.display().to_string().into());
+    app.ui.set_encrypted_import_error("".into());
+}
+
+pub(crate) fn wire(app: &Rc<App>) {
+    let ui = &app.ui;
+    ui.on_pick_encrypted_import_file(handler!(app, |a| pick_encrypted_file(&a)));
+    ui.on_run_encrypted_import(handler!(app, |a| start_encrypted_import(&a)));
+    ui.on_cancel_encrypted_import(handler!(app, |a| close_encrypted_dialog(&a)));
 }
 
 /// Writes the library as XML (rekordbox-compatible).

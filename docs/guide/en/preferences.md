@@ -17,7 +17,7 @@ On Windows audio goes through WASAPI, on macOS through CoreAudio, and on Linux t
 
 ## View
 
-Language, key notation (**Camelot**, **Open Key** or **musical**), the appearance (dark, light or following the system), **UI scale** from 75 to 200 % (after a restart), and the **Waveform colour**: 3-band, blue or RGB.
+Language, key notation (**Camelot**, **Open Key** or **musical**), the appearance (dark, light or following the system), **UI scale** from 75 to 200 % (after a restart), and the **Waveform colour**: 3-band, one colour or RGB. With **OWN COLOURS** you can pick your own colours for the lows, mids and highs; **STANDARD COLOURS** brings back the default ones.
 
 - **Colour-blind-safe palette** and **High contrast (bright light)** apply at once.
 - **Reduce motion** calms the interface.

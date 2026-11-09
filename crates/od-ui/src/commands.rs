@@ -271,7 +271,9 @@ pub(crate) fn run(app: &Rc<App>, id: &str) {
         | "library.restore.archive"
         | "library.consolidate"
         | "library.import.settings"
-        | "library.import.itunes" => crate::import::library_action(app, id),
+        | "library.import.itunes"
+        | "library.import.club-usb"
+        | "library.import.encrypted" => crate::import::library_action(app, id),
         _ => {
             if let Some(l) = id.strip_prefix("perform.layout.set.") {
                 crate::decks::set_perform_layout(app, l);

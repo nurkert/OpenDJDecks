@@ -4,8 +4,8 @@
 use anyhow::{Context, bail};
 use clap::{Parser, Subcommand};
 use od_core::DataSource;
-use od_devices::{FormatWriter, NativeWriter, SyncOptions};
-use od_library::{Library, NewTrack, NodeKind};
+use od_devices::{ClubUsbWriter, FormatWriter, NativeWriter, SyncOptions};
+use od_library::{DeviceFormats, Library, NewTrack, NodeKind};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 
@@ -83,6 +83,26 @@ enum Cmd {
     XmlExport { file: PathBuf },
     /// Import a library XML file (rekordbox-compatible; tracks, cues, grids, playlists).
     XmlImport { file: PathBuf },
+    /// Import an encrypted library database. You pick the file and supply
+    /// the key for your own library; OpenDJDecks contains no key.
+    EncryptedLibraryImport {
+        file: PathBuf,
+        /// Key for this library, used once and not stored. Prefer the
+        /// environment variable OD_ENCRYPTED_LIBRARY_KEY: command-line
+        /// arguments are visible to other programs on this computer.
+        #[arg(long)]
+        key: Option<String>,
+        /// Also import the play history.
+        #[arg(long)]
+        history: bool,
+    },
+    /// Import a Club player USB written by other software (stick mount point).
+    ClubUsbImport {
+        root: PathBuf,
+        /// Also import the play history.
+        #[arg(long)]
+        history: bool,
+    },
     /// DMX lighting: edit the rig and run a test show.
     Lighting {
         /// Rig file (default: lighting.json in the app's data folder).
@@ -117,6 +137,10 @@ enum Cmd {
         name: Option<String>,
         #[arg(long = "playlist", required = true)]
         playlists: Vec<String>,
+        /// Also write the Club player USB export (compatible with Pioneer DJ
+        /// players) when syncing this stick.
+        #[arg(long)]
+        club_usb: bool,
     },
     /// Sync a registered stick mounted at the given path.
     Sync {
@@ -310,6 +334,34 @@ fn main() -> anyhow::Result<()> {
                 println!("missing file: {}", m.display());
             }
         }
+        Cmd::EncryptedLibraryImport { file, key, history } => {
+            let key = key
+                .or_else(|| std::env::var("OD_ENCRYPTED_LIBRARY_KEY").ok())
+                .map(od_import::LibraryKey::new);
+            let r = od_import::import(
+                &od_import::Source::EncryptedLibrary { file, key },
+                &mut lib,
+                &od_import::ImportOptions {
+                    include_history: history,
+                    analyse_missing: true,
+                    ..Default::default()
+                },
+                |_| true,
+            )?;
+            print_import_report(&r);
+        }
+        Cmd::ClubUsbImport { root, history } => {
+            let r = od_import::import(
+                &od_import::Source::ClubStick { root },
+                &mut lib,
+                &od_import::ImportOptions {
+                    include_history: history,
+                    ..Default::default()
+                },
+                |_| true,
+            )?;
+            print_import_report(&r);
+        }
         Cmd::Archive { file, audio } => {
             let n = lib.export_archive(&file, audio, |_, _| {})?;
             println!("wrote {} (audio files: {n})", file.display());
@@ -389,6 +441,7 @@ fn main() -> anyhow::Result<()> {
             mount,
             name,
             playlists,
+            club_usb,
         } => {
             let all = lib.all_nodes()?;
             let mut nodes = Vec::new();
@@ -424,8 +477,14 @@ fn main() -> anyhow::Result<()> {
                     m
                 }
             };
-            let id =
-                lib.register_device(&marker.device_uuid, &marker.name)?;
+            let id = lib.register_device(
+                &marker.device_uuid,
+                &marker.name,
+                DeviceFormats {
+                    club_usb,
+                    ..Default::default()
+                },
+            )?;
             lib.set_device_nodes(id, &nodes)?;
             println!("registered {} as device {id}", marker.name);
         }
@@ -436,8 +495,13 @@ fn main() -> anyhow::Result<()> {
             let Some(device) = lib.device_by_uuid(&marker.device_uuid)? else {
                 bail!("stick not registered in this library")
             };
-            let mut writers: Vec<Box<dyn FormatWriter + Send>> =
-                vec![Box::new(NativeWriter::default())];
+            let mut writers: Vec<Box<dyn FormatWriter + Send>> = Vec::new();
+            if device.formats.opendjdecks {
+                writers.push(Box::new(NativeWriter::default()));
+            }
+            if device.formats.club_usb {
+                writers.push(Box::new(ClubUsbWriter::default()));
+            }
             let report = od_devices::sync::sync_device(
                 &mut lib,
                 device.id,
@@ -448,7 +512,7 @@ fn main() -> anyhow::Result<()> {
                 |_| {},
             )?;
             println!(
-                "synced {}: {} tracks, {} copied ({} MB), {} updated, {} removed, {} missing, {:.2} s{}",
+                "synced {}: {} tracks, {} copied ({} MB), {} updated, {} removed, {} missing, {} proposals, {:.2} s{}",
                 device.name,
                 report.tracks,
                 report.copied,
@@ -456,6 +520,7 @@ fn main() -> anyhow::Result<()> {
                 report.updated,
                 report.removed,
                 report.skipped_missing.len(),
+                report.proposals.len(),
                 report.seconds,
                 if report.full { " (full)" } else { "" }
             );
@@ -467,6 +532,30 @@ fn main() -> anyhow::Result<()> {
                     stick.library.track_count()?,
                     stick.library.all_nodes()?.len()
                 );
+            }
+            let pdb = mount.join("PIONEER/rekordbox/export.pdb");
+            if pdb.exists() {
+                let db = od_format_clubusb::pdb::ExportDatabase::parse(&std::fs::read(&pdb)?)?;
+                println!(
+                    "export.pdb: {} tracks, {} playlists",
+                    db.tracks.len(),
+                    db.playlists.len()
+                );
+                let mut cues = 0;
+                for t in &db.tracks {
+                    let dat = mount.join(t.anlz_path.trim_start_matches('/'));
+                    let ext = dat.with_extension("EXT");
+                    let a = od_format_clubusb::anlz::AnlzFile::parse(&std::fs::read(&dat)?)?;
+                    let e = od_format_clubusb::anlz::AnlzFile::parse(&std::fs::read(&ext)?)?;
+                    cues += e.cues().len();
+                    if a.beatgrid().is_none() {
+                        println!("  no beatgrid: {}", t.tags.title);
+                    }
+                    if !mount.join(t.device_path.trim_start_matches('/')).exists() {
+                        println!("  missing audio: {}", t.device_path);
+                    }
+                }
+                println!("ANLZ: all files parse, {cues} cues");
             }
         }
         Cmd::Backup => println!("{}", lib.backup_now("cli")?.display()),
@@ -905,4 +994,21 @@ fn lighting_cmd(path: &std::path::Path, cmd: &LightCmd) -> anyhow::Result<()> {
         }
     }
     Ok(())
+}
+
+/// Prints what an import brought in.
+fn print_import_report(r: &od_import::ImportReport) {
+    println!(
+        "imported {} tracks ({} already known), {} playlists, {} folders, {} cues, {} beatgrids, {} keys",
+        r.tracks_added, r.tracks_existing, r.playlists, r.folders, r.cues, r.grids, r.keys
+    );
+    for f in &r.missing_files {
+        println!("missing file: {}", f.display());
+    }
+    for (what, why) in &r.skipped {
+        println!("skipped {what}: {why}");
+    }
+    for n in &r.notes {
+        println!("note: {n}");
+    }
 }

@@ -2230,8 +2230,8 @@ msgstr "3 BÄNDER"
 
 #: ui/preferences.slint:392
 msgctxt "PreferencesWindow"
-msgid "BLUE"
-msgstr "BLAU"
+msgid "ONE COLOUR"
+msgstr "EINFARBIG"
 
 #: ui/preferences.slint:394
 msgctxt "PreferencesWindow"
@@ -5592,3 +5592,138 @@ msgstr "BEARBEITEN …"
 msgctxt "GridPanel"
 msgid "Open the track in the grid editor (Prepare)"
 msgstr "Track im Grid-Editor öffnen (Prepare)"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Import a Club Player USB…"
+msgstr "Club-Player-USB importieren…"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "FORMATS"
+msgstr "FORMATE"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Club player USB (export.pdb)"
+msgstr "Club-Player-USB (export.pdb)"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Also write the database Club players read (compatible with Pioneer DJ players)"
+msgstr "Zusätzlich die Datenbank schreiben, die Club-Player lesen (kompatibel mit Pioneer-DJ-Playern)"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "OpenDJDecks"
+msgstr "OpenDJDecks"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Write the OpenDJDecks library for other OpenDJDecks setups"
+msgstr "Die OpenDJDecks-Bibliothek für andere OpenDJDecks-Geräte schreiben"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "CHANGES MADE ON PLAYERS — REVIEW"
+msgstr "ÄNDERUNGEN AN PLAYERN — PRÜFEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "TAKE STICK CUES"
+msgstr "STICK-CUES ÜBERNEHMEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "DISMISS"
+msgstr "VERWERFEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "KEEP LIBRARY"
+msgstr "BIBLIOTHEK BEHALTEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Import the play history from the stick"
+msgstr "Die Wiedergabe-Historie vom Stick importieren"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Replace the library cues with the ones edited on the players"
+msgstr "Bibliotheks-Cues durch die auf den Playern bearbeiteten ersetzen"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Ignore this history"
+msgstr "Diese Historie ignorieren"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Keep the library cues; the stick gets them at the next sync"
+msgstr "Bibliotheks-Cues behalten; der Stick bekommt sie beim nächsten Sync"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Import an Encrypted Library Database…"
+msgstr "Verschlüsselte Bibliotheksdatenbank importieren…"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "IMPORT AN ENCRYPTED LIBRARY DATABASE"
+msgstr "VERSCHLÜSSELTE BIBLIOTHEKSDATENBANK IMPORTIEREN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "No file chosen"
+msgstr "Keine Datei gewählt"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "CHOOSE FILE"
+msgstr "DATEI WÄHLEN"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Pick the library database file. Nothing is searched for on this computer."
+msgstr "Wähle die Datei der Bibliotheksdatenbank. Auf diesem Computer wird nichts gesucht."
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "ADVANCED"
+msgstr "ERWEITERT"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "KEY FOR THIS LIBRARY"
+msgstr "SCHLÜSSEL FÜR DIESE BIBLIOTHEK"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "You need the key for your own library. OpenDJDecks neither contains nor fetches it, and the key is used for this import only: it is not stored or logged. The database itself is only read."
+msgstr "Du brauchst den Schlüssel für deine eigene Bibliothek. OpenDJDecks enthält ihn nicht und beschafft ihn nicht; er wird nur für diesen Import verwendet, nicht gespeichert und nicht protokolliert. Die Datenbank selbst wird nur gelesen."
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "CANCEL"
+msgstr "ABBRECHEN"
+
+msgctxt "PreferencesWindow"
+msgid "Lows"
+msgstr "Tiefen"
+
+msgctxt "PreferencesWindow"
+msgid "Mids"
+msgstr "Mitten"
+
+msgctxt "PreferencesWindow"
+msgid "Highs"
+msgstr "Höhen"
+
+msgctxt "PreferencesWindow"
+msgid "STANDARD COLOURS"
+msgstr "STANDARDFARBEN"
+
+msgctxt "PreferencesWindow"
+msgid "OWN COLOURS"
+msgstr "EIGENE FARBEN"

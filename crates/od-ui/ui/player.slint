@@ -478,184 +478,6 @@ export component PreparePlayer inherits Rectangle {
             vertical-stretch: 1;
             spacing: 0;
 
-            // Header, overview and the waveforms.
-            VerticalLayout {
-                horizontal-stretch: 1;
-                spacing: 0;
-                // EDIT GRID: its header in place of the track's (same height).
-                if GridEdit.active && root.has-track: GridHeader { }
-                if !(GridEdit.active && root.has-track): HorizontalLayout {
-                    height: 34px;
-                    padding-left: 12px; padding-right: 12px;
-                    spacing: 18px;
-                    // Cover art, an outlined square when the track has none.
-                    VerticalLayout { alignment: center; Rectangle {
-                        accessible-role: image; accessible-label: "player1.artwork";
-                        accessible-value: root.has-artwork && root.has-track ? "cover" : "none";
-                        width: 26px; height: 26px;
-                        background: Theme.plate;
-                        border-width: root.has-artwork && root.has-track ? 0px : 1px; border-color: Theme.rule;
-                        if root.has-artwork && root.has-track: Image { width: parent.width; height: parent.height; source: root.artwork; image-fit: cover; }
-                    } }
-                    Text {
-                        accessible-role: text;
-                        accessible-label: "player1.title";
-                        accessible-value: self.text;
-                        horizontal-stretch: 2;
-                        text: root.has-track ? root.title : @tr("No track selected");
-                        font-family: Theme.family; font-size: 16px; font-weight: 600; vertical-alignment: center;
-                        color: root.has-track ? Theme.bone : Theme.bone-3; overflow: elide;
-                    }
-                    Text { accessible-role: text; accessible-label: "player1.artist"; accessible-value: self.text; horizontal-stretch: 1; text: root.artist; font-family: Theme.family; font-size: 13px; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
-                    Reading { a11y-label: "player1.time-remaining"; label: @tr("REMAIN"); template: "-00:00"; value: root.has-track ? root.remaining : ""; }
-                    Reading { a11y-label: "player1.time-elapsed"; label: @tr("POS"); template: "00:00.000"; value: root.position; }
-                    Reading { a11y-label: "player1.duration"; label: @tr("TIME"); template: "00:00"; value: root.duration; }
-                    Reading { a11y-label: "player1.bpm"; label: "BPM"; template: "000.00"; value: root.bpm; }
-                    Reading { a11y-label: "player1.key"; label: @tr("KEY"); template: "12A"; value: root.key; }
-                }
-                Rectangle {
-                    accessible-role: slider;
-                    accessible-label: "player1.overview";
-                    height: 40px;
-                    background: Theme.ground-band;
-                    Image { width: parent.width; height: parent.height; source: root.overview; image-fit: fill; }
-                    for c in root.cues: Rectangle {
-                        x: parent.width * c.pos;
-                        width: 1px;
-                        VLine {
-                            height: parent.height; weight: c.slot >= 0 ? 2px : 1px;
-                            tone: c.slot >= 0 ? Theme.cue-tone(c.slot, c.tone) : Theme.bone;
-                            form: c.slot >= 0 ? "solid" : "dashed";
-                        }
-                        Text { x: 4px; y: 1px; text: c.letter; font-family: Theme.family; font-size: 10px; font-weight: 600; color: Theme.bone; }
-                    }
-                    // Edit region: a sodium bar along the top between dashed IN / OUT lines.
-                    if root.has-track && TrackEdit.start >= 0 && TrackEdit.end >= 0: Rectangle {
-                        accessible-role: text; accessible-label: "player1.edit.span"; accessible-value: TrackEdit.region;
-                        x: parent.width * min(TrackEdit.start, TrackEdit.end);
-                        width: max(1px, parent.width * abs(TrackEdit.end - TrackEdit.start));
-                        y: 0; height: 3px;
-                        background: Theme.attention.with-alpha(0.6);
-                    }
-                    for f in [TrackEdit.start, TrackEdit.end]: Rectangle {
-                        visible: root.has-track && f >= 0;
-                        x: parent.width * f; width: 1px;
-                        VLine { height: parent.height; weight: 1px; tone: Theme.attention; form: "dashed"; }
-                    }
-                    if root.has-track: Rectangle { x: parent.width * root.cursor - 1px; width: 2px; height: parent.height; background: Theme.bone; }
-                    TouchArea {
-                        mouse-cursor: crosshair;
-                        // Shift-drag selects the edit region; otherwise the cursor follows.
-                        property <float> from: -1;
-                        pointer-event(ev) => {
-                            if (ev.kind == PointerEventKind.down) {
-                                self.from = ev.modifiers.shift ? clamp(self.mouse-x / self.width, 0, 1) : -1;
-                            }
-                        }
-                        clicked => { if (self.from < 0) { root.seek(clamp(self.mouse-x / self.width, 0, 1)); } }
-                        moved => {
-                            if (self.pressed && self.from >= 0) {
-                                TrackEdit.select(self.from, clamp(self.mouse-x / self.width, 0, 1));
-                            } else if (self.pressed) {
-                                root.seek(clamp(self.mouse-x / self.width, 0, 1));
-                            }
-                        }
-                    }
-                }
-                PhraseStrip { phrases: root.has-track ? root.phrases : []; can-edit: root.has-track && !root.read-only; cursor: root.cursor; }
-                HLine { tone: Theme.rule; }
-                // Zoom of the enlarged waveform: in, reset, out, and the span shown.
-                HorizontalLayout {
-                    height: 24px;
-                    spacing: 0px;
-                    for z in [{ id: "zoom-in", glyph: "plus", tip: @tr("Zoom in") }, { id: "zoom-reset", glyph: "", tip: @tr("Reset the zoom (Preferences > View > Waveform zoom)") }, { id: "zoom-out", glyph: "minus", tip: @tr("Zoom out") }]: Rectangle {
-                        accessible-role: button; accessible-label: "player1." + z.id;
-                        width: 28px;
-                        background: zt.has-hover ? Theme.plate-raised : Theme.plate;
-                        border-width: 1px; border-color: Theme.ground;
-                        if z.glyph != "": Glyph { x: 9px; y: 7px; width: 10px; height: 10px; kind: z.glyph; tone: Theme.bone-2; }
-                        if z.glyph == "": Rectangle { width: 5px; height: 5px; border-radius: 2.5px; background: Theme.bone-2; }
-                        zt := TipArea { tooltip: z.tip; mouse-cursor: pointer; clicked => { root.act(z.id); } }
-                    }
-                    Caps { text: "  " + root.zoom; font-size: 10px; vertical-alignment: center; }
-                    // EDIT GRID: the drift of the whole track beside the zoom.
-                    if GridEdit.active && root.has-track: DriftStrip { horizontal-stretch: 1; cursor: root.cursor; }
-                    if !(GridEdit.active && root.has-track): Rectangle { horizontal-stretch: 1; }
-                }
-                Rectangle {
-                    accessible-role: image;
-                    accessible-label: "player1.enlarged";
-                    vertical-stretch: 1;
-                    min-height: 60px;
-                    background: Theme.ground-band;
-                    Image { width: parent.width; height: parent.height; source: root.detail; image-fit: fill; }
-                    // Hot cues (flag with the letter) and memory cues (triangle).
-                    for c[i] in root.cues: CueMarker {
-                        property <length> px: parent.width / 2 + (c.pos - root.cursor) / max(root.detail-span, 0.00001) * parent.width;
-                        property <length> lw: c.is-loop ? (c.end - c.pos) / max(root.detail-span, 0.00001) * parent.width : 0px;
-                        accessible-role: image;
-                        accessible-label: c.slot >= 0 ? "player1.wave.cue." + c.letter : "player1.wave.memory." + i;
-                        accessible-value: c.time;
-                        visible: root.has-track && root.detail-span > 0 && self.px + self.lw >= 0 && self.px <= parent.width;
-                        x: self.px; y: 0; height: parent.height;
-                        cue: c; loop-w: self.lw;
-                    }
-                    Rectangle { x: parent.width / 2 - 1px; width: 2px; height: parent.height; background: Theme.bone; }
-                    wave-touch := TouchArea {
-                        mouse-cursor: GridEdit.active ? (self.pressed ? grabbing : grab) : ew-resize;
-                        // Drag the zoomed waveform to nudge the cursor (8 s across).
-                        // EDIT GRID: a drag moves the grid (live, snapped to the
-                        // kick on release, Alt: exactly), a click moves the
-                        // cursor, a double-click makes the beat there the 1;
-                        // the wheel scrolls, Ctrl / ⌘ + wheel zooms.
-                        property <length> last;
-                        property <length> from;
-                        property <bool> dragged;
-                        property <bool> alt-held;
-                        pointer-event(ev) => {
-                            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.down) {
-                                self.last = self.mouse-x; self.from = self.mouse-x; self.dragged = false;
-                                self.alt-held = ev.modifiers.alt;
-                            }
-                            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.up && GridEdit.active) {
-                                if (self.dragged) {
-                                    GridEdit.commit((self.mouse-x - self.from) / self.width, self.mouse-x / self.width - 0.5, self.alt-held || ev.modifiers.alt);
-                                } else {
-                                    GridEdit.act("seek", "" + (self.mouse-x / self.width - 0.5));
-                                }
-                            }
-                        }
-                        double-clicked => {
-                            // The first click already brought that spot to the
-                            // cursor, the second moved it again by the same.
-                            if (GridEdit.active) { GridEdit.set-one-at(0.5 - self.mouse-x / self.width); }
-                        }
-                        moved => {
-                            if (self.pressed) {
-                                if (abs(self.mouse-x - self.from) > 3px) { self.dragged = true; }
-                                if (GridEdit.active) {
-                                    if (self.dragged) { GridEdit.preview((self.mouse-x - self.from) / self.width); }
-                                } else {
-                                    root.nudge((self.last - self.mouse-x) / self.width * 8.0);
-                                    self.last = self.mouse-x;
-                                }
-                            }
-                        }
-                        scroll-event(ev) => {
-                            if (!GridEdit.active) { return reject; }
-                            if (ev.modifiers.control || ev.modifiers.meta) {
-                                if (ev.delta-y != 0) { root.act(ev.delta-y > 0 ? "zoom-in" : "zoom-out"); }
-                                return accept;
-                            }
-                            root.nudge(-(ev.delta-x + ev.delta-y) / self.width * 2.0);
-                            accept
-                        }
-                    }
-                    if !root.has-track: Text { text: @tr("Select a track to prepare it"); font-family: Theme.family; font-size: 14px; color: Theme.bone-3; }
-                }
-            }
-            VLine { weight: 1px; tone: Theme.rule; }
-
             // Cue list: MEMORY / HOT CUE / INFO.
             VerticalLayout {
                 width: 264px;
@@ -779,22 +601,191 @@ export component PreparePlayer inherits Rectangle {
                     }
                 }
             }
+            VLine { weight: 1px; tone: Theme.rule; }
+
+            // Header, overview and the waveforms.
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 0;
+                // EDIT GRID: its header in place of the track's (same height).
+                if GridEdit.active && root.has-track: GridHeader { }
+                if !(GridEdit.active && root.has-track): HorizontalLayout {
+                    height: 34px;
+                    padding-left: 12px; padding-right: 12px;
+                    spacing: 18px;
+                    // Cover art, an outlined square when the track has none.
+                    VerticalLayout { alignment: center; Rectangle {
+                        accessible-role: image; accessible-label: "player1.artwork";
+                        accessible-value: root.has-artwork && root.has-track ? "cover" : "none";
+                        width: 26px; height: 26px;
+                        background: Theme.plate;
+                        border-width: root.has-artwork && root.has-track ? 0px : 1px; border-color: Theme.rule;
+                        if root.has-artwork && root.has-track: Image { width: parent.width; height: parent.height; source: root.artwork; image-fit: cover; }
+                    } }
+                    Text {
+                        accessible-role: text;
+                        accessible-label: "player1.title";
+                        accessible-value: self.text;
+                        horizontal-stretch: 2;
+                        text: root.has-track ? root.title : @tr("No track selected");
+                        font-family: Theme.family; font-size: 16px; font-weight: 600; vertical-alignment: center;
+                        color: root.has-track ? Theme.bone : Theme.bone-3; overflow: elide;
+                    }
+                    Text { accessible-role: text; accessible-label: "player1.artist"; accessible-value: self.text; horizontal-stretch: 1; text: root.artist; font-family: Theme.family; font-size: 13px; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
+                    Reading { a11y-label: "player1.time-remaining"; label: @tr("REMAIN"); template: "-00:00"; value: root.has-track ? root.remaining : ""; }
+                    Reading { a11y-label: "player1.time-elapsed"; label: @tr("POS"); template: "00:00.000"; value: root.position; }
+                    Reading { a11y-label: "player1.duration"; label: @tr("TIME"); template: "00:00"; value: root.duration; }
+                    Reading { a11y-label: "player1.bpm"; label: "BPM"; template: "000.00"; value: root.bpm; }
+                    Reading { a11y-label: "player1.key"; label: @tr("KEY"); template: "12A"; value: root.key; }
+                }
+                // Zoom of the enlarged waveform: in, reset, out, and the span shown.
+                HorizontalLayout {
+                    height: 24px;
+                    spacing: 0px;
+                    for z in [{ id: "zoom-in", glyph: "plus", tip: @tr("Zoom in") }, { id: "zoom-reset", glyph: "", tip: @tr("Reset the zoom (Preferences > View > Waveform zoom)") }, { id: "zoom-out", glyph: "minus", tip: @tr("Zoom out") }]: Rectangle {
+                        accessible-role: button; accessible-label: "player1." + z.id;
+                        width: 28px;
+                        background: zt.has-hover ? Theme.plate-raised : Theme.plate;
+                        border-width: 1px; border-color: Theme.ground;
+                        if z.glyph != "": Glyph { x: 9px; y: 7px; width: 10px; height: 10px; kind: z.glyph; tone: Theme.bone-2; }
+                        if z.glyph == "": Rectangle { width: 5px; height: 5px; border-radius: 2.5px; background: Theme.bone-2; }
+                        zt := TipArea { tooltip: z.tip; mouse-cursor: pointer; clicked => { root.act(z.id); } }
+                    }
+                    Caps { text: "  " + root.zoom; font-size: 10px; vertical-alignment: center; }
+                    // EDIT GRID: the drift of the whole track beside the zoom.
+                    if GridEdit.active && root.has-track: DriftStrip { horizontal-stretch: 1; cursor: root.cursor; }
+                    if !(GridEdit.active && root.has-track): Rectangle { horizontal-stretch: 1; }
+                }
+                Rectangle {
+                    accessible-role: image;
+                    accessible-label: "player1.enlarged";
+                    vertical-stretch: 1;
+                    min-height: 60px;
+                    background: Theme.ground-band;
+                    Image { width: parent.width; height: parent.height; source: root.detail; image-fit: fill; }
+                    // Hot cues (flag with the letter) and memory cues (triangle).
+                    for c[i] in root.cues: CueMarker {
+                        property <length> px: parent.width / 2 + (c.pos - root.cursor) / max(root.detail-span, 0.00001) * parent.width;
+                        property <length> lw: c.is-loop ? (c.end - c.pos) / max(root.detail-span, 0.00001) * parent.width : 0px;
+                        accessible-role: image;
+                        accessible-label: c.slot >= 0 ? "player1.wave.cue." + c.letter : "player1.wave.memory." + i;
+                        accessible-value: c.time;
+                        visible: root.has-track && root.detail-span > 0 && self.px + self.lw >= 0 && self.px <= parent.width;
+                        x: self.px; y: 0; height: parent.height;
+                        cue: c; loop-w: self.lw;
+                    }
+                    Rectangle { x: parent.width / 2 - 1px; width: 2px; height: parent.height; background: Theme.bone; }
+                    wave-touch := TouchArea {
+                        mouse-cursor: GridEdit.active ? (self.pressed ? grabbing : grab) : ew-resize;
+                        // Drag the zoomed waveform to nudge the cursor (8 s across).
+                        // EDIT GRID: a drag moves the grid (live, snapped to the
+                        // kick on release, Alt: exactly), a click moves the
+                        // cursor, a double-click makes the beat there the 1;
+                        // the wheel scrolls, Ctrl / ⌘ + wheel zooms.
+                        property <length> last;
+                        property <length> from;
+                        property <bool> dragged;
+                        property <bool> alt-held;
+                        pointer-event(ev) => {
+                            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.down) {
+                                self.last = self.mouse-x; self.from = self.mouse-x; self.dragged = false;
+                                self.alt-held = ev.modifiers.alt;
+                            }
+                            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.up && GridEdit.active) {
+                                if (self.dragged) {
+                                    GridEdit.commit((self.mouse-x - self.from) / self.width, self.mouse-x / self.width - 0.5, self.alt-held || ev.modifiers.alt);
+                                } else {
+                                    GridEdit.act("seek", "" + (self.mouse-x / self.width - 0.5));
+                                }
+                            }
+                        }
+                        double-clicked => {
+                            // The first click already brought that spot to the
+                            // cursor, the second moved it again by the same.
+                            if (GridEdit.active) { GridEdit.set-one-at(0.5 - self.mouse-x / self.width); }
+                        }
+                        moved => {
+                            if (self.pressed) {
+                                if (abs(self.mouse-x - self.from) > 3px) { self.dragged = true; }
+                                if (GridEdit.active) {
+                                    if (self.dragged) { GridEdit.preview((self.mouse-x - self.from) / self.width); }
+                                } else {
+                                    root.nudge((self.last - self.mouse-x) / self.width * 8.0);
+                                    self.last = self.mouse-x;
+                                }
+                            }
+                        }
+                        scroll-event(ev) => {
+                            if (!GridEdit.active) { return reject; }
+                            if (ev.modifiers.control || ev.modifiers.meta) {
+                                if (ev.delta-y != 0) { root.act(ev.delta-y > 0 ? "zoom-in" : "zoom-out"); }
+                                return accept;
+                            }
+                            root.nudge(-(ev.delta-x + ev.delta-y) / self.width * 2.0);
+                            accept
+                        }
+                    }
+                    if !root.has-track: Text { text: @tr("Select a track to prepare it"); font-family: Theme.family; font-size: 14px; color: Theme.bone-3; }
+                }
+                HLine { tone: Theme.rule; }
+                Rectangle {
+                    accessible-role: slider;
+                    accessible-label: "player1.overview";
+                    height: 40px;
+                    background: Theme.ground-band;
+                    Image { width: parent.width; height: parent.height; source: root.overview; image-fit: fill; }
+                    for c in root.cues: Rectangle {
+                        x: parent.width * c.pos;
+                        width: 1px;
+                        VLine {
+                            height: parent.height; weight: c.slot >= 0 ? 2px : 1px;
+                            tone: c.slot >= 0 ? Theme.cue-tone(c.slot, c.tone) : Theme.bone;
+                            form: c.slot >= 0 ? "solid" : "dashed";
+                        }
+                        Text { x: 4px; y: 1px; text: c.letter; font-family: Theme.family; font-size: 10px; font-weight: 600; color: Theme.bone; }
+                    }
+                    // Edit region: a sodium bar along the top between dashed IN / OUT lines.
+                    if root.has-track && TrackEdit.start >= 0 && TrackEdit.end >= 0: Rectangle {
+                        accessible-role: text; accessible-label: "player1.edit.span"; accessible-value: TrackEdit.region;
+                        x: parent.width * min(TrackEdit.start, TrackEdit.end);
+                        width: max(1px, parent.width * abs(TrackEdit.end - TrackEdit.start));
+                        y: 0; height: 3px;
+                        background: Theme.attention.with-alpha(0.6);
+                    }
+                    for f in [TrackEdit.start, TrackEdit.end]: Rectangle {
+                        visible: root.has-track && f >= 0;
+                        x: parent.width * f; width: 1px;
+                        VLine { height: parent.height; weight: 1px; tone: Theme.attention; form: "dashed"; }
+                    }
+                    if root.has-track: Rectangle { x: parent.width * root.cursor - 1px; width: 2px; height: parent.height; background: Theme.bone; }
+                    TouchArea {
+                        mouse-cursor: crosshair;
+                        // Shift-drag selects the edit region; otherwise the cursor follows.
+                        property <float> from: -1;
+                        pointer-event(ev) => {
+                            if (ev.kind == PointerEventKind.down) {
+                                self.from = ev.modifiers.shift ? clamp(self.mouse-x / self.width, 0, 1) : -1;
+                            }
+                        }
+                        clicked => { if (self.from < 0) { root.seek(clamp(self.mouse-x / self.width, 0, 1)); } }
+                        moved => {
+                            if (self.pressed && self.from >= 0) {
+                                TrackEdit.select(self.from, clamp(self.mouse-x / self.width, 0, 1));
+                            } else if (self.pressed) {
+                                root.seek(clamp(self.mouse-x / self.width, 0, 1));
+                            }
+                        }
+                    }
+                }
+                PhraseStrip { phrases: root.has-track ? root.phrases : []; can-edit: root.has-track && !root.read-only; cursor: root.cursor; }
+            }
         }
         HLine { tone: Theme.rule; }
-        // The dock: CUE / PLAY, then the tool tabs with the loop and jump keys
-        // over the keys of the chosen tool, all on 30 px lines.
+        // The dock: the tool tabs with the loop and jump keys over the keys of the
+        // chosen tool, all on 30 px lines, then CUE / PLAY.
         HorizontalLayout {
             padding: 8px;
             spacing: 12px;
-            VerticalLayout {
-                alignment: center;
-                HorizontalLayout {
-                    spacing: 8px;
-                    Transport { accessible-label: "player1.cue"; accessible-role: button; kind: "cue"; tone: Theme.attention; size: 52px; clicked => { root.jump-start(); } }
-                    Transport { accessible-label: "player1.play"; accessible-role: button; accessible-checkable: true; accessible-checked: root.previewing; kind: "play"; on: root.previewing; tone: Theme.live; size: 52px; clicked => { root.toggle-preview(); } }
-                }
-            }
-            VLine { weight: 1px; tone: Theme.rule; }
             VerticalLayout {
                 horizontal-stretch: 1;
                 spacing: 8px;
@@ -947,6 +938,15 @@ export component PreparePlayer inherits Rectangle {
                             Toggle { size: 30px; accessible-role: button; accessible-label: "player1.edit.clear"; label: @tr("CLEAR"); tone: Theme.fault; tooltip: @tr("Forget the region"); enabled: TrackEdit.start >= 0 || TrackEdit.end >= 0; clicked => { TrackEdit.clear(); } }
                         }
                     }
+                }
+            }
+            VLine { weight: 1px; tone: Theme.rule; }
+            VerticalLayout {
+                alignment: center;
+                HorizontalLayout {
+                    spacing: 8px;
+                    Transport { accessible-label: "player1.cue"; accessible-role: button; kind: "cue"; tone: Theme.attention; size: 52px; clicked => { root.jump-start(); } }
+                    Transport { accessible-label: "player1.play"; accessible-role: button; accessible-checkable: true; accessible-checked: root.previewing; kind: "play"; on: root.previewing; tone: Theme.live; size: 52px; clicked => { root.toggle-preview(); } }
                 }
             }
         }

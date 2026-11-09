@@ -228,6 +228,11 @@ impl App {
                     }
                 }
                 WorkerEvent::Message(m) => self.status(m),
+                WorkerEvent::EncryptedImportStarted => crate::import::close_encrypted_dialog(self),
+                WorkerEvent::EncryptedImportFailed(m) => {
+                    self.ui.set_encrypted_import_busy(false);
+                    self.ui.set_encrypted_import_error(m.into());
+                }
             }
         }
         crate::appearance::tick(self);

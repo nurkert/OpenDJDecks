@@ -747,7 +747,7 @@ global StemFill {
     public pure function of(progress: float, i: int) -> float { return clamp(progress * 4 - i, 0, 1); }
 }
 
-// Part keys of a deck: VOCAL INST DRUMS BASS, the caption toward the deck's
+// Part keys of a deck: VOCAL DRUMS BASS INST, the caption toward the deck's
 // outer side (PARTS; while separating, the progress in percent).
 component StemStrip inherits HorizontalLayout {
     in property <DeckView> deck;
@@ -762,10 +762,10 @@ component StemStrip inherits HorizontalLayout {
     if !root.mirror && !root.compact: Rectangle { horizontal-stretch: 1; }
     if !root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: 10px; vertical-alignment: center; color: Theme.bone-3; }
     if root.compact && root.busy: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: 10px; vertical-alignment: center; color: Theme.bone-3; }
-    StemKey { deck: root.deck.deck; stem: "vocal"; label: "VOCAL"; muted: root.deck.mute-vocal; level: root.deck.level-vocal; tone: Theme.w546; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 0); toggle => { root.stem("vocal"); } set-level(v) => { root.stem-level("vocal", v); } }
-    StemKey { deck: root.deck.deck; stem: "inst"; label: "INST"; muted: root.deck.mute-inst; level: root.deck.level-inst; tone: Theme.w656; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 1); toggle => { root.stem("inst"); } set-level(v) => { root.stem-level("inst", v); } }
-    StemKey { deck: root.deck.deck; stem: "drums"; label: "DRUMS"; muted: root.deck.mute-drums; level: root.deck.level-drums; tone: Theme.w486; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 2); toggle => { root.stem("drums"); } set-level(v) => { root.stem-level("drums", v); } }
+    StemKey { deck: root.deck.deck; stem: "vocal"; label: "VOCAL"; muted: root.deck.mute-vocal; level: root.deck.level-vocal; tone: Theme.w589; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 0); toggle => { root.stem("vocal"); } set-level(v) => { root.stem-level("vocal", v); } }
+    StemKey { deck: root.deck.deck; stem: "drums"; label: "DRUMS"; muted: root.deck.mute-drums; level: root.deck.level-drums; tone: Theme.w615; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 2); toggle => { root.stem("drums"); } set-level(v) => { root.stem-level("drums", v); } }
     StemKey { deck: root.deck.deck; stem: "bass"; label: "BASS"; muted: root.deck.mute-bass; level: root.deck.level-bass; tone: Theme.w405; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 3); toggle => { root.stem("bass"); } set-level(v) => { root.stem-level("bass", v); } }
+    StemKey { deck: root.deck.deck; stem: "inst"; label: "INST"; muted: root.deck.mute-inst; level: root.deck.level-inst; tone: Theme.w486; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 1); toggle => { root.stem("inst"); } set-level(v) => { root.stem-level("inst", v); } }
     if root.mirror && !root.compact: Rectangle { horizontal-stretch: 1; }
 }
 
@@ -1136,7 +1136,7 @@ component KioskDeck inherits Rectangle {
                     HorizontalLayout { alignment: center; VerticalLayout { alignment: center; PlateButton { tall: true; label: @tr("LOAD SELECTED"); tone: root.tone; clicked => { root.load(); } } } }
                 }
             }
-            for st[i] in [{ id: "vocal", label: "VOC", tone: Theme.w546 }, { id: "inst", label: "INST", tone: Theme.w656 }, { id: "drums", label: "DRM", tone: Theme.w486 }, { id: "bass", label: "BASS", tone: Theme.w405 }]: StemKey {
+            for st[i] in [{ id: "vocal", label: "VOC", tone: Theme.w589 }, { id: "drums", label: "DRM", tone: Theme.w615 }, { id: "bass", label: "BASS", tone: Theme.w405 }, { id: "inst", label: "INST", tone: Theme.w486 }]: StemKey {
                 deck: root.deck.deck; stem: st.id; label: st.label; tone: st.tone;
                 muted: st.id == "vocal" ? root.deck.mute-vocal : st.id == "inst" ? root.deck.mute-inst : st.id == "drums" ? root.deck.mute-drums : root.deck.mute-bass;
                 level: st.id == "vocal" ? root.deck.level-vocal : st.id == "inst" ? root.deck.level-inst : st.id == "drums" ? root.deck.level-drums : root.deck.level-bass;

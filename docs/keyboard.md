@@ -3,7 +3,7 @@
 Every user action of OpenDJDecks is a command in one registry
 (`crates/od-ui/src/keymap.rs`) with an id, a default binding per platform
 and optional user bindings (SPEC §12.2). The registry currently holds
-**277 actions**; every one has a default binding, and no two defaults
+**279 actions**; every one has a default binding, and no two defaults
 collide where they apply (checked by tests, together with this table).
 
 ## Changing bindings
@@ -111,6 +111,8 @@ Perform). Text fields keep the keys they type.
 | Import a library XML (rekordbox-compatible) | `library.import.xml` | both | `⌥⇧⌘X` | `Alt+Shift+X` |
 | Export the library as XML (rekordbox-compatible) | `library.export.xml` | both | `⌥⌘X` | `Alt+X` |
 | Import a Music / iTunes library XML | `library.import.itunes` | both | `⌥⇧⌘M` | `Alt+Shift+M` |
+| Import a Club player USB | `library.import.club-usb` | both | `⌥⇧⌘U` | `Alt+Shift+U` |
+| Import an encrypted library database | `library.import.encrypted` | both | `⌥⇧⌘L` | `Alt+Shift+L` |
 | Export a library archive | `library.export.archive` | both | `⌥⌘A` | `Alt+A` |
 | Restore a library archive | `library.restore.archive` | both | `⌥⇧⌘A` | `Alt+Shift+A` |
 | Consolidate the library | `library.consolidate` | both | `⌥⌘C` | `Alt+C` |

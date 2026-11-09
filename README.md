@@ -97,6 +97,7 @@ cover art are made up.</sub>
 - **Recording** — one button; WAV, FLAC or MP3 with an automatic tracklist
   as `.cue` and as text for Mixcloud/SoundCloud, optional split into one
   file per track.
+- **Club player USB** — sticks can also be written in the USB format of Pioneer DJ players, chosen per stick, and such sticks can be imported, including cues and histories changed on a player. Not yet confirmed on real players.
 - **Exchange** — library XML export and import (rekordbox-compatible), a whole-library archive (`.odlib`) for moving to a new
   computer, and a duplicate finder.
 - **Raspberry Pi standalone** — boots straight into Perform, plays sticks
@@ -215,9 +216,12 @@ four-deck soak without dropouts and sync to FAT32/exFAT sticks) and what needs h
 
 ## Trademarks and independence
 
-All trademarks belong to their respective owners. OpenDJDecks is an
-independent project, not affiliated with or endorsed by any manufacturer;
-names are used only to state compatibility.
+OpenDJDecks is an independent project, not affiliated with or endorsed by
+AlphaTheta Corporation or any other manufacturer. rekordbox and Pioneer DJ
+are trademarks of AlphaTheta Corporation; other names belong to their
+respective owners. Names are used only to state compatibility. Sources and
+third-party notices are in [NOTICE.md](NOTICE.md), the rules for contributions
+in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
