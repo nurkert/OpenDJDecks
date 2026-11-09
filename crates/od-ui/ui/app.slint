@@ -10,7 +10,8 @@ import { InfoPanel, TrackInfo } from "info.slint";
 import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace } from "controls.slint";
 import { TooltipLayer } from "tooltip.slint";
 import { Sidebar, RailItem } from "sidebar.slint";
-import { TopBar } from "topbar.slint";
+import { TopBar, Gig } from "topbar.slint";
+export { Gig }
 import { PreparePlayer } from "player.slint";
 import { TrackTable, TableStyle } from "table.slint";
 export { TableStyle }
@@ -1149,6 +1150,7 @@ export component AppWindow inherits Window {
                         spacing: Theme.s3;
                         PlateButton { accessible-label: "browser.empty.add-music"; accessible-role: button; label: @tr("ADD MUSIC FOLDER"); tone: Theme.live; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } }
                         PlateButton { accessible-label: "browser.empty.import-library"; accessible-role: button; label: @tr("IMPORT LIBRARY"); tone: Theme.w486; tooltip: @tr("Import a library XML file (rekordbox-compatible)"); command: "library.import.xml"; clicked => { root.menu-action("library.import.xml"); } }
+                        PlateButton { accessible-label: "browser.empty.gig-preset"; accessible-role: button; accessible-checkable: true; accessible-checked: Gig.active; label: @tr("GIG PRESET"); selected: Gig.active; tooltip: @tr("High contrast, the colour-blind palette and a larger interface in one click (also GIG in the top bar)"); clicked => { Gig.act("toggle"); } }
                     }
 
                     // ── Devices section ──

@@ -2188,11 +2188,6 @@ msgctxt "PreferencesWindow"
 msgid "Display"
 msgstr "Darstellung"
 
-#: ui/preferences.slint:389
-msgctxt "PreferencesWindow"
-msgid "UI SCALE APPLIES AFTER RESTART"
-msgstr "SKALIERUNG GILT NACH NEUSTART"
-
 #: ui/preferences.slint:390
 msgctxt "PreferencesWindow"
 msgid "Appearance"
@@ -5922,3 +5917,67 @@ msgstr "ZEILEN"
 msgctxt "TopBar"
 msgid "STRIP"
 msgstr "LEISTE"
+
+msgctxt "GigKey"
+msgid "GIG"
+msgstr "GIG"
+
+msgctxt "GigKey"
+msgid "Gig preset"
+msgstr "Gig-Preset"
+
+msgctxt "GigKey"
+msgid "High contrast, the colour-blind palette and a larger interface, in one step."
+msgstr "Hoher Kontrast, die Palette für Farbenblinde und eine größere Oberfläche, in einem Schritt."
+
+msgctxt "GigKey"
+msgid "TURN GIG PRESET OFF"
+msgstr "GIG-PRESET AUS"
+
+msgctxt "GigKey"
+msgid "TURN GIG PRESET ON"
+msgstr "GIG-PRESET EIN"
+
+msgctxt "GigKey"
+msgid "HIGH CONTRAST"
+msgstr "HOHER KONTRAST"
+
+msgctxt "GigKey"
+msgid "COLOUR-BLIND"
+msgstr "FARBENBLIND"
+
+msgctxt "GigKey"
+msgid "SCALE"
+msgstr "GRÖSSE"
+
+msgctxt "GigKey"
+msgid "Gig preset on: click to go back to your settings"
+msgstr "Gig-Preset an: Klick stellt deine Einstellungen wieder her"
+
+msgctxt "GigKey"
+msgid "Gig preset: high contrast, colour-blind palette and a larger interface in one click"
+msgstr "Gig-Preset: hoher Kontrast, Palette für Farbenblinde und eine größere Oberfläche mit einem Klick"
+
+msgctxt "GigKey"
+msgid "Gig preset: contrast, palette and interface scale"
+msgstr "Gig-Preset: Kontrast, Palette und Größe der Oberfläche"
+
+msgctxt "TopBar"
+msgid "Gig preset: on"
+msgstr "Gig-Preset: ein"
+
+msgctxt "TopBar"
+msgid "Gig preset: off"
+msgstr "Gig-Preset: aus"
+
+msgctxt "AppWindow"
+msgid "GIG PRESET"
+msgstr "GIG-PRESET"
+
+msgctxt "AppWindow"
+msgid "High contrast, the colour-blind palette and a larger interface in one click (also GIG in the top bar)"
+msgstr "Hoher Kontrast, die Palette für Farbenblinde und eine größere Oberfläche mit einem Klick (auch GIG in der oberen Leiste)"
+
+msgctxt "TopBar"
+msgid "UNDO"
+msgstr "RÜCKGÄNGIG"

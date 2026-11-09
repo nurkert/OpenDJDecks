@@ -68,6 +68,7 @@ The app uses one name for each thing, in the interface and in these guides. Wher
 | **Sub browser** | A second tree and list under the browser, for dragging tracks between lists. | |
 | **Channel FX** | The effect on a mixer channel, set with the **CH FX** knob. | |
 | **Hot cue** / **Memory cue** | A stored point on a pad / a stored point you jump to on the waveform. | |
+| **Gig preset** | One click for high contrast, the colour-blind palette and a larger interface; **GIG** in the top bar. | |
 | **Beatgrid** | The beat markers of a track. | |
 
 ## Where next

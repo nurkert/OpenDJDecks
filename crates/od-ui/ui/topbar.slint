@@ -60,6 +60,94 @@ component PanelToggle inherits Rectangle {
     touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
 }
 
+// The gig preset: high contrast, colour-blind palette and interface scale in
+// one step (set from Rust).
+export global Gig {
+    in property <bool> active;
+    in property <bool> contrast;
+    in property <bool> colorblind;
+    // Index into 100, 125, 150 %; -1 = another stored scale.
+    in property <int> scale: 0;
+    callback act(string);
+}
+
+// GIG in the bar: a click switches the preset, the arrow opens its parts.
+component GigKey inherits Rectangle {
+    in property <bool> narrow;
+    width: l.preferred-width + 32px;
+    Rectangle {
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: Theme.face(true, tog.pressed, tog.has-hover || open.has-hover, false, Gig.active, Theme.setup-on);
+    }
+    l := Text {
+        x: 10px; height: parent.height;
+        text: @tr("GIG");
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: Theme.ink(true, tog.pressed, tog.has-hover, false, Gig.active);
+        vertical-alignment: center;
+    }
+    Text {
+        x: parent.width - 16px; height: parent.height; text: "▾"; font-size: Theme.label; vertical-alignment: center;
+        color: Theme.ink(true, open.pressed, open.has-hover, false, Gig.active);
+    }
+    tog := TipArea {
+        accessible-role: button; accessible-label: "topbar.gig"; accessible-checkable: true; accessible-checked: Gig.active;
+        width: parent.width - 18px; x: 0;
+        tooltip: Gig.active ? @tr("Gig preset on: click to go back to your settings") : @tr("Gig preset: high contrast, colour-blind palette and a larger interface in one click");
+        mouse-cursor: pointer;
+        clicked => { Gig.act("toggle"); }
+    }
+    open := TipArea {
+        accessible-role: button; accessible-label: "topbar.gig.menu";
+        x: parent.width - 18px; width: 18px;
+        tooltip: @tr("Gig preset: contrast, palette and interface scale");
+        mouse-cursor: pointer;
+        clicked => { pop.show(); }
+    }
+    pop := PopupWindow {
+        x: PopupPlace.x(root.absolute-position.x, 0, 240px);
+        y: PopupPlace.y(root.absolute-position.y, root.height + 2px, -pop-body.preferred-height - 2px, pop-body.preferred-height);
+        width: 240px; height: pop-body.preferred-height;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Theme.plate; border-radius: Theme.r-overlay;
+            pop-body := VerticalLayout {
+                padding: Theme.s3; spacing: Theme.s2;
+                Text {
+                    text: @tr("Gig preset");
+                    font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone;
+                }
+                Text {
+                    text: @tr("High contrast, the colour-blind palette and a larger interface, in one step.");
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; wrap: word-wrap;
+                }
+                PlateButton {
+                    accessible-role: button; accessible-label: "topbar.gig.toggle"; accessible-checkable: true; accessible-checked: Gig.active;
+                    label: Gig.active ? @tr("TURN GIG PRESET OFF") : @tr("TURN GIG PRESET ON");
+                    selected: Gig.active;
+                    clicked => { Gig.act("toggle"); }
+                }
+                HorizontalLayout {
+                    spacing: Theme.key-gap;
+                    PlateButton { accessible-role: checkbox; accessible-label: "topbar.gig.contrast"; accessible-checkable: true; accessible-checked: Gig.contrast; horizontal-stretch: 1; compact: true; label: @tr("HIGH CONTRAST"); selected: Gig.contrast; clicked => { Gig.act("contrast"); } }
+                    PlateButton { accessible-role: checkbox; accessible-label: "topbar.gig.colorblind"; accessible-checkable: true; accessible-checked: Gig.colorblind; horizontal-stretch: 1; compact: true; label: @tr("COLOUR-BLIND"); selected: Gig.colorblind; clicked => { Gig.act("colorblind"); } }
+                }
+                HorizontalLayout {
+                    spacing: Theme.key-gap;
+                    Caps { text: @tr("SCALE"); vertical-alignment: center; }
+                    Rectangle { width: Theme.s2; }
+                    for s[i] in ["100%", "125%", "150%"]: PlateButton {
+                        accessible-role: button; accessible-label: "topbar.gig.scale." + i; compact: true; horizontal-stretch: 1;
+                        label: s; selected: Gig.scale == i;
+                        clicked => { Gig.act("scale:" + i); }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // Picture of a Perform view in the layout menu: deck lanes as bars
 // (horizontal) or posts (vertical), Browse as a framed list.
 component ViewIcon inherits Rectangle {
@@ -284,7 +372,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.fx.panel";
                 clicked => { root.toggle-fx-panel(); }
             }
-            if root.show-panels: Rectangle { width: Theme.s2; }
+            if root.show-panels: Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.mix-preview"; accessible-role: button;
@@ -294,7 +382,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.mix-preview.panel";
                 clicked => { root.toggle-mix-preview-panel(); }
             }
-            if root.show-panels: Rectangle { width: Theme.s2; }
+            if root.show-panels: Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.sampler"; accessible-role: button;
@@ -304,7 +392,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.sampler.panel";
                 clicked => { root.toggle-sampler-panel(); }
             }
-            if root.show-panels: Rectangle { width: Theme.s2; }
+            if root.show-panels: Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.mixer"; accessible-role: button;
@@ -314,7 +402,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.mixer.panel";
                 clicked => { root.toggle-mixer-panel(); }
             }
-            if root.show-panels: Rectangle { width: Theme.s2; }
+            if root.show-panels: Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             // Recording section (Perform) / recording bar (Prepare); while
             // recording it shows the elapsed time.
             if !root.kiosk: PanelToggle {
@@ -344,6 +432,8 @@ export component TopBar inherits Rectangle {
                 mt := Caps { x: 20px; height: parent.height; text: "MIDI"; vertical-alignment: center; color: root.midi-device != "" ? Theme.bone : Theme.bone-3; }
                 TipArea { tooltip: root.midi-device != "" ? @tr("Controller connected: {}", root.midi-device) : @tr("No controller connected"); }
             }
+            GigKey { narrow: root.narrow; }
+            Rectangle { width: Theme.s2; }
             // Appearance: moon (dark), sun (light), half disc (follow system);
             // a click moves on to the next mode.
             Rectangle {
@@ -379,7 +469,7 @@ export component TopBar inherits Rectangle {
             if root.undo-label != "": Rectangle {
                 accessible-label: "topbar.undo"; accessible-role: button; accessible-value: root.undo-label;
                 width: u.preferred-width + 24px;
-                u := Caps { text: @tr("UNDO  {}  ⌘Z", root.undo-label); vertical-alignment: center; height: parent.height; }
+                u := Caps { text: root.narrow ? @tr("UNDO") : @tr("UNDO  {}  ⌘Z", root.undo-label); vertical-alignment: center; height: parent.height; }
                 TipArea { tooltip: @tr("Undo the last change"); command: "library.undo"; mouse-cursor: pointer; clicked => { root.undo(); } }
             }
             Rectangle { width: Theme.s2; }
@@ -561,6 +651,7 @@ export component TopBar inherits Rectangle {
             Menu {
                 MenuItem { title: Club.enabled ? @tr("Back to the full deck controls") : @tr("Club mode"); enabled: root.show-panels; activated => { Club.set-enabled(!Club.enabled); } }
                 MenuItem { title: Lighting.panel ? @tr("Hide the lighting strip") : @tr("Show the lighting strip"); enabled: root.show-panels; activated => { Lighting.panel = !Lighting.panel; } }
+                MenuItem { title: Gig.active ? @tr("Gig preset: off") : @tr("Gig preset: on"); activated => { Gig.act("toggle"); } }
                 MenuItem { title: @tr("Appearance: dark, light or system"); activated => { root.cycle-appearance(); } }
                 MenuItem { title: @tr("Undo the last change"); enabled: root.undo-label != ""; activated => { root.undo(); } }
                 MenuItem { title: root.recording ? @tr("Stop recording") : @tr("Record the master output"); activated => { root.toggle-recording(); } }

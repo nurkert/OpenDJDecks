@@ -221,7 +221,6 @@ export component PreferencesWindow inherits Window {
     in property <int> notation;
     in property <[string]> scale-options;
     in property <int> scale;
-    in property <bool> scale-pending;
     in property <bool> colorblind;
     in property <bool> high-contrast;
     in property <bool> reduced-motion;
@@ -439,7 +438,7 @@ export component PreferencesWindow inherits Window {
                         width: parent.width;
                         alignment: start;
                         spacing: Theme.s1;
-                        Heading { text: @tr("Display"); note: root.scale-pending ? @tr("UI SCALE APPLIES AFTER RESTART") : ""; }
+                        Heading { text: @tr("Display"); }
                         Row { label: @tr("Language"); Choice { accessible-label: "prefs.view.language"; options: [@tr("SYSTEM"), "ENGLISH", "DEUTSCH"]; selected: root.language; picked(i) => { root.choose("view.language", i); } } }
                         Row { label: @tr("Tooltips"); Switch { accessible-label: "prefs.view.tooltips"; label: @tr("Show what a control does and its shortcut on hover"); on: root.tooltips; toggled(v) => { root.flag("view.tooltips", v); } } }
                         Row { label: @tr("Text size"); Choice { accessible-label: "prefs.view.font-size"; options: ["12", "14", "16", "18"]; selected: root.font-size; picked(i) => { root.choose("view.font-size", i); } } }

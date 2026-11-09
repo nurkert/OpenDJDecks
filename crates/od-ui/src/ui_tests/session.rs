@@ -294,6 +294,33 @@ fn browser_text_size_and_line_spacing() {
     );
 }
 
+/// The gig preset: one click on GIG in the top bar sets high contrast, the
+/// colour-blind palette and a larger interface (at once, no restart), and a
+/// second click puts back what was set before.
+#[test]
+fn gig_preset_is_one_step_and_restores() {
+    let ui = Ui::open((1440, 900));
+    assert!(ui.has("topbar.gig"), "reachable in the top bar");
+    ui.click("topbar.gig");
+    ui.pump(200);
+    let s = stored(&ui);
+    assert!(s.view.high_contrast && s.view.colorblind_safe);
+    assert!(s.view.gig_restore.is_some());
+    assert_eq!(s.view.scale, 1.25);
+    assert!(
+        (ui.app.ui.window().scale_factor() - 1.25).abs() < 1e-3,
+        "the scale applies without a restart"
+    );
+    assert_eq!(ui.app.ui.global::<crate::Theme>().get_colorblind_safe(), true);
+    ui.click("topbar.gig");
+    ui.pump(200);
+    let s = stored(&ui);
+    assert!(!s.view.high_contrast && !s.view.colorblind_safe);
+    assert!(s.view.gig_restore.is_none());
+    assert_eq!(s.view.scale, 1.0);
+    assert!((ui.app.ui.window().scale_factor() - 1.0).abs() < 1e-3);
+}
+
 /// UI scale 0.75–2.0: chosen in Preferences > View and stored; at every
 /// scale the Prepare view fits a 2560×1600 display without clipping or
 /// overlap.
@@ -304,7 +331,10 @@ fn ui_scale_without_clipping() {
     prefs_el(&w, "prefs.view.scale");
     w.invoke_choose("view.scale".into(), 5);
     assert_eq!(stored(&ui).view.scale, 2.0);
-    assert!(w.get_scale_pending(), "says it applies after a restart");
+    assert!(
+        (ui.app.ui.window().scale_factor() - 2.0).abs() < 1e-3,
+        "applies at once, no restart"
+    );
     let _ = w.hide();
     ui.app.ui.invoke_row_clicked(0, false, false);
     const LABELS: [&str; 14] = [
@@ -323,13 +353,8 @@ fn ui_scale_without_clipping() {
         "browser.list",
         "status.summary",
     ];
-    for &scale in crate::settings::SCALES.iter() {
-        ui.app
-            .ui
-            .window()
-            .dispatch_event(WindowEvent::ScaleFactorChanged {
-                scale_factor: scale,
-            });
+    for (i, &scale) in crate::settings::SCALES.iter().enumerate() {
+        w.invoke_choose("view.scale".into(), i as i32);
         let (lw, lh) = (2560.0 / scale, 1600.0 / scale);
         ui.app.ui.window().set_size(slint::LogicalSize::new(lw, lh));
         ui.pump(400);

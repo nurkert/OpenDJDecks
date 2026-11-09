@@ -376,7 +376,6 @@ pub(crate) fn refresh(app: &App) {
                 .map(|i| i as i32)
                 .unwrap_or(1),
         );
-        w.set_scale_pending((s.view.scale - started.view.scale).abs() > 0.01);
         w.set_colorblind(s.view.colorblind_safe);
         w.set_high_contrast(s.view.high_contrast);
         w.set_reduced_motion(s.view.reduced_motion);
@@ -1088,6 +1087,11 @@ fn clear_binding(app: &App, id: &str) {
 
 /// Applies everything that can change live; the rest shows "applies after
 /// restart".
+pub(crate) fn refresh_live(app: &App) {
+    apply_live(app);
+    refresh(app);
+}
+
 fn apply_live(app: &App) {
     let (settings, lite) = {
         let st = app.state.borrow();
@@ -1116,6 +1120,7 @@ fn apply_live(app: &App) {
         .set_mode(settings.view.deck_time.clone().into());
     crate::player::refresh_detail(app);
     shell::apply_browser_style(&app.ui, &settings, app.state.borrow().config.kiosk);
+    crate::gig::apply(app);
     crate::recorder::apply_gain(app);
     {
         let mut c = app

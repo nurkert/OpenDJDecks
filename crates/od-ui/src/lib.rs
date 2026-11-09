@@ -28,6 +28,7 @@ mod engine;
 mod explorer;
 mod format;
 mod fx;
+mod gig;
 mod grid_edit;
 mod import;
 mod keymap;

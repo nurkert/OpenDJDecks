@@ -28,7 +28,7 @@ These come first because every later screen builds on them.
 - [x] **[2] One state language.** Off, selected, on, armed, running, disabled and focused as documented tokens, used in Perform, Lighting, FX and Preferences, with a visible focus ring. Each accent colour has one job and colour is never the only cue. Done when dashed outlines no longer mean "selected" and idle toggles never look lit.
 - [x] **[43] Type scale.** About five sizes and two weights, fixed-width figures for changing numbers, and BPM and remaining time as the largest values on a deck. Done when hard-coded font sizes are gone.
 - [x] **[1] Legibility.** A minimum of 11 px for labels and 12 px for anything read live or touched, with contrast of at least 4.5:1 measured on each surface. The text size setting also scales the deck. Done when no label is below the floor and a test enforces it.
-- [ ] **[3] Gig preset.** High contrast, colour-blind palette and interface scale can be found near the top bar and in the first run, and combine into one preset. Scale applies without a restart. Done when all of it is reachable in one step.
+- [x] **[3] Gig preset.** High contrast, colour-blind palette and interface scale can be found near the top bar and in the first run, and combine into one preset. Scale applies without a restart. Done when all of it is reachable in one step.
 
 ### Step 3: hierarchy and orientation
 

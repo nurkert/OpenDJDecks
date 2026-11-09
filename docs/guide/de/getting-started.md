@@ -68,6 +68,7 @@ Die App benutzt für jede Sache ein Wort, in der Oberfläche und in diesen Anlei
 | **Sub-Browser** | Ein zweiter Baum mit Liste unter dem Browser, um Tracks zwischen Listen zu ziehen. | |
 | **Channel FX** | Der Effekt auf einem Mixer-Kanal, mit dem **CH FX**-Regler. | |
 | **Hot Cue** / **Memory Cue** | Ein gespeicherter Punkt auf einem Pad / ein gespeicherter Punkt, den du auf der Waveform ansteuerst. | |
+| **Gig-Preset** | Ein Klick für hohen Kontrast, die Palette für Farbenblinde und eine größere Oberfläche; **GIG** in der oberen Leiste. | |
 | **Beatgrid** | Die Beat-Marken eines Tracks. | |
 
 ## Wie es weitergeht
