@@ -24,7 +24,7 @@ component ModeTab inherits Rectangle {
     }
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: 13px; font-weight: 600; letter-spacing: root.narrow ? 1.2px : 2.4px;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: root.narrow ? 1.2px : 2.4px;
         color: root.current ? Theme.ground : touch.has-hover ? Theme.bone : Theme.bone-2;
         vertical-alignment: center;
     }
@@ -44,7 +44,7 @@ component PanelToggle inherits Rectangle {
     in property <length> min-w: 0px;
     in property <bool> enabled: true;
     callback clicked();
-    width: max(root.min-w, t.preferred-width + (root.narrow ? 14px : 22px));
+    width: max(root.min-w, t.preferred-width + (root.narrow ? 12px : 22px));
     Rectangle {
         y: Theme.s2; height: parent.height - 2 * Theme.s2;
         border-radius: Theme.r-control;
@@ -53,7 +53,7 @@ component PanelToggle inherits Rectangle {
     }
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.6px;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: root.narrow ? 0.6px : 1.6px;
         color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, false, root.on || root.running);
         horizontal-alignment: center; vertical-alignment: center;
     }
@@ -97,7 +97,7 @@ component ViewMenu inherits Rectangle {
         row := HorizontalLayout {
             alignment: center; spacing: Theme.s2;
             VerticalLayout { alignment: center; ViewIcon { view: root.current; tone: Theme.bone; } }
-            Text { text: "▾"; font-size: 9px; color: Theme.bone-2; vertical-alignment: center; }
+            Text { text: "▾"; font-size: Theme.label; color: Theme.bone-2; vertical-alignment: center; }
         }
     }
     touch := TipArea {
@@ -127,10 +127,10 @@ component ViewMenu inherits Rectangle {
                     background: vi.has-hover ? Theme.plate-raised : transparent;
                     HorizontalLayout {
                         padding-left: Theme.s3; padding-right: Theme.s3; spacing: Theme.s3;
-                        Text { width: 10px; text: root.current == v.id ? "✓" : ""; font-size: 12px; color: Theme.attention; vertical-alignment: center; }
+                        Text { width: 10px; text: root.current == v.id ? "✓" : ""; font-size: Theme.control; color: Theme.attention; vertical-alignment: center; }
                         VerticalLayout { alignment: center; ViewIcon { view: v.id; tone: root.current == v.id ? Theme.attention : Theme.bone-2; } }
                         Text {
-                            text: v.label; font-family: Theme.family; font-size: 12px; font-weight: 600;
+                            text: v.label; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
                             color: root.current == v.id ? Theme.bone : Theme.bone-2; vertical-alignment: center;
                         }
                     }
@@ -215,13 +215,13 @@ export component TopBar inherits Rectangle {
             spacing: 0px;
             // Brand on the rail.
             Rectangle {
-                width: root.narrow ? 124px : 196px;
+                width: root.narrow ? 112px : 196px;
                 VLine { x: 12px; y: 10px; height: parent.height - 20px; weight: 1px; tone: Theme.rule-strong; }
                 Rectangle { x: 9px; y: 6px; width: 7px; height: 7px; border-radius: 3.5px; border-width: 1px; border-color: Theme.bone-3; }
                 Text {
                     x: 28px; height: parent.height;
                     text: "OPENDJDECKS";
-                    font-family: Theme.family; font-size: root.narrow ? 12px : 16px; font-weight: 600; letter-spacing: root.narrow ? 0.8px : 2.2px;
+                    font-family: Theme.family; font-size: root.narrow ? Theme.control : Theme.body; font-weight: Theme.weight-semi; letter-spacing: root.narrow ? 0.8px : 2.2px;
                     color: Theme.bone; vertical-alignment: center;
                 }
             }
@@ -240,7 +240,7 @@ export component TopBar inherits Rectangle {
                 accessible-label: "topbar.mode.lighting"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
                 label: @tr("LIGHTING"); tooltip: @tr("Lighting: DMX rig and light show"); command: "mode.lighting"; current: root.mode == "lighting"; clicked => { root.set-mode("lighting"); } }
-            Rectangle { width: Theme.s5; }
+            Rectangle { width: root.narrow ? Theme.s2 : Theme.s5; }
             if root.mode == "perform" && !root.kiosk: ViewMenu {
                 narrow: root.narrow;
                 deck-count: root.deck-count; layout: PerformLayout.layout;
@@ -394,7 +394,7 @@ export component TopBar inherits Rectangle {
                     width: parent.width * clamp(root.master-meter, 0, 1);
                     background: root.master-clip ? Theme.fault : root.master-meter > 0.8 ? Theme.attention : Theme.live;
                 }
-                Caps { y: parent.height / 2 + 4px; text: @tr("MASTER"); font-size: 8px; }
+                Caps { y: parent.height / 2 + 4px; text: @tr("MASTER"); font-size: Theme.label; }
             }
             if !root.kiosk: Rectangle { width: Theme.s2; }
             if !root.kiosk: VerticalLayout {
@@ -412,7 +412,7 @@ export component TopBar inherits Rectangle {
             Text {
                 accessible-label: "topbar.clock"; accessible-role: text; accessible-value: self.text;
                 text: root.clock;
-                font-family: Theme.family; font-size: 13px; font-weight: 600; letter-spacing: 1px;
+                font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
                 color: Theme.bone-2; vertical-alignment: center;
             }
             Rectangle { width: Theme.s1; }
@@ -434,7 +434,7 @@ export component TopBar inherits Rectangle {
                 rec := Text {
                     x: 28px; height: parent.height;
                     text: root.recording ? @tr("REC {}", root.recording-time) : @tr("RECORD");
-                    font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 1.8px;
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.8px;
                     color: Theme.ink(true, rt.pressed, rt.has-hover, false, root.recording); vertical-alignment: center;
                 }
                 rt := TipArea { tooltip: root.recording ? @tr("Stop recording") : @tr("Record the master output"); command: "record.toggle"; mouse-cursor: pointer; clicked => { root.toggle-recording(); } }
@@ -450,7 +450,7 @@ export component TopBar inherits Rectangle {
             accessible-label: "topbar.mode"; accessible-role: combobox; accessible-value: root.mode;
             width: max(84px, mk.preferred-width + 20px);
             background: Theme.bone;
-            mk := Text { text: root.mode == "prepare" ? @tr("PREPARE") : root.mode == "lighting" ? @tr("LIGHTING") : @tr("PERFORM"); font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 1.2px; color: Theme.ground; }
+            mk := Text { text: root.mode == "prepare" ? @tr("PREPARE") : root.mode == "lighting" ? @tr("LIGHTING") : @tr("PERFORM"); font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px; color: Theme.ground; }
             kmode := TipArea { tooltip: @tr("Work mode"); mouse-cursor: pointer; clicked => { modes.show(); } }
             modes := PopupWindow {
                 x: PopupPlace.x(parent.absolute-position.x, 0, 140px);
@@ -463,7 +463,7 @@ export component TopBar inherits Rectangle {
                         for m[i] in [{ id: "prepare", label: @tr("PREPARE") }, { id: "perform", label: @tr("PERFORM") }, { id: "lighting", label: @tr("LIGHTING") }]: Rectangle {
                             height: 44px;
                             background: mi.has-hover ? Theme.plate-raised : transparent;
-                            Text { x: 12px; text: m.label; font-family: Theme.family; font-size: 12px; font-weight: 600; color: root.mode == m.id ? Theme.bone : Theme.bone-2; vertical-alignment: center; height: parent.height; }
+                            Text { x: 12px; text: m.label; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: root.mode == m.id ? Theme.bone : Theme.bone-2; vertical-alignment: center; height: parent.height; }
                             mi := TouchArea { clicked => { root.set-mode(m.id); modes.close(); } }
                         }
                     }
@@ -551,7 +551,7 @@ export component TopBar inherits Rectangle {
         Text {
             accessible-label: "topbar.clock"; accessible-role: text; accessible-value: self.text;
             text: root.clock;
-            font-family: Theme.family; font-size: 13px; font-weight: 600;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
             color: Theme.bone-2; vertical-alignment: center;
         }
         // Everything else of the bar: Club mode, lighting strip,
@@ -568,7 +568,7 @@ export component TopBar inherits Rectangle {
             Rectangle {
                 accessible-label: "topbar.more"; accessible-role: button;
                 background: km.has-hover ? Theme.plate : transparent;
-                Text { text: "⋯"; font-family: Theme.family; font-size: 18px; font-weight: 600; color: Theme.bone-2; }
+                Text { text: "⋯"; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone-2; }
                 km := TipArea { tooltip: @tr("More"); mouse-cursor: pointer; clicked => { more.show({ x: 0, y: self.height }); } }
             }
         }

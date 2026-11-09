@@ -27,7 +27,7 @@ export component UserTagPanel inherits Rectangle {
             Caps { text: @tr("TAGS"); color: Theme.bone-2; }
             Text {
                 text: root.selection-count == 0 ? @tr("Select tracks to tag them.") : @tr("{} selected — click a value to tag or untag them.", root.selection-count);
-                font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
             }
             if !root.read-only: Field {
                 accessible-label: "user_tag.add"; accessible-role: text-input; accessible-value: self.text;
@@ -38,11 +38,11 @@ export component UserTagPanel inherits Rectangle {
             }
             if root.chips.length == 0: Text {
                 text: @tr("No tag values yet. Type one above, e.g. Mood: Peak.");
-                font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
             }
             for c[i] in root.chips: VerticalLayout {
                 spacing: Theme.key-gap;
-                if c.first: Caps { text: c.category; font-size: 10px; }
+                if c.first: Caps { text: c.category; font-size: Theme.label; }
                 Rectangle {
                     accessible-label: "user_tag.value\{i}"; accessible-role: checkbox;
                     accessible-value: c.category + ": " + c.value;
@@ -53,14 +53,14 @@ export component UserTagPanel inherits Rectangle {
                     Text {
                         x: 14px; width: parent.width - 54px; height: parent.height;
                         text: c.value; overflow: elide;
-                        font-family: Theme.family; font-size: 13px;
+                        font-family: Theme.family; font-size: Theme.control;
                         color: c.on ? Theme.bone : Theme.bone-2;
                         vertical-alignment: center;
                     }
                     Text {
                         x: parent.width - 40px; width: 36px; height: parent.height;
                         text: c.count; horizontal-alignment: right;
-                        font-family: Theme.family; font-size: 11px; color: Theme.bone-3;
+                        font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
                         vertical-alignment: center;
                     }
                     t := TipArea {
@@ -93,11 +93,11 @@ export component SuggestionPanel inherits Rectangle {
         Caps { text: @tr("FITS AFTER"); color: Theme.bone-2; }
         Text {
             text: root.reference == "" ? @tr("Select a track to see what fits after it.") : root.reference;
-            font-family: Theme.family; font-size: 13px; font-weight: 600; color: Theme.bone; wrap: word-wrap;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; wrap: word-wrap;
         }
         if root.reference != "" && root.rows.length == 0: Text {
             text: @tr("No analysed track within ±6 % tempo and a compatible key.");
-            font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
         }
         Flickable {
             vertical-stretch: 1;
@@ -111,17 +111,17 @@ export component SuggestionPanel inherits Rectangle {
                     Text {
                         x: 14px; y: 4px; width: parent.width - 90px;
                         text: r.title; overflow: elide;
-                        font-family: Theme.family; font-size: 13px; color: Theme.bone;
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone;
                     }
                     Text {
                         x: 14px; y: 21px; width: parent.width - 90px;
                         text: r.artist; overflow: elide;
-                        font-family: Theme.family; font-size: 11px; color: Theme.bone-3;
+                        font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
                     }
                     Text {
                         x: parent.width - 72px; width: 68px; height: parent.height;
                         text: r.bpm + "  " + r.key; horizontal-alignment: right;
-                        font-family: Theme.family; font-size: 12px; color: Theme.bone-2;
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
                         vertical-alignment: center;
                     }
                     t := TipArea {

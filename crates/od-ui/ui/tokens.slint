@@ -79,13 +79,20 @@ export global Theme {
     out property <length> hair: high-contrast ? 2px : 1px;
     out property <length> line: 2px;
 
-    // Type ranks: one family, ranked by size, tracking and ink.
+    // Type (DESIGN.md, Typography): one family, five sizes, two weights; the
+    // bundled figures are all one width, so changing numbers never shift.
+    // `text-scale` is the text size preference (Preferences > View, the
+    // list and the deck); nothing falls below its floor, 12 px for what is
+    // read live or touched and in the kiosk, 11 px for legends.
     out property <string> family: "Barlow Semi Condensed";
-    out property <length> rank-a: 40px;
-    out property <length> rank-b: 24px;
-    out property <length> rank-c: 17px;
-    out property <length> body: 14px;
-    out property <length> index: 11px;
+    in-out property <float> text-scale: 1;
+    out property <length> hero: 32px * root.text-scale;
+    out property <length> heading: 22px * root.text-scale;
+    out property <length> body: max(12px, 15px * root.text-scale);
+    out property <length> control: max(12px, 13px * root.text-scale);
+    out property <length> label: max(root.touch ? 12px : 11px, 11px * root.text-scale);
+    out property <int> weight-medium: 500;
+    out property <int> weight-semi: 600;
     out property <length> tracking-index: 1.6px;
     out property <length> tracking-c: 2.2px;
 
@@ -111,7 +118,7 @@ export global Theme {
 
     // Width of the browser's side rails: sources on the left, panels on
     // the right (full words).
-    out property <length> rail: 72px;
+    out property <length> rail: 78px;
 
     // The off-centre rail.
     out property <length> rail-x: 28px;

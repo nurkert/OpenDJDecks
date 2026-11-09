@@ -86,7 +86,7 @@ component HeaderCell inherits Rectangle {
         x: root.right ? parent.width - lbl.preferred-width - 24px : lbl.preferred-width + 16px;
         height: parent.height;
         text: root.column.rank;
-        font-family: Theme.family; font-size: 9px; color: Theme.bone-3;
+        font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
         vertical-alignment: center;
     }
     // Where a dragged column lands.
@@ -162,7 +162,7 @@ export global TableStyle {
 component Cell inherits Text {
     horizontal-alignment: left;
     font-family: Theme.family;
-    font-size: TableStyle.text;
+    font-size: Theme.body;
     vertical-alignment: center;
     overflow: elide;
 }
@@ -317,7 +317,7 @@ component TrackLine inherits Rectangle {
         Text {
             x: 0; height: parent.height; width: 12px;
             text: root.item.deck;
-            font-family: Theme.family; font-size: 11px; font-weight: 600;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi;
             color: Theme.deck-color(root.item.deck);
             vertical-alignment: center; horizontal-alignment: center;
         }
@@ -349,7 +349,7 @@ component TrackLine inherits Rectangle {
             text: root.show-position ? root.item.position : "";
             color: Theme.bone-3;
             horizontal-alignment: right;
-            font-size: 12px;
+            font-size: Theme.control;
         }
         for c in root.columns: Rectangle {
             min-width: ColumnResize.of(c) > 0 ? ColumnResize.of(c) : 0px;
@@ -428,7 +428,7 @@ component TrackLine inherits Rectangle {
                 horizontal-alignment: c.right ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
                 color: c.id == "title" || c.id == "bpm" ? root.ink : c.id == "artist" && root.item.selected ? Theme.bone-2 : Theme.bone-3;
                 font-weight: c.id == "title" && root.item.selected ? 500 : 400;
-                font-size: c.id == "title" || c.id == "artist" || c.id == "bpm" ? TableStyle.text : TableStyle.text - 1px;
+                font-size: Theme.body;
             }
         }
         // Analysis state: nothing when analysed, half-height pending, struck missing file.
@@ -583,7 +583,7 @@ export component TrackTable inherits Rectangle {
             vertical-stretch: 1;
             Text {
                 text: root.empty-text;
-                font-family: Theme.family; font-size: 15px; color: Theme.bone-3;
+                font-family: Theme.family; font-size: Theme.body; color: Theme.bone-3;
                 wrap: word-wrap;
                 horizontal-alignment: center;
                 width: min(parent.width - 64px, 460px);

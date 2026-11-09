@@ -43,7 +43,7 @@ component InfoField inherits VerticalLayout {
     in property <string> field;
     callback save(string);
     spacing: Theme.key-gap;
-    Caps { text: root.label; font-size: 10px; }
+    Caps { text: root.label; font-size: Theme.label; }
     if root.editable: Field {
         accessible-label: root.field; accessible-role: text-input; accessible-value: self.text;
         height: 28px; text: root.value; accepted(t) => { root.save(t); }
@@ -51,7 +51,7 @@ component InfoField inherits VerticalLayout {
     if !root.editable: Text {
         accessible-label: root.field; accessible-role: text; accessible-value: root.value;
         text: root.value == "" ? "—" : root.value;
-        font-family: Theme.family; font-size: 13px; color: Theme.bone-2;
+        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
         wrap: root.path ? TextWrap.char-wrap : TextWrap.word-wrap;
         // Never wider than the panel, however long the value.
         min-width: 0px;
@@ -72,7 +72,7 @@ component InfoTab inherits Rectangle {
     Rectangle { y: parent.height - 2px; height: 2px; background: root.current ? Theme.w486 : transparent; }
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.4px;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1.4px;
         color: root.current ? Theme.bone : Theme.bone-3;
     }
     tt := TipArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
@@ -99,7 +99,7 @@ export component InfoPanel inherits Rectangle {
         if !root.info.has-track: Text {
             vertical-stretch: 1;
             text: @tr("Select a track to see and edit its tags.");
-            font-family: Theme.family; font-size: 13px; color: Theme.bone-3; wrap: word-wrap;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
         }
         if root.info.has-track && root.tab == "summary": summary-pane := Flickable {
             vertical-stretch: 1;
@@ -154,7 +154,7 @@ export component InfoPanel inherits Rectangle {
             }
             if !root.info.has-artwork: Text {
                 text: @tr("This track has no cover art.");
-                font-family: Theme.family; font-size: 13px; color: Theme.bone-3; wrap: word-wrap;
+                font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
             }
         }
     }

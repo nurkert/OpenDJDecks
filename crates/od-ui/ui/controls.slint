@@ -64,10 +64,10 @@ export component Glyph inherits Path {
 
 export component Caps inherits Text {
     font-family: Theme.family;
-    font-size: Theme.index;
+    font-size: Theme.label;
     letter-spacing: Theme.tracking-index;
     color: Theme.bone-3;
-    font-weight: 500;
+    font-weight: Theme.weight-medium;
 }
 
 // The focus ring: 2px bone at a 2px offset (DESIGN.md), the same on every
@@ -133,8 +133,8 @@ export component PlateButton inherits Rectangle {
         y: touch.pressed && root.enabled ? 1px : 0;
         text: root.label;
         font-family: Theme.family;
-        font-size: root.compact ? 11px : 12px;
-        font-weight: 500;
+        font-size: Theme.control;
+        font-weight: Theme.weight-medium;
         letter-spacing: root.compact ? 1.4px : 1.8px;
         color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
         vertical-alignment: center;
@@ -227,13 +227,13 @@ export component Field inherits Rectangle {
     if input.text == "": Text {
         x: 10px; height: parent.height;
         text: root.placeholder;
-        font-family: Theme.family; font-size: 12px; letter-spacing: 1.4px;
+        font-family: Theme.family; font-size: Theme.control; letter-spacing: 1.4px;
         color: Theme.bone-3;
         vertical-alignment: center;
     }
     input := TextInput {
         x: 10px; width: parent.width - 20px; height: parent.height;
-        font-family: Theme.family; font-size: 14px;
+        font-family: Theme.family; font-size: Theme.body;
         color: Theme.bone;
         selection-background-color: Theme.w486.with-alpha(0.35);
         selection-foreground-color: Theme.bone;
@@ -270,7 +270,7 @@ export component LineToggle inherits Rectangle {
     t := Text {
         x: 16px; height: parent.height;
         text: root.label;
-        font-family: Theme.family; font-size: 13px;
+        font-family: Theme.family; font-size: Theme.control;
         color: root.checked ? Theme.bone : Theme.bone-2;
         vertical-alignment: center;
     }
@@ -323,7 +323,7 @@ export component Knob inherits Rectangle {
     lbl := Text {
         y: root.size + (root.label-h >= 16px ? 3px : 1px); width: parent.width;
         text: root.label;
-        font-family: Theme.family; font-size: root.label-h >= 16px ? 9px : 8px; font-weight: 600; letter-spacing: root.label-h >= 16px ? 1.2px : 0.8px;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: root.label-h >= 16px ? 1.2px : 0.8px;
         color: Theme.bone-3;
         horizontal-alignment: center;
     }
@@ -402,7 +402,7 @@ export component Toggle inherits Rectangle {
     in property <length> min-w: 0px;
     callback clicked();
     property <bool> filled: root.on || root.running;
-    min-width: max(root.min-w, t.preferred-width + 20px);
+    min-width: max(root.min-w, t.preferred-width + 16px);
     height: root.size;
     background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.tone);
     border-radius: Theme.r-control;
@@ -410,7 +410,7 @@ export component Toggle inherits Rectangle {
     t := Text {
         y: (parent.height - self.height) / 2 + (touch.pressed && root.enabled ? 1px : 0);
         text: root.label;
-        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
         color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
         horizontal-alignment: center; vertical-alignment: center;
     }
@@ -531,9 +531,9 @@ export component Jog inherits Rectangle {
         x: 24px; width: root.size - 48px;
         alignment: center;
         spacing: 0;
-        Text { text: root.top-text; font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; color: Theme.bone-3; horizontal-alignment: center; }
-        Text { text: root.main-text; font-family: Theme.family; font-size: root.size > 120px ? 24px : 18px; font-weight: 600; color: Theme.bone; horizontal-alignment: center; }
-        Text { text: root.sub-text; font-family: Theme.family; font-size: 11px; color: Theme.bone-2; horizontal-alignment: center; }
+        Text { text: root.top-text; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px; color: Theme.bone-3; horizontal-alignment: center; }
+        Text { text: root.main-text; font-family: Theme.family; font-size: root.size > 120px ? Theme.hero : Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: center; }
+        Text { text: root.sub-text; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: center; }
     }
     TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.touched(); } }
     // Click the BPM: type the tempo you want. The field opens on the current
@@ -589,7 +589,7 @@ export component Transport inherits Rectangle {
     if root.kind == "cue": Text {
         y: (parent.height - self.height) / 2 + (touch.pressed ? 1px : 0);
         text: "CUE";
-        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1px;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
         color: Theme.ink(true, touch.pressed, touch.has-hover, false, root.on);
     }
     if root.kind != "cue": Glyph {
@@ -615,7 +615,7 @@ export component Stepper inherits Rectangle {
     in property <color> tone: Theme.bone-3;
     in property <bool> lit;
     in property <bool> enabled: true;
-    in property <length> font-size: 12px;
+    in property <length> font-size: Theme.control;
     // Accessible labels of the ‹ area, the value and the › area (test
     // hooks for steppers whose parts are separate controls).
     in property <string> a11y-prev;
@@ -627,7 +627,7 @@ export component Stepper inherits Rectangle {
     min-width: probe.preferred-width + 2 * root.arrow + 12px;
     background: root.enabled ? Theme.plate : Theme.ground-band;
     border-radius: Theme.r-control;
-    probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: 600; letter-spacing: 1px; }
+    probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px; }
     Rectangle {
         x: 0; width: root.arrow;
         accessible-role: button;
@@ -645,7 +645,7 @@ export component Stepper inherits Rectangle {
         background: mid.has-hover && root.enabled ? Theme.plate-raised : transparent;
         Text {
             text: root.value;
-            font-family: Theme.family; font-size: root.font-size; font-weight: 600; letter-spacing: 1px;
+            font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px;
             color: !root.enabled ? Theme.bone-3 : root.lit ? Theme.bone : Theme.bone-2;
             horizontal-alignment: center; vertical-alignment: center;
             overflow: elide;
@@ -681,7 +681,7 @@ export component HoldButton inherits Rectangle {
     border-radius: Theme.r-control;
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 1.1px;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.1px;
         color: Theme.ink(true, touch.pressed, touch.has-hover, false, root.lit);
         horizontal-alignment: center; vertical-alignment: center;
     }

@@ -35,7 +35,7 @@ export component UpdateBar inherits Rectangle {
         Text {
             horizontal-stretch: 1;
             text: root.text;
-            font-family: Theme.family; font-size: 13px; color: Theme.bone;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone;
             vertical-alignment: center;
             overflow: elide;
         }
@@ -77,17 +77,17 @@ export component UpdatePrompt inherits Rectangle {
             spacing: Theme.s4;
             Text {
                 text: root.title;
-                font-family: Theme.family; font-size: 22px; font-weight: 600; color: Theme.bone;
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone;
                 wrap: word-wrap;
             }
             Text {
                 text: @tr("Update now? OpenDJDecks downloads the new version, checks it and restarts. Your library and settings stay as they are.");
-                font-family: Theme.family; font-size: 14px; color: Theme.bone-2;
+                font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                 wrap: word-wrap;
             }
             if root.notes != "": Text {
                 text: root.notes;
-                font-family: Theme.family; font-size: 13px; color: Theme.bone-3;
+                font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
                 wrap: word-wrap;
                 max-height: 170px;
                 overflow: elide;

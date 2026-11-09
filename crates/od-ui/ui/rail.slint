@@ -25,14 +25,14 @@ component SectionTick inherits Rectangle {
     Text {
         x: Theme.rail-x + 20px; y: 6px;
         text: root.label;
-        font-family: Theme.family; font-size: 13px; font-weight: 600;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
         letter-spacing: Theme.tracking-c;
         color: root.current ? Theme.bone : Theme.bone-2;
     }
     Caps {
         x: Theme.rail-x + 20px; y: 23px;
         text: root.sub;
-        font-size: 10px;
+        font-size: Theme.label;
     }
     TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
@@ -87,7 +87,7 @@ export component TreeItem inherits Rectangle {
         text: root.item.name;
         overflow: elide;
         font-family: Theme.family;
-        font-size: 14px;
+        font-size: Theme.body;
         font-weight: root.item.kind == "folder" || root.item.kind == "stick" ? 600 : 400;
         color: root.selected ? Theme.bone : Theme.bone-2;
         vertical-alignment: center;
@@ -116,7 +116,7 @@ export component TreeItem inherits Rectangle {
         x: parent.width - 40px; width: 32px; height: parent.height;
         text: root.item.kind == "folder" ? "" : root.item.count;
         horizontal-alignment: right;
-        font-family: Theme.family; font-size: 12px; color: Theme.bone-3;
+        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
         vertical-alignment: center;
     }
     touch := TouchArea {
@@ -169,7 +169,7 @@ component ModeTab inherits Rectangle {
     }
     Text {
         text: root.label;
-        font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 2px;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 2px;
         color: root.current ? Theme.bone : Theme.bone-3;
     }
     TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
@@ -201,7 +201,7 @@ export component Rail inherits Rectangle {
             Text {
                 x: Theme.rail-x + 20px; y: 2px;
                 text: "OPENDJDECKS";
-                font-family: Theme.family; font-size: 18px; font-weight: 600;
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
                 letter-spacing: 2.4px; color: Theme.bone;
             }
         }

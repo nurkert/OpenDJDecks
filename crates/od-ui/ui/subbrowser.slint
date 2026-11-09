@@ -54,12 +54,12 @@ component ListItem inherits Rectangle {
     Text {
         x: 22px + root.item.depth * 12px; width: parent.width - self.x - 34px;
         text: root.item.name;
-        font-family: Theme.family; font-size: 13px; font-weight: root.item.kind == "folder" ? 600 : 400;
+        font-family: Theme.family; font-size: Theme.control; font-weight: root.item.kind == "folder" ? 600 : 400;
         color: root.selected ? Theme.bone : Theme.bone-2; vertical-alignment: center; overflow: elide;
     }
     if root.item.kind != "folder": Text {
         x: parent.width - 30px; width: 24px;
-        text: root.item.count; font-family: Theme.family; font-size: 11px; color: Theme.bone-3;
+        text: root.item.count; font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
         horizontal-alignment: right; vertical-alignment: center;
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
@@ -75,10 +75,10 @@ component TrackItem inherits Rectangle {
     HorizontalLayout {
         padding-left: Theme.s3; padding-right: Theme.s2;
         spacing: Theme.s3;
-        Text { horizontal-stretch: 3; text: root.item.title; font-family: Theme.family; font-size: 13px; color: Theme.bone; vertical-alignment: center; overflow: elide; }
-        Text { horizontal-stretch: 2; text: root.item.artist; font-family: Theme.family; font-size: 13px; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
-        Text { width: 58px; text: root.item.bpm; font-family: Theme.family; font-size: 13px; color: Theme.bone-2; horizontal-alignment: right; vertical-alignment: center; }
-        Text { width: 46px; text: root.item.key; font-family: Theme.family; font-size: 13px; color: Theme.bone-2; horizontal-alignment: right; vertical-alignment: center; }
+        Text { horizontal-stretch: 3; text: root.item.title; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; overflow: elide; }
+        Text { horizontal-stretch: 2; text: root.item.artist; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
+        Text { width: 58px; text: root.item.bpm; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: right; vertical-alignment: center; }
+        Text { width: 46px; text: root.item.key; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: right; vertical-alignment: center; }
     }
     touch := TouchArea {
         accessible-role: list-item;
@@ -144,7 +144,7 @@ export component SubBrowserPane inherits Rectangle {
                 Text {
                     accessible-role: text; accessible-label: "browser.sub.title"; accessible-value: self.text;
                     text: SubBrowser.selected < 0 ? @tr("SUB-BROWSER — PICK A LIST") : SubBrowser.title;
-                    font-family: Theme.family; font-size: 13px; font-weight: 600; color: Theme.bone; vertical-alignment: center; overflow: elide;
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; vertical-alignment: center; overflow: elide;
                 }
                 Rectangle { horizontal-stretch: 1; }
                 if SubBrowser.selected >= 0: Caps { text: @tr("{} TRACKS", SubBrowser.tracks.length); vertical-alignment: center; }
@@ -169,7 +169,7 @@ export component SubBrowserPane inherits Rectangle {
                 }
                 if SubBrowser.selected >= 0 && SubBrowser.tracks.length == 0: Text {
                     text: SubBrowser.takes-tracks ? @tr("Empty. Drag tracks from the list above onto this list.") : @tr("No tracks in this list.");
-                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
                 }
                 // Main-list rows dropped here go into the list shown.
                 if SubBrowser.selected >= 0: DropZone { width: parent.width; height: parent.height; id: DragTargets.tree + SubBrowser.selected; enabled: SubBrowser.takes-tracks; }

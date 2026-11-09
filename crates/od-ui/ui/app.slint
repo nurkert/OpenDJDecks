@@ -76,7 +76,7 @@ component SectionTitle inherits HorizontalLayout {
     spacing: Theme.s4;
     Text {
         text: root.title;
-        font-family: Theme.family; font-size: Theme.rank-b; font-weight: 600;
+        font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
         color: Theme.bone; vertical-alignment: center;
         overflow: elide;
     }
@@ -98,6 +98,7 @@ export component AppWindow inherits Window {
     min-height: root.kiosk ? 320px : 640px;
     background: Theme.ground;
     default-font-family: Theme.family;
+    default-font-weight: Theme.weight-medium;
     default-font-size: Theme.body;
 
     // The list header's keys shorten when a panel takes the room (small window).
@@ -938,7 +939,7 @@ export component AppWindow inherits Window {
                             horizontal-stretch: 0;
                             text: root.node-title;
                             read-only: root.node-kind == "all" || root.node-kind == "explorer" || root.node-kind == "similar" || root.node-kind == "history" || root.node-kind == "taglist" || root.node-kind == "auto" || root.read-only;
-                            font-family: Theme.family; font-size: 18px; font-weight: 600;
+                            font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
                             color: Theme.bone;
                             vertical-alignment: center;
                             single-line: true;
@@ -1044,7 +1045,7 @@ export component AppWindow inherits Window {
                         if root.smart-rule-error != "": Text {
                             accessible-label: "browser.smart-rule-error"; accessible-role: text; accessible-value: self.text;
                             text: root.smart-rule-error;
-                            font-family: Theme.family; font-size: 12px; color: Theme.fault;
+                            font-family: Theme.family; font-size: Theme.control; color: Theme.fault;
                         }
                     }
                     if root.section == "library" && root.node-kind == "set" && root.mode == "prepare": SetFlow {
@@ -1154,7 +1155,7 @@ export component AppWindow inherits Window {
                     if root.section == "devices": SectionTitle { title: @tr("USB STICKS"); sub: @tr("{} REGISTERED", root.devices.length); }
                     if root.section == "devices": Text {
                         text: @tr("Registered sticks are kept in sync automatically while they are plugged in. Every change to a playlist, cue or beatgrid reaches the stick within seconds.");
-                        wrap: word-wrap; font-family: Theme.family; font-size: 14px; color: Theme.bone-2;
+                        wrap: word-wrap; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                     }
                     if root.section == "devices": HorizontalLayout {
                         vertical-stretch: 1;
@@ -1216,8 +1217,8 @@ export component AppWindow inherits Window {
                                 VLine { weight: 2px; form: "double"; tone: Theme.attention; }
                                 VerticalLayout {
                                     horizontal-stretch: 1;
-                                    Text { text: p.title; font-family: Theme.family; font-size: 14px; font-weight: 600; color: Theme.bone; overflow: elide; }
-                                    Text { text: p.detail; font-family: Theme.family; font-size: 12px; color: Theme.bone-3; overflow: elide; }
+                                    Text { text: p.title; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone; overflow: elide; }
+                                    Text { text: p.detail; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; overflow: elide; }
                                 }
                                 PlateButton { compact: true; label: p.kind == "history" ? @tr("IMPORT") : @tr("TAKE STICK CUES"); tone: Theme.live; tooltip: p.kind == "history" ? @tr("Import the play history from the stick") : @tr("Replace the library cues with the ones edited on the players"); clicked => { root.accept-proposal(p.index); } }
                                 PlateButton { compact: true; label: p.kind == "history" ? @tr("DISMISS") : @tr("KEEP LIBRARY"); tooltip: p.kind == "history" ? @tr("Ignore this history") : @tr("Keep the library cues; the stick gets them at the next sync"); clicked => { root.reject-proposal(p.index); } }
@@ -1239,12 +1240,12 @@ export component AppWindow inherits Window {
                         spacing: Theme.s1;
                         if root.recordings.length == 0: Text {
                             text: @tr("No recordings yet. Press RECORD in Perform, or the record button on your controller.");
-                            wrap: word-wrap; font-family: Theme.family; font-size: 14px; color: Theme.bone-3;
+                            wrap: word-wrap; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-3;
                         }
                         for r in root.recordings: Rectangle {
                             height: 48px;
                             VLine { x: 0; y: 8px; height: parent.height - 16px; tone: Theme.w656; }
-                            Text { x: 16px; y: 6px; text: r.name; font-family: Theme.family; font-size: 15px; font-weight: 600; color: Theme.bone; }
+                            Text { x: 16px; y: 6px; text: r.name; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone; }
                             Caps { x: 16px; y: 28px; text: r.detail; }
                             TouchArea { width: parent.width - 260px; clicked => { root.reveal-recording(r.id); } }
                             HorizontalLayout {
@@ -1348,7 +1349,7 @@ export component AppWindow inherits Window {
                         accessible-label: "status.message"; accessible-role: text; accessible-value: root.status-text;
                         horizontal-stretch: 1;
                         text: root.status-text;
-                        font-family: Theme.family; font-size: 12px; color: Theme.bone-2;
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
                         vertical-alignment: center; overflow: elide;
                     }
                     Caps {
@@ -1403,7 +1404,7 @@ export component AppWindow inherits Window {
             y: parent.height - 76px;
             width: t.preferred-width + 32px; height: 36px;
             background: Theme.plate-raised; border-width: 1px; border-color: Theme.live;
-            t := Text { text: drop-hint.hint; font-family: Theme.family; font-size: 14px; font-weight: 600; color: Theme.bone; }
+            t := Text { text: drop-hint.hint; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone; }
         }
     }
     // The dragged track follows the pointer.
@@ -1434,7 +1435,7 @@ export component AppWindow inherits Window {
                         horizontal-stretch: 1;
                         vertical-alignment: center;
                         text: root.encrypted-import-file == "" ? @tr("No file chosen") : root.encrypted-import-file;
-                        font-family: Theme.family; font-size: 13px; color: Theme.bone-3;
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
                         overflow: elide;
                     }
                     PlateButton { accessible-label: "import.encrypted.choose"; accessible-role: button; compact: true; label: @tr("CHOOSE FILE"); tooltip: @tr("Pick the library database file. Nothing is searched for on this computer."); clicked => { root.pick-encrypted-import-file(); } }
@@ -1452,7 +1453,7 @@ export component AppWindow inherits Window {
                 }
                 Text {
                     text: @tr("You need the key for your own library. OpenDJDecks neither contains nor fetches it, and the key is used for this import only: it is not stored or logged. The database itself is only read.");
-                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
                     wrap: word-wrap;
                 }
                 if root.encrypted-import-error != "": Text {
@@ -1460,7 +1461,7 @@ export component AppWindow inherits Window {
                     accessible-label: "import.encrypted.error";
                     accessible-value: self.text;
                     text: root.encrypted-import-error;
-                    font-family: Theme.family; font-size: 13px; color: Theme.fault;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.fault;
                     wrap: word-wrap;
                 }
                 HorizontalLayout {

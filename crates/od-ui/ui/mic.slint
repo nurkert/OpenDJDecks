@@ -31,7 +31,7 @@ component Chip inherits Rectangle {
     border-radius: Theme.r-control;
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 1.1px;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.1px;
         color: Theme.ink(true, ta.pressed, ta.has-hover, false, root.on);
         horizontal-alignment: center; vertical-alignment: center;
     }

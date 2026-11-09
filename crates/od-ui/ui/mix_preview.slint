@@ -34,12 +34,12 @@ component Readout inherits HorizontalLayout {
     in property <string> value;
     in property <string> a11y;
     spacing: Theme.s1;
-    Caps { text: root.label; font-size: 9px; vertical-alignment: center; }
+    Caps { text: root.label; font-size: Theme.label; vertical-alignment: center; }
     Text {
         accessible-role: text; accessible-label: root.a11y; accessible-value: self.text;
         min-width: 58px;
         text: root.value == "" ? "—" : root.value;
-        font-family: Theme.family; font-size: 13px; font-weight: 600;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
         color: root.value == "" ? Theme.bone-3 : Theme.bone; vertical-alignment: center;
     }
 }
@@ -56,7 +56,7 @@ component DeckPoints inherits HorizontalLayout {
     Text {
         accessible-role: text; accessible-label: "mix-preview.deck\{root.d.deck}.points"; accessible-value: root.d.points;
         text: @tr("{} POINTS", root.d.points);
-        font-family: Theme.family; font-size: 11px; color: Theme.bone-2; vertical-alignment: center;
+        font-family: Theme.family; font-size: Theme.label; color: Theme.bone-2; vertical-alignment: center;
     }
     Readout { a11y: "mix-preview.deck\{root.d.deck}.mix-in-time"; label: @tr("IN"); value: root.d.mix-in; }
     Readout { a11y: "mix-preview.deck\{root.d.deck}.mix-out-time"; label: @tr("OUT"); value: root.d.mix-out; }
@@ -115,7 +115,7 @@ export component MixPreviewPanel inherits Rectangle {
             accessible-role: text; accessible-label: "mix-preview.reserved"; accessible-value: MixPreview.next;
             horizontal-stretch: 0; max-width: 260px; overflow: elide;
             text: MixPreview.waiting == 0 ? @tr("NOTHING RESERVED") : MixPreview.waiting == 1 ? @tr("NEXT  {}", MixPreview.next) : @tr("NEXT  {}  +{}", MixPreview.next, MixPreview.waiting - 1);
-            font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
             color: MixPreview.waiting == 0 ? Theme.bone-3 : Theme.bone; vertical-alignment: center;
         }
         PlateButton {

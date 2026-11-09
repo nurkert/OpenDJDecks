@@ -34,7 +34,7 @@ export component StemsModelBar inherits Rectangle {
         Text {
             horizontal-stretch: 1;
             text: root.text;
-            font-family: Theme.family; font-size: 13px; color: Theme.bone;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone;
             vertical-alignment: center;
             overflow: elide;
         }
@@ -74,14 +74,14 @@ export component StemsModelPrompt inherits Rectangle {
             spacing: Theme.s4;
             Text {
                 text: root.title;
-                font-family: Theme.family; font-size: 22px; font-weight: 600; color: Theme.bone;
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone;
                 wrap: word-wrap;
             }
             Text {
                 accessible-label: "app.stems.prompt.text";
                 accessible-value: self.text;
                 text: @tr("To split tracks into vocals, instruments, drums and bass, OpenDJDecks needs a separation model of {} MB. It is downloaded once; after that stems work without internet. Your music stays on this computer.", root.size-mb);
-                font-family: Theme.family; font-size: 14px; color: Theme.bone-2;
+                font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                 wrap: word-wrap;
             }
             HorizontalLayout {

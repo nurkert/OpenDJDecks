@@ -120,7 +120,7 @@ component Swatches inherits HorizontalLayout {
         width: 40px;
         border-radius: Theme.r-control;
         background: root.current == -1 ? Theme.bone : Theme.plate;
-        Text { text: @tr("TRACK"); font-family: Theme.family; font-size: 9px; font-weight: 600; letter-spacing: 1px; color: root.current == -1 ? Theme.ground : Theme.bone-2; horizontal-alignment: center; vertical-alignment: center; }
+        Text { text: @tr("TRACK"); font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1px; color: root.current == -1 ? Theme.ground : Theme.bone-2; horizontal-alignment: center; vertical-alignment: center; }
         TouchArea { mouse-cursor: pointer; clicked => { root.chosen(-1); } }
     }
     for c[i] in Lighting.swatches: Rectangle {
@@ -187,13 +187,13 @@ component Stage inherits Rectangle {
         if !root.compact: Text {
             x: cx - 60px; y: cy + (f.role == "bar" ? 10px : 24px); width: 120px;
             text: f.name;
-            font-family: Theme.family; font-size: 10px; color: #8B867B;
+            font-family: Theme.family; font-size: Theme.label; color: #8B867B;
             horizontal-alignment: center; overflow: elide;
         }
     }
     if Lighting.fixtures.length == 0: Text {
         text: @tr("No fixtures patched yet. Add your lights on the left.");
-        font-family: Theme.family; font-size: 13px; color: #8B867B;
+        font-family: Theme.family; font-size: Theme.control; color: #8B867B;
         horizontal-alignment: center; vertical-alignment: center;
     }
 }
@@ -214,7 +214,7 @@ component RigPanel inherits VerticalLayout {
         HorizontalLayout {
             spacing: Theme.s2; padding-left: Theme.s2; padding-right: Theme.s1;
             Rectangle { width: 10px; Rectangle { height: 10px; width: 10px; border-radius: 5px; background: f.color.with-alpha(0.3 + 0.7 * f.intensity); } }
-            Text { text: f.name; font-family: Theme.family; font-size: 13px; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+            Text { text: f.name; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
             Caps { text: f.group; vertical-alignment: center; width: 70px; overflow: elide; }
             Caps { text: f.address; vertical-alignment: center; width: 54px; }
             PlateButton {
@@ -371,7 +371,7 @@ component ShowPanel inherits VerticalLayout {
         Caps { text: @tr("AUTOMATIC"); }
         Text {
             text: @tr("Intros breathe, build-ups chase faster and end in a strobe, choruses sweep the movers on the beat, breakdowns calm down, outros fade. During a mix both tracks' looks blend by how loud each is.");
-            wrap: word-wrap; font-family: Theme.family; font-size: 12px; color: Theme.bone-2;
+            wrap: word-wrap; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
         }
     }
     if Lighting.mode == "easy": VerticalLayout {
@@ -390,7 +390,7 @@ component ShowPanel inherits VerticalLayout {
         Caps { text: @tr("GROUPS"); }
         for g[gi] in Lighting.groups: VerticalLayout {
             spacing: Theme.key-gap;
-            Text { text: g.name; font-family: Theme.family; font-size: 13px; color: Theme.bone; }
+            Text { text: g.name; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; }
             HorizontalLayout {
                 spacing: Theme.key-gap;
                 PlateButton {
@@ -445,13 +445,13 @@ component ShowPanel inherits VerticalLayout {
         }
         HLine { }
         Caps { text: @tr("TRACK CUES"); }
-        Text { text: Lighting.timeline-title == "" ? @tr("Play a track to store lighting cues with it.") : Lighting.timeline-title; font-family: Theme.family; font-size: 12px; color: Theme.bone-2; overflow: elide; }
+        Text { text: Lighting.timeline-title == "" ? @tr("Play a track to store lighting cues with it.") : Lighting.timeline-title; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; overflow: elide; }
         for t[ti] in Lighting.timeline: Rectangle {
             accessible-label: "lighting.timeline" + ti; accessible-role: list-item; accessible-value: t;
             height: 22px;
             HorizontalLayout {
                 padding-left: Theme.s2; spacing: Theme.s2;
-                Text { text: t; font-family: Theme.family; font-size: 12px; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                Text { text: t; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
                 PlateButton { accessible-label: "lighting.timeline" + ti + ".delete"; accessible-role: button; compact: true; glyph: "close"; width: 30px; tooltip: @tr("Remove this track cue"); clicked => { Lighting.timeline-delete(ti); } }
             }
         }
@@ -470,7 +470,7 @@ component ShowPanel inherits VerticalLayout {
             Rectangle { x: 0; width: 2px; background: ci == Lighting.active-cue ? Theme.attention : transparent; }
             HorizontalLayout {
                 padding-left: Theme.s2; spacing: Theme.s2;
-                Text { text: (ci + 1) + "  " + c; font-family: Theme.family; font-size: 13px; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; }
+                Text { text: (ci + 1) + "  " + c; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; }
                 PlateButton { accessible-label: "lighting.cue" + ci + ".delete"; accessible-role: button; compact: true; glyph: "close"; tooltip: @tr("Delete this cue"); clicked => { Lighting.cue-delete(ci); } }
             }
         }
@@ -572,6 +572,8 @@ export component LightingStrip inherits Rectangle {
 
 // The LIGHTING view on its own (detached window, second screen).
 export component LightingWindow inherits Window {
+    default-font-family: Theme.family;
+    default-font-weight: Theme.weight-medium;
     title: "OpenDJDecks — Lighting";
     // Window / taskbar icon (X11 and Windows; Wayland and macOS take it
     // from the .desktop file / the bundle).

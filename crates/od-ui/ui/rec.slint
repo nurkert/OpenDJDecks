@@ -62,18 +62,18 @@ component Level inherits Rectangle {
     accessible-value: Rec.gain >= 0 && Rec.gain < Rec.gain-options.length ? Rec.gain-options[Rec.gain] : "";
     accessible-action-increment => { Rec.step-gain(1); }
     accessible-action-decrement => { Rec.step-gain(-1); }
-    min-width: 72px;
+    min-width: root.tall ? 56px : 72px;
     height: root.tall ? 44px : 26px;
     border-width: 1px;
     border-color: ta.has-hover ? Theme.rule-strong : Theme.rule;
-    Text { x: 6px; height: parent.height; text: "−"; font-family: Theme.family; font-size: 14px; color: Theme.bone-3; vertical-alignment: center; }
+    Text { x: 6px; height: parent.height; text: "−"; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-3; vertical-alignment: center; }
     Text {
         width: parent.width; height: parent.height;
         text: Rec.gain >= 0 && Rec.gain < Rec.gain-options.length ? Rec.gain-options[Rec.gain] : "";
-        font-family: Theme.family; font-size: 12px; font-weight: 500; color: Theme.bone;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-medium; color: Theme.bone;
         horizontal-alignment: center; vertical-alignment: center;
     }
-    Text { x: parent.width - 14px; height: parent.height; text: "+"; font-family: Theme.family; font-size: 14px; color: Theme.bone-3; vertical-alignment: center; }
+    Text { x: parent.width - 14px; height: parent.height; text: "+"; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-3; vertical-alignment: center; }
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => { Rec.step-gain(self.mouse-x < self.width / 2 ? -1 : 1); }
@@ -130,13 +130,13 @@ export component RecPanel inherits VerticalLayout {
         VerticalLayout {
             alignment: center;
             horizontal-stretch: 1;
-            Meter { accessible-role: progress-indicator; accessible-label: "rec.panel.meter"; accessible-value: round(Rec.level * 100) + "%"; min-width: 120px; level: Rec.level; clipping: Rec.clip; }
+            Meter { accessible-role: progress-indicator; accessible-label: "rec.panel.meter"; accessible-value: round(Rec.level * 100) + "%"; min-width: Theme.touch ? 96px : 120px; level: Rec.level; clipping: Rec.clip; }
         }
         Text {
             accessible-role: text; accessible-label: "rec.panel.time"; accessible-value: Rec.elapsed;
             min-width: 70px;
             text: Rec.recording ? Rec.elapsed : "--:--:--";
-            font-family: Theme.family; font-size: 18px; font-weight: 600;
+            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
             color: Rec.recording ? Theme.bone : Theme.bone-3;
             vertical-alignment: center; horizontal-alignment: right;
         }
@@ -144,7 +144,7 @@ export component RecPanel inherits VerticalLayout {
             accessible-role: text; accessible-label: "rec.size"; accessible-value: Rec.size;
             min-width: 64px;
             text: Rec.recording ? Rec.size : "";
-            font-family: Theme.family; font-size: 13px; color: Theme.bone-2;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
             vertical-alignment: center; horizontal-alignment: right;
         }
     }
@@ -155,7 +155,7 @@ export component RecPanel inherits VerticalLayout {
             accessible-role: text; accessible-label: "rec.file"; accessible-value: self.text;
             horizontal-stretch: 1;
             text: Rec.recording ? Rec.file : @tr("Armed: recording starts when the master carries sound");
-            font-family: Theme.family; font-size: 12px; color: Theme.bone-2; overflow: elide;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; overflow: elide;
         }
     }
     if Rec.recording: VerticalLayout {
@@ -163,15 +163,15 @@ export component RecPanel inherits VerticalLayout {
         spacing: Theme.key-gap;
         if Rec.tracks.length == 0: Text {
             text: @tr("The tracklist grows here as tracks become audible.");
-            font-family: Theme.family; font-size: 12px; color: Theme.bone-3;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
         }
         for t in Rec.tracks: HorizontalLayout {
             accessible-role: list-item; accessible-label: "rec.tracklist.row\{t.index}"; accessible-value: t.title;
             spacing: Theme.s3;
             height: 22px;
-            Text { width: 22px; text: t.index; font-family: Theme.family; font-size: 12px; color: Theme.bone-3; horizontal-alignment: right; vertical-alignment: center; }
-            Text { width: 64px; text: t.time; font-family: Theme.family; font-size: 12px; color: Theme.bone-2; vertical-alignment: center; }
-            Text { horizontal-stretch: 1; text: t.artist == "" ? t.title : t.artist + " — " + t.title; font-family: Theme.family; font-size: 13px; color: Theme.bone; vertical-alignment: center; overflow: elide; }
+            Text { width: 22px; text: t.index; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; horizontal-alignment: right; vertical-alignment: center; }
+            Text { width: 64px; text: t.time; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; }
+            Text { horizontal-stretch: 1; text: t.artist == "" ? t.title : t.artist + " — " + t.title; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; overflow: elide; }
         }
     }
     HLine { tone: Theme.rule; }
@@ -201,7 +201,7 @@ export component RecBar inherits Rectangle {
         Text {
             accessible-role: text; accessible-label: "rec.time"; accessible-value: self.text;
             text: Rec.recording ? Rec.elapsed : "00:00:00";
-            font-family: Theme.family; font-size: 13px; font-weight: 600;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
             color: Rec.recording ? Theme.bone : Theme.bone-3; vertical-alignment: center;
         }
         Rectangle { horizontal-stretch: 1; }
