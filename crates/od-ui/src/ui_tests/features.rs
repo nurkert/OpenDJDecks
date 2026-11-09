@@ -4,8 +4,8 @@
 
 use super::flows::{deck_title, deck_views};
 use super::harness::*;
-use slint::ComponentHandle;
 use slint::platform::Key;
+use slint::{ComponentHandle, Model};
 
 fn perform(ui: &Ui) {
     ui.app.ui.invoke_set_mode("perform".into());
@@ -544,4 +544,242 @@ fn encrypted_import_dialog_clears_the_key() {
     ui.pump(100);
     assert!(!ui.app.ui.get_encrypted_import_open());
     assert_eq!(ui.app.ui.get_encrypted_import_key(), "");
+}
+
+/// SYNC ALL STICKS: every registered stick is synced at once; with the
+/// stored "eject when done" each is ejected once it has finished.
+#[test]
+fn sync_all_sticks_runs_every_stick_and_ejects_when_done() {
+    let ui = Ui::open((1440, 900));
+    let (pl, track) = (ui.fx.playlist, ui.fx.tracks[0].0);
+    let mut sticks = Vec::new();
+    {
+        let mut lib = ui.fx.lib();
+        for name in ["SYNCALL-A", "SYNCALL-B"] {
+            let stick = test_env().join("volumes").join(name);
+            let _ = std::fs::remove_dir_all(&stick);
+            std::fs::create_dir_all(&stick).unwrap();
+            let uuid = format!("uuid-{name}-{}", std::process::id());
+            let marker = od_format_native::DeviceMarker {
+                format_version: od_format_native::FORMAT_VERSION,
+                device_uuid: uuid.clone(),
+                name: name.into(),
+                created_by: "test".into(),
+            };
+            od_format_native::write_marker(&stick, &marker).unwrap();
+            let id = lib
+                .register_device(&uuid, name, od_library::DeviceFormats::default())
+                .unwrap();
+            lib.set_device_nodes(id, &[pl]).unwrap();
+            sticks.push(stick);
+        }
+    }
+    ui.app.device_manager.send(od_devices::Command::Refresh);
+    assert!(
+        ui.wait_until(10.0, |u| !u.app.state.borrow().devices.statuses.is_empty()),
+        "the registered sticks are known"
+    );
+    let first = ui.app.state.borrow().devices.statuses[0].device.id;
+    ui.app.ui.invoke_open_device(first.0 as i32);
+    assert!(
+        ui.wait_until(10.0, |u| u.has("devices.sync-all")),
+        "the action is offered once sticks are registered"
+    );
+
+    ui.click("devices.eject-when-done");
+    assert!(
+        ui.app.state.borrow().settings.devices.eject_when_done,
+        "the choice is stored"
+    );
+    ui.click("devices.sync-all");
+    let synced = ui.wait_until(40.0, |_| {
+        sticks.iter().all(|s| {
+            matches!(od_format_native::Stick::open(s),
+                Ok(Some(st)) if st.library.track(track).is_ok())
+        })
+    });
+    assert!(synced, "both sticks reached the library's tracks");
+    let msg = ui.wait_until(20.0, |u| {
+        u.app.state.borrow().devices.statuses.iter().all(|s| s.device.last_sync.is_some())
+    });
+    assert!(msg, "every stick records its finished sync");
+    for s in &sticks {
+        let _ = std::fs::remove_dir_all(s);
+    }
+}
+
+/// Maximum compatibility is a per-stick option, off by default, offered
+/// only for sticks that carry the Club player USB format.
+#[test]
+fn max_compatibility_is_a_per_stick_option() {
+    let ui = Ui::open((1440, 900));
+    let name = "COMPAT-STICK";
+    let stick = test_env().join("volumes").join(name);
+    let _ = std::fs::remove_dir_all(&stick);
+    std::fs::create_dir_all(&stick).unwrap();
+    let uuid = format!("uuid-{name}-{}", std::process::id());
+    let marker = od_format_native::DeviceMarker {
+        format_version: od_format_native::FORMAT_VERSION,
+        device_uuid: uuid.clone(),
+        name: name.into(),
+        created_by: "test".into(),
+    };
+    od_format_native::write_marker(&stick, &marker).unwrap();
+    let mut lib = ui.fx.lib();
+    let id = lib
+        .register_device(
+            &uuid,
+            name,
+            od_library::DeviceFormats {
+                club_usb: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    ui.app.device_manager.send(od_devices::Command::Refresh);
+    assert!(ui.wait_until(10.0, |u| !u.app.state.borrow().devices.statuses.is_empty()));
+    ui.app.ui.invoke_open_device(id.0 as i32);
+    ui.pump(200);
+    assert!(ui.has("devices.club-usb-compat"), "offered for club sticks");
+    assert!(!lib.device(id).unwrap().formats.club_usb_compat, "off by default");
+    ui.click("devices.club-usb-compat");
+    assert!(
+        ui.wait_until(5.0, |_| lib.device(id).unwrap().formats.club_usb_compat),
+        "stored per stick"
+    );
+    let _ = std::fs::remove_dir_all(&stick);
+}
+
+/// Preview at another tempo or key: the shift reaches the preview deck, the
+/// track and its analysis stay as they are, and it ends when another track
+/// is previewed.
+#[test]
+fn preview_at_another_tempo_and_key() {
+    let ui = Ui::open((1440, 900));
+    let (id, title) = ui.fx.tracks[0].clone();
+    let (other, other_title) = ui.fx.tracks[1].clone();
+    ui.click_el(&row(&ui, &title));
+    assert!(ui.wait_until(10.0, |u| u.has("player1.tab.shift")));
+    ui.click("player1.tab.shift");
+    ui.pump(100);
+    assert_eq!(ui.value("player1.shift.tempo"), "0 %");
+    ui.click("player1.shift.tempo-up");
+    ui.click("player1.shift.tempo-up");
+    ui.click("player1.shift.key-up");
+    ui.pump(100);
+    assert_eq!(ui.value("player1.shift.tempo"), "+2 %");
+    assert_eq!(ui.value("player1.shift.key"), "+1");
+    ui.click("player1.play");
+    assert!(
+        ui.wait_until(20.0, |u| u.app.decks.borrow().loaded_id(crate::decks::PREVIEW_DECK) == Some(id)),
+        "the preview deck holds the track"
+    );
+    let deck = |ui: &Ui| crate::engine::snapshot(&ui.app).unwrap().decks[crate::decks::PREVIEW_DECK];
+    assert!(ui.wait_until(10.0, |u| (deck(u).tempo_fader - 2.0 / 16.0).abs() < 1e-3));
+    assert_eq!(deck(&ui).key_shift, 1.0);
+    assert!(deck(&ui).keylock, "the key stays while the tempo moves");
+    assert_eq!(deck(&ui).tempo_range, od_engine::TempoRange::Sixteen);
+    let lib = ui.fx.lib();
+    let (before, analysis) = (lib.track(id).unwrap(), lib.analysis(id).unwrap());
+    ui.pump(300);
+    assert_eq!(lib.track(id).unwrap().bpm, before.bpm, "stored tempo untouched");
+    assert_eq!(lib.analysis(id).unwrap(), analysis, "analysis untouched");
+    assert!(
+        !ui.app.state.borrow().settings.deck.decks[3].master_tempo,
+        "not remembered as a deck switch"
+    );
+
+    // Another track: the shift ends.
+    ui.click_el(&row(&ui, &other_title));
+    ui.click("player1.play"); // pauses the preview
+    ui.click("player1.play"); // plays the other track
+    assert!(
+        ui.wait_until(20.0, |u| u.app.decks.borrow().loaded_id(crate::decks::PREVIEW_DECK) == Some(other)),
+        "the other track previewing"
+    );
+    assert!(ui.wait_until(10.0, |u| deck(u).key_shift == 0.0 && deck(u).tempo_fader == 0.0));
+    assert!(!deck(&ui).keylock, "the deck's own switch is back");
+    assert_eq!(ui.value("player1.shift.tempo"), "0 %");
+}
+
+/// Preferences > Analysis offers the BPM ranges for detection; the choice
+/// is stored and goes to the analysis worker.
+#[test]
+fn bpm_range_preference_reaches_the_analysis() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_open_preferences();
+    ui.pump(200);
+    let prefs = ui
+        .app
+        .prefs
+        .borrow()
+        .window
+        .as_ref()
+        .map(|w| w.clone_strong())
+        .expect("Preferences open");
+    prefs.set_page("analysis".into());
+    ui.pump(200);
+    assert!(
+        i_slint_backend_testing::ElementHandle::find_by_accessible_label(&prefs, "prefs.analysis.bpm-range")
+            .next()
+            .is_some(),
+        "the BPM range choice is on the page"
+    );
+    let options: Vec<String> = prefs.get_bpm_options().iter().map(|s| s.to_string()).collect();
+    assert_eq!(options, ["70–180", "58–115", "98–195", "118–236"]);
+    assert_eq!(prefs.get_bpm_range(), 0, "70–180 by default");
+
+    prefs.invoke_choose("analysis.bpm".into(), 3);
+    assert_eq!(
+        (
+            ui.app.state.borrow().settings.analysis.bpm_min,
+            ui.app.state.borrow().settings.analysis.bpm_max
+        ),
+        (118, 236)
+    );
+    let opts = ui
+        .app
+        .analysis
+        .control
+        .lock()
+        .unwrap()
+        .options
+        .clone();
+    assert_eq!((opts.min_bpm, opts.max_bpm), (118.0, 236.0));
+    let _ = prefs.hide();
+}
+
+/// The KEY column sorts around the circle of fifths or by the key text;
+/// the choice is in the column menu and is stored.
+#[test]
+fn key_column_sorts_by_circle_or_alphabet() {
+    let ui = Ui::open((1440, 900));
+    let (a, b) = (ui.fx.tracks[0].0, ui.fx.tracks[1].0);
+    {
+        let mut st = ui.app.state.borrow_mut();
+        let key = od_core::MusicalKey::parse;
+        st.lib.set_key(a, key("10A")).unwrap();
+        st.lib.set_key(b, key("2A")).unwrap();
+        st.load_rows();
+    }
+    ui.app.ui.invoke_sort("key".into());
+    ui.pump(100);
+    let order = |ui: &Ui| {
+        let st = ui.app.state.borrow();
+        let pos = |id| st.browser.rows.iter().position(|t| t.id == id).unwrap();
+        pos(b) < pos(a)
+    };
+    assert!(order(&ui), "circle of fifths: 2A before 10A");
+    assert_eq!(ui.app.state.borrow().settings.browser.key_sort, "circle");
+
+    ui.right_click_el(&ui.get("browser.header.key"));
+    assert!(ui.click_menu_item("Sort keys alphabetically"));
+    assert!(
+        ui.wait_until(5.0, |u| u.app.state.borrow().settings.browser.key_sort == "alpha"),
+        "the choice is stored"
+    );
+    assert!(
+        ui.wait_until(5.0, |u| !order(u)),
+        "alphabetical by the key shown: 10A before 2A"
+    );
 }

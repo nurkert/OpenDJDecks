@@ -465,6 +465,9 @@ impl Decks {
 
 /// Loads `track` (of the current source) into `deck` in the background.
 pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Option<f64>) {
+    if deck == PREVIEW_DECK {
+        crate::player::reset_shift_for(app, track);
+    }
     if !engine::ensure_engine(app) {
         engine::show_message(app);
         return;

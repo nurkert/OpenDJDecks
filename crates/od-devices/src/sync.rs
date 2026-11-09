@@ -5,7 +5,8 @@
 //! journal on the stick detects interrupted syncs, which force a full sync
 //! the next time.
 
-use crate::placement::{Placement, PlacementMap, contents_path};
+use crate::convert::{self, ConvertError};
+use crate::placement::{Placement, PlacementMap, WavCopy, contents_path, wav_path};
 use od_core::{DeviceId, TrackId};
 use od_library::{Entry, Library, Node, NodeKind, TrackRecord};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -41,6 +42,12 @@ pub struct PlacedTrack {
     pub record: TrackRecord,
     /// Stick-relative path starting with `/Contents/`.
     pub stick_path: String,
+    /// The WAV copy Club player USB uses instead of the original (when the
+    /// option is on).
+    pub wav: Option<WavCopy>,
+    /// The track could not be converted and has no usable WAV copy; it is
+    /// left out of the Club player USB export.
+    pub skip_club_usb: bool,
 }
 
 /// Everything a format writer needs.
@@ -80,6 +87,12 @@ pub enum Progress {
         total_bytes: u64,
         current: String,
     },
+    /// Writing the 16-bit WAV copy of a track (`done` of `total` tracks).
+    Converting {
+        done: usize,
+        total: usize,
+        current: String,
+    },
     Writing {
         format: &'static str,
     },
@@ -91,6 +104,10 @@ pub struct SyncReport {
     pub tracks: usize,
     pub copied: usize,
     pub bytes_copied: u64,
+    /// Tracks written as WAV by this sync.
+    pub converted: usize,
+    /// Tracks that could not be converted (left out of Club player USB).
+    pub conversion_failed: Vec<TrackId>,
     pub removed: usize,
     pub updated: usize,
     pub skipped_missing: Vec<TrackId>,
@@ -162,6 +179,16 @@ pub fn device_tree(
     Ok(out)
 }
 
+/// The temporary file a stick file is written to before it is renamed.
+pub(crate) fn part_file(dst: &Path) -> PathBuf {
+    dst.with_file_name(format!(
+        ".{}.part",
+        dst.file_name()
+            .map(|n| n.to_string_lossy())
+            .unwrap_or_default()
+    ))
+}
+
 fn copy_file(
     src: &Path,
     dst: &Path,
@@ -171,12 +198,7 @@ fn copy_file(
     if let Some(parent) = dst.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let tmp = dst.with_file_name(format!(
-        ".{}.part",
-        dst.file_name()
-            .map(|n| n.to_string_lossy())
-            .unwrap_or_default()
-    ));
+    let tmp = part_file(dst);
     let mut input = std::fs::File::open(src)?;
     let mut output = std::fs::File::create(&tmp)?;
     let mut buf = vec![0u8; 1 << 20];
@@ -240,6 +262,10 @@ pub fn sync_device(
     };
 
     let wanted: Vec<TrackRecord> = lib.device_tracks(device)?;
+    // Maximum compatibility: only for the Club player USB export. The
+    // OpenDJDecks format keeps the original file.
+    let formats = lib.device(device)?.formats;
+    let compat = formats.club_usb && formats.club_usb_compat;
     od_format_native::begin_sync(
         root,
         &od_format_native::SyncJournal {
@@ -260,7 +286,10 @@ pub fn sync_device(
         .tracks
         .iter()
         .filter(|(id, _)| wanted_ids.contains(id))
-        .map(|(_, p)| p.path.to_lowercase())
+        .flat_map(|(_, p)| {
+            std::iter::once(p.path.to_lowercase())
+                .chain(p.wav.as_ref().map(|w| w.path.to_lowercase()))
+        })
         .collect();
     let mut placed = Vec::with_capacity(wanted.len());
     let mut to_copy: Vec<(usize, PathBuf)> = Vec::new();
@@ -269,13 +298,23 @@ pub fn sync_device(
     } else {
         pending.tracks.clone()
     };
+    // Index in `placed` of the tracks to write as WAV, and the copy there is
+    // now (kept if the conversion fails).
+    let mut to_convert: Vec<(usize, Option<WavCopy>)> = Vec::new();
+    // Files of this stick that are no longer wanted.
+    let mut stale: Vec<PathBuf> = Vec::new();
+    // Originals a Club-only stick no longer needs next to the WAV copy.
+    let mut unneeded: Vec<(usize, PathBuf)> = Vec::new();
     for t in wanted {
+        let convert = compat && convert::needs_wav(t.format);
         if t.missing || !t.path.exists() {
             report.skipped_missing.push(t.id);
             if let Some(p) = placement.tracks.get(&t.id) {
                 // Keep whatever is already on the stick.
                 placed.push(PlacedTrack {
                     stick_path: p.path.clone(),
+                    wav: p.wav.clone().filter(|_| convert),
+                    skip_club_usb: convert && p.wav.is_none(),
                     record: t,
                 });
             }
@@ -291,17 +330,62 @@ pub fn sync_device(
                 p
             }
         };
+        // A stick with only the Club player USB format needs no original
+        // next to the WAV copy (removed below, once the conversion worked).
         let dst = stick_file(root, &stick_path);
-        let up_to_date = existing
-            .is_some_and(|p| p.hash == t.content_hash && p.size == t.file_size)
-            && std::fs::metadata(&dst).is_ok_and(|m| m.len() == t.file_size);
-        if !up_to_date {
-            to_copy.push((placed.len(), t.path.clone()));
-            changed.insert(t.id);
+        if convert && !formats.opendjdecks {
+            if dst.exists() {
+                unneeded.push((placed.len(), dst.clone()));
+            }
+        } else {
+            let up_to_date = existing
+                .is_some_and(|p| p.hash == t.content_hash && p.size == t.file_size)
+                && std::fs::metadata(&dst).is_ok_and(|m| m.len() == t.file_size);
+            if !up_to_date {
+                to_copy.push((placed.len(), t.path.clone()));
+                changed.insert(t.id);
+            }
         }
+        let previous = existing.and_then(|p| p.wav.clone());
+        let wav = if convert {
+            let path = match &previous {
+                Some(w) => w.path.clone(),
+                None => {
+                    let p = wav_path(&stick_path, &taken);
+                    taken.insert(p.to_lowercase());
+                    p
+                }
+            };
+            let current = previous.as_ref().filter(|w| {
+                w.hash == t.content_hash
+                    && std::fs::metadata(stick_file(root, &w.path)).is_ok_and(|m| m.len() == w.size)
+            });
+            match current {
+                Some(w) => Some(w.clone()),
+                None => {
+                    to_convert.push((placed.len(), previous.clone()));
+                    changed.insert(t.id);
+                    Some(WavCopy {
+                        path,
+                        hash: t.content_hash.clone(),
+                        size: convert::estimated_size(t.duration, t.sample_rate),
+                        sample_rate: t.sample_rate,
+                    })
+                }
+            }
+        } else {
+            if let Some(w) = &previous {
+                // The option was turned off or the format no longer needs it.
+                stale.push(stick_file(root, &w.path));
+                changed.insert(t.id);
+            }
+            None
+        };
         placed.push(PlacedTrack {
             record: t,
             stick_path,
+            wav,
+            skip_club_usb: false,
         });
     }
 
@@ -315,7 +399,17 @@ pub fn sync_device(
                 .unwrap_or(0);
             t.record.file_size.saturating_sub(old)
         })
-        .sum();
+        .sum::<u64>()
+        + to_convert
+            .iter()
+            .map(|(i, _)| {
+                let wav = placed[*i].wav.as_ref().expect("converted tracks have a path");
+                let old = std::fs::metadata(stick_file(root, &wav.path))
+                    .map(|m| m.len())
+                    .unwrap_or(0);
+                wav.size.saturating_sub(old)
+            })
+            .sum::<u64>();
     if let Some((_, free)) = crate::volumes::space(root) {
         // Keep a small reserve for metadata.
         if needed + (8 << 20) > free {
@@ -326,12 +420,18 @@ pub fn sync_device(
     // Remove tracks that left the device.
     for id in &removed {
         if let Some(p) = placement.tracks.remove(id) {
-            let f = stick_file(root, &p.path);
-            if p.path.starts_with("/Contents/") && std::fs::remove_file(&f).is_ok() {
-                report.removed += 1;
-                if let Some(parent) = f.parent() {
-                    prune_empty_dirs(parent.to_path_buf(), &root.join("Contents"));
+            let mut gone = false;
+            for path in std::iter::once(&p.path).chain(p.wav.as_ref().map(|w| &w.path)) {
+                let f = stick_file(root, path);
+                if path.starts_with("/Contents/") && std::fs::remove_file(&f).is_ok() {
+                    gone = true;
+                    if let Some(parent) = f.parent() {
+                        prune_empty_dirs(parent.to_path_buf(), &root.join("Contents"));
+                    }
                 }
+            }
+            if gone {
+                report.removed += 1;
             }
         }
     }
@@ -362,18 +462,66 @@ pub fn sync_device(
                 path: t.stick_path.clone(),
                 hash: t.record.content_hash.clone(),
                 size: t.record.file_size,
+                wav: None,
             },
         );
     }
+    // Write the WAV copies.
+    let total_converts = to_convert.len();
+    for (done, (i, previous)) in to_convert.iter().enumerate() {
+        let name = placed[*i].record.tags.title.clone();
+        progress(Progress::Converting {
+            done,
+            total: total_converts,
+            current: name,
+        });
+        let src = placed[*i].record.path.clone();
+        let wav = placed[*i].wav.as_ref().expect("converted tracks have a path");
+        let dst = stick_file(root, &wav.path);
+        match convert::write_wav(&src, &dst, cancel) {
+            Ok(w) => {
+                let slot = placed[*i].wav.as_mut().expect("converted tracks have a path");
+                slot.size = w.size;
+                slot.sample_rate = w.sample_rate;
+                report.converted += 1;
+                report.bytes_copied += w.size;
+            }
+            Err(ConvertError::Cancelled) => return Err(SyncError::Cancelled),
+            Err(ConvertError::Io(e)) => return Err(e.into()),
+            Err(ConvertError::Decode(e)) => {
+                let id = placed[*i].record.id;
+                tracing::warn!(track = %id, error = %e, "conversion failed");
+                report.conversion_failed.push(id);
+                let t = &mut placed[*i];
+                t.wav = previous.clone().filter(|w| stick_file(root, &w.path).exists());
+                t.skip_club_usb = t.wav.is_none();
+            }
+        }
+    }
     for t in &placed {
-        placement
+        let entry = placement
             .tracks
             .entry(t.record.id)
             .or_insert_with(|| Placement {
                 path: t.stick_path.clone(),
                 hash: t.record.content_hash.clone(),
                 size: t.record.file_size,
+                wav: None,
             });
+        entry.wav = t.wav.clone();
+    }
+    stale.extend(
+        unneeded
+            .into_iter()
+            .filter(|(i, _)| !placed[*i].skip_club_usb)
+            .map(|(_, f)| f),
+    );
+    for f in &stale {
+        if std::fs::remove_file(f).is_ok() {
+            if let Some(parent) = f.parent() {
+                prune_empty_dirs(parent.to_path_buf(), &root.join("Contents"));
+            }
+        }
     }
     placement.save(root)?;
     if cancel.load(Ordering::Relaxed) {

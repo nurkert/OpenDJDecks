@@ -173,6 +173,8 @@ export component AppWindow inherits Window {
     in property <[NodeChoice]> device-content;
     in property <bool> device-club-usb;
     in property <bool> device-opendjdecks;
+    in property <bool> device-club-compat;
+    in property <bool> eject-when-done;
     in property <[ProposalRow]> proposals;
     // Encrypted library import dialog (the key is cleared after use).
     in property <bool> encrypted-import-open;
@@ -291,11 +293,15 @@ export component AppWindow inherits Window {
     in property <bool> player-loop-in-set;
     in property <bool> player-quantize: true;
     in property <string> player-jump-size: "2 S";
+    in property <string> player-shift-tempo: "0 %";
+    in property <string> player-shift-key: "0";
+    in property <string> player-shift-result;
     in property <string> player-zoom: "8 S";
     callback player-act(string);
     callback sampler-bpm-scale(float);
     callback sampler-seq-save();
     callback sync-all-devices();
+    callback set-eject-when-done(bool);
     callback history-year-step(int);
     // Top bar MIXER, MIX PREVIEW and REC toggles (persisted in the settings).
     in property <bool> mixer-panel: true;
@@ -386,6 +392,7 @@ export component AppWindow inherits Window {
     // reorder, Tags, tag list, similar tracks, histories, tree drag.
     in property <[ColumnView]> columns;
     in property <[ColumnChoice]> column-choices;
+    in property <string> key-sort: "circle";
     in property <bool> reorderable;
     in property <bool> filter-open;
     in property <FilterView> filter;
@@ -404,6 +411,7 @@ export component AppWindow inherits Window {
     in property <string> suggestion-reference;
     callback sort-then(string);
     callback toggle-column(string);
+    callback set-key-sort(string);
     callback move-column(string, int);
     callback resize-column(string, float);
     callback column-measured(string, float);
@@ -447,7 +455,7 @@ export component AppWindow inherits Window {
     callback forget-device(int);
     callback register-volume(int);
     callback set-device-node(int, bool);
-    callback set-device-formats(bool, bool);
+    callback set-device-formats(bool, bool, bool);
     callback pick-encrypted-import-file();
     callback run-encrypted-import();
     callback cancel-encrypted-import();
@@ -693,6 +701,9 @@ export component AppWindow inherits Window {
                 loop-in-set: root.player-loop-in-set;
                 quantize: root.player-quantize;
                 jump-size: root.player-jump-size;
+                shift-tempo: root.player-shift-tempo;
+                shift-key: root.player-shift-key;
+                shift-result: root.player-shift-result;
                 zoom: root.player-zoom;
                 act(w) => { root.player-act(w); }
             }
@@ -1089,12 +1100,14 @@ export component AppWindow inherits Window {
                         explorer: root.node-kind == "explorer";
                         columns: root.columns;
                         column-choices: root.column-choices;
+                        key-sort: root.key-sort;
                         reorderable: root.reorderable;
                         filter-open: root.filter-open;
                         filter: root.filter;
                         user-tag-options: root.user-tag-options;
                         sort-then(c) => { root.sort-then(c); }
                         toggle-column(c) => { root.toggle-column(c); }
+                        set-key-sort(o) => { root.set-key-sort(o); }
                         move-column(c, i) => { root.move-column(c, i); }
                         resize-column(c, w) => { root.resize-column(c, w); }
                         column-measured(c, w) => { root.column-measured(c, w); }
@@ -1126,6 +1139,13 @@ export component AppWindow inherits Window {
                         VerticalLayout {
                             width: 360px;
                             spacing: 6px;
+                            if root.devices.length > 0: HorizontalLayout {
+                                spacing: 14px;
+                                height: 30px;
+                                PlateButton { accessible-role: button; accessible-label: "devices.sync-all"; compact: true; label: @tr("SYNC ALL STICKS"); tone: Theme.live; tooltip: @tr("Sync every plugged-in stick at the same time"); clicked => { root.sync-all-devices(); } }
+                                LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-label: "devices.eject-when-done"; label: @tr("Eject when done"); tooltip: @tr("Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"); checked: root.eject-when-done; toggled(v) => { root.set-eject-when-done(v); } }
+                                Rectangle { horizontal-stretch: 1; }
+                            }
                             for d in root.devices: DeviceLine {
                                 device: d;
                                 roomy: true;
@@ -1147,9 +1167,10 @@ export component AppWindow inherits Window {
                             Caps { text: @tr("FORMATS"); }
                             HorizontalLayout {
                                 spacing: 18px;
-                                LineToggle { label: @tr("Club player USB (export.pdb)"); tooltip: @tr("Also write the database Club players read (compatible with Pioneer DJ players)"); checked: root.device-club-usb; toggled(v) => { root.set-device-formats(v, root.device-opendjdecks); } }
-                                LineToggle { label: @tr("OpenDJDecks"); tooltip: @tr("Write the OpenDJDecks library for other OpenDJDecks setups"); checked: root.device-opendjdecks; toggled(v) => { root.set-device-formats(root.device-club-usb, v); } }
+                                LineToggle { label: @tr("Club player USB (export.pdb)"); tooltip: @tr("Also write the database Club players read (compatible with Pioneer DJ players)"); checked: root.device-club-usb; toggled(v) => { root.set-device-formats(v, root.device-opendjdecks, root.device-club-compat); } }
+                                LineToggle { label: @tr("OpenDJDecks"); tooltip: @tr("Write the OpenDJDecks library for other OpenDJDecks setups"); checked: root.device-opendjdecks; toggled(v) => { root.set-device-formats(root.device-club-usb, v, root.device-club-compat); } }
                             }
+                            if root.device-club-usb: LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-label: "devices.club-usb-compat"; label: @tr("Maximum compatibility (WAV for older club players)"); tooltip: @tr("Writes FLAC and M4A/AAC/ALAC tracks to this stick as 16-bit WAV. Your original files stay as they are."); checked: root.device-club-compat; toggled(v) => { root.set-device-formats(root.device-club-usb, root.device-opendjdecks, v); } }
                             Caps { text: @tr("CONTENT — LISTS ON THIS STICK"); }
                             Rectangle {
                                 vertical-stretch: 1;

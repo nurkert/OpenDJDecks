@@ -98,7 +98,7 @@ fn sanitize_range(opts: &AnalysisOptions) -> (f64, f64) {
     let lo = if opts.min_bpm.is_finite() && opts.min_bpm > 20.0 {
         opts.min_bpm
     } else {
-        87.0
+        AnalysisOptions::default().min_bpm
     };
     let hi = if opts.max_bpm.is_finite() && opts.max_bpm > lo {
         opts.max_bpm
@@ -578,8 +578,40 @@ mod tests {
         }
     }
 
+    /// The BPM range chosen in Preferences decides where tempos are folded.
+    #[test]
+    fn bpm_range_presets_fold_the_tempo_estimate() {
+        let range = |min, max| AnalysisOptions {
+            min_bpm: min,
+            max_bpm: max,
+            ..AnalysisOptions::default()
+        };
+        // Default range: slow tracks read in double time, fast ones as written.
+        // Low and high presets keep the tempo where it was played.
+        for (min, max, play, expect) in [
+            (70.0, 180.0, 60.0, 120.0),
+            (70.0, 180.0, 170.0, 170.0),
+            (58.0, 115.0, 60.0, 60.0),
+            (98.0, 195.0, 65.0, 130.0),
+            (118.0, 236.0, 200.0, 200.0),
+        ] {
+            let (x, _) = click_track(44_100, play, 0.1, 40.0);
+            let g = detect_beatgrid(&x, 44_100, &range(min, max));
+            assert!(
+                (g.first_bpm().unwrap() - expect).abs() < 0.05,
+                "{min}-{max} at {play}: {:?}",
+                g.first_bpm()
+            );
+        }
+    }
+
     #[test]
     fn half_and_double_time_fold_into_range() {
+        let opts = || AnalysisOptions {
+            min_bpm: 87.0,
+            max_bpm: 175.0,
+            ..AnalysisOptions::default()
+        };
         // 65 BPM clicks → 130; 70 → 140.
         for (play, expect) in [(65.0, 130.0), (70.0, 140.0)] {
             let (x, _) = click_track(44_100, play, 0.1, 40.0);

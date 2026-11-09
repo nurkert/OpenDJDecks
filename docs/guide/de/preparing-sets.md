@@ -2,7 +2,7 @@
 title: Ein Set vorbereiten
 description: Ein Set ist eine Playlist mit Plan. Sieh den Verlauf von Tempo, Tonart und Energie, schreib Übergangsnotizen, halte Ersatz-Tracks bereit und plane die Startzeit.
 keywords: [set, sets, setliste, planen, planung, verlauf, set verlauf, übergang, übergänge, notizen, ersatz, reihenfolge, energie, tonart, tempo, harmonisch]
-features: [browser-sets-flow, browser-set-backups, shell-prepare-layouts]
+features: [prepare-preview-shift, browser-sets-flow, browser-set-backups, shell-prepare-layouts]
 ---
 
 Ein Set ist eine geordnete Liste mit Extras für den Auftritt: Es zeigt, wie sich Tempo, Tonart und Energie von Track zu Track entwickeln, und du kannst dir für jeden Übergang Notizen hinterlassen.
@@ -35,6 +35,16 @@ Klicke eine Position an, um sie auszuwählen. Notizen, Ersatz-Tracks und was du 
 
 - Lies die **MATCH**-Spalte, während ein Kandidat läuft, oder öffne **PASSEND** für Vorschläge; siehe [Bibliothek](library.md#die-match-spalte).
 - Hot Cues und Memory Cues, die du beim Vorbereiten setzt, sind automatisch auf dem Stick und in Perform.
+
+## Einen Track in anderem Tempo oder anderer Tonart vorhören (ab Version 0.6)
+
+Bevor du dich auf einen Übergang festlegst, kannst du einen Track wie gepitcht anhören: Öffne im Prepare-Player den Reiter **TEMPO / TONART**.
+
+- Die Pfeile bei **TEMPO** ändern die Geschwindigkeit des Vorhörens (in Prozent); die Tonart bleibt gleich.
+- Die Pfeile bei **TONART** verschieben ihn in Halbtonschritten nach oben oder unten.
+- Neben den Pfeilen liest du Tempo und Tonart des Vorhörens ab; **ZURÜCKSETZEN** bringt alles zurück zum Original.
+
+Das gilt nur fürs Hören: Der gespeicherte Track, sein Beatgrid und seine Analyse ändern sich nicht, und wenn du ihn auf ein Deck lädst, spielt er wie immer. Die Verschiebung endet von selbst, sobald du einen anderen Track vorhörst.
 
 ## Layouts zum Vorbereiten
 

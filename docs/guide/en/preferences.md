@@ -2,7 +2,7 @@
 title: Preferences and keyboard shortcuts
 description: Audio devices, language and appearance, waveforms, deck defaults, every keyboard shortcut and how to rebind it.
 keywords: [preferences, settings, options, audio, output device, buffer, sample rate, language, german, english, theme, appearance, dark, light, colour blind, contrast, scale, zoom, waveform colour, shortcut, shortcuts, keyboard, key binding, keybindings, keys, tasten, belegen, rebind]
-features: [prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends]
+features: [analysis-bpm-ranges, prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends]
 ---
 
 Open **Preferences** with the gear in the top bar, or `⌘,` on the Mac and `Ctrl+,` on Windows and Linux. `Esc` closes the window. **FIND A SETTING** at the top searches all pages.
@@ -27,6 +27,15 @@ Language, key notation (**Camelot**, **Open Key** or **musical**), the appearanc
 ## Analysis, Recording
 
 See [Beatgrids](beatgrid.md#if-the-tempo-keeps-coming-out-wrong) for the **BPM range** and [Recording](recording.md) for the recording page.
+
+**BPM range** (from version 0.6) tells the tempo analysis which range your music lives in. Tracks that come out at half or double the tempo are moved into the range you pick:
+
+- **70–180** is the default and suits most music.
+- **58–115** is for slow music like reggae or downtempo.
+- **98–195** is for faster genres, where a track should not read as half tempo.
+- **118–236** is for very fast music like drum and bass or hardcore.
+
+The range only applies to tracks analysed from now on. To change an analysed track, choose **Analyse again** from its menu in the player or list.
 
 ## Controller
 

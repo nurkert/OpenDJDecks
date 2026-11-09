@@ -5751,3 +5751,51 @@ msgstr "SPÄTER"
 msgctxt "UpdatePrompt"
 msgid "UPDATE NOW"
 msgstr "JETZT AKTUALISIEREN"
+
+msgctxt "AppWindow"
+msgid "SYNC ALL STICKS"
+msgstr "ALLE STICKS SYNCHRONISIEREN"
+
+msgctxt "AppWindow"
+msgid "Sync every plugged-in stick at the same time"
+msgstr "Alle eingesteckten Sticks gleichzeitig synchronisieren"
+
+msgctxt "AppWindow"
+msgid "Eject when done"
+msgstr "Nach dem Sync auswerfen"
+
+msgctxt "AppWindow"
+msgid "Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"
+msgstr "Jeden Stick auswerfen, sobald sein Sync fertig ist (auch wenn der Sync über die Überschrift GERÄTE gestartet wurde)"
+
+msgctxt "AppWindow"
+msgid "Maximum compatibility (WAV for older club players)"
+msgstr "Maximale Kompatibilität (WAV für ältere Club-Player)"
+
+msgctxt "AppWindow"
+msgid "Writes FLAC and M4A/AAC/ALAC tracks to this stick as 16-bit WAV. Your original files stay as they are."
+msgstr "Schreibt FLAC- und M4A/AAC/ALAC-Tracks als 16-Bit-WAV auf diesen Stick. Deine Originaldateien bleiben unverändert."
+
+msgctxt "PreparePlayer"
+msgid "TEMPO / KEY"
+msgstr "TEMPO / TONART"
+
+msgctxt "PreparePlayer"
+msgid "Preview at another tempo (the key stays); the track and its analysis are not changed"
+msgstr "In anderem Tempo vorhören (die Tonart bleibt); der Track und seine Analyse ändern sich nicht"
+
+msgctxt "PreparePlayer"
+msgid "Preview in another key, in semitones; the track and its analysis are not changed"
+msgstr "In anderer Tonart vorhören, in Halbtönen; der Track und seine Analyse ändern sich nicht"
+
+msgctxt "PreparePlayer"
+msgid "Back to the original tempo and key"
+msgstr "Zurück zum Originaltempo und zur Originaltonart"
+
+msgctxt "TrackTable"
+msgid "Sort keys by circle of fifths"
+msgstr "Tonarten nach Quintenzirkel sortieren"
+
+msgctxt "TrackTable"
+msgid "Sort keys alphabetically"
+msgstr "Tonarten alphabetisch sortieren"

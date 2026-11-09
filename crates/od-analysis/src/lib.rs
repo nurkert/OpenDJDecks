@@ -54,12 +54,12 @@ pub struct AnalysisOptions {
 }
 
 impl Default for AnalysisOptions {
-    /// 87–175 BPM (the usual DJ fold: hip-hop doubles, drum & bass stays at
-    /// 170+), phrases on, full quality.
+    /// 70–180 BPM (halves and doubles fold into it: hip-hop at 90 stays,
+    /// drum & bass at 174 stays), phrases on, full quality.
     fn default() -> Self {
         Self {
-            min_bpm: 87.0,
-            max_bpm: 175.0,
+            min_bpm: 70.0,
+            max_bpm: 180.0,
             detect_phrases: true,
             lite: false,
         }

@@ -15,7 +15,7 @@ pub(crate) use columns::sanitize as sanitize_columns;
 pub(crate) use sources::load_tag_list;
 pub(crate) use tracks::{
     SortFields, art_px, art_sender, default_descending, key_distance, list_images, poll_artworks, refresh_tracks,
-    same_row, sort_key_known, sort_rows,
+    same_row, sort_key_known, sort_rows, KeyOrder,
 };
 pub(crate) use tree::{refresh_tree, stick_root_id};
 
@@ -973,6 +973,13 @@ fn wire_columns(app: &Rc<App>) {
             }
         });
         columns::refresh(&a);
+    }));
+    ui.on_set_key_sort(handler!(app, |a, order: SharedString| {
+        a.state
+            .borrow_mut()
+            .change_settings(|s| s.browser.key_sort = order.to_string());
+        a.state.borrow_mut().load_rows();
+        refresh_tracks(&a);
     }));
     ui.on_sort_then(handler!(app, |a, col: SharedString| {
         let primary = a.state.borrow().browser.sort.clone();

@@ -33,6 +33,15 @@ pub(crate) struct PlayerState {
     /// [`JUMP_SIZES`]) of the player.
     pub loop_beats: f64,
     pub jump: Option<usize>,
+    /// Preview at another tempo or key (TEMPO / KEY tab): percent and
+    /// semitones, for the track [`Self::shift_track`] (the shift ends when
+    /// another track is previewed).
+    pub shift_tempo: i32,
+    pub shift_key: i32,
+    pub shift_track: Option<TrackId>,
+    /// The shift has put the preview deck under key lock; its own switches
+    /// are not remembered until they are back (`engine::remember_deck_switches`).
+    pub shift_engaged: bool,
 }
 
 /// Jump sizes of the player's − / + in seconds.
@@ -853,6 +862,161 @@ pub(crate) fn detail_span(app: &App) -> f64 {
     st.settings.view.zoom_span as f64 / 2f64.powi(st.player.zoom)
 }
 
+/// The steps of the preview shift (TEMPO / KEY tab), percent and semitones.
+const SHIFT_TEMPO_MAX: i32 = 16;
+const SHIFT_KEY_MAX: i32 = 12;
+
+/// The key `semitones` away from `key`.
+fn shifted_key(key: od_core::MusicalKey, semitones: i32) -> od_core::MusicalKey {
+    od_core::MusicalKey::new((key.tonic as i32 + semitones).rem_euclid(12) as u8, key.mode)
+}
+
+/// Read-outs of the preview shift: the tempo and key steppers and what the
+/// shifted preview comes to ("127.50 BPM · 9A"), empty without a shift.
+pub(crate) fn shift_readout(st: &crate::state::AppState) -> (String, String, String) {
+    let p = &st.player;
+    let (tempo, key) = if p.current == p.shift_track {
+        (p.shift_tempo, p.shift_key)
+    } else {
+        (0, 0)
+    };
+    let tempo_text = if tempo == 0 {
+        "0 %".to_string()
+    } else {
+        format!("{tempo:+} %")
+    };
+    let key_text = format!("{key:+}").replace("+0", "0");
+    let result = if tempo == 0 && key == 0 {
+        String::new()
+    } else if let Some(t) = p.current.and_then(|id| st.src().track(id).ok()) {
+        let bpm = t.bpm.map(|b| format!("{:.2} BPM", b * (1.0 + tempo as f64 / 100.0)));
+        let keyed = t
+            .key
+            .map(|k| shifted_key(k, key).format(st.settings.key_notation()));
+        [bpm, keyed].into_iter().flatten().collect::<Vec<_>>().join(" · ")
+    } else {
+        String::new()
+    };
+    (tempo_text, key_text, result)
+}
+
+/// One step of the TEMPO / KEY tab on the selected track.
+fn change_shift(app: &App, what: &str) {
+    let Some(track) = app.state.borrow().player.current else {
+        return;
+    };
+    {
+        let mut st = app.state.borrow_mut();
+        let p = &mut st.player;
+        if p.shift_track != Some(track) {
+            p.shift_tempo = 0;
+            p.shift_key = 0;
+            p.shift_track = Some(track);
+        }
+        match what {
+            "shift-tempo-up" => p.shift_tempo = (p.shift_tempo + 1).min(SHIFT_TEMPO_MAX),
+            "shift-tempo-down" => p.shift_tempo = (p.shift_tempo - 1).max(-SHIFT_TEMPO_MAX),
+            "shift-key-up" => p.shift_key = (p.shift_key + 1).min(SHIFT_KEY_MAX),
+            "shift-key-down" => p.shift_key = (p.shift_key - 1).max(-SHIFT_KEY_MAX),
+            _ => {
+                p.shift_tempo = 0;
+                p.shift_key = 0;
+            }
+        }
+    }
+    apply_shift(app);
+}
+
+/// Sends the preview shift to the preview deck: key lock keeps the track's
+/// key while the tempo moves, the key shift moves the key on top. Nothing
+/// is stored with the track.
+fn apply_shift(app: &App) {
+    let d = decks::PREVIEW_DECK;
+    let (tempo, key, engaged, restore) = {
+        let st = app.state.borrow();
+        let p = &st.player;
+        (
+            p.shift_tempo,
+            p.shift_key,
+            p.shift_engaged,
+            crate::preferences::deck_defaults(&st.settings, d),
+        )
+    };
+    if tempo == 0 && key == 0 {
+        if engaged {
+            for cmd in restore {
+                engine::deck_cmd(app, d, cmd);
+            }
+            engine::deck_cmd(app, d, DeckCommand::SetTempoFader(0.0));
+            engine::deck_cmd(app, d, DeckCommand::SetKeyShift(0.0));
+        }
+        return;
+    }
+    // Commands before the first start of audio would be lost.
+    if !engine::ensure_engine(app) {
+        return;
+    }
+    app.state.borrow_mut().player.shift_engaged = true;
+    engine::deck_cmd(app, d, DeckCommand::SetTempoRange(od_engine::TempoRange::Sixteen));
+    engine::deck_cmd(app, d, DeckCommand::SetKeylock(true));
+    engine::deck_cmd(app, d, DeckCommand::SetTempoFader(tempo as f32 / SHIFT_TEMPO_MAX as f32));
+    engine::deck_cmd(app, d, DeckCommand::SetKeyShift(key as f32));
+}
+
+/// Ends the preview shift unless it was set for `track` (called when the
+/// preview deck is about to play `track`).
+pub(crate) fn reset_shift_for(app: &App, track: TrackId) {
+    let reset = {
+        let p = &app.state.borrow().player;
+        p.shift_track != Some(track) && (p.shift_tempo != 0 || p.shift_key != 0)
+    };
+    if reset {
+        reset_preview_shift(app);
+    }
+}
+
+/// Clears the preview shift (shift back to normal playback).
+pub(crate) fn reset_preview_shift(app: &App) {
+    {
+        let p = &mut app.state.borrow_mut().player;
+        p.shift_tempo = 0;
+        p.shift_key = 0;
+        p.shift_track = None;
+    }
+    apply_shift(app);
+    project_controls(app, engine::snapshot(app).as_ref());
+}
+
+/// Frame tick: the shift has let go of the preview deck once its switches
+/// show the remembered values again.
+pub(crate) fn settle_shift(app: &App, state: &od_engine::EngineState) {
+    let (engaged, shifted) = {
+        let p = &app.state.borrow().player;
+        (p.shift_engaged, p.shift_tempo != 0 || p.shift_key != 0)
+    };
+    if !engaged || shifted {
+        return;
+    }
+    let want = {
+        let st = app.state.borrow();
+        let defaults = crate::preferences::deck_defaults(&st.settings, decks::PREVIEW_DECK);
+        (
+            defaults.iter().find_map(|c| match c {
+                DeckCommand::SetKeylock(on) => Some(*on),
+                _ => None,
+            }),
+            defaults.iter().find_map(|c| match c {
+                DeckCommand::SetTempoRange(r) => Some(*r),
+                _ => None,
+            }),
+        )
+    };
+    let d = &state.decks[decks::PREVIEW_DECK];
+    if want == (Some(d.keylock), Some(d.tempo_range)) {
+        app.state.borrow_mut().player.shift_engaged = false;
+    }
+}
+
 /// Moves the cursor to the next (or previous) cue of the current track.
 /// The player's own controls (loops on the preview deck, quantize, memory
 /// cue stepping, zoom, jump size and the track menu).
@@ -956,6 +1120,8 @@ pub(crate) fn act(app: &App, what: &str) {
                 s as f32
             });
         }
+        "shift-tempo-up" | "shift-tempo-down" | "shift-key-up" | "shift-key-down"
+        | "shift-reset" => change_shift(app, what),
         "undo" => app.undo(),
         "redo" => app.redo(),
         "menu:analyse" => app.ui.invoke_analyse_selected(),
@@ -1003,6 +1169,16 @@ pub(crate) fn project_controls(app: &App, state: Option<&od_engine::EngineState>
         .map(|s| s.decks[decks::PREVIEW_DECK].loop_state)
         .unwrap_or_default();
     let set = |a: SharedString, b: &str| a.as_str() != b;
+    let (shift_tempo, shift_key, shift_result) = shift_readout(&app.state.borrow());
+    if set(ui.get_player_shift_tempo(), &shift_tempo) {
+        ui.set_player_shift_tempo(shift_tempo.into());
+    }
+    if set(ui.get_player_shift_key(), &shift_key) {
+        ui.set_player_shift_key(shift_key.into());
+    }
+    if set(ui.get_player_shift_result(), &shift_result) {
+        ui.set_player_shift_result(shift_result.into());
+    }
     if set(
         ui.get_player_loop_size(),
         &format::beats(if l.active {
@@ -1243,6 +1419,14 @@ pub(crate) fn wire(app: &Rc<App>) {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn preview_shift_moves_the_key_around_the_wheel() {
+        use super::shifted_key;
+        let am = od_core::MusicalKey::parse("Am").unwrap();
+        assert_eq!(shifted_key(am, 1), od_core::MusicalKey::parse("Bbm").unwrap());
+        assert_eq!(shifted_key(am, -12), am);
+    }
 
     #[test]
     fn cue_list_edits() {

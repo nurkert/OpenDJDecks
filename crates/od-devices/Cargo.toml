@@ -17,6 +17,7 @@ thiserror.workspace = true
 tracing.workspace = true
 crossbeam-channel.workspace = true
 blake3.workspace = true
+hound = "3"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

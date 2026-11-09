@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 216 features; 210 in scope: 210 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 221 features; 215 in scope: 215 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -88,6 +88,8 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Import an encrypted library database (opt-in, the user supplies the key) | DONE | `od-import/src/encrypted_library.rs`, `od-import/src/sqlcipher.rs`, `od-ui/src/import.rs::start_encrypted_import`; The user picks the file and types the key under Advanced (or `od-cli encrypted-library-import`, `OD_ENCRYPTED_LIBRARY_KEY`). No key is contained, fetched, stored or logged; the source is read-only and the temporary decrypted copy is removed, also on error | 9 |  |
 | MCP server: full library access for preparing sets with an LLM | DONE | `apps/od-mcp/src/tools.rs`, `apps/od-mcp/src/server.rs`, `apps/od-mcp/src/lighting.rs`, `crates/od-lighting/src/rig.rs`; Owner request 2026-11-06 (SPEC §5.6). `opendjdecks-mcp` (MCP 2025-06-18, stdio or loopback HTTP): 8 read and 10 write tools, track/node resources, build_set and fix_transitions prompts; each write is one undo step "MCP: …" plus change-log rows (stick sync); setup in docs/mcp.md. Owner request 2026-11-07: the light show too — 8 lighting tools (rig overview, patch, settings, group looks, outputs, cue stack, track cues, live actions); the app reloads the edited rig and runs live actions from the rig's inbox; (SPEC §5.6) | 10 | **P1** |
 | Played tick in the list (on air this session) | DONE | `recorder.rs::mark_played`, `ui/table.slint`; A track that was audible on the master for 30 s in all gets a tick in the list and the Explorer; a short listen in the headphones does not count | 2 | P3 |
+| Preview a track at another tempo or key (TEMPO / KEY tab in the Prepare player) | DONE | `player.rs::apply_shift`, `player.rs::shift_readout`, `ui/player.slint::PreparePlayer`; Steps of whole percents (with key lock, so the key stays) and semitones on the hidden preview deck. Nothing is stored with the track or its analysis; the shift ends when another track is previewed and is not remembered as a deck switch | 2 | P2 |
+| KEY column sorts by circle of fifths or alphabetically (stored choice) | DONE | `browser/tracks.rs::KeyOrder`, `browser/tracks.rs::compare_keys`, `ui/table.slint::TrackTable`; Two checkable items in the column menu; circle of fifths (Camelot order) is the default. Alphabetical sorts by the key text in the chosen notation. The key sort is always done in the app, not by SQL | 2 | P2 |
 
 ## 2. Analysis
 
@@ -106,6 +108,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Loudness + auto gain | DONE | `od-analysis/src/loudness.rs`; gain in `perform.rs::load_track`, engine default on (`mixer.rs` `auto_gain: true`); no toggle in UI | 3 |  |
 | Re-analyse selected, never overwrite manual/imported | DONE | `on_analyse_selected`; `DataSource` priority in `tracks.rs::store_analysis` | 3 |  |
 | Phrase editing (GRID EDIT \| PHRASE EDIT, cut / clear) | DONE | `crates/od-ui/src/phrase_edit.rs`, `crates/od-library/src/tracks.rs::set_phrases`; PHRASE tab next to GRID in the Prepare player: kind of the phrase at the cursor (a gap gets a new phrase), CUT at the nearest bar (at least 4 bars each side), BOUNDARY TO CURSOR, CLEAR; keyboard commands. Stored with Library::set_phrases (normalized with od_core::normalize_phrases, one undo step, change log → sticks resync). A new analysis of the track replaces edited phrases; (UX §2.5) | 6 | P3 |
+| BPM range presets for tempo detection (70–180, 58–115, 98–195, 118–236) | DONE | `settings.rs::BPM_RANGES`, `preferences.rs::bpm_choices`, `workers.rs::AnalysisControl`, `tempo.rs::sanitize_range`; Preferences > Analysis offers four BPM ranges (70–180 is the default), used for new analyses and for analysing a track again. A range stored by an older version stays selected and in use until another is chosen | 2 | P2 |
 
 ## 3. Cues and loops
 
@@ -259,6 +262,8 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | OpenDJDecks native stick format | DONE | `od-format-native` | 3 |  |
 | Club player USB export (`export.pdb` + ANLZ DAT/EXT/2EX) | DONE | `od-format-clubusb`, `od-devices/src/club_usb.rs`; per-stick choice in the stick board (own format stays the default) | 9 |  |
 | Player settings on Club player USB (`MYSETTING`) | DONE | `od-format-clubusb/src/mysetting.rs`, `od-devices/src/club_usb.rs::player_settings`; `/PIONEER/MYSETTING.DAT` written on every Club player USB sync from the deck defaults (quantize, auto cue, tempo range, jog mode, language); other settings get the documented defaults | 5 | P3 |
+| Sync all sticks at once, with eject when done | DONE | `manager.rs::sync_all`, `manager.rs::sync_stick`, `devices.rs::wire`; SYNC ALL STICKS (and the sync key in the DEVICES heading) runs every plugged-in stick on its own thread with its own progress line. A stored Eject when done ejects each stick once its sync has finished; a stick that fails keeps its error and stays mounted, the others carry on | 2 | P2 |
+| Maximum compatibility: FLAC and AAC/ALAC as 16-bit WAV on Club player USB sticks | DONE | `convert.rs::write_wav`, `sync.rs::sync_device`, `club_usb.rs::ClubUsbWriter`, `placement.rs::WavCopy`; Off by default, per stick. FLAC, AAC and ALAC tracks are written as stereo 16-bit WAV for Club player USB (sample rates above 48 kHz are reduced); the export and analysis files name the .wav, a conversion is only redone when the source changes and removed when it is stale. Sticks that also carry the OpenDJDecks format keep the original file for it. Originals in the library are never touched. | 5 | P2 |
 
 ## 11. Preferences, audio and controllers
 
@@ -325,13 +330,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 210 |
+| DONE | 215 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **216** |
+| **Total** | **221** |
 
 ## P1 gaps and implementation notes
 

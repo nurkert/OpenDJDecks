@@ -2,7 +2,7 @@
 title: USB-Sticks und Sync
 description: Registriere einen Stick einmal. Danach erreicht ihn jede Änderung automatisch und schrittweise, bereit für OpenDJDecks auf einem anderen Rechner oder den Raspberry Pi.
 keywords: [usb, stick, sticks, usb stick, sync, synchronisieren, sychronisieren, export, exportieren, registrieren, auswerfen, neu schreiben, stick status, gerät, sync manager]
-features: [export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
+features: [export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
 ---
 
 Der Stick ist ein Spiegel deiner Bibliothek. Registriere ihn einmal mit den Listen, die darauf gehören, und jeder geänderte Cue, jede Playlist und jedes Grid ist innerhalb von Sekunden auf dem Stick, solange er steckt. Es gibt keinen Export-Schritt, an den du denken musst.
@@ -22,6 +22,17 @@ Das Stick-Board zeigt seinen Zustand, was aussteht, und den Fortschritt.
 - **AUSWERFEN** (`⌘E`) wirft ihn sicher aus. Warte darauf, bevor du ihn ziehst.
 - **VERGESSEN** beendet das Synchronisieren dieses Sticks.
 
+## Alle Sticks auf einmal synchronisieren (ab Version 0.6)
+
+Mehrere Sticks zu befüllen, etwa Backups für eine Tour? Stecke alle ein und öffne die Stick-Übersicht:
+
+1. Drücke **ALLE STICKS SYNCHRONISIEREN**. Jeder eingesteckte Stick wird gleichzeitig synchronisiert, jeder mit einer eigenen Fortschrittslinie.
+2. Mit **Nach dem Sync auswerfen** wirft sich jeder Stick selbst aus, sobald er fertig ist, so kannst du sie einzeln abziehen. Diese Einstellung bleibt, bis du sie wieder ausschaltest.
+
+Läuft bei einem Stick etwas schief, zum Beispiel weil er voll ist, erscheint der Fehler nur bei diesem Stick, die anderen laufen weiter. Ein Stick mit Fehler wird nicht ausgeworfen, damit du die Meldung lesen und es erneut versuchen kannst.
+
+Der kleine Sync-Pfeil neben **GERÄTE** im Baum macht dasselbe mit derselben Einstellung.
+
 ## Was auf dem Stick liegt
 
 Unter **INHALT — LISTEN AUF DIESEM STICK** wählst du die Listen. Der Stick trägt deine Musik mit Cues, Beatgrids, Phrasen und, falls vorhanden, den getrennten Parts für Stems. Sticks werden von OpenDJDecks gelesen, etwa auf einem anderen Rechner oder der [Raspberry-Pi-Einheit](raspberry-pi.md). Damit ein Stick auch auf Club-Playern läuft, schalte unten das Club-Player-USB-Format ein.
@@ -35,6 +46,20 @@ Unter **INHALT — LISTEN AUF DIESEM STICK** wählst du die Listen. Der Stick tr
 Ab Version 0.6 kann ein Stick zusätzlich das Club-Player-USB-Format tragen, das mit Pioneer-DJ-Playern kompatibel ist. Das wählst du für jeden Stick einzeln: Stick auswählen und unter **FORMATE** **Club-Player-USB (export.pdb)** einschalten. Das eigene Format von OpenDJDecks bleibt standardmäßig an, beide können gleichzeitig aktiv sein.
 
 Ist das Format an, schreibt jeder Sync zusätzlich die Datenbank und die Analyse, die die Player lesen, mit deinen Playlists, Cues, Beatgrids und Waveforms, und übernimmt deine Standard-Player-Einstellungen (Quantize, Auto Cue, Tempobereich, Jog-Modus, Sprache). Nur geänderte Tracks werden neu geschrieben. Ogg- und Opus-Dateien bleiben außen vor, weil Player sie nicht abspielen können.
+
+### Maximale Kompatibilität für ältere Club-Player (ab Version 0.6)
+
+Ältere Club-Player können FLAC und M4A (AAC, ALAC) oft nicht lesen. Hast du dafür einen Stick dabei, schalte für ihn **Maximale Kompatibilität (WAV für ältere Club-Player)** ein. Die Option erscheint unter **FORMATE**, sobald **Club-Player-USB** an ist, und gilt nur für diesen Stick.
+
+Ist die Option an:
+
+- Diese Tracks kommen als 16-Bit-WAV mit der Endung `.wav` auf den Stick. Sehr hochauflösende Tracks über 48 kHz werden dabei so verkleinert, dass sie überall laufen. MP3 und WAV bleiben, wie sie sind.
+- Deine Originaldateien in der Bibliothek werden nie verändert.
+- Ein Track wird nur einmal umgewandelt. Erneut umgewandelt wird er nur, wenn sich die Originaldatei ändert; wenn du Cues oder Beatgrid änderst, wird nur die Analyse auf dem Stick aktualisiert.
+- Schaltest du die Option aus oder verlässt ein Track den Stick, wird seine WAV-Datei vom Stick entfernt.
+- Eine WAV-Datei ist größer als das Original, plane also etwas mehr Platz auf dem Stick ein.
+
+Trägt ein Stick zusätzlich das OpenDJDecks-Format, bleibt das Original neben der WAV-Datei liegen, sodass sich beim Abspielen in OpenDJDecks nichts ändert.
 
 ### Cues und Historien von den Playern
 

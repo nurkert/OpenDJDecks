@@ -461,6 +461,8 @@ pub(crate) fn start(app: &App) -> bool {
     if app.guard_read_only() {
         return false;
     }
+    // The grid is edited at the track's own tempo and key.
+    player::reset_preview_shift(app);
     let Some(id) = app.state.borrow().player.current else {
         app.status("Select a track to edit its beatgrid");
         return false;

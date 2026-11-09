@@ -2,7 +2,7 @@
 title: Bibliothek, Playlists und Smart-Listen
 description: Tracks finden, sortieren und taggen. Playlists, Smart-Listen, Tags, Auto-Sortierung, die MATCH-Spalte, passende Tracks und der Explorer.
 keywords: [bibliothek, sammlung, playlist, playlists, smart liste, smart playlist, ordner, suche, suchen, filter, tag, tags, bewertung, sterne, farbe, kommentar, sortieren, auto sortierung, match, match spalte, passend, duplikate, doppelt, verschoben, fehlende dateien, explorer, verlauf, spalten, rückgängig, backup]
-features: [browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck]
+features: [browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck]
 ---
 
 Der Browser ist in Prepare und Perform derselbe. Links liegen deine Quellen und Listen, in der Mitte die Tracks, rechts eine Leiste mit Panels.
@@ -12,6 +12,15 @@ Der Browser ist in Prepare und Perform derselbe. Links liegen deine Quellen und 
 ## Die Quellen links
 
 Die schmale Leiste schaltet, was der Baum zeigt: **ALLE** (die ganze Sammlung), **LISTEN** (Playlists, Sets und Smart-Listen), **PASST** (passende Tracks), **SMPL** (das Sampler-Panel in Perform), **DATEIEN** (der Explorer), **USB** (deine Sticks), **VERL** (Verläufe), **REC** (Aufnahmen) und **TAG** (die Tag-Liste).
+
+## Nach Tonart sortieren (ab Version 0.6)
+
+Klicke die Spalte **KEY**, um deine Tracks nach Tonart zu sortieren. Mit einem Rechtsklick auf die Spaltenüberschrift wählst du, wie:
+
+- **Tonarten nach Quintenzirkel sortieren** geht in musikalischer Reihenfolge rund um das Rad: 1A, 1B, 2A, 2B und so weiter. Tracks nebeneinander lassen sich harmonisch mischen. Das ist die Voreinstellung.
+- **Tonarten alphabetisch sortieren** sortiert einfach nach dem angezeigten Tonarten-Text.
+
+Deine Wahl bleibt gespeichert. Die Spalte nutzt die Tonart-Schreibweise, die du unter **Einstellungen › Analyse** gewählt hast.
 
 ## Playlists, Sets, Smart-Listen und Ordner
 

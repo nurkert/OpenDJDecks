@@ -267,14 +267,20 @@ impl ExplorerState {
 
     /// Sorts the files, keeping the selection on the same files. No column
     /// keeps the folder's name order.
-    pub fn sort(&mut self, column: &str, descending: bool, selection: &mut BTreeSet<usize>) {
+    pub fn sort(
+        &mut self,
+        column: &str,
+        descending: bool,
+        selection: &mut BTreeSet<usize>,
+        key_order: browser::KeyOrder,
+    ) {
         let selected: HashSet<PathBuf> = selection
             .iter()
             .filter_map(|&i| self.files.get(i))
             .map(|f| f.path.clone())
             .collect();
         if browser::sort_key_known(column) {
-            browser::sort_rows(&mut self.files, column, descending, &[]);
+            browser::sort_rows(&mut self.files, column, descending, &[], key_order);
         } else {
             self.files.sort_by_key(|f| name_key(&f.path));
         }
@@ -929,7 +935,8 @@ pub(crate) fn poll(app: &App) {
         if changed && browser::sort_key_known(&st.browser.sort) {
             let (col, desc) = (st.browser.sort.clone(), st.browser.descending);
             let st = &mut *st;
-            st.explorer.sort(&col, desc, &mut st.browser.selection);
+            let key_order = st.settings.key_order();
+            st.explorer.sort(&col, desc, &mut st.browser.selection, key_order);
         }
     }
     for im in imported {
@@ -1388,10 +1395,10 @@ mod tests {
             },
         ];
         let mut sel: BTreeSet<usize> = [0].into_iter().collect();
-        st.sort("title", false, &mut sel);
+        st.sort("title", false, &mut sel, browser::KeyOrder::Circle);
         assert_eq!(st.files[0].title, "Alpha");
         assert_eq!(sel.iter().copied().collect::<Vec<_>>(), vec![1]);
-        st.sort("", false, &mut sel);
+        st.sort("", false, &mut sel, browser::KeyOrder::Circle);
         assert_eq!(st.files[0].path, PathBuf::from("/a"));
         let rows = file_rows(
             &st.files,

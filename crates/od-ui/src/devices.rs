@@ -70,6 +70,19 @@ pub(crate) fn device_line(s: &DeviceStatus) -> (&'static str, String, f32) {
                     0.0
                 },
             ),
+            od_devices::Progress::Converting {
+                done,
+                total,
+                current,
+            } => (
+                "syncing",
+                format!("Converting {current}"),
+                if *total > 0 {
+                    *done as f32 / *total as f32
+                } else {
+                    0.0
+                },
+            ),
             od_devices::Progress::Writing { format } => {
                 ("syncing", format!("Writing {format} data"), 0.95)
             }
@@ -77,6 +90,21 @@ pub(crate) fn device_line(s: &DeviceStatus) -> (&'static str, String, f32) {
         },
         DeviceState::Error(e) => ("error", e.clone(), 0.0),
     }
+}
+
+/// ", 3 converted to WAV, 1 could not be converted" (empty when nothing was).
+fn conversion_summary(report: &od_devices::SyncReport) -> String {
+    let mut text = String::new();
+    if report.converted > 0 {
+        text += &od_i18n::trf(", {} converted to WAV", &[&report.converted]);
+    }
+    if !report.conversion_failed.is_empty() {
+        text += &od_i18n::trf(
+            ", {} could not be converted",
+            &[&report.conversion_failed.len()],
+        );
+    }
+    text
 }
 
 fn space(free: u64, total: u64) -> String {
@@ -131,6 +159,7 @@ pub(crate) fn refresh(app: &App) {
         }
     }
     ui.set_devices(model(rows));
+    ui.set_eject_when_done(st.settings.devices.eject_when_done);
     let vols: Vec<VolumeRow> = st
         .devices
         .volumes
@@ -157,6 +186,7 @@ pub(crate) fn refresh(app: &App) {
     ui.set_device_name(device.name.clone().into());
     ui.set_device_club_usb(device.formats.club_usb);
     ui.set_device_opendjdecks(device.formats.opendjdecks);
+    ui.set_device_club_compat(device.formats.club_usb_compat);
     let assigned: HashSet<NodeId> = st
         .lib
         .device_nodes(id)
@@ -423,7 +453,7 @@ pub(crate) fn poll(app: &App) -> bool {
                         String::new()
                     } else {
                         format!(", {} missing files skipped", report.skipped_missing.len())
-                    }
+                    } + &conversion_summary(&report)
                 ));
             }
             Event::SyncFailed { error, .. } => app.status(format!("Sync failed: {error}")),
@@ -465,22 +495,18 @@ pub(crate) fn wire(app: &Rc<App>) {
     ui.on_sync_device(handler!(app, |a, id: i32| a
         .device_manager
         .send(Command::SyncNow(DeviceId(id as i64)))));
-    // DEVICES heading: sync every registered stick now (sticks that are not
-    // plugged in are skipped by the device manager).
+    // DEVICES heading and SYNC ALL STICKS: every plugged-in stick at once
+    // (the device manager skips sticks that are not plugged in).
     ui.on_sync_all_devices(handler!(app, |a| {
-        let ids: Vec<DeviceId> = a
-            .state
-            .borrow()
-            .lib
-            .devices()
-            .unwrap_or_default()
-            .iter()
-            .map(|d| d.id)
-            .collect();
-        for id in ids {
-            a.device_manager.send(Command::SyncNow(id));
-        }
+        let eject = a.state.borrow().settings.devices.eject_when_done;
+        a.device_manager.send(Command::SyncAll { eject });
         a.status("Syncing sticks…");
+    }));
+    ui.on_set_eject_when_done(handler!(app, |a, on: bool| {
+        a.state
+            .borrow_mut()
+            .change_settings(|s| s.devices.eject_when_done = on);
+        refresh(&a);
     }));
     ui.on_rebuild_device(handler!(app, |a, id: i32| {
         a.device_manager.send(Command::Rebuild(DeviceId(id as i64)));
@@ -526,7 +552,7 @@ pub(crate) fn wire(app: &Rc<App>) {
             name.unwrap_or_default()
         ));
     }));
-    ui.on_set_device_formats(handler!(app, |a, club_usb: bool, opendjdecks: bool| {
+    ui.on_set_device_formats(handler!(app, |a, club_usb: bool, opendjdecks: bool, club_usb_compat: bool| {
         let id = a.state.borrow().devices.selected;
         if let Some(id) = id {
             let name = a
@@ -542,6 +568,7 @@ pub(crate) fn wire(app: &Rc<App>) {
                 DeviceFormats {
                     club_usb,
                     opendjdecks,
+                    club_usb_compat,
                 },
             );
             if a.report(r).is_some() {

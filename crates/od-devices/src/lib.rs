@@ -1,6 +1,7 @@
 //! USB devices: detection, registration and automatic incremental sync.
 
 pub mod club_usb;
+mod convert;
 pub mod manager;
 pub mod placement;
 pub mod sync;
