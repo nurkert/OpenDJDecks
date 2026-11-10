@@ -274,7 +274,13 @@ fn refine_tempo(o: &[f32], fr: f64, coarse: f64, lite: bool) -> f64 {
         &[(1.0, 0.02), (0.04, 0.002), (0.004, 0.0002)]
     };
     let mut center = coarse;
-    for &(span, step) in stages {
+    // The coarse tempo is only as good as one autocorrelation lag (one
+    // onset frame): about 0.7 BPM at 120 but 3.8 BPM at 280. The first
+    // stage searches at least that far, so fast tempos are not left off by
+    // a fraction of a BPM.
+    let lag_bpm = coarse * coarse / (60.0 * fr);
+    for (k, &(span, step)) in stages.iter().enumerate() {
+        let span = if k == 0 { span.max(lag_bpm) } else { span };
         let n = (span / step).round() as i64;
         let scores: Vec<(f64, f64)> = (-n..=n)
             .into_par_iter()
@@ -603,6 +609,44 @@ mod tests {
                 g.first_bpm()
             );
         }
+    }
+
+    /// [57] High tempos: generated click, four-on-the-floor kick, kick and
+    /// snare and house loops at known tempos from 170 to 280 BPM. In every
+    /// range that holds the tempo they read as played (no halving); the
+    /// default range only reports where it folds them (`--nocapture`).
+    #[test]
+    fn high_tempos_read_without_halving() {
+        let range = |min, max| AnalysisOptions {
+            min_bpm: min,
+            max_bpm: max,
+            ..AnalysisOptions::default()
+        };
+        type Gen = fn(u32, f64, f64, f64) -> (Vec<f32>, Vec<f64>);
+        let gens: [(&str, Gen); 4] = [
+            ("click", click_track),
+            ("kick", |fs, b, o, s| kick_track(fs, b, o, s, true)),
+            ("kick+snare", |fs, b, o, s| kick_track(fs, b, o, s, false)),
+            ("house", house_track),
+        ];
+        let mut report = Vec::new();
+        for (name, g) in gens {
+            for play in [170.0, 200.0, 220.0, 250.0, 280.0] {
+                let (x, onsets) = g(44_100, play, 0.11, 40.0);
+                let mut row = format!("{name:>10} {play:>5}:");
+                for (min, max) in [(70.0, 180.0), (118.0, 236.0), (150.0, 300.0)] {
+                    let gr = detect_beatgrid(&x, 44_100, &range(min, max));
+                    let got = gr.first_bpm().unwrap_or(0.0);
+                    row += &format!("  {min}-{max} → {got:.2}");
+                    let in_range = play <= max + 0.5 && play >= min - 0.5;
+                    if in_range {
+                        check(&gr, play, &onsets, 0.005);
+                    }
+                }
+                report.push(row);
+            }
+        }
+        println!("{}", report.join("\n"));
     }
 
     #[test]
