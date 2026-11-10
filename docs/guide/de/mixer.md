@@ -9,7 +9,7 @@ Der Mixer steht zwischen den Decks. Drücke **MIXER** in der oberen Leiste (`⌥
 
 ## Ein Kanal
 
-Von oben nach unten: die Kanalnummer mit ihrer **CLIP**-Lampe, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (der Channel-FX-Regler), **STEM** und **CUE**, und der Kanalfader mit seiner Anzeige. Zieh einen Regler nach oben oder unten, um ihn zu drehen; Doppelklick (oder doppeltes Tippen) setzt ihn auf die Mitte zurück.
+Von oben nach unten: die Kanalnummer mit ihrer **CLIP**-Lampe, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (der Channel-FX-Regler) und der Kanalfader mit seiner Anzeige, daneben **STEM** und **CUE**. Zieh einen Regler nach oben oder unten, um ihn zu drehen; Doppelklick (oder doppeltes Tippen) setzt ihn auf die Mitte zurück.
 
 Jeder Regler zeigt seinen Wert daneben: TRIM und EQ in dB (**AUS**, wenn ein Isolator-Band ganz heruntergedreht ist), CH FX als Seite und Stärke des Filters (**LP40** ist ein Tiefpass bei 40 %, **HP25** ein Hochpass bei 25 %), andere Channel FX als Prozent mit Vorzeichen.
 
@@ -21,18 +21,18 @@ Jeder Regler zeigt seinen Wert daneben: TRIM und EQ in dB (**AUS**, wenn ein Iso
 
 ## Basswechsel
 
-![Der Mixer mit gekilltem LOW auf Deck 2 und einem LOW-Tausch, der auf den nächsten Takt wartet](../img/mixer-bass-swap.png)
+![Der Mixer mit gekilltem LOW auf einem Deck und einem LOW-Tausch, der auf den nächsten Takt wartet](../img/mixer-bass-swap.png)
 
 **KILL** neben HI, MID und LOW nimmt dieses Band heraus, solange es leuchtet. Der Regler bleibt, wo er ist; lässt du den Kill los, kommt das Band mit dem Wert des Reglers zurück. Mit dem Isolator-EQ ist ein gekilltes Band stumm, mit dem klassischen EQ steht es auf der tiefsten Stellung des Reglers (−26 dB). Der Wert neben dem Regler zeigt **KILL**, solange er an ist.
 
-Die Reihe **SWAP** unter den Kanälen tauscht mit einem Tippen ein Band zwischen den zwei Decks im Mix:
+Die Tauschreihe unter den Kanälen (mit zwei gegenläufigen Pfeilen markiert) tauscht mit einem Tippen ein Band zwischen den zwei Decks im Mix:
 
 1. Kille das LOW des kommenden Decks (oder dreh es herunter), während das spielende Deck seinen Bass hat.
-2. Tippe in der SWAP-Reihe auf **LOW**. Die beiden Decks tauschen LOW-Regler und Kill: Das kommende Deck bekommt den Bass, das gehende verliert ihn. **MID** und **HI** machen dasselbe für ihre Bänder.
+2. Tippe in der Tauschreihe auf **LOW**. Die beiden Decks tauschen LOW-Regler und Kill: Das kommende Deck bekommt den Bass, das gehende verliert ihn. **MID** und **HI** machen dasselbe für ihre Bänder.
 
 Die Taste am Ende der Reihe bestimmt, wann getauscht wird: **SOFORT**, **BEAT** (auf dem nächsten Beat) oder **TAKT** (auf der nächsten Eins), gezählt am Beatgrid des Master-Decks. Klick sie an, um durch die drei zu schalten. Solange ein Tausch auf seinen Beat oder Takt wartet, zeigt seine Taste einen Rahmen; tippst du erneut darauf, wird er abgebrochen. Spielt kein Deck, gibt es keinen Beat, auf den gewartet werden kann, und der Tausch passiert sofort.
 
-Der Tausch wirkt auf die zwei lautesten spielenden Decks. Spielt nur ein Deck, tauscht es mit dem nächsten Deck, auf dem ein Track geladen ist; spielt keins, mit Deck 1 und 2. Bei vier Decks nennt die Reihe das Paar (zum Beispiel **SWAP 2/3**).
+Der Tausch wirkt auf die zwei lautesten spielenden Decks. Spielt nur ein Deck, tauscht es mit dem nächsten Deck, auf dem ein Track geladen ist; spielt keins, mit Deck 1 und 2. Bei vier Decks nennt die Reihe das Paar (zum Beispiel **2/3**).
 
 Ein Controller kann beides: Lege `mixer.eq_kill` (mit `band = "low"`, `"mid"` oder `"high"`) auf eine Taste eines Kanals und `eq_swap` (mit einem `band`) auf eine beliebige Taste; siehe [Controller-Mappings](controllers.md). Noch kein mitgeliefertes Controller-Mapping nutzt sie, und an einem echten Controller wurden sie noch nicht ausprobiert; getestet sind sie nur in der Software.
 

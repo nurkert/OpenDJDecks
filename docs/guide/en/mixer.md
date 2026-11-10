@@ -9,7 +9,7 @@ The mixer stands between the decks. Press **MIXER** in the top bar (`⌥⌘M`) t
 
 ## A channel
 
-From top to bottom: the channel number with its **CLIP** lamp, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (the Channel FX knob), **STEM** and **CUE**, and the channel fader with its meter. Drag a knob up or down to turn it; double-click (or double-tap) it to reset it to the centre.
+From top to bottom: the channel number with its **CLIP** lamp, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (the Channel FX knob), and the channel fader with its meter, with **STEM** and **CUE** beside it. Drag a knob up or down to turn it; double-click (or double-tap) it to reset it to the centre.
 
 Each knob shows its value beside it: TRIM and the EQ in dB (**OFF** when an isolator band is turned fully down), CH FX as the filter side and depth (**LP40** is a low-pass at 40 %, **HP25** a high-pass at 25 %), other Channel FX as a signed percent.
 
@@ -21,18 +21,18 @@ Each knob shows its value beside it: TRIM and the EQ in dB (**OFF** when an isol
 
 ## Bass swaps
 
-![The mixer with deck 2's LOW killed and a LOW swap waiting for the next bar](../img/mixer-bass-swap.png)
+![The mixer with one deck's LOW killed and a LOW swap waiting for the next bar](../img/mixer-bass-swap.png)
 
 **KILL** beside HI, MID and LOW takes that band out while it is lit. The knob stays where it is; when you release the kill, the band comes back at the knob's value. With the isolator EQ a killed band is silent; with the classic EQ it is at the knob's lowest setting (−26 dB). The value beside the knob reads **KILL** while it is on.
 
-The **SWAP** row under the channels exchanges one band between the two decks in the mix with one tap:
+The swap row under the channels (marked with two opposed arrows) exchanges one band between the two decks in the mix with one tap:
 
 1. Kill the LOW of the incoming deck (or turn it down) while the playing deck has its bass.
-2. Tap **LOW** in the SWAP row. The two decks trade their LOW knob and kill: the incoming deck gets the bass, the outgoing deck loses it. **MID** and **HI** do the same for their bands.
+2. Tap **LOW** in the swap row. The two decks trade their LOW knob and kill: the incoming deck gets the bass, the outgoing deck loses it. **MID** and **HI** do the same for their bands.
 
 The key at the end of the row sets when the swap happens: **NOW** (at once), **BEAT** (on the next beat) or **BAR** (on the next downbeat), counted on the master deck's beatgrid. Click it to step through the three. While a swap waits for its beat or bar, its key shows an outline; tap it again to cancel. When no deck is playing there is no beat to wait for, and the swap happens at once.
 
-The swap acts on the two loudest playing decks. When only one deck plays, it swaps with the next deck that has a track loaded; with nothing playing, decks 1 and 2. With four decks, the row names the pair (for example **SWAP 2/3**).
+The swap acts on the two loudest playing decks. When only one deck plays, it swaps with the next deck that has a track loaded; with nothing playing, decks 1 and 2. With four decks, the row names the pair (for example **2/3**).
 
 A controller can do both: map `mixer.eq_kill` (with `band = "low"`, `"mid"` or `"high"`) to a button of a channel, and `eq_swap` (with a `band`) to any button; see [Controller mappings](controllers.md). No shipped controller mapping uses them yet, and they have not been tried on a hardware controller; they are tested in software only.
 
