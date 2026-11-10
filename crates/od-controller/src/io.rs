@@ -101,6 +101,7 @@ struct Connected {
 pub struct ControllerManager {
     events: Receiver<ControllerEvent>,
     feedback: Sender<(Option<String>, ControlFeedback)>,
+    lights: Sender<(Option<String>, bool)>,
     monitor: MidiMonitor,
     learn: Arc<Mutex<Option<LearnSession>>>,
     stop: Arc<AtomicBool>,
@@ -111,6 +112,7 @@ impl ControllerManager {
     pub fn start(mappings: Vec<Arc<Mapping>>, config: ManagerConfig) -> Self {
         let (ev_tx, ev_rx) = crossbeam_channel::unbounded();
         let (fb_tx, fb_rx) = crossbeam_channel::unbounded();
+        let (lights_tx, lights_rx) = crossbeam_channel::unbounded();
         let monitor = MidiMonitor::default();
         let learn = Arc::new(Mutex::new(None));
         let stop = Arc::new(AtomicBool::new(false));
@@ -120,12 +122,15 @@ impl ControllerManager {
             let stop = stop.clone();
             std::thread::Builder::new()
                 .name("od-controller".into())
-                .spawn(move || run(mappings, config, ev_tx, fb_rx, monitor, learn, stop))
+                .spawn(move || {
+                    run(mappings, config, ev_tx, fb_rx, lights_rx, monitor, learn, stop)
+                })
                 .expect("spawn controller thread")
         };
         Self {
             events: ev_rx,
             feedback: fb_tx,
+            lights: lights_tx,
             monitor,
             learn,
             stop,
@@ -144,6 +149,13 @@ impl ControllerManager {
 
     pub fn monitor(&self) -> &MidiMonitor {
         &self.monitor
+    }
+
+    /// Self-test: switches every LED the mapping drives on, or off again
+    /// (after which the LEDs show the app state again). One device (by
+    /// mapping id) or all (`None`).
+    pub fn light_all(&self, device: Option<&str>, on: bool) {
+        let _ = self.lights.send((device.map(str::to_string), on));
     }
 
     /// Starts a MIDI learn session; incoming messages are fed to it.
@@ -166,11 +178,13 @@ impl Drop for ControllerManager {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run(
     mappings: Vec<Arc<Mapping>>,
     config: ManagerConfig,
     events: Sender<ControllerEvent>,
     feedback: Receiver<(Option<String>, ControlFeedback)>,
+    lights: Receiver<(Option<String>, bool)>,
     monitor: MidiMonitor,
     learn: Arc<Mutex<Option<LearnSession>>>,
     stop: Arc<AtomicBool>,
@@ -217,6 +231,27 @@ fn run(
                     && let Some(s) = c.session.as_mut()
                 {
                     s.feedback(&fb);
+                }
+            }
+        }
+
+        // Self-test: all lights on or off.
+        while let Ok((dev, on)) = lights.try_recv() {
+            for (port, c) in conns.iter_mut() {
+                if dev.as_ref().is_some_and(|d| *d != c.device) {
+                    continue;
+                }
+                let (Some(s), Some(out)) = (c.session.as_mut(), c.output.as_mut()) else {
+                    continue;
+                };
+                for msg in crate::hardware::led_messages(s.mapping(), on) {
+                    if out.send(&msg).is_err() {
+                        break;
+                    }
+                    monitor.record(port, Direction::Out, &msg, Vec::new());
+                }
+                if !on {
+                    s.output_mut().reset();
                 }
             }
         }

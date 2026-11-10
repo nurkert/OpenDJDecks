@@ -140,7 +140,8 @@ verify = false
 | `repeat`, `step` | Expand into `repeat` bindings on numbers `n, n+step, …`. |
 | `index_arg`, `index_base` | Set argument `index_arg` to `index_base + i` for repetition `i`. |
 | `args` | Action arguments. An **array** value supplies one element per repetition: `args = { beats = [-1.0, 1.0, -2.0, 2.0] }`. |
-| `verify` | Not yet confirmed on hardware; flagged in the MIDI monitor. |
+| `verify` | Not yet confirmed on hardware and not backed by a public source; flagged in the MIDI monitor. |
+| `confirmed` | Confirmed on a real unit with OpenDJDecks (also on `[[output]]`). Drives the hardware status below. |
 
 14-bit pairs: the MSB is stored and the value is emitted when the LSB
 arrives (`(msb << 7 | lsb) / 16383`).
@@ -282,6 +283,25 @@ registered in `device_module::module_for`.
    point: `--learn deck.play_pause` prints a ready `[[input]]` entry after
    five seconds of input (`LearnSession` in the API).
 3. Check outputs with `--leds` (cycles Play/Cue/Sync LEDs and VU meters).
-4. Remove `verify = true` once an entry is confirmed on hardware.
+4. Once an entry is confirmed on a real unit, remove `verify = true`, add
+   `confirmed = true` and say in the commit which unit and firmware it was.
+   Then regenerate the hardware status (below).
 5. `cargo test -p od-controller` parses every bundled mapping and checks
    that no MIDI address is bound twice.
+
+## Hardware status
+
+The controllers guide (`docs/guide/{en,de}/controllers.md`) lists every
+mapped control with one of three states, generated from the mapping files:
+
+| State | Meaning in the file |
+|---|---|
+| verified | `confirmed = true` |
+| partial | neither flag: the message comes from a public source, not yet tried on a unit |
+| untested | `verify = true` |
+
+Regenerate the list after changing a mapping:
+`cargo run -p od-controller --example hardware_status -- --write`.
+`cargo test -p od-controller` fails while the guide is out of date. The
+app's self-test (Preferences › Controller › Self-test) ticks controls as
+their messages arrive and lights every mapped LED.

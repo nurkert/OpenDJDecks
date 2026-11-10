@@ -819,3 +819,37 @@ fn flx10_part_isolator_drives_stem_levels() {
     let a = feed(&mut s, &[[0xB1, 0x10, 0x40], [0xB1, 0x30, 0x00]]);
     assert!(a.iter().any(|x| matches!(x, ControlAction::Deck { deck: 2, action: DeckAction::StemLevel { stem: StemPart::Drums, level } } if *level >= 0.99)), "{a:?}");
 }
+
+/// The hardware status in the controllers guide is generated from the
+/// mapping files; regenerate it with
+/// `cargo run -p od-controller --example hardware_status -- --write`.
+#[test]
+fn the_published_hardware_status_matches_the_mapping_files() {
+    use od_controller::hardware::{replace_section, status_markdown};
+    let dir = od_controller::bundled_mappings_dir().join("controllers");
+    let mut loaded = Mapping::load_dir(&dir);
+    loaded.sort_by(|a, b| a.0.cmp(&b.0));
+    let mappings: Vec<Arc<Mapping>> = loaded
+        .into_iter()
+        .map(|(_, m)| Arc::new(m.unwrap()))
+        .collect();
+    let guide = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/guide");
+    for (lang, de) in [("en", false), ("de", true)] {
+        let doc = std::fs::read_to_string(guide.join(lang).join("controllers.md")).unwrap();
+        let fresh = replace_section(&doc, &status_markdown(&mappings, de)).expect("markers");
+        assert!(
+            fresh == doc,
+            "docs/guide/{lang}/controllers.md is out of date: run \
+             cargo run -p od-controller --example hardware_status -- --write"
+        );
+    }
+    // Nothing is confirmed on a unit yet; a confirmation is a deliberate
+    // `confirmed = true` in a mapping file.
+    for m in &mappings {
+        assert!(
+            m.inputs.iter().all(|b| !b.confirmed) && m.outputs.iter().all(|b| !b.confirmed),
+            "{} has confirmed entries: update this test with the confirmation",
+            m.file.device.name
+        );
+    }
+}
