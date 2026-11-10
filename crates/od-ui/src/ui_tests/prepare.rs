@@ -76,6 +76,8 @@ fn files_dropped_from_the_file_manager() {
                 .ok()
                 .flatten()
                 .is_some()
+            // Appending to the open playlist follows the import.
+            && lib.entries(u.fx.playlist).map(|e| e.len()).unwrap_or(0) == 3
     });
     assert!(
         added,

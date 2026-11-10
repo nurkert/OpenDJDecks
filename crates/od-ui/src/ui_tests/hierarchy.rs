@@ -186,9 +186,13 @@ fn assert_points_at(ui: &Ui, label: &str) {
                 .map(|(l, v, e)| format!("{l}={v} {:?}", Rect::of(&e)))
                 .collect();
             panic!(
-                "no highlight on {label}: visible {} target {:?} control {:?} window {:?} marks {marks:?}",
+                "no highlight on {label}: visible {} target {:?} node {:?} section {:?} rows {} mode {:?} control {:?} window {:?} marks {marks:?}",
                 g.get_visible(),
                 g.get_target().to_string(),
+                ui.app.ui.get_node_kind().to_string(),
+                ui.app.ui.get_section().to_string(),
+                slint::Model::row_count(&ui.app.ui.get_tracks()),
+                ui.app.ui.get_mode().to_string(),
                 ui.by_value("browser.empty.add-music", "").map(|(_, e)| Rect::of(&e)),
                 ui.app.ui.window().size(),
             )
