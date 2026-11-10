@@ -33,6 +33,7 @@ mod format;
 mod fx;
 mod gig;
 mod gig_check;
+mod stick_check;
 mod grid_edit;
 mod import;
 mod keep_awake;

@@ -50,6 +50,7 @@ pub struct App {
     pub(crate) sampler: sampler::SamplerRuntime,
     pub(crate) recorder: RefCell<recorder::RecorderState>,
     pub(crate) controller: RefCell<controller::Controllers>,
+    pub(crate) stick_check: RefCell<crate::stick_check::Running>,
     pub(crate) browser: browser::BrowserViews,
     pub(crate) explorer: explorer::ExplorerRuntime,
     pub(crate) device_manager: DeviceManager,
@@ -124,6 +125,7 @@ impl App {
             sampler: sampler::SamplerRuntime::default(),
             recorder: RefCell::new(recorder::RecorderState::default()),
             controller: RefCell::new(controller::Controllers::default()),
+            stick_check: RefCell::new(Default::default()),
             browser: browser::BrowserViews::default(),
             explorer: explorer::ExplorerRuntime::default(),
             device_manager,
@@ -159,6 +161,7 @@ impl App {
         crate::first_start::wire(&app);
         crate::audio_health::wire(&app);
         crate::gig_check::wire(&app);
+        crate::stick_check::wire(&app);
         engine::start(&app);
         crate::restore::wire(&app);
         crate::perform_lock::wire(&app);
@@ -260,6 +263,7 @@ impl App {
             update::poll(self);
         }
         stems_model::poll(self);
+        crate::stick_check::poll(self);
         if devices::poll(self) {
             need_refresh = true;
         }

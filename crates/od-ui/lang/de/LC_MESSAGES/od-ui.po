@@ -6386,3 +6386,118 @@ msgstr "REST"
 msgctxt "BoothDeck"
 msgid "PHRASE · TO THE NEXT"
 msgstr "PHRASE · BIS ZUR NÄCHSTEN"
+
+#: ui/app.slint:1250
+msgctxt "AppWindow"
+msgid "CHECK STICK"
+msgstr "STICK PRÜFEN"
+
+#: ui/app.slint:1250
+msgctxt "AppWindow"
+msgid "Read the stick back and compare every track, cue, grid and playlist with the library"
+msgstr "Den Stick zurücklesen und jeden Track, jeden Cue, jedes Grid und jede Playlist mit der Bibliothek vergleichen"
+
+#: ui/devices.slint:195
+msgctxt "StickCheckPanel"
+msgid "Checking the stick…"
+msgstr "Der Stick wird geprüft …"
+
+#: ui/devices.slint:195
+msgctxt "StickCheckPanel"
+msgid "Ready"
+msgstr "Bereit"
+
+#: ui/devices.slint:195
+msgctxt "StickCheckPanel"
+msgid "Not ready"
+msgstr "Nicht bereit"
+
+#: ui/devices.slint:206
+msgctxt "StickCheckPanel"
+msgid "CLOSE"
+msgstr "SCHLIESSEN"
+
+#: ui/devices.slint:230
+msgctxt "StickCheckPanel"
+msgid "FILE"
+msgstr "DATEI"
+
+#: ui/devices.slint:231
+msgctxt "StickCheckPanel"
+msgid "CUES"
+msgstr "CUES"
+
+#: ui/devices.slint:232
+msgctxt "StickCheckPanel"
+msgid "GRID"
+msgstr "GRID"
+
+#: ui/devices.slint:238
+msgctxt "StickCheckPanel"
+msgid "Solid: as in the library. Dashed: changed since the last sync. Struck: missing or unreadable. Half: nothing to compare."
+msgstr "Durchgezogen: wie in der Bibliothek. Gestrichelt: seit dem letzten Sync geändert. Durchgestrichen: fehlt oder nicht lesbar. Halb: nichts zu vergleichen."
+
+#: ui/preferences.slint:567
+msgctxt "PreferencesWindow"
+msgid "Self-test"
+msgstr "Selbsttest"
+
+#: ui/preferences.slint:569
+msgctxt "PreferencesWindow"
+msgid "Mapping"
+msgstr "Mapping"
+
+#: ui/preferences.slint:573
+msgctxt "PreferencesWindow"
+msgid "{} of {} answered"
+msgstr "{} von {} gemeldet"
+
+#: ui/preferences.slint:574
+msgctxt "PreferencesWindow"
+msgid "START"
+msgstr "START"
+
+#: ui/preferences.slint:574
+msgctxt "PreferencesWindow"
+msgid "Stop listening"
+msgstr "Nicht mehr zuhören"
+
+#: ui/preferences.slint:574
+msgctxt "PreferencesWindow"
+msgid "Listen to the controller and tick each control that answers"
+msgstr "Dem Controller zuhören und jedes Element abhaken, das sich meldet"
+
+#: ui/preferences.slint:575
+msgctxt "PreferencesWindow"
+msgid "LEDS ON…"
+msgstr "LEDS AN …"
+
+#: ui/preferences.slint:575
+msgctxt "PreferencesWindow"
+msgid "FLASH LEDS"
+msgstr "LEDS BLINKEN"
+
+#: ui/preferences.slint:575
+msgctxt "PreferencesWindow"
+msgid "Light every LED of the mapping for two seconds ({} lights)"
+msgstr "Jede LED des Mappings zwei Sekunden leuchten lassen ({} Anzeigen)"
+
+#: ui/preferences.slint:600
+msgctxt "PreferencesWindow"
+msgid "VERIFIED"
+msgstr "BESTÄTIGT"
+
+#: ui/preferences.slint:600
+msgctxt "PreferencesWindow"
+msgid "PARTIAL"
+msgstr "TEILWEISE"
+
+#: ui/preferences.slint:600
+msgctxt "PreferencesWindow"
+msgid "UNTESTED"
+msgstr "UNGETESTET"
+
+#: ui/preferences.slint:606
+msgctxt "PreferencesWindow"
+msgid "Press START and move every control once; each is ticked when its message arrives. FLASH LEDS lights every mapped LED. VERIFIED: confirmed on a unit. PARTIAL: from a public source, not yet tried on a unit. UNTESTED: neither."
+msgstr "Drücke START und bewege jedes Element einmal; es wird abgehakt, sobald seine Nachricht ankommt. LEDS BLINKEN lässt jede zugeordnete LED leuchten. BESTÄTIGT: auf einem Gerät bestätigt. TEILWEISE: aus einer öffentlichen Quelle, noch nicht auf einem Gerät ausprobiert. UNGETESTET: weder noch."

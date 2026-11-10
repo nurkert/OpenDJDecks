@@ -785,3 +785,76 @@ fn key_column_sorts_by_circle_or_alphabet() {
         "alphabetical by the key shown: 10A before 2A"
     );
 }
+
+/// CHECK STICK reads a synced stick back: a row per track with file, cues
+/// and grid, and a verdict. A file removed from the stick makes it not
+/// ready and is named on its track; after a sync it is ready again.
+#[test]
+fn stick_check_gives_a_verdict_and_a_row_per_track() {
+    let _volumes = volumes_lock();
+    let ui = Ui::open((1440, 900));
+    let pl = ui.fx.playlist;
+    let name = "CHECK-STICK";
+    let stick = test_env().join("volumes").join(name);
+    let _ = std::fs::remove_dir_all(&stick);
+    std::fs::create_dir_all(&stick).unwrap();
+    let uuid = format!("uuid-{name}-{}", std::process::id());
+    od_format_native::write_marker(
+        &stick,
+        &od_format_native::DeviceMarker {
+            format_version: od_format_native::FORMAT_VERSION,
+            device_uuid: uuid.clone(),
+            name: name.into(),
+            created_by: "test".into(),
+        },
+    )
+    .unwrap();
+    let mut lib = ui.fx.lib();
+    let id = lib
+        .register_device(
+            &uuid,
+            name,
+            od_library::DeviceFormats {
+                club_usb: true,
+                opendjdecks: true,
+                club_usb_compat: false,
+            },
+        )
+        .unwrap();
+    lib.set_device_nodes(id, &[pl]).unwrap();
+    let wanted = lib.device_tracks(id).unwrap();
+    assert!(!wanted.is_empty());
+    ui.app.device_manager.send(od_devices::Command::Refresh);
+    assert!(ui.wait_until(10.0, |u| u.app.state.borrow().devices.statuses.iter().any(|s| s.device.id == id && s.volume.is_some())));
+    ui.app.ui.invoke_open_device(id.0 as i32);
+    ui.app.device_manager.send(od_devices::Command::SyncNow(id));
+    assert!(
+        ui.wait_until(40.0, |_| lib.device(id).unwrap().last_sync.is_some()),
+        "the stick is synced"
+    );
+    let g = ui.app.ui.global::<crate::StickCheck>();
+    ui.click("devices.check");
+    assert!(g.get_visible());
+    assert!(ui.wait_until(20.0, |_| !g.get_running()), "the check finishes");
+    assert!(g.get_ready(), "{} | {}", g.get_summary(), g.get_problems());
+    assert_eq!(g.get_rows().row_count(), wanted.len());
+    assert!(g.get_rows().iter().all(|r| r.file == "ok"));
+    assert_eq!(ui.value("devices.check-verdict"), "Ready");
+    assert!(g.get_summary().contains("OpenDJDecks + Club player USB"), "{}", g.get_summary());
+
+    // A file goes missing on the stick.
+    let native = od_format_native::Stick::open(&stick).unwrap().unwrap();
+    let rec = native.library.track(wanted[0].id).unwrap();
+    std::fs::remove_file(native.resolve(&rec.path)).unwrap();
+    drop(native);
+    ui.click("devices.check");
+    assert!(ui.wait_until(20.0, |_| !g.get_running()));
+    assert!(!g.get_ready());
+    assert_eq!(ui.value("devices.check-verdict"), "Not ready");
+    let first = g.get_rows().row_data(0).unwrap();
+    assert_eq!(first.title, wanted[0].tags.title.as_str(), "problems come first");
+    assert_eq!(first.file, "missing");
+    ui.click("devices.check-close");
+    assert!(!g.get_visible());
+    let _ = std::fs::remove_dir_all(&stick);
+}
