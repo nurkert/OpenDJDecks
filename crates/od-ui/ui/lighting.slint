@@ -301,6 +301,7 @@ component LockedSetup inherits VerticalLayout {
             accepted(t) => { Lighting.unlock(t); self.text = ""; }
         }
         VerticalLayout {
+            horizontal-stretch: 0;
             alignment: center;
             PlateButton {
                 accessible-label: "lighting.pin.unlock"; accessible-role: button;
@@ -424,6 +425,7 @@ component OutputTab inherits VerticalLayout {
             placeholder: root.output-kind == "artnet" ? "2.0.0.10:6454" : root.output-kind == "sacn" ? "1" : "/dev/tty.usbserial";
         }
         VerticalLayout {
+            horizontal-stretch: 0;
             alignment: center;
             PlateButton {
                 accessible-label: "lighting.output.apply"; accessible-role: button;
@@ -519,6 +521,7 @@ component SafetyTab inherits VerticalLayout {
             horizontal-stretch: 1;
         }
         VerticalLayout {
+            horizontal-stretch: 0;
             alignment: center;
             PlateButton {
                 accessible-label: "lighting.pin.set"; accessible-role: button;
@@ -1001,8 +1004,9 @@ export component LightingStrip inherits Rectangle {
             }
             HorizontalLayout {
                 spacing: Theme.s3; height: 18px;
-                LinkStatus { }
-                Caps { text: Lighting.status; color: Theme.attention; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+                // A lost link takes the whole line: it is what needs you.
+                LinkStatus { horizontal-stretch: Lighting.link == "lost" || Lighting.link == "fault" ? 1 : 0; }
+                if Lighting.link != "lost" && Lighting.link != "fault": Caps { text: Lighting.status; color: Theme.attention; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
             }
             HorizontalLayout {
                 spacing: Theme.s1;
