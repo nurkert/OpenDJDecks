@@ -465,6 +465,17 @@ pub(crate) fn refresh(app: &App) {
         w.set_mappings(strings(crate::controller::mapping_names()));
         w.set_mapping_file(s.controller.mapping_file.clone().into());
         w.set_mapping_pending(s.controller.mapping_file != started.controller.mapping_file);
+        // Self-test: the mappings, the connected controller's chosen.
+        if app.prefs.borrow().midi.test_mappings.is_empty() {
+            let list = crate::controller::test_mappings(app);
+            let connected = crate::controller::connected_id(app);
+            let index = connected
+                .and_then(|id| list.iter().position(|m| m.file.device.id == id))
+                .unwrap_or(0);
+            let mut p = app.prefs.borrow_mut();
+            p.midi.test_mappings = list;
+            p.midi.select_test(index);
+        }
         // MIDI monitor / learn.
         {
             use crate::midi_tools as mt;
@@ -490,6 +501,32 @@ pub(crate) fn refresh(app: &App) {
             );
             w.set_learn_entry(m.entry().unwrap_or_default().into());
             w.set_learn_file(learn_file(&st).display().to_string().into());
+            w.set_test_mappings(strings(
+                m.test_mappings
+                    .iter()
+                    .map(|m| m.file.device.name.clone())
+                    .collect(),
+            ));
+            w.set_test_mapping(m.test_index as i32);
+            w.set_test_active(m.testing);
+            w.set_test_flashing(m.flashing);
+            let rows: Vec<crate::SelfTestRow> = m
+                .selftest
+                .as_ref()
+                .map(|t| {
+                    t.controls
+                        .iter()
+                        .map(|c| crate::SelfTestRow {
+                            name: c.name.clone().into(),
+                            status: c.status.id().into(),
+                            seen: c.seen,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            w.set_test_seen(rows.iter().filter(|r| r.seen).count() as i32);
+            w.set_test_lights(m.selftest.as_ref().map_or(0, |t| t.lights()) as i32);
+            w.set_test_rows(slint::ModelRc::new(slint::VecModel::from(rows)));
         }
         // Recording.
         w.set_rec_format(index_of(
@@ -576,14 +613,14 @@ fn midi_stream(app: &Rc<App>) {
         if p.midi.monitor.is_none() {
             p.midi.monitor = crate::controller::monitor(app);
         }
-        if p.midi.monitor.is_none() && (p.midi.monitoring || p.midi.learning) {
+        if p.midi.monitor.is_none() && (p.midi.monitoring || p.midi.learning || p.midi.testing) {
             drop(p);
             app.status("No controller layer running — connect a controller and restart");
         }
     }
     let run = {
         let p = app.prefs.borrow();
-        p.midi.monitoring || p.midi.learning
+        p.midi.monitoring || p.midi.learning || p.midi.testing
     };
     let weak = Rc::downgrade(app);
     let p = app.prefs.borrow();
@@ -604,6 +641,31 @@ fn midi_stream(app: &Rc<App>) {
     }
 }
 
+/// Self-test: every LED of the chosen mapping on for two seconds, then
+/// back to what the decks show.
+fn flash_leds(app: &Rc<App>) {
+    let id = {
+        let p = app.prefs.borrow();
+        if p.midi.flashing {
+            return;
+        }
+        p.midi.selftest.as_ref().map(|t| t.mapping().file.device.id.clone())
+    };
+    let Some(id) = id else { return };
+    if crate::controller::connected_id(app).as_deref() != Some(id.as_str()) {
+        app.status("Connect this controller to flash its LEDs");
+    }
+    crate::controller::light_all(app, &id, true);
+    app.prefs.borrow_mut().midi.flashing = true;
+    let weak = Rc::downgrade(app);
+    slint::Timer::single_shot(std::time::Duration::from_secs(2), move || {
+        let Some(a) = weak.upgrade() else { return };
+        crate::controller::light_all(&a, &id, false);
+        a.prefs.borrow_mut().midi.flashing = false;
+        refresh(&a);
+    });
+}
+
 /// Controller page tools: the MIDI monitor and MIDI learn.
 pub(crate) fn midi_act(app: &Rc<App>, what: &str) {
     match what {
@@ -613,6 +675,9 @@ pub(crate) fn midi_act(app: &Rc<App>, what: &str) {
             .midi
             .set_monitoring(what == "midi.on"),
         "midi.clear" => app.prefs.borrow_mut().midi.lines.clear(),
+        "test.start" => app.prefs.borrow_mut().midi.start_test(),
+        "test.stop" => app.prefs.borrow_mut().midi.stop_test(),
+        "test.flash" => flash_leds(app),
         "learn.start" => app.prefs.borrow_mut().midi.start_learn(),
         "learn.stop" => app.prefs.borrow_mut().midi.stop_learn(),
         "learn.save" => {
@@ -961,6 +1026,9 @@ const PAGE_TERMS: &[(&str, &[&str])] = &[
         &[
             "controller",
             "midi",
+            "self-test",
+            "selbsttest",
+            "led",
             "learn",
             "tempo range",
             "quantize",
@@ -1036,6 +1104,16 @@ pub(crate) fn page_for_search(text: &str) -> Option<&'static str> {
                 .any(|w| w.contains(t.as_str()) || t.contains(w))
         })
         .map(|(p, _)| *p)
+}
+
+/// Documentation screenshots: Preferences on `page`, scrolled to `y`.
+pub(crate) fn demo_page(app: &App, page: &str, y: f32) {
+    select_page(app, page);
+    refresh(app);
+    with_window(app, |w| {
+        w.set_controller_scroll(-y);
+        w.window().set_size(slint::LogicalSize::new(1440.0, 900.0));
+    });
 }
 
 fn select_page(app: &App, page: &str) {
@@ -1358,6 +1436,16 @@ fn choose(app: &App, key: &str, i: i32) {
             app.prefs.borrow_mut().midi.deck = i.min(4) as u8;
             refresh(app);
         }
+        "test.mapping" => {
+            let mut p = app.prefs.borrow_mut();
+            let testing = p.midi.testing;
+            p.midi.select_test(i);
+            if testing {
+                p.midi.start_test();
+            }
+            drop(p);
+            refresh(app);
+        }
         _ => tracing::warn!(key, "unknown choice"),
     }
 }
@@ -1649,6 +1737,7 @@ fn wire_window(app: &Rc<App>, w: &PreferencesWindow) {
         app,
         |a, k: SharedString| if k.starts_with("midi.")
             || k.starts_with("learn.")
+            || k.starts_with("test.")
         {
             midi_act(&a, k.as_str())
         } else {

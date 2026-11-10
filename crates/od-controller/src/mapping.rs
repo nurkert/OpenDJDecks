@@ -263,6 +263,10 @@ pub struct InputSpec {
     /// The entry still has to be verified on real hardware.
     #[serde(default)]
     pub verify: bool,
+    /// Someone confirmed the entry on a real unit (see
+    /// docs/controller-mappings.md, "Hardware status").
+    #[serde(default)]
+    pub confirmed: bool,
 }
 
 fn one() -> u8 {
@@ -320,6 +324,8 @@ pub struct OutputSpec {
     pub min_interval_ms: Option<u32>,
     #[serde(default)]
     pub verify: bool,
+    #[serde(default)]
+    pub confirmed: bool,
 }
 
 fn full() -> u8 {
@@ -344,6 +350,7 @@ pub struct InputBinding {
     pub invert: bool,
     pub takeover: bool,
     pub verify: bool,
+    pub confirmed: bool,
     pub template: Arc<ActionTemplate>,
 }
 
@@ -365,6 +372,7 @@ pub struct OutputBinding {
     /// Software layers: only drive the LED while `deck` is active on `side`.
     pub active_when: Option<(u8, u8)>,
     pub verify: bool,
+    pub confirmed: bool,
 }
 
 /// A compiled, ready-to-use mapping.
@@ -585,6 +593,7 @@ impl Mapping {
                         invert: spec.invert,
                         takeover,
                         verify: spec.verify,
+                        confirmed: spec.confirmed,
                         template: Arc::new(template),
                     });
                 }
@@ -675,6 +684,7 @@ impl Mapping {
                             min_interval_ms,
                             active_when,
                             verify: spec.verify,
+                            confirmed: spec.confirmed,
                         });
                     }
                 }

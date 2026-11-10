@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 229 features; 223 in scope: 223 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 232 features; 226 in scope: 226 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -266,6 +266,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Club player USB export (`export.pdb` + ANLZ DAT/EXT/2EX) | DONE | `od-format-clubusb`, `od-devices/src/club_usb.rs`; per-stick choice in the stick board (own format stays the default) | 9 |  |
 | Player settings on Club player USB (`MYSETTING`) | DONE | `od-format-clubusb/src/mysetting.rs`, `od-devices/src/club_usb.rs::player_settings`; `/PIONEER/MYSETTING.DAT` written on every Club player USB sync from the deck defaults (quantize, auto cue, tempo range, jog mode, language); other settings get the documented defaults | 5 | P3 |
 | Sync all sticks at once, with eject when done | DONE | `manager.rs::sync_all`, `manager.rs::sync_stick`, `devices.rs::wire`; SYNC ALL STICKS (and the sync key in the DEVICES heading) runs every plugged-in stick on its own thread with its own progress line. A stored Eject when done ejects each stick once its sync has finished; a stick that fails keeps its error and stays mounted, the others carry on | 2 | P2 |
+| Stick check before a gig: file, cues and grid per track, playlists, a ready verdict | DONE | `crates/od-devices/src/check.rs`, `crates/od-ui/src/stick_check.rs`; CHECK STICK on the Devices page reads both stick formats back (OpenDJDecks library, Club player USB export and analysis files). Ready only when every file opens as audio, cues and grids match the library, playlists hold the library's tracks in order, the chosen formats are there and no sync was cut off. Whether a given player model accepts the stick is not covered (roadmap [H2]).; (Roadmap [53]) | 8 | P2 |
 | Maximum compatibility: FLAC and AAC/ALAC as 16-bit WAV on Club player USB sticks | DONE | `convert.rs::write_wav`, `sync.rs::sync_device`, `club_usb.rs::ClubUsbWriter`, `placement.rs::WavCopy`; Off by default, per stick. FLAC, AAC and ALAC tracks are written as stereo 16-bit WAV for Club player USB (sample rates above 48 kHz are reduced); the export and analysis files name the .wav, a conversion is only redone when the source changes and removed when it is stale. Sticks that also carry the OpenDJDecks format keep the original file for it. Originals in the library are never touched. | 5 | P2 |
 
 ## 11. Preferences, audio and controllers
@@ -280,6 +281,8 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Controller LED feedback | DONE | `perform.rs::feedback` (play, cue, sync, master, key lock, slip, loop, pads, VU) | 3 |  |
 | Soft takeover | DONE | `od-controller/src/takeover.rs` | 4 |  |
 | MIDI learn / MIDI monitor | DONE | `crates/od-ui/src/midi_tools.rs`, `od-controller/src/learn.rs`; Preferences ▸ Controller: MIDI monitor (raw messages with the mapping hits) and MIDI learn (action, deck, the learned control described and as a mapping entry; ADD TO MY MAPPING writes it to the own mapping file, checked to load) | 7 | P3 |
+| Controller self-test before a gig: controls ticked as they answer, LEDs flashed | DONE | `crates/od-controller/src/hardware.rs`, `crates/od-ui/src/midi_tools.rs`, `od-controller/src/io.rs::light_all`; Preferences ▸ Controller ▸ Self-test: every control of the chosen mapping with its hardware status; START ticks each control when its MIDI message arrives, FLASH LEDS lights every mapped LED for two seconds and then restores the feedback. Tested with simulated MIDI; not yet run on a real unit.; (Roadmap [52]) | 4 | P2 |
+| Hardware status per model and control (verified, partial, untested), generated from the mappings | DONE | `crates/od-controller/src/hardware.rs`, `crates/od-controller/examples/hardware_status.rs`, `docs/guide/en/controllers.md`; The controllers guide lists every mapped control; `confirmed = true` marks verified, `verify = true` untested, the rest partial. Nothing is confirmed on hardware yet.; (Roadmap [52]) | 3 | P2 |
 | Audio output on macOS (CoreAudio) | DONE | `crates/od-audio-io/src/output.rs`; (SPEC §10.4) | 1 |  |
 | Linux audio: PipeWire / JACK, ALSA direct on the Pi | DONE | `crates/od-audio-io/src/devices.rs`; ALSA (always; direct on the Pi), JACK and PipeWire (features `jack`, `pipewire`) selectable in Preferences ▸ Audio; CI builds and tests all three hosts on Linux x86_64 and aarch64; (SPEC §10.4) | 4 | P2 |
 | Four-deck controller mapping (LEDs) | DONE | `mappings/controllers/ddj-flx10.toml`; (SPEC §9.1) | 3 |  |
@@ -338,13 +341,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 223 |
+| DONE | 226 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **229** |
+| **Total** | **232** |
 
 ## P1 gaps and implementation notes
 

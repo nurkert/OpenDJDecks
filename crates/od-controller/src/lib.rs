@@ -13,6 +13,7 @@
 pub mod action;
 pub mod device_module;
 pub mod feedback;
+pub mod hardware;
 #[cfg(feature = "midi-io")]
 pub mod io;
 pub mod learn;

@@ -2,7 +2,7 @@
 title: Controllers and MIDI learn
 description: Plug in a compatible controller and play. For anything else, map controls with MIDI learn and see what your controller sends in the MIDI monitor.
 keywords: [controller, controllers, midi, midi learn, mapping, ddj, ddj-flx10, ddj-flx4, flx10, flx4, pioneer, led, soft takeover, browse, encoder, midi monitor, hardware]
-features: [ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
+features: [ctrl-self-test, ctrl-hardware-status, ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
 ---
 
 OpenDJDecks ships with mappings compatible with the Pioneer DJ DDJ-FLX10 and DDJ-FLX4, with LED feedback for play, cue, sync, master, key lock, slip, loop and the pads, and the VU meters. The mappings are not yet fully confirmed on real devices, so individual controls or LEDs may not work: try them before a gig. Connect a controller by USB; it is picked up within a few seconds, and its audio interface is used automatically (**Preferences › Audio › Output device**).
@@ -28,3 +28,478 @@ In **Preferences › Controller › MIDI learn**:
 ## MIDI monitor
 
 Turn on **Monitor** to see every incoming MIDI message and what it does, for example when you are working out what a control sends.
+
+## Self-test before a gig
+
+In **Preferences › Controller › Self-test**, check a controller before you rely on it:
+
+1. Pick the controller under **Mapping**. A connected controller is picked for you.
+2. Press **START** and move every control once: press each button and pad, turn each knob, move each fader and the jog wheels. Each control is ticked as soon as its message arrives. The count shows how many have answered.
+3. Press **FLASH LEDS**. Every LED the mapping drives lights up for two seconds and then goes back to what the decks show. An LED that stays dark is not mapped correctly for your unit.
+
+The self-test lists the controls of each deck separately, so its count is larger than the list below.
+
+![The controller self-test in Preferences](../img/controller-self-test.png)
+
+A control that stays unticked after you moved it does not reach OpenDJDecks the way the mapping expects. Turn on the **Monitor** to see what it sends instead, and report it with the monitor lines.
+
+## Hardware status
+
+Each mapped control has one of three states:
+
+- **verified**: someone confirmed it on a real unit with OpenDJDecks.
+- **partial**: the MIDI message comes from a public source, another project's working mapping, but nobody has tried it with OpenDJDecks on a unit yet.
+- **untested**: there is no public source and no confirmation yet (`verify = true` in the mapping file).
+
+No control is verified yet: the checks on real units are still open. For the four-deck mapping, the public source covers related models of the same family. The list below is generated from the mapping files, so it changes with them. The self-test above is how you find out for your own unit.
+
+<!-- hardware-status:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->
+
+| Model | Controls | Verified | Partial | Untested |
+|---|---|---|---|---|
+| DDJ-FLX10 | 260 | 0 | 125 | 135 |
+| DDJ-FLX4 | 173 | 0 | 126 | 47 |
+
+### DDJ-FLX10
+
+| Control | Kind | Status |
+|---|---|---|
+| Browse rotate | input | untested |
+| Browse rotate (shift) | input | untested |
+| Browse press | input | untested |
+| Back | input | partial |
+| Back (shift) | input | untested |
+| Browse view | input | partial |
+| Browse view (long press) | input | untested |
+| Browse view (shift) | input | untested |
+| Load deck 1 | input | partial |
+| Load deck 2 | input | partial |
+| Load deck 3 | input | partial |
+| Load deck 4 | input | partial |
+| Deck select | input | untested |
+| Play/Pause | input | partial |
+| Play/Pause (shift) | input | untested |
+| Cue | input | partial |
+| Cue (shift) | input | untested |
+| Sync | input | partial |
+| Sync (long press) | input | untested |
+| Sync (shift) | input | untested |
+| Key sync | input | partial |
+| Key sync (long press) | input | partial |
+| Key sync (shift) | input | partial |
+| Tempo reset | input | partial |
+| Tempo reset (shift) | input | partial |
+| Shift | input | partial |
+| Quantize | input | partial |
+| Quantize (shift) | input | untested |
+| Slip | input | partial |
+| Slip (shift) | input | untested |
+| Slip reverse | input | partial |
+| Slip reverse (shift) | input | untested |
+| Beat jump back | input | partial |
+| Beat jump forward | input | partial |
+| Beat jump back (shift) | input | partial |
+| Beat jump forward (shift) | input | partial |
+| Search back (long press) | input | partial |
+| Search forward (long press) | input | partial |
+| Memory cue call back | input | partial |
+| Memory cue call forward | input | partial |
+| Memory cue call back (shift) | input | partial |
+| Memory cue call forward (shift) | input | partial |
+| Mix point / part buttons | input | partial |
+| Mix point / part buttons 1 | input | partial |
+| Mix point / part buttons 2 | input | partial |
+| Mix point / part buttons 3 | input | partial |
+| Tempo fader | input | untested |
+| Tempo fader (shift) | input | untested |
+| Jog touch | input | untested |
+| Jog touch (shift) | input | untested |
+| Jog scratch | input | untested |
+| Jog top bend | input | untested |
+| Jog side bend | input | untested |
+| Jog search (shift) | input | untested |
+| Loop in | input | partial |
+| Loop in (loop active) | input | untested |
+| Loop out | input | partial |
+| Loop out (loop active) | input | untested |
+| Loop out (shift) | input | partial |
+| 4 beat loop | input | partial |
+| 4 beat loop (shift) | input | untested |
+| Trim | input | partial |
+| EQ high | input | partial |
+| EQ mid | input | partial |
+| EQ low | input | partial |
+| Part isolator vocals | input | untested |
+| Part isolator inst | input | untested |
+| Part isolator drums | input | untested |
+| Channel fader | input | untested |
+| CH FX knob | input | partial |
+| Crossfader | input | untested |
+| Master level | input | untested |
+| Booth level | input | untested |
+| Headphone mix | input | untested |
+| Headphone level | input | untested |
+| Headphone cue | input | partial |
+| Headphone cue (shift) | input | untested |
+| Master cue | input | untested |
+| Master cue (shift) | input | untested |
+| Crossfader assign A | input | untested |
+| Crossfader assign THRU | input | untested |
+| Crossfader assign B | input | untested |
+| Input select / fader start 1 | input | untested |
+| Input select / fader start 2 | input | untested |
+| Input select / fader start 3 | input | untested |
+| Fader start (play) | input | partial |
+| Fader start (cue) | input | untested |
+| CH FX select 1 | input | untested |
+| CH FX select 2 | input | untested |
+| CH FX select 3 | input | untested |
+| CH FX select 4 | input | untested |
+| CH FX select 5 | input | untested |
+| CH FX select 6 | input | untested |
+| CH FX select (shift) 1 | input | untested |
+| CH FX select (shift) 2 | input | untested |
+| CH FX select (shift) 3 | input | untested |
+| CH FX select (shift) 4 | input | untested |
+| CH FX select (shift) 5 | input | untested |
+| CH FX select (shift) 6 | input | untested |
+| FX part select 1 | input | partial |
+| FX part select 2 | input | partial |
+| FX part select 3 | input | partial |
+| FX part select 4 | input | partial |
+| FX part select 5 | input | partial |
+| FX part select 6 | input | partial |
+| Sampler volume | input | partial |
+| Sampler cue | input | untested |
+| Tempo FX beat down | input | untested |
+| Tempo FX beat up | input | untested |
+| Tempo FX auto beat (shift) | input | untested |
+| Tempo FX tap (shift) | input | untested |
+| Tempo FX select 1 | input | partial |
+| Tempo FX select 2 | input | partial |
+| Tempo FX select 3 | input | partial |
+| Tempo FX select 4 | input | partial |
+| Tempo FX select 5 | input | partial |
+| Tempo FX select 6 | input | partial |
+| Tempo FX select 7 | input | partial |
+| Tempo FX select 8 | input | partial |
+| Tempo FX select 9 | input | partial |
+| Tempo FX select 10 | input | partial |
+| Tempo FX select 11 | input | partial |
+| Tempo FX select 12 | input | partial |
+| Tempo FX select 13 | input | partial |
+| Tempo FX select 14 | input | partial |
+| Tempo FX channel 1 | input | partial |
+| Tempo FX channel 2 | input | partial |
+| Tempo FX channel 3 | input | partial |
+| Tempo FX channel 4 | input | partial |
+| Tempo FX channel master | input | partial |
+| Tempo FX channel mic/sampler 1 | input | partial |
+| Tempo FX channel mic/sampler 2 | input | partial |
+| Tempo FX level | input | partial |
+| Tempo FX on | input | untested |
+| Tempo FX release (shift) | input | untested |
+| Pad mode hot cue | input | untested |
+| Pad mode keyboard (shift) | input | partial |
+| Pad mode hold FX 1 | input | untested |
+| Pad mode hold FX 2 (shift) | input | untested |
+| Pad mode beat jump | input | untested |
+| Pad mode beat loop (shift) | input | untested |
+| Pad mode sampler | input | partial |
+| Pad mode key shift (shift) | input | untested |
+| Pad page left 1 | input | untested |
+| Pad page left 2 | input | untested |
+| Pad page left 3 | input | untested |
+| Pad page left 4 | input | untested |
+| Pad page right 1 | input | untested |
+| Pad page right 2 | input | untested |
+| Pad page right 3 | input | untested |
+| Pad page right 4 | input | untested |
+| Sampler bank down | input | untested |
+| Sampler bank up | input | untested |
+| Hot cue pad 1 | input | partial |
+| Hot cue pad 2 | input | partial |
+| Hot cue pad 3 | input | partial |
+| Hot cue pad 4 | input | partial |
+| Hot cue pad 5 | input | partial |
+| Hot cue pad 6 | input | partial |
+| Hot cue pad 7 | input | partial |
+| Hot cue pad 8 | input | partial |
+| Hot cue pad (shift) 1 | input | partial |
+| Hot cue pad (shift) 2 | input | partial |
+| Hot cue pad (shift) 3 | input | partial |
+| Hot cue pad (shift) 4 | input | partial |
+| Hot cue pad (shift) 5 | input | partial |
+| Hot cue pad (shift) 6 | input | partial |
+| Hot cue pad (shift) 7 | input | partial |
+| Hot cue pad (shift) 8 | input | partial |
+| Hold FX 1 pad 1 | input | partial |
+| Hold FX 1 pad 2 | input | partial |
+| Hold FX 1 pad 3 | input | partial |
+| Hold FX 1 pad 4 | input | partial |
+| Hold FX 1 pad 5 | input | partial |
+| Hold FX 1 pad 6 | input | partial |
+| Hold FX 1 pad 7 | input | partial |
+| Hold FX 1 pad 8 | input | partial |
+| Beat jump pad 1 | input | untested |
+| Beat jump pad 2 | input | untested |
+| Beat jump pad 3 | input | untested |
+| Beat jump pad 4 | input | untested |
+| Beat jump pad 5 | input | untested |
+| Beat jump pad 6 | input | untested |
+| Beat jump pad 7 | input | untested |
+| Beat jump pad 8 | input | untested |
+| Sampler pad 1 | input | untested |
+| Sampler pad 2 | input | untested |
+| Sampler pad 3 | input | untested |
+| Sampler pad 4 | input | untested |
+| Sampler pad 5 | input | untested |
+| Sampler pad 6 | input | untested |
+| Sampler pad 7 | input | untested |
+| Sampler pad 8 | input | untested |
+| Sampler pad (shift) 1 | input | untested |
+| Sampler pad (shift) 2 | input | untested |
+| Sampler pad (shift) 3 | input | untested |
+| Sampler pad (shift) 4 | input | untested |
+| Sampler pad (shift) 5 | input | untested |
+| Sampler pad (shift) 6 | input | untested |
+| Sampler pad (shift) 7 | input | untested |
+| Sampler pad (shift) 8 | input | untested |
+| Keyboard pad 1 | input | untested |
+| Keyboard pad 2 | input | untested |
+| Keyboard pad 3 | input | untested |
+| Keyboard pad 4 | input | untested |
+| Keyboard pad 5 | input | untested |
+| Keyboard pad 6 | input | untested |
+| Keyboard pad 7 | input | untested |
+| Keyboard pad 8 | input | untested |
+| Hold FX 2 pad 1 | input | partial |
+| Hold FX 2 pad 2 | input | partial |
+| Hold FX 2 pad 3 | input | partial |
+| Hold FX 2 pad 4 | input | partial |
+| Hold FX 2 pad 5 | input | partial |
+| Hold FX 2 pad 6 | input | partial |
+| Hold FX 2 pad 7 | input | partial |
+| Hold FX 2 pad 8 | input | partial |
+| Beat loop pad 1 | input | untested |
+| Beat loop pad 2 | input | untested |
+| Beat loop pad 3 | input | untested |
+| Beat loop pad 4 | input | untested |
+| Beat loop pad 5 | input | untested |
+| Beat loop pad 6 | input | untested |
+| Beat loop pad 7 | input | untested |
+| Beat loop pad 8 | input | untested |
+| Key shift pad 1 | input | untested |
+| Key shift pad 2 | input | untested |
+| Key shift pad 3 | input | untested |
+| Key shift pad 4 | input | untested |
+| Key shift pad 5 | input | untested |
+| Key shift pad 6 | input | untested |
+| Key shift pad 7 | input | untested |
+| Key shift pad 8 | input | untested |
+| deck play | light | partial |
+| deck cue | light | partial |
+| deck sync | light | partial |
+| deck master | light | untested |
+| deck key sync | light | partial |
+| deck keylock | light | partial |
+| deck tempo reset | light | partial |
+| deck tempo range | light | partial |
+| deck quantize | light | partial |
+| deck slip | light | partial |
+| deck vinyl | light | untested |
+| deck censor | light | partial |
+| deck reverse | light | untested |
+| deck loop in | light | partial |
+| deck loop out | light | partial |
+| deck reloop | light | partial |
+| deck loop active | light | partial |
+| mixer cue | light | partial |
+| mixer vu | light | untested |
+| deck loaded | light | untested |
+| deck pad mode | light | partial |
+| deck pad | light | partial |
+| master cue | light | untested |
+| channel fx | light | partial |
+| tempo fx on | light | partial |
+| tempo fx release | light | untested |
+| sampler cue | light | untested |
+
+### DDJ-FLX4
+
+| Control | Kind | Status |
+|---|---|---|
+| Browse rotate | input | untested |
+| Browse rotate (shift) | input | untested |
+| Browse press | input | partial |
+| Browse press (shift) | input | partial |
+| Load deck 1 | input | partial |
+| Load deck 2 | input | partial |
+| Load deck 1 (shift) | input | untested |
+| Load deck 2 (shift) | input | untested |
+| Play/Pause | input | partial |
+| Play/Pause (shift) | input | untested |
+| Cue | input | partial |
+| Cue (shift) | input | partial |
+| Sync | input | partial |
+| Sync (long press) | input | partial |
+| Sync (shift) | input | partial |
+| Shift | input | partial |
+| Tempo fader | input | untested |
+| Tempo fader (shift) | input | untested |
+| Jog touch | input | partial |
+| Jog touch (shift) | input | partial |
+| Jog scratch | input | partial |
+| Jog top bend | input | partial |
+| Jog side bend | input | partial |
+| Jog search (shift) | input | partial |
+| Loop in | input | partial |
+| Loop out | input | partial |
+| 4 beat loop | input | partial |
+| 4 beat loop (shift) | input | partial |
+| Call left (loop) | input | untested |
+| Call left | input | untested |
+| Call right (loop) | input | untested |
+| Call right | input | untested |
+| Call left (shift) | input | partial |
+| Call right (shift) | input | partial |
+| Trim | input | partial |
+| EQ high | input | partial |
+| EQ mid | input | partial |
+| EQ low | input | partial |
+| Channel fader | input | partial |
+| CH FX knob ch1 | input | partial |
+| CH FX knob ch2 | input | partial |
+| Crossfader | input | partial |
+| Master level | input | untested |
+| Headphone mix | input | untested |
+| Headphone level | input | untested |
+| Headphone cue | input | partial |
+| Headphone cue (shift) | input | partial |
+| Auto Channel FX | input | untested |
+| Auto Channel FX select | input | untested |
+| Auto fader | input | untested |
+| Master cue (shift) | input | untested |
+| Fader start (play) | input | untested |
+| Fader start (cue) | input | untested |
+| Tempo FX lever CH1 | input | untested |
+| Tempo FX lever CH2 | input | untested |
+| Tempo FX beat down | input | partial |
+| Tempo FX beat down (lever CH2) | input | untested |
+| Tempo FX beat up | input | partial |
+| Tempo FX beat up (lever CH2) | input | untested |
+| Tempo FX auto beat (shift) | input | untested |
+| Tempo FX tap (shift) | input | untested |
+| Tempo FX select | input | partial |
+| Tempo FX select (shift) | input | partial |
+| Tempo FX level | input | partial |
+| Tempo FX level (lever CH2) | input | untested |
+| Tempo FX on | input | partial |
+| Tempo FX on (lever CH2) | input | partial |
+| Tempo FX release (shift) | input | partial |
+| Tempo FX release (shift, lever CH2) | input | partial |
+| Pad mode hot cue | input | partial |
+| Pad mode keyboard (shift) | input | partial |
+| Pad mode hold FX 1 | input | partial |
+| Pad mode hold FX 2 (shift) | input | partial |
+| Pad mode beat jump | input | partial |
+| Pad mode beat loop (shift) | input | partial |
+| Pad mode sampler | input | partial |
+| Pad mode key shift (shift) | input | partial |
+| Hot cue pad 1 | input | partial |
+| Hot cue pad 2 | input | partial |
+| Hot cue pad 3 | input | partial |
+| Hot cue pad 4 | input | partial |
+| Hot cue pad 5 | input | partial |
+| Hot cue pad 6 | input | partial |
+| Hot cue pad 7 | input | partial |
+| Hot cue pad 8 | input | partial |
+| Hot cue pad (shift) 1 | input | partial |
+| Hot cue pad (shift) 2 | input | partial |
+| Hot cue pad (shift) 3 | input | partial |
+| Hot cue pad (shift) 4 | input | partial |
+| Hot cue pad (shift) 5 | input | partial |
+| Hot cue pad (shift) 6 | input | partial |
+| Hot cue pad (shift) 7 | input | partial |
+| Hot cue pad (shift) 8 | input | partial |
+| Hold FX 1 pad 1 | input | untested |
+| Hold FX 1 pad 2 | input | untested |
+| Hold FX 1 pad 3 | input | untested |
+| Hold FX 1 pad 4 | input | untested |
+| Hold FX 1 pad 5 | input | untested |
+| Hold FX 1 pad 6 | input | untested |
+| Hold FX 1 pad 7 | input | untested |
+| Hold FX 1 pad 8 | input | untested |
+| Beat jump pad 1 | input | partial |
+| Beat jump pad 2 | input | partial |
+| Beat jump pad 3 | input | partial |
+| Beat jump pad 4 | input | partial |
+| Beat jump pad 5 | input | partial |
+| Beat jump pad 6 | input | partial |
+| Beat jump pad 7 | input | partial |
+| Beat jump pad 8 | input | partial |
+| Sampler pad 1 | input | partial |
+| Sampler pad 2 | input | partial |
+| Sampler pad 3 | input | partial |
+| Sampler pad 4 | input | partial |
+| Sampler pad 5 | input | partial |
+| Sampler pad 6 | input | partial |
+| Sampler pad 7 | input | partial |
+| Sampler pad 8 | input | partial |
+| Sampler pad (shift) 1 | input | partial |
+| Sampler pad (shift) 2 | input | partial |
+| Sampler pad (shift) 3 | input | partial |
+| Sampler pad (shift) 4 | input | partial |
+| Sampler pad (shift) 5 | input | partial |
+| Sampler pad (shift) 6 | input | partial |
+| Sampler pad (shift) 7 | input | partial |
+| Sampler pad (shift) 8 | input | partial |
+| Keyboard pad 1 | input | partial |
+| Keyboard pad 2 | input | partial |
+| Keyboard pad 3 | input | partial |
+| Keyboard pad 4 | input | partial |
+| Keyboard pad 5 | input | partial |
+| Keyboard pad 6 | input | partial |
+| Keyboard pad 7 | input | partial |
+| Keyboard pad 8 | input | partial |
+| Hold FX 2 pad 1 | input | untested |
+| Hold FX 2 pad 2 | input | untested |
+| Hold FX 2 pad 3 | input | untested |
+| Hold FX 2 pad 4 | input | untested |
+| Hold FX 2 pad 5 | input | untested |
+| Hold FX 2 pad 6 | input | untested |
+| Hold FX 2 pad 7 | input | untested |
+| Hold FX 2 pad 8 | input | untested |
+| Beat loop pad 1 | input | partial |
+| Beat loop pad 2 | input | partial |
+| Beat loop pad 3 | input | partial |
+| Beat loop pad 4 | input | partial |
+| Beat loop pad 5 | input | partial |
+| Beat loop pad 6 | input | partial |
+| Beat loop pad 7 | input | partial |
+| Beat loop pad 8 | input | partial |
+| Key shift pad 1 | input | partial |
+| Key shift pad 2 | input | partial |
+| Key shift pad 3 | input | partial |
+| Key shift pad 4 | input | partial |
+| Key shift pad 5 | input | partial |
+| Key shift pad 6 | input | partial |
+| Key shift pad 7 | input | partial |
+| Key shift pad 8 | input | partial |
+| deck play | light | partial |
+| deck cue | light | partial |
+| deck sync | light | partial |
+| deck tempo range | light | partial |
+| deck loop in | light | partial |
+| deck loop out | light | partial |
+| deck loop active | light | partial |
+| deck vinyl | light | untested |
+| mixer cue | light | partial |
+| mixer vu | light | untested |
+| deck loaded | light | untested |
+| deck pad mode | light | partial |
+| deck pad | light | partial |
+| tempo fx on | light | partial |
+| tempo fx release | light | partial |
+| channel fx | light | untested |
+<!-- hardware-status:end -->

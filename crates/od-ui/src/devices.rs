@@ -8,7 +8,7 @@ use crate::{DeviceRow, NodeChoice, ProposalRow, VolumeRow, format};
 use od_core::{DeviceId, TrackId};
 use od_devices::{Command, DeviceState, DeviceStatus, Event, Proposal, Volume};
 use od_library::{DeviceFormats, Library, NodeId, NodeKind};
-use slint::SharedString;
+use slint::{ComponentHandle, SharedString};
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -517,7 +517,12 @@ pub(crate) fn wire(app: &Rc<App>) {
         a.status("Ejecting…");
     }));
     ui.on_open_device(handler!(app, |a, id: i32| {
-        a.state.borrow_mut().devices.selected = Some(DeviceId(id as i64));
+        let new = Some(DeviceId(id as i64));
+        if a.state.borrow().devices.selected != new {
+            // The check belongs to the stick it was run on.
+            a.ui.global::<crate::StickCheck>().set_visible(false);
+        }
+        a.state.borrow_mut().devices.selected = new;
         a.ui.set_section("devices".into());
         refresh(&a);
     }));

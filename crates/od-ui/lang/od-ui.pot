@@ -2676,3 +2676,118 @@ msgstr ""
 msgctxt "MiniPlayer"
 msgid "KEY"
 msgstr ""
+
+#: ui/app.slint:1250
+msgctxt "AppWindow"
+msgid "CHECK STICK"
+msgstr ""
+
+#: ui/app.slint:1250
+msgctxt "AppWindow"
+msgid "Read the stick back and compare every track, cue, grid and playlist with the library"
+msgstr ""
+
+#: ui/devices.slint:195
+msgctxt "StickCheckPanel"
+msgid "Checking the stick…"
+msgstr ""
+
+#: ui/devices.slint:195
+msgctxt "StickCheckPanel"
+msgid "Ready"
+msgstr ""
+
+#: ui/devices.slint:195
+msgctxt "StickCheckPanel"
+msgid "Not ready"
+msgstr ""
+
+#: ui/devices.slint:206
+msgctxt "StickCheckPanel"
+msgid "CLOSE"
+msgstr ""
+
+#: ui/devices.slint:230
+msgctxt "StickCheckPanel"
+msgid "FILE"
+msgstr ""
+
+#: ui/devices.slint:231
+msgctxt "StickCheckPanel"
+msgid "CUES"
+msgstr ""
+
+#: ui/devices.slint:232
+msgctxt "StickCheckPanel"
+msgid "GRID"
+msgstr ""
+
+#: ui/devices.slint:238
+msgctxt "StickCheckPanel"
+msgid "Solid: as in the library. Dashed: changed since the last sync. Struck: missing or unreadable. Half: nothing to compare."
+msgstr ""
+
+#: ui/preferences.slint:567
+msgctxt "PreferencesWindow"
+msgid "Self-test"
+msgstr ""
+
+#: ui/preferences.slint:569
+msgctxt "PreferencesWindow"
+msgid "Mapping"
+msgstr ""
+
+#: ui/preferences.slint:573
+msgctxt "PreferencesWindow"
+msgid "{} of {} answered"
+msgstr ""
+
+#: ui/preferences.slint:574
+msgctxt "PreferencesWindow"
+msgid "START"
+msgstr ""
+
+#: ui/preferences.slint:574
+msgctxt "PreferencesWindow"
+msgid "Stop listening"
+msgstr ""
+
+#: ui/preferences.slint:574
+msgctxt "PreferencesWindow"
+msgid "Listen to the controller and tick each control that answers"
+msgstr ""
+
+#: ui/preferences.slint:575
+msgctxt "PreferencesWindow"
+msgid "LEDS ON…"
+msgstr ""
+
+#: ui/preferences.slint:575
+msgctxt "PreferencesWindow"
+msgid "FLASH LEDS"
+msgstr ""
+
+#: ui/preferences.slint:575
+msgctxt "PreferencesWindow"
+msgid "Light every LED of the mapping for two seconds ({} lights)"
+msgstr ""
+
+#: ui/preferences.slint:600
+msgctxt "PreferencesWindow"
+msgid "VERIFIED"
+msgstr ""
+
+#: ui/preferences.slint:600
+msgctxt "PreferencesWindow"
+msgid "PARTIAL"
+msgstr ""
+
+#: ui/preferences.slint:600
+msgctxt "PreferencesWindow"
+msgid "UNTESTED"
+msgstr ""
+
+#: ui/preferences.slint:606
+msgctxt "PreferencesWindow"
+msgid "Press START and move every control once; each is ticked when its message arrives. FLASH LEDS lights every mapped LED. VERIFIED: confirmed on a unit. PARTIAL: from a public source, not yet tried on a unit. UNTESTED: neither."
+msgstr ""

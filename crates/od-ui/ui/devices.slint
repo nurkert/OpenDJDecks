@@ -128,3 +128,114 @@ export component DeviceBoard inherits Rectangle {
         }
     }
 }
+
+// The stick check before a gig (roadmap [53]): one verdict, then a row per
+// track with its file, cues and grid, problems first.
+export struct StickCheckRow {
+    title: string,
+    artist: string,
+    // "ok", "missing", "differs", "unreadable", "none".
+    file: string,
+    cues: string,
+    grid: string,
+}
+
+export global StickCheck {
+    // The panel shows (for the selected stick).
+    in-out property <bool> visible;
+    in property <bool> running;
+    in property <bool> ready;
+    // "2 of 2 tracks in order · 1 playlist as in the library".
+    in property <string> summary;
+    // Whole-stick problems, one per line ("" when none).
+    in property <string> problems;
+    in property <[StickCheckRow]> rows;
+    callback run(int);
+    callback close();
+}
+
+// One mark: a short line in the status grammar over its legend.
+component CheckMark inherits HorizontalLayout {
+    in property <string> state;
+    in property <string> label;
+    width: 64px; spacing: Theme.s1;
+    VerticalLayout {
+        padding-top: Theme.s2; padding-bottom: Theme.s2;
+        VLine {
+            tone: root.state == "ok" ? Theme.live : root.state == "differs" ? Theme.attention : root.state == "none" ? Theme.rule-strong : Theme.bone-3;
+            form: root.state == "ok" ? "solid" : root.state == "differs" ? "dashed" : root.state == "none" ? "half" : "struck";
+        }
+    }
+    Caps {
+        text: root.label; vertical-alignment: center;
+        color: root.state == "missing" || root.state == "unreadable" ? Theme.fault : root.state == "ok" ? Theme.bone-3 : Theme.bone-2;
+    }
+}
+
+export component StickCheckPanel inherits VerticalLayout {
+    accessible-role: groupbox;
+    accessible-label: "devices.check-panel";
+    accessible-value: StickCheck.running ? "running" : StickCheck.ready ? "ready" : "not ready";
+    spacing: Theme.s2;
+    HorizontalLayout {
+        spacing: Theme.s3;
+        height: 44px;
+        VerticalLayout {
+            padding-top: Theme.s1; padding-bottom: Theme.s1;
+            VLine {
+                weight: 2px;
+                tone: StickCheck.running ? Theme.attention : StickCheck.ready ? Theme.live : Theme.bone-3;
+                form: StickCheck.running ? "dashed" : StickCheck.ready ? "solid" : "struck";
+            }
+        }
+        VerticalLayout {
+            horizontal-stretch: 1; alignment: center; spacing: Theme.key-gap;
+            Text {
+                accessible-role: text; accessible-label: "devices.check-verdict"; accessible-value: self.text;
+                text: StickCheck.running ? @tr("Checking the stick…") : StickCheck.ready ? @tr("Ready") : @tr("Not ready");
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+                color: !StickCheck.running && !StickCheck.ready ? Theme.fault : Theme.bone;
+            }
+            if !StickCheck.running: Text {
+                text: StickCheck.summary; overflow: elide;
+                font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2;
+            }
+        }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton { accessible-role: button; accessible-label: "devices.check-close"; compact: true; label: @tr("CLOSE"); clicked => { StickCheck.close(); } }
+        }
+    }
+    if StickCheck.problems != "": Text {
+        accessible-role: text; accessible-label: "devices.check-problems"; accessible-value: self.text;
+        text: StickCheck.problems; wrap: word-wrap;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.fault;
+    }
+    HLine { tone: Theme.rule; }
+    Rectangle {
+        vertical-stretch: 1;
+        Flickable {
+            VerticalLayout {
+                alignment: start;
+                for r in StickCheck.rows: HorizontalLayout {
+                    accessible-role: text;
+                    accessible-label: "devices.check-row";
+                    accessible-value: r.title + " file " + r.file + " cues " + r.cues + " grid " + r.grid;
+                    height: 40px; spacing: Theme.s3;
+                    VerticalLayout {
+                        horizontal-stretch: 1; alignment: center;
+                        Text { text: r.title; overflow: elide; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone; }
+                        Text { text: r.artist; overflow: elide; font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3; }
+                    }
+                    CheckMark { state: r.file; label: @tr("FILE"); }
+                    CheckMark { state: r.cues; label: @tr("CUES"); }
+                    CheckMark { state: r.grid; label: @tr("GRID"); }
+                }
+            }
+        }
+    }
+    Text {
+        text: @tr("Solid: as in the library. Dashed: changed since the last sync. Struck: missing or unreadable. Half: nothing to compare.");
+        wrap: word-wrap; font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
+    }
+}

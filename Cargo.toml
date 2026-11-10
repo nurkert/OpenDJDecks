@@ -49,6 +49,14 @@ lto = "thin"
 codegen-units = 1
 debug = "line-tables-only"
 
+# Long-run measurements (`od-soak`): optimised like a release, without the
+# slow link-time optimisation, so the soak binary builds in a few minutes.
+[profile.soak]
+inherits = "release"
+lto = false
+codegen-units = 16
+debug = false
+
 [profile.dev.package."*"]
 opt-level = 2
 

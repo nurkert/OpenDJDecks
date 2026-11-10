@@ -2736,6 +2736,39 @@ evidence = ["crates/od-ui/src/midi_tools.rs", "od-controller/src/learn.rs"]
 note = "Preferences ▸ Controller: MIDI monitor (raw messages with the mapping hits) and MIDI learn (action, deck, the learned control described and as a mapping entry; ADD TO MY MAPPING writes it to the own mapping file, checked to load)"
 
 [[feature]]
+id = "ctrl-self-test"
+area = "preferences"
+name = "Controller self-test before a gig: controls ticked as they answer, LEDs flashed"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-controller::hardware::tests::the_self_test_ticks_controls_as_their_messages_arrive",
+  "od-controller::hardware::tests::led_messages_light_every_mapped_led_once",
+  "od-ui::midi_tools::tests::the_self_test_ticks_from_the_monitor_stream",
+  "od-ui::ui_tests::prepare::controller_self_test_ticks_controls_and_flashes_leds",
+]
+evidence = ["crates/od-controller/src/hardware.rs", "crates/od-ui/src/midi_tools.rs", "od-controller/src/io.rs::light_all"]
+spec = "Roadmap [52]"
+note = "Preferences ▸ Controller ▸ Self-test: every control of the chosen mapping with its hardware status; START ticks each control when its MIDI message arrives, FLASH LEDS lights every mapped LED for two seconds and then restores the feedback. Tested with simulated MIDI; not yet run on a real unit."
+
+[[feature]]
+id = "ctrl-hardware-status"
+area = "preferences"
+name = "Hardware status per model and control (verified, partial, untested), generated from the mappings"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-controller::hardware::tests::status_follows_the_markers",
+  "od-controller::hardware::tests::the_generated_section_replaces_only_between_the_markers",
+  "od-controller::mappings::the_published_hardware_status_matches_the_mapping_files",
+]
+evidence = ["crates/od-controller/src/hardware.rs", "crates/od-controller/examples/hardware_status.rs", "docs/guide/en/controllers.md"]
+spec = "Roadmap [52]"
+note = "The controllers guide lists every mapped control; `confirmed = true` marks verified, `verify = true` untested, the rest partial. Nothing is confirmed on hardware yet."
+
+[[feature]]
 id = "audio-coreaudio"
 area = "preferences"
 name = "Audio output on macOS (CoreAudio)"
@@ -3394,6 +3427,27 @@ tests = [
 ]
 evidence = ["manager.rs::sync_all", "manager.rs::sync_stick", "devices.rs::wire"]
 note = "SYNC ALL STICKS (and the sync key in the DEVICES heading) runs every plugged-in stick on its own thread with its own progress line. A stored Eject when done ejects each stick once its sync has finished; a stick that fails keeps its error and stays mounted, the others carry on"
+
+[[feature]]
+id = "export-stick-check"
+area = "export"
+name = "Stick check before a gig: file, cues and grid per track, playlists, a ready verdict"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-devices::check::tests::a_freshly_synced_stick_is_ready",
+  "od-devices::check::tests::a_missing_file_is_named_on_its_track",
+  "od-devices::check::tests::a_damaged_file_is_unreadable",
+  "od-devices::check::tests::library_changes_since_the_sync_show_until_the_next_sync",
+  "od-devices::check::tests::an_interrupted_sync_is_not_ready",
+  "od-devices::check::tests::a_stick_without_its_formats_is_not_ready",
+  "od-ui::stick_check::tests::the_summary_counts_tracks_lists_and_formats",
+  "od-ui::ui_tests::features::stick_check_gives_a_verdict_and_a_row_per_track",
+]
+evidence = ["crates/od-devices/src/check.rs", "crates/od-ui/src/stick_check.rs"]
+spec = "Roadmap [53]"
+note = "CHECK STICK on the Devices page reads both stick formats back (OpenDJDecks library, Club player USB export and analysis files). Ready only when every file opens as audio, cues and grids match the library, playlists hold the library's tracks in order, the chosen formats are there and no sync was cut off. Whether a given player model accepts the stick is not covered (roadmap [H2])."
 
 [[feature]]
 id = "export-club-usb-compat"

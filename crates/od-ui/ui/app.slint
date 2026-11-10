@@ -26,7 +26,8 @@ export { TableStyle }
 import { UserTagPanel, SuggestionPanel } from "user_tags.slint";
 import { ColumnView, ColumnChoice, FilterView, UserTagChip, SuggestionRow } from "structs.slint";
 export { ColumnView, ColumnChoice, FilterView, UserTagChip, SuggestionRow }
-import { DeviceLine } from "devices.slint";
+import { DeviceLine, StickCheck, StickCheckRow, StickCheckPanel } from "devices.slint";
+export { StickCheck, StickCheckRow }
 import { SetFlow } from "flow.slint";
 import { PerformView } from "perform.slint";
 import { LightingView, Lighting, LightFixtureView, LightGroupView, LightingWindow } from "lighting.slint";
@@ -1214,8 +1215,9 @@ export component AppWindow inherits Window {
                                 LineToggle { label: @tr("OpenDJDecks"); tooltip: @tr("Write the OpenDJDecks library for other OpenDJDecks setups"); checked: root.device-opendjdecks; toggled(v) => { root.set-device-formats(root.device-club-usb, v, root.device-club-compat); } }
                             }
                             if root.device-club-usb: LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-label: "devices.club-usb-compat"; label: @tr("Maximum compatibility (WAV for older club players)"); tooltip: @tr("Writes FLAC and M4A/AAC/ALAC tracks to this stick as 16-bit WAV. Your original files stay as they are."); checked: root.device-club-compat; toggled(v) => { root.set-device-formats(root.device-club-usb, root.device-opendjdecks, v); } }
-                            Caps { text: @tr("CONTENT — LISTS ON THIS STICK"); }
-                            Rectangle {
+                            if StickCheck.visible: StickCheckPanel { vertical-stretch: 1; }
+                            if !StickCheck.visible: Caps { text: @tr("CONTENT — LISTS ON THIS STICK"); }
+                            if !StickCheck.visible: Rectangle {
                                 vertical-stretch: 1;
                                 Flickable {
                                     VerticalLayout {
@@ -1245,6 +1247,7 @@ export component AppWindow inherits Window {
                             HorizontalLayout {
                                 spacing: Theme.s2;
                                 PlateButton { compact: true; label: @tr("SYNC NOW"); tone: Theme.live; tooltip: @tr("Sync this stick now"); command: "devices.sync"; clicked => { root.sync-device(root.device-selected); } }
+                                PlateButton { accessible-role: button; accessible-label: "devices.check"; compact: true; label: @tr("CHECK STICK"); tone: Theme.attention; tooltip: @tr("Read the stick back and compare every track, cue, grid and playlist with the library"); clicked => { StickCheck.run(root.device-selected); } }
                                 PlateButton { compact: true; label: @tr("REBUILD STICK"); tone: Theme.attention; tooltip: @tr("Write the whole stick again from the library"); clicked => { root.rebuild-device(root.device-selected); } }
                                 PlateButton { compact: true; label: @tr("FORGET"); tone: Theme.fault; tooltip: @tr("Stop keeping this stick in sync"); clicked => { root.forget-device(root.device-selected); } }
                             }

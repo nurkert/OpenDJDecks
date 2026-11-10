@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 
-const PDB_PATH: &str = "PIONEER/rekordbox/export.pdb";
+pub(crate) const PDB_PATH: &str = "PIONEER/rekordbox/export.pdb";
 const MYSETTING_PATH: &str = "PIONEER/MYSETTING.DAT";
 /// Library meta key with the player preferences for sticks (JSON of
 /// [`StickPlayerSettings`]), kept up to date by the app.
@@ -124,6 +124,15 @@ impl ClubUsbState {
     }
 }
 
+/// The analysis file (`.DAT`, stick-relative) written for each track.
+pub(crate) fn written_analysis(root: &Path) -> Vec<(TrackId, String)> {
+    ClubUsbState::load(root)
+        .tracks
+        .into_iter()
+        .map(|(id, w)| (id, w.dat))
+        .collect()
+}
+
 fn hash(bytes: &[u8]) -> String {
     blake3::hash(bytes).to_hex().to_string()
 }
@@ -132,7 +141,7 @@ fn stick_file(root: &Path, p: &str) -> PathBuf {
     root.join(p.trim_start_matches('/'))
 }
 
-fn ext_path(dat: &str) -> String {
+pub(crate) fn ext_path(dat: &str) -> String {
     dat.strip_suffix(".DAT")
         .map(|s| format!("{s}.EXT"))
         .unwrap_or_else(|| dat.to_string())
@@ -157,7 +166,7 @@ fn cue_key(c: &Cue) -> (u8, i64, Option<i64>) {
     )
 }
 
-fn same_cues(a: &[Cue], b: &[Cue]) -> bool {
+pub(crate) fn same_cues(a: &[Cue], b: &[Cue]) -> bool {
     let mut x: Vec<_> = a.iter().map(cue_key).collect();
     let mut y: Vec<_> = b.iter().map(cue_key).collect();
     x.sort();
