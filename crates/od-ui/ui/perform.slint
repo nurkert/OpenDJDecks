@@ -1841,7 +1841,7 @@ component WaveZoneColumn inherits Rectangle {
     callback zoom(float);
     callback zoom-reset();
     // Its height comes from the lanes, never from the keys.
-    width: Theme.touch ? 3 * Theme.target : Theme.target;
+    width: Theme.touch ? 3 * Theme.target : root.all-fit ? Theme.target : 2 * Theme.target;
     min-height: Theme.touch ? 2 * Theme.target : Theme.target;
     preferred-height: self.min-height;
     vertical-stretch: 1;
@@ -1850,33 +1850,49 @@ component WaveZoneColumn inherits Rectangle {
         width: root.width; height: 2 * Theme.target;
         spacing: 0px;
         Row {
-            ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
             ZoneKey { id: "zoom-in"; glyph: "plus"; tip: @tr("Zoom in (all decks)"); act => { root.zoom(120); } }
+            ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
             ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
         }
         Row {
-            ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
+            ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
             ZoneKey { id: "expand"; glyph: "plus"; tip: @tr("Larger waveform zone"); act => { PerformLayout.wave-size = min(2, PerformLayout.wave-size + 1); } }
         }
     }
     // Desktop: one column, most used first: zoom in, zoom out, centre,
-    // then the zone height keys. When the lanes are too short for all five,
-    // the height keys move behind a ⋯ key (a popup beside it); only whole
-    // keys are ever shown.
+    // then the zone height keys. Lanes too short for five keys get two
+    // columns in the same order (three rows); shorter still, the height
+    // keys move behind a ⋯ key (a popup beside it). Only whole keys show.
     property <int> fits: Math.floor(root.height / Theme.target);
     property <bool> all-fit: root.fits >= 5;
-    if !Theme.touch: VerticalLayout {
+    property <bool> two-cols: !root.all-fit && root.fits >= 3;
+    if !Theme.touch && !root.two-cols: VerticalLayout {
         width: root.width; height: root.height;
         spacing: 0px;
         alignment: start;
         ZoneKey { id: "zoom-in"; glyph: "plus"; tip: @tr("Zoom in (all decks)"); act => { root.zoom(120); } }
         if root.fits >= 2: ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
-        if root.fits >= 3: ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
+        if root.all-fit: ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
         if root.all-fit: ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
         if root.all-fit: ZoneKey { id: "expand"; glyph: "plus"; tip: @tr("Larger waveform zone"); act => { PerformLayout.wave-size = min(2, PerformLayout.wave-size + 1); } }
         if !root.all-fit: ZoneKey {
             id: "more"; glyph: ""; tip: @tr("More waveform keys");
             act => { overflow.show(); }
+        }
+    }
+    if !Theme.touch && root.two-cols: GridLayout {
+        width: root.width; height: 3 * Theme.target;
+        spacing: 0px;
+        Row {
+            ZoneKey { id: "zoom-in"; glyph: "plus"; tip: @tr("Zoom in (all decks)"); act => { root.zoom(120); } }
+            ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
+        }
+        Row {
+            ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
+            ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
+        }
+        Row {
+            ZoneKey { id: "expand"; glyph: "plus"; tip: @tr("Larger waveform zone"); act => { PerformLayout.wave-size = min(2, PerformLayout.wave-size + 1); } }
         }
     }
     overflow := PopupWindow {
@@ -1885,7 +1901,7 @@ component WaveZoneColumn inherits Rectangle {
             background: Theme.ground-band; border-radius: Theme.r-control;
             VerticalLayout {
                 if root.fits < 2: ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
-                if root.fits < 3: ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
+                ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
                 ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
                 ZoneKey { id: "expand"; glyph: "plus"; tip: @tr("Larger waveform zone"); act => { PerformLayout.wave-size = min(2, PerformLayout.wave-size + 1); } }
             }

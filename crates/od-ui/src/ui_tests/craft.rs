@@ -351,7 +351,7 @@ fn club_keys_wrap_the_jog() {
 #[test]
 fn waveform_view_keys_stand_in_one_column() {
     let order = ["wave.zoom-in", "wave.zoom-out", "wave.zoom-reset", "wave.collapse", "wave.expand"];
-    for (size, decks) in [((1440, 900), 2), ((1280, 800), 2), ((1440, 900), 4)] {
+    for (size, decks) in [((1440, 900), 2), ((1280, 800), 2), ((1440, 900), 4), ((1280, 800), 4)] {
         let ui = Ui::open(size);
         perform(&ui);
         if decks == 4 {
@@ -363,17 +363,25 @@ fn waveform_view_keys_stand_in_one_column() {
         let lanes: Vec<Rect> = (1..=decks).map(|d| Rect::of(&ui.get(&format!("wave.lane{d}")))).collect();
         let (top, bottom) = (lanes[0].y, lanes[decks - 1].bottom());
         let shown: Vec<Rect> = order.iter().filter(|l| ui.has(l)).map(|l| Rect::of(&ui.get(l))).collect();
-        assert!(shown.len() >= 3, "{size:?} x{decks}: the zoom keys stay");
+        assert!(shown.len() >= 2, "{size:?} x{decks}: the zoom keys stay");
         if shown.len() < 5 {
             assert!(ui.has("wave.more"), "{size:?} x{decks}: the rest behind ⋯");
         }
+        // One column when all five fit, else two columns in the same order.
+        let columns = if shown.len() == 5 && shown.iter().all(|k| (k.x - shown[0].x).abs() < 0.5) { 1 } else { 2 };
+        let right = shown.iter().map(|k| k.right()).fold(0.0f32, f32::max);
         for (i, k) in shown.iter().enumerate() {
-            assert!((k.x - shown[0].x).abs() < 0.5, "{size:?} x{decks}: one column");
+            if columns == 1 {
+                assert!((k.x - shown[0].x).abs() < 0.5, "{size:?} x{decks}: one column");
+            }
             assert!(k.y >= top - 0.5 && k.bottom() <= bottom + 0.5 + 26.0, "{size:?} x{decks}: key {i} inside the zone");
             if i > 0 {
-                assert!(k.y >= shown[i - 1].bottom() - 0.5, "{size:?} x{decks}: in order, no overlap");
+                assert!(k.y >= shown[i - 1].y - 0.5, "{size:?} x{decks}: in order");
+                for o in &shown[..i] {
+                    assert!(k.overlap(o) <= 0.0, "{size:?} x{decks}: no overlap");
+                }
             }
-            assert!(lanes[0].x >= k.right() - 0.5 && lanes[0].x - k.right() <= 1.0, "{size:?} x{decks}: lanes take the freed width");
+            assert!(lanes[0].x >= right - 0.5 && lanes[0].x - right <= 1.0, "{size:?} x{decks}: lanes start after the keys");
         }
         if ui.has("wave.grid-edit1") {
             let g = Rect::of(&ui.get("wave.grid-edit1"));

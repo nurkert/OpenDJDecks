@@ -8238,7 +8238,7 @@ msgstr "Keylock: Die Tonart bleibt, wenn sich das Tempo ändert"
 
 msgctxt "PlatterGroup"
 msgid "Tempo range of the fader — click for the next"
-msgstr "Tempobereich des Faders – Klick für den nächsten"
+msgstr "Tempobereich des Faders — klicken für den nächsten"
 
 msgctxt "WaveZoneColumn"
 msgid "More waveform keys"
