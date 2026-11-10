@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 264 features; 258 in scope: 258 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 268 features; 262 in scope: 262 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -356,6 +356,10 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Easy manual mode: scene pads, dimmer, strobe, blackout, tap/sync, controller pad mode | DONE | EASY: look pads, colour swatches, master dimmer, BLACKOUT, FLASH / STROBE / FOG hold, TAP tempo when no deck plays; LIGHTING pad mode on the decks (and the controller pads): A–F looks, G strobe, H flash; (SPEC §10.5) | 4 | P2 |
 | Pro mode: programmer, effects engine, cue stacks, per-track lighting cues, MIDI mapping | DONE | PRO: program / colour / attribute effect (sine, saw, square, random on dimmer, pan, tilt; phase spread; beat-synced) and an XY pan / tilt programmer per group; cue stack with GO / BACK / STORE and beat fades; track cue timeline (cues stored at bars of the track you hear, recalled whenever it plays); every lighting control MIDI-mappable (`lighting.*` mapping actions); (SPEC §10.5) | 6 | P2 |
 | LIGHTING tab, split view in Perform, detachable window, 2D visualiser | DONE | LIGHTING tab (topbar, View menu, Alt+3) with RIG \| STAGE (live 2D visualiser) \| SHOW, a lighting strip inside Perform (LIGHT, Alt+K) and a detachable LIGHTING window for a second screen (WINDOW); (SPEC §10.5) | 4 | P2 |
+| Own looks and chases on pads: pages, latch or flash, live colour preview, group masters, mapped to pads and MIDI | DONE | Roadmap [15]. PADS in the LIGHTING view: 4 pages of 8 pads; a look sets program, colour and level per group (groups it leaves out keep what runs underneath), a chase steps through looks on the beat (1/4 beat to 2 bars); latch or flash per pad; the pad shows the look's colours and follows every edit; group masters. Saved with the rig (lighting.json). Deck pads in LIGHTING mode play the current page; mapping actions lighting.pad, lighting.page(_next/_prev), lighting.group_master; MIDI learn fills the pad, page or group number. Tested with simulated MIDI only, not from a hardware controller; (SPEC §10.5) | 10 | P2 |
+| Full lighting controls in Perform and Club, legible in the dark and sized for touch | DONE | Roadmap [17]. STRIP (LIGHT STRIP, Alt+Cmd+K) opens a lighting panel in the browser's place in Perform and Club: stage preview (from 1360 px), pages and pads, master and group faders, AUTO / EASY / PRO, DMX OUT, HOLD, RELEASE, who is in control or a lost link, BLACKOUT / FLASH / STROBE / FOG. The decks, mixer and waveforms keep every element's place and size at 1440 x 900 and 1280 x 800 (UI test); every key, pad and fader is 44 px or more. Not tried on a real touch screen; (SPEC §10.5) | 2 | P2 |
+| AUTO you can steer: palettes, editable phrase-to-look table, hold, and a visible order of AUTO, overrides and release | DONE | Roadmap [18]. PALETTE (track key, warm, cool, sunset, ocean, white, own swatches); PHRASE -> LOOK for intro, verse, build-up, drop, breakdown, outro (a program or a pad); HOLD keeps AUTO's look through phrase changes; who wins, top first: blackout, FLASH / STROBE keys, a flash pad while held, the latched pad, HOLD, AUTO. A pad takes only the groups its look sets; RELEASE hands back with a one-beat fade. The order is shown with the layer in control lit, and IN CONTROL names it; (SPEC §10.5) | 5 | P2 |
+| Connecting interfaces: several universes, USB-DMX port picker, Art-Net node discovery, test pattern, guided setup | DONE | Roadmap [20]. OUTPUT: each universe its own Art-Net Port-Address or sACN universe by default; PORTS lists USB serial adapters (REFRESH); FIND NODES sends an ArtPoll to the broadcast address and lists the ArtPollReply answers; TEST PATTERN each / colours / full, through the safety limits; GUIDED SETUP in four steps ending with the test. Tested with a fake node on the loopback address (documentation-range IP) and listed test ports; no real Art-Net node, sACN receiver or USB-DMX interface has been tried; (SPEC §10.5) | 5 | P2 |
 
 ## 14. Video, DVS, streaming, cloud
 
@@ -373,13 +377,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 258 |
+| DONE | 262 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **264** |
+| **Total** | **268** |
 
 ## P1 gaps and implementation notes
 
