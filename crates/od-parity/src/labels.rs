@@ -43,6 +43,7 @@ pub const SCOPES: &[(&str, &str)] = &[
     ("info", "Info panel (right of the list)"),
     ("subbrowser", "sub-browser (second tree + list)"),
     ("status", "status band"),
+    ("guide", "first-start guide: bar, steps, highlight of the real control"),
     (
         "lighting",
         "LIGHTING view: rig, outputs, stage preview, show controls",

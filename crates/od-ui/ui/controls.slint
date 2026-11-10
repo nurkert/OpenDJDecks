@@ -49,6 +49,7 @@ export component Glyph inherits Path {
         : kind == "minus" ? "M 0 5 L 10 5"
         : kind == "up" ? "M 5 10 L 5 1 M 1.5 4.5 L 5 1 L 8.5 4.5"
         : kind == "down" ? "M 5 0 L 5 9 M 1.5 5.5 L 5 9 L 8.5 5.5"
+        : kind == "check" ? "M 1 5.5 L 4 8.5 L 9 2"
         : kind == "close" ? "M 1 1 L 9 9 M 9 1 L 1 9"
         // Chevrons for steppers (previous / next value).
         : kind == "prev" ? "M 6.5 1 L 2.5 5 L 6.5 9"
@@ -98,6 +99,38 @@ export component ArmedOutline inherits Rectangle {
     border-color: root.show ? root.tone.with-alpha(root.pulse) : transparent;
 }
 
+// The first-start guide: which real control needs the user now (set from
+// Rust; it matches the control's accessible label).
+export global FirstStart {
+    in property <bool> visible;
+    // Steps done so far (0..4).
+    in property <int> step;
+    // Accessible label of the control to point at.
+    in property <string> target;
+    // What to do now (a key of the hint table in first_start.slint).
+    in property <string> hint;
+    in property <bool> samples-busy;
+    in property <bool> tone-on;
+    callback add-samples();
+    callback toggle-tone();
+    callback close();
+    callback reopen();
+}
+
+// Marks a control while the guide points at it: the armed outline in sodium.
+export component GuideMark inherits Rectangle {
+    in property <string> id;
+    in property <length> radius: Theme.r-control;
+    property <bool> show: FirstStart.visible && root.id != "" && FirstStart.target == root.id;
+    if root.show: ArmedOutline {
+        accessible-role: text;
+        accessible-label: "guide.highlight";
+        accessible-value: root.id;
+        width: parent.width; height: parent.height;
+        show: true; radius: root.radius;
+    }
+}
+
 export component PlateButton inherits Rectangle {
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
@@ -114,6 +147,8 @@ export component PlateButton inherits Rectangle {
     in property <bool> armed: false;
     in property <bool> enabled: true;
     in property <bool> compact: false;
+    // First-start guide: the id it can be pointed at by.
+    in property <string> guide;
     callback clicked();
 
     in property <bool> tall: false;
@@ -126,6 +161,8 @@ export component PlateButton inherits Rectangle {
     height: tall ? 44px : compact ? 26px : 32px;
     background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.danger && !root.active && root.over ? Theme.fault : root.tone);
     border-radius: Theme.r-control;
+    border-width: root.enabled || root.selected || root.filled ? 0px : Theme.hair;
+    border-color: Theme.rule;
     animate background { duration: Theme.motion ? 90ms : 0ms; }
 
     lbl := Text {
@@ -147,6 +184,7 @@ export component PlateButton inherits Rectangle {
         tone: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
     }
     if root.armed: ArmedOutline { width: parent.width; height: parent.height; show: true; tone: root.tone; }
+    if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; }
     touch := TipArea { tooltip: root.tooltip; command: root.command;
         enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;
@@ -350,6 +388,8 @@ export component Fader inherits Rectangle {
     in property <string> command;
     in-out property <float> value: 0;
     in property <color> tone: Theme.bone;
+    // Handle height (the deck's strongest controls take a larger handle).
+    in property <length> handle: 12px;
     callback changed(float);
     width: 26px;
     Rectangle { x: parent.width / 2 - 1px; y: 4px; width: 2px; height: parent.height - 8px; background: Theme.rule-strong; }
@@ -360,11 +400,11 @@ export component Fader inherits Rectangle {
         background: root.tone.with-alpha(0.6);
     }
     Rectangle {
-        x: 1px; width: parent.width - 2px; height: 12px;
-        y: 4px + (parent.height - 8px - 12px) * (1 - root.value);
+        x: 1px; width: parent.width - 2px; height: root.handle;
+        y: 4px + (parent.height - 8px - root.handle) * (1 - root.value);
         background: Theme.plate-raised;
         border-radius: 2px; border-width: 1px; border-color: touch.has-hover ? Theme.bone-2 : Theme.bone-3;
-        Rectangle { y: 5px; height: 2px; x: 3px; width: parent.width - 6px; background: Theme.bone; }
+        Rectangle { y: (parent.height - 2px) / 2; height: 2px; x: 3px; width: parent.width - 6px; background: Theme.bone; }
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command;
         mouse-cursor: ns-resize;
@@ -398,23 +438,32 @@ export component Toggle inherits Rectangle {
     in property <color> tone: Theme.setup-on;
     in property <bool> enabled: true;
     in property <length> size: 26px;
+    // Legend size (Control rank; a tier-one key is one rank up).
+    in property <length> label-size: Theme.control;
     // Smallest width (44 px touch keys).
     in property <length> min-w: 0px;
+    // First-start guide: the id it can be pointed at by.
+    in property <string> guide;
     callback clicked();
     property <bool> filled: root.on || root.running;
     min-width: max(root.min-w, t.preferred-width + 16px);
     height: root.size;
     background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.tone);
     border-radius: Theme.r-control;
+    // Disabled: band charcoal with a hairline edge, so the key keeps its
+    // shape on a band-charcoal panel.
+    border-width: root.enabled || root.selected || root.filled ? 0px : Theme.hair;
+    border-color: Theme.rule;
     animate background { duration: Theme.motion ? 90ms : 0ms; }
     t := Text {
         y: (parent.height - self.height) / 2 + (touch.pressed && root.enabled ? 1px : 0);
         text: root.label;
-        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+        font-family: Theme.family; font-size: root.label-size; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
         color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
         horizontal-alignment: center; vertical-alignment: center;
     }
     if root.armed: ArmedOutline { width: parent.width; height: parent.height; show: true; tone: root.tone; }
+    if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; }
     touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
     focus := FocusScope { focus-on-click: false; enabled: root.enabled; x: 0; width: 0; height: 0;
         key-pressed(e) => {
@@ -584,22 +633,27 @@ export component Transport inherits Rectangle {
     in property <bool> on;
     in property <color> tone: Theme.live;
     in property <length> size: 44px;
+    // First-start guide: the id it can be pointed at by.
+    in property <string> guide;
     callback clicked();
     width: root.size; height: root.size;
     border-radius: root.size / 2;
     background: Theme.face(true, touch.pressed, touch.has-hover, false, root.on, root.tone);
+    // The mark and the legend grow with the key.
+    property <length> mark: max(12px, root.size * 0.32);
     if root.kind == "cue": Text {
         y: (parent.height - self.height) / 2 + (touch.pressed ? 1px : 0);
         text: "CUE";
-        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
-        color: Theme.ink(true, touch.pressed, touch.has-hover, false, root.on);
+        font-family: Theme.family; font-size: root.size >= 56px ? Theme.heading : Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: root.on ? Theme.ink-on : Theme.bone;
     }
     if root.kind != "cue": Glyph {
-        x: (parent.width - 12px) / 2 + 1px; y: (parent.height - 12px) / 2;
-        width: 12px; height: 12px;
+        x: (parent.width - root.mark) / 2 + 1px; y: (parent.height - root.mark) / 2;
+        width: root.mark; height: root.mark;
         kind: root.on ? "pause" : "play";
-        tone: Theme.ink(true, touch.pressed, touch.has-hover, false, root.on);
+        tone: root.on ? Theme.ink-on : Theme.bone;
     }
+    if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; radius: root.size / 2; }
     touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
@@ -629,6 +683,8 @@ export component Stepper inherits Rectangle {
     min-width: probe.preferred-width + 2 * root.arrow + 12px;
     background: root.enabled ? Theme.plate : Theme.ground-band;
     border-radius: Theme.r-control;
+    border-width: root.enabled ? 0px : Theme.hair;
+    border-color: Theme.rule;
     probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px; }
     Rectangle {
         x: 0; width: root.arrow;

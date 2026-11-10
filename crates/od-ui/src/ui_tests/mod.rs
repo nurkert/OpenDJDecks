@@ -34,3 +34,4 @@ mod session;
 mod stage;
 mod stems_model;
 mod views;
+mod hierarchy;

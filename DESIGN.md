@@ -294,7 +294,7 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 | On (a function is active) | Filled in its tone | Ground | Fill itself, and the label stays |
 | Armed (will act on the next event) | Ash plate with a 2px outline in its tone, slow pulse | Bone | Pulse, off when motion is off |
 | Running (recording, syncing) | Filled in its tone with a timer or percent | Ground | Moving value |
-| Disabled | Band charcoal | Bone 3 | No hover |
+| Disabled | Band charcoal with a hairline rule edge | Bone 3 | No hover; keeps its width |
 | Focused | Any of the above | | 2px bone ring, 2px offset, used for nothing else |
 
 **One job per colour.** Sodium: now and attention, meaning playheads, the selected item in a list, and things that need you. Green: playing, and in sync. Red: recording, clash, danger. Cyan, orange, green and violet also name decks 1 to 4, and appear on a deck only as that deck's identity. Master is shown by the deck's own line doubled and a MASTER key filled in the deck colour.
@@ -316,7 +316,7 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 ### Navigation (sidebar and top bar)
 - **Sidebar sections:** caps headings (COLLECTION, PLAYLISTS, DEVICES, RECORDINGS) with a hairline plus glyph for creation where it applies.
 - **Tree:** 26px rows indented 14px per level; kind marker lines left of the name (sticks solid green 2px, sets solid sodium 1px, smart lists dashed indigo 1px); a 1px strong-rule length bar under each list proportional to its playing time; counts right-aligned in bone-3. Selection is an 8px sodium tick at the left edge, never a fill.
-- **Top bar:** three zones with more space between them than inside them: modes as a segmented control with a filled current mode, panel toggles as one group, status at the right. Live values have fixed widths and are never cut off.
+- **Top bar:** three zones with more space between them than inside them: modes as a segmented control with a filled current mode; panel toggles as one group of slimmer keys; status at the right. Live values have fixed widths and are never cut off. RECORD is an action, not a panel: an ash plate with a bone-3 dot at rest, filled deep red with a running timer while recording, with the section's panel switch joined to it. Editing actions (undo) appear only in Prepare. Under 1360px the brand drops to its rail mark so live values keep their room.
 
 ### Track Table
 - No boxes, no zebra fills. Caps header with a bone sort label and hairline arrow, 1px rule beneath.
@@ -330,6 +330,9 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 - **Overview well:** 92px of band charcoal; three-band columns in violet, teal and sodium by default, which the user can change in Preferences; dimmed sodium phrase ticks every 16 bars in the top and bottom margins; cue lines (2px solid in cue colour with their letter, 1px dashed bone for memory cues); the cursor as doubled sodium.
 - **Hot cue ruler:** letters A to H on a strong-rule baseline 18px from the bottom. A set cue is a 2px solid line in its colour with a bone letter and its time; an empty slot is a hollow outline in bone 3, and a set one is filled in its cue colour.
 - **Beatgrid:** compact plates, struck while the grid is locked; LOCK goes dashed-active in sodium with a LOCKED caps legend.
+
+### First-Start Guide
+A band under the top bar on an empty library: four steps with hollow rings, a sodium ring on the current one, a green ring with a tick when done, a sentence that says what to do now, and the armed outline in sodium on the real control. Sample tracks and a test tone are offered in the band. Hidden in the kiosk. Never covers a control and never shows while a library exists unless asked for.
 
 ### Device Line (signature)
 - One stick, one line: 2px, inset 8px top and bottom, 64px rows (78px in the Devices section). In sync is solid green; pending is dashed sodium; error is struck with the detail text in deep red; unknown or unregistered is half-height.
@@ -346,6 +349,7 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 - **Overview** (34px, 26px compact) with played-portion veil, cue lines, doubled sodium position line and needle search; LOAD SELECTED when empty.
 - **Stems row:** VOCAL / INST / DRUMS / BASS mute toggles (disabled until the track has stems, SEPARATING… while separating) and KEY LOCK.
 - **Performance row:** hot cue pads A–D | E–H in two columns, LOOP (½, size, 2×), BEAT JUMP −4 / +4, Q and SLIP, round CUE and PLAY, the tempo fader with its range.
+- **Tiers:** a deck has three visual ranks. First: PLAY, CUE (round, mark and legend grow with the key), SYNC (one rank larger label, same column as CUE and PLAY) and the faders (larger handle). Second: pads and loop keys on the full rows. Third, setup keys (SLIP, QUANTIZE, KEYLOCK, tempo range, pad mode, GRID, KEY SYNC, key shift): 24px and not growing with the rows. Windows narrower than 1300 px keep the same rows with tighter columns, tighter header gaps and a one-rank smaller BPM in the header (the platter keeps the Hero BPM), and still spell out KEY SYNC and MASTER; the compact deck is for narrower windows and four decks. Empty hot cues are hollow; set ones filled in the cue colour. On the kiosk the transport keys stay at 44 px.
 - **Mixer:** per channel a knob column (TRIM, HI, MID, LOW, CH FX) beside the channel numeral, CUE toggle, a 4px level line (deep red at clip) and the channel fader. Knobs are drawn rings with a single indicator line; a changed knob's line takes its band wavelength; double-click resets.
 - The crossfader is a single 2px bone line on a strong-rule ruler between A and B.
 

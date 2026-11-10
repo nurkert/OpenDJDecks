@@ -125,6 +125,8 @@ const DE: &[(&str, &str)] = &[
         "{} Tracks hinzugefügt, {} Dateien nicht lesbar",
     ),
     ("Analysis complete", "Analyse abgeschlossen"),
+    ("Writing sample tracks", "Beispieltracks werden geschrieben"),
+    ("Sample tracks could not be written", "Beispieltracks konnten nicht geschrieben werden"),
     ("{} closed: not enough room", "{} geschlossen: zu wenig Platz"),
     ("ANALYSING {}/{}", "ANALYSE {}/{}"),
     (

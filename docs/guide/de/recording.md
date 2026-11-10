@@ -11,7 +11,7 @@ Drücke den runden Aufnahmeknopf neben dem Master-Pegel (oder `⌘Return`, oder 
 
 ## Während der Aufnahme
 
-Drücke **REC** in der oberen Leiste, um den Aufnahmebereich zu zeigen: Pegel, Anzeige, verstrichene Zeit und Dateigröße, und die Trackliste, die mitwächst. Tracks kommen hinzu, sobald sie hörbar werden. Der Aufnahmepegel reicht von −12 bis +12 dB.
+**AUFNAHME** in der oberen Leiste startet und stoppt eine Aufnahme; sie wird rot mit der laufenden Zeit. Die kleine Taste daneben zeigt den Aufnahmebereich: Pegel, Anzeige, verstrichene Zeit und Dateigröße, und die Trackliste, die mitwächst. Tracks kommen hinzu, sobald sie hörbar werden. Der Aufnahmepegel reicht von −12 bis +12 dB.
 
 ## Nach der Aufnahme
 

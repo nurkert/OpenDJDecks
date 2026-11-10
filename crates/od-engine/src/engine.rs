@@ -272,6 +272,9 @@ pub struct EngineProcessor {
     hp_gain: Smoothed,
     sampler_level: f32,
     sampler_cue: bool,
+    test_tone: bool,
+    test_tone_phase: f32,
+    test_tone_gain: f32,
     booth_level: f32,
     booth_gain: Smoothed,
     master_cue: bool,
@@ -346,6 +349,9 @@ impl EngineProcessor {
             hp_gain: Smoothed::new(1.0, ramp),
             sampler_level: 1.0,
             sampler_cue: false,
+            test_tone: false,
+            test_tone_phase: 0.0,
+            test_tone_gain: 0.0,
             booth_level: 1.0,
             booth_gain: Smoothed::new(1.0, ramp),
             master_cue: false,
@@ -470,6 +476,7 @@ impl EngineProcessor {
                 MixerCommand::SetHeadphoneLevel(l) => self.hp_level = l.clamp(0.0, 1.5),
                 MixerCommand::SetSamplerLevel(l) => self.sampler_level = l.clamp(0.0, 1.5),
                 MixerCommand::SetSamplerCue(on) => self.sampler_cue = on,
+                MixerCommand::SetTestTone(on) => self.test_tone = on,
                 MixerCommand::SetBoothLevel(l) => self.booth_level = l.clamp(0.0, 1.5),
                 MixerCommand::SetMasterCue(on) => self.master_cue = on,
                 MixerCommand::SetLimiter(on) => self.limiter_on = on,
@@ -729,6 +736,27 @@ impl EngineProcessor {
             let live = k % TEMPO_FX_SLOTS == 0 || self.tempo_fx_multi[k / TEMPO_FX_SLOTS];
             if live && unit.target() == FxTarget::Master {
                 unit.process(master_buf, &clock);
+            }
+        }
+        // Test tone (first-start guide): −18 dBFS with a short ramp.
+        if self.test_tone || self.test_tone_gain > 0.0 {
+            const LEVEL: f32 = 0.125;
+            let ramp = 1.0 / (self.sr as f32 * 0.01);
+            let step = 440.0 * std::f32::consts::TAU / self.sr as f32;
+            for (m, c) in master_buf
+                .as_chunks_mut::<2>()
+                .0
+                .iter_mut()
+                .zip(cue_buf.as_chunks_mut::<2>().0.iter_mut())
+            {
+                let target = if self.test_tone { 1.0 } else { 0.0 };
+                self.test_tone_gain += (target - self.test_tone_gain).clamp(-ramp, ramp);
+                self.test_tone_phase = (self.test_tone_phase + step) % std::f32::consts::TAU;
+                let s = self.test_tone_phase.sin() * LEVEL * self.test_tone_gain;
+                m[0] += s;
+                m[1] += s;
+                c[0] += s;
+                c[1] += s;
             }
         }
         // Booth: master bus before master level / limiter.

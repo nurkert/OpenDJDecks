@@ -7,7 +7,9 @@ export { DragState }
 export { PopupPlace }
 export { DeckTime, GridEdit, DeckGrid, DeckGridView } from "structs.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
-import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace } from "controls.slint";
+import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark } from "controls.slint";
+import { FirstStartBar } from "first_start.slint";
+export { FirstStart }
 import { TooltipLayer } from "tooltip.slint";
 import { Sidebar, RailItem } from "sidebar.slint";
 import { TopBar, Gig } from "topbar.slint";
@@ -595,6 +597,8 @@ export component AppWindow inherits Window {
             MenuItem { title: @tr("Library"); activated => { root.select-section("library"); } }
             MenuItem { title: @tr("USB Sticks"); activated => { root.select-section("devices"); } }
             MenuItem { title: @tr("Recordings"); activated => { root.select-section("recordings"); } }
+            MenuSeparator { }
+            MenuItem { title: @tr("First-Start Guide"); activated => { FirstStart.reopen(); } }
         }
     }
 
@@ -631,7 +635,6 @@ export component AppWindow inherits Window {
                 cycle-layout => { root.cycle-layout(); }
                 deck-count: root.decks.length;
                 set-perform-view(v) => { root.set-perform-view(v); }
-                show-record: root.mode != "perform";
                 show-panels: root.mode == "perform";
                 fx-panel: root.fx-panel;
                 sampler-panel: root.sampler-panel;
@@ -665,6 +668,7 @@ export component AppWindow inherits Window {
                 progress: root.update-progress;
                 act(what) => { root.update-action(what); }
             }
+            if FirstStart.visible: FirstStartBar { }
             if root.stems-model-state != "": StemsModelBar {
                 state: root.stems-model-state;
                 text: root.stems-model-text;
@@ -1096,6 +1100,7 @@ export component AppWindow inherits Window {
                     }
                     if root.section == "library": TrackTable {
                         accessible-label: "browser.list"; accessible-role: table;
+                        guide: "browser.list";
                         vertical-stretch: 1;
                         rows: root.tracks;
                         sort-column: root.sort-column;
@@ -1149,7 +1154,7 @@ export component AppWindow inherits Window {
                     if root.section == "library" && root.node-kind == "all" && root.tracks.length == 0: HorizontalLayout {
                         alignment: center;
                         spacing: Theme.s3;
-                        PlateButton { accessible-label: "browser.empty.add-music"; accessible-role: button; label: @tr("ADD MUSIC FOLDER"); tone: Theme.live; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } }
+                        PlateButton { accessible-label: "browser.empty.add-music"; accessible-role: button; label: @tr("ADD MUSIC FOLDER"); tone: Theme.live; guide: "browser.empty.add-music"; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } }
                         PlateButton { accessible-label: "browser.empty.import-library"; accessible-role: button; label: @tr("IMPORT LIBRARY"); tone: Theme.w486; tooltip: @tr("Import a library XML file (rekordbox-compatible)"); command: "library.import.xml"; clicked => { root.menu-action("library.import.xml"); } }
                         PlateButton { accessible-label: "browser.empty.gig-preset"; accessible-role: button; accessible-checkable: true; accessible-checked: Gig.active; label: @tr("GIG PRESET"); selected: Gig.active; tooltip: @tr("High contrast, the colour-blind palette and a larger interface in one click (also GIG in the top bar)"); clicked => { Gig.act("toggle"); } }
                     }
@@ -1333,6 +1338,7 @@ export component AppWindow inherits Window {
             // Status band.
             Rectangle {
                 height: 26px;
+                GuideMark { x: 0; y: 0; width: parent.width; height: parent.height; id: "status.activity"; }
                 HorizontalLayout {
                     padding-left: Theme.s4;
                     padding-right: Theme.s4;

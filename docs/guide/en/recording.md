@@ -11,7 +11,7 @@ Press the round record button next to the master level (or `⌘Return`, or the r
 
 ## While you record
 
-Press **REC** in the top bar to show the recording section: the level, a meter, the elapsed time and file size, and the tracklist as it grows. Tracks are added as they become audible. Record level goes from −12 to +12 dB.
+**RECORD** in the top bar starts and stops a recording; it turns red with the running time. The small key beside it shows the recording section: the level, a meter, the elapsed time and file size, and the tracklist as it grows. Tracks are added as they become audible. Record level goes from −12 to +12 dB.
 
 ## After recording
 

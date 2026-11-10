@@ -25,12 +25,12 @@ Above the decks, the wide zone shows one scrolling waveform per deck. Turn the w
 
 The view button at the top of Perform opens a menu with a picture of each view: **2 Decks** or **4 Decks**, each **horizontal** or **vertical**, and **Browse**, which keeps the decks small and gives the browser the room. Shortcuts: `⌥⌘V` for vertical waveforms and `⌥⌘B` for Browse. A four-deck controller switches to four decks automatically.
 
-The top bar also shows or hides the panels: **FX**, **PREVIEW**, **SAMPLER**, **MIXER** and **REC**, plus **CLUB** and **LIGHT STRIP**. Drag the separator bars between the areas to resize them, double-click to reset.
+The top bar has three zones. On the left are the work modes, in the middle what the current mode shows, and on the right what is live: the master tempo, recording, the controller and the master out. **FX**, **PREVIEW**, **SAMPLER** and **MIXER** show or hide panels, plus **CLUB** and **LIGHT STRIP**. **RECORD** starts a recording and turns red with the running time; the small key next to it shows or hides the recording section. **UNDO** appears in Prepare, where you edit. Drag the separator bars between the areas to resize them, double-click to reset.
 
 ## Tempo and sync
 
-- The **tempo fader** changes the speed; up is slower, as on a player. The range key above CUE cycles through **±6 %**, **±10 %**, **±16 %** and **WIDE**. The default comes from **Preferences › Controller › Decks**, and you can type a BPM into the field on the platter.
-- **SYNC** locks a deck to the **MASTER** deck by tempo and beat position. `⇧Q` and `⇧Y` make decks 1 and 2 master. Under **Preferences › Controller › Decks › Sync** you choose full beat sync or tempo only.
+- The **tempo fader** changes the speed; up is slower, as on a player. The range key with the setup keys beside the fader cycles through **±6 %**, **±10 %**, **±16 %** and **WIDE**. The default comes from **Preferences › Controller › Decks**, and you can type a BPM into the field on the platter.
+- **SYNC**, above **CUE** and **PLAY**, locks a deck to the **MASTER** deck by tempo and beat position. `⇧Q` and `⇧Y` make decks 1 and 2 master. Under **Preferences › Controller › Decks › Sync** you choose full beat sync or tempo only.
 - **Q** (quantize) makes cues, loops and jumps land on the beat.
 - **KEY SYNC** moves the deck to the key of the master deck.
 - **‹ ±0 ›** in the deck header shifts the key a semitone at a time; click the value to reset.

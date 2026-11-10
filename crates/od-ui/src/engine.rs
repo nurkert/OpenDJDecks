@@ -327,7 +327,7 @@ fn perform_crowd(app: &App) {
         layout.get_layout(),
         layout.get_wave_size(),
         slint::Model::row_count(&ui.get_decks()),
-        ui.get_update_state(),
+        format!("{}{}", ui.get_update_state(), ui.global::<crate::FirstStart>().get_visible()),
     );
     let changed = CROWD_KEY.with(|k| {
         let mut k = k.borrow_mut();

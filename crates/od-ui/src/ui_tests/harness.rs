@@ -44,6 +44,8 @@ pub(crate) fn test_env() -> &'static Path {
             std::env::set_var("OPENDJDECKS_VOLUMES_DIR", base.join("volumes"));
             std::env::set_var("OPENDJDECKS_DATA_DIR", base.join("data"));
             std::env::set_var("OPENDJDECKS_MAPPINGS", base.join("data/mappings"));
+            // Short sample tracks for the first-start guide.
+            std::env::set_var("OPENDJDECKS_SAMPLE_BARS", "6");
         }
         base
     })
@@ -145,6 +147,34 @@ impl Fixture {
             outside_folder,
             outside_file,
             tracks,
+            playlist,
+        }
+    }
+
+    /// An empty library: no tracks, nothing added yet (the first start).
+    pub fn empty() -> Self {
+        test_env();
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+        let library = root.join("library/library.sqlite");
+        let mut lib = Library::open(&library).unwrap();
+        let mut settings = crate::settings::Settings::default();
+        settings.view.language = "en".into();
+        settings.recording.folder = root.join("recordings").display().to_string();
+        lib.set_meta(crate::settings::META_SETTINGS, &settings.to_json())
+            .unwrap();
+        let playlist = lib
+            .create_node(None, NodeKind::Playlist, "Warm-up")
+            .unwrap();
+        drop(lib);
+        Self {
+            root: root.clone(),
+            explorer_root: root.clone(),
+            outside_folder: root.clone(),
+            outside_file: root.clone(),
+            _dir: dir,
+            library,
+            tracks: Vec::new(),
             playlist,
         }
     }

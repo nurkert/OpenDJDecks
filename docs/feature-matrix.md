@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 222 features; 216 in scope: 216 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 223 features; 217 in scope: 217 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -292,7 +292,8 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Prepare / Perform mode switch that keeps loaded tracks | DONE | `crates/od-ui/src/shell.rs`; (SPEC §3.1) | 1 |  |
 | Perform layouts: 2 / 4 decks horizontal and vertical, Browse | DONE | 2 and 4 decks in three layouts (persisted): standard (lanes across the top), vertical (Alt+V: upright lanes with zoom keys above the mixer) and Browse (Alt+B: header, overview and parts per deck, browser enlarged); (SPEC §10.1; UX §1.4) | 5 | P2 |
 | Prepare layouts: 1 player, 2 players, dual, simple, full browser | DONE | `crates/od-ui/src/shell.rs::set_prepare_layout`; Player and browser, 2 players (full player plus a compact second player), dual (two compact players side by side), simple (one compact player) and full browser: top-bar switch, View menu, ⌥⌘4–⌥⌘8, persisted. Player 2 takes the selected track (LOAD) or a dragged row and plays on the preview deck; (UX §1.7) | 3 | P2 |
-| Top-bar panel toggles: FX, Mix Preview, Sampler, Mixer, Recording | DONE | FX, PREVIEW, SAMPLER, MIXER and REC in the top bar (stored): MIXER hides the mixer column, PREVIEW shows the Mix Preview panel, REC shows or hides the recording section, plus CLUB and LIGHT; (UX §1.2, §2.8) | 3 | P2 |
+| First-start guide: self-ticking checklist that points at the real controls, sample tracks, test tone | DONE | With an empty library a checklist under the top bar ticks itself (add music, analysis, two tracks, play and sync) and outlines the next control. Two sample tracks are synthesised by the app; TEST TONE plays a quiet tone on master and headphones.; (Roadmap [7]) | 3 | P2 |
+| Top-bar panel toggles: FX, Mix Preview, Sampler, Mixer, Recording | DONE | FX, PREVIEW, SAMPLER and MIXER in the top bar (stored): MIXER hides the mixer column, PREVIEW shows the Mix Preview panel, the key beside RECORD shows or hides the recording section, plus CLUB and LIGHT; (UX §1.2, §2.8) | 3 | P2 |
 | Mix Preview (mix in / mix out points between decks) | DONE | `crates/od-ui/src/mix_preview.rs`, `crates/od-ui/ui/mix_preview.slint`; MIX PREVIEW panel above the waveforms: MIX IN / MIX OUT at the edited deck's playhead (stored per track), ◀ ▶ through the points (memory cues and mix points), EDIT switches the deck, LINK starts the waiting deck from its mix-in point when the playing deck passes its mix-out point; (UX §1.5; SPEC §16.3) | 5 | P3 |
 | Draggable splitters with persisted sizes, double-click reset | DONE | `crates/od-ui/src/shell.rs`; Upper/lower and sidebar splitters: drag, persisted across restarts, double-click reset (UI test). Per-layout sizes and waveform-zone collapse / expand are not there; (SPEC §12; UX §2.6) | 2 |  |
 | Status band: analysis / sync state, list summary (tracks, time, size) | DONE | `crates/od-ui/src/shell.rs`; Activity (analysis progress) at the left, the last message, and the open list summary (tracks, time, size, selection) at the right; (SPEC §12; UX §1.6) | 3 |  |
@@ -331,13 +332,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 216 |
+| DONE | 217 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **222** |
+| **Total** | **223** |
 
 ## P1 gaps and implementation notes
 
