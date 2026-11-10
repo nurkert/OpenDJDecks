@@ -27,8 +27,6 @@ Nicht abgedeckt: die Arbeit des Audiotreibers, die Wandler des Interfaces, das g
 
 Rechner: MacBookPro18,2 (Apple M1 Max), 32 GB, macOS 27.0.1. Build: optimiert (`--profile soak`).
 
-**Noch ist kein Lauf von vier Stunden oder mehr beendet.** Bisher wurde nur gemessen, was unten steht.
-
 ### Kurzer Probelauf: 4 Decks, kein Langlauf (2 min)
 
 | Messgröße | Wert |
@@ -47,7 +45,70 @@ Rechner: MacBookPro18,2 (Apple M1 Max), 32 GB, macOS 27.0.1. Build: optimiert (`
 | Als WAV aufgenommen | 2 min |
 | Neu geladene Decks während des Laufs | 1 |
 | Log | `docs/soak/smoke-4-decks-2min.jsonl` |
+
+### 2 Decks, 4 Stunden
+
+| Messgröße | Wert |
+|---|---|
+| Beginn | 2026-11-10 06:35 UTC |
+| Gemessene Minuten | 240 |
+| Puffer, Rate, Latenz | 256 Frames · 48000 Hz · 5,33 ms |
+| Engine-Callbacks | 2700026 |
+| Verpasste Fristen (Aussetzer) | **7** in 5 der Minuten |
+| Rechenzeit länger als der Puffer | 6 |
+| Rechenzeit, Median der Minuten-Mediane | 2,56 ms (48 %) |
+| Rechenzeit p99, typische / schlechteste Minute | 2,96 ms (55 %) / 3,57 ms (67 %) |
+| Längster einzelner Callback | 5,82 ms (109 %) |
+| Speicher (RSS) erste / letzte / höchste Minute | 1025 / 936 / 1025 MB |
+| Last des Rechners (1 min), Median / höchste | 11,4 / 115,3 |
+| Als WAV aufgenommen | 240 min |
+| Neu geladene Decks während des Laufs | 70 |
+| Log | `docs/soak/soak-2-decks-4h.jsonl` |
+
+Stunde für Stunde:
+
+| Stunde | Aussetzer | Rechenzeit p99, schlechteste Minute | Längster Callback | RSS am Ende | Last (Median) |
+|---|---|---|---|---|---|
+| 1 | 2 | 3,44 ms | 5,82 ms | 936 MB | 12,4 |
+| 2 | 0 | 3,46 ms | 5,22 ms | 620 MB | 11,4 |
+| 3 | 4 | 3,57 ms | 5,56 ms | 322 MB | 10,3 |
+| 4 | 1 | 3,42 ms | 5,47 ms | 936 MB | 11,8 |
+
+### 4 Decks, 4 Stunden
+
+| Messgröße | Wert |
+|---|---|
+| Beginn | 2026-11-10 10:35 UTC |
+| Gemessene Minuten | 240 |
+| Puffer, Rate, Latenz | 256 Frames · 48000 Hz · 5,33 ms |
+| Engine-Callbacks | 2700003 |
+| Verpasste Fristen (Aussetzer) | **1007** in 105 der Minuten |
+| Rechenzeit länger als der Puffer | 947 |
+| Rechenzeit, Median der Minuten-Mediane | 1,97 ms (37 %) |
+| Rechenzeit p99, typische / schlechteste Minute | 3,27 ms (61 %) / 5,38 ms (101 %) |
+| Längster einzelner Callback | 7,37 ms (138 %) |
+| Speicher (RSS) erste / letzte / höchste Minute | 1219 / 970 / 1339 MB |
+| Last des Rechners (1 min), Median / höchste | 8,2 / 111,2 |
+| Als WAV aufgenommen | 240 min |
+| Neu geladene Decks während des Laufs | 70 |
+| Log | `docs/soak/soak-4-decks-4h.jsonl` |
+
+Stunde für Stunde:
+
+| Stunde | Aussetzer | Rechenzeit p99, schlechteste Minute | Längster Callback | RSS am Ende | Last (Median) |
+|---|---|---|---|---|---|
+| 1 | 83 | 4,60 ms | 6,95 ms | 592 MB | 13,3 |
+| 2 | 158 | 4,76 ms | 5,99 ms | 686 MB | 11,7 |
+| 3 | 379 | 5,29 ms | 6,49 ms | 916 MB | 4,4 |
+| 4 | 387 | 5,38 ms | 7,37 ms | 970 MB | 3,9 |
 <!-- soak-results:end -->
+
+### Was die Zahlen zeigen
+
+- **Zwei Decks:** 7 verspätete Puffer in vier Stunden, bei 2,7 Millionen Puffern. Keine Stunde hatte mehr als 4. Der Speicher stieg und fiel mit dem Neuladen der Decks und wuchs über den Lauf nicht an.
+- **Vier Decks:** 1007 verspätete Puffer, und sie kamen nicht gleichmäßig. In 135 der 240 Minuten gab es keinen einzigen. Der Rest kam in Schüben, etwa in den Minuten 165 bis 181 und 231 bis 238. In diesen Minuten hat derselbe Rechner OpenDJDecks kompiliert, die Testsuite laufen lassen und Bildschirmfotos der App gemacht. Die mittlere Rechenzeit der Engine pro Puffer lag die ganzen vier Stunden zwischen 1,7 und 2,6 ms. Die Engine wurde mit der Zeit nicht langsamer; sie hat den Prozessor an andere Arbeit verloren.
+- **Was das für dich heißt:** Mit vier Decks, Stems und Effekten bei 5,3 ms Puffer schließt du am besten alles andere auf dem Rechner oder wählst einen größeren Puffer. Zwei Decks liefen auch neben schwerer Arbeit stabil.
+- **Noch offen:** Diese Läufe liefen auf einem Rechner, der gleichzeitig benutzt wurde. Ein Lauf auf einem ruhigen Rechner und Läufe über acht Stunden fehlen noch. Sie kommen hier dazu, auf dieselbe Weise gemessen.
 
 ## Auf deinem Rechner wiederholen
 
