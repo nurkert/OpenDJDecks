@@ -550,6 +550,7 @@ fn encrypted_import_dialog_clears_the_key() {
 /// stored "eject when done" each is ejected once it has finished.
 #[test]
 fn sync_all_sticks_runs_every_stick_and_ejects_when_done() {
+    let _volumes = volumes_lock();
     let ui = Ui::open((1440, 900));
     let (pl, track) = (ui.fx.playlist, ui.fx.tracks[0].0);
     let mut sticks = Vec::new();
@@ -612,6 +613,7 @@ fn sync_all_sticks_runs_every_stick_and_ejects_when_done() {
 /// only for sticks that carry the Club player USB format.
 #[test]
 fn max_compatibility_is_a_per_stick_option() {
+    let _volumes = volumes_lock();
     let ui = Ui::open((1440, 900));
     let name = "COMPAT-STICK";
     let stick = test_env().join("volumes").join(name);
