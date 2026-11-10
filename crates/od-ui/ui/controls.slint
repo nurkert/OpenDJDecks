@@ -254,12 +254,16 @@ export component Field inherits Rectangle {
     in property <color> tone: Theme.w486;
     // InputType.password shows dots instead of the text.
     in property <InputType> input-type: InputType.text;
+    // Disabled: band charcoal with a hairline edge, no input (state table).
+    in property <bool> enabled: true;
     callback edited(string);
     callback accepted(string);
     // Esc in the field.
     callback cancelled();
     height: 32px;
-    background: Theme.plate;
+    background: root.enabled ? Theme.plate : Theme.ground-band;
+    border-width: root.enabled ? 0px : Theme.hair;
+    border-color: Theme.rule;
 
     border-radius: Theme.r-control;
     if input.text == "": Text {
@@ -277,6 +281,7 @@ export component Field inherits Rectangle {
         selection-foreground-color: Theme.bone;
         vertical-alignment: center;
         single-line: true;
+        enabled: root.enabled;
         input-type: root.input-type;
         edited => { root.edited(self.text); }
         accepted => { root.accepted(self.text); }

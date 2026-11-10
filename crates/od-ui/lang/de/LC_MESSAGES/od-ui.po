@@ -6501,3 +6501,398 @@ msgstr "UNGETESTET"
 msgctxt "PreferencesWindow"
 msgid "Press START and move every control once; each is ticked when its message arrives. FLASH LEDS lights every mapped LED. VERIFIED: confirmed on a unit. PARTIAL: from a public source, not yet tried on a unit. UNTESTED: neither."
 msgstr "Drücke START und bewege jedes Element einmal; es wird abgehakt, sobald seine Nachricht ankommt. LEDS BLINKEN lässt jede zugeordnete LED leuchten. BESTÄTIGT: auf einem Gerät bestätigt. TEILWEISE: aus einer öffentlichen Quelle, noch nicht auf einem Gerät ausprobiert. UNGETESTET: weder noch."
+
+#: ui/lighting.slint:294
+msgctxt "LockedSetup"
+msgid "SETUP LOCKED"
+msgstr "SETUP GESPERRT"
+
+#: ui/lighting.slint:295
+msgctxt "LockedSetup"
+msgid "Patch, outputs and safety limits need the PIN. The show controls on the right stay free."
+msgstr "Patch, Ausgänge und Sicherheitsgrenzen brauchen die PIN. Die Show-Bedienung rechts bleibt frei."
+
+#: ui/lighting.slint:300
+msgctxt "LockedSetup"
+msgid "PIN"
+msgstr "PIN"
+
+#: ui/lighting.slint:307
+msgctxt "LockedSetup"
+msgid "UNLOCK"
+msgstr "ENTSPERREN"
+
+#: ui/lighting.slint:307
+msgctxt "LockedSetup"
+msgid "Open the setup with the PIN"
+msgstr "Das Setup mit der PIN öffnen"
+
+#: ui/lighting.slint:321
+msgctxt "RigTab"
+msgid "ADD FIXTURES"
+msgstr "SCHEINWERFER HINZUFÜGEN"
+
+#: ui/lighting.slint:329
+msgctxt "RigTab"
+msgid "Name"
+msgstr "Name"
+
+#: ui/lighting.slint:330
+msgctxt "RigTab"
+msgid "Group"
+msgstr "Gruppe"
+
+#: ui/lighting.slint:336
+msgctxt "RigTab"
+msgid "COUNT"
+msgstr "ANZAHL"
+
+#: ui/lighting.slint:341
+msgctxt "RigTab"
+msgid "UNIVERSE"
+msgstr "UNIVERSUM"
+
+#: ui/lighting.slint:342 ui/lighting.slint:347
+msgctxt "RigTab"
+msgid "free"
+msgstr "frei"
+
+#: ui/lighting.slint:346
+msgctxt "RigTab"
+msgid "START"
+msgstr "START"
+
+#: ui/lighting.slint:353
+msgctxt "RigTab"
+msgid "ADD"
+msgstr "HINZUFÜGEN"
+
+#: ui/lighting.slint:354
+msgctxt "RigTab"
+msgid "Patch the fixtures one after another from the start address (empty: the first free addresses)"
+msgstr "Die Scheinwerfer nacheinander ab der Startadresse patchen (leer: die ersten freien Adressen)"
+
+#: ui/lighting.slint:362
+msgctxt "RigTab"
+msgid "Change universe, address, mode and channel count in the patch table in the middle."
+msgstr "Universum, Adresse, Modus und Kanalzahl änderst du in der Patch-Tabelle in der Mitte."
+
+#: ui/lighting.slint:366
+msgctxt "RigTab"
+msgid "IMPORT FIXTURE FILE…"
+msgstr "SCHEINWERFER-DATEI IMPORTIEREN…"
+
+#: ui/lighting.slint:367
+msgctxt "RigTab"
+msgid "Patch a fixture from an Open Fixture Library file (.json)"
+msgstr "Einen Scheinwerfer aus einer Open-Fixture-Library-Datei (.json) patchen"
+
+#: ui/lighting.slint:375
+msgctxt "OutputTab"
+msgid "OUTPUTS"
+msgstr "AUSGÄNGE"
+
+#: ui/lighting.slint:376
+msgctxt "OutputTab"
+msgid "No output set. The show runs in the preview only."
+msgstr "Kein Ausgang gesetzt. Die Show läuft nur in der Vorschau."
+
+#: ui/lighting.slint:401
+msgctxt "OutputTab"
+msgid "Remove this output"
+msgstr "Diesen Ausgang entfernen"
+
+#: ui/lighting.slint:408
+msgctxt "OutputTab"
+msgid "SET OUTPUT"
+msgstr "AUSGANG SETZEN"
+
+#: ui/lighting.slint:414
+msgctxt "OutputTab"
+msgid "Choose how the universe leaves the computer"
+msgstr "Wählen, wie das Universum den Computer verlässt"
+
+#: ui/lighting.slint:430
+msgctxt "OutputTab"
+msgid "SET"
+msgstr "SETZEN"
+
+#: ui/lighting.slint:430
+msgctxt "OutputTab"
+msgid "Send this universe to the output"
+msgstr "Dieses Universum an den Ausgang senden"
+
+#: ui/lighting.slint:437
+msgctxt "OutputTab"
+msgid "WHEN A LINK IS LOST"
+msgstr "WENN EINE VERBINDUNG FEHLT"
+
+#: ui/lighting.slint:440
+msgctxt "OutputTab"
+msgid "HOLD"
+msgstr "HALTEN"
+
+#: ui/lighting.slint:440
+msgctxt "OutputTab"
+msgid "SAFE SCENE"
+msgstr "SICHERE SZENE"
+
+#: ui/lighting.slint:440
+msgctxt "OutputTab"
+msgid "BLACKOUT"
+msgstr "BLACKOUT"
+
+#: ui/lighting.slint:447
+msgctxt "OutputTab"
+msgid "The whole rig keeps the last look until every link is back, then fades back to the show in one second."
+msgstr "Das ganze Rig hält den letzten Look, bis jede Verbindung zurück ist, und blendet dann in einer Sekunde zurück zur Show."
+
+#: ui/lighting.slint:448
+msgctxt "OutputTab"
+msgid "The whole rig fades to a calm warm wash at 30 % in two seconds: no strobe, no fog, no lasers."
+msgstr "Das ganze Rig blendet in zwei Sekunden auf ein ruhiges warmes Licht mit 30 %: kein Strobe, kein Nebel, keine Laser."
+
+#: ui/lighting.slint:449
+msgctxt "OutputTab"
+msgid "The whole rig goes dark at once and fades back in when every link is back."
+msgstr "Das ganze Rig wird sofort dunkel und blendet wieder ein, wenn jede Verbindung zurück ist."
+
+#: ui/lighting.slint:451
+msgctxt "OutputTab"
+msgid "The same choice applies when the show fails and when the app quits."
+msgstr "Dieselbe Wahl gilt, wenn die Show ausfällt und wenn die App beendet wird."
+
+#: ui/lighting.slint:456
+msgctxt "SafetyTab"
+msgid "STROBE AND FLASH CAP"
+msgstr "GRENZE FÜR STROBE UND BLITZE"
+
+#: ui/lighting.slint:463
+msgctxt "SafetyTab"
+msgid "NO STROBE"
+msgstr "KEIN STROBE"
+
+#: ui/lighting.slint:463
+msgctxt "SafetyTab"
+msgid "{} PER SECOND"
+msgstr "{} PRO SEKUNDE"
+
+#: ui/lighting.slint:465
+msgctxt "SafetyTab"
+msgid "Most flashes per second any look may send"
+msgstr "Höchstens so viele Blitze pro Sekunde darf jeder Look senden"
+
+#: ui/lighting.slint:470
+msgctxt "SafetyTab"
+msgid "Fast flashing can trigger seizures in people with photosensitive epilepsy. 3 per second or less is the safe default; every look, button and cue is held to it."
+msgstr "Schnelles Blitzen kann bei Menschen mit fotosensitiver Epilepsie Anfälle auslösen. 3 pro Sekunde oder weniger ist die sichere Voreinstellung; jeder Look, jede Taste und jeder Cue hält sich daran."
+
+#: ui/lighting.slint:472
+msgctxt "SafetyTab"
+msgid "LOCKOUT"
+msgstr "SPERRE"
+
+#: ui/lighting.slint:478
+msgctxt "SafetyTab"
+msgid "FOG ARMED"
+msgstr "NEBEL SCHARF"
+
+#: ui/lighting.slint:478
+msgctxt "SafetyTab"
+msgid "ARM FOG"
+msgstr "NEBEL SCHARF SCHALTEN"
+
+#: ui/lighting.slint:480
+msgctxt "SafetyTab"
+msgid "Fog machines stay off until armed. Arming ends when the app quits."
+msgstr "Nebelmaschinen bleiben aus, bis sie scharf geschaltet sind. Das endet, wenn die App beendet wird."
+
+#: ui/lighting.slint:486
+msgctxt "SafetyTab"
+msgid "LASERS ARMED"
+msgstr "LASER SCHARF"
+
+#: ui/lighting.slint:486
+msgctxt "SafetyTab"
+msgid "ARM LASERS"
+msgstr "LASER SCHARF SCHALTEN"
+
+#: ui/lighting.slint:488
+msgctxt "SafetyTab"
+msgid "Lasers stay dark until armed. Arming ends when the app quits."
+msgstr "Laser bleiben dunkel, bis sie scharf geschaltet sind. Das endet, wenn die App beendet wird."
+
+#: ui/lighting.slint:494
+msgctxt "SafetyTab"
+msgid "No fog machine or laser is patched."
+msgstr "Keine Nebelmaschine und kein Laser gepatcht."
+
+#: ui/lighting.slint:495
+msgctxt "SafetyTab"
+msgid "Arming lasts until the app quits; each start begins locked."
+msgstr "Scharf bleibt es, bis die App beendet wird; jeder Start beginnt gesperrt."
+
+#: ui/lighting.slint:498
+msgctxt "SafetyTab"
+msgid "LEVEL CAP PER GROUP"
+msgstr "PEGELGRENZE PRO GRUPPE"
+
+#: ui/lighting.slint:499
+msgctxt "SafetyTab"
+msgid "Groups appear here once fixtures are patched."
+msgstr "Gruppen erscheinen hier, sobald Scheinwerfer gepatcht sind."
+
+#: ui/lighting.slint:508
+msgctxt "SafetyTab"
+msgid "Highest level this group may reach"
+msgstr "Höchster Pegel, den diese Gruppe erreichen darf"
+
+#: ui/lighting.slint:513
+msgctxt "SafetyTab"
+msgid "SETUP PIN"
+msgstr "SETUP-PIN"
+
+#: ui/lighting.slint:518
+msgctxt "SafetyTab"
+msgid "New PIN (empty clears it)"
+msgstr "Neue PIN (leer entfernt sie)"
+
+#: ui/lighting.slint:518
+msgctxt "SafetyTab"
+msgid "4 to 8 digits"
+msgstr "4 bis 8 Ziffern"
+
+#: ui/lighting.slint:525
+msgctxt "SafetyTab"
+msgid "CLEAR"
+msgstr "ENTFERNEN"
+
+#: ui/lighting.slint:525
+msgctxt "SafetyTab"
+msgid "SET"
+msgstr "SETZEN"
+
+#: ui/lighting.slint:526
+msgctxt "SafetyTab"
+msgid "With a PIN, guests can play the show but not change the setup"
+msgstr "Mit einer PIN können Gäste die Show spielen, aber das Setup nicht ändern"
+
+#: ui/lighting.slint:543
+msgctxt "SetupPanel"
+msgid "RIG"
+msgstr "RIG"
+
+#: ui/lighting.slint:543
+msgctxt "SetupPanel"
+msgid "OUTPUT"
+msgstr "AUSGANG"
+
+#: ui/lighting.slint:543
+msgctxt "SetupPanel"
+msgid "SAFETY"
+msgstr "SICHERHEIT"
+
+#: ui/lighting.slint:550
+msgctxt "SetupPanel"
+msgid "LOCK"
+msgstr "SPERREN"
+
+#: ui/lighting.slint:550
+msgctxt "SetupPanel"
+msgid "Lock the setup with the PIN"
+msgstr "Das Setup mit der PIN sperren"
+
+#: ui/lighting.slint:568
+msgctxt "PatchTable"
+msgid "NAME"
+msgstr "NAME"
+
+#: ui/lighting.slint:569
+msgctxt "PatchTable"
+msgid "GROUP"
+msgstr "GRUPPE"
+
+#: ui/lighting.slint:570
+msgctxt "PatchTable"
+msgid "UNIV"
+msgstr "UNIV"
+
+#: ui/lighting.slint:571
+msgctxt "PatchTable"
+msgid "ADDRESS"
+msgstr "ADRESSE"
+
+#: ui/lighting.slint:572
+msgctxt "PatchTable"
+msgid "MODE"
+msgstr "MODUS"
+
+#: ui/lighting.slint:573
+msgctxt "PatchTable"
+msgid "CH"
+msgstr "KAN"
+
+#: ui/lighting.slint:574
+msgctxt "PatchTable"
+msgid "CHECK"
+msgstr "PRÜFUNG"
+
+#: ui/lighting.slint:579
+msgctxt "PatchTable"
+msgid "No fixtures patched yet. Add your lights on the left."
+msgstr "Noch keine Scheinwerfer gepatcht. Füge deine Lampen links hinzu."
+
+#: ui/lighting.slint:624
+msgctxt "PatchTable"
+msgid "DMX mode of the fixture"
+msgstr "DMX-Modus des Scheinwerfers"
+
+#: ui/lighting.slint:638
+msgctxt "PatchTable"
+msgid "FOG · LOCKOUT"
+msgstr "NEBEL · GESPERRT"
+
+#: ui/lighting.slint:638
+msgctxt "PatchTable"
+msgid "LASER · LOCKOUT"
+msgstr "LASER · GESPERRT"
+
+#: ui/lighting.slint:648
+msgctxt "PatchTable"
+msgid "Identify: blink this fixture"
+msgstr "Identifizieren: diesen Scheinwerfer blinken lassen"
+
+#: ui/lighting.slint:657
+msgctxt "PatchTable"
+msgid "Remove this fixture"
+msgstr "Diesen Scheinwerfer entfernen"
+
+#: ui/lighting.slint:665
+msgctxt "PatchTable"
+msgid "Type a value and press Enter to apply it."
+msgstr "Wert eintippen und mit Enter übernehmen."
+
+#: ui/lighting.slint:680
+msgctxt "ChannelGrid"
+msgid "AS SENT, AFTER THE SAFETY LIMITS"
+msgstr "WIE GESENDET, NACH DEN SICHERHEITSGRENZEN"
+
+#: ui/lighting.slint:682
+msgctxt "ChannelGrid"
+msgid "No fixtures patched yet. Add your lights on the left."
+msgstr "Noch keine Scheinwerfer gepatcht. Füge deine Lampen links hinzu."
+
+#: ui/lighting.slint:783
+msgctxt "ShowPanel"
+msgid "Fog is locked out: arm it under SAFETY"
+msgstr "Nebel ist gesperrt: unter SICHERHEIT scharf schalten"
+
+#: ui/lighting.slint:938
+msgctxt "LightingView"
+msgid "PATCH"
+msgstr "PATCH"
+
+#: ui/lighting.slint:938
+msgctxt "LightingView"
+msgid "CHANNELS"
+msgstr "KANÄLE"

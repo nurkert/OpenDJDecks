@@ -6,7 +6,7 @@ import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
 import { Caps, PlateButton, Glyph, TipArea, Knob, PopupPlace, GuideMark } from "controls.slint";
 import { Club } from "club.slint";
-import { Lighting } from "lighting.slint";
+import { Lighting, LinkStatus } from "lighting.slint";
 import { PerformLayout } from "perform.slint";
 import { GigCheck, LockKey, PerformLock } from "safety.slint";
 
@@ -436,6 +436,11 @@ export component TopBar inherits Rectangle {
                 tooltip: Lighting.panel ? @tr("Hide the lighting strip") : @tr("Show the lighting strip");
                 command: "perform.light.panel";
                 clicked => { Lighting.panel = !Lighting.panel; }
+            }
+            // A lost DMX link shows here too, even with the strip hidden.
+            if root.show-panels && !Lighting.panel && (Lighting.link == "lost" || Lighting.link == "fault"): HorizontalLayout {
+                padding-left: Theme.s2; padding-right: Theme.s1;
+                LinkStatus { }
             }
             if root.show-panels: Rectangle { width: Theme.key-gap; }
             if root.show-panels: PanelToggle {
