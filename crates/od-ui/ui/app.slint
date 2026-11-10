@@ -28,6 +28,8 @@ import { ColumnView, ColumnChoice, FilterView, UserTagChip, SuggestionRow } from
 export { ColumnView, ColumnChoice, FilterView, UserTagChip, SuggestionRow }
 import { DeviceLine, StickCheck, StickCheckRow, StickCheckPanel } from "devices.slint";
 export { StickCheck, StickCheckRow }
+import { ImportReview, ImportReviewDialog, ImportCountRow, ImportLeftOutRow } from "import_review.slint";
+export { ImportReview, ImportCountRow, ImportLeftOutRow }
 import { SetFlow } from "flow.slint";
 import { PerformView } from "perform.slint";
 import { LightingView, Lighting, LightFixtureView, LightGroupView, LightingWindow } from "lighting.slint";
@@ -1442,6 +1444,8 @@ export component AppWindow inherits Window {
     // The dragged track follows the pointer.
     DragGhost { }
     // Tooltips draw above everything.
+    // Library import review: preview, result with before / after, undo.
+    if ImportReview.stage != "": ImportReviewDialog { width: 100%; height: 100%; }
     // Encrypted library import: the user picks the file and types the key.
     if root.encrypted-import-open: Rectangle {
         background: #00000099;

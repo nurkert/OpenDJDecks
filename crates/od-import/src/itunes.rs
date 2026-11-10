@@ -290,10 +290,10 @@ pub fn import_itunes(lib: &mut Library, path: &Path) -> Result<ItunesImportRepor
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
-    fn library_xml(a: &Path, b: &Path, missing: &Path) -> String {
+    pub(crate) fn library_xml(a: &Path, b: &Path, missing: &Path) -> String {
         let loc = |p: &Path| crate::xml::location(p).replace("file://localhost", "file://");
         format!(
             r#"<?xml version="1.0" encoding="UTF-8"?>

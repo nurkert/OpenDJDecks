@@ -1606,10 +1606,7 @@ fn act(app: &App, what: &str) {
         "stems.remove" => crate::stems_model::act(app, "remove"),
         "stems.cancel" => crate::stems_model::act(app, "cancel"),
         "stems.help" => crate::stems_model::act(app, "help"),
-        "import.settings" => {
-            let m = crate::import::import_settings(app, None);
-            app.status(m);
-        }
+        "import.settings" => crate::import::pick_and_import_settings(app),
         "keys.reset-all" => {
             {
                 let mut st = app.state.borrow_mut();

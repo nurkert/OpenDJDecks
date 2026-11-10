@@ -4,7 +4,9 @@
 
 use crate::app::{App, handler};
 use crate::workers::WorkerEvent;
+use od_import::review::{ExportFormat, ImportPlan, LeftOut, LeftOutReason};
 use od_import::{ImportOptions, Source};
+use od_library::LibraryCounts;
 use slint::ComponentHandle;
 use std::path::Path;
 use std::rc::Rc;
@@ -33,7 +35,8 @@ pub(crate) fn library_action(app: &App, id: &str) {
             else {
                 return;
             };
-            import_xml(app, &f)
+            open_review(app, &f, ExportFormat::LibraryXml);
+            return;
         }
         "library.export.archive" => {
             let Some(f) = rfd::FileDialog::new()
@@ -79,7 +82,10 @@ pub(crate) fn library_action(app: &App, id: &str) {
             consolidate(app, &dir);
             return;
         }
-        "library.import.settings" => import_settings(app, None),
+        "library.import.settings" => {
+            pick_and_import_settings(app);
+            return;
+        }
         "library.import.club-usb" => {
             let Some(dir) = rfd::FileDialog::new()
                 .set_title(od_i18n::tr("Choose a Club player USB"))
@@ -111,7 +117,8 @@ pub(crate) fn library_action(app: &App, id: &str) {
             else {
                 return;
             };
-            import_itunes(app, &f)
+            open_review(app, &f, ExportFormat::MusicXml);
+            return;
         }
         _ => return,
     };
@@ -254,6 +261,261 @@ pub(crate) fn wire(app: &Rc<App>) {
     ui.on_pick_encrypted_import_file(handler!(app, |a| pick_encrypted_file(&a)));
     ui.on_run_encrypted_import(handler!(app, |a| start_encrypted_import(&a)));
     ui.on_cancel_encrypted_import(handler!(app, |a| close_encrypted_dialog(&a)));
+    let g = ui.global::<crate::ImportReview>();
+    g.on_run(handler!(app, |a| run_review(&a)));
+    g.on_cancel(handler!(app, |a| close_review(&a)));
+    g.on_undo(handler!(app, |a| undo_review(&a)));
+    g.on_close(handler!(app, |a| close_review(&a)));
+}
+
+// ── Reviewed import of an export file ───────────────────────────────────
+
+/// Items listed in the review; the rest are counted.
+const LEFT_OUT_SHOWN: usize = 200;
+
+/// A reviewed import in progress: the file, what it carries over, the
+/// library before, and the snapshot that undoes it.
+#[derive(Default)]
+pub(crate) struct Review {
+    file: Option<(std::path::PathBuf, ExportFormat)>,
+    plan: Option<ImportPlan>,
+    before: LibraryCounts,
+    snapshot: Option<std::path::PathBuf>,
+}
+
+/// Why an item does not carry over, in words.
+pub(crate) fn reason_text(r: &LeftOutReason) -> String {
+    match r {
+        LeftOutReason::FileMissing => od_i18n::tr("file not found").into(),
+        LeftOutReason::NotALocalFile => {
+            od_i18n::tr("not a file on this computer (stream or cloud)").into()
+        }
+        LeftOutReason::NotMusic => od_i18n::tr("video or podcast").into(),
+        LeftOutReason::UnreadableCues(n) => {
+            od_i18n::trf("{} cue points could not be read", &[n])
+        }
+        LeftOutReason::BuiltInList => {
+            od_i18n::tr("a list the other app makes itself").into()
+        }
+        LeftOutReason::ListEntries(n) => {
+            od_i18n::trf("{} entries whose tracks do not carry over", &[n])
+        }
+    }
+}
+
+fn format_label(f: ExportFormat) -> String {
+    match f {
+        ExportFormat::LibraryXml => od_i18n::tr("LIBRARY XML").into(),
+        ExportFormat::MusicXml => od_i18n::tr("MUSIC / ITUNES LIBRARY").into(),
+    }
+}
+
+fn row(label: &str, before: Option<u64>, after: u64) -> crate::ImportCountRow {
+    crate::ImportCountRow {
+        label: od_i18n::tr(label).into(),
+        before: before.map(|b| b.to_string()).unwrap_or_default().into(),
+        after: after.to_string().into(),
+        changed: before.is_some_and(|b| b != after),
+    }
+}
+
+/// The preview's count rows (pure).
+pub(crate) fn plan_rows(p: &ImportPlan, format: ExportFormat) -> Vec<crate::ImportCountRow> {
+    let mut rows = vec![
+        row("New tracks", None, p.tracks_new as u64),
+        row("Tracks already in your library", None, p.tracks_known as u64),
+        row("Playlists", None, p.playlists as u64),
+        row("Folders", None, p.folders as u64),
+    ];
+    if format == ExportFormat::LibraryXml {
+        rows.push(row("Cue points", None, p.cues as u64));
+        rows.push(row("Beatgrids", None, p.grids as u64));
+        rows.push(row("Keys", None, p.keys as u64));
+    }
+    rows
+}
+
+/// The result's rows: the library before and after (pure).
+pub(crate) fn result_rows(
+    before: &LibraryCounts,
+    after: &LibraryCounts,
+) -> Vec<crate::ImportCountRow> {
+    vec![
+        row("Tracks", Some(before.tracks), after.tracks),
+        row("Playlists", Some(before.playlists), after.playlists),
+        row("Folders", Some(before.folders), after.folders),
+        row("Cue points", Some(before.cues), after.cues),
+        row("Beatgrids", Some(before.grids), after.grids),
+        row("Keys", Some(before.keys), after.keys),
+    ]
+}
+
+fn left_out_rows(items: &[LeftOut]) -> (Vec<crate::ImportLeftOutRow>, i32) {
+    let rows = items
+        .iter()
+        .take(LEFT_OUT_SHOWN)
+        .map(|l| crate::ImportLeftOutRow {
+            item: l.item.clone().into(),
+            reason: reason_text(&l.reason).into(),
+        })
+        .collect();
+    (rows, items.len().saturating_sub(LEFT_OUT_SHOWN) as i32)
+}
+
+fn plan_note(p: &ImportPlan, format: ExportFormat) -> String {
+    let mut note = match format {
+        ExportFormat::LibraryXml => od_i18n::tr(
+            "Lists go into a new folder “XML import”. Tracks already in your library take the file's tags, cues, beatgrid and key.",
+        ),
+        ExportFormat::MusicXml => od_i18n::tr(
+            "Lists go into a new folder “Music library import”. Tracks already in your library take the file's tags.",
+        ),
+    }
+    .to_string();
+    if p.is_empty() {
+        note = od_i18n::tr("Nothing in this file can be imported.").into();
+    }
+    note
+}
+
+/// Reads `path` and shows what it would carry over. Nothing is written.
+pub(crate) fn open_review(app: &App, path: &Path, format: ExportFormat) {
+    if app.state.borrow().read_only() {
+        app.state.borrow_mut().browser.stick = None;
+    }
+    let g = app.ui.global::<crate::ImportReview>();
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let planned = {
+        let st = app.state.borrow();
+        od_import::review::plan(&st.lib, path, format).map(|p| (p, st.lib.counts()))
+    };
+    let (plan, before) = match planned {
+        Ok((p, Ok(before))) => (p, before),
+        Ok((_, Err(e))) => {
+            app.status(od_i18n::trf("Cannot open library: {}", &[&e]));
+            return;
+        }
+        Err(e) => {
+            app.status(od_i18n::trf("This file cannot be read: {}", &[&e]));
+            return;
+        }
+    };
+    g.set_file(name.into());
+    g.set_format(format_label(format).into());
+    g.set_counts(crate::models::model(plan_rows(&plan, format)));
+    let (rows, more) = left_out_rows(&plan.left_out);
+    g.set_left_out(crate::models::model(rows));
+    g.set_left_out_more(more);
+    g.set_note(plan_note(&plan, format).into());
+    g.set_error("".into());
+    g.set_stage("preview".into());
+    *app.import_review.borrow_mut() = Review {
+        file: Some((path.to_path_buf(), format)),
+        plan: Some(plan),
+        before,
+        snapshot: None,
+    };
+}
+
+/// The snapshot that undoes the running import, next to the library.
+fn snapshot_path(app: &App) -> std::path::PathBuf {
+    let lib = app.state.borrow().config.library_path.clone();
+    lib.parent()
+        .unwrap_or(Path::new("."))
+        .join("import-undo.snapshot")
+}
+
+/// Imports the reviewed file in the background, after a snapshot of the
+/// library for undo.
+fn run_review(app: &App) {
+    let Some((path, format)) = app.import_review.borrow().file.clone() else {
+        return;
+    };
+    let g = app.ui.global::<crate::ImportReview>();
+    let snap = snapshot_path(app);
+    if let Err(e) = app.state.borrow().lib.backup_to(&snap) {
+        g.set_error(od_i18n::trf("No undo copy could be made, nothing was imported: {}", &[&e]).into());
+        return;
+    }
+    let before = app.state.borrow().lib.counts().unwrap_or_default();
+    {
+        let mut r = app.import_review.borrow_mut();
+        r.snapshot = Some(snap);
+        r.before = before;
+    }
+    g.set_stage("running".into());
+    let library = app.state.borrow().config.library_path.clone();
+    let tx = app.worker_tx.clone();
+    std::thread::spawn(move || {
+        let r = od_library::Library::open(&library)
+            .map_err(|e| e.to_string())
+            .and_then(|mut lib| {
+                od_import::review::run(&mut lib, &path, format).map_err(|e| e.to_string())
+            });
+        let _ = tx.send(WorkerEvent::ReviewedImportDone(r.map(|_| ())));
+    });
+}
+
+/// The background import finished: the counts before and after and what
+/// did not transfer.
+pub(crate) fn review_done(app: &App, result: Result<(), String>) {
+    let g = app.ui.global::<crate::ImportReview>();
+    app.refresh_library();
+    let _ = app.analysis.wake.send(());
+    crate::covers::spawn_backfill(app);
+    let after = app.state.borrow().lib.counts().unwrap_or_default();
+    let before = app.import_review.borrow().before;
+    g.set_counts(crate::models::model(result_rows(&before, &after)));
+    if let Err(e) = result {
+        g.set_error(od_i18n::trf("The import stopped: {}. UNDO IMPORT puts back what was written.", &[&e]).into());
+    }
+    g.set_note(
+        od_i18n::tr("UNDO IMPORT puts the library back exactly as it was before, as long as this window is open.")
+            .into(),
+    );
+    g.set_stage("done".into());
+    app.status(od_i18n::trf(
+        "Library import done: {} tracks before, {} after",
+        &[&before.tracks, &after.tracks],
+    ));
+}
+
+/// Puts the library back to the snapshot taken before the import.
+pub(crate) fn undo_review(app: &App) {
+    let g = app.ui.global::<crate::ImportReview>();
+    let Some(snap) = app.import_review.borrow_mut().snapshot.take() else {
+        return;
+    };
+    let r = app.state.borrow_mut().lib.restore_in_place(&snap);
+    if let Err(e) = r {
+        app.import_review.borrow_mut().snapshot = Some(snap);
+        g.set_error(od_i18n::trf("Undo failed: {}", &[&e]).into());
+        return;
+    }
+    let _ = std::fs::remove_file(&snap);
+    app.refresh_library();
+    let now = app.state.borrow().lib.counts().unwrap_or_default();
+    let before = app.import_review.borrow().before;
+    // Before = the library before the import; now = after the undo.
+    g.set_counts(crate::models::model(result_rows(&before, &now)));
+    g.set_note(od_i18n::tr("The library is as it was before the import.").into());
+    g.set_error("".into());
+    g.set_stage("undone".into());
+    app.status(od_i18n::tr("Library import undone"));
+}
+
+/// Closes the review; the undo copy is removed.
+pub(crate) fn close_review(app: &App) {
+    let snap = std::mem::take(&mut *app.import_review.borrow_mut()).snapshot;
+    if let Some(s) = snap {
+        let _ = std::fs::remove_file(s);
+    }
+    app.ui
+        .global::<crate::ImportReview>()
+        .set_stage("".into());
 }
 
 /// Writes the library as XML (rekordbox-compatible).
@@ -264,7 +526,9 @@ pub(crate) fn export_xml(app: &App, path: &Path) -> String {
     }
 }
 
-/// Reads a library XML file (rekordbox-compatible) into the library.
+/// Reads a library XML file (rekordbox-compatible) into the library at
+/// once, without the review (tests).
+#[cfg(test)]
 pub(crate) fn import_xml(app: &App, path: &Path) -> String {
     if app.state.borrow().read_only() {
         app.state.borrow_mut().browser.stick = None;
@@ -289,7 +553,9 @@ pub(crate) fn import_xml(app: &App, path: &Path) -> String {
 }
 
 /// Reads an iTunes / Music library export (`Library.xml`): tracks with
-/// their tags and the playlists (in a folder of their own).
+/// their tags and the playlists (in a folder of their own), without the
+/// review (tests).
+#[cfg(test)]
 pub(crate) fn import_itunes(app: &App, path: &Path) -> String {
     if app.state.borrow().read_only() {
         app.state.borrow_mut().browser.stick = None;
@@ -379,10 +645,23 @@ pub(crate) fn consolidate(app: &App, dir: &Path) {
     });
 }
 
-/// Takes over the preferences and keyboard shortcuts of a rekordbox
-/// installation (`dir`, else the user's rekordbox settings folder). Shortcuts
-/// that would bind one key twice are left out.
-pub(crate) fn import_settings(app: &App, dir: Option<&Path>) -> String {
+/// Asks for the preference folder (the user picks it; nothing is looked
+/// for on its own) and takes its preferences and shortcuts over.
+pub(crate) fn pick_and_import_settings(app: &App) {
+    let Some(dir) = rfd::FileDialog::new()
+        .set_title(od_i18n::tr("Choose the rekordbox preferences folder"))
+        .pick_folder()
+    else {
+        return;
+    };
+    let m = import_settings(app, &dir);
+    app.status(m);
+}
+
+/// Takes over the preferences and keyboard shortcuts in `dir`, a
+/// rekordbox preference folder the user picked. Shortcuts that would bind
+/// one key twice are left out.
+pub(crate) fn import_settings(app: &App, dir: &Path) -> String {
     let (settings, _report) = match od_import::settings::read(dir) {
         Ok(r) => r,
         Err(e) => return od_i18n::trf("No rekordbox preferences found: {}", &[&e]),
@@ -745,4 +1024,99 @@ pub(crate) fn wire_native_drop(app: &std::rc::Rc<App>) {
         }
         slint::winit_030::EventResult::Propagate
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn review_rows_and_reasons() {
+        let p = ImportPlan {
+            tracks_in_file: 5,
+            tracks_new: 2,
+            tracks_known: 1,
+            playlists: 3,
+            folders: 1,
+            cues: 7,
+            grids: 2,
+            keys: 1,
+            left_out: vec![LeftOut {
+                item: "Cy – Lost".into(),
+                reason: LeftOutReason::FileMissing,
+            }],
+        };
+        let rows = plan_rows(&p, ExportFormat::LibraryXml);
+        let values: Vec<(String, String)> = rows
+            .iter()
+            .map(|r| (r.label.to_string(), r.after.to_string()))
+            .collect();
+        assert_eq!(values[0], ("New tracks".into(), "2".into()));
+        assert_eq!(values[4], ("Cue points".into(), "7".into()));
+        assert_eq!(rows.len(), 7);
+        // A Music library export has no cues, grids or keys to show.
+        assert_eq!(plan_rows(&p, ExportFormat::MusicXml).len(), 4);
+        let before = LibraryCounts {
+            tracks: 10,
+            ..Default::default()
+        };
+        let after = LibraryCounts {
+            tracks: 12,
+            ..Default::default()
+        };
+        let r = result_rows(&before, &after);
+        assert_eq!((r[0].before.as_str(), r[0].after.as_str()), ("10", "12"));
+        assert!(r[0].changed && !r[1].changed);
+        let many: Vec<LeftOut> = (0..LEFT_OUT_SHOWN + 5)
+            .map(|i| LeftOut {
+                item: format!("T{i}"),
+                reason: LeftOutReason::ListEntries(i),
+            })
+            .collect();
+        let (shown, more) = left_out_rows(&many);
+        assert_eq!((shown.len(), more), (LEFT_OUT_SHOWN, 5));
+        assert_eq!(
+            reason_text(&LeftOutReason::UnreadableCues(3)),
+            "3 cue points could not be read"
+        );
+    }
+
+    #[test]
+    fn review_texts_have_german() {
+        for s in [
+            "file not found",
+            "not a file on this computer (stream or cloud)",
+            "video or podcast",
+            "{} cue points could not be read",
+            "a list the other app makes itself",
+            "{} entries whose tracks do not carry over",
+            "LIBRARY XML",
+            "MUSIC / ITUNES LIBRARY",
+            "New tracks",
+            "Tracks already in your library",
+            "Playlists",
+            "Folders",
+            "Cue points",
+            "Beatgrids",
+            "Keys",
+            "Tracks",
+            "Nothing in this file can be imported.",
+            "This file cannot be read: {}",
+            "No undo copy could be made, nothing was imported: {}",
+            "The import stopped: {}. UNDO IMPORT puts back what was written.",
+            "UNDO IMPORT puts the library back exactly as it was before, as long as this window is open.",
+            "Library import done: {} tracks before, {} after",
+            "Undo failed: {}",
+            "The library is as it was before the import.",
+            "Library import undone",
+            "Choose the rekordbox preferences folder",
+            "NOW",
+            "BEAT",
+            "BAR",
+            "KILL",
+            "OFF",
+        ] {
+            assert!(od_i18n::has_german(s), "no German for {s:?}");
+        }
+    }
 }

@@ -2,6 +2,8 @@
 //!
 //! * [`xml`]: the library XML format (rekordbox-compatible), import and export.
 //! * [`itunes`]: an iTunes / Music library export.
+//! * [`review`]: a preview of what an export file carries over, then the
+//!   import (with before and after counts and undo in the app).
 //! * [`settings`]: preferences and keyboard shortcuts.
 //! * [`club_stick`]: a Club player USB written by other software
 //!   (`/PIONEER/rekordbox/export.pdb` + ANLZ), via `od-format-clubusb`.
@@ -43,6 +45,7 @@ pub mod club_stick;
 mod encrypted_library;
 pub mod itunes;
 mod model;
+pub mod review;
 pub mod settings;
 mod smart;
 mod sqlcipher;

@@ -25,6 +25,7 @@ mod design;
 mod editing;
 mod features;
 mod flows;
+mod mix;
 pub(crate) mod harness;
 mod perform;
 mod prepare;
