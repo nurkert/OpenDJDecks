@@ -456,11 +456,14 @@ export component Sidebar inherits Rectangle {
                     tooltip: @tr("Sync every plugged-in stick now");
                     act => { root.sync-all-devices(); }
                 }
-                if root.devices.length == 0 && root.volumes.length == 0: Text {
-                    // The tree's width (the column less its rail).
-                    x: 12px; width: root.width - (Theme.touch ? 0px : root.tight ? 44px : Theme.rail) - 24px;
-                    text: @tr("Plug in a USB stick to register it.");
-                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
+                if root.devices.length == 0 && root.volumes.length == 0: HorizontalLayout {
+                    padding-left: Theme.s3; padding-right: Theme.s3;
+                    // Wraps to the tree's width, never wider.
+                    Text {
+                        min-width: 0px; preferred-width: 0px; horizontal-stretch: 1;
+                        text: @tr("Plug in a USB stick to register it.");
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
+                    }
                 }
                 for d[i] in root.devices: DeviceItem {
                     index: i;
