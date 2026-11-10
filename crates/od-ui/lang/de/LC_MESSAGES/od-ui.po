@@ -6361,3 +6361,28 @@ msgstr "Üben an: SYNC ist aus. Klick gibt SYNC wieder frei"
 msgctxt "PhaseStrip"
 msgid "Practise beatmatching by ear and eye: SYNC goes off and stays off"
 msgstr "Beatmatching nach Gehör und Auge üben: SYNC geht aus und bleibt aus"
+
+#: ui/app.slint:610
+msgctxt "AppWindow"
+msgid "Booth View"
+msgstr "Booth-Ansicht"
+
+#: ui/booth.slint:67
+msgctxt "BoothDeck"
+msgid "Not loaded"
+msgstr "Nicht geladen"
+
+#: ui/booth.slint:84
+msgctxt "BoothDeck"
+msgid "KEY"
+msgstr "TONART"
+
+#: ui/booth.slint:101
+msgctxt "BoothDeck"
+msgid "REMAINING"
+msgstr "REST"
+
+#: ui/booth.slint:108
+msgctxt "BoothDeck"
+msgid "PHRASE · TO THE NEXT"
+msgstr "PHRASE · BIS ZUR NÄCHSTEN"

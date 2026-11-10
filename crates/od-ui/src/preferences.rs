@@ -1101,6 +1101,7 @@ fn apply_live(app: &App) {
     };
     shell::apply_language(&settings.language());
     shell::apply_theme(&app.ui.global::<crate::Theme>(), &settings, lite);
+    crate::booth::apply_theme(app);
     with_window(app, |w| {
         shell::apply_theme(&w.global::<crate::Theme>(), &settings, lite)
     });

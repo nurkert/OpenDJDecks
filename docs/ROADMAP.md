@@ -42,7 +42,7 @@ These come first because every later screen builds on them.
 - [x] **[9] Restore after a crash.** Deck state is saved continuously and offered back after an abnormal exit, and a running recording survives. Done when killing the app mid-set restores tracks and positions and keeps the recording.
 - [x] **[11] Performance lock.** Blocks loading onto a playing deck, deleting and grid editing. Keeps the computer awake and pauses background work while decks play. Done when none of these can happen by accident while locked.
 - [x] **[12] Phase and tempo between decks.** A phase meter and tempo difference in Perform with a clear in-sync state, and an option to practise without sync. Done when manual beatmatching can be judged from the screen.
-- [ ] **[58] Booth view.** A large view with two big waveforms and large BPM, key, remaining time and phrase countdown. Done when it is readable from a few metres away.
+- [x] **[58] Booth view.** A large view with two big waveforms and large BPM, key, remaining time and phrase countdown. Done when it is readable from a few metres away.
 
 ### Step 5: proof that it holds up
 

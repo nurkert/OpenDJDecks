@@ -1,8 +1,8 @@
 ---
 title: Die Grundlagen von Perform
 description: Decks, Layouts, Sync, Keylock, Tempo, Loops und Beat Jump und jeder Pad-Modus am Deck.
-keywords: [phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom]
-features: [deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, shell-panel-toggles, shell-splitters, deck-phase-meter]
+keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom]
+features: [deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
 ---
 
 Perform ist der Live-Modus: Decks, Mixer und Browser in einer Ansicht.
@@ -48,6 +48,14 @@ Die Leiste unter den Wellenformen vergleicht jedes Deck mit dem **Bezugsdeck**: 
 Zum Angleichen von Hand bringst du den Tempounterschied mit dem Tempo-Fader auf ±0.00 und schiebst dann mit dem Jogwheel oder den Bend-Tasten nach, bis die Linie in der Mitte steht.
 
 **ÜBEN** rechts in der Leiste schaltet SYNC auf allen Decks aus und lässt es aus, damit du ohne üben kannst. Ein weiterer Klick gibt SYNC wieder frei.
+
+## Booth-Ansicht
+
+**Ansicht › Booth-Ansicht** (`⌥⇧⌘B`, unter Linux und Windows `Strg+Alt+Umschalt+B`) öffnet die Decks in einem eigenen Fenster, so groß, dass man sie aus ein paar Metern lesen kann: die Wellenform, BPM, Tonart, die Restzeit und die Phrase mit dem Countdown zur nächsten. Stell es auf einen zweiten Bildschirm in der Kabine, oder doppelklicke für Vollbild. Alles wächst mit dem Fenster: Auf einem 1080p-Bildschirm sind BPM und Zeit etwa dreimal so groß wie am Deck. Es zeigt, was Perform zeigt, Bild für Bild; im letzten Zehntel eines laufenden Tracks wird seine Zeit gelb.
+
+![Die Booth-Ansicht mit zwei Decks](../img/booth.png)
+
+Die Booth-Ansicht ist ein Fenster der Desktop-App; der Raspberry-Pi-Kiosk hat kein zweites Fenster.
 
 ## Jogwheels
 

@@ -536,6 +536,14 @@ fn build() -> Vec<Action> {
         Global,
         &["Mod+Alt+Shift+K"],
     );
+    b.add(
+        "view.booth",
+        "Booth view: the decks large in their own window",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+B"],
+    );
     b.add_split(
         "app.check-updates",
         "Check for updates",

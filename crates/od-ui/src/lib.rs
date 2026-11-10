@@ -17,6 +17,7 @@ slint::include_modules!();
 mod app;
 mod audio_health;
 mod appearance;
+mod booth;
 mod browser;
 mod club;
 mod commands;

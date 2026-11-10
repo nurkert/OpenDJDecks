@@ -1201,6 +1201,11 @@ const DE: &[(&str, &str)] = &[
         "Üben: SYNC ist aus. Gleiche Tempo und Phase nach Gehör und mit der Phasenanzeige an",
     ),
     ("SYNC can be used again", "SYNC ist wieder verfügbar"),
+    // Booth view (roadmap [58]).
+    (
+        "Booth view: the decks large in their own window",
+        "Booth-Ansicht: die Decks groß in einem eigenen Fenster",
+    ),
     (
         "Practice: SYNC stays off until you turn practice off",
         "Üben: SYNC bleibt aus, bis du das Üben beendest",

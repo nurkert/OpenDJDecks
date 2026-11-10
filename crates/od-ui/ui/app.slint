@@ -11,6 +11,8 @@ import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlac
 import { FirstStartBar } from "first_start.slint";
 import { PhaseMeter, PhaseRow } from "phase.slint";
 export { PhaseMeter, PhaseRow }
+import { Booth, BoothWindow } from "booth.slint";
+export { Booth, BoothWindow }
 import { AudioHealth, GigCheck, GigCheckRow, AudioStatusLine, DeviceLostBar, GigCheckBar, Restore, RestoreBar, PerformLock } from "safety.slint";
 export { AudioHealth, GigCheck, GigCheckRow, Restore, PerformLock }
 export { FirstStart }
@@ -605,6 +607,7 @@ export component AppWindow inherits Window {
             MenuItem { title: @tr("First-Start Guide"); activated => { FirstStart.reopen(); } }
             MenuItem { title: @tr("Gig Check"); activated => { GigCheck.run(); } }
             MenuItem { title: @tr("Lock for the Set"); checkable: true; checked: PerformLock.locked; activated => { PerformLock.toggle(); } }
+            MenuItem { title: @tr("Booth View"); activated => { root.menu-action("view.booth"); } }
         }
     }
 

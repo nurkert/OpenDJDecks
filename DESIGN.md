@@ -334,6 +334,14 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 ### First-Start Guide
 A band under the top bar on an empty library: four steps with hollow rings, a sodium ring on the current one, a green ring with a tick when done, a sentence that says what to do now, and the armed outline in sodium on the real control. Sample tracks and a test tone are offered in the band. Hidden in the kiosk. Never covers a control and never shows while a library exists unless asked for.
 
+### Set Safety
+Nothing here is a dialog: nothing may interrupt a set.
+- **Bands under the top bar** (ground-band, panel radius, the first-start band's place): device lost (struck deep-red line, Heading in fault, SWITCH OUTPUT as the green lead), restore after a crash (doubled sodium line, it needs you; RESTORE DECKS green, START EMPTY plain), gig check (one result per check: solid green ready, dashed sodium look at it, struck fix it). Order from the top: device lost, restore, gig check, first start.
+- **Audio line** at the right end of the status band: a 2px line in the status grammar (solid green running, dashed sodium for 20 s after a dropout, struck when lost, half strong-rule before audio starts), AUDIO in Label caps, then device, latency and dropouts in Control rank.
+- **Lock key** in the status zone of the top bar: LOCK at rest, LOCKED filled sodium (the legend sodium already has for a locked grid). Under 1500 px it is a padlock that fills the same way. Controls the lock blocks take the disabled state.
+- **Phase strip** under the waveform lanes (26px): per deck a strong-rule ruler of half a beat each way, a bone-3 hairline centre, the deck's 2px line where its beat falls (unsmoothed), tempo difference and ms in Control rank. In sync the centre becomes a 2px green line and the readout says IN SYNC in green. PRACTICE is a toggle in sodium.
+- **Booth window**: the deck's ranks (hero, heading, body, label) multiplied by one zoom that fits a 640 x 360 canvas to the window, so the scale stays five sizes relative to each other; nothing else in the app scales this way. The last tenth of a playing track turns its time sodium.
+
 ### Device Line (signature)
 - One stick, one line: 2px, inset 8px top and bottom, 64px rows (78px in the Devices section). In sync is solid green; pending is dashed sodium; error is struck with the detail text in deep red; unknown or unregistered is half-height.
 - **Syncing:** the dashed sodium line (60% alpha) fills solid green from the bottom by progress, animated 320ms on the spring easing (one damped overshoot). Motion off sets it to 0ms.

@@ -67,6 +67,8 @@ pub struct App {
     pub(crate) lighting: RefCell<crate::lighting::LightingRuntime>,
     /// The LIGHTING view detached into its own window.
     pub(crate) lighting_window: RefCell<Option<crate::LightingWindow>>,
+    /// The booth view's window, once opened.
+    pub(crate) booth_window: RefCell<Option<crate::BoothWindow>>,
     /// Club mode checklist (SPEC §10.3c).
     pub(crate) club: RefCell<crate::club::ClubRuntime>,
     /// Microphone / aux input.
@@ -111,6 +113,7 @@ impl App {
             stems_model: RefCell::new(stems_model::StemsModel::default()),
             lighting: RefCell::new(lighting),
             lighting_window: RefCell::new(None),
+            booth_window: RefCell::new(None),
             club: RefCell::new(crate::club::ClubRuntime::default()),
             mic: RefCell::new(crate::mic::MicRuntime::default()),
             first_start: RefCell::new(crate::first_start::Guide::default()),
@@ -160,6 +163,7 @@ impl App {
         crate::restore::wire(&app);
         crate::perform_lock::wire(&app);
         crate::phase::wire(&app);
+        crate::booth::wire(&app);
         decks::autoload(&app);
 
         let _ = app.state.borrow_mut().lib.check_missing();

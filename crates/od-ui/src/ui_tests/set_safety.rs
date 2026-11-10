@@ -366,3 +366,50 @@ fn phase_meter_shows_tempo_and_phase_and_practice_keeps_sync_off() {
     assert!(!crate::phase::practice());
 }
 
+
+/// [58] The booth view opens in its own window and shows the decks of
+/// Perform as they play: BPM, key, remaining time and phrase, at a size
+/// that grows with the window (hero figures of about 96 px on a 1080p
+/// screen, three times the deck's).
+#[test]
+fn booth_view_shows_the_decks_large() {
+    use i_slint_backend_testing::ElementHandle;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    play(&ui, 0, 0);
+    crate::commands::run(&ui.app, "view.booth");
+    ui.pump(100);
+    let w = ui
+        .app
+        .booth_window
+        .borrow()
+        .as_ref()
+        .map(|w| w.clone_strong())
+        .expect("booth window");
+    w.window().set_size(slint::LogicalSize::new(1920.0, 1080.0));
+    ui.pump(300);
+    let find = |label: &str| ElementHandle::find_by_accessible_label(&w, label).next();
+    let value = |label: &str| {
+        find(label)
+            .and_then(|e| e.accessible_value())
+            .map(|v| v.to_string())
+            .unwrap_or_default()
+    };
+    assert!(find("booth.deck1").is_some() && find("booth.deck2").is_some(), "both decks");
+    assert!(ui.wait_until(3.0, |_| !value("booth.deck1.bpm").is_empty()));
+    let deck = super::flows::deck_views(&ui)[0].clone();
+    assert_eq!(value("booth.deck1.bpm"), deck.bpm.as_str());
+    assert_eq!(value("booth.deck1.key"), deck.key.as_str());
+    // The remaining time runs with the deck.
+    let before = value("booth.deck1.remaining");
+    assert!(ui.wait_until(3.0, |_| value("booth.deck1.remaining") != before), "remaining time runs");
+    assert!(find("booth.deck1.phrase").is_some());
+    // Large: the BPM reading (caption and value) at 1080p.
+    let bpm = super::harness::Rect::of(&find("booth.deck1.bpm").unwrap());
+    assert!(bpm.h >= 120.0, "BPM reading {} px tall", bpm.h);
+    let small = super::harness::Rect::of(&ui.get("deck1.bpm"));
+    assert!(bpm.h >= 2.5 * small.h, "{} vs the deck's {}", bpm.h, small.h);
+    // Double-click: full screen.
+    w.global::<crate::Booth>().invoke_toggle_full_screen();
+    ui.pump(50);
+}

@@ -2636,3 +2636,43 @@ msgstr ""
 msgctxt "PhaseStrip"
 msgid "Practise beatmatching by ear and eye: SYNC goes off and stays off"
 msgstr ""
+
+#: ui/app.slint:610
+msgctxt "AppWindow"
+msgid "Booth View"
+msgstr ""
+
+#: ui/booth.slint:67
+msgctxt "BoothDeck"
+msgid "Not loaded"
+msgstr ""
+
+#: ui/booth.slint:84
+msgctxt "BoothDeck"
+msgid "KEY"
+msgstr ""
+
+#: ui/booth.slint:101
+msgctxt "BoothDeck"
+msgid "REMAINING"
+msgstr ""
+
+#: ui/booth.slint:108
+msgctxt "BoothDeck"
+msgid "PHRASE · TO THE NEXT"
+msgstr ""
+
+#: ui/club.slint:280
+msgctxt "ClubPlayer"
+msgid "KEY"
+msgstr ""
+
+#: ui/perform.slint:1112
+msgctxt "KioskDeck"
+msgid "Not loaded"
+msgstr ""
+
+#: ui/player.slint:1098
+msgctxt "MiniPlayer"
+msgid "KEY"
+msgstr ""

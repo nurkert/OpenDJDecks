@@ -285,6 +285,11 @@ pub(crate) struct Decks {
 }
 
 impl Decks {
+    /// The waveform lanes' motion rows (shared with the booth window).
+    pub(crate) fn lane_motion(&self) -> slint::ModelRc<crate::LaneMotion> {
+        slint::ModelRc::from(self.motion.clone())
+    }
+
     /// Parts of the track on `deck` are being separated.
     pub(crate) fn stems_pending(&self, deck: usize) -> bool {
         self.loaded[deck]

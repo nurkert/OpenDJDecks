@@ -2968,6 +2968,19 @@ spec = "Roadmap [12]"
 note = "A strip under the waveforms in Perform (desktop layouts; not in Club mode or the kiosk touch layout): one ruler per deck against the sync master (else the playing deck), half a beat each way, with the tempo difference in BPM and the phase in ms. IN SYNC (solid green centre) within 0.05 BPM and 0.02 beat. PRACTICE turns SYNC off on all decks and blocks it."
 
 [[feature]]
+id = "perform-booth-view"
+area = "deck"
+name = "Booth view: the decks large in their own window (waveform, BPM, key, remaining time, phrase countdown)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::set_safety::booth_view_shows_the_decks_large",
+]
+spec = "Roadmap [58]"
+note = "A separate window like the detached LIGHTING view (View > Booth View, Alt+Shift+Cmd+B), sharing the deck models of Perform. The deck's type ranks are multiplied by one zoom that fills the window (640 x 360 canvas): about 96 px hero figures at 1080p. Double-click for full screen. Not on the kiosk (single screen)."
+
+[[feature]]
 id = "shell-panel-toggles"
 area = "shell"
 name = "Top-bar panel toggles: FX, Mix Preview, Sampler, Mixer, Recording"
