@@ -2386,3 +2386,138 @@ msgstr ""
 msgctxt "TopBar"
 msgid "MASTER {} BPM"
 msgstr ""
+
+#: ui/safety.slint:66
+msgctxt "AudioStatusLine"
+msgid "AUDIO"
+msgstr ""
+
+#: ui/safety.slint:69
+msgctxt "AudioStatusLine"
+msgid "starts with the first track"
+msgstr ""
+
+#: ui/safety.slint:70
+msgctxt "AudioStatusLine"
+msgid "{} lost"
+msgstr ""
+
+#: ui/safety.slint:83
+msgctxt "AudioStatusLine"
+msgid "1 dropout"
+msgstr ""
+
+#: ui/safety.slint:83
+msgctxt "AudioStatusLine"
+msgid "{} dropouts"
+msgstr ""
+
+#: ui/safety.slint:109
+msgctxt "DeviceLostBar"
+msgid "Audio output lost: {}"
+msgstr ""
+
+#: ui/safety.slint:115
+msgctxt "DeviceLostBar"
+msgid "The decks are held where they were. Plug the interface back in and the sound returns by itself, or switch to {}."
+msgstr ""
+
+#: ui/safety.slint:116
+msgctxt "DeviceLostBar"
+msgid "The decks are held where they were. Plug the interface back in and the sound returns by itself."
+msgstr ""
+
+#: ui/safety.slint:125
+msgctxt "DeviceLostBar"
+msgid "SWITCH OUTPUT"
+msgstr ""
+
+#: ui/safety.slint:126
+msgctxt "DeviceLostBar"
+msgid "Go on on {}"
+msgstr ""
+
+#: ui/safety.slint:134
+msgctxt "DeviceLostBar"
+msgid "TRY AGAIN"
+msgstr ""
+
+#: ui/safety.slint:135
+msgctxt "DeviceLostBar"
+msgid "Open {} again"
+msgstr ""
+
+#: ui/safety.slint:157
+msgctxt "CheckItem"
+msgid "AUDIO OUTPUT"
+msgstr ""
+
+#: ui/safety.slint:158
+msgctxt "CheckItem"
+msgid "CONTROLLER"
+msgstr ""
+
+#: ui/safety.slint:159
+msgctxt "CheckItem"
+msgid "RECORDING SPACE"
+msgstr ""
+
+#: ui/safety.slint:160
+msgctxt "CheckItem"
+msgid "TRACK FILES"
+msgstr ""
+
+#: ui/safety.slint:186
+msgctxt "GigCheckBar"
+msgid "GIG CHECK"
+msgstr ""
+
+#: ui/safety.slint:188
+msgctxt "GigCheckBar"
+msgid "Ready"
+msgstr ""
+
+#: ui/safety.slint:188
+msgctxt "GigCheckBar"
+msgid "Look at the dashed ones"
+msgstr ""
+
+#: ui/safety.slint:188
+msgctxt "GigCheckBar"
+msgid "Fix the struck ones"
+msgstr ""
+
+#: ui/safety.slint:198
+msgctxt "GigCheckBar"
+msgid "CHECK AGAIN"
+msgstr ""
+
+#: ui/safety.slint:199
+msgctxt "GigCheckBar"
+msgid "Look at outputs, controller, disk space and track files again"
+msgstr ""
+
+#: ui/safety.slint:207
+msgctxt "GigCheckBar"
+msgid "CLOSE"
+msgstr ""
+
+#: ui/stems_model.slint:46
+msgctxt "StemsModelBar"
+msgid "CLOSE"
+msgstr ""
+
+#: ui/topbar.slint:209
+msgctxt "GigKey"
+msgid "Before the set: outputs, controller, space for the recording and missing track files."
+msgstr ""
+
+#: ui/topbar.slint:214
+msgctxt "GigKey"
+msgid "RUN GIG CHECK"
+msgstr ""
+
+#: ui/app.slint:604
+msgctxt "AppWindow"
+msgid "Gig Check"
+msgstr ""

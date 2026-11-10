@@ -1156,6 +1156,26 @@ const DE: &[(&str, &str)] = &[
     ("This library database is encrypted. Enter its key under Advanced.", "Diese Bibliotheksdatenbank ist verschlüsselt. Gib ihren Schlüssel unter Erweitert ein."),
     ("Choose the library database file first", "Wähle zuerst die Datei der Bibliotheksdatenbank"),
     ("Choose the library database file", "Datei der Bibliotheksdatenbank wählen"),
+    // Audio health and the gig check (roadmap [10]).
+    ("Audio output lost: {}", "Audioausgang verloren: {}"),
+    ("Audio back on {}", "Ton wieder auf {}"),
+    ("Audio output: {}", "Audioausgang: {}"),
+    ("Audio output could not start: {}", "Audioausgang konnte nicht starten: {}"),
+    ("{} dropouts so far", "bisher {} Aussetzer"),
+    ("no headphone output", "kein Kopfhörerausgang"),
+    ("master and headphones", "Master und Kopfhörer"),
+    ("{} is lost", "{} ist verloren"),
+    ("No controller connected", "Kein Controller verbunden"),
+    ("{} GB free, about {} hours of recording", "{} GB frei, etwa {} Stunden Aufnahme"),
+    ("Free space unknown", "Freier Platz unbekannt"),
+    ("Every track file is in place", "Alle Trackdateien sind da"),
+    ("{} missing: {}", "{} fehlen: {}"),
+    (" and {} more", " und {} weitere"),
+    ("No audio output", "Kein Audioausgang"),
+    (
+        "Check before the gig: outputs, controller, disk, files",
+        "Vor dem Gig prüfen: Ausgänge, Controller, Speicher, Dateien",
+    ),
 ];
 
 /// Whether `english` has a German translation (independent of the

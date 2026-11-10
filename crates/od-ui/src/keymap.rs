@@ -520,6 +520,14 @@ fn build() -> Vec<Action> {
         Global,
         &["Mod+,"],
     );
+    b.add(
+        "gig.check",
+        "Check before the gig: outputs, controller, disk, files",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+C"],
+    );
     b.add_split(
         "app.check-updates",
         "Check for updates",

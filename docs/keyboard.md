@@ -3,7 +3,7 @@
 Every user action of OpenDJDecks is a command in one registry
 (`crates/od-ui/src/keymap.rs`) with an id, a default binding per platform
 and optional user bindings (SPEC §12.2). The registry currently holds
-**279 actions**; every one has a default binding, and no two defaults
+**280 actions**; every one has a default binding, and no two defaults
 collide where they apply (checked by tests, together with this table).
 
 ## Changing bindings
@@ -83,6 +83,7 @@ Perform). Text fields keep the keys they type.
 |---|---|---|---|---|
 | **General** | | | | |
 | Open preferences | `prefs.open` | both | `⌘,` | `Ctrl+,` |
+| Check before the gig: outputs, controller, disk, files | `gig.check` | both | `⌥⇧⌘C` | `Ctrl+Alt+Shift+C` |
 | Check for updates | `app.check-updates` | both | `⌥⌘U` | `Alt+U` |
 | Undo | `library.undo` | both | `⌘Z` | `Ctrl+Z` |
 | Redo | `library.redo` | both | `⇧⌘Z` | `Ctrl+Shift+Z` `Ctrl+Y` |

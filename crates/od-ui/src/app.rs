@@ -154,6 +154,8 @@ impl App {
         crate::club::wire(&app);
         crate::mic::wire(&app);
         crate::first_start::wire(&app);
+        crate::audio_health::wire(&app);
+        crate::gig_check::wire(&app);
         engine::start(&app);
         decks::autoload(&app);
 

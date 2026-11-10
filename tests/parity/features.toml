@@ -2886,6 +2886,38 @@ spec = "Roadmap [7]"
 note = "With an empty library a checklist under the top bar ticks itself (add music, analysis, two tracks, play and sync) and outlines the next control. Two sample tracks are synthesised by the app; TEST TONE plays a quiet tone on master and headphones."
 
 [[feature]]
+id = "shell-audio-health"
+area = "shell"
+name = "Audio health: device, latency and dropouts always shown, device-lost alert, recovery and device change without a restart"
+scope = "in"
+status = "done"
+prio = "P1"
+tests = [
+  "od-audio-io::device_loss::loss_is_seen_at_once_and_the_engine_moves_to_another_device",
+  "od-audio-io::device_loss::a_device_that_stops_calling_back_counts_as_lost",
+  "od-audio-io::device_loss::a_device_that_cannot_open_gives_the_processor_back",
+  "od-ui::ui_tests::set_safety::device_loss_is_shown_at_once_and_recovers",
+]
+spec = "Roadmap [10]"
+note = "The status band names the output, its latency and the dropouts. A lost device (reported by the backend, or no callback for 1.5 s) raises a band at once; the engine is kept and goes on with SWITCH OUTPUT, TRY AGAIN or by itself when the device is plugged back in. Device, buffer and headphone routing in Preferences apply at once. Device loss is injected in tests (virtual output); it has not been checked with a real interface being unplugged."
+
+[[feature]]
+id = "shell-gig-check"
+area = "shell"
+name = "Gig check: audio output, controller, space for the recording and missing track files"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::gig_check::tests::a_ready_setup_passes_every_check",
+  "od-ui::gig_check::tests::each_problem_is_named",
+  "od-ui::gig_check::tests::dropouts_and_a_missing_headphone_output_are_warnings",
+  "od-ui::ui_tests::set_safety::gig_check_reports_each_item",
+]
+spec = "Roadmap [10]"
+note = "From the gig menu in the top bar or View > Gig Check: a band with one result per check in the line grammar (solid ready, dashed look at it, struck fix it)."
+
+[[feature]]
 id = "shell-panel-toggles"
 area = "shell"
 name = "Top-bar panel toggles: FX, Mix Preview, Sampler, Mixer, Recording"

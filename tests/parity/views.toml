@@ -605,8 +605,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Perform: 4 decks horizontal ----
 [[view.kiosk]]
@@ -1526,8 +1527,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Perform: 2 decks vertical ----
 [[view.kiosk]]
@@ -2180,8 +2182,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Perform: 4 decks vertical ----
 [[view.kiosk]]
@@ -3079,8 +3082,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Perform: Browse layout ----
 [[view.kiosk]]
@@ -3457,8 +3461,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Perform: mixer toggle off ----
 [[view.kiosk]]
@@ -3894,8 +3899,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- FX panel ----
 [[view.kiosk]]
@@ -4686,8 +4692,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Prepare: player EDIT GRID (GRID tab → EDIT GRID) ----
 [[view]]
@@ -5030,8 +5037,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Prepare: dual player ----
 [[view]]
@@ -5217,8 +5225,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Prepare: simple player ----
 [[view]]
@@ -5354,8 +5363,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Prepare: full browser ----
 [[view]]
@@ -5476,8 +5486,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Prepare: recording bar ----
 [[view]]
@@ -5640,8 +5651,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Browser source: Playlists ----
 [[view.kiosk]]
@@ -5773,8 +5785,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Browser source: Similar tracks ----
 [[view.kiosk]]
@@ -5916,8 +5929,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Browser source: Explorer ----
 [[view.kiosk]]
@@ -6049,8 +6063,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Browser source: Devices ----
 [[view.kiosk]]
@@ -6180,8 +6195,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Browser source: Histories ----
 [[view.kiosk]]
@@ -6310,8 +6326,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Browser source: Recordings ----
 [[view.kiosk]]
@@ -6406,8 +6423,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Browser source: Tag list ----
 [[view.kiosk]]
@@ -6535,8 +6553,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Browser source: Sampler source ----
 [[view]]
@@ -6650,8 +6669,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Info panel ----
 [[view]]
@@ -6792,8 +6812,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Sub-browser ----
 [[view]]
@@ -6926,8 +6947,9 @@ order = "row"
 elements = [
   "status.activity",
   "status.summary",
+  "status.audio",
 ]
-note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12)"
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
 # ---- Preferences: View ----
 [[view]]

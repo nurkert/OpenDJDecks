@@ -8,6 +8,7 @@ import { Caps, PlateButton, Glyph, TipArea, Knob, PopupPlace, GuideMark } from "
 import { Club } from "club.slint";
 import { Lighting } from "lighting.slint";
 import { PerformLayout } from "perform.slint";
+import { GigCheck } from "safety.slint";
 
 component ModeTab inherits Rectangle {
     in property <bool> narrow;
@@ -202,6 +203,16 @@ component GigKey inherits Rectangle {
                         label: s; selected: Gig.scale == i;
                         clicked => { Gig.act("scale:" + i); }
                     }
+                }
+                Rectangle { height: Theme.hair; background: Theme.rule; }
+                Text {
+                    text: @tr("Before the set: outputs, controller, space for the recording and missing track files.");
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; wrap: word-wrap;
+                }
+                PlateButton {
+                    accessible-role: button; accessible-label: "topbar.gig.check";
+                    label: @tr("RUN GIG CHECK"); command: "gig.check";
+                    clicked => { pop.close(); GigCheck.run(); }
                 }
             }
         }

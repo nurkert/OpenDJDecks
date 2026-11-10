@@ -10,9 +10,12 @@ use std::time::{Duration, Instant};
 
 pub(crate) struct EngineHost {
     pub engine: Option<Engine>,
-    host: Option<od_audio_io::AudioHost>,
-    /// Audio rendered into nothing (headless tests, no audio device wanted).
-    null_host: Option<NullHost>,
+    /// The output running the engine: a device, or the virtual output
+    /// (headless tests, no audio device wanted).
+    pub(crate) host: Option<od_audio_io::AudioHost>,
+    /// The engine's processor while no output runs it (the device was
+    /// lost): decks, positions and mixer wait here for the next device.
+    pub(crate) parked: Option<od_engine::EngineProcessor>,
     /// Device line or the reason audio is not running.
     pub message: String,
     timer: slint::Timer,
@@ -24,7 +27,7 @@ impl Default for EngineHost {
         Self {
             engine: None,
             host: None,
-            null_host: None,
+            parked: None,
             message: od_i18n::tr("Audio starts when you load a track").into(),
             timer: slint::Timer::default(),
             last_feedback: Instant::now(),
@@ -97,18 +100,11 @@ fn start_engine(app: &App) -> bool {
                 recorder::attach(app, tap, negotiated.sample_rate);
             }
             let mut h = app.engine.borrow_mut();
-            h.message = format!(
-                "{} · {} Hz{}",
-                negotiated.device_name,
-                negotiated.sample_rate,
-                if negotiated.routing.headphones.is_some() {
-                    " · headphones on 3/4"
-                } else {
-                    ""
-                }
-            );
+            h.message = device_line(host.info());
             h.engine = Some(engine);
             h.host = Some(host);
+            drop(h);
+            crate::audio_health::started(app);
             true
         }
         Err(e) => {
@@ -118,29 +114,33 @@ fn start_engine(app: &App) -> bool {
     }
 }
 
-/// A stand-in for the audio device: a thread that runs the engine processor
-/// in real time and discards the output. Everything else (decks, mixer,
-/// recorder tap) behaves as with a device, so the UI can be driven
-/// headlessly (UI tests, CI machines without audio).
-struct NullHost {
-    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
-    thread: Option<std::thread::JoinHandle<()>>,
-}
-
-impl Drop for NullHost {
-    fn drop(&mut self) {
-        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
-        if let Some(t) = self.thread.take() {
-            let _ = t.join();
+/// "Interface · 48000 Hz · headphones on 3/4".
+pub(crate) fn device_line(n: &od_audio_io::Negotiated) -> String {
+    format!(
+        "{} · {} Hz{}",
+        n.device_name,
+        n.sample_rate,
+        if n.routing.headphones.is_some() {
+            " · headphones on 3/4"
+        } else {
+            ""
         }
-    }
+    )
 }
 
 const NULL_RATE: u32 = 48_000;
-const NULL_BLOCK: usize = 480;
 
+/// The virtual output standing in for a device when no audio is wanted.
+pub(crate) fn null_output() -> od_audio_io::VirtualOutput {
+    od_audio_io::VirtualOutput::new(od_i18n::tr("No audio output (headless)"), NULL_RATE)
+}
+
+/// Audio rendered into nothing: the engine runs on the virtual output, and
+/// everything else (decks, mixer, recorder tap, device loss) behaves as
+/// with a device, so the UI can be driven headlessly (UI tests, CI
+/// machines without audio).
 fn start_null(app: &App, lite: bool) {
-    let (mut engine, mut processor) = Engine::new(EngineConfig {
+    let (mut engine, processor) = Engine::new(EngineConfig {
         sample_rate: NULL_RATE,
         max_block: 2048,
         decks: decks::DECKS,
@@ -149,38 +149,13 @@ fn start_null(app: &App, lite: bool) {
     if let Some(tap) = engine.take_record_tap() {
         recorder::attach(app, tap, NULL_RATE);
     }
-    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let flag = stop.clone();
-    let thread = std::thread::Builder::new()
-        .name("od-null-audio".into())
-        .spawn(move || {
-            let mut master = vec![0.0f32; NULL_BLOCK * 2];
-            let mut phones = vec![0.0f32; NULL_BLOCK * 2];
-            let period = Duration::from_secs_f64(NULL_BLOCK as f64 / NULL_RATE as f64);
-            let mut next = Instant::now();
-            while !flag.load(std::sync::atomic::Ordering::Relaxed) {
-                processor.process(
-                    NULL_BLOCK,
-                    &mut od_engine::Outputs {
-                        master: &mut master,
-                        headphones: Some(&mut phones),
-                        booth: None,
-                    },
-                );
-                next += period;
-                let now = Instant::now();
-                if next > now {
-                    std::thread::sleep(next - now);
-                } else {
-                    next = now;
-                }
-            }
-        })
-        .ok();
+    let host = od_audio_io::AudioHost::start_virtual(&null_output(), processor);
     let mut h = app.engine.borrow_mut();
     h.message = od_i18n::tr("No audio output (headless)").into();
     h.engine = Some(engine);
-    h.null_host = Some(NullHost { stop, thread });
+    h.host = Some(host);
+    drop(h);
+    crate::audio_health::started(app);
 }
 
 /// The audio configuration from Preferences > Audio (device `None` =
@@ -429,6 +404,7 @@ fn remember_deck_switches(app: &App, state: &EngineState) {
 }
 
 fn frame(app: &App) {
+    crate::audio_health::watch(app);
     let scale = app.ui.window().scale_factor();
     let small = (app.ui.window().size().height as f32 / scale) < 620.0;
     if app.ui.get_small_screen() != small {
@@ -492,13 +468,6 @@ fn frame(app: &App) {
     fx::project(app, &state);
     sampler::project(app, &state);
     app.ui.set_engine_ready(true);
-    if let Some(h) = app.engine.borrow().host.as_ref() {
-        let s = h.stats();
-        if s.xruns > 0 || s.overruns > 0 {
-            app.ui
-                .set_engine_message(format!("Audio dropouts: {}", s.xruns + s.overruns).into());
-        }
-    }
 }
 
 thread_local! {

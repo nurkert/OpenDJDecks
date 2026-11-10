@@ -12,13 +12,17 @@ The file is missing or has moved. Press **{n} MOVED** at the top of the list, or
 ## There is no sound
 
 - Check **Preferences › Audio › Output device**. Automatic chooses the controller when one is connected, otherwise the system output.
-- Audio settings apply when audio next starts. If you changed something, restart the app.
+- Output device, buffer size and headphone output apply at once. Only a new sample rate needs a restart.
 - On Linux, try another of the available audio backends in the same place.
 - If a deck has a track but the meters stay flat, check that its fader and **TRIM** are up, and that the crossfader is not on the other side.
 
 ## Audio stutters
 
-Raise the **Buffer size** in **Preferences › Audio**, close other heavy programs, and on Linux or macOS make sure the computer is not on battery saver.
+The status band at the bottom right counts dropouts; its line turns dashed for a while after one. Raise the **Buffer size** in **Preferences › Audio**, close other heavy programs, and on Linux or macOS make sure the computer is not on battery saver.
+
+## The audio output was lost
+
+A red band names the device. The decks wait where they were. Plug the interface back in and the sound returns by itself, or press **SWITCH OUTPUT** to go on on the computer's own output. See [Safe during a set](set-safety.md).
 
 ## The controller is not found
 

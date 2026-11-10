@@ -20,7 +20,10 @@ mod output;
 
 pub use devices::{Backend, DeviceInfo, backends, default_output_device_name, list_devices};
 pub use input::{AudioInput, InputConfig};
-pub use output::{AudioConfig, AudioHost, AudioStats, Negotiated, OutputRouting, StreamInfo};
+pub use output::{
+    AudioConfig, AudioHost, AudioStats, FaultHook, Health, Negotiated, OutputRouting, STALL_LIMIT,
+    StartError, StreamInfo, VirtualOutput,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AudioError {

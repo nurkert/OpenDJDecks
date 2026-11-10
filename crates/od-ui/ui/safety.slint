@@ -1,0 +1,212 @@
+// Set safety (roadmap step 4): the permanent audio line in the status band,
+// the band when the audio device is lost, and the check before the gig.
+// Bands sit under the top bar like the first-start guide: nothing here is a
+// dialog, because nothing may interrupt a set.
+
+import { Theme } from "tokens.slint";
+import { Caps, PlateButton } from "controls.slint";
+import { VLine } from "lines.slint";
+
+// Audio output health, set from Rust (audio_health.rs).
+export global AudioHealth {
+    // "off" (not started), "ok", "dropouts" (in the last 20 s), "lost".
+    in property <string> state: "off";
+    in property <string> device;
+    // "5.3 ms" ("" unknown).
+    in property <string> latency;
+    in property <int> dropouts;
+    // The device that went away ("" while audio runs).
+    in property <string> lost-device;
+    // The output offered instead ("" when there is none).
+    in property <string> fallback;
+    callback retry();
+    callback use-fallback();
+}
+
+export struct GigCheckRow {
+    // "outputs", "controller", "disk", "files".
+    id: string,
+    // "ok", "warn", "fail".
+    state: string,
+    detail: string,
+}
+
+export global GigCheck {
+    in-out property <bool> visible;
+    in property <[GigCheckRow]> rows;
+    // The worst result: "ok", "warn" or "fail".
+    in property <string> result;
+    callback run();
+    callback close();
+}
+
+// The line form of a check result: solid green ready, dashed sodium needs a
+// look, struck red will go wrong.
+component ResultLine inherits VLine {
+    in property <string> state;
+    tone: root.state == "ok" ? Theme.live : root.state == "warn" ? Theme.attention : Theme.bone-3;
+    form: root.state == "ok" ? "solid" : root.state == "warn" ? "dashed" : "struck";
+}
+
+// Status band, right: the output that plays, its latency and the dropouts
+// so far. Always there; the line says the state at a glance.
+export component AudioStatusLine inherits HorizontalLayout {
+    accessible-role: text;
+    accessible-label: "status.audio";
+    accessible-value: AudioHealth.state + " " + AudioHealth.device + " " + AudioHealth.latency + " " + AudioHealth.dropouts;
+    spacing: Theme.s2;
+    property <string> state: AudioHealth.state;
+    VerticalLayout {
+        padding-top: Theme.s1; padding-bottom: Theme.s1;
+        VLine {
+            tone: root.state == "ok" ? Theme.live : root.state == "dropouts" ? Theme.attention : root.state == "lost" ? Theme.bone-3 : Theme.rule-strong;
+            form: root.state == "ok" ? "solid" : root.state == "dropouts" ? "dashed" : root.state == "lost" ? "struck" : "half";
+        }
+    }
+    Caps { text: @tr("AUDIO"); vertical-alignment: center; }
+    Text {
+        max-width: 220px;
+        text: root.state == "off" ? @tr("starts with the first track")
+            : root.state == "lost" ? @tr("{} lost", AudioHealth.device)
+            : AudioHealth.device;
+        overflow: elide;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: root.state == "lost" ? Theme.fault : Theme.bone-2;
+        vertical-alignment: center;
+    }
+    if root.state != "off" && root.state != "lost" && AudioHealth.latency != "": Text {
+        text: AudioHealth.latency;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: Theme.bone-2; vertical-alignment: center;
+    }
+    if root.state != "off": Text {
+        text: AudioHealth.dropouts == 1 ? @tr("1 dropout") : @tr("{} dropouts", AudioHealth.dropouts);
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: root.state == "dropouts" ? Theme.bone : Theme.bone-3;
+        vertical-alignment: center;
+    }
+}
+
+// The device is gone: a band that cannot be missed, with the way out.
+export component DeviceLostBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: "app.audio-lost";
+    accessible-value: AudioHealth.lost-device;
+    height: max(56px, body.preferred-height + 2 * Theme.s3);
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    HorizontalLayout {
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        spacing: Theme.s4;
+        VerticalLayout {
+            padding-top: Theme.s2; padding-bottom: Theme.s2;
+            VLine { form: "struck"; tone: Theme.fault; }
+        }
+        body := VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: Theme.key-gap;
+            Text {
+                text: @tr("Audio output lost: {}", AudioHealth.lost-device);
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+                color: Theme.fault; overflow: elide;
+            }
+            Text {
+                text: AudioHealth.fallback != ""
+                    ? @tr("The decks are held where they were. Plug the interface back in and the sound returns by itself, or switch to {}.", AudioHealth.fallback)
+                    : @tr("The decks are held where they were. Plug the interface back in and the sound returns by itself.");
+                wrap: word-wrap;
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            }
+        }
+        if AudioHealth.fallback != "": VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.audio-lost.switch";
+                label: @tr("SWITCH OUTPUT"); tone: Theme.live; active: true;
+                tooltip: @tr("Go on on {}", AudioHealth.fallback);
+                clicked => { AudioHealth.use-fallback(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.audio-lost.retry";
+                label: @tr("TRY AGAIN");
+                tooltip: @tr("Open {} again", AudioHealth.lost-device);
+                clicked => { AudioHealth.retry(); }
+            }
+        }
+    }
+}
+
+// One check: its line, its name and what was found.
+component CheckItem inherits HorizontalLayout {
+    in property <GigCheckRow> check;
+    accessible-role: text;
+    accessible-label: "app.gig-check." + root.check.id;
+    accessible-value: root.check.state + ": " + root.check.detail;
+    spacing: Theme.s2;
+    VerticalLayout {
+        padding-top: Theme.s1; padding-bottom: Theme.s1;
+        ResultLine { state: root.check.state; height: 34px; }
+    }
+    VerticalLayout {
+        alignment: center;
+        spacing: Theme.key-gap;
+        Caps {
+            text: root.check.id == "outputs" ? @tr("AUDIO OUTPUT")
+                : root.check.id == "controller" ? @tr("CONTROLLER")
+                : root.check.id == "disk" ? @tr("RECORDING SPACE")
+                : @tr("TRACK FILES");
+            color: root.check.state == "ok" ? Theme.bone-3 : Theme.bone-2;
+        }
+        Text {
+            text: root.check.detail;
+            overflow: elide;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+            color: root.check.state == "fail" ? Theme.fault : Theme.bone;
+        }
+    }
+}
+
+// The check before the gig: four results side by side, the worst first in
+// the summary, again and close on the right.
+export component GigCheckBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: "app.gig-check";
+    accessible-value: GigCheck.result;
+    height: 56px;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    HorizontalLayout {
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        spacing: Theme.s5;
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 0;
+            Caps { text: @tr("GIG CHECK"); }
+            Text {
+                text: GigCheck.result == "ok" ? @tr("Ready") : GigCheck.result == "warn" ? @tr("Look at the dashed ones") : @tr("Fix the struck ones");
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
+                color: GigCheck.result == "fail" ? Theme.fault : Theme.bone;
+            }
+        }
+        for r in GigCheck.rows: CheckItem { check: r; horizontal-stretch: 1; min-width: 120px; }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.gig-check.again";
+                compact: true; label: @tr("CHECK AGAIN");
+                tooltip: @tr("Look at outputs, controller, disk space and track files again");
+                clicked => { GigCheck.run(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.gig-check.close";
+                compact: true; label: @tr("CLOSE");
+                clicked => { GigCheck.close(); }
+            }
+        }
+    }
+}

@@ -15,6 +15,7 @@
 slint::include_modules!();
 
 mod app;
+mod audio_health;
 mod appearance;
 mod browser;
 mod club;
@@ -30,6 +31,7 @@ mod first_start;
 mod format;
 mod fx;
 mod gig;
+mod gig_check;
 mod grid_edit;
 mod import;
 mod keymap;

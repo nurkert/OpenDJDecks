@@ -6126,3 +6126,133 @@ msgstr "Aufnahmebereich einblenden: Pegel, Meter und Aufnahmetaste"
 msgctxt "TopBar"
 msgid "MASTER {} BPM"
 msgstr "MASTER {} BPM"
+
+#: ui/safety.slint:66
+msgctxt "AudioStatusLine"
+msgid "AUDIO"
+msgstr "AUDIO"
+
+#: ui/safety.slint:69
+msgctxt "AudioStatusLine"
+msgid "starts with the first track"
+msgstr "startet mit dem ersten Track"
+
+#: ui/safety.slint:70
+msgctxt "AudioStatusLine"
+msgid "{} lost"
+msgstr "{} verloren"
+
+#: ui/safety.slint:83
+msgctxt "AudioStatusLine"
+msgid "1 dropout"
+msgstr "1 Aussetzer"
+
+#: ui/safety.slint:83
+msgctxt "AudioStatusLine"
+msgid "{} dropouts"
+msgstr "{} Aussetzer"
+
+#: ui/safety.slint:109
+msgctxt "DeviceLostBar"
+msgid "Audio output lost: {}"
+msgstr "Audioausgang verloren: {}"
+
+#: ui/safety.slint:115
+msgctxt "DeviceLostBar"
+msgid "The decks are held where they were. Plug the interface back in and the sound returns by itself, or switch to {}."
+msgstr "Die Decks bleiben, wo sie waren. Steck das Interface wieder ein, dann kommt der Ton von selbst zurück, oder wechsle zu {}."
+
+#: ui/safety.slint:116
+msgctxt "DeviceLostBar"
+msgid "The decks are held where they were. Plug the interface back in and the sound returns by itself."
+msgstr "Die Decks bleiben, wo sie waren. Steck das Interface wieder ein, dann kommt der Ton von selbst zurück."
+
+#: ui/safety.slint:125
+msgctxt "DeviceLostBar"
+msgid "SWITCH OUTPUT"
+msgstr "AUSGANG WECHSELN"
+
+#: ui/safety.slint:126
+msgctxt "DeviceLostBar"
+msgid "Go on on {}"
+msgstr "Auf {} weiterspielen"
+
+#: ui/safety.slint:134
+msgctxt "DeviceLostBar"
+msgid "TRY AGAIN"
+msgstr "NOCHMAL VERSUCHEN"
+
+#: ui/safety.slint:135
+msgctxt "DeviceLostBar"
+msgid "Open {} again"
+msgstr "{} erneut öffnen"
+
+#: ui/safety.slint:157
+msgctxt "CheckItem"
+msgid "AUDIO OUTPUT"
+msgstr "AUDIOAUSGANG"
+
+#: ui/safety.slint:158
+msgctxt "CheckItem"
+msgid "CONTROLLER"
+msgstr "CONTROLLER"
+
+#: ui/safety.slint:159
+msgctxt "CheckItem"
+msgid "RECORDING SPACE"
+msgstr "PLATZ FÜR AUFNAHME"
+
+#: ui/safety.slint:160
+msgctxt "CheckItem"
+msgid "TRACK FILES"
+msgstr "TRACKDATEIEN"
+
+#: ui/safety.slint:186
+msgctxt "GigCheckBar"
+msgid "GIG CHECK"
+msgstr "GIG-CHECK"
+
+#: ui/safety.slint:188
+msgctxt "GigCheckBar"
+msgid "Ready"
+msgstr "Bereit"
+
+#: ui/safety.slint:188
+msgctxt "GigCheckBar"
+msgid "Look at the dashed ones"
+msgstr "Gestrichelte ansehen"
+
+#: ui/safety.slint:188
+msgctxt "GigCheckBar"
+msgid "Fix the struck ones"
+msgstr "Durchgestrichene beheben"
+
+#: ui/safety.slint:198
+msgctxt "GigCheckBar"
+msgid "CHECK AGAIN"
+msgstr "ERNEUT PRÜFEN"
+
+#: ui/safety.slint:199
+msgctxt "GigCheckBar"
+msgid "Look at outputs, controller, disk space and track files again"
+msgstr "Ausgänge, Controller, Speicherplatz und Trackdateien erneut prüfen"
+
+#: ui/safety.slint:207
+msgctxt "GigCheckBar"
+msgid "CLOSE"
+msgstr "SCHLIESSEN"
+
+#: ui/topbar.slint:209
+msgctxt "GigKey"
+msgid "Before the set: outputs, controller, space for the recording and missing track files."
+msgstr "Vor dem Set: Ausgänge, Controller, Platz für die Aufnahme und fehlende Trackdateien."
+
+#: ui/topbar.slint:214
+msgctxt "GigKey"
+msgid "RUN GIG CHECK"
+msgstr "GIG-CHECK STARTEN"
+
+#: ui/app.slint:604
+msgctxt "AppWindow"
+msgid "Gig Check"
+msgstr "Gig-Check"

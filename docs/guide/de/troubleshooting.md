@@ -12,13 +12,17 @@ Die Datei fehlt oder wurde verschoben. Drücke **{n} VERSCHOBEN** oben in der Li
 ## Kein Ton
 
 - Prüfe **Einstellungen › Audio › Ausgabegerät**. Automatisch wählt den Controller, wenn einer angeschlossen ist, sonst die Systemausgabe.
-- Audioeinstellungen gelten ab dem nächsten Audiostart. Hast du etwas geändert, starte die App neu.
+- Ausgabegerät, Puffergröße und Kopfhörerausgang gelten sofort. Nur eine neue Samplerate braucht einen Neustart.
 - Unter Linux probiere dort ein anderes Audio-Backend.
 - Hat ein Deck einen Track, die Anzeigen bleiben aber flach, prüfe den Fader und **TRIM** und ob der Crossfader auf der anderen Seite steht.
 
 ## Der Ton setzt aus
 
-Erhöhe die **Puffergröße** unter **Einstellungen › Audio**, schließe andere schwere Programme und achte unter Linux oder macOS darauf, dass der Rechner nicht im Stromsparmodus läuft.
+Die Statusleiste unten rechts zählt Aussetzer; ihre Linie wird nach einem Aussetzer eine Weile gestrichelt. Erhöhe die **Puffergröße** unter **Einstellungen › Audio**, schließe andere schwere Programme und achte unter Linux oder macOS darauf, dass der Rechner nicht im Stromsparmodus läuft.
+
+## Der Audioausgang ist weg
+
+Ein rotes Band nennt das Gerät. Die Decks warten, wo sie waren. Steck das Interface wieder ein, dann kommt der Ton von selbst zurück, oder drücke **AUSGANG WECHSELN**, um auf dem eigenen Ausgang des Rechners weiterzuspielen. Siehe [Sicher durch das Set](set-safety.md).
 
 ## Der Controller wird nicht erkannt
 
