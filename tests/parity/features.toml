@@ -1836,7 +1836,7 @@ tests = [
   "od-ui::ui_tests::mix::mixer_kills_swaps_values_and_clip",
 ]
 evidence = ["MixerCommand::SwapEq", "crates/od-ui/src/mixer.rs::swap"]
-note = "Roadmap [55]. SWAP LOW / MID / HI under the channels (and `eq_swap` in mappings) exchanges the knob and kill of that band between the two loudest playing decks (one playing: it and the next loaded deck); NOW / BEAT / BAR sets the timing on the master clock, a waiting swap shows armed and a second tap cancels it. Landing is block-accurate in the engine"
+note = "Roadmap [55]. LOW / MID / HI in the swap row under the channels (and `eq_swap` in mappings) exchanges the knob and kill of that band between the two loudest playing decks (one playing: it and the next loaded deck); NOW / BEAT / BAR sets the timing on the master clock, a waiting swap shows armed and a second tap cancels it. Landing is block-accurate in the engine"
 
 [[feature]]
 id = "mixer-eq-values"
@@ -1851,7 +1851,7 @@ tests = [
   "od-ui::ui_tests::mix::mixer_rows_line_up",
 ]
 evidence = ["ui/perform.slint::BandRow", "crates/od-ui/src/mixer.rs::eq_text"]
-note = "Roadmap [55]. EQ and CH FX knobs 28 px (20 px compact, before 22 / 16) with the value beside them: dB for TRIM and EQ, OFF at the isolator's full cut, KILL while killed, LP / HP and percent for the filter; double-click (double-tap) resets"
+note = "Roadmap [55]. EQ and CH FX knobs 26 px (18 px compact, before 22 / 16) with the value beside them: dB for TRIM and EQ, OFF at the isolator's full cut, KILL while killed, LP / HP and percent for the filter; double-click (double-tap) resets"
 
 [[feature]]
 id = "mixer-clip-indicator"

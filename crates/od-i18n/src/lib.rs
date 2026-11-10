@@ -1249,7 +1249,6 @@ const DE: &[(&str, &str)] = &[
     ("BEAT", "BEAT"),
     ("BAR", "TAKT"),
     ("KILL", "KILL"),
-    ("OFF", "AUS"),
     ("file not found", "Datei nicht gefunden"),
     ("not a file on this computer (stream or cloud)", "keine Datei auf diesem Computer (Stream oder Cloud)"),
     ("video or podcast", "Video oder Podcast"),

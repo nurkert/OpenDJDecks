@@ -151,8 +151,8 @@ fn mixer_rows_line_up() {
                 assert!(kill.x >= k.right() - 1.0, "{size:?} ch{ch} {band}: kill right of knob");
             }
             let high = Rect::of(&ui.get(&format!("mixer.ch{ch}.eq-high")));
-            // Larger than before (22 px, 16 px compact): 28 px, 20 px compact.
-            let min = if size.0 >= 1440 { 36.0 } else { 28.0 };
+            // Larger than before (22 px, 16 px compact): 26 px, 18 px compact.
+            let min = if size.0 >= 1440 { 34.0 } else { 26.0 };
             assert!(high.w >= min, "{size:?}: EQ knob {}px", high.w);
         }
         for key in ["mixer.swap.low", "mixer.swap.mid", "mixer.swap.high", "mixer.swap.at"] {

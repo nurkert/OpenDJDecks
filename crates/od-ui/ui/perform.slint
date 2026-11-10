@@ -449,19 +449,21 @@ component GridPanel inherits VerticalLayout {
         GridKeyCell {
             deck: root.d; id: "lock"; label: root.deck.grid-locked ? @tr("LOCKED") : @tr("LOCK");
             lit: root.deck.grid-locked; horizontal-stretch: 2;
+            // This row's keys keep a clickable width; the captions give way.
+            min-width: 34px;
             tooltip: @tr("Lock the grid against changes (analysis and edits)");
             accessible-label: "deck\{root.d}.grid.lock"; accessible-role: button; accessible-checkable: true; accessible-checked: root.deck.grid-locked;
         }
         Caps { text: @tr("GAIN"); vertical-alignment: center; horizontal-alignment: center; font-size: Theme.label; min-width: 0px; horizontal-stretch: 1; overflow: elide; }
-        GridKeyCell { deck: root.d; id: "gain"; arg: "-0.5"; label: "−"; tooltip: @tr("Track gain 0.5 dB lower (stored with the track)"); accessible-label: "deck\{root.d}.grid.gain-down"; accessible-role: button; }
+        GridKeyCell { min-width: 18px; deck: root.d; id: "gain"; arg: "-0.5"; label: "−"; tooltip: @tr("Track gain 0.5 dB lower (stored with the track)"); accessible-label: "deck\{root.d}.grid.gain-down"; accessible-role: button; }
         Rectangle {
             accessible-role: text; accessible-label: "deck\{root.d}.grid.gain"; accessible-value: root.deck.gain-adjust;
-            horizontal-stretch: 2; min-width: 0px;
+            horizontal-stretch: 2; min-width: 32px;
             background: Theme.plate; border-radius: Theme.r-control;
             Text { text: root.deck.gain-adjust; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: center; vertical-alignment: center; overflow: elide; }
             TouchArea { double-clicked => { DeckGrid.act(root.d, "gain-reset", ""); } }
         }
-        GridKeyCell { deck: root.d; id: "gain"; arg: "0.5"; label: "+"; tooltip: @tr("Track gain 0.5 dB higher (stored with the track)"); accessible-label: "deck\{root.d}.grid.gain-up"; accessible-role: button; }
+        GridKeyCell { min-width: 18px; deck: root.d; id: "gain"; arg: "0.5"; label: "+"; tooltip: @tr("Track gain 0.5 dB higher (stored with the track)"); accessible-label: "deck\{root.d}.grid.gain-up"; accessible-role: button; }
     }
 }
 
@@ -1582,10 +1584,10 @@ component BandRow inherits HorizontalLayout {
         changed(v) => { root.changed(v); }
     }
     VerticalLayout {
-        width: root.compact ? 24px : 30px;
+        width: root.compact ? 24px : 28px;
         alignment: start;
-        padding-top: root.compact ? 0px : 2px;
-        spacing: 2px;
+        padding-top: root.compact ? 0px : Theme.key-gap;
+        spacing: Theme.key-gap;
         Text {
             accessible-role: text; accessible-label: root.id + ".value"; accessible-value: root.readout;
             text: root.readout;
@@ -1617,7 +1619,7 @@ component ChannelStrip inherits Rectangle {
     callback fader(float);
     callback cue();
     property <color> tone: Theme.deck-color(root.ch.channel);
-    property <length> band: root.compact ? 20px : 28px;
+    property <length> band: root.compact ? 18px : 26px;
     VerticalLayout {
         spacing: Theme.key-gap;
         HorizontalLayout {
@@ -1678,23 +1680,25 @@ component ChannelStrip inherits Rectangle {
             changed(v) => { root.channel-fx-amount(v); }
         }
         HorizontalLayout {
-            spacing: Theme.key-gap;
-            Toggle {
-                accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.parts;
-                accessible-label: "mixer.ch\{root.ch.channel}.stem";
-                width: root.compact ? 30px : 36px;
-                size: 24px; label: "STEM"; on: root.ch.parts; tone: Theme.setup-on;
-                label-size: Theme.label;
-                tooltip: @tr("EQ knobs control the stems: HI vocals, MID inst, LOW drums");
-                clicked => { MixerParts.toggle(root.ch.channel); }
-            }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.cue; accessible-label: "mixer.ch\{root.ch.channel}.cue"; width: root.compact ? 24px : 30px; size: 24px; label: "CUE"; label-size: Theme.label; on: root.ch.cue; tone: Theme.attention; clicked => { root.cue(); } }
-        }
-        HorizontalLayout {
             vertical-stretch: 1;
-            min-height: root.compact ? 30px : 56px;
+            min-height: root.compact ? 50px : 56px;
             spacing: Theme.key-gap;
             alignment: center;
+            // STEM and CUE beside the fader, CUE nearest to it.
+            VerticalLayout {
+                alignment: end;
+                spacing: Theme.key-gap;
+                Toggle {
+                    accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.parts;
+                    accessible-label: "mixer.ch\{root.ch.channel}.stem";
+                    width: 30px;
+                    size: 24px; label: "STEM"; on: root.ch.parts; tone: Theme.setup-on;
+                    label-size: Theme.label;
+                    tooltip: @tr("EQ knobs control the stems: HI vocals, MID inst, LOW drums");
+                    clicked => { MixerParts.toggle(root.ch.channel); }
+                }
+                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.cue; accessible-label: "mixer.ch\{root.ch.channel}.cue"; width: 30px; size: 24px; label: "CUE"; label-size: Theme.label; on: root.ch.cue; tone: Theme.attention; clicked => { root.cue(); } }
+            }
             // Level meter: amber near the top, red at clip.
             Rectangle {
                 width: 4px;
@@ -1705,7 +1709,7 @@ component ChannelStrip inherits Rectangle {
                     background: root.ch.peak > 0.99 || root.ch.clip ? Theme.fault : root.ch.level > 0.8 ? Theme.attention : Theme.live;
                 }
             }
-            Fader { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.fader"; accessible-value: root.ch.fader; value: root.ch.fader; tone: root.tone; handle: 20px; width: 30px; changed(v) => { root.fader(v); } }
+            Fader { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.fader"; accessible-value: root.ch.fader; value: root.ch.fader; tone: root.tone; handle: 20px; width: root.compact ? 24px : 26px; changed(v) => { root.fader(v); } }
         }
     }
 }
@@ -1750,28 +1754,39 @@ export component MixerPanel inherits Rectangle {
         if root.channels.length >= 2: HorizontalLayout {
             spacing: Theme.key-gap;
             alignment: center;
-            Caps { text: root.channels.length > 2 ? "SWAP " + MixerParts.swap-pair : "SWAP"; font-size: Theme.label; vertical-alignment: center; }
+            // Swap glyph (two opposed arrows); with four decks also the pair.
+            Rectangle {
+                width: 14px;
+                Path {
+                    x: 1px; y: (parent.height - 12px) / 2; width: 12px; height: 12px;
+                    viewbox-width: 12; viewbox-height: 12;
+                    stroke: Theme.bone-3; stroke-width: 1.5px;
+                    MoveTo { x: 1; y: 3.5; } LineTo { x: 11; y: 3.5; } MoveTo { x: 8; y: 1; } LineTo { x: 11; y: 3.5; } LineTo { x: 8; y: 6; }
+                    MoveTo { x: 11; y: 8.5; } LineTo { x: 1; y: 8.5; } MoveTo { x: 4; y: 6; } LineTo { x: 1; y: 8.5; } LineTo { x: 4; y: 11; }
+                }
+            }
+            if root.channels.length > 2: Caps { text: MixerParts.swap-pair; font-size: Theme.label; vertical-alignment: center; }
             Toggle {
                 accessible-role: button; accessible-label: "mixer.swap.low"; accessible-value: MixerParts.swap-pending == 0 ? "waiting" : "";
-                width: 30px; size: 22px; label-size: Theme.label; label: "LOW"; armed: MixerParts.swap-pending == 0; tone: Theme.attention;
+                width: 26px; size: root.compact ? 18px : 22px; label-size: Theme.label; label: "LOW"; armed: MixerParts.swap-pending == 0; tone: Theme.attention;
                 tooltip: @tr("Swap LOW (knob and kill) between the two decks; tap again to cancel a waiting swap");
                 clicked => { MixerParts.swap(0); }
             }
             Toggle {
                 accessible-role: button; accessible-label: "mixer.swap.mid"; accessible-value: MixerParts.swap-pending == 1 ? "waiting" : "";
-                width: 30px; size: 22px; label-size: Theme.label; label: "MID"; armed: MixerParts.swap-pending == 1; tone: Theme.attention;
+                width: 26px; size: root.compact ? 18px : 22px; label-size: Theme.label; label: "MID"; armed: MixerParts.swap-pending == 1; tone: Theme.attention;
                 tooltip: @tr("Swap MID (knob and kill) between the two decks; tap again to cancel a waiting swap");
                 clicked => { MixerParts.swap(1); }
             }
             Toggle {
                 accessible-role: button; accessible-label: "mixer.swap.high"; accessible-value: MixerParts.swap-pending == 2 ? "waiting" : "";
-                width: 30px; size: 22px; label-size: Theme.label; label: "HI"; armed: MixerParts.swap-pending == 2; tone: Theme.attention;
+                width: 22px; size: root.compact ? 18px : 22px; label-size: Theme.label; label: "HI"; armed: MixerParts.swap-pending == 2; tone: Theme.attention;
                 tooltip: @tr("Swap HI (knob and kill) between the two decks; tap again to cancel a waiting swap");
                 clicked => { MixerParts.swap(2); }
             }
             Toggle {
                 accessible-role: button; accessible-label: "mixer.swap.at"; accessible-value: MixerParts.swap-at;
-                width: 34px; size: 22px; label-size: Theme.label; label: MixerParts.swap-at;
+                width: 32px; size: root.compact ? 18px : 22px; label-size: Theme.label; label: MixerParts.swap-at;
                 tooltip: @tr("When a swap happens: at once, on the next beat or on the next bar");
                 clicked => { MixerParts.cycle-swap-at(); }
             }

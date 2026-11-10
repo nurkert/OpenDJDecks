@@ -91,6 +91,9 @@ fn deck_grid_panel_edits_grid_and_gain() {
     assert!(!ui.has("deck1.pad.A"), "in place of the pads");
     ui.click("deck1.grid.beat-later");
     assert!(ui.wait_until(2.0, |u| (first(u) - before).abs() > 0.1), "grid moved a beat");
+    for k in ["deck1.grid.lock", "deck1.grid.gain-down", "deck1.grid.gain", "deck1.grid.gain-up"] {
+        assert!(Rect::of(&ui.get(k)).w >= 18.0, "{k} keeps a usable width");
+    }
     ui.click("deck1.grid.gain-up");
     assert!(ui.wait_until(2.0, |u| u.value("deck1.grid.gain") == "+0.5 dB"));
     assert_eq!(crate::deck_grid::stored_gain(&ui.app.state.borrow().lib, id), 0.5);

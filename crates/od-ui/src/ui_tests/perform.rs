@@ -431,9 +431,10 @@ fn stem_fx_part_keys() {
     }));
 }
 
-/// Mixer knobs sit centred in their channel strip (the CUE key spans the
-/// strip), and the PHONES knobs centred on the global bar row (the
-/// crossfader is centred on it), at desktop and laptop size.
+/// Mixer knobs stand in one column per channel strip (their values and
+/// kills beside them), inside the strip, and the PHONES knobs centred on the
+/// global bar row (the crossfader is centred on it), at desktop and laptop
+/// size.
 #[test]
 fn mixer_and_phones_knobs_are_centred() {
     for size in [(1440, 900), (1280, 800)] {
@@ -442,15 +443,25 @@ fn mixer_and_phones_knobs_are_centred() {
         assert!(ui.wait_until(5.0, |u| u.has("mixer.ch1.cue")
             && u.has("global.phones.mix")));
         for ch in 1..=2 {
-            let strip = Rect::of(&ui.get(&format!("mixer.ch{ch}.cue")));
+            let cue = Rect::of(&ui.get(&format!("mixer.ch{ch}.cue")));
+            let fader = Rect::of(&ui.get(&format!("mixer.ch{ch}.fader")));
+            let high = Rect::of(&ui.get(&format!("mixer.ch{ch}.eq-high")));
             for knob in ["trim", "eq-high", "eq-mid", "eq-low"] {
                 let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{knob}")));
                 assert!(
-                    (k.centre().x - strip.centre().x).abs() <= 1.0,
-                    "{size:?} ch{ch} {knob}: knob x {} vs strip x {}",
-                    k.centre().x,
-                    strip.centre().x
+                    (k.x - high.x).abs() <= 1.0,
+                    "{size:?} ch{ch} {knob}: knob left {} vs column {}",
+                    k.x,
+                    high.x
                 );
+                assert!(
+                    k.x >= cue.x - 1.0 && k.right() <= fader.right() + 1.0,
+                    "{size:?} ch{ch} {knob}: knob outside the strip"
+                );
+            }
+            for knob in ["eq-mid", "eq-low"] {
+                let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{knob}")));
+                assert!((k.centre().x - high.centre().x).abs() <= 1.0, "{size:?} ch{ch} {knob}");
             }
         }
         let row = Rect::of(&ui.get("global.xfader"));
