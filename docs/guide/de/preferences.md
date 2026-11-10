@@ -36,12 +36,13 @@ Der **BPM-Bereich** (ab Version 0.6) sagt der Tempoanalyse, in welchem Bereich d
 - **58–115** für langsame Musik wie Reggae oder Downtempo.
 - **98–195** für schnellere Genres, bei denen ein Track nicht als halbes Tempo erscheinen soll.
 - **118–236** für sehr schnelle Musik wie Drum and Bass oder Hardcore.
+- **150–300** für Musik über 200 BPM wie Gabber oder Speedcore; siehe [Beatgrids](beatgrid.md#schnelle-musik-und-halb-oder-doppelt-am-deck).
 
 Der Bereich gilt für alle Tracks, die ab jetzt analysiert werden. Um einen analysierten Track zu ändern, wähle in seinem Menü im Player oder in der Liste **Erneut analysieren**.
 
 ## Controller
 
-**Decks** enthält die Standards, die an jedes Deck gehen: Tempobereich, Quantisieren, Sync-Modus, Jog-Modus und Auto Cue. **Mixer** enthält EQ und Faderkurven. Den Rest findest du unter [Controller](controllers.md).
+**Decks** enthält die Standards, die an jedes Deck gehen: Tempobereich, Quantisieren, Sync-Modus (**BEAT**, **NUR TEMPO** oder **PHRASE**, siehe [Phrasen](phrases.md#auf-der-phrase-mixen)), Jog-Modus und Auto Cue. **Mixer** enthält EQ und Faderkurven. Den Rest findest du unter [Controller](controllers.md).
 
 ## Tastatur
 

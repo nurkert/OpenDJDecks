@@ -215,6 +215,10 @@ export struct LaneMotion {
     t0: float,
     t1: float,
     t2: float,
+    // Over a playing lane: the incoming deck drawn (0 = none) and where its
+    // cue sits on its own timeline in seconds (< 0: no mark).
+    of-deck: int,
+    mark: float,
 }
 
 // One deck pad in the current pad mode.
@@ -326,6 +330,18 @@ export struct DeckView {
     beat-pos: string,
     // Manual loop: the in point is set and waits for the out point.
     loop-in-set: bool,
+    // Bars to the next drop and breakdown, nearest first ("DROP 8 · BREAK 24").
+    phrase-ahead: string,
+    // Waits to start on the master's next phrase; bars.beats left ("-3.2").
+    start-armed: bool,
+    start-wait: string,
+    // A loop roll is held (its size, e.g. "1/8").
+    rolling: bool,
+    roll-size: string,
+    // Where playback resumes after a roll or slip (seconds, < 0: none).
+    slip-pos: float,
+    // The track's grid can be halved / doubled (loaded, not locked).
+    bpm-scalable: bool,
 }
 
 // One mixer channel.
@@ -463,6 +479,16 @@ export struct DeckGridView {
 
 // GRID panel of a Perform deck: (deck 1-based, action, argument), see
 // deck_grid.rs for the actions; `decks` holds the readouts per deck.
+// Phrase-aligned blends, loop capture and half / double tempo on a Perform
+// deck (1-based deck numbers); see decks.rs. `overlay` holds, per lane, the
+// incoming track drawn over the playing waveform.
+export global DeckMix {
+    in property <[LaneMotion]> overlay;
+    callback phrase-start(int);
+    callback capture(int);
+    callback bpm-scale(int, float);
+}
+
 export global DeckGrid {
     in property <[DeckGridView]> decks;
     callback act(int, string, string);

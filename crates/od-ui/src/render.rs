@@ -587,6 +587,78 @@ pub fn detail_tile(
     draw_detail(w, grid, phrases, start, span, None, width, height)
 }
 
+/// One tile of the incoming track drawn over the playing waveform: the
+/// waveform's outline (white, with a faint body) on a transparent ground,
+/// at the same scale as [`detail_tile`]. The UI paints it in the incoming
+/// deck's colour (`colorize`), so it reads over any waveform.
+pub fn outline_tile(w: &Waveform, start: f64, span: f64, width: u32, height: u32) -> Image {
+    Image::from_rgba8(outline_buf(w, start, span, width, height))
+}
+
+pub(crate) fn outline_buf(
+    w: &Waveform,
+    start: f64,
+    span: f64,
+    width: u32,
+    height: u32,
+) -> SharedPixelBuffer<Rgba8Pixel> {
+    let (width, height) = (width.max(1), height.max(1));
+    let mut buf = SharedPixelBuffer::<Rgba8Pixel>::new(width, height);
+    let secs_per_px = span / width as f64;
+    // The same geometry as the detail tile: amplitudes match.
+    let strip = (height / 18).max(3);
+    let wave_h = height.saturating_sub(strip + 1).max(2);
+    let mark_h = (wave_h / 7).max(5);
+    let mid = wave_h / 2;
+    let rate = w.columns_per_second;
+    let px = buf.make_mut_slice();
+    let mut set = |x: u32, y: u32, a: u8| {
+        if x < width && y < height {
+            let p = &mut px[(y * width + x) as usize];
+            if p.a < a {
+                *p = Rgba8Pixel { r: 255, g: 255, b: 255, a };
+            }
+        }
+    };
+    let mut prev: Option<u32> = None;
+    for x in 0..width {
+        let t = start + x as f64 * secs_per_px;
+        if t < 0.0 {
+            prev = None;
+            continue;
+        }
+        let a = (t * rate) as usize;
+        let b = (((t + secs_per_px) * rate) as usize).max(a + 1);
+        if a >= w.columns.len() {
+            prev = None;
+            continue;
+        }
+        let peak = w.columns[a..b.min(w.columns.len())]
+            .iter()
+            .map(|c| c.peak)
+            .max()
+            .unwrap_or(0);
+        let amp = (peak as f32 / 255.0 * (wave_h as f32 / 2.0 - mark_h as f32 - 2.0)).max(1.0) as u32;
+        let (top, bottom) = (mid.saturating_sub(amp), (mid + amp).min(wave_h));
+        for y in top..=bottom {
+            set(x, y, 46);
+        }
+        // The outline joins neighbouring columns so steep edges stay closed.
+        let (from, to) = match prev {
+            Some(p) => (p.min(amp), p.max(amp)),
+            None => (amp, amp),
+        };
+        for r in from..=to {
+            for dy in 0..2 {
+                set(x, mid.saturating_sub(r) + dy, 235);
+                set(x, (mid + r).min(wave_h).saturating_sub(dy), 235);
+            }
+        }
+        prev = Some(amp);
+    }
+    buf
+}
+
 /// A tile turned for the vertical lanes: time runs top to bottom, the
 /// waveform's amplitude spreads left and right.
 pub fn transpose(img: &Image) -> Image {
@@ -798,6 +870,37 @@ mod tests {
             10
         );
         assert_eq!(ground_texture().size().width, 640);
+    }
+
+    /// [56] The incoming track's outline: transparent ground, a bright edge
+    /// at the waveform's peak and a faint body inside, nothing before 0 s.
+    #[test]
+    fn outline_tile_draws_the_edge_on_a_clear_ground() {
+        let w = Waveform {
+            columns_per_second: 150.0,
+            columns: vec![
+                WaveformColumn {
+                    low: 200,
+                    mid: 20,
+                    high: 10,
+                    peak: 255
+                };
+                1500
+            ],
+        };
+        let (wd, h) = (100u32, 100u32);
+        // From −1 s: the first 25 columns are before the track.
+        let buf = outline_buf(&w, -1.0, 4.0, wd, h);
+        let px = buf.as_slice();
+        let at = |x: u32, y: u32| px[(y * wd + x) as usize].a;
+        assert!((0..h).all(|y| at(10, y) == 0), "nothing before the start");
+        let col: Vec<u8> = (0..h).map(|y| at(60, y)).collect();
+        let edge = col.iter().position(|&a| a > 200).expect("an edge");
+        let mid = (h - (h / 18).max(3) - 1) / 2;
+        assert!(edge < mid as usize, "edge above the centre line");
+        assert!(col[mid as usize] > 0 && col[mid as usize] < 100, "faint body");
+        assert_eq!(col[(h - 1) as usize], 0, "the phrase strip stays clear");
+        assert_eq!(outline_tile(&w, 0.0, 4.0, 50, 20).size().width, 50);
     }
 
     #[test]

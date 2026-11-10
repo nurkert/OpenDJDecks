@@ -277,6 +277,11 @@ pub(crate) struct Decks {
     pub zoom: [f64; DECKS],
     scroll: [LaneScroll; DECKS],
     motion: Rc<VecModel<LaneMotion>>,
+    /// The incoming track drawn over each lane ([`phrase_mix`]).
+    overlay_scroll: [LaneScroll; DECKS],
+    overlay: Rc<VecModel<LaneMotion>>,
+    /// The loop each deck played last (its track, seconds), for CAPTURE.
+    pub last_loop: [Option<(TrackId, f64, f64)>; DECKS],
     /// The track data each deck plays (a grid edit swaps in a copy with
     /// the new grid, sharing the audio).
     engine_data: [Option<Arc<od_engine::TrackData>>; DECKS],
@@ -288,6 +293,11 @@ impl Decks {
     /// The waveform lanes' motion rows (shared with the booth window).
     pub(crate) fn lane_motion(&self) -> slint::ModelRc<crate::LaneMotion> {
         slint::ModelRc::from(self.motion.clone())
+    }
+
+    /// Per lane, the incoming track drawn over it (Perform).
+    pub(crate) fn lane_overlay(&self) -> slint::ModelRc<crate::LaneMotion> {
+        slint::ModelRc::from(self.overlay.clone())
     }
 
     /// Parts of the track on `deck` are being separated.
@@ -324,6 +334,9 @@ impl Default for Decks {
             zoom: [1.0; DECKS],
             scroll: Default::default(),
             motion: Rc::new(VecModel::from(vec![LaneMotion::default(); DECKS])),
+            overlay_scroll: Default::default(),
+            overlay: Rc::new(VecModel::from(vec![LaneMotion::default(); DECKS])),
+            last_loop: [None; DECKS],
         }
     }
 }
@@ -332,8 +345,9 @@ impl Default for Decks {
 /// motion last published to the UI.
 #[derive(Default)]
 struct LaneScroll {
-    /// What the tiles were rendered for: track, span (ms), size, phrases.
-    key: Option<(TrackId, i64, u32, u32, bool, bool, bool, u32)>,
+    /// What the tiles were rendered for: track, span (ms), size, phrases,
+    /// look, vertical, waveform generation, outline.
+    key: Option<(TrackId, i64, u32, u32, bool, bool, bool, u32, bool)>,
     tiles: HashMap<i64, Image>,
     first: Option<i64>,
     sent_pos: f64,
@@ -354,6 +368,8 @@ struct ScrollIn<'a> {
     phrases: bool,
     /// Tiles turned for the vertical lanes.
     vertical: bool,
+    /// Outline tiles of an incoming track ([`render::outline_tile`]).
+    outline: bool,
     now: Instant,
 }
 
@@ -377,6 +393,7 @@ impl LaneScroll {
             crate::appearance::is_light(),
             i.vertical,
             render::waveform_generation(),
+            i.outline,
         );
         let mut force = !self.loaded;
         if self.key != Some(key) {
@@ -405,6 +422,9 @@ impl LaneScroll {
             self.tiles.retain(|k, _| (first..first + 3).contains(k));
             for k in first..first + 3 {
                 self.tiles.entry(k).or_insert_with(|| {
+                    if i.outline {
+                        return render::outline_tile(&m.waveform, k as f64 * i.span, i.span, i.width, i.height);
+                    }
                     let tile = render::detail_tile(
                         &m.waveform,
                         &m.grid,
@@ -443,6 +463,8 @@ impl LaneScroll {
             t0: (first as f64 * i.span) as f32,
             t1: ((first + 1) as f64 * i.span) as f32,
             t2: ((first + 2) as f64 * i.span) as f32,
+            of_deck: 0,
+            mark: -1.0,
         })
     }
 }
@@ -1149,6 +1171,18 @@ pub(crate) struct DeckFields {
     pub key_sync: bool,
     pub jump_size: SharedString,
     pub loop_in_set: bool,
+    /// Bars to the next drop and breakdown ([`phrase_mix::ahead_text`]).
+    pub phrase_ahead: SharedString,
+    /// Waits to start on the master's next phrase, and how long ("-3.2").
+    pub start_armed: bool,
+    pub start_wait: SharedString,
+    /// A loop roll is held, and its size ("1/8").
+    pub rolling: bool,
+    pub roll_size: SharedString,
+    /// Where playback resumes after a roll / slip (seconds, −1 = none).
+    pub slip_pos: f32,
+    /// ÷2 / ×2 can change the track's grid.
+    pub bpm_scalable: bool,
 }
 
 /// What the projection needs besides the engine's deck state.
@@ -1169,6 +1203,8 @@ pub(crate) struct DeckInputs<'a> {
     pub pad_mode: PadMode,
     /// Value of the pad mode's ‹ › (see [`pads::param_label`]).
     pub pad_param: String,
+    /// A waiting start: bars.beats left on the master clock ("-3.2").
+    pub start_wait: String,
 }
 
 /// The deck's bar counter in the chosen mode (falls back to counting up).
@@ -1325,6 +1361,22 @@ pub(crate) fn deck_fields(s: &DeckState, i: &DeckInputs) -> DeckFields {
         loop_in_set: !s.loop_state.active
             && s.loop_state.start.is_some()
             && s.loop_state.end.is_none(),
+        phrase_ahead: meta
+            .filter(|_| s.beat_in_bar > 0)
+            .map(|m| crate::phrase_mix::ahead_text(&m.phrases, s.beat))
+            .unwrap_or_default()
+            .into(),
+        start_armed: s.start_on_beat.is_some(),
+        start_wait: i.start_wait.as_str().into(),
+        rolling: s.loop_state.roll,
+        roll_size: if s.loop_state.roll {
+            s.loop_state.beats.map(pads::beats_label).unwrap_or_default()
+        } else {
+            String::new()
+        }
+        .into(),
+        slip_pos: s.slip_position.map_or(-1.0, |p| p as f32),
+        bpm_scalable: meta.is_some_and(|m| !m.grid.locked && !m.grid.beats.is_empty()) && !i.loading,
     }
 }
 
@@ -1460,6 +1512,13 @@ impl Lane {
             key_sync: f.key_sync,
             jump_size: f.jump_size,
             loop_in_set: f.loop_in_set,
+            phrase_ahead: f.phrase_ahead,
+            start_armed: f.start_armed,
+            start_wait: f.start_wait,
+            rolling: f.rolling,
+            roll_size: f.roll_size,
+            slip_pos: f.slip_pos,
+            bpm_scalable: f.bpm_scalable,
         }
     }
 }
@@ -1541,6 +1600,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
     // The phrase bar under the overview has its own switch (Preferences > View).
     let show_overview_phrases = app.ui.get_show_phrases_overview();
     let bar_mode = app.state.borrow().settings.view.bar_counter.clone();
+    let show_overlay = app.state.borrow().settings.view.incoming_overlay;
     let scale = app.ui.window().scale_factor();
     let sampler_bank = app.sampler.bank.get();
     let sampler_slots = app.sampler.slots.borrow();
@@ -1561,6 +1621,8 @@ pub(crate) fn project(app: &App, state: &EngineState) {
         )
     };
     let now = Instant::now();
+    let master = state.master_deck.filter(|&m| m < count);
+    let master_beat = master.map(|m| state.decks[m].beat);
     if d.views.all.len() != count {
         d.views.resize(count);
     }
@@ -1612,6 +1674,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
             height,
             phrases: show_phrases,
             vertical,
+            outline: false,
             now,
         };
         if let Some(row) = d.scroll[i].update(&input) {
@@ -1666,14 +1729,136 @@ pub(crate) fn project(app: &App, state: &EngineState) {
                 bar_counter: &bar_mode,
                 pad_mode: d.pad_mode[i],
                 pad_param,
+                start_wait: match (s.start_on_beat, master_beat) {
+                    (Some(t), Some(b)) => crate::phrase_mix::wait_text(b, t),
+                    _ => String::new(),
+                },
             },
         );
+        // The loop heard last (a roll too), for CAPTURE.
+        if s.loop_state.active
+            && let (Some(t), Some(a), Some(b)) = (s.track, s.loop_state.start, s.loop_state.end)
+        {
+            d.last_loop[i] = Some((t, a, b));
+        }
         if lane.fields.as_ref() != Some(&fields) {
             lane.fields = Some(fields);
             dirty = true;
         }
         if dirty {
             d.views.publish(i);
+        }
+    }
+    project_overlay(d, state, count, master, (lane_width, height), show_overlay && !vertical, now);
+}
+
+/// The deck whose track is drawn over the playing master `m`: one that
+/// waits for the master's phrase first, then one that plays, then the
+/// first other loaded deck.
+fn incoming_deck(state: &EngineState, loaded: &[Option<Loaded>], count: usize, m: usize) -> Option<usize> {
+    let ready = |j: usize| {
+        j != m
+            && loaded[j]
+                .as_ref()
+                .is_some_and(|l| Some(l.id) == state.decks[j].track)
+    };
+    let cands: Vec<usize> = (0..count).filter(|&j| ready(j)).collect();
+    cands
+        .iter()
+        .copied()
+        .find(|&j| state.decks[j].start_on_beat.is_some())
+        .or_else(|| cands.iter().copied().find(|&j| state.decks[j].playing))
+        .or_else(|| cands.first().copied())
+}
+
+/// The incoming track's outline over the playing master's lane: where it
+/// plays, or (cued) where its cue meets the master's next phrase.
+fn project_overlay(
+    d: &mut Decks,
+    state: &EngineState,
+    count: usize,
+    master: Option<usize>,
+    (width, height): (u32, u32),
+    show: bool,
+    now: Instant,
+) {
+    let pair = master
+        .filter(|&m| show && state.decks[m].playing && d.loaded[m].is_some())
+        .and_then(|m| incoming_deck(state, &d.loaded, count, m).map(|j| (m, j)));
+    for i in 0..DECKS {
+        let mut extra = (0, -1.0f32);
+        let row = match pair {
+            Some((m, j)) if m == i && i < count => {
+                let (ms, sj) = (&state.decks[m], &state.decks[j]);
+                let rate = if sj.sync && sj.track_bpm > 0.0 {
+                    ms.bpm / sj.track_bpm
+                } else {
+                    sj.tempo
+                }
+                .max(0.25);
+                let phrases = d.loaded[m].as_ref().map(|l| l.phrases.as_slice()).unwrap_or(&[]);
+                let start = sj
+                    .start_on_beat
+                    .unwrap_or_else(|| crate::phrase_mix::next_boundary(phrases, ms.beat, 0.25));
+                let pos = crate::phrase_mix::incoming_position(
+                    sj.position,
+                    sj.playing,
+                    rate,
+                    ms.beat,
+                    ms.bpm,
+                    start,
+                );
+                extra = (j as i32 + 1, if sj.playing { -1.0 } else { sj.position as f32 });
+                let span = ((DETAIL_SPAN * d.zoom[i] * rate) * 100.0).round() / 100.0;
+                let input = ScrollIn {
+                    meta: d.loaded[j].as_ref(),
+                    position: pos,
+                    speed: rate,
+                    span,
+                    width,
+                    height,
+                    phrases: false,
+                    vertical: false,
+                    outline: true,
+                    now,
+                };
+                d.overlay_scroll[i].update(&input)
+            }
+            _ => {
+                let input = ScrollIn {
+                    meta: None,
+                    position: 0.0,
+                    speed: 0.0,
+                    span: 1.0,
+                    width,
+                    height,
+                    phrases: false,
+                    vertical: false,
+                    outline: true,
+                    now,
+                };
+                d.overlay_scroll[i].update(&input)
+            }
+        };
+        let current = d.overlay.row_data(i).unwrap_or_default();
+        match row {
+            Some(mut r) => {
+                if r.loaded {
+                    (r.of_deck, r.mark) = extra;
+                }
+                d.overlay.set_row_data(i, r);
+            }
+            None if current.loaded && (current.of_deck, current.mark) != extra => {
+                d.overlay.set_row_data(
+                    i,
+                    LaneMotion {
+                        of_deck: extra.0,
+                        mark: extra.1,
+                        ..current
+                    },
+                );
+            }
+            None => {}
         }
     }
 }
@@ -1970,7 +2155,8 @@ pub(crate) fn pad_param(app: &App, d: usize, delta: i32) {
         | PadMode::MemoryCue
         | PadMode::Lighting
         | PadMode::TimedCensor
-        | PadMode::PatternRecall => {}
+        | PadMode::PatternRecall
+        | PadMode::LoopRoll => {}
     }
 }
 
@@ -2046,6 +2232,134 @@ pub(crate) fn edit_memory_cue(
         cues.remove(i);
     }
     cues
+}
+
+// ── Phrase-aligned blends, loop capture, half / double ([56] [57] [59]) ─
+
+/// SYNC (screen, keys, controller). In the PHRASE sync mode a playing deck
+/// that syncs also jumps whole beats so it stands as far before one of its
+/// phrase boundaries as the master before its next one.
+pub(crate) fn toggle_sync(app: &App, d: usize) {
+    engine::ensure_engine(app);
+    let Some(state) = engine::snapshot(app) else { return };
+    let s = state.decks[d];
+    let on = !s.sync;
+    engine::deck_cmd(app, d, DeckCommand::SetSync(on));
+    let phrase = app.state.borrow().settings.deck.sync_mode == "phrase";
+    if !(on && phrase && s.playing) {
+        return;
+    }
+    let Some(m) = state.master_deck.filter(|&m| m != d && state.decks[m].playing) else {
+        return;
+    };
+    let jump = {
+        let dk = app.decks.borrow();
+        let (Some(lm), Some(ld)) = (dk.loaded(m), dk.loaded(d)) else { return };
+        crate::phrase_mix::sync_jump(&lm.phrases, state.decks[m].beat, &ld.phrases, s.beat)
+    };
+    if let Some(beats) = jump {
+        engine::deck_cmd(app, d, DeckCommand::BeatJump { beats });
+        app.status(od_i18n::trf("Synced to the phrase: {} beats", &[&format!("{beats:+}")]));
+    }
+}
+
+/// Start on the master's next phrase: arms a cued deck to start when the
+/// playing master reaches its next phrase boundary; a second press (or
+/// PLAY / CUE) cancels.
+pub(crate) fn phrase_start(app: &App, d: usize) {
+    engine::ensure_engine(app);
+    let Some(state) = engine::snapshot(app) else { return };
+    let s = state.decks[d];
+    if s.start_on_beat.is_some() {
+        engine::send(app, Command::StartOnBeat { deck: d, beat: None });
+        app.status("Phrase start cancelled");
+        return;
+    }
+    if s.playing || s.track.is_none() {
+        app.status("Phrase start: cue a track on a paused deck first");
+        return;
+    }
+    let Some(m) = state.master_deck.filter(|&m| m != d && state.decks[m].playing) else {
+        app.status("Phrase start: no other deck is playing to wait for");
+        return;
+    };
+    let target = {
+        let dk = app.decks.borrow();
+        let phrases = dk.loaded(m).map(|l| l.phrases.as_slice()).unwrap_or(&[]);
+        // Not a boundary that is reached before the start can be heard.
+        crate::phrase_mix::next_boundary(phrases, state.decks[m].beat, 0.25)
+    };
+    engine::send(app, Command::StartOnBeat { deck: d, beat: Some(target) });
+    app.status(od_i18n::trf(
+        "Deck {} starts on deck {}'s next phrase ({} bars)",
+        &[
+            &(d + 1),
+            &(m + 1),
+            &crate::phrase_mix::wait_text(state.decks[m].beat, target),
+        ],
+    ));
+}
+
+/// CAPTURE: the loop heard last on deck `d` (a roll or a loop) becomes a
+/// hot loop on the first free pad of the active bank, or a memory loop when
+/// the bank is full. Saved like any cue edit (one undo step).
+pub(crate) fn capture_loop(app: &App, d: usize) {
+    engine::ensure_engine(app);
+    let Some(s) = deck_state(app, d) else { return };
+    let Some(id) = editable(app, d) else { return };
+    let current = s
+        .loop_state
+        .start
+        .zip(s.loop_state.end)
+        .filter(|_| s.loop_state.active);
+    let last = app.decks.borrow().last_loop[d]
+        .filter(|(t, _, _)| *t == id)
+        .map(|(_, a, b)| (a, b));
+    let Some((start, end)) = current.or(last).filter(|(a, b)| b > a) else {
+        app.status("Nothing to capture: roll or play a loop first");
+        return;
+    };
+    match capture_target(&s) {
+        Some(slot) => {
+            engine::deck_cmd(
+                app,
+                d,
+                DeckCommand::SetHotCueAt { slot, start, loop_end: Some(end) },
+            );
+            let letter = pads::hot_letter(s.hot_cue_bank * od_engine::HOT_CUES + slot);
+            app.status(od_i18n::trf("Loop captured on hot cue {}", &[&letter]));
+        }
+        None => {
+            let current = app.state.borrow().lib.cues(id).unwrap_or_default();
+            let mut next = edit_memory_cue(current.clone(), start, true);
+            set_memory_loop_end(&mut next, start, end);
+            if next == current {
+                app.status("This loop is already stored");
+                return;
+            }
+            let r = app.state.borrow_mut().lib.set_cues(id, next.clone());
+            if app.report(r).is_none() {
+                return;
+            }
+            if let Some(m) = app.decks.borrow_mut().loaded[d].as_mut() {
+                m.source.cues = next;
+            }
+            refresh_deck_cues(app, id);
+            reload_engine_data(app, d);
+            app.after_edit("Loop captured as a memory loop (the hot cues are full)");
+        }
+    }
+}
+
+/// The pad a captured loop goes to: the first free one of the active bank.
+pub(crate) fn capture_target(s: &DeckState) -> Option<usize> {
+    s.hot_cues.iter().position(|c| c.is_none())
+}
+
+/// ÷2 / ×2 on the deck: the track's grid at half or double the tempo (the
+/// GRID panel's scale, one undo step).
+pub(crate) fn bpm_scale(app: &App, d: usize, factor: f64) {
+    crate::deck_grid::act(app, d, "scale", if factor < 1.0 { "0.5" } else { "2" });
 }
 
 /// Makes the memory cue at `start` a saved loop ending at `end`.
@@ -2271,12 +2585,13 @@ pub(crate) fn wire(app: &Rc<App>) {
         engine::deck_cmd(&a, d as usize - 1, DeckCommand::Cue(true));
         engine::deck_cmd(&a, d as usize - 1, DeckCommand::Cue(false));
     }));
-    ui.on_deck_sync(handler!(app, |a, d: i32| {
-        let on = deck_state(&a, d as usize - 1)
-            .map(|s| s.sync)
-            .unwrap_or(false);
-        engine::deck_cmd(&a, d as usize - 1, DeckCommand::SetSync(!on));
-    }));
+    ui.on_deck_sync(handler!(app, |a, d: i32| toggle_sync(&a, idx(d))));
+    // Phrase start, loop capture and ÷2 / ×2 ([56] [57] [59]).
+    let mix = ui.global::<crate::DeckMix>();
+    mix.set_overlay(app.decks.borrow().lane_overlay());
+    mix.on_phrase_start(handler!(app, |a, d: i32| phrase_start(&a, idx(d))));
+    mix.on_capture(handler!(app, |a, d: i32| capture_loop(&a, idx(d))));
+    mix.on_bpm_scale(handler!(app, |a, d: i32, f: f32| bpm_scale(&a, idx(d), f as f64)));
     ui.on_deck_seek(handler!(app, |a, d: i32, f: f32| engine::deck_cmd(
         &a,
         d as usize - 1,
@@ -2496,6 +2811,65 @@ pub(crate) fn wire(app: &Rc<App>) {
         engine::ensure_engine(&a);
         load_selected(&a, idx(d));
     }));
+    demo(app);
+}
+
+/// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF`):
+/// `phrase-start` pauses deck 2 and keeps it armed for deck 1's next
+/// phrase (the incoming outline over lane 1); `loop-roll` puts deck 1's
+/// pads in LOOP ROLL and holds a 1/8 roll.
+fn demo(app: &Rc<App>) {
+    let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
+    let phrase = v.split(',').any(|p| p == "phrase-start");
+    let roll = v.split(',').any(|p| p == "loop-roll");
+    if !phrase && !roll {
+        return;
+    }
+    let weak = Rc::downgrade(app);
+    slint::Timer::single_shot(std::time::Duration::from_secs(5), move || {
+        let Some(a) = weak.upgrade() else { return };
+        engine::send(&a, Command::SetMasterDeck(Some(0)));
+        if roll {
+            set_pad_mode(&a, 0, PadMode::LoopRoll);
+            engine::deck_cmd(&a, 0, DeckCommand::LoopRoll { beats: 0.125, on: true });
+        }
+        if !phrase {
+            return;
+        }
+        let cue = deck_state(&a, 1).map(|s| s.position).unwrap_or(0.0);
+        engine::deck_cmd(&a, 1, DeckCommand::Pause);
+        let w = Rc::downgrade(&a);
+        let rearm = Rc::new(slint::Timer::default());
+        let keep = rearm.clone();
+        rearm.start(
+            slint::TimerMode::Repeated,
+            std::time::Duration::from_millis(250),
+            move || {
+                let _ = &keep;
+                let Some(a) = w.upgrade() else { return };
+                let Some(st) = engine::snapshot(&a) else { return };
+                let s = st.decks[1];
+                if let Some(t) = s.start_on_beat {
+                    // Keep it waiting: move on to the phrase after.
+                    if t - st.decks[0].beat < 1.0 {
+                        let next = {
+                            let dk = a.decks.borrow();
+                            let ph = dk.loaded(0).map(|l| l.phrases.clone()).unwrap_or_default();
+                            crate::phrase_mix::next_boundary(&ph, t, 0.25)
+                        };
+                        engine::send(&a, Command::StartOnBeat { deck: 1, beat: Some(next) });
+                    }
+                    return;
+                }
+                if s.playing {
+                    engine::deck_cmd(&a, 1, DeckCommand::Pause);
+                    engine::deck_cmd(&a, 1, DeckCommand::Seek { seconds: cue });
+                } else {
+                    phrase_start(&a, 1);
+                }
+            },
+        );
+    });
 }
 
 #[cfg(test)]
@@ -2622,6 +2996,7 @@ mod tests {
                 bar_counter: "up",
                 pad_mode: PadMode::HotCue,
                 pad_param: String::new(),
+                start_wait: String::new(),
             },
         );
         assert_eq!(f.deck, 2);
@@ -2645,6 +3020,7 @@ mod tests {
                 bar_counter: "up",
                 pad_mode: PadMode::HotCue,
                 pad_param: String::new(),
+                start_wait: String::new(),
             },
         );
         assert_eq!(f, g);

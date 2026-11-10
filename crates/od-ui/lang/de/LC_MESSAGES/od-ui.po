@@ -2359,12 +2359,8 @@ msgstr "BPM-Bereich"
 
 #: ui/preferences.slint:426
 msgctxt "PreferencesWindow"
-msgid ""
-"Tempos are folded into this range: pick a lower range for hip-hop, a higher "
-"one for drum & bass."
-msgstr ""
-"Tempi werden in diesen Bereich gefaltet: ein niedrigerer Bereich für Hip-"
-"Hop, ein höherer für Drum & Bass."
+msgid "Tempos are folded into this range: pick a lower range for hip-hop, a higher one for drum & bass, 150–300 for hardcore and other tempos above 200. The range shows in the Prepare player's INFO tab and beside the analysis progress."
+msgstr "Tempi werden in diesen Bereich gefaltet: ein niedrigerer Bereich für Hip-Hop, ein höherer für Drum & Bass, 150–300 für Hardcore und andere Tempi über 200. Der Bereich steht im INFO-Tab des Prepare-Players und neben dem Analysefortschritt."
 
 #: ui/preferences.slint:427
 msgctxt "PreferencesWindow"
@@ -7041,3 +7037,59 @@ msgstr "PATCH"
 msgctxt "LightingView"
 msgid "CHANNELS"
 msgstr "KANÄLE"
+
+msgctxt "Readout"
+msgid "Half the tempo: the track's grid at half the BPM (one undo step)"
+msgstr "Halbes Tempo: das Raster des Tracks auf die halbe BPM (ein Rückgängig-Schritt)"
+
+msgctxt "Readout"
+msgid "Double the tempo: the track's grid at twice the BPM (one undo step)"
+msgstr "Doppeltes Tempo: das Raster des Tracks auf die doppelte BPM (ein Rückgängig-Schritt)"
+
+msgctxt "PadModes"
+msgid "ROLL"
+msgstr "ROLL"
+
+msgctxt "DeckPad"
+msgid "Roll this many beats while held; the track carries on underneath and resumes on release"
+msgstr "So viele Beats rollen, solange gedrückt; der Track läuft darunter weiter und setzt beim Loslassen dort fort"
+
+msgctxt "PadModeBar"
+msgid "CAPTURE"
+msgstr "SICHERN"
+
+msgctxt "PadModeBar"
+msgid "Capture the loop you just heard (roll or loop) as a hot loop on the first free pad, else as a memory loop"
+msgstr "Den eben gehörten Loop (Roll oder Loop) als Hot Loop auf das erste freie Pad sichern, sonst als Memory Loop"
+
+msgctxt "TransportRows"
+msgid "Play / pause — right click: start on the master deck's next phrase"
+msgstr "Abspielen / Pause — Rechtsklick: auf der nächsten Phrase des Master-Decks starten"
+
+msgctxt "Platter"
+msgid "START {}"
+msgstr "START {}"
+
+msgctxt "WaveLane"
+msgid "ROLL {}"
+msgstr "ROLL {}"
+
+msgctxt "PreferencesWindow"
+msgid "Incoming track"
+msgstr "Kommender Track"
+
+msgctxt "PreferencesWindow"
+msgid "Draw the incoming track over the playing waveform"
+msgstr "Den kommenden Track über die laufende Wellenform zeichnen"
+
+msgctxt "PreferencesWindow"
+msgid "PHRASE"
+msgstr "PHRASE"
+
+msgctxt "PreferencesWindow"
+msgid "PHRASE: a playing deck that syncs also jumps whole beats, so it stands as far before its next phrase as the master deck."
+msgstr "PHRASE: Ein laufendes Deck springt beim Sync zusätzlich um ganze Beats, sodass es so weit vor seiner nächsten Phrase steht wie das Master-Deck."
+
+msgctxt "PreparePlayer"
+msgid "BPM RANGE"
+msgstr "BPM-BEREICH"

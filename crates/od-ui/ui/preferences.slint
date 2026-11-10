@@ -352,6 +352,7 @@ export component PreferencesWindow inherits Window {
     callback search-settings(string);
     in property <bool> tooltips: true;
     in property <bool> club-other-beat: true;
+    in property <bool> incoming-overlay: true;
     callback record-key(string);
     callback reset-key(string);
     callback clear-key(string);
@@ -481,6 +482,7 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Motion"); Switch { accessible-label: "prefs.view.reduced-motion"; label: @tr("Reduce motion"); on: root.reduced-motion; toggled(v) => { root.flag("view.motion", v); } } }
                         Row { label: @tr("UI scale"); Choice { accessible-label: "prefs.view.scale"; options: root.scale-options; selected: root.scale; picked(i) => { root.choose("view.scale", i); } } }
                         Row { label: @tr("Club mode"); Switch { accessible-label: "prefs.view.club-other-beat"; label: @tr("Show the other deck's beat under the beat boxes"); on: root.club-other-beat; toggled(v) => { root.flag("view.club-other-beat", v); } } }
+                        Row { label: @tr("Incoming track"); Switch { accessible-label: "prefs.view.incoming-overlay"; label: @tr("Draw the incoming track over the playing waveform"); on: root.incoming-overlay; toggled(v) => { root.flag("view.incoming-overlay", v); } } }
                     }
                 }
 
@@ -494,7 +496,7 @@ export component PreferencesWindow inherits Window {
                         spacing: Theme.s1;
                         Heading { text: @tr("Track analysis"); }
                         Row { label: @tr("BPM range"); Choice { accessible-label: "prefs.analysis.bpm-range"; options: root.bpm-options; selected: root.bpm-range; picked(i) => { root.choose("analysis.bpm", i); } } }
-                        Note { text: @tr("Tempos are folded into this range: pick a lower range for hip-hop, a higher one for drum & bass."); }
+                        Note { text: @tr("Tempos are folded into this range: pick a lower range for hip-hop, a higher one for drum & bass, 150–300 for hardcore and other tempos above 200. The range shows in the Prepare player's INFO tab and beside the analysis progress."); }
                         Row { label: @tr("Key"); Switch { accessible-label: "prefs.analysis.key"; label: @tr("Detect the key"); on: root.detect-key; toggled(v) => { root.flag("analysis.key", v); } } }
                         Row { label: @tr("Phrases"); Switch { accessible-label: "prefs.analysis.phrase"; label: @tr("Detect phrases (intro, verse, chorus …)"); on: root.detect-phrases; toggled(v) => { root.flag("analysis.phrases", v); } } }
                         Row { label: @tr("Key notation"); Choice { accessible-label: "prefs.analysis.key-notation"; options: [@tr("CAMELOT  8A"), @tr("OPEN KEY  1M"), @tr("MUSICAL  Am")]; selected: root.notation; picked(i) => { root.choose("view.notation", i); } } }
@@ -532,7 +534,8 @@ export component PreferencesWindow inherits Window {
                         Heading { text: @tr("Decks"); }
                         Row { label: @tr("Tempo range"); Choice { accessible-label: "prefs.controller.tempo-range"; options: ["±6 %", "±10 %", "±16 %", @tr("WIDE")]; selected: root.tempo-range; picked(i) => { root.choose("deck.tempo-range", i); } } }
                         Row { label: @tr("Quantize"); Switch { accessible-label: "prefs.controller.quantize"; label: @tr("Quantize cues, loops and jumps to the beat"); on: root.deck-quantize; toggled(v) => { root.flag("deck.quantize", v); } } }
-                        Row { label: @tr("Sync"); Choice { accessible-label: "prefs.controller.sync-mode"; options: [@tr("BEAT"), @tr("TEMPO ONLY")]; selected: root.sync-mode; picked(i) => { root.choose("deck.sync-mode", i); } } }
+                        Row { label: @tr("Sync"); Choice { accessible-label: "prefs.controller.sync-mode"; options: [@tr("BEAT"), @tr("TEMPO ONLY"), @tr("PHRASE")]; selected: root.sync-mode; picked(i) => { root.choose("deck.sync-mode", i); } } }
+                        if root.sync-mode == 2: Note { text: @tr("PHRASE: a playing deck that syncs also jumps whole beats, so it stands as far before its next phrase as the master deck."); }
                         Row { label: @tr("Jog wheel"); Choice { accessible-label: "prefs.controller.jog-mode"; options: [@tr("VINYL"), @tr("PITCH BEND")]; selected: root.jog-mode; picked(i) => { root.choose("deck.jog-mode", i); } } }
                         Row { label: @tr("Auto cue"); Switch { accessible-label: "prefs.controller.auto-cue"; label: @tr("A loaded track waits at its first sound"); on: root.auto-cue; toggled(v) => { root.flag("deck.auto-cue", v); } } }
                         Heading { text: @tr("Mixer"); }

@@ -1,8 +1,8 @@
 ---
 title: Hot cues, memory cues and loops
 description: Mark the places you play. Eight hot cues per bank, memory cues, saved and active loops, names and colours, and cues set like on your other tracks.
-keywords: [hot cue, hotcue, hot cues, memory cue, memory, cue point, cue points, loop, loops, saved loop, active loop, set cue, jump, marker, banks, name, colour, auto cue]
-features: [cues-hot-cues-prepare, cues-hot-cues-perform, cues-hot-cue-banks, cues-memory-add, cues-memory-edit, cues-memory-call, cues-memory-controller, cues-saved-loops, cues-auto-personalised, cues-active-loop, cues-colours, cues-labels, cues-auto-cue, deck-manual-loop, deck-auto-loop, deck-loop-roll]
+keywords: [hot cue, hotcue, hot cues, memory cue, memory, cue point, cue points, loop, loops, saved loop, active loop, set cue, jump, marker, banks, name, colour, auto cue, loop roll, roll, capture, slip]
+features: [cues-hot-cues-prepare, cues-hot-cues-perform, cues-hot-cue-banks, cues-memory-add, cues-memory-edit, cues-memory-call, cues-memory-controller, cues-saved-loops, cues-auto-personalised, cues-active-loop, cues-colours, cues-labels, cues-auto-cue, deck-manual-loop, deck-auto-loop, deck-loop-roll, deck-loop-capture]
 ---
 
 Open a track in the player at the top of Prepare to set cues. Everything you set here is saved with the track and reaches your [USB sticks](usb-sticks.md) by itself.
@@ -47,9 +47,21 @@ In the player's **CUE / LOOP** tab and on the Perform deck:
 
 - **LOOP** starts an auto loop of the shown length; press it again to leave. **½** and **2×** change the length, from 1/32 to 32 beats.
 - **IN** and **OUT** set a manual loop; **EXIT** leaves it. In Perform it reloops with the same control.
-- A controller can roll a short loop that lets the track carry on underneath when you let go.
+- The **ROLL** pad mode rolls a short loop while you hold a pad, see below.
 
 Press **MEMORY +** while a loop plays to store it as a memory loop, or set a hot cue on a loop. **ACTIVE** in the cue editor turns a stored loop into an active one: it engages by itself when playback reaches it.
+
+## Loop roll and capture
+
+![Deck 1 in the ROLL pad mode with a 1/8 roll held: the filled pad, the ROLL 1/8 band on the waveform and CAPTURE in the mode bar](../img/loop-roll.png)
+
+Pick **ROLL** as the pad mode in Perform. The pads hold the sizes **1/32**, **1/16**, **1/8**, **1/4** (left) and **1/2**, **1**, **2**, **4** beats (right).
+
+- **Hold a pad** to roll: the loop starts on the grid (with **Q** on) and repeats while you hold. The track carries on underneath, a thin line on the waveform shows where; when you let go, playback continues from there, as with slip.
+- The held pad is filled, and the loop band on the waveform names the roll, for example **ROLL 1/8**.
+- **CAPTURE** in the mode bar keeps the loop you just heard, a roll or a loop, as a hot loop on the first free pad of the bank. With all eight pads taken it becomes a memory loop. Each capture is one undo step and is saved with the track.
+
+On a controller: `deck.loop_roll` with `beats`, the pad mode `loop_roll`, and `deck.loop_capture`. Rolls are tested in the engine and the app; they have not been tried on hardware pads yet.
 
 ## Cues like on your other tracks
 

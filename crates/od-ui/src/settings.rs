@@ -115,7 +115,7 @@ impl Default for MixerSettings {
 
 pub const TEMPO_RANGES: [&str; 4] = ["six", "ten", "sixteen", "wide"];
 pub const JOG_MODES: [&str; 2] = ["vinyl", "bend"];
-pub const SYNC_MODES: [&str; 2] = ["beat", "tempo"];
+pub const SYNC_MODES: [&str; 3] = ["beat", "tempo", "phrase"];
 pub const EQ_MODES: [&str; 2] = ["isolator", "classic"];
 pub const FADER_CURVES: [&str; 3] = ["linear", "smooth", "sharp"];
 pub const CROSSFADER_CURVES: [&str; 3] = ["constant_power", "linear", "cut"];
@@ -203,6 +203,8 @@ pub struct ViewSettings {
     /// Club mode: the other deck's beat of the bar, greyed, under each
     /// player's beat boxes (to line the bars up by eye).
     pub club_other_beat: bool,
+    /// Perform: the incoming track drawn over the playing waveform.
+    pub incoming_overlay: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -430,6 +432,7 @@ impl Default for ViewSettings {
             zoom_span: 8.0,
             tooltips: true,
             club_other_beat: true,
+            incoming_overlay: true,
         }
     }
 }
@@ -483,7 +486,7 @@ pub const PHRASE_TYPES: [&str; 2] = ["names", "colors"];
 /// Appearance modes, in the order the top-bar button cycles them.
 pub const APPEARANCES: [&str; 3] = ["dark", "light", "system"];
 /// The BPM ranges offered for tempo detection; the first is the default.
-pub const BPM_RANGES: [(u32, u32); 4] = [(70, 180), (58, 115), (98, 195), (118, 236)];
+pub const BPM_RANGES: [(u32, u32); 5] = [(70, 180), (58, 115), (98, 195), (118, 236), (150, 300)];
 
 impl Settings {
     /// Reads the settings from JSON; unknown or broken values fall back to

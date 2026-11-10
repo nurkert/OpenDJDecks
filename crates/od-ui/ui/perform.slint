@@ -12,7 +12,7 @@ import { DropZone } from "drag.slint";
 import { DeckView, CueMark, HotCueSlot, ChannelView, PhraseMark, LaneMotion, FxUnitView, PadView } from "structs.slint";
 import { FxPanel, ChannelFxSelector, ChoiceList } from "fx.slint";
 import { SamplerPanel } from "sampler.slint";
-import { SamplerPadView, SamplerView, DeckTime, DeckGrid, DeckGridView, GridEdit } from "structs.slint";
+import { SamplerPadView, SamplerView, DeckTime, DeckGrid, DeckGridView, GridEdit, DeckMix } from "structs.slint";
 import { WaveLane, VerticalLane } from "wave.slint";
 import { MicControls } from "mic.slint";
 import { RecStrip } from "rec.slint";
@@ -71,6 +71,26 @@ export component Pad inherits Rectangle {
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.pressed(); } }
 }
 
+// A small key on a readout's caption line (÷2 / ×2 on the BPM).
+component MiniKey inherits Rectangle {
+    in property <string> label;
+    in property <string> tooltip;
+    in property <bool> enabled: true;
+    callback clicked();
+    accessible-role: button;
+    width: t.preferred-width + 8px; height: 15px;
+    border-radius: 2px;
+    background: !root.enabled ? transparent : tip.pressed ? Theme.bone : tip.has-hover ? Theme.plate-raised : Theme.plate;
+    border-width: root.enabled ? 0px : Theme.hair; border-color: Theme.rule;
+    t := Text {
+        text: root.label;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi;
+        color: !root.enabled ? Theme.bone-3 : tip.pressed ? Theme.ground : Theme.bone-2;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    tip := TipArea { tooltip: root.tooltip; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
+}
+
 component Readout inherits VerticalLayout {
     in property <string> label;
     in property <string> value;
@@ -89,9 +109,22 @@ component Readout inherits VerticalLayout {
     // elapsed time), with its own label.
     in property <string> sub2;
     in property <string> sub2-label;
+    // Half / double keys on the caption (the BPM: one press halves or
+    // doubles the track's grid tempo); `a11y` prefixes their labels.
+    in property <bool> scale-keys;
+    in property <bool> scale-enabled: true;
+    in property <string> a11y;
+    callback scale(float);
     spacing: 0;
     alignment: center;
-    Caps { text: root.label; font-size: Theme.label; horizontal-alignment: root.align; }
+    if !root.scale-keys: Caps { text: root.label; font-size: Theme.label; horizontal-alignment: root.align; }
+    if root.scale-keys: HorizontalLayout {
+        alignment: end;
+        spacing: Theme.key-gap;
+        MiniKey { label: "½"; enabled: root.scale-enabled; accessible-label: root.a11y + ".bpm-half"; tooltip: @tr("Half the tempo: the track's grid at half the BPM (one undo step)"); clicked => { root.scale(0.5); } }
+        Caps { text: root.label; font-size: Theme.label; vertical-alignment: center; }
+        MiniKey { label: "2×"; enabled: root.scale-enabled; accessible-label: root.a11y + ".bpm-double"; tooltip: @tr("Double the tempo: the track's grid at twice the BPM (one undo step)"); clicked => { root.scale(2); } }
+    }
     Text {
         accessible-role: text;
         accessible-label: root.value-label;
@@ -205,8 +238,8 @@ global PadLetters {
 
 // Pad modes, in selector order (ids as in DeckView.pad-mode).
 global PadModes {
-    out property <[string]> ids: ["hot_cue", "hold_fx1", "beat_jump", "sampler", "keyboard", "key_shift", "beat_loop", "slicer", "stems", "memory_cue", "lighting", "timed_censor", "pattern_recall"];
-    out property <[string]> names: [@tr("HOT CUE"), @tr("HOLD FX"), @tr("BEAT JUMP"), @tr("SAMPLER"), @tr("KEYBOARD"), @tr("KEY SHIFT"), @tr("BEAT LOOP"), @tr("SLICER"), @tr("STEMS"), @tr("MEMORY CUE"), @tr("LIGHTING"), @tr("CENSOR"), @tr("PATTERN")];
+    out property <[string]> ids: ["hot_cue", "hold_fx1", "beat_jump", "sampler", "keyboard", "key_shift", "beat_loop", "slicer", "stems", "memory_cue", "lighting", "timed_censor", "pattern_recall", "loop_roll"];
+    out property <[string]> names: [@tr("HOT CUE"), @tr("HOLD FX"), @tr("BEAT JUMP"), @tr("SAMPLER"), @tr("KEYBOARD"), @tr("KEY SHIFT"), @tr("BEAT LOOP"), @tr("SLICER"), @tr("STEMS"), @tr("MEMORY CUE"), @tr("LIGHTING"), @tr("CENSOR"), @tr("PATTERN"), @tr("ROLL")];
     public pure function index(id: string) -> int {
         if (id == "hold_fx1" || id == "hold_fx2") { return 1; }
         if (id == "beat_jump") { return 2; }
@@ -220,6 +253,7 @@ global PadModes {
         if (id == "lighting") { return 10; }
         if (id == "timed_censor") { return 11; }
         if (id == "pattern_recall") { return 12; }
+        if (id == "loop_roll") { return 13; }
         return 0;
     }
     // Hot cues keep their cue colours (with their letter); every other pad
@@ -267,6 +301,7 @@ export component DeckPad inherits Rectangle {
             : root.mode == "sampler" ? @tr("Play the sampler slot (drop tracks on the sampler panel)")
             : root.mode == "beat_jump" ? @tr("Jump by this many beats")
             : root.mode == "beat_loop" ? @tr("Loop this many beats; press again to exit")
+            : root.mode == "loop_roll" ? @tr("Roll this many beats while held; the track carries on underneath and resumes on release")
             : root.mode == "key_shift" ? @tr("Shift the key by these semitones")
             : root.mode == "keyboard" ? @tr("Play the hot cue at this key")
             : root.mode == "slicer" ? @tr("Play this slice while held")
@@ -508,6 +543,14 @@ component PadModeBar inherits Rectangle {
             command: "deck" + root.deck.deck + ".padmode.next";
             step(d) => { root.mode-step(d); }
             value-clicked => { modes.show(); }
+        }
+        // Loop roll: CAPTURE keeps the loop you just heard as a hot loop.
+        if root.with-param && root.deck.pad-mode == "loop_roll": Toggle {
+            accessible-role: button; accessible-label: "deck\{root.deck.deck}.loop.capture";
+            horizontal-stretch: 1;
+            size: root.size; label: @tr("CAPTURE"); label-size: Theme.label; tracking: 0.8px;
+            tooltip: @tr("Capture the loop you just heard (roll or loop) as a hot loop on the first free pad, else as a memory loop");
+            clicked => { DeckMix.capture(root.deck.deck); }
         }
         if root.with-param && root.deck.pad-param != "": Stepper {
             horizontal-stretch: 1;
@@ -963,7 +1006,15 @@ component TransportRows inherits VerticalLayout {
     }
     GridRow {
         base: root.base; span: 2; grows: 1;
-        Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; guide: "deck\{root.deck.deck}.play"; size: min(parent.width, parent.height); x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; clicked => { root.toggle-play(); } }
+        Transport {
+            accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play";
+            accessible-value: root.deck.start-armed ? "armed" : "";
+            kind: "play"; on: root.deck.playing; armed: root.deck.start-armed; tone: Theme.live; guide: "deck\{root.deck.deck}.play";
+            tooltip: @tr("Play / pause — right click: start on the master deck's next phrase");
+            size: min(parent.width, parent.height); x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+            clicked => { root.toggle-play(); }
+            alt-clicked => { DeckMix.phrase-start(root.deck.deck); }
+        }
     }
 }
 
@@ -990,6 +1041,8 @@ component Platter inherits Rectangle {
         playing: root.deck.playing; loaded: root.deck.loaded; tone: root.tone;
         top-text: root.deck.phrase; main-text: root.deck.loaded ? root.deck.bpm : "—";
         sub-text: root.deck.tempo + "  " + root.deck.tempo-range;
+        foot-text: root.deck.start-armed ? @tr("START {}", root.deck.start-wait) : root.deck.phrase-ahead;
+        foot-label: "deck\{root.deck.deck}.phrase-ahead";
         editable: true; a11y-prefix: "deck\{root.deck.deck}";
         set-bpm(t) => { root.set-bpm(t); }
         range => { root.range(); }
@@ -1320,7 +1373,13 @@ export component DeckPanel inherits Rectangle {
                     overflow: elide;
                 }
             }
-            Readout { value-label: "deck\{root.deck.deck}.bpm"; label: "BPM"; template: "000.00"; value: root.deck.bpm; size: root.tight-header ? Theme.heading : !root.compact ? Theme.hero : root.four ? Theme.body : Theme.heading; }
+            Readout {
+                value-label: "deck\{root.deck.deck}.bpm"; label: "BPM"; template: "000.00"; value: root.deck.bpm; size: root.tight-header ? Theme.heading : !root.compact ? Theme.hero : root.four ? Theme.body : Theme.heading;
+                // ÷2 / ×2 where the hero value leaves room for them.
+                scale-keys: !root.compact && !root.tight-header && !root.browse;
+                scale-enabled: root.deck.bpm-scalable; a11y: "deck\{root.deck.deck}";
+                scale(f) => { DeckMix.bpm-scale(root.deck.deck, f); }
+            }
             Readout { value-label: "deck\{root.deck.deck}.time-remaining"; sub-label: "deck\{root.deck.deck}.time-elapsed"; sub2-label: "deck\{root.deck.deck}.time-track"; label: DeckTime.label(); template: "-00:00.0"; value: DeckTime.main(root.deck); sub: root.deck.elapsed; sub2: DeckTime.track(root.deck); size: !root.compact ? Theme.hero : root.four ? Theme.body : Theme.heading; }
             Readout { value-label: "deck\{root.deck.deck}.key"; label: @tr("KEY"); template: "12A"; value: root.deck.key; size: !root.compact ? Theme.heading : root.four ? Theme.control : Theme.body; }
             // Key sync and key shift (semitones; the value resets). Narrow
@@ -2092,6 +2151,7 @@ export component PerformView inherits Rectangle {
             accessible-role: groupbox;
             accessible-label: "wave.lane\{d.deck}";
             playhead-label: i == root.decks.length - 1;
+            overlay-on: true;
             deck: d;
             motion: root.lane-motion[d.deck - 1];
             zoom(delta) => { root.zoom(d.deck, delta); }

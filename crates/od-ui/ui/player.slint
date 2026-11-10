@@ -411,6 +411,8 @@ export component PreparePlayer inherits Rectangle {
     in property <string> title;
     in property <string> artist;
     in property <string> bpm;
+    // The active BPM detection range, e.g. "70–180".
+    in property <string> bpm-range;
     in property <string> key;
     in property <string> duration;
     in property <string> position;
@@ -537,6 +539,8 @@ export component PreparePlayer inherits Rectangle {
                             if root.list-tab == "info": VerticalLayout {
                                 spacing: Theme.s2;
                                 Reading { label: "BPM"; value: root.bpm; }
+                                // The tempo range the analysis folds into (Preferences › Analysis).
+                                Reading { a11y-label: "player1.bpm-range"; label: @tr("BPM RANGE"); value: root.bpm-range; }
                                 Reading { label: @tr("KEY"); value: root.key; }
                                 Reading { label: @tr("TIME"); value: root.duration; }
                                 Reading { label: @tr("GRID"); value: root.grid-source; }

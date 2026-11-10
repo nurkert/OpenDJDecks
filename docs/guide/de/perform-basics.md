@@ -15,7 +15,7 @@ Doppelklicke einen Track im Browser, ziehe ihn auf ein Deck oder nutze `⇧←` 
 
 ## Deck-Anzeigen
 
-Der Deck-Kopf zeigt Nummer, Cover, Titel und Artist, **BPM**, Rest- oder verstrichene Zeit, **TONART** und den Sync-Zustand. Der Platter darunter zeigt das Tempo, den Taktzähler und die aktuelle Phrase mit Countdown.
+Der Deck-Kopf zeigt Nummer, Cover, Titel und Artist, **BPM**, Rest- oder verstrichene Zeit, **TONART** und den Sync-Zustand. Der Platter darunter zeigt das Tempo, den Taktzähler und die aktuelle Phrase mit Countdown, und unter dem Tempo die Takte bis zum nächsten Drop und Break ([Phrasen](phrases.md#auf-der-phrase-mixen)). **½** und **2×** neben **BPM** halbieren oder verdoppeln das Grid des Tracks ([Beatgrids](beatgrid.md#schnelle-musik-und-halb-oder-doppelt-am-deck)).
 
 Die schmale Wellenform in jedem Deck ist der ganze Track mit Hot Cues und Phrasen. Ein Klick springt dorthin (Needle Search); am Controller tut das der Touch Strip.
 
@@ -30,7 +30,7 @@ Die obere Leiste hat drei Zonen. Links stehen die Arbeitsmodi, in der Mitte das,
 ## Tempo und Sync
 
 - Der **Tempo-Fader** ändert die Geschwindigkeit; oben ist langsamer, wie am Player. Die Bereichstaste bei den Setup-Tasten neben dem Fader schaltet durch **±6 %**, **±10 %**, **±16 %** und **WIDE**. Der Standard kommt aus **Einstellungen › Controller › Decks**, und im Feld auf dem Platter kannst du eine BPM eintippen.
-- **SYNC**, über **CUE** und **PLAY**, koppelt ein Deck an das **MASTER**-Deck, nach Tempo und Taktposition. `⇧Q` und `⇧Y` machen Deck 1 und 2 zum Master. Unter **Einstellungen › Controller › Decks › Sync** wählst du Beat-Sync oder nur Tempo.
+- **SYNC**, über **CUE** und **PLAY**, koppelt ein Deck an das **MASTER**-Deck, nach Tempo und Taktposition. `⇧Q` und `⇧Y` machen Deck 1 und 2 zum Master. Unter **Einstellungen › Controller › Decks › Sync** wählst du Beat-Sync, nur Tempo oder Phrasen-Sync. Ein Rechtsklick auf **PLAY** startet ein gecuetes Deck auf der nächsten Phrase des Masters ([Phrasen](phrases.md#auf-der-phrase-mixen)).
 - **Q** (Quantisieren) lässt Cues, Loops und Sprünge auf dem Beat landen.
 - **KEY SYNC** bringt das Deck in die Tonart des Master-Decks.
 - **‹ ±0 ›** im Deck-Kopf verschiebt die Tonart um je einen Halbton; Klick auf den Wert setzt zurück.
@@ -92,5 +92,6 @@ Die sechzehn Pads links an jedem Deck ändern mit dem Modus ihre Bedeutung. Wäh
 | **CENSOR** | ¼ bis 32 Beats zensieren, dann dort weiterlaufen, wo es wäre |
 | **PATTERN** | Sampler-Sequenzen speichern und abrufen |
 | **LIGHTING** | A–F Looks, G Strobe, H Flash, siehe [Lichtshow](light-show.md) |
+| **ROLL** | 1/32 bis 4 Beats rollen, solange gehalten; SICHERN behält ihn, siehe [Loop Roll](cues-and-loops.md#loop-roll-und-sichern) |
 
 Die **GRID**-Taste neben dem Modus tauscht die Pads gegen das Grid- und Gain-Panel; siehe [Beatgrids](beatgrid.md#ein-grid-korrigieren-waehrend-der-track-laeuft).

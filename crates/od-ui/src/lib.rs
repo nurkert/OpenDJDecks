@@ -48,6 +48,7 @@ mod pads;
 mod perform_lock;
 mod phase;
 mod phrase_edit;
+mod phrase_mix;
 mod player;
 mod preferences;
 mod recorder;

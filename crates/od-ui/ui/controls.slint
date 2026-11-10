@@ -547,6 +547,9 @@ export component Jog inherits Rectangle {
     in property <string> top-text;
     in property <string> main-text;
     in property <string> sub-text;
+    // A small line under the platter's centre (bars to the drop / break).
+    in property <string> foot-text;
+    in property <string> foot-label;
     in property <length> size: 150px;
     // The BPM in the centre can be typed (target tempo) and the tempo range
     // under it clicked through.
@@ -598,6 +601,15 @@ export component Jog inherits Rectangle {
         Text { text: root.main-text; font-family: Theme.family; font-size: root.size >= root.hero-from ? Theme.hero : Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: center; }
         Text { text: root.sub-text; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: center; }
     }
+    if root.foot-text != "": Text {
+        accessible-role: text;
+        accessible-label: root.foot-label;
+        accessible-value: self.text;
+        x: 26px; width: root.size - 52px; y: root.r + 33px;
+        text: root.foot-text;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
+        color: Theme.bone-2; horizontal-alignment: center; overflow: elide;
+    }
     TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.touched(); } }
     // Click the BPM: type the tempo you want. The field opens on the current
     // BPM, all selected; Return sets it, Esc or a click anywhere else
@@ -647,7 +659,11 @@ export component Transport inherits Rectangle {
     in property <length> size: 44px;
     // First-start guide: the id it can be pointed at by.
     in property <string> guide;
+    // Waiting to act (a start on the next phrase): the armed outline.
+    in property <bool> armed;
     callback clicked();
+    // Right click (the play key: start on the master's next phrase).
+    callback alt-clicked();
     width: root.size; height: root.size;
     border-radius: root.size / 2;
     background: Theme.face(true, touch.pressed, touch.has-hover, false, root.on, root.tone);
@@ -665,8 +681,15 @@ export component Transport inherits Rectangle {
         kind: root.on ? "pause" : "play";
         tone: root.on ? Theme.ink-on : Theme.bone;
     }
+    if root.armed: ArmedOutline { width: parent.width; height: parent.height; show: true; tone: root.tone; radius: root.size / 2; }
     if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; radius: root.size / 2; }
-    touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
+    touch := TipArea {
+        tooltip: root.tooltip; command: root.command; mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+        pointer-event(ev) => {
+            if (ev.button == PointerEventButton.right && ev.kind == PointerEventKind.down) { root.alt-clicked(); }
+        }
+    }
 }
 
 // A value with ‹ › on either side (effect, beat length, bank). The value

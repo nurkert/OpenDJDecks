@@ -43,6 +43,11 @@ pub enum Command {
     SetMasterDeck(Option<usize>),
     /// Enables/disables the record tap (master stereo into the record ring).
     SetRecordTap(bool),
+    /// Starts deck `deck` when the master clock reaches `beat` (a grid beat
+    /// of the sync master, e.g. its next phrase start), within one audio
+    /// block. Without a playing master the deck starts at once. `None`
+    /// cancels; Play, Pause, Cue, Load and a new request replace it.
+    StartOnBeat { deck: usize, beat: Option<f64> },
     /// Microphone / aux input channel.
     Input(InputCommand),
     /// Internal: attaches an additional command queue (see

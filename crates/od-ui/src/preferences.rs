@@ -414,6 +414,7 @@ pub(crate) fn refresh(app: &App) {
         w.set_phrases(s.view.phrases);
         w.set_tooltips(s.view.tooltips);
         w.set_club_other_beat(s.view.club_other_beat);
+        w.set_incoming_overlay(s.view.incoming_overlay);
         w.set_phrases_overview(s.view.phrases_overview);
         w.set_phrase_types(index_of(
             &crate::settings::PHRASE_TYPES,
@@ -1179,6 +1180,10 @@ fn apply_live(app: &App) {
     };
     shell::apply_language(&settings.language());
     shell::apply_theme(&app.ui.global::<crate::Theme>(), &settings, lite);
+    // The BPM range shows where tracks are analysed.
+    app.ui.set_bpm_range_text(
+        shell::bpm_range_text(settings.analysis.bpm_min, settings.analysis.bpm_max).into(),
+    );
     crate::booth::apply_theme(app);
     with_window(app, |w| {
         shell::apply_theme(&w.global::<crate::Theme>(), &settings, lite)
@@ -1457,6 +1462,7 @@ fn flag(app: &App, key: &str, v: bool) {
         "view.colorblind" => change(app, |s| s.view.colorblind_safe = v),
         "view.tooltips" => change(app, |s| s.view.tooltips = v),
         "view.club-other-beat" => change(app, |s| s.view.club_other_beat = v),
+        "view.incoming-overlay" => change(app, |s| s.view.incoming_overlay = v),
         "view.contrast" => change(app, |s| s.view.high_contrast = v),
         "view.motion" => change(app, |s| s.view.reduced_motion = v),
         "analysis.key" => change(app, |s| s.analysis.detect_key = v),
@@ -1912,7 +1918,8 @@ mod tests {
         // An older stored range stays what analysis uses and stays selected.
         assert_eq!(bpm_choices((70, 180)), (BPM_RANGES.to_vec(), 0));
         let (ranges, selected) = bpm_choices((87, 175));
-        assert_eq!(ranges.len(), 5);
+        assert_eq!(ranges.len(), 6);
+        assert!(BPM_RANGES.contains(&(150, 300)), "a range above 200 BPM");
         assert_eq!(ranges[selected as usize], (87, 175));
         assert!(
             TEMPO_RANGES.contains(&d.deck.tempo_range.as_str())

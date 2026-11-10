@@ -104,6 +104,9 @@ pub struct DeckState {
     /// Target stem levels, indexed by [`crate::Stem::index`]
     /// (vocals, drums, bass, inst).
     pub stem_levels: [f32; 4],
+    /// The deck waits to start on this master-clock beat
+    /// ([`crate::Command::StartOnBeat`]).
+    pub start_on_beat: Option<f64>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]

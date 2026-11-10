@@ -261,17 +261,25 @@ pub(crate) fn refresh_status(app: &App) {
             .unwrap_or_default()
             .into(),
     );
+    let range = bpm_range_text(st.settings.analysis.bpm_min, st.settings.analysis.bpm_max);
+    app.ui.set_bpm_range_text(range.as_str().into());
     match analysis_band(st.analysis) {
         Some((progress, (done, total))) => {
             app.ui.set_analysis_progress(progress);
-            app.ui
-                .set_analysis_text(od_i18n::trf("ANALYSING {}/{}", &[&done, &total]).into());
+            app.ui.set_analysis_text(
+                od_i18n::trf("ANALYSING {}/{} · {} BPM", &[&done, &total, &range]).into(),
+            );
         }
         None => {
             app.ui.set_analysis_progress(0.0);
             app.ui.set_analysis_text(SharedString::new());
         }
     }
+}
+
+/// The active BPM detection range, as the analysis uses it: "70–180".
+pub(crate) fn bpm_range_text(min: u32, max: u32) -> String {
+    format!("{min}–{max}")
 }
 
 /// Progress fraction while analysis runs.
