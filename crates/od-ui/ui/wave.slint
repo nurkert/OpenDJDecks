@@ -202,9 +202,14 @@ export component WaveLane inherits Rectangle {
         }
         VLine { x: parent.width - 1px; height: parent.height; weight: 1px; tone: Theme.rule; }
     }
-    // Playhead at the centre of the waveform area.
+    // Playhead at the centre of the waveform area. Calm waveform: a crisp
+    // 1 px bone line between two dark rims, so it stays sharp on any peak.
+    if Theme.calm-wave: Rectangle {
+        x: root.gutter + root.area / 2 - 1.5px; width: 3px; height: parent.height;
+        background: Theme.ground;
+    }
     Rectangle {
-        x: root.gutter + root.area / 2 - 1px; width: 2px; height: parent.height;
+        x: root.gutter + root.area / 2 - (Theme.calm-wave ? 0.5px : 1px); width: Theme.calm-wave ? 1px : 2px; height: parent.height;
         accessible-role: image;
         accessible-label: root.playhead-label ? "wave.playhead" : "";
         background: root.deck.loaded ? Theme.bone : Theme.rule-strong;
@@ -304,8 +309,12 @@ export component VerticalLane inherits Rectangle {
             horizontal-alignment: center; vertical-alignment: center;
         }
     }
+    if Theme.calm-wave: Rectangle {
+        y: root.gutter + root.area / 2 - 1.5px; height: 3px; width: parent.width;
+        background: Theme.ground;
+    }
     Rectangle {
-        y: root.gutter + root.area / 2 - 1px; height: 2px; width: parent.width;
+        y: root.gutter + root.area / 2 - (Theme.calm-wave ? 0.5px : 1px); height: Theme.calm-wave ? 1px : 2px; width: parent.width;
         background: root.deck.loaded ? Theme.bone : Theme.rule-strong;
     }
     TouchArea {

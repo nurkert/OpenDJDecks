@@ -24,6 +24,8 @@ component ModeTab inherits Rectangle {
         y: Theme.s2; height: parent.height - 2 * Theme.s2;
         border-radius: Theme.r-control;
         background: root.current ? Theme.bone : touch.pressed || touch.has-hover ? Theme.plate-raised : Theme.plate;
+        // Mode change: the filled segment moves to the new mode.
+        animate background { duration: Theme.t-mode; easing: Theme.ease; }
     }
     t := Text {
         text: root.label;
@@ -54,7 +56,7 @@ component PanelToggle inherits Rectangle {
         y: 9px; height: parent.height - 18px;
         border-radius: Theme.r-control;
         background: Theme.face(root.enabled, touch.pressed, touch.has-hover, false, root.on || root.running, root.running ? Theme.fault : Theme.setup-on);
-        animate background { duration: Theme.motion ? 90ms : 0ms; }
+        animate background { duration: Theme.t-press; easing: Theme.ease; }
     }
     t := Text {
         text: root.label;
@@ -86,7 +88,7 @@ component RecordKey inherits HorizontalLayout {
             y: Theme.s2; height: parent.height - 2 * Theme.s2;
             border-radius: Theme.r-control;
             background: Theme.face(true, rk.pressed, rk.has-hover, false, root.recording, Theme.fault);
-            animate background { duration: Theme.motion ? 90ms : 0ms; }
+            animate background { duration: Theme.t-press; easing: Theme.ease; }
         }
         Rectangle {
             x: 12px; y: (parent.height - 8px) / 2; width: 8px; height: 8px; border-radius: 4px;
@@ -439,6 +441,7 @@ export component TopBar inherits Rectangle {
     in property <string> midi-device;
     in property <float> master-level: 1;
     in property <float> master-meter;
+    in property <float> master-hold;
     in property <bool> master-clip;
     in property <string> clock;
     callback set-master-level(float);
@@ -676,6 +679,12 @@ export component TopBar inherits Rectangle {
                     width: parent.width * clamp(root.master-meter, 0, 1);
                     background: root.master-clip ? Theme.fault : root.master-meter > 0.8 ? Theme.attention : Theme.live;
                 }
+                // Peak hold: a 2px tick at the highest recent peak.
+                if root.master-hold > 0.01: Rectangle {
+                    accessible-role: image; accessible-label: "topbar.master-hold"; accessible-value: Math.round(clamp(root.master-hold, 0, 1) * 100);
+                    x: (parent.width - 2px) * clamp(root.master-hold, 0, 1); y: (parent.height - 8px) / 2; width: 2px; height: 8px;
+                    background: root.master-clip || root.master-hold > 0.99 ? Theme.fault : root.master-hold > 0.8 ? Theme.attention : Theme.bone;
+                }
                 Caps { y: parent.height / 2 + 4px; text: @tr("MASTER"); font-size: Theme.label; }
             }
             if !root.kiosk: Rectangle { width: Theme.s2; }
@@ -805,6 +814,12 @@ export component TopBar inherits Rectangle {
                 x: 0; y: (parent.height - 4px) / 2; height: 4px;
                 width: parent.width * clamp(root.master-meter, 0, 1);
                 background: root.master-clip ? Theme.fault : root.master-meter > 0.8 ? Theme.attention : Theme.live;
+            }
+            // Peak hold: a 2px tick at the highest recent peak.
+            if root.master-hold > 0.01: Rectangle {
+                accessible-role: image; accessible-label: "topbar.master-hold"; accessible-value: Math.round(clamp(root.master-hold, 0, 1) * 100);
+                x: (parent.width - 2px) * clamp(root.master-hold, 0, 1); y: (parent.height - 8px) / 2; width: 2px; height: 8px;
+                background: root.master-clip || root.master-hold > 0.99 ? Theme.fault : root.master-hold > 0.8 ? Theme.attention : Theme.bone;
             }
         }
         Text {

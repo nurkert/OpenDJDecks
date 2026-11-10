@@ -268,6 +268,8 @@ export component AppWindow inherits Window {
     // Top bar: connected controller, master meter (0..1, clip) and the clock.
     in property <string> midi-device;
     in property <float> master-meter;
+    // Peak hold of the master meter (0..1).
+    in property <float> master-hold;
     in property <bool> master-clip;
     in property <string> clock;
     in property <float> crossfader: 0.5;
@@ -679,6 +681,7 @@ export component AppWindow inherits Window {
                 midi-device: root.midi-device;
                 master-level: root.master-level;
                 master-meter: root.master-meter;
+                master-hold: root.master-hold;
                 master-clip: root.master-clip;
                 clock: root.clock;
                 set-master-level(v) => { root.set-master-level(v); }

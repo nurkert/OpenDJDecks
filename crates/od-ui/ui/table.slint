@@ -1,5 +1,7 @@
-// Track table: no boxes, no fills; bone legends in tabular columns, the
-// selected row marked by a rail tick.
+// Track table: no boxes, no zebra; the title leads in bone, secondary
+// columns recede to bone 2 and bone 3, figures sit right-aligned in tabular
+// columns. The selected row is filled in ash plate with a sodium tick; a
+// track on a deck carries that deck's line and numeral in its colour.
 
 import { ListView } from "std-widgets.slint";
 import { Theme } from "tokens.slint";
@@ -190,7 +192,9 @@ component TrackLine inherits Rectangle {
     in property <bool> explorer;
     in property <int> deck-count: 2;
     height: Theme.row-height;
-    background: touch.has-hover ? Theme.ground-band : transparent;
+    // Selection: an ash plate fill (raised under the pointer); hover alone
+    // lifts the row to band charcoal.
+    background: root.item.selected ? (touch.has-hover ? Theme.plate-raised : Theme.plate) : touch.has-hover ? Theme.ground-band : transparent;
 
     pure function text-of(id: string) -> string {
         return id == "title" ? root.item.title
@@ -209,6 +213,15 @@ component TrackLine inherits Rectangle {
             : "";
     }
     property <color> ink: root.item.missing ? Theme.bone-3 : root.item.selected ? Theme.bone : Theme.bone-2;
+    // Ink of a column: the title leads (bone), figures and the artist come
+    // second (bone 2), the rest recede (bone 3); all at 4.5:1 or better on
+    // the selection fill too.
+    pure function ink-of(id: string) -> color {
+        if (root.item.missing) { return Theme.bone-3; }
+        if (id == "title") { return Theme.bone; }
+        if (id == "artist" || id == "bpm" || id == "time") { return root.item.selected ? Theme.bone : Theme.bone-2; }
+        return root.item.selected ? Theme.bone-2 : Theme.bone-3;
+    }
 
     // The row's own input first; the cells drawn above keep their clicks
     // (rating) and let the rest through.
@@ -305,20 +318,24 @@ component TrackLine inherits Rectangle {
         }
     }
 
-    // Selection: one horizontal sodium tick on the rail side.
-    if root.item.selected: Rectangle {
+    // Selection: the fill, and one horizontal sodium tick on the rail side
+    // (where a loaded track shows its deck instead).
+    if root.item.selected && root.item.deck == 0: Rectangle {
         x: 0; y: parent.height / 2 - 1px; width: 12px; height: 2px;
         background: Theme.attention;
     }
-    // Loaded on a deck: doubled sodium plus that deck's line and numeral.
+    // Loaded on a deck: that deck's 2px line and its numeral, both in the
+    // deck colour (the numeral is the second channel).
     if root.item.deck > 0: Rectangle {
+        accessible-role: image;
+        accessible-label: "browser.row\{root.index}.deck";
+        accessible-value: root.item.deck;
         x: 0; width: 30px; height: parent.height;
-        VLine { x: 14px; y: 6px; height: parent.height - 12px; weight: 1px; form: "double"; tone: Theme.attention; }
-        VLine { x: 22px; y: 6px; height: parent.height - 12px; weight: 2px; tone: Theme.deck-color(root.item.deck); }
+        Rectangle { x: 0; y: 4px; width: 3px; height: parent.height - 8px; background: Theme.deck-color(root.item.deck); }
         Text {
-            x: 0; height: parent.height; width: 12px;
+            x: 6px; height: parent.height; width: 14px;
             text: root.item.deck;
-            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
             color: Theme.deck-color(root.item.deck);
             vertical-alignment: center; horizontal-alignment: center;
         }
@@ -366,7 +383,7 @@ component TrackLine inherits Rectangle {
             }
             if c.id == "preview": Image { x: 0; y: (parent.height - 20px) / 2; width: parent.width - 6px; height: 20px; source: root.item.preview; image-fit: fill; }
             if c.id == "key": Rectangle {
-                Cell { width: parent.width; text: root.item.key; color: root.ink; horizontal-alignment: right; }
+                Cell { width: parent.width; text: root.item.key; color: root.ink-of("key"); horizontal-alignment: right; }
                 // Harmonic fit to the selected track: solid = same/adjacent, dashed = 2 steps.
                 if root.item.key-distance >= 0 && root.item.key-distance <= 2 && !root.item.selected: VLine {
                     x: 2px; y: 8px; height: parent.height - 16px; weight: 1px;
@@ -446,8 +463,9 @@ component TrackLine inherits Rectangle {
                 x: 0; width: parent.width;
                 text: root.text-of(c.id);
                 horizontal-alignment: c.right ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
-                color: c.id == "title" || c.id == "bpm" ? root.ink : c.id == "artist" && root.item.selected ? Theme.bone-2 : Theme.bone-3;
-                font-weight: c.id == "title" && root.item.selected ? 500 : 400;
+                color: root.ink-of(c.id);
+                // The title leads: medium, semibold when selected.
+                font-weight: c.id == "title" ? (root.item.selected ? Theme.weight-semi : Theme.weight-medium) : 400;
                 font-size: Theme.body;
             }
         }

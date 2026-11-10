@@ -205,6 +205,9 @@ pub struct ViewSettings {
     pub club_other_beat: bool,
     /// Perform: the incoming track drawn over the playing waveform.
     pub incoming_overlay: bool,
+    /// The calm waveform: a crisp playhead, faint beat lines and softer
+    /// band colours (off by default).
+    pub calm_waveform: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -469,6 +472,7 @@ impl Default for ViewSettings {
             tooltips: true,
             club_other_beat: true,
             incoming_overlay: true,
+            calm_waveform: false,
         }
     }
 }

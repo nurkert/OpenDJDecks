@@ -37,6 +37,29 @@ static STYLE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 /// Counts changes of waveform style and colours, so cached tiles can tell.
 static GENERATION: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
+/// The calm waveform option (Preferences › View): faint beat lines and
+/// softer band colours.
+static CALM: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Switches the calm waveform option; cached tiles redraw.
+pub fn set_calm_waveform(on: bool) {
+    if CALM.swap(on, std::sync::atomic::Ordering::Relaxed) != on {
+        GENERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+fn calm() -> bool {
+    CALM.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Calm colour: the band's colour drawn halfway towards its own grey, so
+/// neighbouring columns of different bands flicker less in hue while the
+/// bands stay apart by lightness.
+fn calm_rgb(rgb: [u8; 3]) -> [u8; 3] {
+    let grey = (rgb[0] as u32 * 30 + rgb[1] as u32 * 59 + rgb[2] as u32 * 11) / 100;
+    rgb.map(|c| ((c as u32 + grey) / 2) as u8)
+}
+
 /// The current generation of waveform style and colours.
 pub fn waveform_generation() -> u32 {
     GENERATION.load(std::sync::atomic::Ordering::Relaxed)
@@ -288,6 +311,7 @@ fn styled_column(
         if a == 0 {
             continue;
         }
+        let rgb = if calm() { calm_rgb(rgb) } else { rgb };
         let rgb = if played { dim(rgb) } else { rgb };
         vline(buf, x, mid.saturating_sub(a), mid + a, rgb);
     }
@@ -303,7 +327,7 @@ fn mono_column(
     played: bool,
 ) {
     let top = c.low.max(c.mid).max(c.high).max(1) as f32;
-    let body = bands()[0];
+    let body = if calm() { calm_rgb(bands()[0]) } else { bands()[0] };
     let light = body.map(|v| v / 2 + 120);
     for (v, rgb) in [(c.low.max(c.mid), body), (c.high, light)] {
         let a = (v as f32 / top * amp as f32).round() as u32;
@@ -335,6 +359,7 @@ fn rgb_column(
     }
     // The loudest band is full intensity; the others in proportion.
     let rgb = [c.low, c.mid, c.high].map(|v| ((v as u32 * 255) / top as u32).max(40) as u8);
+    let rgb = if calm() { calm_rgb(rgb) } else { rgb };
     vline(
         buf,
         x,
@@ -756,13 +781,8 @@ fn draw_detail_buf(
             let x = ((b.time - start) / secs_per_px) as u32;
             let downbeat = b.bar_position == 1;
             let phrase = downbeat && (i / 4) % 16 == 0;
-            let (mut color, mut through, tick, wide): ([u8; 3], f32, u32, u32) = if phrase {
-                (pal().phrase_mark, 0.55, mark_h, 3u32)
-            } else if downbeat {
-                (pal().downbeat_mark, 0.38, mark_h, 2)
-            } else {
-                (pal().downbeat, 0.16, mark_h / 2 + 1, 1)
-            };
+            let (mut color, mut through, tick, wide) =
+                beat_mark(phrase, downbeat, calm() && evidence.is_none(), mark_h);
             // Grid editing: the tick tells how far the beat is off; the
             // bottom edge belongs to the transients.
             if let Some(ev) = evidence {
@@ -780,7 +800,9 @@ fn draw_detail_buf(
                 }
                 continue;
             }
-            vline_over(&mut buf, x, tick, wave_h - tick, color, through);
+            if through > 0.0 {
+                vline_over(&mut buf, x, tick, wave_h - tick, color, through);
+            }
             for dx in 0..wide {
                 let xx = (x + dx).saturating_sub(wide / 2);
                 vline(&mut buf, xx, 0, tick, color);
@@ -789,6 +811,22 @@ fn draw_detail_buf(
         }
     }
     buf
+}
+
+/// How a beat of the grid is drawn on a detail tile: its colour, the
+/// strength of its line through the wave (0 = none), the length of its
+/// ticks at the edges and their width. Calm (Preferences › View): faint
+/// lines through the wave, plain beats only as short ticks at the edges,
+/// thinner bar and phrase marks.
+fn beat_mark(phrase: bool, downbeat: bool, calm: bool, mark_h: u32) -> ([u8; 3], f32, u32, u32) {
+    match (phrase, downbeat, calm) {
+        (true, _, false) => (pal().phrase_mark, 0.55, mark_h, 3),
+        (false, true, false) => (pal().downbeat_mark, 0.38, mark_h, 2),
+        (false, false, false) => (pal().downbeat, 0.16, mark_h / 2 + 1, 1),
+        (true, _, true) => (pal().phrase_mark, 0.22, mark_h, 2),
+        (false, true, true) => (pal().downbeat, 0.12, mark_h * 2 / 3, 1),
+        (false, false, true) => (dim(pal().downbeat), 0.0, mark_h / 3 + 1, 1),
+    }
 }
 
 /// The charcoal continuum: a faint, deterministic vertical banding drawn
@@ -928,6 +966,31 @@ mod tests {
         assert_eq!(at(1), LOW);
         assert_eq!(at(14), MID);
         assert_eq!(at(20), HIGH);
+    }
+
+    /// The calm option: every beat line is fainter and shorter than its
+    /// standard form, plain beats no longer cross the wave, and the band
+    /// colours keep their order of lightness with less hue between them.
+    #[test]
+    fn calm_waveform_has_faint_beats_and_softer_colours() {
+        let lum = |p: [u8; 3]| p[0] as u32 * 30 + p[1] as u32 * 59 + p[2] as u32 * 11;
+        for (phrase, downbeat) in [(true, true), (false, true), (false, false)] {
+            let (_, through, tick, wide) = beat_mark(phrase, downbeat, false, 12);
+            let (calm, calm_through, calm_tick, calm_wide) = beat_mark(phrase, downbeat, true, 12);
+            assert!(calm_through < through, "fainter through the wave");
+            assert!(calm_tick <= tick && calm_wide <= wide, "no larger at the edges");
+            if !downbeat {
+                assert_eq!(calm_through, 0.0, "plain beats leave the wave alone");
+                assert!(lum(calm) < lum(DOWNBEAT));
+            }
+        }
+        let spread = |c: [u8; 3]| c.iter().max().unwrap() - c.iter().min().unwrap();
+        for band in [LOW, MID, HIGH] {
+            let soft = calm_rgb(band);
+            assert!(spread(soft) < spread(band), "less saturated: {band:?} → {soft:?}");
+            assert!((lum(soft) as i64 - lum(band) as i64).abs() < 300, "same lightness");
+        }
+        assert!(lum(calm_rgb(HIGH)) > lum(calm_rgb(MID)) && lum(calm_rgb(MID)) > lum(calm_rgb(LOW)));
     }
 
     #[test]

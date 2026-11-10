@@ -65,7 +65,7 @@ component DeviceItem inherits Rectangle {
             y: parent.height * (1 - clamp(root.device.progress, 0, 1));
             height: parent.height * clamp(root.device.progress, 0, 1);
             background: Theme.live;
-            animate y, height { duration: Theme.motion ? 320ms : 0ms; easing: Theme.spring; }
+            animate y, height { duration: Theme.t-mode; easing: Theme.ease; }
         }
     }
     Glyph { x: 24px; y: 9px; width: 10px; height: 10px; kind: "usb"; tone: root.device.connected ? Theme.bone-2 : Theme.bone-3; }

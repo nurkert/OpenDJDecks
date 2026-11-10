@@ -219,7 +219,8 @@ component Readout inherits VerticalLayout {
 component LoadingVeil inherits Rectangle {
     in property <color> tone;
     background: Theme.ground.with-alpha(0.45);
-    property <float> phase: mod(animation-tick() / 1ms, 900) / 900;
+    // Still (the sweep parked in the middle) when motion is off.
+    property <float> phase: Theme.motion ? Math.mod(animation-tick() / Theme.t-pulse, 1.0) : 0.5;
     Rectangle {
         x: (parent.width + self.width) * root.phase - self.width;
         width: max(24px, parent.width * 0.18);
@@ -451,7 +452,7 @@ component GridMeter inherits Rectangle {
         x: root.mid + root.span * root.v.err / 20 - 1.5px; y: root.height / 2 - 8px;
         width: 3px; height: 17px;
         background: root.v.err-tone == 0 ? Theme.bone : root.v.err-tone == 1 ? Theme.attention : Theme.fault;
-        animate x { duration: Theme.motion ? 160ms : 0ms; easing: ease-out; }
+        animate x { duration: Theme.t-panel; easing: Theme.ease; }
     }
 }
 
@@ -767,6 +768,8 @@ component StateColumn inherits VerticalLayout {
 // Slim tempo fader (for mouse use without a controller).
 component TempoColumn inherits VerticalLayout {
     in property <DeckView> deck;
+    // Right-hand deck: the readout opens to the right, over its own deck.
+    in property <bool> mirror;
     callback tempo(float);
     width: 30px;
     spacing: Theme.key-gap;
@@ -781,6 +784,9 @@ component TempoColumn inherits VerticalLayout {
         // Fader handle down = faster, as on the hardware.
         value: (1 - root.deck.tempo-value) / 2;
         tone: Theme.bone-2;
+        bipolar: true;
+        readout: root.deck.tempo;
+        readout-left: !root.mirror;
         guide: "deck\{root.deck.deck}.pitch";
         changed(v) => { root.tempo(1 - v * 2); }
     }
@@ -1191,7 +1197,7 @@ component DeckControls inherits HorizontalLayout {
     // The GRID panel replaces the pads (its key is in the loop column).
     property <bool> grid-open;
 
-    if root.mirror: tempo-r := VerticalLayout { TempoColumn { vertical-stretch: 1; deck: root.deck; tempo(v) => { root.tempo(v); } } }
+    if root.mirror: tempo-r := VerticalLayout { TempoColumn { vertical-stretch: 1; mirror: true; deck: root.deck; tempo(v) => { root.tempo(v); } } }
     if root.mirror && DeckLayout.setup: state-r := StateRows { deck: root.deck; base: root.base; narrow: root.narrow; slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
     if root.mirror: Platter { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } }
     if root.mirror: TransportRows { deck: root.deck; base: root.base; cue => { root.cue(); } toggle-play => { root.toggle-play(); } sync => { root.sync(); } }
@@ -1373,7 +1379,7 @@ component SimpleControls inherits HorizontalLayout {
     callback sync();
     callback tempo(float);
     spacing: Theme.s4;
-    if root.mirror: VerticalLayout { TempoColumn { vertical-stretch: 1; deck: root.deck; tempo(v) => { root.tempo(v); } } }
+    if root.mirror: VerticalLayout { TempoColumn { vertical-stretch: 1; mirror: true; deck: root.deck; tempo(v) => { root.tempo(v); } } }
     if root.mirror: TransportRows { deck: root.deck; base: root.base; cue => { root.cue(); } toggle-play => { root.toggle-play(); } sync => { root.sync(); } }
     if root.mirror && DeckLayout.loops: simple-loop-r := VerticalLayout {
         width: 104px;
@@ -1858,6 +1864,7 @@ component BandRow inherits HorizontalLayout {
     Knob {
         accessible-role: slider; accessible-label: root.id; accessible-value: root.value;
         label: root.moved ? root.readout : root.label; value: root.value; tone: root.tone;
+        readout: root.readout;
         legend-id: root.id + ".value";
         // A fixed box, so the kill key does not move as the value changes.
         width: root.compact ? 24px : 32px;
@@ -1974,7 +1981,9 @@ component ChannelStrip inherits Rectangle {
             min-height: root.compact ? 30px : 56px;
             spacing: Theme.key-gap;
             alignment: center;
-            // Level meter: amber near the top, red at clip.
+            // Level meter: amber near the top, red at clip; the peak hold is
+            // a 2px tick at the highest recent peak (unsmoothed, like the
+            // level).
             Rectangle {
                 width: 4px;
                 background: Theme.ground;
@@ -1982,6 +1991,14 @@ component ChannelStrip inherits Rectangle {
                     y: parent.height * (1 - clamp(root.ch.level, 0, 1));
                     height: parent.height * clamp(root.ch.level, 0, 1);
                     background: root.ch.peak > 0.99 || root.ch.clip ? Theme.fault : root.ch.level > 0.8 ? Theme.attention : Theme.live;
+                }
+                if root.ch.hold > 0.01: Rectangle {
+                    accessible-role: image;
+                    accessible-label: "mixer.ch\{root.ch.channel}.peak-hold";
+                    accessible-value: Math.round(clamp(root.ch.hold, 0, 1) * 100);
+                    y: (parent.height - 2px) * (1 - clamp(root.ch.hold, 0, 1));
+                    height: 2px;
+                    background: root.ch.hold > 0.99 || root.ch.clip ? Theme.fault : root.ch.hold > 0.8 ? Theme.attention : Theme.bone;
                 }
             }
             Fader { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.fader"; accessible-value: root.ch.fader; value: root.ch.fader; tone: root.tone; handle: 20px; width: 30px; guide: "mixer.ch\{root.ch.channel}.fader"; changed(v) => { root.fader(v); } }

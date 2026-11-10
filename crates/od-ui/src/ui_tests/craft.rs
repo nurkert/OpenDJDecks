@@ -1,0 +1,250 @@
+//! The craft of the controls (roadmap [45], [46], [49], [50]): the motion
+//! timings and the reduced-motion switch, knobs with value arcs, centre
+//! marks and a drag readout, fader caps and the tempo detent, meters with
+//! peak hold, the calm waveform option and the calmer library table,
+//! driven through the real window.
+
+use super::harness::*;
+use super::session::{prefs, prefs_el, stored};
+use slint::ComponentHandle;
+use slint::LogicalPosition;
+use slint::platform::{PointerEventButton, WindowEvent};
+
+fn perform(ui: &Ui) {
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::engine::ensure_engine(&ui.app);
+    ui.pump(300);
+}
+
+fn load(ui: &Ui, deck: usize, t: usize) {
+    crate::decks::load_track(&ui.app, deck, ui.fx.tracks[t].0, None);
+    assert!(
+        ui.wait_until(60.0, |u| crate::engine::snapshot(&u.app)
+            .is_some_and(|s| s.decks[deck].track.is_some())),
+        "deck {} loads",
+        deck + 1
+    );
+}
+
+/// Every element labelled `label` (part labels such as `knob.arc` are
+/// outside the view scopes, so they are looked up directly).
+fn all(ui: &Ui, label: &str) -> Vec<Rect> {
+    i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui.app.ui, label)
+        .map(|e| Rect::of(&e))
+        .collect()
+}
+
+/// Elements labelled `label` whose centre lies inside `area`.
+fn inside(ui: &Ui, label: &str, area: &Rect) -> usize {
+    all(ui, label)
+        .iter()
+        .filter(|r| {
+            let c = r.centre();
+            c.x >= area.x - 1.0 && c.x <= area.right() + 1.0 && c.y >= area.y - 1.0 && c.y <= area.bottom() + 1.0
+        })
+        .count()
+}
+
+fn move_to(ui: &Ui, p: LogicalPosition) {
+    ui.app.ui.window().dispatch_event(WindowEvent::PointerMoved { position: p });
+    ui.pump(32);
+}
+
+/// [45] The four named timings run while motion is on and drop to 0 ms
+/// with Reduce motion (Preferences › View); the switch is off on a fresh
+/// install, since Slint does not report the system's setting.
+#[test]
+fn reduced_motion_stops_every_named_timing() {
+    let ui = Ui::open((1440, 900));
+    assert!(!crate::settings::Settings::default().view.reduced_motion, "off by default");
+    let theme = ui.app.ui.global::<crate::Theme>();
+    let timings = |t: &crate::Theme| [t.get_t_press(), t.get_t_toggle(), t.get_t_panel(), t.get_t_mode()];
+    let on = timings(&theme);
+    assert!(on.iter().all(|d| *d > 0), "timings while motion is on: {on:?}");
+    assert!(on.windows(2).all(|w| w[0] < w[1]), "press < toggle < panel < mode: {on:?}");
+    assert!(on[3] <= 300, "nothing slow: {on:?}");
+    let w = prefs(&ui, "view");
+    prefs_el(&w, "prefs.view.reduced-motion").mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert!(stored(&ui).view.reduced_motion, "stored");
+    assert_eq!(timings(&ui.app.ui.global::<crate::Theme>()), [0, 0, 0, 0], "reduced motion");
+    assert!(!ui.app.ui.global::<crate::Theme>().get_motion());
+    prefs_el(&w, "prefs.view.reduced-motion").mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert_eq!(timings(&ui.app.ui.global::<crate::Theme>()), on, "back on");
+}
+
+/// [46] Knobs: bipolar knobs (trim, EQ, CH FX) carry a centre mark, a
+/// unipolar one (headphone level) does not; the value arc appears once a
+/// bipolar knob leaves the centre; dragging shows the value above the ring
+/// (the same words as the legend) and the readout goes on release.
+#[test]
+fn knobs_show_arc_centre_mark_and_a_readout_while_dragged() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    assert!(ui.wait_until(10.0, |u| u.has("mixer.ch1.eq-high")));
+    let knob = Rect::of(&ui.get("mixer.ch1.eq-high"));
+    for id in ["mixer.ch1.trim", "mixer.ch1.eq-high", "mixer.ch1.eq-mid", "mixer.ch1.eq-low", "fx.channel-fx.ch1"] {
+        let r = Rect::of(&ui.get(id));
+        assert_eq!(inside(&ui, "knob.centre", &r), 1, "{id}: centre mark");
+    }
+    let level = Rect::of(&ui.get("global.phones.level"));
+    assert_eq!(inside(&ui, "knob.centre", &level), 0, "a level knob has no centre");
+    assert_eq!(inside(&ui, "knob.arc", &level), 1, "a level knob lights its arc from the start");
+    assert_eq!(inside(&ui, "knob.arc", &knob), 0, "no arc at the centre");
+    assert!(!ui.has("control.readout"), "no readout at rest");
+
+    let from = knob.centre();
+    ui.press_at(from, PointerEventButton::Left);
+    ui.pump(32);
+    assert!(ui.wait_until(2.0, |u| u.has("control.readout")), "readout while held");
+    for i in 1..=8 {
+        move_to(&ui, LogicalPosition::new(from.x, from.y - 3.0 * i as f32));
+    }
+    assert!(ui.wait_until(2.0, |u| u.value("mixer.ch1.eq-high.value") != "HI"), "the knob turned");
+    let readout = Rect::of(&ui.get("control.readout"));
+    let shown = ui.value("control.readout");
+    assert_eq!(shown, ui.value("mixer.ch1.eq-high.value"), "readout = legend value");
+    assert!(readout.bottom() <= knob.y + 1.0, "above the ring: {readout:?} / {knob:?}");
+    assert!(readout.h <= 16.5, "a small plate");
+    ui.release_at(LogicalPosition::new(from.x, from.y - 24.0), PointerEventButton::Left);
+    ui.pump(100);
+    assert!(!ui.has("control.readout"), "gone on release");
+    let knob = Rect::of(&ui.get("mixer.ch1.eq-high"));
+    assert_eq!(inside(&ui, "knob.arc", &knob), 1, "the arc shows the turn");
+    ui.double_click("mixer.ch1.eq-high");
+    assert!(ui.wait_until(2.0, |u| inside(u, "knob.arc", &knob) == 0), "reset clears the arc");
+}
+
+/// [46] Faders: a cap with its centre line on every fader, a centre detent
+/// on the tempo fader only, and the tempo shown beside the cap (towards
+/// the deck) while it is held.
+#[test]
+fn faders_have_caps_a_tempo_detent_and_a_readout() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    load(&ui, 0, 0);
+    let pitch = Rect::of(&ui.get("deck1.pitch"));
+    let fader = Rect::of(&ui.get("mixer.ch1.fader"));
+    assert_eq!(inside(&ui, "fader.detent", &pitch), 1, "tempo detent");
+    assert_eq!(inside(&ui, "fader.detent", &fader), 0, "no detent on a channel fader");
+    assert_eq!(inside(&ui, "fader.cap", &pitch), 1);
+    assert_eq!(inside(&ui, "fader.cap", &fader), 1);
+    let cap = all(&ui, "fader.cap").into_iter().find(|c| pitch.contains(c, 1.0)).unwrap();
+    // At 0 % the cap sits on the detent.
+    let detent = all(&ui, "fader.detent").into_iter().find(|c| pitch.contains(c, 1.0)).unwrap();
+    assert!((cap.centre().y - detent.centre().y).abs() <= 1.5, "cap {cap:?} on the detent {detent:?}");
+
+    let at = cap.centre();
+    ui.press_at(at, PointerEventButton::Left);
+    ui.pump(32);
+    move_to(&ui, LogicalPosition::new(at.x, at.y + 12.0));
+    assert!(ui.wait_until(2.0, |u| u.has("control.readout")), "readout while held");
+    let readout = Rect::of(&ui.get("control.readout"));
+    assert!(readout.right() <= pitch.x + 1.0, "deck 1: the readout opens towards the deck");
+    // The engine reports the new tempo a frame or two later.
+    assert!(
+        ui.wait_until(5.0, |u| u.value("deck1.pitch").starts_with('+')
+            && u.value("control.readout") == u.value("deck1.pitch")),
+        "shows the tempo, down is faster: {} / {}",
+        ui.value("control.readout"),
+        ui.value("deck1.pitch")
+    );
+    ui.release_at(LogicalPosition::new(at.x, at.y + 12.0), PointerEventButton::Left);
+    ui.pump(100);
+    assert!(!ui.has("control.readout"));
+}
+
+/// [46] Meters hold their peak: a playing channel shows a hold tick at or
+/// above its level, and so does the master meter in the top bar.
+#[test]
+fn meters_hold_their_peak() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    load(&ui, 0, 0);
+    crate::engine::send(&ui.app, od_engine::Command::Channel(0, od_engine::ChannelCommand::SetFader(1.0)));
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::Play);
+    assert!(ui.wait_until(20.0, |u| u.has("mixer.ch1.peak-hold")), "channel hold tick");
+    let hold: f32 = ui.value("mixer.ch1.peak-hold").parse().unwrap();
+    let view = {
+        use slint::Model;
+        ui.app.ui.get_channels().row_data(0).unwrap()
+    };
+    assert!(hold > 0.0 && view.hold > 0.0, "hold {}", view.hold);
+    assert!(view.hold + 0.05 >= view.level, "the hold sits at or above the level: {} / {}", view.hold, view.level);
+    assert!(ui.wait_until(20.0, |u| u.has("topbar.master-hold")), "master hold tick");
+    assert!(ui.app.ui.get_master_hold() >= ui.app.ui.get_master_meter() - 1e-3);
+}
+
+/// [46] The new control anatomy adds no size: knobs, faders and the mixer
+/// column keep their widths in Perform at 1440 × 900 and 1280 × 800.
+#[test]
+fn control_anatomy_keeps_the_perform_sizes() {
+    for (size, knob) in [((1440, 900), 32.0), ((1280, 800), 24.0)] {
+        let ui = Ui::open(size);
+        perform(&ui);
+        assert!(ui.wait_until(10.0, |u| u.has("mixer.ch1.eq-high")));
+        let r = |l: &str| Rect::of(&ui.get(l));
+        assert!((r("mixer.ch1.eq-high").w - knob).abs() <= 0.5, "{size:?}: EQ knob {}", r("mixer.ch1.eq-high").w);
+        assert!((r("deck1.pitch").w - 30.0).abs() <= 0.5, "{size:?}: tempo fader");
+        assert!((r("mixer.ch1.fader").w - 30.0).abs() <= 0.5, "{size:?}: channel fader");
+        let column = r("fx.channel-fx.type").w + 8.0;
+        assert!(column <= 125.0, "{size:?}: mixer column {column}");
+        for (a, b) in [("deck1.pitch", "mixer.ch1.stem"), ("mixer.ch2.cue", "deck2.pitch")] {
+            assert!(r(a).right() <= r(b).x, "{size:?}: {a} left of {b}");
+        }
+    }
+}
+
+/// [50] The calm waveform option (Preferences › View) is off by default;
+/// on, the playhead is a crisp 1 px line and cached tiles are redrawn
+/// (faint beat lines, softer colours); off brings the standard back.
+#[test]
+fn calm_waveform_option_draws_a_crisp_playhead() {
+    let ui = Ui::open((1440, 900));
+    assert!(!crate::settings::Settings::default().view.calm_waveform, "the default stays as is");
+    perform(&ui);
+    load(&ui, 0, 0);
+    assert!(ui.wait_until(10.0, |u| u.has("wave.playhead")));
+    let width = |u: &Ui| Rect::of(&u.get("wave.playhead")).w;
+    assert!((width(&ui) - 2.0).abs() < 0.1, "standard playhead 2 px");
+    let w = prefs(&ui, "view");
+    let before = crate::render::waveform_generation();
+    prefs_el(&w, "prefs.view.calm-waveform").mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert!(stored(&ui).view.calm_waveform, "stored");
+    assert!(w.get_calm_waveform());
+    assert!(crate::render::waveform_generation() > before, "cached waveforms are redrawn");
+    assert!(ui.wait_until(2.0, |u| (width(u) - 1.0).abs() < 0.1), "crisp 1 px playhead");
+    prefs_el(&w, "prefs.view.calm-waveform").mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert!(!stored(&ui).view.calm_waveform);
+    assert!(ui.wait_until(2.0, |u| (width(u) - 2.0).abs() < 0.1), "standard again");
+}
+
+/// [49] A track on a deck carries that deck's mark at the row's left edge,
+/// its numeral as the value (figure alignment: `browser::columns` tests).
+#[test]
+fn library_rows_carry_their_deck_mark() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let (id, title) = ui.fx.tracks[1].clone();
+    crate::decks::load_track(&ui.app, 1, id, None);
+    assert!(
+        ui.wait_until(30.0, |u| u
+            .with_prefix("browser.row")
+            .iter()
+            .any(|(l, v, _)| l.ends_with(".deck") && v == "2")),
+        "the loaded row carries deck 2"
+    );
+    let (label, _, mark) = ui
+        .with_prefix("browser.row")
+        .into_iter()
+        .find(|(l, v, _)| l.ends_with(".deck") && v == "2")
+        .unwrap();
+    let row_label = label.trim_end_matches(".deck").to_string();
+    assert_eq!(ui.value(&row_label), title, "on its own row");
+    let row = Rect::of(&ui.get(&row_label));
+    let m = Rect::of(&mark);
+    assert!(m.x <= row.x + 2.0 && m.right() <= row.x + 32.0, "at the left edge: {m:?} / {row:?}");
+}

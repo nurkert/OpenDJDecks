@@ -73,6 +73,6 @@ export component ProgressLine inherits Rectangle {
         x: 0; y: 0; height: parent.height;
         width: parent.width * clamp(root.progress, 0, 1);
         background: root.tone;
-        animate width { duration: Theme.motion ? 180ms : 0ms; easing: ease-out; }
+        animate width { duration: Theme.t-panel; easing: Theme.ease; }
     }
 }

@@ -39,7 +39,7 @@ export component DeviceLine inherits Rectangle {
             y: parent.height * (1 - clamp(root.device.progress, 0, 1));
             height: parent.height * clamp(root.device.progress, 0, 1);
             background: Theme.live;
-            animate y, height { duration: Theme.motion ? 320ms : 0ms; easing: Theme.spring; }
+            animate y, height { duration: Theme.t-mode; easing: Theme.ease; }
         }
     }
     Text {

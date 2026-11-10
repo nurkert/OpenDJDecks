@@ -415,6 +415,7 @@ pub(crate) fn refresh(app: &App) {
         w.set_tooltips(s.view.tooltips);
         w.set_club_other_beat(s.view.club_other_beat);
         w.set_incoming_overlay(s.view.incoming_overlay);
+        w.set_calm_waveform(s.view.calm_waveform);
         w.set_phrases_overview(s.view.phrases_overview);
         w.set_phrase_types(index_of(
             &crate::settings::PHRASE_TYPES,
@@ -1472,6 +1473,7 @@ fn flag(app: &App, key: &str, v: bool) {
         "view.tooltips" => change(app, |s| s.view.tooltips = v),
         "view.club-other-beat" => change(app, |s| s.view.club_other_beat = v),
         "view.incoming-overlay" => change(app, |s| s.view.incoming_overlay = v),
+        "view.calm-waveform" => change(app, |s| s.view.calm_waveform = v),
         "view.contrast" => change(app, |s| s.view.high_contrast = v),
         "view.motion" => change(app, |s| s.view.reduced_motion = v),
         "analysis.key" => change(app, |s| s.analysis.detect_key = v),

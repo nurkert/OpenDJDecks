@@ -232,6 +232,21 @@ pub(crate) fn refresh(app: &App) {
 
 #[cfg(test)]
 mod tests {
+
+    /// [49] Figures read down the page like a register: every column of
+    /// numbers (and the star and match columns) is right-aligned, with a
+    /// fixed width, while the text columns share the rest.
+    #[test]
+    fn figure_columns_are_right_aligned_and_fixed() {
+        let figures = ["bpm", "key", "match", "time", "year", "date-added", "plays", "bitrate", "rating"];
+        for c in COLUMNS {
+            assert_eq!(c.right, figures.contains(&c.id), "{}", c.id);
+            if c.right {
+                assert!(c.width > 0.0, "{} has a fixed width", c.id);
+            }
+        }
+    }
+
     use super::*;
 
     fn ids(v: &[&str]) -> Vec<String> {

@@ -343,7 +343,8 @@ component Stage inherits Rectangle {
     border-width: 1px;
     border-color: Theme.rule;
     clip: true;
-    property <bool> blink: Math.mod(animation-tick() / 1ms, 90) < 45;
+    // The strobe preview flashes as the light does; steady with reduced motion.
+    property <bool> blink: !Theme.motion || Math.mod(animation-tick() / 1ms, 90) < 45;
 
     // Trusses.
     for y in [0.18, 0.5, 0.82]: Rectangle {

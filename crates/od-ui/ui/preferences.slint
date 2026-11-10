@@ -142,7 +142,7 @@ component Switch inherits Rectangle {
         Rectangle {
             y: (parent.height - 10px) / 2; x: root.on ? parent.width - self.width - 2px : 2px;
             width: 10px; height: 10px; border-radius: 5px; background: root.on ? Theme.ink-on : Theme.bone-3;
-            animate x { duration: Theme.motion ? 90ms : 0ms; }
+            animate x { duration: Theme.t-toggle; easing: Theme.ease; }
         }
     }
     t := Text {
@@ -354,6 +354,7 @@ export component PreferencesWindow inherits Window {
     in property <bool> tooltips: true;
     in property <bool> club-other-beat: true;
     in property <bool> incoming-overlay: true;
+    in property <bool> calm-waveform;
     callback record-key(string);
     callback reset-key(string);
     callback clear-key(string);
@@ -474,6 +475,7 @@ export component PreferencesWindow inherits Window {
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Mids"); Swatches { key: "prefs.view.waveform-mid"; colours: root.waveform-swatches; selected: root.waveform-mid; picked(i) => { root.choose("view.waveform-mid", i); } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Highs"); Swatches { key: "prefs.view.waveform-high"; colours: root.waveform-swatches; selected: root.waveform-high; picked(i) => { root.choose("view.waveform-high", i); } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: ""; HorizontalLayout { alignment: start; PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-reset"; label: @tr("STANDARD COLOURS"); clicked => { root.choose("view.waveform-reset", 0); } } } }
+                        Row { label: @tr("Calm waveform"); Switch { accessible-label: "prefs.view.calm-waveform"; label: @tr("Crisp playhead, faint beat lines, softer colours"); on: root.calm-waveform; toggled(v) => { root.flag("view.calm-waveform", v); } } }
                         Row { label: @tr("Waveform zoom"); Choice { accessible-label: "prefs.view.zoom"; options: [@tr("4 S"), @tr("8 S"), @tr("16 S"), @tr("32 S")]; selected: root.zoom-span; picked(i) => { root.choose("view.zoom", i); } } }
                         Row { label: @tr("Remaining time"); Choice { accessible-label: "prefs.view.deck-time"; options: [@tr("TRACK TIME"), @tr("REAL TIME AT TEMPO"), @tr("BOTH")]; selected: root.deck-time; picked(i) => { root.choose("view.deck-time", i); } } }
                         Row { label: @tr("Bar counter"); Choice { accessible-label: "prefs.view.bar-counter"; options: [@tr("TO PHRASE END"), @tr("TO NEXT MEMORY CUE"), @tr("COUNT UP")]; selected: root.bar-counter; picked(i) => { root.choose("view.bar-counter", i); } } }

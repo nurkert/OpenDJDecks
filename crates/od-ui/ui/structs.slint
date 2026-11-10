@@ -370,6 +370,8 @@ export struct ChannelView {
     cue: bool,
     level: float,
     peak: float,
+    // Peak hold (0..1): a tick that stays at the highest recent peak.
+    hold: float,
     // STEM: the HI / MID / LOW knobs set vocals / inst / drums.
     parts: bool,
     // Kill per EQ band.

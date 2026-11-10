@@ -20,6 +20,7 @@
 //! - [`editing`]: phrase display and editing, edit mode, sub-browser
 
 mod alignment;
+mod craft;
 mod browser;
 mod design;
 mod editing;

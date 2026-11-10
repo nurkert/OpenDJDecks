@@ -8215,3 +8215,11 @@ msgstr "Nebel ist gesperrt: unter SICHERHEIT scharf schalten"
 msgctxt "PreferencesWindow"
 msgid "Pad, page or group"
 msgstr "Pad, Seite oder Gruppe"
+
+msgctxt "PreferencesWindow"
+msgid "Calm waveform"
+msgstr "Ruhige Wellenform"
+
+msgctxt "PreferencesWindow"
+msgid "Crisp playhead, faint beat lines, softer colours"
+msgstr "Scharfe Abspielmarke, zarte Beatlinien, sanftere Farben"

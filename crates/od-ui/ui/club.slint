@@ -454,6 +454,7 @@ export component ClubPlayer inherits Rectangle {
                         x: parent.cx - self.width / 2; y: 6px; height: parent.height - 12px;
                         tone: root.tone;
                         value: (1 - root.deck.tempo-value) / 2;
+                        bipolar: true; readout: root.deck.tempo;
                         tooltip: @tr("Tempo (up = slower, like a player)");
                         changed(v) => { Club.tempo(root.n, 1 - v * 2); }
                     }

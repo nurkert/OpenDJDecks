@@ -93,7 +93,7 @@ export component ArmedOutline inherits Rectangle {
     in property <bool> show;
     in property <color> tone: Theme.attention;
     in property <length> radius: Theme.r-control;
-    property <float> pulse: root.show && Theme.motion ? 0.65 + 0.35 * Math.sin(animation-tick() / 900ms * 360deg) : 1;
+    property <float> pulse: root.show && Theme.motion ? 0.65 + 0.35 * Math.sin(animation-tick() / Theme.t-pulse * 360deg) : 1;
     border-width: 2px;
     border-radius: root.radius;
     border-color: root.show ? root.tone.with-alpha(root.pulse) : transparent;
@@ -205,7 +205,7 @@ export component PlateButton inherits Rectangle {
     border-radius: Theme.r-control;
     border-width: root.enabled || root.selected || root.filled ? 0px : Theme.hair;
     border-color: Theme.rule;
-    animate background { duration: Theme.motion ? 90ms : 0ms; }
+    animate background { duration: Theme.t-press; easing: Theme.ease; }
 
     lbl := Text {
         x: 14px;
@@ -250,7 +250,7 @@ export component Disclosure inherits Rectangle {
     in property <color> tone: Theme.bone-3;
     width: 12px; height: 12px;
     property <float> turn: root.open ? 1 : 0;
-    animate turn { duration: Theme.motion ? 140ms : 0ms; easing: ease-out; }
+    animate turn { duration: Theme.t-toggle; easing: Theme.ease; }
     // The chevron's points around the centre (5, 5), turned by 0–90°.
     property <angle> a: root.turn * 90deg;
     Path {
@@ -365,9 +365,32 @@ export component LineToggle inherits Rectangle {
     }
 }
 
-// Rotary knob: a ring with an indicator line. Vertical drag changes the
-// value; double-click resets it. Bipolar knobs (EQ, FX) light the arc from
-// the centre.
+// Drag readout (DESIGN.md, Control anatomy): the value of a knob or fader
+// while it is held, on a bone plate beside the control. It floats over its
+// neighbours and takes no room in the layout.
+component DragReadout inherits Rectangle {
+    in property <string> shown;
+    accessible-role: text;
+    accessible-label: "control.readout";
+    accessible-value: root.shown;
+    width: rt.preferred-width + 10px;
+    height: 16px;
+    border-radius: Theme.r-control;
+    background: Theme.bone;
+    rt := Text {
+        text: root.shown;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi;
+        color: Theme.ground;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+}
+
+// Rotary knob (DESIGN.md, Control anatomy): a ring with an indicator line
+// and a value arc on the ring. Bipolar knobs (EQ, filter, trim, FX
+// parameter: the range spans 0) carry a centre mark at the top and light
+// the arc from the centre; the others light it from the start. Vertical
+// drag changes the value with its readout shown above the ring;
+// double-click resets it.
 export component Knob inherits Rectangle {
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
@@ -386,29 +409,58 @@ export component Knob inherits Rectangle {
     // shows the knob's value (mixer).
     in property <color> legend-color: Theme.bone-3;
     in property <string> legend-id;
+    // The value as words while dragging ("-6.0", "LP 40"); empty: percent.
+    in property <string> readout;
     // Guide id (first-start guide, controller setup).
     in property <string> guide;
     callback changed(float);
     width: max(root.size + 8px, lbl.preferred-width + 4px);
     height: root.size + (root.label == "" ? 0px : root.label-h);
 
+    out property <bool> bipolar: root.minimum < 0 && root.maximum > 0;
     property <float> norm: (root.value - root.minimum) / (root.maximum - root.minimum);
     property <angle> a: -225deg + 270deg * root.norm;
+    // Where the arc starts: the centre (top) or the start of the travel.
+    property <angle> a0: root.bipolar ? -90deg : -225deg;
+    property <bool> moved: Math.abs(root.value - root.default-value) > 0.01;
 
     Rectangle {
         x: (parent.width - root.size) / 2; y: 0;
         width: root.size; height: root.size;
         border-radius: root.size / 2;
         border-width: 1px;
-        border-color: touch.has-hover ? Theme.bone-3 : Theme.rule-strong;
+        border-color: touch.has-hover || touch.pressed ? Theme.bone-3 : Theme.rule-strong;
         background: Theme.plate;
+        // The value arc on the ring.
+        if Math.abs(root.a - root.a0) > 1deg: Path {
+            accessible-role: image; accessible-label: "knob.arc";
+            width: root.size; height: root.size;
+            viewbox-width: 100; viewbox-height: 100;
+            stroke: root.tone;
+            stroke-width: 2px;
+            fill: transparent;
+            MoveTo { x: 50 + 46 * Math.cos(root.a0); y: 50 + 46 * Math.sin(root.a0); }
+            ArcTo {
+                x: 50 + 46 * Math.cos(root.a); y: 50 + 46 * Math.sin(root.a);
+                radius-x: 46; radius-y: 46;
+                large-arc: Math.abs(root.a - root.a0) > 180deg;
+                sweep: root.a > root.a0;
+            }
+        }
+        // Centre mark of a bipolar knob: a notch through the ring at the top.
+        if root.bipolar: Rectangle {
+            accessible-role: image; accessible-label: "knob.centre";
+            x: (parent.width - 2px) / 2; y: 0;
+            width: 2px; height: max(2px, root.size * 0.14);
+            background: root.moved ? Theme.bone-3 : Theme.bone-2;
+        }
         Path {
             width: root.size; height: root.size;
             viewbox-width: 100; viewbox-height: 100;
-            stroke: Math.abs(root.value - root.default-value) > 0.01 ? root.tone : Theme.bone;
+            stroke: root.moved ? root.tone : Theme.bone;
             stroke-width: 2px;
             MoveTo { x: 50 + 16 * Math.cos(root.a); y: 50 + 16 * Math.sin(root.a); }
-            LineTo { x: 50 + 44 * Math.cos(root.a); y: 50 + 44 * Math.sin(root.a); }
+            LineTo { x: 50 + 40 * Math.cos(root.a); y: 50 + 40 * Math.sin(root.a); }
         }
     }
     lbl := Text {
@@ -434,9 +486,18 @@ export component Knob inherits Rectangle {
         double-clicked => { root.value = root.default-value; root.changed(root.value); }
     }
     if root.guide != "": GuideMark { x: (parent.width - root.size) / 2 - 2px; y: -2px; width: root.size + 4px; height: root.size + 4px; id: root.guide; radius: root.size / 2 + 2px; }
+    if touch.pressed: DragReadout {
+        x: (parent.width - self.width) / 2; y: -self.height - 2px;
+        shown: root.readout != "" ? root.readout
+            : root.bipolar ? (root.value >= 0 ? "+" : "") + Math.round(root.value * 100) + "%"
+            : Math.round(root.norm * 100) + "%";
+    }
 }
 
-// Vertical fader: a track line with a plate handle.
+// Vertical fader (DESIGN.md, Control anatomy): a track line with a cap. The
+// cap is a raised plate with grip ridges and a bone centre line, the point
+// the value is read at. A bipolar fader (tempo) has a centre detent mark
+// beside the track. The value shows beside the cap while it is held.
 export component Fader inherits Rectangle {
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
@@ -445,23 +506,41 @@ export component Fader inherits Rectangle {
     in property <color> tone: Theme.bone;
     // Handle height (the deck's strongest controls take a larger handle).
     in property <length> handle: 12px;
+    // Centre detent at 0.5 (tempo).
+    in property <bool> bipolar;
+    // The value as words while dragging; empty: percent.
+    in property <string> readout;
+    // The readout on the left (a fader at the right edge of its column).
+    in property <bool> readout-left;
     // Guide id (first-start guide, controller setup).
     in property <string> guide;
     callback changed(float);
     width: 26px;
+    property <length> travel: root.height - 8px - root.handle;
     Rectangle { x: parent.width / 2 - 1px; y: 4px; width: 2px; height: parent.height - 8px; background: Theme.rule-strong; }
     Rectangle {
         x: parent.width / 2 - 1px; width: 2px;
         y: 4px + (parent.height - 8px) * (1 - root.value);
         height: (parent.height - 8px) * root.value;
-        background: root.tone.with-alpha(0.6);
+        background: root.bipolar ? transparent : root.tone.with-alpha(0.6);
     }
-    Rectangle {
+    // Centre detent: two short ticks either side of the track.
+    if root.bipolar: Rectangle {
+        accessible-role: image; accessible-label: "fader.detent";
+        y: 4px + root.handle / 2 + root.travel / 2 - 0.5px; height: 1px;
+        Rectangle { x: 1px; width: parent.width / 2 - 4px; background: Theme.bone-3; }
+        Rectangle { x: parent.width / 2 + 3px; width: parent.width / 2 - 4px; background: Theme.bone-3; }
+    }
+    cap := Rectangle {
+        accessible-role: image; accessible-label: "fader.cap";
         x: 1px; width: parent.width - 2px; height: root.handle;
-        y: 4px + (parent.height - 8px - root.handle) * (1 - root.value);
+        y: 4px + root.travel * (1 - root.value);
         background: Theme.plate-raised;
-        border-radius: 2px; border-width: 1px; border-color: touch.has-hover ? Theme.bone-2 : Theme.bone-3;
-        Rectangle { y: (parent.height - 2px) / 2; height: 2px; x: 3px; width: parent.width - 6px; background: Theme.bone; }
+        border-radius: 2px; border-width: 1px; border-color: touch.has-hover || touch.pressed ? Theme.bone-2 : Theme.bone-3;
+        // Grip ridges above and below the centre line (tall caps only).
+        if root.handle >= 16px: Rectangle { y: parent.height / 2 - 5px; height: 1px; x: 5px; width: parent.width - 10px; background: Theme.rule-strong; }
+        if root.handle >= 16px: Rectangle { y: parent.height / 2 + 4px; height: 1px; x: 5px; width: parent.width - 10px; background: Theme.rule-strong; }
+        Rectangle { y: (parent.height - 2px) / 2; height: 2px; x: 2px; width: parent.width - 4px; background: Theme.bone; }
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command;
         mouse-cursor: ns-resize;
@@ -479,6 +558,11 @@ export component Fader inherits Rectangle {
         }
     }
     if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; }
+    if touch.pressed: DragReadout {
+        x: root.readout-left ? -self.width - 2px : parent.width + 2px;
+        y: cap.y + (cap.height - self.height) / 2;
+        shown: root.readout != "" ? root.readout : Math.round(root.value * 100) + "%";
+    }
 }
 
 // Small state button (DESIGN.md, State Language): filled in its tone when
@@ -520,7 +604,7 @@ export component Toggle inherits Rectangle {
     // shape on a band-charcoal panel.
     border-width: root.enabled || root.selected || root.filled ? 0px : Theme.hair;
     border-color: Theme.rule;
-    animate background { duration: Theme.motion ? 90ms : 0ms; }
+    animate background { duration: Theme.t-press; easing: Theme.ease; }
     t := Text {
         y: (parent.height - self.height) / 2 + (touch.pressed && root.enabled ? 1px : 0);
         text: root.label;
@@ -570,7 +654,7 @@ export component Splitter inherits Rectangle {
     horizontal-stretch: root.horizontal ? 1 : 0;
     vertical-stretch: root.horizontal ? 0 : 1;
     background: touch.pressed || touch.has-hover ? Theme.plate : transparent;
-    animate background { duration: Theme.motion ? 90ms : 0ms; }
+    animate background { duration: Theme.t-press; easing: Theme.ease; }
     Rectangle {
         x: root.horizontal ? 0 : (root.thickness - 1px) / 2; y: root.horizontal ? (root.thickness - 1px) / 2 : 0;
         width: root.horizontal ? parent.width : 1px;
