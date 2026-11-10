@@ -28,6 +28,36 @@ impl Library {
         Ok(())
     }
 
+    /// Puts the open library back to `snapshot` (a copy made with
+    /// [`Self::backup_to`] or [`Self::backup_now`]) in place, without closing
+    /// it: every change since the snapshot is gone. Used to undo a library
+    /// import.
+    pub fn restore_in_place(&mut self, snapshot: &Path) -> Result<()> {
+        let src = Connection::open_with_flags(
+            snapshot,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )?;
+        let backup = rusqlite::backup::Backup::new(&src, &mut self.conn)?;
+        backup.run_to_completion(256, Duration::from_millis(0), None)?;
+        Ok(())
+    }
+
+    /// How many tracks, lists and analysis results the library holds (the
+    /// before and after counts of an import).
+    pub fn counts(&self) -> Result<LibraryCounts> {
+        let n = |sql: &str| -> Result<u64> {
+            Ok(self.conn.query_row(sql, [], |r| r.get::<_, i64>(0))? as u64)
+        };
+        Ok(LibraryCounts {
+            tracks: n("SELECT count(*) FROM track")?,
+            playlists: n("SELECT count(*) FROM node WHERE kind <> 'folder'")?,
+            folders: n("SELECT count(*) FROM node WHERE kind = 'folder'")?,
+            cues: n("SELECT count(*) FROM cue")?,
+            grids: n("SELECT count(*) FROM analysis WHERE grid IS NOT NULL")?,
+            keys: n("SELECT count(*) FROM track WHERE musical_key IS NOT NULL AND musical_key <> ''")?,
+        })
+    }
+
     /// Creates a timestamped backup in the backup directory and rotates old
     /// ones. Returns the backup path.
     pub fn backup_now(&self, reason: &str) -> Result<PathBuf> {
@@ -74,6 +104,18 @@ impl Library {
     }
 }
 
+/// What a library holds, by kind ([`Library::counts`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct LibraryCounts {
+    pub tracks: u64,
+    /// Playlists, smart lists and sets.
+    pub playlists: u64,
+    pub folders: u64,
+    pub cues: u64,
+    pub grids: u64,
+    pub keys: u64,
+}
+
 pub(crate) fn backup_before_migration(lib: &Library) -> Result<()> {
     lib.backup_now("before-migration").map(|_| ())
 }
@@ -113,6 +155,26 @@ fn rotate(dir: &Path) -> Result<()> {
 mod tests {
     use super::*;
     use crate::test_util::track;
+
+    #[test]
+    fn restore_in_place_undoes_everything_since_the_snapshot() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("library.sqlite");
+        let mut lib = Library::open(&path).unwrap();
+        track(&mut lib, "A", None, None);
+        let before = lib.counts().unwrap();
+        assert_eq!(before.tracks, 1);
+        let snap = dir.path().join("undo.snapshot");
+        lib.backup_to(&snap).unwrap();
+        track(&mut lib, "B", None, None);
+        lib.create_node(None, crate::NodeKind::Playlist, "New").unwrap();
+        let after = lib.counts().unwrap();
+        assert_eq!((after.tracks, after.playlists), (2, before.playlists + 1));
+        lib.restore_in_place(&snap).unwrap();
+        assert_eq!(lib.counts().unwrap(), before);
+        // A second connection sees the restored library too.
+        assert_eq!(Library::open(&path).unwrap().counts().unwrap(), before);
+    }
 
     #[test]
     fn backup_rotate_and_restore() {

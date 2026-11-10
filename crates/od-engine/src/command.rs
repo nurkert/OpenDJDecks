@@ -408,6 +408,13 @@ pub enum ChannelCommand {
         value: f32,
     },
     SetEqMode(crate::dsp::eq::EqMode),
+    /// Kill of EQ band `band` (0 = low, 1 = mid, 2 = high): on, the band
+    /// sits at the knob's −1 (isolator: silent; classic: −26 dB); off, it
+    /// returns to the knob.
+    SetEqKill {
+        band: usize,
+        on: bool,
+    },
     SetChannelFx(ChannelFxKind),
     /// Channel FX knob −1..=1, 0 = bypass.
     SetChannelFxAmount(f32),
@@ -446,6 +453,37 @@ pub enum MixerCommand {
     /// Master limiter + soft clip (default on).
     SetLimiter(bool),
     ResetClipIndicators,
+    /// Swaps EQ band `band` (knob and kill) between channels `a` and `b`,
+    /// now or on the master clock's next beat or bar. A second request for
+    /// the same pair and band while one waits cancels it; another request
+    /// replaces it.
+    SwapEq {
+        a: usize,
+        b: usize,
+        band: usize,
+        at: SwapAt,
+    },
+}
+
+/// When an EQ swap happens.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SwapAt {
+    /// At once.
+    #[default]
+    Now,
+    /// On the next beat of the master clock.
+    Beat,
+    /// On the next downbeat (bar) of the master clock.
+    Bar,
+}
+
+/// An EQ swap waiting for its beat or bar.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PendingSwap {
+    pub a: usize,
+    pub b: usize,
+    pub band: usize,
+    pub at: SwapAt,
 }
 
 /// Tempo FX type. Every effect is synced to the BPM and beat of its unit's

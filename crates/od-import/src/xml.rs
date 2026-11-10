@@ -255,7 +255,7 @@ pub struct XmlImportReport {
 }
 
 #[derive(Default)]
-struct XmlTrack {
+pub(crate) struct XmlTrack {
     attrs: HashMap<String, String>,
     tempos: Vec<HashMap<String, String>>,
     marks: Vec<HashMap<String, String>>,
@@ -272,9 +272,41 @@ fn attrs_of(e: &BytesStart) -> Result<HashMap<String, String>> {
     Ok(m)
 }
 
+/// A library XML file as read, before anything is written.
+#[derive(Default)]
+pub(crate) struct XmlDoc {
+    pub tracks: Vec<XmlTrack>,
+    /// Playlist tree: (depth, name, is_folder, track keys). The first node
+    /// is the file's ROOT.
+    pub nodes: Vec<(usize, String, bool, Vec<String>)>,
+}
+
+impl XmlTrack {
+    pub(crate) fn get(&self, k: &str) -> String {
+        self.attrs.get(k).cloned().unwrap_or_default()
+    }
+    /// The cue points that carry over, and how many marks do not.
+    pub(crate) fn cues(&self) -> (Vec<Cue>, usize) {
+        let cues: Vec<Cue> = self.marks.iter().filter_map(cue_from_mark).collect();
+        let lost = self.marks.len() - cues.len();
+        (cues, lost)
+    }
+    pub(crate) fn grid(&self) -> Option<Beatgrid> {
+        grid_from_tempos(&self.tempos, self.get("TotalTime").parse().unwrap_or(0.0))
+    }
+    pub(crate) fn key(&self) -> Option<MusicalKey> {
+        MusicalKey::parse(&self.get("Tonality"))
+    }
+}
+
 /// Imports a library XML file into `lib` (new tracks are added; tracks
 /// whose file already is in the library get the XML's cues, grid and tags).
 pub fn import_xml(lib: &mut Library, path: &Path) -> Result<XmlImportReport> {
+    apply_doc(lib, read_doc(path)?)
+}
+
+/// Reads a library XML file. Nothing is written.
+pub(crate) fn read_doc(path: &Path) -> Result<XmlDoc> {
     let text = std::fs::read_to_string(path)?;
     let mut reader = Reader::from_str(&text);
     reader.config_mut().trim_text(true);
@@ -334,7 +366,12 @@ pub fn import_xml(lib: &mut Library, path: &Path) -> Result<XmlImportReport> {
             _ => {}
         }
     }
+    Ok(XmlDoc { tracks, nodes })
+}
 
+/// Writes what [`read_doc`] read into `lib`.
+fn apply_doc(lib: &mut Library, doc: XmlDoc) -> Result<XmlImportReport> {
+    let XmlDoc { tracks, nodes } = doc;
     let mut report = XmlImportReport::default();
     let mut ids: HashMap<String, TrackId> = HashMap::new();
     for t in &tracks {

@@ -285,22 +285,6 @@ pub struct SettingsFiles {
     pub paths: Vec<PathBuf>,
 }
 
-/// The rekordbox preference folder of this user
-/// (`~/Library/Application Support/Pioneer/rekordbox6|7` on macOS,
-/// `%APPDATA%\Pioneer\rekordbox6|7` on Windows).
-pub fn default_settings_dir() -> Option<PathBuf> {
-    let base = if cfg!(target_os = "macos") {
-        std::env::home_dir()?.join("Library/Application Support/Pioneer")
-    } else if cfg!(windows) {
-        PathBuf::from(std::env::var_os("APPDATA")?).join("Pioneer")
-    } else {
-        return None;
-    };
-    ["rekordbox7", "rekordbox6"]
-        .iter()
-        .map(|v| base.join(v))
-        .find(|d| d.join("rekordbox3.settings").is_file())
-}
 
 /// Files that hold settings OpenDJDecks has no equivalent for.
 const OTHER_FILES: &[(&str, &str)] = &[
@@ -383,18 +367,10 @@ pub fn load_files(dir: &Path) -> std::io::Result<SettingsFiles> {
     Ok(f)
 }
 
-/// Reads and maps the settings of `dir`, or of [`default_settings_dir`].
-pub fn read(dir: Option<&Path>) -> std::io::Result<(RekordboxSettings, SettingsReport)> {
-    let dir = match dir {
-        Some(d) => d.to_path_buf(),
-        None => default_settings_dir().ok_or_else(|| {
-            std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "no rekordbox preference folder found",
-            )
-        })?,
-    };
-    Ok(parse(&load_files(&dir)?))
+/// Reads and maps the settings in `dir`, a folder the user picked. Nothing
+/// looks for another application's settings on its own.
+pub fn read(dir: &Path) -> std::io::Result<(RekordboxSettings, SettingsReport)> {
+    Ok(parse(&load_files(dir)?))
 }
 
 // ───────────────────────────── XML ─────────────────────────────
@@ -2176,7 +2152,7 @@ mod tests {
         .unwrap();
         std::fs::write(dir.path().join("DEVSETTING.DAT"), dat(&[0; 32])).unwrap();
         std::fs::write(dir.path().join("VideoSettings.xml"), "<PROPERTIES/>").unwrap();
-        let (s, r) = read(Some(dir.path())).unwrap();
+        let (s, r) = read(dir.path()).unwrap();
         assert_eq!(r.files.len(), 4);
         assert_eq!(s.keymap_name.as_deref(), Some("My Keys"));
         assert!(
@@ -2186,6 +2162,6 @@ mod tests {
         );
         assert!(r.unmapped_files.iter().any(|(n, _)| n == "DEVSETTING.DAT"));
         let empty = tempfile::tempdir().unwrap();
-        assert!(read(Some(empty.path())).is_err());
+        assert!(read(empty.path()).is_err());
     }
 }

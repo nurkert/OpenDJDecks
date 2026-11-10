@@ -68,6 +68,9 @@ pub struct Eq3 {
     sr: f32,
     mode: EqMode,
     knobs: [f32; 3],
+    /// Kill per band: the band is at its knob's −1 position while on, and
+    /// back at the knob when released.
+    kills: [bool; 3],
     gains: [Smoothed; 3],
     // isolator
     lp1: Lr4,
@@ -88,6 +91,7 @@ impl Eq3 {
             sr,
             mode: EqMode::Isolator,
             knobs: [0.0; 3],
+            kills: [false; 3],
             gains: [Smoothed::new(1.0, ramp); 3],
             lp1: Lr4::new(Coeffs::lowpass(LOW_CROSSOVER_HZ, BUTTERWORTH_Q, sr)),
             hp1: Lr4::new(Coeffs::highpass(LOW_CROSSOVER_HZ, BUTTERWORTH_Q, sr)),
@@ -102,8 +106,8 @@ impl Eq3 {
     pub fn set_mode(&mut self, mode: EqMode) {
         if mode != self.mode {
             self.mode = mode;
-            for (i, k) in self.knobs.into_iter().enumerate() {
-                self.gains[i].reset(self.target_for(k));
+            for i in 0..3 {
+                self.gains[i].reset(self.target_for(self.effective(i)));
             }
             self.classic_counter = 0;
         }
@@ -116,13 +120,32 @@ impl Eq3 {
         }
     }
 
+    /// The knob value band `band` works at: −1 while killed.
+    fn effective(&self, band: usize) -> f32 {
+        if self.kills[band] { -1.0 } else { self.knobs[band] }
+    }
+
     /// Sets band `band` (0 = low, 1 = mid, 2 = high) to a knob value −1..=1.
     pub fn set_band(&mut self, band: usize, knob: f32) {
         if band < 3 {
             self.knobs[band] = knob;
-            let t = self.target_for(knob);
+            let t = self.target_for(self.effective(band));
             self.gains[band].set(t);
         }
+    }
+
+    /// Kills band `band` (isolator: silent; classic EQ: −26 dB) or releases
+    /// it back to its knob. The change is smoothed like a knob move.
+    pub fn set_kill(&mut self, band: usize, on: bool) {
+        if band < 3 {
+            self.kills[band] = on;
+            let t = self.target_for(self.effective(band));
+            self.gains[band].set(t);
+        }
+    }
+
+    pub fn kills(&self) -> [bool; 3] {
+        self.kills
     }
 
     pub fn is_flat(&self) -> bool {
@@ -225,5 +248,35 @@ mod tests {
             let db = 20.0 * g.log10();
             assert!(db < -min_db, "band {band} at {f} Hz only {db} dB");
         }
+    }
+
+    #[test]
+    fn kill_silences_the_band_and_release_returns_to_the_knob() {
+        let mut eq = Eq3::new(48_000);
+        eq.set_band(0, 0.5);
+        eq.set_kill(0, true);
+        assert_eq!(eq.kills(), [true, false, false]);
+        let killed = 20.0 * tone_gain(&mut eq, 50.0, 48_000).log10();
+        assert!(killed < -40.0, "low kill only {killed} dB");
+        // The other bands are untouched.
+        let mid = 20.0 * tone_gain(&mut eq, 1000.0, 48_000).log10();
+        assert!(mid.abs() < 0.5, "mid moved to {mid} dB");
+        // Moving the knob while killed changes nothing audible ...
+        eq.set_band(0, 1.0);
+        let still = 20.0 * tone_gain(&mut eq, 50.0, 48_000).log10();
+        assert!(still < -40.0, "kill gave way to the knob: {still} dB");
+        // ... and the release goes to the knob's value (+6 dB).
+        eq.set_kill(0, false);
+        let back = 20.0 * tone_gain(&mut eq, 50.0, 48_000).log10();
+        assert!((back - 6.0).abs() < 0.5, "released to {back} dB");
+    }
+
+    #[test]
+    fn classic_kill_is_the_knobs_floor() {
+        let mut eq = Eq3::new(48_000);
+        eq.set_mode(EqMode::Classic);
+        eq.set_kill(2, true);
+        let db = 20.0 * tone_gain(&mut eq, 16_000.0, 48_000).log10();
+        assert!(db < -20.0, "classic high kill only {db} dB");
     }
 }

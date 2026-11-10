@@ -342,6 +342,18 @@ export struct ChannelView {
     peak: float,
     // STEM: the HI / MID / LOW knobs set vocals / inst / drums.
     parts: bool,
+    // Kill per EQ band.
+    kill_high: bool,
+    kill_mid: bool,
+    kill_low: bool,
+    // Values under the knobs ("-6.0", "KILL", "LP 40").
+    trim_text: string,
+    high_text: string,
+    mid_text: string,
+    low_text: string,
+    fx_text: string,
+    // The channel clipped since the indicators were last cleared.
+    clip: bool,
 }
 
 // Slot 2 or 3 of a Tempo FX unit in multi mode.

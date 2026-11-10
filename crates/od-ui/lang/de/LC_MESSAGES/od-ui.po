@@ -6502,6 +6502,151 @@ msgctxt "PreferencesWindow"
 msgid "Press START and move every control once; each is ticked when its message arrives. FLASH LEDS lights every mapped LED. VERIFIED: confirmed on a unit. PARTIAL: from a public source, not yet tried on a unit. UNTESTED: neither."
 msgstr "Drücke START und bewege jedes Element einmal; es wird abgehakt, sobald seine Nachricht ankommt. LEDS BLINKEN lässt jede zugeordnete LED leuchten. BESTÄTIGT: auf einem Gerät bestätigt. TEILWEISE: aus einer öffentlichen Quelle, noch nicht auf einem Gerät ausprobiert. UNGETESTET: weder noch."
 
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "BEFORE YOU IMPORT — NOTHING IS WRITTEN YET"
+msgstr "VOR DEM IMPORT — NOCH WIRD NICHTS GESCHRIEBEN"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "IMPORTING…"
+msgstr "IMPORTIERE …"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "IMPORT UNDONE"
+msgstr "IMPORT RÜCKGÄNGIG GEMACHT"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "IMPORT DONE"
+msgstr "IMPORT FERTIG"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "WHAT CARRIES OVER"
+msgstr "WAS ÜBERNOMMEN WIRD"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "YOUR LIBRARY"
+msgstr "DEINE BIBLIOTHEK"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "BEFORE"
+msgstr "VORHER"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "FROM THE FILE"
+msgstr "AUS DER DATEI"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "NOW"
+msgstr "JETZT"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "AFTER"
+msgstr "NACHHER"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "EVERYTHING IN THE FILE CARRIES OVER"
+msgstr "ALLES AUS DER DATEI WIRD ÜBERNOMMEN"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "WILL NOT CARRY OVER ({})"
+msgstr "WIRD NICHT ÜBERNOMMEN ({})"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "DID NOT TRANSFER ({})"
+msgstr "NICHT ÜBERNOMMEN ({})"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "… and {} more"
+msgstr "… und {} weitere"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "CANCEL"
+msgstr "ABBRECHEN"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "IMPORT"
+msgstr "IMPORTIEREN"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "Import what is listed above. Undo stays possible afterwards."
+msgstr "Importiert, was oben steht. Rückgängig machen bleibt danach möglich."
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "UNDO IMPORT"
+msgstr "IMPORT RÜCKGÄNGIG"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "Put the library back exactly as it was before this import"
+msgstr "Stellt die Bibliothek genau so wieder her, wie sie vor diesem Import war"
+
+#: ui/import_review.slint
+msgctxt "ImportReviewDialog"
+msgid "DONE"
+msgstr "FERTIG"
+
+#: ui/perform.slint
+msgctxt "BandRow"
+msgid "Drag to turn, double-click to reset"
+msgstr "Ziehen zum Drehen, Doppelklick setzt zurück"
+
+#: ui/perform.slint
+msgctxt "ChannelStrip"
+msgid "Lights when the channel clips before the fader. Click to clear."
+msgstr "Leuchtet, wenn der Kanal vor dem Fader übersteuert. Klick setzt zurück."
+
+#: ui/perform.slint
+msgctxt "ChannelStrip"
+msgid "Kill HI: silent while lit, the knob stays"
+msgstr "HI-Kill: stumm, solange es leuchtet; der Regler bleibt"
+
+#: ui/perform.slint
+msgctxt "ChannelStrip"
+msgid "Kill MID: silent while lit, the knob stays"
+msgstr "MID-Kill: stumm, solange es leuchtet; der Regler bleibt"
+
+#: ui/perform.slint
+msgctxt "ChannelStrip"
+msgid "Kill LOW: silent while lit, the knob stays"
+msgstr "LOW-Kill: stumm, solange es leuchtet; der Regler bleibt"
+
+#: ui/perform.slint
+msgctxt "MixerPanel"
+msgid "Swap LOW (knob and kill) between the two decks; tap again to cancel a waiting swap"
+msgstr "LOW (Regler und Kill) zwischen den zwei Decks tauschen; erneut tippen bricht einen wartenden Tausch ab"
+
+#: ui/perform.slint
+msgctxt "MixerPanel"
+msgid "Swap MID (knob and kill) between the two decks; tap again to cancel a waiting swap"
+msgstr "MID (Regler und Kill) zwischen den zwei Decks tauschen; erneut tippen bricht einen wartenden Tausch ab"
+
+#: ui/perform.slint
+msgctxt "MixerPanel"
+msgid "Swap HI (knob and kill) between the two decks; tap again to cancel a waiting swap"
+msgstr "HI (Regler und Kill) zwischen den zwei Decks tauschen; erneut tippen bricht einen wartenden Tausch ab"
+
+#: ui/perform.slint
+msgctxt "MixerPanel"
+msgid "When a swap happens: at once, on the next beat or on the next bar"
+msgstr "Wann getauscht wird: sofort, auf dem nächsten Beat oder auf dem nächsten Takt"
+
 #: ui/lighting.slint:294
 msgctxt "LockedSetup"
 msgid "SETUP LOCKED"

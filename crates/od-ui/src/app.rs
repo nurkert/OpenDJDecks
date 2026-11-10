@@ -51,6 +51,8 @@ pub struct App {
     pub(crate) recorder: RefCell<recorder::RecorderState>,
     pub(crate) controller: RefCell<controller::Controllers>,
     pub(crate) stick_check: RefCell<crate::stick_check::Running>,
+    /// The library import under review (preview, result, undo).
+    pub(crate) import_review: RefCell<crate::import::Review>,
     pub(crate) browser: browser::BrowserViews,
     pub(crate) explorer: explorer::ExplorerRuntime,
     pub(crate) device_manager: DeviceManager,
@@ -126,6 +128,7 @@ impl App {
             recorder: RefCell::new(recorder::RecorderState::default()),
             controller: RefCell::new(controller::Controllers::default()),
             stick_check: RefCell::new(Default::default()),
+            import_review: RefCell::new(Default::default()),
             browser: browser::BrowserViews::default(),
             explorer: explorer::ExplorerRuntime::default(),
             device_manager,
@@ -248,6 +251,7 @@ impl App {
                 WorkerEvent::Message(m) => self.status(m),
                 WorkerEvent::SamplesDone => crate::first_start::samples_done(self),
                 WorkerEvent::EncryptedImportStarted => crate::import::close_encrypted_dialog(self),
+                WorkerEvent::ReviewedImportDone(r) => crate::import::review_done(self, r),
                 WorkerEvent::EncryptedImportFailed(m) => {
                     self.ui.set_encrypted_import_busy(false);
                     self.ui.set_encrypted_import_error(m.into());

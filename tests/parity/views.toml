@@ -306,7 +306,7 @@ elements = [
   "mixer.ch1.cue",
   "mixer.ch1.fader",
 ]
-note = "UX §1.3 mixer; channel order 1-2. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 1-2. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "mixer.ch2"
@@ -322,7 +322,7 @@ elements = [
   "mixer.ch2.cue",
   "mixer.ch2.fader",
 ]
-note = "UX §1.3 mixer; channel order 1-2. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 1-2. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "deck2.header"
@@ -1068,7 +1068,7 @@ elements = [
   "mixer.ch3.cue",
   "mixer.ch3.fader",
 ]
-note = "UX §1.3 mixer; channel order 3-1-2-4. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 3-1-2-4. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "mixer.ch1"
@@ -1084,7 +1084,7 @@ elements = [
   "mixer.ch1.cue",
   "mixer.ch1.fader",
 ]
-note = "UX §1.3 mixer; channel order 3-1-2-4. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 3-1-2-4. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "mixer.ch2"
@@ -1100,7 +1100,7 @@ elements = [
   "mixer.ch2.cue",
   "mixer.ch2.fader",
 ]
-note = "UX §1.3 mixer; channel order 3-1-2-4. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 3-1-2-4. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "mixer.ch4"
@@ -1116,7 +1116,7 @@ elements = [
   "mixer.ch4.cue",
   "mixer.ch4.fader",
 ]
-note = "UX §1.3 mixer; channel order 3-1-2-4. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 3-1-2-4. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "deck2.header"
@@ -1883,7 +1883,7 @@ elements = [
   "mixer.ch1.cue",
   "mixer.ch1.fader",
 ]
-note = "UX §1.3 mixer; channel order 1-2. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 1-2. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "mixer.ch2"
@@ -1899,7 +1899,7 @@ elements = [
   "mixer.ch2.cue",
   "mixer.ch2.fader",
 ]
-note = "UX §1.3 mixer; channel order 1-2. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 1-2. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "deck2.header"
@@ -2623,7 +2623,7 @@ elements = [
   "mixer.ch3.cue",
   "mixer.ch3.fader",
 ]
-note = "UX §1.3 mixer; channel order 3-1-2-4. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 3-1-2-4. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "mixer.ch1"
@@ -2639,7 +2639,7 @@ elements = [
   "mixer.ch1.cue",
   "mixer.ch1.fader",
 ]
-note = "UX §1.3 mixer; channel order 3-1-2-4. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 3-1-2-4. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "mixer.ch2"
@@ -2655,7 +2655,7 @@ elements = [
   "mixer.ch2.cue",
   "mixer.ch2.fader",
 ]
-note = "UX §1.3 mixer; channel order 3-1-2-4. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 3-1-2-4. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "mixer.ch4"
@@ -2671,7 +2671,7 @@ elements = [
   "mixer.ch4.cue",
   "mixer.ch4.fader",
 ]
-note = "UX §1.3 mixer; channel order 3-1-2-4. STEM sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above CUE and the fader"
+note = "UX §1.3 mixer; channel order 3-1-2-4. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
 
 [[view.region]]
 id = "deck2.header"

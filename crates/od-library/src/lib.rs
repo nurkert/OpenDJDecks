@@ -25,6 +25,7 @@ pub mod smart;
 pub mod smart_text;
 pub mod tracks;
 
+pub use backup::LibraryCounts;
 pub use datadir::data_dir;
 pub use devices::{Device, DeviceFormats, PendingChanges};
 pub use journal::{EntityState, JournalEntry};

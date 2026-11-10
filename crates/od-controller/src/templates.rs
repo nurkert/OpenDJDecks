@@ -191,6 +191,7 @@ pub const ACTION_NAMES: &[&str] = &[
     "mixer.eq_high",
     "mixer.eq_mid",
     "mixer.eq_low",
+    "mixer.eq_kill",
     "mixer.channel_fx",
     "mixer.fader",
     "mixer.cue",
@@ -201,6 +202,7 @@ pub const ACTION_NAMES: &[&str] = &[
     "headphone_mix",
     "headphone_level",
     "master_cue",
+    "eq_swap",
     "tempo_fx.toggle",
     "tempo_fx.release",
     "tempo_fx.level",
@@ -271,6 +273,11 @@ fn stem_arg(a: &Args) -> Result<StemPart, MappingError> {
     let s = a.str("stem")?;
     StemPart::parse(&s)
         .ok_or_else(|| a.err(format!("unknown stem `{s}` (vocals, drums, bass, inst)")))
+}
+
+fn band_arg(a: &Args) -> Result<EqBand, MappingError> {
+    let s = a.str("band")?;
+    EqBand::parse(&s).ok_or_else(|| a.err(format!("unknown EQ band `{s}` (low, mid, high)")))
 }
 
 fn bipolar(u: f32) -> f32 {
@@ -460,6 +467,16 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
         "mixer.eq_high" => (Absolute, mixer_abs(MixerAction::EqHigh)),
         "mixer.eq_mid" => (Absolute, mixer_abs(MixerAction::EqMid)),
         "mixer.eq_low" => (Absolute, mixer_abs(MixerAction::EqLow)),
+        "mixer.eq_kill" => {
+            let band = band_arg(&a)?;
+            (
+                Button,
+                on_press(move |d| ControlAction::Mixer {
+                    channel: d.unwrap_or(0),
+                    action: MixerAction::EqKill(band),
+                }),
+            )
+        }
         "mixer.channel_fx" => (Absolute, mixer_abs(|u| MixerAction::ChannelFx(bipolar(u)))),
         "mixer.fader" => (Absolute, mixer_abs(MixerAction::Fader)),
         "mixer.cue" => (
@@ -505,6 +522,10 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
             Box::new(|_, v| Some(ControlAction::HeadphoneLevel(v.unit()))),
         ),
         "master_cue" => (Button, on_press(|_| ControlAction::MasterCue)),
+        "eq_swap" => {
+            let band = band_arg(&a)?;
+            (Button, on_press(move |_| ControlAction::EqSwap(band)))
+        }
 
         n if n.starts_with("tempo_fx.") => {
             let unit = a.u8_or("unit", 1)?;
@@ -701,6 +722,7 @@ mod tests {
         t.insert("effect".into(), Value::String("echo".into()));
         t.insert("channel".into(), Value::Integer(1));
         t.insert("stem".into(), Value::String("vocals".into()));
+        t.insert("band".into(), Value::String("low".into()));
         for n in ACTION_NAMES {
             let mut args = t.clone();
             if *n == "deck.pad_mode" {
@@ -755,6 +777,37 @@ mod tests {
             ),
             None
         );
+    }
+
+    #[test]
+    fn eq_kill_and_swap_map() {
+        let press = InputValue::Button {
+            pressed: true,
+            velocity: 127,
+        };
+        let mut low = Table::new();
+        low.insert("band".into(), Value::String("low".into()));
+        let kill = parse_action("mixer.eq_kill", &low).unwrap();
+        assert!(kill.needs_deck);
+        assert_eq!(
+            kill.produce(Some(2), press),
+            Some(ControlAction::Mixer {
+                channel: 2,
+                action: MixerAction::EqKill(EqBand::Low)
+            })
+        );
+        let mut high = Table::new();
+        high.insert("band".into(), Value::String("high".into()));
+        let swap = parse_action("eq_swap", &high).unwrap();
+        assert!(!swap.needs_deck);
+        assert_eq!(
+            swap.produce(None, press),
+            Some(ControlAction::EqSwap(EqBand::High))
+        );
+        let mut bass = Table::new();
+        bass.insert("band".into(), Value::String("bass".into()));
+        assert!(parse_action("eq_swap", &bass).is_err());
+        assert!(parse_action("mixer.eq_kill", &Table::new()).is_err());
     }
 
     #[test]

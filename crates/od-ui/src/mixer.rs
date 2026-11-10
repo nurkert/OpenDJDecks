@@ -4,7 +4,8 @@ use crate::app::{App, handler};
 use crate::models::Rows;
 use crate::{ChannelView, decks, engine};
 use od_engine::{
-    ChannelCommand, ChannelState, Command, DeckCommand, DeckState, EngineState, MixerCommand, Stem,
+    ChannelCommand, ChannelFxKind, ChannelState, Command, DeckCommand, DeckState, EngineState,
+    MixerCommand, Stem, SwapAt,
 };
 use slint::ComponentHandle;
 use slint::Model as _;
@@ -33,6 +34,104 @@ pub(crate) struct MixerView {
     /// Auto Fader on, and the low EQ it last set per channel.
     pub smart: Cell<bool>,
     smart_low: Cell<[Option<f32>; decks::DECKS]>,
+    /// When a swap happens.
+    pub swap_at: Cell<SwapAt>,
+}
+
+/// The next swap timing: now → beat → bar → now.
+pub(crate) fn next_swap_at(at: SwapAt) -> SwapAt {
+    match at {
+        SwapAt::Now => SwapAt::Beat,
+        SwapAt::Beat => SwapAt::Bar,
+        SwapAt::Bar => SwapAt::Now,
+    }
+}
+
+/// The key legend of a swap timing.
+pub(crate) fn swap_at_label(at: SwapAt) -> String {
+    match at {
+        SwapAt::Now => od_i18n::tr("NOW"),
+        SwapAt::Beat => od_i18n::tr("BEAT"),
+        SwapAt::Bar => od_i18n::tr("BAR"),
+    }
+    .into()
+}
+
+/// The two decks (0-based, in order) an EQ swap acts on among the first
+/// `count`: the two loudest playing decks; with one playing, it and the
+/// next deck with a track (the one being mixed in); else decks 1 and 2.
+pub(crate) fn swap_pair(state: &EngineState, count: usize) -> (usize, usize) {
+    let count = count.clamp(2, decks::DECKS);
+    let mut playing: Vec<usize> = (0..count)
+        .filter(|&d| state.decks[d].playing && state.decks[d].track.is_some())
+        .collect();
+    playing.sort_by(|&a, &b| {
+        state.audible.level[b]
+            .partial_cmp(&state.audible.level[a])
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then(a.cmp(&b))
+    });
+    let pair = match playing.as_slice() {
+        [a, b, ..] => (*a, *b),
+        [a] => {
+            let other = (1..count)
+                .map(|i| (a + i) % count)
+                .find(|&d| state.decks[d].track.is_some())
+                .unwrap_or(if *a == 0 { 1 } else { 0 });
+            (*a, other)
+        }
+        [] => (0, 1),
+    };
+    (pair.0.min(pair.1), pair.0.max(pair.1))
+}
+
+/// A dB value for a readout: one decimal below 10 dB, a true minus sign.
+fn db_text(db: f32) -> String {
+    if db.abs() < 0.05 {
+        return "0".into();
+    }
+    let t = if db.abs() >= 9.95 {
+        format!("{:+.0}", db)
+    } else {
+        format!("{:+.1}", db)
+    };
+    t.replace('-', "\u{2212}")
+}
+
+/// The value under an EQ knob: its gain in dB, `OFF` at the isolator's
+/// full cut and `KILL` while the band's kill is on.
+pub(crate) fn eq_text(v: f32, kill: bool, classic: bool) -> String {
+    if kill {
+        return od_i18n::tr("KILL").into();
+    }
+    let v = v.clamp(-1.0, 1.0);
+    if classic {
+        return db_text(if v < 0.0 { v * 26.0 } else { v * 6.0 });
+    }
+    if v <= -0.999 {
+        return od_i18n::tr("OFF").into();
+    }
+    db_text(20.0 * od_engine::dsp::eq::knob_to_gain(v).log10())
+}
+
+/// The value under the trim knob, in dB.
+pub(crate) fn trim_text(db: f32) -> String {
+    db_text(db)
+}
+
+/// The value under the CH FX knob: the filter's side and depth in percent
+/// (`LP40`, `HP25`), else the signed amount; `0` in the centre.
+pub(crate) fn fx_text(v: f32, kind: ChannelFxKind) -> String {
+    let pct = (v.abs().min(1.0) * 100.0).round() as i32;
+    if pct == 0 {
+        return "0".into();
+    }
+    match kind {
+        ChannelFxKind::Filter if v < 0.0 => format!("LP{pct}"),
+        ChannelFxKind::Filter => format!("HP{pct}"),
+        _ if v < 0.0 => format!("\u{2212}{pct}"),
+        _ => format!("+{pct}"),
+    }
 }
 
 /// Auto Fader bass swap: the low EQ of the A side (`a = true`) or B side
@@ -56,17 +155,34 @@ pub(crate) fn knob_to_trim(v: f32) -> f32 {
 /// A channel in STEM mode: the EQ knobs show the deck's part levels (pure).
 pub(crate) fn parts_view(channel: usize, c: &ChannelState, d: &DeckState) -> ChannelView {
     let part = |band: usize| part_to_knob(d.stem_levels[PART_BANDS[band].index()]);
+    let pct = |band: usize| format!("{}", (knob_to_part(part(band)) * 100.0).round() as i32);
     ChannelView {
         high: part(2),
         mid: part(1),
         low: part(0),
+        high_text: pct(2).into(),
+        mid_text: pct(1).into(),
+        low_text: pct(0).into(),
+        kill_high: false,
+        kill_mid: false,
+        kill_low: false,
         parts: true,
-        ..channel_view(channel, c)
+        ..channel_view(channel, c, false)
     }
 }
 
-pub(crate) fn channel_view(channel: usize, c: &ChannelState) -> ChannelView {
+/// A channel's row; `classic`: the EQ is in classic mode (its dB range).
+pub(crate) fn channel_view(channel: usize, c: &ChannelState, classic: bool) -> ChannelView {
     ChannelView {
+        kill_high: c.eq_kill[2],
+        kill_mid: c.eq_kill[1],
+        kill_low: c.eq_kill[0],
+        trim_text: trim_text(c.trim_db).into(),
+        high_text: eq_text(c.eq[2], c.eq_kill[2], classic).into(),
+        mid_text: eq_text(c.eq[1], c.eq_kill[1], classic).into(),
+        low_text: eq_text(c.eq[0], c.eq_kill[0], classic).into(),
+        fx_text: fx_text(c.channel_fx_amount, c.channel_fx).into(),
+        clip: c.meter.clipped,
         parts: false,
         channel: channel as i32 + 1,
         trim: trim_to_knob(c.trim_db),
@@ -85,19 +201,36 @@ pub(crate) fn channel_view(channel: usize, c: &ChannelState) -> ChannelView {
 pub(crate) fn project(app: &App, state: &EngineState) {
     let count = app.decks.borrow().deck_count;
     let parts = app.mixer.parts.get();
+    let classic = app.state.borrow().settings.mixer.eq_mode == "classic";
     app.mixer.channels.sync_eq(
         (0..count)
             .map(|d| {
                 if parts[d] {
                     parts_view(d, &state.channels[d], &state.decks[d])
                 } else {
-                    channel_view(d, &state.channels[d])
+                    channel_view(d, &state.channels[d], classic)
                 }
             })
             .collect(),
     );
     auto_fader(app, state);
     let ui = &app.ui;
+    let g = ui.global::<crate::MixerParts>();
+    let (a, b) = swap_pair(state, count);
+    let pair = format!("{}/{}", a + 1, b + 1);
+    if g.get_swap_pair() != pair.as_str() {
+        g.set_swap_pair(pair.into());
+    }
+    g.set_swap_pending(
+        state
+            .pending_swap
+            .filter(|p| (p.a.min(p.b), p.a.max(p.b)) == (a, b))
+            .map_or(-1, |p| p.band as i32),
+    );
+    let at = swap_at_label(app.mixer.swap_at.get());
+    if g.get_swap_at() != at.as_str() {
+        g.set_swap_at(at.into());
+    }
     ui.set_master_level(state.master_level);
     ui.set_headphone_mix(state.headphone_mix);
     ui.set_headphone_level(state.headphone_level);
@@ -200,8 +333,104 @@ pub(crate) fn toggle_auto_fader(app: &App) {
     app.mixer.smart_low.set([None; decks::DECKS]);
 }
 
+/// Kill of EQ band `band` (0 low, 1 mid, 2 high) on channel `c`
+/// (0-based) on or off.
+pub(crate) fn toggle_kill(app: &App, c: usize, band: usize) {
+    engine::ensure_engine(app);
+    let c = c.min(decks::DECKS - 1);
+    let band = band.min(2);
+    let on = engine::snapshot(app).is_some_and(|s| s.channels[c].eq_kill[band]);
+    engine::send(
+        app,
+        Command::Channel(c, ChannelCommand::SetEqKill { band, on: !on }),
+    );
+}
+
+/// One-tap swap of EQ band `band` between the pair of decks, at the set
+/// timing; a second tap while it waits cancels it (the engine decides).
+pub(crate) fn swap(app: &App, band: usize) {
+    engine::ensure_engine(app);
+    let Some(state) = engine::snapshot(app) else {
+        return;
+    };
+    let count = app.decks.borrow().deck_count;
+    let (a, b) = swap_pair(&state, count);
+    engine::send(
+        app,
+        Command::Mixer(MixerCommand::SwapEq {
+            a,
+            b,
+            band: band.min(2),
+            at: app.mixer.swap_at.get(),
+        }),
+    );
+}
+
+pub(crate) fn cycle_swap_at(app: &App) {
+    let at = next_swap_at(app.mixer.swap_at.get());
+    app.mixer.swap_at.set(at);
+    app.ui
+        .global::<crate::MixerParts>()
+        .set_swap_at(swap_at_label(at).into());
+}
+
+/// Documentation screenshots: `OPENDJDECKS_DEMO_PROOF=mixer` stages a bass
+/// swap: deck 2's LOW killed, a few EQ and filter values, a clip on
+/// channel 1 and a LOW swap waiting for the next bar (re-armed while the
+/// demo runs).
+fn demo(app: &Rc<App>) {
+    let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
+    if !v.split(',').any(|p| p == "mixer") {
+        return;
+    }
+    let weak = Rc::downgrade(app);
+    slint::Timer::single_shot(std::time::Duration::from_secs(4), move || {
+        let Some(a) = weak.upgrade() else { return };
+        let ch = |c: usize, cmd| engine::send(&a, Command::Channel(c, cmd));
+        ch(1, ChannelCommand::SetEqKill { band: 0, on: true });
+        ch(0, ChannelCommand::SetEq { band: 2, value: -0.3 });
+        ch(0, ChannelCommand::SetEq { band: 1, value: 0.25 });
+        ch(1, ChannelCommand::SetChannelFxAmount(-0.35));
+        ch(0, ChannelCommand::SetTrim(12.0));
+        a.mixer.swap_at.set(SwapAt::Bar);
+        let w = Rc::downgrade(&a);
+        slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
+            if let Some(a) = w.upgrade() {
+                engine::send(&a, Command::Channel(0, ChannelCommand::SetTrim(0.0)));
+            }
+        });
+        let w = Rc::downgrade(&a);
+        let rearm = Rc::new(slint::Timer::default());
+        let keep = rearm.clone();
+        rearm.start(
+            slint::TimerMode::Repeated,
+            std::time::Duration::from_millis(250),
+            move || {
+                let _ = &keep;
+                let Some(a) = w.upgrade() else { return };
+                if engine::snapshot(&a).is_some_and(|s| s.pending_swap.is_none()) {
+                    swap(&a, 0);
+                }
+            },
+        );
+    });
+}
+
 pub(crate) fn wire(app: &Rc<App>) {
+    demo(app);
     let ui = &app.ui;
+    let g = ui.global::<crate::MixerParts>();
+    g.on_kill(handler!(app, |a, c: i32, band: i32| toggle_kill(
+        &a,
+        (c as usize).saturating_sub(1),
+        band.max(0) as usize
+    )));
+    g.on_swap(handler!(app, |a, band: i32| swap(&a, band.max(0) as usize)));
+    g.on_cycle_swap_at(handler!(app, |a| cycle_swap_at(&a)));
+    g.on_reset_clip(handler!(app, |a| engine::send(
+        &a,
+        Command::Mixer(MixerCommand::ResetClipIndicators)
+    )));
     // Channel callbacks carry 1-based channel numbers and start audio.
     fn ch(app: &App, c: i32, cmd: ChannelCommand) {
         engine::ensure_engine(app);
@@ -328,10 +557,63 @@ mod tests {
             cue: true,
             ..Default::default()
         };
-        let v = channel_view(0, &c);
+        let v = channel_view(0, &c, false);
         assert_eq!(v.channel, 1);
         assert_eq!(v.fader, 0.7);
         assert!(v.cue);
-        assert_eq!(v, channel_view(0, &c));
+        assert_eq!(v, channel_view(0, &c, false));
+    }
+
+    #[test]
+    fn readouts_show_values_kills_and_clip() {
+        let mut c = ChannelState::default();
+        c.eq = [-1.0, -0.5, 1.0];
+        c.eq_kill = [false, true, false];
+        c.trim_db = -6.0;
+        c.channel_fx_amount = -0.4;
+        c.meter.clipped = true;
+        let v = channel_view(0, &c, false);
+        assert_eq!(v.low_text.as_str(), "OFF");
+        assert_eq!(v.mid_text.as_str(), "KILL");
+        assert!(v.kill_mid && !v.kill_low && !v.kill_high);
+        assert_eq!(v.high_text.as_str(), "+6.0");
+        assert_eq!(v.trim_text.as_str(), "\u{2212}6.0");
+        assert_eq!(v.fx_text.as_str(), "LP40");
+        assert!(v.clip);
+        // Classic EQ: −1 is −26 dB.
+        assert_eq!(channel_view(0, &c, true).low_text.as_str(), "\u{2212}26");
+        // Isolator: −0.5 is about −18 dB.
+        assert_eq!(eq_text(-0.5, false, false), "\u{2212}18");
+        assert_eq!(eq_text(0.0, false, false), "0");
+        assert_eq!(fx_text(0.25, ChannelFxKind::Filter), "HP25");
+        assert_eq!(fx_text(-0.3, ChannelFxKind::Echo), "\u{2212}30");
+        assert_eq!(fx_text(0.001, ChannelFxKind::Filter), "0");
+    }
+
+    #[test]
+    fn swap_timing_cycles() {
+        assert_eq!(next_swap_at(SwapAt::Now), SwapAt::Beat);
+        assert_eq!(next_swap_at(SwapAt::Beat), SwapAt::Bar);
+        assert_eq!(next_swap_at(SwapAt::Bar), SwapAt::Now);
+    }
+
+    #[test]
+    fn swap_pair_follows_the_playing_decks() {
+        let mut s = EngineState::default();
+        assert_eq!(swap_pair(&s, 4), (0, 1), "nothing plays: decks 1 and 2");
+        let track = Some(od_core::TrackId(1));
+        for d in [1, 2, 3] {
+            s.decks[d].track = track;
+        }
+        s.decks[3].playing = true;
+        // One plays: it and the next deck with a track.
+        assert_eq!(swap_pair(&s, 4), (1, 3));
+        s.decks[2].playing = true;
+        s.decks[1].playing = true;
+        s.audible.level = [0.0, 0.1, 0.5, 0.4];
+        // The two loudest of three.
+        assert_eq!(swap_pair(&s, 4), (2, 3));
+        // Only the decks shown count.
+        assert_eq!(swap_pair(&s, 2), (0, 1));
     }
 }

@@ -23,6 +23,8 @@ pub enum WorkerEvent {
     EncryptedImportStarted,
     /// The encrypted library import was refused (shown in its dialog).
     EncryptedImportFailed(String),
+    /// A reviewed library import finished (the error text if it stopped).
+    ReviewedImportDone(Result<(), String>),
 }
 
 /// Collects supported audio files below `root`.

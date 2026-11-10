@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::tempofx::{BeatClock, FxUnit};
 use crate::command::{
+    PendingSwap, SwapAt,
     TempoFxCommand, Command, CrossfaderCurve, DeckCommand, FxTarget, MixerCommand,
 };
 use crate::config::MAX_DECKS;
@@ -14,7 +15,7 @@ use crate::dsp::limiter::Limiter;
 use crate::dsp::meter::Meter;
 use crate::dsp::smooth::Smoothed;
 use crate::dsp::soft_clip;
-use crate::mixer::{Channel, crossfader_gains, level_gain};
+use crate::mixer::{Channel, crossfader_gains, level_gain, swap_beat};
 use crate::rt::{Garbage, RtCtx};
 use crate::sampler::Sampler;
 use crate::state::{AudibleState, EngineState, Event};
@@ -263,6 +264,9 @@ pub struct EngineProcessor {
     master: Option<usize>,
     master_bpm: f64,
     free_beat: f64,
+    /// EQ swap waiting for its beat: the request and the master-clock beat
+    /// it happens on (set on the first block after the request).
+    pending_swap: Option<(PendingSwap, Option<f64>)>,
     crossfader: f32,
     xf_curve: CrossfaderCurve,
     master_level: f32,
@@ -340,6 +344,7 @@ impl EngineProcessor {
             master: None,
             master_bpm: 120.0,
             free_beat: 0.0,
+            pending_swap: None,
             crossfader: 0.0,
             xf_curve: CrossfaderCurve::default(),
             master_level: 1.0,
@@ -485,6 +490,23 @@ impl EngineProcessor {
                     self.hp_meter.reset_clip();
                     self.channels.iter_mut().for_each(|c| c.meter.reset_clip());
                 }
+                MixerCommand::SwapEq { a, b, band, at } => {
+                    let n = self.channels.len();
+                    if a == b || a >= n || b >= n || band >= 3 {
+                        return;
+                    }
+                    let same = |p: &PendingSwap| {
+                        p.band == band && ((p.a, p.b) == (a, b) || (p.a, p.b) == (b, a))
+                    };
+                    if self.pending_swap.is_some_and(|(p, _)| same(&p)) {
+                        self.pending_swap = None;
+                    } else if at == SwapAt::Now {
+                        self.pending_swap = None;
+                        self.swap_eq(a, b, band);
+                    } else {
+                        self.pending_swap = Some((PendingSwap { a, b, band, at }, None));
+                    }
+                }
             },
             Command::TempoFx(u, c) => {
                 if u < TEMPO_FX_UNITS {
@@ -572,6 +594,37 @@ impl EngineProcessor {
         }
     }
 
+    /// Exchanges the knob and kill of EQ band `band` between two channels.
+    fn swap_eq(&mut self, a: usize, b: usize, band: usize) {
+        let x = self.channels[a].eq_band(band);
+        let y = self.channels[b].eq_band(band);
+        self.channels[a].set_eq_band(band, y);
+        self.channels[b].set_eq_band(band, x);
+    }
+
+    /// Runs a waiting EQ swap when its beat falls into this block. Without
+    /// a playing master there is no beat to wait for: it happens at once.
+    fn run_pending_swap(&mut self, clock: &BeatClock, n: usize, master_playing: bool) {
+        let Some((p, target)) = self.pending_swap else {
+            return;
+        };
+        let bar = self
+            .master
+            .and_then(|m| self.decks[m].bar_position());
+        let target = match target {
+            // The master jumped back (cue, loop) or changed: aim again.
+            Some(t) if t - clock.beat <= 4.5 => Some(t),
+            _ => swap_beat(clock.beat, bar, p.at),
+        };
+        let end = clock.beat + clock.beats_per_frame * n as f64;
+        if !master_playing || target.is_none_or(|t| t <= end) {
+            self.pending_swap = None;
+            self.swap_eq(p.a, p.b, p.band);
+        } else {
+            self.pending_swap = Some((p, target));
+        }
+    }
+
     fn render_block(&mut self, n: usize) {
         self.select_master();
         let sr = self.sr;
@@ -595,6 +648,7 @@ impl EngineProcessor {
             },
         };
         self.free_beat = clock.beat + bpf * n as f64;
+        self.run_pending_swap(&clock, n, matches!(master_info, Some((_, true))));
         let master_key = self.master.and_then(|m| self.decks[m].key_pitch());
         let target = master_info.map(|(beat, playing)| SyncTarget {
             bpm: self.master_bpm,
@@ -852,6 +906,7 @@ impl EngineProcessor {
         s.quantize = self.quantize;
         s.master_deck = self.master;
         s.master_bpm = self.master_bpm;
+        s.pending_swap = self.pending_swap.map(|(p, _)| p);
         for u in 0..TEMPO_FX_UNITS {
             s.tempo_fx[u] = self.tempo_fx[u * TEMPO_FX_SLOTS].state();
             for k in 1..TEMPO_FX_SLOTS {

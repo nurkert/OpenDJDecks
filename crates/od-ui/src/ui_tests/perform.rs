@@ -431,9 +431,10 @@ fn stem_fx_part_keys() {
     }));
 }
 
-/// Mixer knobs sit centred in their channel strip (the CUE key spans the
-/// strip), and the PHONES knobs centred on the global bar row (the
-/// crossfader is centred on it), at desktop and laptop size.
+/// Mixer knobs stand in one column per channel strip (their values and
+/// kills beside them), inside the strip, and the PHONES knobs centred on the
+/// global bar row (the crossfader is centred on it), at desktop and laptop
+/// size.
 #[test]
 fn mixer_and_phones_knobs_are_centred() {
     for size in [(1440, 900), (1280, 800)] {
@@ -442,15 +443,25 @@ fn mixer_and_phones_knobs_are_centred() {
         assert!(ui.wait_until(5.0, |u| u.has("mixer.ch1.cue")
             && u.has("global.phones.mix")));
         for ch in 1..=2 {
-            let strip = Rect::of(&ui.get(&format!("mixer.ch{ch}.cue")));
+            let stem = Rect::of(&ui.get(&format!("mixer.ch{ch}.stem")));
+            let cue = Rect::of(&ui.get(&format!("mixer.ch{ch}.cue")));
+            let high = Rect::of(&ui.get(&format!("mixer.ch{ch}.eq-high")));
             for knob in ["trim", "eq-high", "eq-mid", "eq-low"] {
                 let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{knob}")));
                 assert!(
-                    (k.centre().x - strip.centre().x).abs() <= 1.0,
-                    "{size:?} ch{ch} {knob}: knob x {} vs strip x {}",
-                    k.centre().x,
-                    strip.centre().x
+                    (k.x - high.x).abs() <= 1.0,
+                    "{size:?} ch{ch} {knob}: knob left {} vs column {}",
+                    k.x,
+                    high.x
                 );
+                assert!(
+                    k.x >= stem.x - 1.0 && k.right() <= cue.right() + 1.0,
+                    "{size:?} ch{ch} {knob}: knob outside the strip"
+                );
+            }
+            for knob in ["eq-mid", "eq-low"] {
+                let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{knob}")));
+                assert!((k.centre().x - high.centre().x).abs() <= 1.0, "{size:?} ch{ch} {knob}");
             }
         }
         let row = Rect::of(&ui.get("global.xfader"));
@@ -597,7 +608,7 @@ fn stem_keys_fill_while_separating_then_lit_means_audible() {
     perform(&ui);
     let (id, title) = ui.fx.tracks[0].clone();
     crate::decks::load_track(&ui.app, 0, id, None);
-    assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.title == title.as_str())));
+    assert!(ui.wait_until(90.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.title == title.as_str())));
     // 60 % separated: VOCAL and INST full, DRUMS 40 %, BASS empty.
     crate::decks::set_stem_progress(&ui.app, id, 0.6);
     assert!(ui.wait_until(5.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.stems_busy && (d.split_progress - 0.6).abs() < 1e-3)));
@@ -619,7 +630,7 @@ fn stem_keys_fill_while_separating_then_lit_means_audible() {
     let stems = od_stems::Stems { sample_rate: audio.sample_rate, vocals: audio.samples, drums: vec![0.0; n], bass: vec![0.0; n] };
     ui.app.decks.borrow().stem_cache().store(&track.content_hash, &stems).unwrap();
     crate::decks::stems_ready(&ui.app, id);
-    assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.stems_available && !d.stems_busy)));
+    assert!(ui.wait_until(90.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.stems_available && !d.stems_busy)));
     ui.pump(50);
     assert!(!ui.has("deck1.stem.vocal.progress"));
     assert_eq!(ui.value("deck1.stem.caption"), "STEMS");

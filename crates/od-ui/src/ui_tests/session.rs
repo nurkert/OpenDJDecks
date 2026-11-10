@@ -609,10 +609,10 @@ fn imported_preferences_and_shortcuts() {
 </PROPERTIES>"#,
     )
     .unwrap();
-    let (rb, _) = od_import::settings::read(Some(&dir)).unwrap();
+    let (rb, _) = od_import::settings::read(&dir).unwrap();
     let values = rb.preference_values();
     assert!(!values.is_empty());
-    let m = crate::import::import_settings(&ui.app, Some(&dir));
+    let m = crate::import::import_settings(&ui.app, &dir);
     assert!(m.starts_with("Took over"), "{m}");
     let s = stored(&ui);
     let want = |k: &str| values.iter().find(|(x, _)| x == k).map(|(_, v)| v.clone());
@@ -639,7 +639,7 @@ fn imported_preferences_and_shortcuts() {
     let empty = ui.fx.root.join("empty");
     std::fs::create_dir_all(&empty).unwrap();
     assert!(
-        crate::import::import_settings(&ui.app, Some(&empty)).starts_with("No rekordbox")
+        crate::import::import_settings(&ui.app, &empty).starts_with("No rekordbox")
     );
 }
 

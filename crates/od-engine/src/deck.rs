@@ -369,6 +369,13 @@ impl Deck {
         self.beat_at(self.pos)
     }
 
+    /// Position (1..=4) of the current beat in its bar, from the grid.
+    pub fn bar_position(&self) -> Option<u8> {
+        let grid = &self.track.as_ref()?.beatgrid;
+        let i = grid.beat_index_at(self.pos / self.sr)?;
+        grid.beats.get(i).map(|b| b.bar_position)
+    }
+
     /// Auto gain of the loaded track with your correction, in dB.
     pub fn auto_gain_db(&self) -> f32 {
         self.track().map_or(0.0, |t| t.auto_gain_db + self.gain_adjust_db)

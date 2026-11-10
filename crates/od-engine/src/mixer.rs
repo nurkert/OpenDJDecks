@@ -2,7 +2,7 @@
 
 use crate::tempofx::BeatClock;
 use crate::channelfx::ChannelFx;
-use crate::command::{ChannelCommand, CrossfaderCurve, FaderCurve, XfAssign};
+use crate::command::{ChannelCommand, CrossfaderCurve, FaderCurve, SwapAt, XfAssign};
 use crate::dsp::db_to_gain;
 use crate::dsp::eq::Eq3;
 use crate::dsp::meter::Meter;
@@ -34,6 +34,22 @@ pub fn crossfader_gains(x: f32, curve: CrossfaderCurve) -> (f32, f32) {
         CrossfaderCurve::Cut => {
             const CUT: f32 = 0.04;
             (((1.0 - p) / CUT).min(1.0), (p / CUT).min(1.0))
+        }
+    }
+}
+
+/// The master-clock beat an EQ swap requested at `beat` happens on: the
+/// next whole beat, or the next downbeat when `bar_position` (1..=4, the
+/// position of the current beat in its bar) is known. `None` for
+/// [`SwapAt::Now`].
+pub fn swap_beat(beat: f64, bar_position: Option<u8>, at: SwapAt) -> Option<f64> {
+    let whole = beat.floor();
+    match at {
+        SwapAt::Now => None,
+        SwapAt::Beat => Some(whole + 1.0),
+        SwapAt::Bar => {
+            let pos = bar_position.unwrap_or(1).clamp(1, 4);
+            Some(whole + (5 - pos) as f64)
         }
     }
 }
@@ -96,6 +112,7 @@ impl Channel {
                 }
             }
             ChannelCommand::SetEqMode(m) => self.eq.set_mode(m),
+            ChannelCommand::SetEqKill { band, on } => self.eq.set_kill(band, on),
             ChannelCommand::SetChannelFx(k) => self.color.set_kind(k),
             ChannelCommand::SetChannelFxAmount(a) => self.color.set_amount(a),
             ChannelCommand::SetFader(v) => self.fader = v.clamp(0.0, 1.0),
@@ -136,6 +153,20 @@ impl Channel {
         self.meter.process(buf);
     }
 
+    /// The knob and kill of EQ band `band`.
+    pub fn eq_band(&self, band: usize) -> (f32, bool) {
+        (self.eq_knobs[band], self.eq.kills()[band])
+    }
+
+    /// Sets the knob and kill of EQ band `band` (one step of a swap).
+    pub fn set_eq_band(&mut self, band: usize, (knob, kill): (f32, bool)) {
+        if band < 3 {
+            self.eq_knobs[band] = knob;
+            self.eq.set_band(band, knob);
+            self.eq.set_kill(band, kill);
+        }
+    }
+
     pub fn state(&self) -> ChannelState {
         ChannelState {
             meter: self.meter.reading(),
@@ -143,6 +174,7 @@ impl Channel {
             trim_db: self.trim_db,
             auto_gain: self.auto_gain,
             eq: self.eq_knobs,
+            eq_kill: self.eq.kills(),
             channel_fx: self.color.kind(),
             channel_fx_amount: self.color.amount(),
             xf_assign: self.xf,
@@ -187,5 +219,32 @@ mod tests {
             assert!((fader_gain(1.0, c) - 1.0).abs() < 1e-6);
         }
         assert!(fader_gain(0.25, FaderCurve::Sharp) > 0.99);
+    }
+
+    #[test]
+    fn swap_lands_on_the_next_beat_or_downbeat() {
+        assert_eq!(swap_beat(10.3, Some(2), SwapAt::Now), None);
+        assert_eq!(swap_beat(10.3, Some(2), SwapAt::Beat), Some(11.0));
+        // Beat 10 is the 2 of its bar: the next 1 is three beats on.
+        assert_eq!(swap_beat(10.3, Some(2), SwapAt::Bar), Some(13.0));
+        assert_eq!(swap_beat(10.0, Some(4), SwapAt::Bar), Some(11.0));
+        assert_eq!(swap_beat(8.9, Some(1), SwapAt::Bar), Some(12.0));
+        // Without a grid position the bar counts from the current beat.
+        assert_eq!(swap_beat(3.5, None, SwapAt::Bar), Some(7.0));
+    }
+
+    #[test]
+    fn eq_band_round_trips_knob_and_kill() {
+        let mut a = Channel::new(48_000, 1);
+        let mut b = Channel::new(48_000, 2);
+        a.apply(ChannelCommand::SetEq { band: 0, value: -1.0 });
+        b.apply(ChannelCommand::SetEqKill { band: 0, on: true });
+        let (x, y) = (a.eq_band(0), b.eq_band(0));
+        a.set_eq_band(0, y);
+        b.set_eq_band(0, x);
+        assert_eq!(a.state().eq[0], 0.0);
+        assert_eq!(a.state().eq_kill, [true, false, false]);
+        assert_eq!(b.state().eq[0], -1.0);
+        assert_eq!(b.state().eq_kill, [false; 3]);
     }
 }
