@@ -147,7 +147,9 @@ fn search_buttons_run_while_held() {
             .is_some_and(|d| d.loaded)
     }));
     ui.pump(200);
-    let p = Rect::of(&ui.get("deck1.club.search-fwd")).centre();
+    // On its legend, toward the outer edge (the inner edge wraps the jog).
+    let k = Rect::of(&ui.get("deck1.club.search-fwd"));
+    let p = slint::LogicalPosition::new(k.right() - 16.0, k.y + k.h / 2.0);
     ui.press_at(p, slint::platform::PointerEventButton::Left);
     assert!(
         ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)

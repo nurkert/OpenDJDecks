@@ -274,6 +274,9 @@ Controls have a 4px radius, panels 8px, dialogs and menus 10px. The platter and 
 
 Borders are the exception: focus, the on-state of a key that sits on a coloured area, and hollow empty slots such as an unset hot cue.
 
+### Named Rules
+**The Concave Neighbour Rule.** A round element (the jog, the platter) gets concave neighbours. A key beside it has an inner edge that is an arc concentric with the ring, one key gap (4 px) from it all the way round; above and below the arc it fills its corner up to half a key gap short of the centre line, so no dead background is left between keys and ring. Outer edges stay straight with the control radius, the legend sits toward the outer edge and never touches the curve, the fill follows the state language, and the key takes the pointer only where it is drawn (never over the ring), at least over the rectangle it replaced. Built from one component (`ConcaveKey`).
+
 ## Components
 
 ### Emission Lines (the primitive)

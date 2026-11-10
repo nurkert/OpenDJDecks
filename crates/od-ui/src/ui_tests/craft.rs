@@ -310,3 +310,35 @@ fn browser_splitters_never_let_content_spill() {
         assert!(Rect::of(&ui.get("browser.upper-splitter")).bottom() <= col.y + 8.0, "splitter above the browser");
     }
 }
+
+/// [46] Club: the four keys beside the jog wrap it. Each key reaches to the
+/// centre line (half a key gap short), so the corners are filled; a press
+/// on the legend acts, a press on the jog never reaches a key, and the
+/// keys are at least as wide as the old rectangles. Desktop and laptop.
+#[test]
+fn club_keys_wrap_the_jog() {
+    for size in [(1440, 900), (1280, 800)] {
+        let ui = Ui::open(size);
+        perform(&ui);
+        slint::ComponentHandle::global::<crate::Club>(&ui.app.ui).invoke_set_enabled(true);
+        ui.pump(300);
+        assert!(ui.wait_until(5.0, |u| u.has("deck1.club.jog")));
+        let jog = Rect::of(&ui.get("deck1.club.jog"));
+        let cx = jog.centre().x;
+        let ring = jog.w / 2.0 + 5.0;
+        for (key, left) in [("search-back", true), ("call-prev", true), ("search-fwd", false), ("call-next", false)] {
+            let k = Rect::of(&ui.get(&format!("deck1.club.{key}")));
+            let inner = if left { k.right() } else { k.x };
+            assert!((inner - cx).abs() <= 2.5, "{size:?} {key}: inner edge {inner} at the centre line {cx}");
+            // The old key ended a group gap before the jog's square.
+            let old = (jog.x - 5.0 - 6.0) - if left { k.x } else { 2.0 * cx - k.right() };
+            let reach = (cx - ring - 4.0) - if left { k.x } else { 2.0 * cx - k.right() };
+            assert!(reach + 0.5 >= old, "{size:?} {key}: no smaller than before ({reach} vs {old})");
+        }
+        // The jog's centre belongs to the jog: pressing it calls nothing.
+        let before = crate::engine::snapshot(&ui.app).map(|s| s.decks[0].position);
+        ui.click_at(jog.centre(), slint::platform::PointerEventButton::Left);
+        ui.pump(200);
+        assert_eq!(crate::engine::snapshot(&ui.app).map(|s| s.decks[0].position), before, "{size:?}: the jog is not a key");
+    }
+}

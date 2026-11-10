@@ -365,6 +365,110 @@ export component LineToggle inherits Rectangle {
     }
 }
 
+// A key beside a round element (DESIGN.md, Shapes: round elements get
+// concave neighbours): a plate whose inner edge is an arc concentric with
+// the round element's ring, `arc-r` from its centre (the ring's radius
+// plus the key gap), so the gap stays constant; above and below the arc
+// the key fills its corner up to `gap / 2` short of the centre line. The
+// outer edges are straight with the control radius. `inner-right`: the
+// round element is to the right (a key on its left). `cy` is the round
+// element's centre in the key's own coordinates; the key's inner edge
+// (its full width) lies `gap / 2` short of the centre's x. Fill follows
+// the state language; the legend sits toward the outer edge, clear of the
+// curve. The whole box takes the pointer.
+export component ConcaveKey inherits Rectangle {
+    in property <string> label;
+    in property <string> tooltip;
+    in property <string> command;
+    in property <bool> on;
+    in property <bool> selected;
+    in property <bool> enabled: true;
+    in property <color> tone: Theme.attention;
+    in property <length> label-size: Theme.control;
+    in property <length> tracking: 1.2px;
+    in property <bool> inner-right: true;
+    in property <length> cy;
+    in property <length> arc-r;
+    in property <length> gap: Theme.s1;
+    callback clicked();
+    // Press and release (hold keys).
+    callback held(bool);
+    out property <bool> pressed: root.down;
+    // The key takes the pointer where it is drawn, never over the round
+    // element: eight strips, each reaching to the arc at its own height
+    // (from the inside), together at least the old rectangle.
+    property <bool> down;
+    property <int> hovers;
+    property <bool> over: root.hovers > 0;
+
+    property <float> w: root.width / 1px;
+    property <float> h: root.height / 1px;
+    property <float> c: Theme.r-control / 1px;
+    property <float> ccx: root.w + root.gap / 2px;
+    property <float> ccy: root.cy / 1px;
+    property <float> rr: root.arc-r / 1px;
+    // Half chord where the arc leaves the inner straight edge.
+    property <float> k: Math.sqrt(Math.max(0, root.rr * root.rr - (root.gap / 2px) * (root.gap / 2px)));
+    property <float> ya: clamp(root.ccy - root.k, 0, root.h);
+    property <float> yb: clamp(root.ccy + root.k, 0, root.h);
+    // The inner edge at y (left orientation).
+    pure function xe(y: float) -> float {
+        return Math.min(root.w, root.ccx - Math.sqrt(Math.max(0, root.rr * root.rr - (y - root.ccy) * (y - root.ccy))));
+    }
+    // Mirrors x for a key right of the round element.
+    pure function mx(x: float) -> float { return root.inner-right ? x : root.w - x; }
+    property <string> sw: root.inner-right ? "0" : "1";
+    property <string> cw: root.inner-right ? "1" : "0";
+    // Room for the legend: from the outer edge to the arc's deepest point.
+    property <float> room: root.xe(clamp(root.ccy, 0, root.h));
+
+    shape := Path {
+        width: root.width; height: root.height;
+        viewbox-x: 0; viewbox-y: 0;
+        viewbox-width: root.w; viewbox-height: root.h;
+        fill: Theme.face(root.enabled, root.down, root.over, root.selected, root.on, root.tone);
+        stroke: root.enabled || root.selected || root.on ? transparent : Theme.rule;
+        stroke-width: root.enabled || root.selected || root.on ? 0px : Theme.hair;
+        commands: "M " + root.mx(root.c) + " 0"
+            + " L " + root.mx(root.xe(0)) + " 0"
+            + " L " + root.mx(root.xe(root.ya)) + " " + root.ya
+            + " A " + root.rr + " " + root.rr + " 0 0 " + root.sw + " " + root.mx(root.xe(root.yb)) + " " + root.yb
+            + " L " + root.mx(root.xe(root.h)) + " " + root.h
+            + " L " + root.mx(root.c) + " " + root.h
+            + " A " + root.c + " " + root.c + " 0 0 " + root.cw + " " + root.mx(0) + " " + (root.h - root.c)
+            + " L " + root.mx(0) + " " + root.c
+            + " A " + root.c + " " + root.c + " 0 0 " + root.cw + " " + root.mx(root.c) + " 0 Z";
+    }
+    t := Text {
+        x: root.inner-right ? 0px : root.width - root.room * 1px;
+        width: root.room * 1px;
+        y: root.down && root.enabled ? 1px : 0px;
+        height: root.height;
+        text: root.label;
+        font-family: Theme.family; font-size: root.label-size; font-weight: Theme.weight-semi; letter-spacing: root.tracking;
+        color: Theme.ink(root.enabled, root.down, root.over, root.selected, root.on);
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    for i in 8: TipArea {
+        property <float> y0: root.h * i / 8;
+        property <float> y1: root.h * (i + 1) / 8;
+        // The strip's narrowest point: its y nearest the centre.
+        property <float> reach: root.xe(clamp(root.ccy, self.y0, self.y1));
+        x: root.inner-right ? 0px : root.width - self.width;
+        y: self.y0 * 1px; height: (self.y1 - self.y0) * 1px;
+        width: max(0px, self.reach * 1px);
+        tooltip: root.tooltip; command: root.command;
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        changed has-hover => { root.hovers += self.has-hover ? 1 : -1; }
+        clicked => { root.clicked(); }
+        pointer-event(ev) => {
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.down) { root.down = true; root.held(true); }
+            if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.up) { root.down = false; root.held(false); }
+        }
+    }
+}
+
 // Drag readout (DESIGN.md, Control anatomy): the value of a knob or fader
 // while it is held, on a bone plate beside the control. It floats over its
 // neighbours and takes no room in the layout.
