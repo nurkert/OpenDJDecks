@@ -1176,6 +1176,10 @@ const DE: &[(&str, &str)] = &[
         "Check before the gig: outputs, controller, disk, files",
         "Vor dem Gig prüfen: Ausgänge, Controller, Speicher, Dateien",
     ),
+    // Restore after a crash (roadmap [9]).
+    ("Deck {}: {} at {}", "Deck {}: {} bei {}"),
+    ("The recording {} was kept: {}", "Die Aufnahme {} ist erhalten: {}"),
+    ("Restored deck {}: press PLAY to go on", "Deck {} wiederhergestellt: PLAY drücken, um weiterzuspielen"),
 ];
 
 /// Whether `english` has a German translation (independent of the

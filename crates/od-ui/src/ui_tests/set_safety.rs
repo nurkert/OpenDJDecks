@@ -106,3 +106,131 @@ fn gig_check_reports_each_item() {
     ui.pump(100);
     assert!(!ui.has("app.gig-check"));
 }
+
+const CRASH_ROOT: &str = "OD_UI_CRASH_CHILD_ROOT";
+
+/// The child of `killed_mid_set_restores_decks_and_keeps_the_recording`:
+/// a set in progress (deck 1 playing, deck 2 cued with its tempo moved, a
+/// recording running) until it is killed.
+#[test]
+#[ignore = "run by killed_mid_set_restores_decks_and_keeps_the_recording in a child process"]
+fn crash_child_plays_and_records() {
+    let Some(root) = std::env::var_os(CRASH_ROOT) else { return };
+    let ui = Ui::start(Fixture::existing(root.into()), (1440, 900), false);
+    perform(&ui);
+    crate::decks::load_track(&ui.app, 1, ui.fx.tracks[1].0, None);
+    play(&ui, 0, 0);
+    crate::engine::deck_cmd(&ui.app, 1, od_engine::DeckCommand::SetTempoFader(0.3));
+    crate::engine::deck_cmd(&ui.app, 1, od_engine::DeckCommand::Seek { seconds: 2.0 });
+    crate::recorder::toggle_from_controller(&ui.app);
+    let session = crate::restore::session_path(&ui.fx.library);
+    let started = std::time::Instant::now();
+    let mut ready = false;
+    loop {
+        ui.pump(16);
+        std::thread::sleep(std::time::Duration::from_millis(8));
+        if !ready
+            && crate::restore::read(&session).is_some_and(|s| {
+                s.decks.len() == 2
+                    && s.decks[0].position > 2.5
+                    && s.recording.is_some()
+                    && (s.decks[1].tempo_fader - 0.3).abs() < 1e-3
+            })
+        {
+            println!("READY");
+            ready = true;
+        }
+        if started.elapsed() > std::time::Duration::from_secs(120) {
+            std::process::exit(2);
+        }
+    }
+}
+
+/// Kills the child if the test fails before it does.
+struct Child(std::process::Child);
+
+impl Drop for Child {
+    fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+    }
+}
+
+/// [9] A set killed with SIGKILL comes back: the next start offers the
+/// decks, keeps the recording (repaired, listed, with its tracklist) and
+/// RESTORE DECKS loads the tracks at their positions with their tempo,
+/// waiting for PLAY.
+#[test]
+fn killed_mid_set_restores_decks_and_keeps_the_recording() {
+    use std::io::BufRead;
+    let fx = Fixture::new();
+    let mut child = Child(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "ui_tests::set_safety::crash_child_plays_and_records",
+                "--exact",
+                "--ignored",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .env(CRASH_ROOT, &fx.root)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .expect("child starts"),
+    );
+    let out = std::io::BufReader::new(child.0.stdout.take().unwrap());
+    let ready = out.lines().map_while(Result::ok).any(|l| l.contains("READY"));
+    assert!(ready, "the child set got going");
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    // SIGKILL on Unix: no destructor, no clean quit.
+    child.0.kill().unwrap();
+    child.0.wait().unwrap();
+
+    let session = crate::restore::session_path(&fx.library);
+    let saved = crate::restore::read(&session).expect("the state is on the disk");
+    assert!(!saved.clean, "a killed run is not clean");
+    let rec = saved.recording.clone().expect("the recording is named");
+    let at = saved.decks[0].position;
+
+    let ids = (fx.tracks[0].0, fx.tracks[1].0);
+    let ui = Ui::start(fx, (1440, 900), false);
+    assert!(ui.has("app.restore"), "the restore band is offered");
+    let offer = ui.value("app.restore");
+    assert!(offer.contains("Deck 1: Alpha Tune at 0:0"), "{offer}");
+    assert!(offer.contains("Deck 2: Bravo Tune at 0:02"), "{offer}");
+    assert!(offer.contains("was kept"), "{offer}");
+    // The recording plays and is listed.
+    let r = hound::WavReader::open(&rec.path).expect("the recording is a valid WAV");
+    let secs = r.duration() as f64 / r.spec().sample_rate as f64;
+    assert!(secs > 0.5, "{secs:.2} s kept");
+    let listed: i64 = ui
+        .app
+        .state
+        .borrow()
+        .lib
+        .conn()
+        .query_row(
+            "SELECT COUNT(*) FROM recording WHERE path = ?1",
+            [rec.path.display().to_string()],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(listed, 1);
+
+    ui.click("app.restore.restore");
+    assert!(
+        ui.wait_until(30.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| {
+            s.decks[0].track == Some(ids.0)
+                && s.decks[1].track == Some(ids.1)
+                && (s.decks[0].position - at).abs() < 0.05
+                && (s.decks[1].tempo_fader - 0.3).abs() < 1e-3
+        })),
+        "tracks, positions and tempo are back"
+    );
+    let s = crate::engine::snapshot(&ui.app).unwrap();
+    assert!(!s.decks[0].playing && !s.decks[1].playing, "the decks wait for PLAY");
+    assert!((s.decks[1].position - 2.0).abs() < 0.3, "deck 2 at {}", s.decks[1].position);
+    assert!(!ui.has("app.restore"), "the offer goes");
+    assert_eq!(ui.app.ui.get_mode(), "perform");
+}

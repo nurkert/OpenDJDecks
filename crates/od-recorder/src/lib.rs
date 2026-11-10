@@ -2,6 +2,11 @@
 //! is written to a WAV file by a background thread; the tracklist is built
 //! from the engine's "audible track" logic and written as a `.cue` sheet and
 //! plain text, and the recording can be split into one file per track.
+//!
+//! A recording survives a crash: the writer brings the WAV header up to date
+//! every second ([`FLUSH_EVERY`]), so a killed process leaves a file that
+//! plays up to the last second, and [`repair_wav`] makes the header match
+//! everything that reached the disk after that.
 
 mod encode;
 pub use encode::{AutoAction, SilenceDetector, wav_to_flac, wav_to_mp3};
@@ -30,6 +35,9 @@ pub enum RecordError {
 }
 
 pub type Result<T> = std::result::Result<T, RecordError>;
+
+/// How often the writer makes the file on disk a complete WAV.
+pub const FLUSH_EVERY: Duration = Duration::from_secs(1);
 
 /// One tracklist entry.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -145,6 +153,7 @@ impl Recorder {
             .name("od-recorder".into())
             .spawn(move || -> Result<()> {
                 let mut buf: Vec<f32> = Vec::with_capacity(48_000);
+                let mut flushed = std::time::Instant::now();
                 loop {
                     let done = stop2.load(Ordering::Relaxed);
                     buf.clear();
@@ -166,6 +175,12 @@ impl Recorder {
                     if done {
                         break;
                     }
+                    if flushed.elapsed() >= FLUSH_EVERY {
+                        // Header sizes and buffered samples to the disk: a
+                        // crash from here on leaves a playable file.
+                        writer.flush()?;
+                        flushed = std::time::Instant::now();
+                    }
                     std::thread::sleep(Duration::from_millis(20));
                 }
                 writer.finalize()?;
@@ -180,6 +195,16 @@ impl Recorder {
             tracklist: Vec::new(),
         });
         Ok(path)
+    }
+
+    /// The file being written, while recording.
+    pub fn path(&self) -> Option<&Path> {
+        self.active.as_ref().map(|a| a.path.as_path())
+    }
+
+    /// The tracklist so far, while recording.
+    pub fn tracklist(&self) -> &[TracklistEntry] {
+        self.active.as_ref().map_or(&[], |a| a.tracklist.as_slice())
     }
 
     /// Records that `track` became the audible track now.
@@ -347,6 +372,61 @@ pub fn split(recording: &Recording) -> Result<Vec<PathBuf>> {
         out.push(path);
     }
     Ok(out)
+}
+
+/// Makes a WAV left by a killed process whole: the RIFF and data sizes
+/// are set to what is on the disk, and a partly written last frame is cut
+/// off. Returns the playable duration in seconds. A file that is already
+/// whole is left as it is.
+pub fn repair_wav(path: &Path) -> Result<f64> {
+    use std::io::{Read, Seek, SeekFrom, Write};
+    let mut f = std::fs::OpenOptions::new().read(true).write(true).open(path)?;
+    let len = f.metadata()?.len();
+    let mut head = [0u8; 12];
+    f.read_exact(&mut head)?;
+    if &head[0..4] != b"RIFF" || &head[8..12] != b"WAVE" {
+        return Err(RecordError::Encode("not a WAV file".into()));
+    }
+    // Walk the chunks to "fmt " (block size) and "data".
+    let mut pos = 12u64;
+    let mut block_align = 0u64;
+    let mut byte_rate = 0u64;
+    let data_at = loop {
+        if pos + 8 > len {
+            return Err(RecordError::Encode("no data chunk".into()));
+        }
+        f.seek(SeekFrom::Start(pos))?;
+        let mut ch = [0u8; 8];
+        f.read_exact(&mut ch)?;
+        let size = u32::from_le_bytes([ch[4], ch[5], ch[6], ch[7]]) as u64;
+        if &ch[0..4] == b"fmt " {
+            let mut fmt = [0u8; 16];
+            f.read_exact(&mut fmt)?;
+            byte_rate = u32::from_le_bytes([fmt[8], fmt[9], fmt[10], fmt[11]]) as u64;
+            block_align = u16::from_le_bytes([fmt[12], fmt[13]]) as u64;
+        }
+        if &ch[0..4] == b"data" {
+            break pos;
+        }
+        pos += 8 + size + (size & 1);
+    };
+    if block_align == 0 || byte_rate == 0 {
+        return Err(RecordError::Encode("no format chunk".into()));
+    }
+    let data_start = data_at + 8;
+    let data_len = (len.saturating_sub(data_start) / block_align) * block_align;
+    let end = data_start + data_len;
+    if end < len {
+        f.set_len(end)?;
+    }
+    let riff = u32::try_from(end - 8).unwrap_or(u32::MAX);
+    let data = u32::try_from(data_len).unwrap_or(u32::MAX);
+    f.seek(SeekFrom::Start(4))?;
+    f.write_all(&riff.to_le_bytes())?;
+    f.seek(SeekFrom::Start(data_at + 4))?;
+    f.write_all(&data.to_le_bytes())?;
+    f.sync_all()?;
+    Ok(data_len as f64 / byte_rate as f64)
 }
 
 /// Re-export for callers that only need the tap type.

@@ -47,6 +47,7 @@ mod player;
 mod preferences;
 mod recorder;
 mod render;
+mod restore;
 mod sampler;
 mod samples;
 mod settings;

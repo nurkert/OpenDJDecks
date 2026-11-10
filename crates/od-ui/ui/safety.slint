@@ -210,3 +210,72 @@ export component GigCheckBar inherits Rectangle {
         }
     }
 }
+
+// The last run did not end cleanly: what can come back.
+export global Restore {
+    in-out property <bool> visible;
+    // Local time of the last saved state ("23:41").
+    in property <string> when;
+    // "Deck 1: Night Drive at 1:15 · Deck 2: …".
+    in property <string> summary;
+    in property <bool> has-decks;
+    // "The recording … was kept: 41:12" ("" without one).
+    in property <string> recording;
+    callback restore();
+    callback dismiss();
+}
+
+// Offered once after a crash. Sodium, because it needs you; it never
+// covers a control and goes as soon as you choose.
+export component RestoreBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: "app.restore";
+    accessible-value: Restore.summary + (Restore.recording != "" ? " | " + Restore.recording : "");
+    height: max(56px, body.preferred-height + 2 * Theme.s3);
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    HorizontalLayout {
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        spacing: Theme.s4;
+        VerticalLayout {
+            padding-top: Theme.s2; padding-bottom: Theme.s2;
+            VLine { form: "double"; tone: Theme.attention; }
+        }
+        body := VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: Theme.key-gap;
+            Text {
+                text: @tr("OpenDJDecks did not close properly at {}", Restore.when);
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+                color: Theme.bone; overflow: elide;
+            }
+            if Restore.has-decks: Text {
+                text: Restore.summary;
+                overflow: elide;
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            }
+            if Restore.recording != "": Text {
+                text: Restore.recording;
+                overflow: elide;
+                font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2;
+            }
+        }
+        if Restore.has-decks: VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.restore.restore";
+                label: @tr("RESTORE DECKS"); tone: Theme.live; active: true;
+                tooltip: @tr("Load the tracks back where they were, with tempo, loops and mixer; the decks wait for PLAY");
+                clicked => { Restore.restore(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.restore.dismiss";
+                label: Restore.has-decks ? @tr("START EMPTY") : @tr("OK");
+                clicked => { Restore.dismiss(); }
+            }
+        }
+    }
+}

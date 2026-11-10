@@ -252,6 +252,9 @@ pub enum DeckCommand {
     /// reaches `start` while playing forward, the loop engages (sample
     /// accurate). `None` disarms. Reset by `Load`.
     SetActiveLoop(Option<(f64, f64)>),
+    /// Sets the loop to `start..end` (seconds) as it was: engaged when
+    /// `active`, else only remembered for RELOOP (session restore).
+    SetLoop { start: f64, end: f64, active: bool },
     /// Sets the loop in point at the current (quantized) position.
     LoopIn,
     /// Sets the loop out point and activates the loop.

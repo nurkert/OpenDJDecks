@@ -157,6 +157,7 @@ impl App {
         crate::audio_health::wire(&app);
         crate::gig_check::wire(&app);
         engine::start(&app);
+        crate::restore::wire(&app);
         decks::autoload(&app);
 
         let _ = app.state.borrow_mut().lib.check_missing();
@@ -189,6 +190,7 @@ impl App {
 
     pub fn run(self: &Rc<Self>) -> anyhow::Result<()> {
         self.ui.run()?;
+        crate::restore::clean_exit(self);
         shell::remember_view(self);
         update::apply_on_quit(self);
         Ok(())

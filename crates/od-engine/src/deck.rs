@@ -674,6 +674,19 @@ impl Deck {
             }
             DeckCommand::Search(rate) => self.search = rate.clamp(-16.0, 16.0),
             DeckCommand::SavedLoop(dir) => self.memory_cue(dir, true, ctx),
+            DeckCommand::SetLoop { start, end, active } => {
+                if start.is_finite() && end.is_finite() && end > start {
+                    let (s, e) = (start * self.sr, end * self.sr);
+                    if active {
+                        self.set_loop(s, e, None);
+                    } else {
+                        self.loop_in = Some(s);
+                        self.loop_out = Some(e);
+                        self.loop_beats = None;
+                        self.exit_loop();
+                    }
+                }
+            }
             DeckCommand::SetActiveLoop(range) => {
                 self.active_loop = range
                     .filter(|(a, b)| a.is_finite() && b.is_finite() && b > a)

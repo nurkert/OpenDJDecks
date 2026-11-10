@@ -455,6 +455,7 @@ fn frame(app: &App) {
     };
     player::follow_preview(app, &state);
     recorder::frame(app, &state);
+    crate::restore::frame(app, &state);
     if app.ui.get_mode() != "perform" {
         return;
     }

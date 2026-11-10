@@ -1,8 +1,8 @@
 ---
 title: Safe during a set
 description: The audio line in the status band, what happens when the audio interface is lost, and the check before the gig.
-keywords: [audio, output, device, interface, latency, dropouts, xrun, lost, unplugged, disconnected, sound card, gig check, before the gig, disk space, missing files, safety]
-features: [shell-audio-health, shell-gig-check]
+keywords: [crash, restore, recover, killed, power cut, session, audio, output, device, interface, latency, dropouts, xrun, lost, unplugged, disconnected, sound card, gig check, before the gig, disk space, missing files, safety]
+features: [shell-audio-health, shell-gig-check, shell-crash-restore]
 ---
 
 OpenDJDecks keeps an eye on the things that can end a set early. This page explains what it shows and what you can do.
@@ -44,3 +44,16 @@ Open the menu next to **GIG** in the top bar and press **RUN GIG CHECK**, or cho
 - **TRACK FILES**: tracks of the library whose file is missing.
 
 A solid green line is ready, a dashed one is worth a look, a struck one needs fixing before you play. **CHECK AGAIN** runs it once more, **CLOSE** hides the band.
+
+## After a crash
+
+While you play, OpenDJDecks writes the state of the decks next to your library once a second: the tracks, their positions, tempo and range, keylock, key shift, sync, loops, and the mixer. It writes a new copy and then swaps it in, so a crash at any moment leaves a complete state behind.
+
+If the app did not close properly, the next start offers it back in a band under the top bar:
+
+![The restore offer after a crash](../img/restore.png)
+
+- **RESTORE DECKS** loads the tracks where they were, with tempo, loops and the mixer, and opens Perform. The decks wait for **PLAY**.
+- **START EMPTY** leaves the decks empty.
+
+A recording that was running is kept either way. Its file is made whole up to the moment of the crash and is listed under Recordings with the tracklist so far. The band says how long it is.

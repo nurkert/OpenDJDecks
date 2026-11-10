@@ -13,6 +13,8 @@ Press the round record button next to the master level (or `⌘Return`, or the r
 
 **RECORD** in the top bar starts and stops a recording; it turns red with the running time. The small key beside it shows the recording section: the level, a meter, the elapsed time and file size, and the tracklist as it grows. Tracks are added as they become audible. Record level goes from −12 to +12 dB.
 
+The file on disk is a complete WAV at every moment, updated once a second. If the app or the computer crashes, the recording keeps everything up to the crash and appears under Recordings with its tracklist the next time OpenDJDecks starts. See [Safe during a set](set-safety.md#after-a-crash).
+
 ## After recording
 
 Open **Recordings** from the **RECORDINGS** rail: every mix is listed with its file. Right there:

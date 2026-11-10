@@ -6256,3 +6256,28 @@ msgstr "GIG-CHECK STARTEN"
 msgctxt "AppWindow"
 msgid "Gig Check"
 msgstr "Gig-Check"
+
+#: ui/safety.slint:248
+msgctxt "RestoreBar"
+msgid "OpenDJDecks did not close properly at {}"
+msgstr "OpenDJDecks wurde um {} nicht richtig beendet"
+
+#: ui/safety.slint:267
+msgctxt "RestoreBar"
+msgid "RESTORE DECKS"
+msgstr "DECKS WIEDERHERSTELLEN"
+
+#: ui/safety.slint:268
+msgctxt "RestoreBar"
+msgid "Load the tracks back where they were, with tempo, loops and mixer; the decks wait for PLAY"
+msgstr "Die Tracks dorthin laden, wo sie waren, mit Tempo, Loops und Mixer; die Decks warten auf PLAY"
+
+#: ui/safety.slint:276
+msgctxt "RestoreBar"
+msgid "START EMPTY"
+msgstr "LEER STARTEN"
+
+#: ui/safety.slint:276
+msgctxt "RestoreBar"
+msgid "OK"
+msgstr "OK"

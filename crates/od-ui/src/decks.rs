@@ -280,6 +280,8 @@ pub(crate) struct Decks {
     /// The track data each deck plays (a grid edit swaps in a copy with
     /// the new grid, sharing the audio).
     engine_data: [Option<Arc<od_engine::TrackData>>; DECKS],
+    /// A deck being restored after a crash: applied when its track is in.
+    pub restore: [Option<crate::restore::DeckSnap>; DECKS],
 }
 
 impl Decks {
@@ -312,6 +314,7 @@ impl Default for Decks {
             stem_worker: None,
             stem_progress: HashMap::new(),
             engine_data: Default::default(),
+            restore: Default::default(),
             views: DeckViews::default(),
             zoom: [1.0; DECKS],
             scroll: Default::default(),
@@ -749,6 +752,11 @@ pub(crate) fn receive_prepared(app: &App) {
         if let Some(t) = play_from {
             engine::deck_cmd(app, deck, DeckCommand::Seek { seconds: t });
             engine::deck_cmd(app, deck, DeckCommand::Play);
+        }
+        let on_deck = app.decks.borrow().loaded_id(deck).map(|t| t.0);
+        let restore = app.decks.borrow_mut().restore[deck].take_if(|r| Some(r.track) == on_deck);
+        if let Some(r) = restore {
+            crate::restore::apply_deck(app, deck, &r);
         }
         engine::show_message(app);
         app.status(format!("Loaded {title} on deck {}", deck + 1));

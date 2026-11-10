@@ -85,7 +85,8 @@ pub(crate) fn write_wav(path: &Path, secs: f32, pitch: f32) {
 /// folder holding a file that is not in the collection.
 #[allow(dead_code)]
 pub(crate) struct Fixture {
-    _dir: tempfile::TempDir,
+    /// Removed with the fixture (`None`: another process owns the folder).
+    _dir: Option<tempfile::TempDir>,
     pub root: PathBuf,
     pub library: PathBuf,
     /// Explorer root (stands for the user folder).
@@ -140,7 +141,7 @@ impl Fixture {
             .unwrap();
         drop(lib);
         Self {
-            _dir: dir,
+            _dir: Some(dir),
             root,
             library,
             explorer_root,
@@ -172,9 +173,43 @@ impl Fixture {
             explorer_root: root.clone(),
             outside_folder: root.clone(),
             outside_file: root.clone(),
-            _dir: dir,
+            _dir: Some(dir),
             library,
             tracks: Vec::new(),
+            playlist,
+        }
+    }
+
+    /// The fixture another process made at `root` (a child process of a
+    /// test opens the parent's library; the parent removes it).
+    pub fn existing(root: PathBuf) -> Self {
+        test_env();
+        let library = root.join("library/library.sqlite");
+        let lib = Library::open(&library).unwrap();
+        let mut tracks: Vec<(TrackId, String)> = lib
+            .tracks(od_library::SortKey::DateAdded, false)
+            .unwrap()
+            .into_iter()
+            .map(|t| (t.id, t.tags.title.clone()))
+            .collect();
+        tracks.sort_by_key(|(id, _)| id.0);
+        let playlist = lib
+            .all_nodes()
+            .unwrap()
+            .into_iter()
+            .find(|n| n.kind == NodeKind::Playlist)
+            .map(|n| n.id)
+            .unwrap();
+        let explorer_root = root.join("home");
+        let outside_folder = explorer_root.join("Crate");
+        Self {
+            _dir: None,
+            outside_file: outside_folder.join("Outside Loop.wav"),
+            outside_folder,
+            explorer_root,
+            library,
+            root,
+            tracks,
             playlist,
         }
     }

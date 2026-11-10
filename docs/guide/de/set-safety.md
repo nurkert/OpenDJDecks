@@ -1,8 +1,8 @@
 ---
 title: Sicher durch das Set
 description: Die Audiozeile in der Statusleiste, was passiert, wenn das Audiointerface verloren geht, und der Check vor dem Gig.
-keywords: [audio, ausgang, gerät, interface, latenz, aussetzer, xrun, verloren, ausgesteckt, getrennt, soundkarte, gig-check, vor dem gig, speicherplatz, fehlende dateien, sicherheit]
-features: [shell-audio-health, shell-gig-check]
+keywords: [absturz, wiederherstellen, abgestürzt, beendet, stromausfall, sitzung, audio, ausgang, gerät, interface, latenz, aussetzer, xrun, verloren, ausgesteckt, getrennt, soundkarte, gig-check, vor dem gig, speicherplatz, fehlende dateien, sicherheit]
+features: [shell-audio-health, shell-gig-check, shell-crash-restore]
 ---
 
 OpenDJDecks behält die Dinge im Blick, die ein Set vorzeitig beenden können. Diese Seite erklärt, was es zeigt und was du tun kannst.
@@ -44,3 +44,16 @@ Getestet wurde das mit einem simulierten Gerät, das so ausfällt wie ein ausges
 - **TRACKDATEIEN**: Tracks der Bibliothek, deren Datei fehlt.
 
 Eine durchgehend grüne Linie ist bereit, eine gestrichelte ist einen Blick wert, eine durchgestrichene musst du vor dem Spielen beheben. **ERNEUT PRÜFEN** prüft noch einmal, **SCHLIESSEN** blendet das Band aus.
+
+## Nach einem Absturz
+
+Während du spielst, schreibt OpenDJDecks den Zustand der Decks einmal pro Sekunde neben deine Bibliothek: die Tracks, ihre Positionen, Tempo und Bereich, Keylock, Tonartverschiebung, Sync, Loops und den Mixer. Es schreibt eine neue Kopie und tauscht sie dann aus, sodass ein Absturz in jedem Moment einen vollständigen Zustand hinterlässt.
+
+Wurde die App nicht richtig beendet, bietet der nächste Start ihn in einem Band unter der oberen Leiste wieder an:
+
+![Das Angebot zum Wiederherstellen nach einem Absturz](../img/restore.png)
+
+- **DECKS WIEDERHERSTELLEN** lädt die Tracks dorthin, wo sie waren, mit Tempo, Loops und Mixer, und öffnet Perform. Die Decks warten auf **PLAY**.
+- **LEER STARTEN** lässt die Decks leer.
+
+Eine laufende Aufnahme bleibt in jedem Fall erhalten. Ihre Datei wird bis zum Moment des Absturzes vervollständigt und mit der bisherigen Trackliste unter Aufnahmen aufgeführt. Das Band sagt, wie lang sie ist.

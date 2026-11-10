@@ -577,3 +577,28 @@ fn bpm_readout_is_steady_on_millisecond_grids() {
         assert!((bpm - 137.9).abs() < 1e-9, "readout {bpm}");
     }
 }
+
+/// Session restore: a loop is set back exactly as it was, engaged or only
+/// remembered for RELOOP.
+#[test]
+fn set_loop_restores_a_loop_as_it_was() {
+    let mut rig = Rig::new(2);
+    rig.deck(0, DeckCommand::Load(sine_track(1, 20.0, 500.0, 0.5, 120.0)));
+    rig.deck(0, DeckCommand::Seek { seconds: 4.2 });
+    rig.deck(0, DeckCommand::SetLoop { start: 4.0, end: 6.0, active: true });
+    rig.deck(0, DeckCommand::Play);
+    rig.render(1200); // 3.2 s at 128-frame blocks
+    let st = rig.state().decks[0];
+    assert!(st.loop_state.active);
+    assert!((st.loop_state.start.unwrap() - 4.0).abs() < 1e-9);
+    assert!((st.loop_state.end.unwrap() - 6.0).abs() < 1e-9);
+    assert!(st.position >= 4.0 && st.position < 6.0, "stays in the loop: {}", st.position);
+
+    rig.deck(1, DeckCommand::Load(sine_track(2, 20.0, 500.0, 0.5, 120.0)));
+    rig.deck(1, DeckCommand::SetLoop { start: 1.0, end: 2.0, active: false });
+    rig.render(2);
+    let st = rig.state().decks[1];
+    assert!(!st.loop_state.active, "remembered, not engaged");
+    assert_eq!(st.loop_state.start, Some(1.0));
+    assert_eq!(st.loop_state.end, Some(2.0));
+}

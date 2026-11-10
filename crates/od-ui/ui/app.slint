@@ -9,8 +9,8 @@ export { DeckTime, GridEdit, DeckGrid, DeckGridView } from "structs.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
 import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark } from "controls.slint";
 import { FirstStartBar } from "first_start.slint";
-import { AudioHealth, GigCheck, GigCheckRow, AudioStatusLine, DeviceLostBar, GigCheckBar } from "safety.slint";
-export { AudioHealth, GigCheck, GigCheckRow }
+import { AudioHealth, GigCheck, GigCheckRow, AudioStatusLine, DeviceLostBar, GigCheckBar, Restore, RestoreBar } from "safety.slint";
+export { AudioHealth, GigCheck, GigCheckRow, Restore }
 export { FirstStart }
 import { TooltipLayer } from "tooltip.slint";
 import { Sidebar, RailItem } from "sidebar.slint";
@@ -672,6 +672,7 @@ export component AppWindow inherits Window {
                 act(what) => { root.update-action(what); }
             }
             if AudioHealth.lost-device != "": DeviceLostBar { }
+            if Restore.visible: RestoreBar { }
             if GigCheck.visible: GigCheckBar { }
             if FirstStart.visible: FirstStartBar { }
             if root.stems-model-state != "": StemsModelBar {
