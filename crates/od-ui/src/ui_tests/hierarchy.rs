@@ -178,7 +178,21 @@ fn assert_points_at(ui: &Ui, label: &str) {
     ui.wait_until(5.0, |u| u.by_value("guide.highlight", label).is_some());
     let (_, mark) = ui
         .by_value("guide.highlight", label)
-        .unwrap_or_else(|| panic!("no highlight on {label}"));
+        .unwrap_or_else(|| {
+            let g = ui.app.ui.global::<crate::FirstStart>();
+            let marks: Vec<_> = ui
+                .with_prefix("guide.")
+                .into_iter()
+                .map(|(l, v, e)| format!("{l}={v} {:?}", Rect::of(&e)))
+                .collect();
+            panic!(
+                "no highlight on {label}: visible {} target {:?} control {:?} window {:?} marks {marks:?}",
+                g.get_visible(),
+                g.get_target().to_string(),
+                ui.by_value("browser.empty.add-music", "").map(|(_, e)| Rect::of(&e)),
+                ui.app.ui.window().size(),
+            )
+        });
     let mark = Rect::of(&mark);
     let real = rect(ui, label);
     assert!(
