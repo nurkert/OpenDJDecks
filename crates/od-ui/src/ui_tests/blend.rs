@@ -170,7 +170,7 @@ fn phrase_start_overlay_and_phrase_sync() {
     assert!(ui.wait_until(2.0, |u| !u.has("wave.incoming1")));
 }
 
-/// [57] ÷2 and ×2 on the BPM readout change the track's grid (one undo
+/// [57] ½ and 2× on the BPM readout change the track's grid (one undo
 /// step each); the active detection range shows in the app, 150–300
 /// included; a controller can halve and double too.
 #[test]

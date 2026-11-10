@@ -121,9 +121,9 @@ component Readout inherits VerticalLayout {
     if root.scale-keys: HorizontalLayout {
         alignment: end;
         spacing: Theme.key-gap;
-        MiniKey { label: "÷2"; enabled: root.scale-enabled; accessible-label: root.a11y + ".bpm-half"; tooltip: @tr("Half the tempo: the track's grid at half the BPM (one undo step)"); clicked => { root.scale(0.5); } }
+        MiniKey { label: "½"; enabled: root.scale-enabled; accessible-label: root.a11y + ".bpm-half"; tooltip: @tr("Half the tempo: the track's grid at half the BPM (one undo step)"); clicked => { root.scale(0.5); } }
         Caps { text: root.label; font-size: Theme.label; vertical-alignment: center; }
-        MiniKey { label: "×2"; enabled: root.scale-enabled; accessible-label: root.a11y + ".bpm-double"; tooltip: @tr("Double the tempo: the track's grid at twice the BPM (one undo step)"); clicked => { root.scale(2); } }
+        MiniKey { label: "2×"; enabled: root.scale-enabled; accessible-label: root.a11y + ".bpm-double"; tooltip: @tr("Double the tempo: the track's grid at twice the BPM (one undo step)"); clicked => { root.scale(2); } }
     }
     Text {
         accessible-role: text;

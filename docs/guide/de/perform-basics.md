@@ -15,7 +15,7 @@ Doppelklicke einen Track im Browser, ziehe ihn auf ein Deck oder nutze `⇧←` 
 
 ## Deck-Anzeigen
 
-Der Deck-Kopf zeigt Nummer, Cover, Titel und Artist, **BPM**, Rest- oder verstrichene Zeit, **TONART** und den Sync-Zustand. Der Platter darunter zeigt das Tempo, den Taktzähler und die aktuelle Phrase mit Countdown, und unter dem Tempo die Takte bis zum nächsten Drop und Break ([Phrasen](phrases.md#auf-der-phrase-mixen)). **÷2** und **×2** neben **BPM** halbieren oder verdoppeln das Grid des Tracks ([Beatgrids](beatgrid.md#schnelle-musik-und-halb-oder-doppelt-am-deck)).
+Der Deck-Kopf zeigt Nummer, Cover, Titel und Artist, **BPM**, Rest- oder verstrichene Zeit, **TONART** und den Sync-Zustand. Der Platter darunter zeigt das Tempo, den Taktzähler und die aktuelle Phrase mit Countdown, und unter dem Tempo die Takte bis zum nächsten Drop und Break ([Phrasen](phrases.md#auf-der-phrase-mixen)). **½** und **2×** neben **BPM** halbieren oder verdoppeln das Grid des Tracks ([Beatgrids](beatgrid.md#schnelle-musik-und-halb-oder-doppelt-am-deck)).
 
 Die schmale Wellenform in jedem Deck ist der ganze Track mit Hot Cues und Phrasen. Ein Klick springt dorthin (Needle Search); am Controller tut das der Touch Strip.
 

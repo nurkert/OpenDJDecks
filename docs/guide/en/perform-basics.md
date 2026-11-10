@@ -15,7 +15,7 @@ Double-click a track in the browser, drag it onto a deck, or use `⇧←` and `�
 
 ## Deck readouts
 
-The deck header shows the number, the artwork, title and artist, **BPM**, the remaining or elapsed time, the **KEY** and the sync state. The platter below shows the tempo, the bar counter and the current phrase with a countdown, and under the tempo the bars to the next drop and break ([Phrases](phrases.md#mix-on-the-phrase)). **÷2** and **×2** beside **BPM** halve or double the track's grid ([Beatgrids](beatgrid.md#fast-music-and-half-or-double-on-the-deck)).
+The deck header shows the number, the artwork, title and artist, **BPM**, the remaining or elapsed time, the **KEY** and the sync state. The platter below shows the tempo, the bar counter and the current phrase with a countdown, and under the tempo the bars to the next drop and break ([Phrases](phrases.md#mix-on-the-phrase)). **½** and **2×** beside **BPM** halve or double the track's grid ([Beatgrids](beatgrid.md#fast-music-and-half-or-double-on-the-deck)).
 
 The narrow waveform in each deck is the whole track with hot cues and phrases. Click it to jump there (needle search); on a controller the touch strip does the same.
 
