@@ -28,6 +28,14 @@ env:
   CARGO_TERM_COLOR: always
   # Zero in-scope gaps: a new gap fails feature_set_complete.
   OD_PARITY_STRICT: "1"
+  # Line tables only: the UI test binary with full debug info needs more
+  # memory to build and link than the free runners have.
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+  CARGO_PROFILE_TEST_DEBUG: line-tables-only
+  # Fewer codegen units in parallel keep the peak memory of the large UI
+  # crate down.
+  CARGO_PROFILE_DEV_CODEGEN_UNITS: "4"
+  CARGO_PROFILE_TEST_CODEGEN_UNITS: "4"
 
 jobs:
   # Repository rules from CONTRIBUTING.md, "Independence".
@@ -55,6 +63,16 @@ jobs:
       - name: System dependencies (Linux)
         if: runner.os == 'Linux'
         run: packaging/linux/install-build-deps.sh
+      # Building the UI tests needs more memory than the free Linux runners
+      # have; without swap the runner is shut down mid-build (exit 143).
+      - name: More swap (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo fallocate -l 10G /ci-swap
+          sudo chmod 600 /ci-swap
+          sudo mkswap /ci-swap
+          sudo swapon /ci-swap
+          free -h
       - name: Test
         run: cargo test --workspace --locked
       - name: Linux audio backends (JACK, PipeWire)

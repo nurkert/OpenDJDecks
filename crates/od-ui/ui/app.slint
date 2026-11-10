@@ -34,7 +34,7 @@ import { ImportReview, ImportReviewDialog, ImportCountRow, ImportLeftOutRow } fr
 export { ImportReview, ImportCountRow, ImportLeftOutRow }
 import { SetFlow } from "flow.slint";
 import { PerformView } from "perform.slint";
-import { LightingView, Lighting, LightFixtureView, LightGroupView, LightingWindow } from "lighting.slint";
+import { LightingView, LightingPanel, Lighting, LightFixtureView, LightGroupView, LightingWindow } from "lighting.slint";
 import { Club, ClubStep, ClubItem } from "club.slint";
 export { Club, ClubStep, ClubItem }
 import { Mic } from "mic.slint";
@@ -893,8 +893,13 @@ export component AppWindow inherits Window {
                 reset => { root.upper-height = 0px; }
             }
 
-            // ── Lower half: the browser ──
-            if !root.kiosk || root.browser-open || (root.mode == "perform" && PerformLayout.layout == "browse"): Rectangle {
+            // ── Lower half: the browser, or in Perform the lighting panel
+            // (STRIP) in its place, so the decks keep their size ──
+            if root.mode == "perform" && Lighting.panel: LightingPanel {
+                vertical-stretch: 1;
+                min-height: root.kiosk ? 180px : 218px;
+            }
+            if !(root.mode == "perform" && Lighting.panel) && (!root.kiosk || root.browser-open || (root.mode == "perform" && PerformLayout.layout == "browse")): Rectangle {
                 vertical-stretch: 1;
                 // The source rail needs its nine sources at the 24 px minimum.
                 min-height: root.kiosk ? 180px : 218px;

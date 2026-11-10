@@ -7788,8 +7788,8 @@ mode = "lighting"
 source = "SPEC §10.5"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "lighting"]
-features = ["lighting-views", "lighting-easy", "lighting-pro", "lighting-fixtures", "lighting-outputs", "lighting-patch-table", "lighting-failsafe", "lighting-safety"]
-note = "SETUP (RIG / OUTPUT / SAFETY) | STAGE / PATCH / CHANNELS | SHOW columns; the browser stays below"
+features = ["lighting-views", "lighting-easy", "lighting-pro", "lighting-fixtures", "lighting-outputs", "lighting-patch-table", "lighting-failsafe", "lighting-safety", "lighting-auto-steer"]
+note = "SETUP (RIG / OUTPUT / SAFETY) | STAGE / PADS / PATCH / CHANNELS | SHOW columns; the browser stays below. With AUTO chosen the SHOW column steers it (HOLD, RELEASE, palette, phrase-to-look table, the order of who wins)"
 
 [[view.region]]
 id = "topbar.modes"
@@ -7831,6 +7831,7 @@ place = "centre column, top: STAGE, PATCH and CHANNELS"
 order = "row"
 elements = [
   "lighting.centre.stage",
+  "lighting.centre.pads",
   "lighting.centre.patch",
   "lighting.centre.channels",
 ]
@@ -7865,4 +7866,86 @@ elements = [
   "lighting.blackout",
   "lighting.flash",
   "lighting.strobe",
+]
+
+[[view.region]]
+id = "lighting.show.auto"
+band = "lighting"
+place = "right column, AUTO: hold and release under the order of who wins"
+order = "row"
+elements = [
+  "lighting.auto.hold",
+  "lighting.auto.release",
+]
+
+[[view]]
+id = "panel.lighting"
+title = "Lighting panel (STRIP) in Perform"
+mode = "perform"
+source = "SPEC §10.5, roadmap [17]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "wave", "deck-row", "global", "lighting", "status"]
+features = ["lighting-panel", "lighting-pads", "lighting-auto-steer"]
+note = "In the browser's place, so the decks, mixer and waveforms keep their size (a UI test compares every deck, mixer and waveform element with the panel open and closed). Every key, pad and fader is 44 px or more; the stage preview shows from 1360 px"
+
+[[view.region]]
+id = "lighting.panel.pages"
+band = "lighting"
+place = "panel, above the pads"
+order = "row"
+elements = [
+  "lighting.strip.page1",
+  "lighting.strip.page2",
+  "lighting.strip.page3",
+  "lighting.strip.page4",
+]
+
+[[view.region]]
+id = "lighting.panel.pads"
+band = "lighting"
+place = "panel, left: the eight pads of the page"
+order = "grid"
+elements = [
+  "lighting.strip.pad0",
+  "lighting.strip.pad1",
+  "lighting.strip.pad2",
+  "lighting.strip.pad3",
+  "lighting.strip.pad4",
+  "lighting.strip.pad5",
+  "lighting.strip.pad6",
+  "lighting.strip.pad7",
+]
+
+[[view.region]]
+id = "lighting.panel.mode"
+band = "lighting"
+place = "panel, right, top row"
+order = "row"
+elements = [
+  "lighting.strip.mode.auto",
+  "lighting.strip.mode.easy",
+  "lighting.strip.mode.pro",
+  "lighting.strip.enable",
+]
+
+[[view.region]]
+id = "lighting.panel.auto"
+band = "lighting"
+place = "panel, right, second row"
+order = "row"
+elements = [
+  "lighting.strip.hold",
+  "lighting.strip.release",
+]
+
+[[view.region]]
+id = "lighting.panel.keys"
+band = "lighting"
+place = "panel, right, bottom row"
+order = "row"
+elements = [
+  "lighting.strip.blackout",
+  "lighting.strip.flash",
+  "lighting.strip.strobe",
+  "lighting.strip.fog",
 ]

@@ -222,6 +222,12 @@ release.
 | `lighting.master` | absolute | | master dimmer |
 | `lighting.cue_go`, `lighting.cue_back` | press | | Pro cue stack |
 | `lighting.mode` | press | `mode` (`auto`, `easy`, `pro`) | |
+| `lighting.pad` | hold | `pad` (1–8, on the current page) | `Pad { pad, pressed }`: plays an own look or chase; a latch pad toggles on press, a flash pad is on while held |
+| `lighting.page` | press | `page` (1–4) | `Page`: the page of pads the pad actions and the deck pads play |
+| `lighting.page_next`, `lighting.page_prev` | press | | next / previous page, round |
+| `lighting.group_master` | absolute | `group` (1 = the first group in the patch) | `GroupMaster { group, level }` |
+| `lighting.release` | press | | hands the show back to AUTO: the latched pad and HOLD end |
+| `lighting.hold` | press | | AUTO keeps its current look (toggle) |
 | `ignore` | any | | `ControlAction::Ignored` (known control without a function) |
 
 In the application (`crates/od-ui/src/controller.rs`) every action above
@@ -335,7 +341,10 @@ inputs that no mapping matches too (`ControllerManager::set_open_unmapped`).
    actions (soft takeover) and `[unverified]` flags.
 2. Unmapped controls show `(unmapped)`. Use MIDI learn to get a starting
    point: `--learn deck.play_pause` prints a ready `[[input]]` entry after
-   five seconds of input (`LearnSession` in the API).
+   five seconds of input (`LearnSession` in the API). In the app (Preferences ›
+   Controller › MIDI learn), **Pad, page or group** fills in the number of
+   `lighting.pad`, `lighting.page` and `lighting.group_master` (and the look
+   of `lighting.look`, counted from 1 there).
 3. Check outputs with `--leds` (cycles Play/Cue/Sync LEDs and VU meters).
 4. Once an entry is confirmed on a real unit, remove `verify = true`, add
    `confirmed = true` and say in the commit which unit and firmware it was.

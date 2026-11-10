@@ -493,6 +493,7 @@ pub(crate) fn refresh(app: &App) {
             ));
             w.set_learn_action(m.action as i32);
             w.set_learn_deck(m.deck as i32);
+            w.set_learn_number(m.number as i32);
             w.set_learn_result(
                 m.suggestion
                     .as_ref()
@@ -1443,6 +1444,10 @@ fn choose(app: &App, key: &str, i: i32) {
         }
         "learn.deck" => {
             app.prefs.borrow_mut().midi.deck = i.min(4) as u8;
+            refresh(app);
+        }
+        "learn.number" => {
+            app.prefs.borrow_mut().midi.number = i.min(8) as u8;
             refresh(app);
         }
         "test.mapping" => {

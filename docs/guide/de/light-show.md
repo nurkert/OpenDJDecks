@@ -1,11 +1,11 @@
 ---
 title: Die DMX-Lichtshow
-description: Eine Lichtshow, die aus Phrasen, Beat und Energie der Musik folgt, ein einfacher Modus mit Looks, ein Pro-Modus mit Programmen, Effekten und Cue-Stack, eine Patch-Tabelle, der Zustand der Ausgänge mit Failsafe und Sicherheitsgrenzen.
-keywords: [licht, lichter, lighting, dmx, lichtshow, light show, art-net, artnet, sacn, usb dmx, scheinwerfer, fixture, moving head, par, strobe, laser, nebel, blackout, bühne, cue stack, ofl, patch, universum, adresse, überschneidung, identifizieren, failsafe, sicherheit, epilepsie, fotosensitiv, pin]
-features: [lighting-outputs, lighting-fixtures, lighting-patch-table, lighting-failsafe, lighting-safety, lighting-auto, lighting-easy, lighting-pro, lighting-views]
+description: Eine Lichtshow, die aus Phrasen, Beat und Energie der Musik folgt, eigene Looks und Lauflichter auf Pads, ein AUTO, das du lenken kannst, ein einfacher und ein Pro-Modus, ein Lichtpanel in Perform und Club, eine Patch-Tabelle, das Verbinden von Interfaces mit geführter Einrichtung, der Zustand der Ausgänge mit Failsafe und Sicherheitsgrenzen.
+keywords: [pads, look, looks, lauflicht, chase, gruppen-master, palette, halten, freigeben, testmuster, node-suche, artpoll, anschluss, licht, lichter, lighting, dmx, lichtshow, light show, art-net, artnet, sacn, usb dmx, scheinwerfer, fixture, moving head, par, strobe, laser, nebel, blackout, bühne, cue stack, ofl, patch, universum, adresse, überschneidung, identifizieren, failsafe, sicherheit, epilepsie, fotosensitiv, pin]
+features: [lighting-pads, lighting-panel, lighting-auto-steer, lighting-connect, lighting-outputs, lighting-fixtures, lighting-patch-table, lighting-failsafe, lighting-safety, lighting-auto, lighting-easy, lighting-pro, lighting-views]
 ---
 
-OpenDJDecks kann das Licht selbst fahren. Der Tab **LIGHTING** (`⌥⌘3`) hat drei Spalten: links das Setup (**RIG**, **AUSGANG**, **SICHERHEIT**), in der Mitte **BÜHNE** (Vorschau), **PATCH** (Tabelle) und **KANÄLE**, rechts **SHOW** zum Fahren.
+OpenDJDecks kann das Licht selbst fahren. Der Tab **LIGHTING** (`⌥⌘3`) hat drei Spalten: links das Setup (**RIG**, **AUSGANG**, **SICHERHEIT**), in der Mitte **BÜHNE** (Vorschau), **PADS** für deine eigenen Looks, **PATCH** (Tabelle) und **KANÄLE**, rechts **SHOW** zum Fahren.
 
 ![Die Ansicht LIGHTING mit dem gepatchten Rig](../img/lighting.png)
 
@@ -24,6 +24,28 @@ Teilen sich nach einer Änderung zwei Scheinwerfer Kanäle, bleibt die Änderung
 **ID** lässt einen Scheinwerfer 1,5-mal pro Sekunde blinken, damit du ihn an der Traverse findest. Noch einmal drücken beendet es.
 
 ![Die Patch-Tabelle mit einer Überschneidung und einem blinkenden Scheinwerfer](../img/lighting-patch.png)
+
+## Ein Interface verbinden
+
+**GEFÜHRTE EINRICHTUNG** in **AUSGANG** führt dich in vier kurzen Schritten durch eine Verbindung:
+
+1. Wie das Licht verbunden ist: **ART-NET-NODE**, **SACN-EMPFÄNGER** oder **USB-DMX-INTERFACE**.
+2. Welches: Für Art-Net fragt die App das Netzwerk, welche Nodes da sind, und listet sie mit Name, Adresse und Universen, oder du tippst eine Adresse ein; für USB-DMX wählst du den seriellen Anschluss; sACN braucht keine Wahl.
+3. Welches Universum dorthin geht (1 bei einem kleinen Rig; die Patch-Tabelle zeigt das Universum deiner Scheinwerfer).
+4. **SETZEN UND TESTEN** setzt den Ausgang, schaltet DMX AUS an und startet das Testmuster. **JA, ES FOLGT** beendet den Test und schließt die Einrichtung; **NICHTS PASSIERT** zählt der Reihe nach auf, was du prüfen kannst.
+
+![Die geführte Einrichtung mit einem gefundenen Art-Net-Node](../img/lighting-guide.png)
+
+Dieselben Teile gibt es einzeln in **AUSGANG**:
+
+- **NODES SUCHEN** (mit ART-NET gewählt) schickt ein ArtPoll, die "Wer ist da?"-Nachricht des Art-Net-Protokolls, an die Broadcast-Adresse des lokalen Netzwerks und listet jeden Node, der in etwa 1,5 Sekunden antwortet. **NUTZEN** schickt das Universum, das daneben eingetippt ist, an diesen Node. Ein Node mit mehreren Ausgängen bekommt das Universum auf dem Ausgang mit derselben Nummer, sonst auf seinem ersten.
+- Mit **USB-DMX** gewählt listet **ANSCHLÜSSE** die seriellen Geräte, die nach USB-Adaptern aussehen (unter macOS `/dev/cu.usbserial…` und `/dev/cu.usbmodem…`, unter Linux `/dev/ttyUSB…`, `/dev/ttyACM…` und `/dev/serial/by-id`, unter Windows die vorhandenen COM-Anschlüsse). **AKTUALISIEREN** sucht nach dem Einstecken erneut; **NUTZEN** schickt das Universum an diesen Anschluss.
+- **Mehrere Universen**: Gib jedem Universum eine eigene Zeile. An denselben Art-Net-Node geht Universum 1 an seine Port-Adresse 0, Universum 2 an 1 und so weiter; sACN ohne Nummer sendet Universum 1 als sACN-Universum 1, Universum 2 als 2 und so weiter.
+- **TESTMUSTER**: **EINZELN** lässt einen Scheinwerfer nach dem anderen leuchten, je eine Sekunde; **FARBEN** schaltet das ganze Rig durch Rot, Grün, Blau und Weiß; **VOLL** lässt alles leuchten. Es ersetzt die Show bis **AUS**, mit 80 %, und geht wie alles andere durch die Sicherheitsgrenzen: Es kann nicht schneller blitzen als die Strobe-Grenze, die Pegelgrenze einer Gruppe nicht überschreiten und weder Nebel noch Laser öffnen.
+
+![AUSGANG mit einem gefundenen Node, das Testmuster läuft](../img/lighting-connect.png)
+
+Node-Suche, Anschlusswahl und Einrichtung sind mit einem Stellvertreter-Node auf der eigenen Loopback-Adresse des Rechners und vorgegebenen Testgeräten getestet. **Mit einem echten Art-Net-Node, sACN-Empfänger oder USB-DMX-Interface sind sie noch nicht ausprobiert.** Nodes, die nur an Port 6454 antworten, während ein anderes Lichtprogramm auf demselben Rechner diesen Port belegt, erscheinen eventuell nicht; tippe dann ihre Adresse ein.
 
 ## Ausgänge und eine verlorene Verbindung
 
@@ -55,7 +77,7 @@ Verlust und Wiederkehr sind mit einer simulierten Verbindung getestet. Mit einem
 
 **SICHERHEIT** setzt Grenzen, die jeder Look einhalten muss. Sie wirken auf das fertige DMX-Bild direkt vor dem Senden, also gehen automatische Looks, Tasten, Cues, Track-Cues, die Fernsteuerung und das Identifizieren alle hindurch.
 
-- **GRENZE FÜR STROBE UND BLITZE**: höchstens so viele Blitze pro Sekunde, voreingestellt 3, 0 für gar keinen Strobe. Schnell blitzendes Licht kann bei Menschen mit fotosensitiver Epilepsie Anfälle auslösen; Richtlinien für Fernsehen und Veranstaltungen sehen das Risiko ab etwa 3 Blitzen pro Sekunde, daher ist 3 oder weniger die sichere Voreinstellung. Die Grenze wirkt auf zwei Wegen. Strobe-Kanäle werden auf die erlaubte Rate gesenkt; dabei wird angenommen, dass der schnellste Strobe-Wert eines Scheinwerfers 25 Blitze pro Sekunde sind, der übliche Bereich. Ein Scheinwerfer, der schneller strobt, kann also etwas schneller als die Grenze blitzen. Und ein Scheinwerfer, dessen Pegel von dunkel auf hell springt, bleibt dunkel, bis seit seinem letzten Blitz eine Periode der Grenze vergangen ist. Das deckt schnelle Lauflichter und Effekte auf Scheinwerfern ohne Strobe-Kanal ab.
+- **GRENZE FÜR STROBE UND BLITZE**: höchstens so viele Blitze pro Sekunde, voreingestellt 3, 0 für gar keinen Strobe. Schnell blitzendes Licht kann bei Menschen mit fotosensitiver Epilepsie Anfälle auslösen; Richtlinien für Fernsehen und Veranstaltungen sehen das Risiko ab etwa 3 Blitzen pro Sekunde, daher ist 3 oder weniger die sichere Voreinstellung. Die Grenze wirkt auf zwei Wegen. Strobe-Kanäle werden auf die erlaubte Rate gesenkt; dabei wird angenommen, dass der schnellste Strobe-Wert eines Scheinwerfers 25 Blitze pro Sekunde sind, der übliche Bereich. Ein Scheinwerfer, der schneller strobt, kann also etwas schneller als die Grenze blitzen. Und jeder Anstieg des Pegels eines Scheinwerfers um etwa ein Fünftel des Maximums oder mehr zählt als Blitz, egal wie dunkel der Look ist und welche Pegelgrenze die Gruppe hat. Ein Scheinwerfer darf erst wieder so ansteigen, wenn seit seinem letzten Blitz eine Periode der Grenze vergangen ist. Das deckt schnelle Lauflichter und Effekte auf Scheinwerfern ohne Strobe-Kanal ab.
 - **SPERRE**: Nebelmaschinen und Laser bleiben auf null, bis du **NEBEL SCHARF SCHALTEN** oder **LASER SCHARF SCHALTEN** drückst. Das wird nicht gespeichert: Jeder Start der App beginnt gesperrt. **NEBEL** in SHOW tut nichts, solange Nebel gesperrt ist.
 - **PEGELGRENZE PRO GRUPPE**: der höchste Pegel, den eine Gruppe erreichen darf, in Schritten von 10 %.
 - **SETUP-PIN**: 4 bis 8 Ziffern. Mit einer PIN schließt **SPERREN** das Setup: Patch, Ausgänge und Grenzen brauchen die PIN, die Show-Bedienung rechts bleibt für Gäste frei. Die PIN steht in `lighting.json` neben der Bibliothek; sie hält Gäste aus dem Setup heraus und ist kein Passwort gegen jemanden mit Zugriff auf den Rechner.
@@ -70,11 +92,50 @@ Verlust und Wiederkehr sind mit einer simulierten Verbindung getestet. Mit einem
 - **EASY** ist ein **LOOK** für das ganze Rig, im Takt, mit Farbfeldern, Master-Dimmer, **BLACKOUT** und **FLASH**, **STROBE** und **NEBEL**, solange gehalten. **TAP** setzt das Tempo, wenn kein Deck läuft.
 - **PRO** setzt pro Gruppe ein **PROGRAMM**, eine **FARBE** und einen Attribut-Effekt (Sinus, Säge, Rechteck, Zufall auf Dimmer, Pan, Tilt; Phasenversatz; im Takt), einen XY-Programmer für Pan und Tilt, und einen **CUE-STACK** mit **GO**, **ZURÜCK** und **SPEICHERN** mit Fades in Beats. **TRACK-CUES** speichert einen Cue an einem Takt des Tracks, den du hörst, und ruft ihn ab, wann immer er läuft.
 
-Am Deck legt der Pad-Modus **LIGHTING** dir die Looks A bis F, Strobe (G) und Flash (H) auf die Pads. Jedes Licht-Bedienelement lässt sich auch auf MIDI legen.
+Am Deck legt der Pad-Modus **LIGHTING** dir deine eigenen Pads der aktuellen Seite auf die Pads, oder die Looks A bis F, Strobe (G) und Flash (H), wo ein Pad leer ist. Jedes Licht-Bedienelement lässt sich auch auf MIDI legen.
+
+## Eigene Looks und Lauflichter
+
+**PADS** in der Mitte hält deine eigenen Looks auf vier Seiten mit je acht Pads (**SEITE 1** bis **4**). Ein Pad zeigt seine Nummer (Seite und Pad, etwa 1.3), seinen Namen, ob es ein Lauflicht oder ein Flash-Pad ist, und eine Linie aus den Farben, die es setzt, eine pro Gruppe. Das Pad, das gerade steuert, ist grün gefüllt.
+
+- Drücke ein Pad, um es zu spielen. Ein **RASTEN**-Pad bleibt an, bis du es erneut drückst oder **FREIGEBEN** drückst; ein **FLASH**-Pad ist an, solange du es hältst.
+- **EDIT** macht die Pads zum Editor: Klicke ein Pad an, um es zu öffnen. Ein leeres Pad bietet **NEUER LOOK** (jede Gruppe weiß und ruhig als Anfang), **NEUES LAUFLICHT** und **AUS PRO** (die Gruppeneinstellungen aus dem PRO-Modus).
+- Ein Look setzt Gruppen: pro Gruppe ein Programm (**MUSIK** folgt der Phrase), eine Farbe (**TRACK** nimmt sie aus der Palette von AUTO oder vom Track) und einen Pegel (**—** überlässt ihn dem Programm). **×** lässt eine Gruppe aus; Gruppen, die ein Look auslässt, behalten, was darunter läuft. Die Farblinie des Pads folgt jeder Änderung sofort.
+- Ein Lauflicht schaltet im Takt durch Looks. **SCHRITTE HINZU**, dann die Looks in ihrer Reihenfolge anklicken; der Stepper legt fest, wie lange jeder Schritt dauert (eine Viertel-Zählzeit bis zwei Takte). Ein Lauflicht folgt dem Deck, das du hörst, oder **TAP** ohne Musik.
+- **GRUPPEN-MASTER** neben den Pads setzen den Pegel jeder Gruppe über allem, auch über dem Master-Dimmer.
+
+Looks, Lauflichter, Seiten und Gruppen-Master werden mit dem Rig in `lighting.json` gespeichert. Welches Pad eingerastet oder gehalten ist, wird nicht gespeichert.
+
+![PADS mit einem Look im Editor, rechts AUTO gehalten](../img/lighting-pads.png)
+
+Am Deck spielt der Pad-Modus **LIGHTING** die acht Pads der aktuellen Seite mit den Pads A bis H; ein Pad der Seite ohne Look behält die eingebauten Looks A bis F, Strobe (G) und Flash (H). In einem Mapping erreichen `lighting.pad`, `lighting.page`, `lighting.page_next`, `lighting.page_prev` und `lighting.group_master` sie von einem Controller, und MIDI-Learn kann sie lernen (wähle Pad, Seite oder Gruppe unter **Pad, Seite oder Gruppe**).
+
+## AUTO lenken
+
+Mit **AUTO** gewählt lenkt die rechte Spalte es:
+
+- **PALETTE** wählt die Farben von AUTO: **TONART** (aus der Tonart des Tracks, wie bisher), **WARM**, **KÜHL**, **ABENDROT**, **MEER**, **WEISS** oder **EIGENE** mit den Farbfeldern, die du ankreuzt. Die Farbe wechselt alle acht Takte, in Phrasen mit hoher Energie jedes zweite Taktpaar zur nächsten Farbe.
+- **PHRASE → LOOK** legt fest, was AUTO für Intro, Strophe, Aufbau, Drop (Chorus), Breakdown und Outro spielt: ein eingebautes Programm oder eines deiner Pads. Die Phrase, die gerade läuft, ist markiert.
+- **HALTEN** behält den Look, den AUTO gerade spielt, über Phrasenwechsel hinweg, bis du es erneut drückst oder **FREIGEBEN** drückst.
+
+**Wer gewinnt.** Von oben:
+
+1. **BLACKOUT**.
+2. Die Tasten **FLASH** und **STROBE**, solange gehalten.
+3. Ein Flash-Pad, solange gehalten (das zuletzt gedrückte).
+4. Das eingerastete Pad.
+5. **HALTEN**.
+6. AUTO (oder EASY oder PRO).
+
+Ein Pad übernimmt nur die Gruppen, die sein Look setzt; die anderen folgen weiter der Ebene darunter. Gruppen-Master und Master-Dimmer skalieren danach das Ergebnis, und die Sicherheitsgrenzen wirken zuletzt auf jedes Bild. **FREIGEBEN** gibt an AUTO zurück: Das eingerastete Pad und HALTEN enden, mit einer Überblendung über eine Zählzeit; ein Flash-Pad endet sofort beim Loslassen. Die Reihenfolge steht unter **WER GEWINNT, OBEN ZUERST**, die steuernde Ebene leuchtet, und **STEUERT** nennt sie, etwa "PAD 1.1 · RED WASH · EINGERASTET".
 
 ## Wo du es siehst
 
-- Der Knopf **LICHTLEISTE** (`⌥⌘K`) zeigt in Perform eine Lichtleiste mit dem Zustand der Ausgänge.
+- Der Knopf **LICHTLEISTE** (`⌥⌘K`, in schmaleren Fenstern **LEISTE**) öffnet das Lichtpanel in Perform und Club. Es nimmt den Platz des Browsers ein, so behalten Decks, Wellenformen und Mixer ihre Größe; **LICHTLEISTE** bringt den Browser zurück. Es enthält die Bühnenvorschau (ab 1360 px Breite), Seiten und Pads, Master- und Gruppenfader, AUTO / EASY / PRO, DMX AUS, HALTEN und FREIGEBEN, wer gerade steuert (oder eine verlorene Verbindung) und BLACKOUT, FLASH, STROBE und NEBEL. Jede Taste, jedes Pad und jeder Fader ist mindestens 44 px groß für Touch, mit dunklen Flächen und heller Schrift für eine dunkle Kabine.
 - **FENSTER** öffnet die Lichtansicht in einem eigenen Fenster, für einen zweiten Bildschirm.
 
-![Die Lichtleiste in Perform mit einer verlorenen Verbindung](../img/lighting-perform.png)
+![Das Lichtpanel in Perform, ein Look eingerastet](../img/lighting-perform.png)
+
+![Das Lichtpanel im Club-Modus](../img/lighting-club.png)
+
+Das Panel ist mit der Maus und in UI-Tests bei 1440 × 900 und 1280 × 800 ausprobiert; auf einem echten Touchscreen noch nicht.

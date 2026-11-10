@@ -39,4 +39,5 @@ mod stems_model;
 mod views;
 mod hierarchy;
 mod layouts;
+mod lighting_person;
 mod set_safety;

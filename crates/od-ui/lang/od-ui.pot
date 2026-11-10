@@ -3598,3 +3598,593 @@ msgstr ""
 msgctxt "WaveLane"
 msgid "TO PHRASE"
 msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "CONNECTION SET UP"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "CONNECT · STEP {} OF 4"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "Close the guided setup"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "How are your lights connected to this computer?"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "ART-NET NODE"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "A box on the network that turns Art-Net into DMX"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "SACN RECEIVER"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "A node or fixture on the network that listens to sACN"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "USB-DMX INTERFACE"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "A cable from a USB port to the first fixture"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "Switch the node on and connect it to the same network as this computer, then look for it."
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "LOOKING…"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "FIND NODES"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "CHOOSE"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "or type its address"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "Plug the interface in, then choose its port. Not listed? Plug it in again and press REFRESH."
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "REFRESH"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "No serial port found."
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "sACN goes out as multicast to every receiver on the network. Nothing to choose: set your receiver to the universe of the next step."
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "Which universe goes there? The patch table shows your fixtures' universe; a small rig is universe 1."
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "UNIVERSE {}"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "The test pattern lights your fixtures one after another, within the safety limits. Do your lights follow it?"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "YES, THEY FOLLOW"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "NOTHING HAPPENS"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "DMX OUT is on and the test pattern has stopped. Patch your fixtures in RIG if you have not yet."
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "TO {}"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "BACK"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "NEXT"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "SET AND TEST"
+msgstr ""
+
+#: 
+msgctxt "ConnectGuide"
+msgid "CLOSE"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "GUIDED SETUP"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "Connect an interface step by step, with a test at the end"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "LOOKING…"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "FIND NODES"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "Ask the local network which Art-Net nodes are there"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "USE"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "PORTS"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "REFRESH"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "Look for USB serial ports again"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "No serial port found. Plug the interface in and press REFRESH."
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "TEST PATTERN"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "OFF"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "EACH"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "COLOURS"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "FULL"
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "Checks a connection: EACH lights one fixture after another, COLOURS steps the rig through red, green, blue and white, FULL lights everything. It replaces the show while it runs, within the safety limits."
+msgstr ""
+
+#: 
+msgctxt "OutputTab"
+msgid "The test pattern replaces the show until you press OFF."
+msgstr ""
+
+#: 
+msgctxt "LightPad"
+msgid "CHASE · FLASH"
+msgstr ""
+
+#: 
+msgctxt "LightPad"
+msgid "CHASE"
+msgstr ""
+
+#: 
+msgctxt "LightPad"
+msgid "FLASH"
+msgstr ""
+
+#: 
+msgctxt "LightPad"
+msgid "EMPTY"
+msgstr ""
+
+#: 
+msgctxt "PageTabs"
+msgid "Page {} of the pads"
+msgstr ""
+
+#: 
+msgctxt "GroupMasters"
+msgid "Level of the group {}"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Click a pad to open it here."
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "PAD {} IS EMPTY"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "NEW LOOK"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "A look that sets the groups you choose"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "NEW CHASE"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "A chase that steps through looks on the beat"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "FROM PRO"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "A look from the group settings of PRO mode"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Name"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "LATCH"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "On until pressed again or released"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "FLASH"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "On while held"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Delete this look"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Patch fixtures in RIG first: a look sets groups."
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Program of the group in this look (— keeps what runs underneath)"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Level of the group in this look"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Leave this group to what runs underneath"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "STEPS"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "How long each step lasts"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "ADD STEPS"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Then click the looks to add, in order"
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Click the looks to add, in order. ADD STEPS again ends it."
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "A chase steps through looks on the beat of the music."
+msgstr ""
+
+#: 
+msgctxt "LookEditor"
+msgid "Remove this step"
+msgstr ""
+
+#: 
+msgctxt "PadsCentre"
+msgid "PAGE"
+msgstr ""
+
+#: 
+msgctxt "PadsCentre"
+msgid "EDIT"
+msgstr ""
+
+#: 
+msgctxt "PadsCentre"
+msgid "Back to playing the pads"
+msgstr ""
+
+#: 
+msgctxt "PadsCentre"
+msgid "Click a pad to make or change its look"
+msgstr ""
+
+#: 
+msgctxt "PadsCentre"
+msgid "Press a pad to play it: a latch pad stays on until pressed again, a flash pad is on while held. EDIT opens a pad to make or change its look."
+msgstr ""
+
+#: 
+msgctxt "PadsCentre"
+msgid "GROUP MASTERS"
+msgstr ""
+
+#: 
+msgctxt "PadsCentre"
+msgid "No groups yet."
+msgstr ""
+
+#: 
+msgctxt "OrderChain"
+msgid "BLACKOUT"
+msgstr ""
+
+#: 
+msgctxt "OrderChain"
+msgid "FLASH / STROBE KEY"
+msgstr ""
+
+#: 
+msgctxt "OrderChain"
+msgid "FLASH PAD"
+msgstr ""
+
+#: 
+msgctxt "OrderChain"
+msgid "LATCHED PAD"
+msgstr ""
+
+#: 
+msgctxt "OrderChain"
+msgid "HOLD"
+msgstr ""
+
+#: 
+msgctxt "OrderChain"
+msgid "AUTO"
+msgstr ""
+
+#: 
+msgctxt "AutoSection"
+msgid "WHO WINS, TOP FIRST"
+msgstr ""
+
+#: 
+msgctxt "AutoSection"
+msgid "HOLD"
+msgstr ""
+
+#: 
+msgctxt "AutoSection"
+msgid "Keep AUTO's current look through phrase changes"
+msgstr ""
+
+#: 
+msgctxt "AutoSection"
+msgid "RELEASE"
+msgstr ""
+
+#: 
+msgctxt "AutoSection"
+msgid "Hand back to AUTO: the latched pad and HOLD end, with a one-beat fade"
+msgstr ""
+
+#: 
+msgctxt "AutoSection"
+msgid "PALETTE"
+msgstr ""
+
+#: 
+msgctxt "AutoSection"
+msgid "PHRASE → LOOK"
+msgstr ""
+
+#: 
+msgctxt "AutoSection"
+msgid "What AUTO plays for this phrase: a program or one of your pads"
+msgstr ""
+
+#: 
+msgctxt "AutoSection"
+msgid "Who wins, from the top: BLACKOUT, the FLASH and STROBE keys, a flash pad while held, the latched pad, HOLD, then AUTO. A pad takes only the groups its look sets. RELEASE hands back to AUTO."
+msgstr ""
+
+#: 
+msgctxt "ShowPanel"
+msgid "IN CONTROL"
+msgstr ""
+
+#: 
+msgctxt "LightingView"
+msgid "PADS"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "PAGE"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "Master dimmer"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "MASTER"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "DMX OUT"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "Send the show to the outputs"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "HOLD"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "Keep AUTO's current look through phrase changes"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "RELEASE"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "Hand back to AUTO: the latched pad and HOLD end"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "BLACKOUT"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "FLASH"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "STROBE"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "FOG"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "Fog machines on while held"
+msgstr ""
+
+#: 
+msgctxt "LightingPanel"
+msgid "Fog is locked out: arm it under SAFETY"
+msgstr ""
+
+#: 
+msgctxt "PreferencesWindow"
+msgid "Pad, page or group"
+msgstr ""

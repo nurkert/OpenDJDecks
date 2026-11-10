@@ -3483,6 +3483,77 @@ spec = "SPEC §10.5"
 note = "LIGHTING tab (topbar, View menu, Alt+3) with RIG | STAGE (live 2D visualiser) | SHOW, a lighting strip inside Perform (LIGHT, Alt+K) and a detachable LIGHTING window for a second screen (WINDOW)"
 
 [[feature]]
+id = "lighting-pads"
+area = "lighting"
+name = "Own looks and chases on pads: pages, latch or flash, live colour preview, group masters, mapped to pads and MIDI"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-lighting::looks::tests::chase_steps_on_the_beat_and_skips_missing_steps",
+  "od-lighting::looks::tests::latch_flash_release_and_the_layer_order",
+  "od-lighting::show::tests::pads_override_auto_by_group_and_release_hands_back",
+  "od-lighting::show::tests::group_masters_scale_their_group",
+  "od-lighting::safety::tests::a_chase_cannot_exceed_the_strobe_cap",
+  "od-controller::templates::tests::lighting_controls_map",
+  "od-ui::midi_tools::tests::monitor_lines_and_learning_from_the_stream",
+  "od-ui::lighting_pads::tests::numbers_labels_and_previews",
+  "od-ui::ui_tests::lighting_person::own_looks_and_chases_on_pads_are_saved_with_the_rig",
+  "od-ui::ui_tests::lighting_person::own_pads_from_controllers_and_deck_pads",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [15]. PADS in the LIGHTING view: 4 pages of 8 pads; a look sets program, colour and level per group (groups it leaves out keep what runs underneath), a chase steps through looks on the beat (1/4 beat to 2 bars); latch or flash per pad; the pad shows the look's colours and follows every edit; group masters. Saved with the rig (lighting.json). Deck pads in LIGHTING mode play the current page; mapping actions lighting.pad, lighting.page(_next/_prev), lighting.group_master; MIDI learn fills the pad, page or group number. Tested with simulated MIDI only, not from a hardware controller"
+
+[[feature]]
+id = "lighting-panel"
+area = "lighting"
+name = "Full lighting controls in Perform and Club, legible in the dark and sized for touch"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::lighting_person::lighting_panel_keeps_the_decks_and_is_sized_for_touch",
+  "od-ui::ui_tests::stage::lighting_strip_in_perform",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [17]. STRIP (LIGHT STRIP, Alt+Cmd+K) opens a lighting panel in the browser's place in Perform and Club: stage preview (from 1360 px), pages and pads, master and group faders, AUTO / EASY / PRO, DMX OUT, HOLD, RELEASE, who is in control or a lost link, BLACKOUT / FLASH / STROBE / FOG. The decks, mixer and waveforms keep every element's place and size at 1440 x 900 and 1280 x 800 (UI test); every key, pad and fader is 44 px or more. Not tried on a real touch screen"
+
+[[feature]]
+id = "lighting-auto-steer"
+area = "lighting"
+name = "AUTO you can steer: palettes, editable phrase-to-look table, hold, and a visible order of AUTO, overrides and release"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-lighting::looks::tests::table_and_palette",
+  "od-lighting::looks::tests::latch_flash_release_and_the_layer_order",
+  "od-lighting::show::tests::auto_table_palette_and_hold",
+  "od-lighting::show::tests::pads_override_auto_by_group_and_release_hands_back",
+  "od-ui::ui_tests::lighting_person::auto_palette_table_hold_and_release",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [18]. PALETTE (track key, warm, cool, sunset, ocean, white, own swatches); PHRASE -> LOOK for intro, verse, build-up, drop, breakdown, outro (a program or a pad); HOLD keeps AUTO's look through phrase changes; who wins, top first: blackout, FLASH / STROBE keys, a flash pad while held, the latched pad, HOLD, AUTO. A pad takes only the groups its look sets; RELEASE hands back with a one-beat fade. The order is shown with the layer in control lit, and IN CONTROL names it"
+
+[[feature]]
+id = "lighting-connect"
+area = "lighting"
+name = "Connecting interfaces: several universes, USB-DMX port picker, Art-Net node discovery, test pattern, guided setup"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-lighting::discovery::tests::poll_and_reply_layout",
+  "od-lighting::discovery::tests::discovers_a_fake_node_on_loopback",
+  "od-lighting::output::tests::serial_port_picker_lists_usb_adapters",
+  "od-lighting::safety::tests::a_test_pattern_cannot_exceed_the_strobe_cap",
+  "od-lighting::tests::test_pattern_steps_through_the_fixtures_and_stops",
+  "od-ui::ui_tests::lighting_person::connecting_interfaces_ports_nodes_test_pattern_and_guide",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [20]. OUTPUT: each universe its own Art-Net Port-Address or sACN universe by default; PORTS lists USB serial adapters (REFRESH); FIND NODES sends an ArtPoll to the broadcast address and lists the ArtPollReply answers; TEST PATTERN each / colours / full, through the safety limits; GUIDED SETUP in four steps ending with the test. Tested with a fake node on the loopback address (documentation-range IP) and listed test ports; no real Art-Net node, sACN receiver or USB-DMX interface has been tried"
+
+[[feature]]
 id = "fx-remix"
 area = "effects"
 name = "Remix-type effects (build-up riser, breakdown, reverse roll)"

@@ -69,6 +69,19 @@ pub enum LightingAction {
     CueBack,
     /// "auto", "easy" or "pro".
     Mode(String),
+    /// An own look or chase: pad `0..8` of the current page, pressed or
+    /// released (a flash pad is on while held).
+    Pad { pad: u8, pressed: bool },
+    /// Page `0..4` of the pads.
+    Page(u8),
+    PageNext,
+    PagePrev,
+    /// Group master `group` (0-based, in the rig's group order), 0..1.
+    GroupMaster { group: u8, level: f32 },
+    /// Hands the show back to the music: latched pad off, HOLD off.
+    Release,
+    /// AUTO keeps its current look (toggle).
+    Hold,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
