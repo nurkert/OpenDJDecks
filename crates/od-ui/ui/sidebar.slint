@@ -270,6 +270,15 @@ export component Sidebar inherits Rectangle {
     // Narrow window (or a panel open): the rail shortens to its short forms.
     in property <bool> tight;
     background: Theme.ground-band; border-radius: Theme.r-panel;
+    // Nothing in the column ever draws outside it (a narrow column cuts,
+    // it never spills over the track table).
+    clip: true;
+    // The narrowest the column may be: the source rail and the three new
+    // list keys side by side, and room for a name with its count (the
+    // splitter and saved widths stop here).
+    out property <length> content-min: Theme.touch ? 190px
+        : (root.tight ? 44px : Theme.rail) + max(200px, root.footer-min);
+    property <length> footer-min;
 
     property <[{ a11y: string, label: string, short: string, tone: color, tip: string }]> rail-items: [
         { a11y: "browser.rail.collection", label: @tr("ALL"), short: @tr("ALL"), tone: Theme.w486, tip: @tr("Collection: every track") },
@@ -429,12 +438,15 @@ export component Sidebar inherits Rectangle {
                     selected: root.selected-node == -4 && root.section == "library";
                     clicked => { root.select-node(-4); }
                 }
-                // The rules the similar list follows.
-                Caps {
-                    accessible-label: "browser.tree.rules"; accessible-role: text; accessible-value: self.text;
-                    x: 38px; height: 18px;
-                    text: @tr("TEMPO ±6 % · COMPATIBLE KEY");
-                    font-size: Theme.label; color: Theme.bone-3; vertical-alignment: top;
+                // The rules the similar list follows (elided in a narrow column).
+                Rectangle {
+                    height: 18px;
+                    Caps {
+                        accessible-label: "browser.tree.rules"; accessible-role: text; accessible-value: self.text;
+                        x: 38px; y: 0; height: 18px; width: max(0px, parent.width - 46px); overflow: elide;
+                        text: @tr("TEMPO ±6 % · COMPATIBLE KEY");
+                        font-size: Theme.label; color: Theme.bone-3; vertical-alignment: top;
+                    }
                 }
                 dev-h := Heading {
                     heading-label: "browser.tree.devices";
@@ -445,7 +457,8 @@ export component Sidebar inherits Rectangle {
                     act => { root.sync-all-devices(); }
                 }
                 if root.devices.length == 0 && root.volumes.length == 0: Text {
-                    x: 12px; width: root.width - 24px;
+                    // The tree's width (the column less its rail).
+                    x: 12px; width: root.width - (Theme.touch ? 0px : root.tight ? 44px : Theme.rail) - 24px;
                     text: @tr("Plug in a USB stick to register it.");
                     font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
                 }
@@ -569,9 +582,12 @@ export component Sidebar inherits Rectangle {
             }
         }
         if !Theme.touch: HLine { tone: Theme.rule; }
-        if !Theme.touch: HorizontalLayout {
+        if !Theme.touch: footer := HorizontalLayout {
             padding: Theme.s2;
             spacing: Theme.s1;
+            // Reports its smallest width to the column (content-min).
+            init => { root.footer-min = self.min-width; }
+            changed min-width => { root.footer-min = self.min-width; }
             // New list buttons share the width (the sidebar is resizable).
             Toggle { accessible-label: "browser.tree.new-set"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
             Toggle { accessible-label: "browser.tree.new-smart"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SMART"); tooltip: @tr("New smart list"); command: "browser.new.smart"; tone: Theme.w436; clicked => { root.create-node("smart"); } }

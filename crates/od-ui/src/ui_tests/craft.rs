@@ -248,3 +248,65 @@ fn library_rows_carry_their_deck_mark() {
     let m = Rect::of(&mark);
     assert!(m.x <= row.x + 2.0 && m.right() <= row.x + 32.0, "at the left edge: {m:?} / {row:?}");
 }
+
+/// [49] The lists column never draws over the track table: dragged to its
+/// far left it stops where its content still fits (the three new-list
+/// keys, a name and its count) and every element of the column stays
+/// inside it; dragged far right it stops at its widest. A stored width
+/// below the minimum is shown at the minimum. The player / browser
+/// splitter keeps the browser and the part above apart in both
+/// directions too. Prepare and Perform, desktop and laptop.
+#[test]
+fn browser_splitters_never_let_content_spill() {
+    for (size, mode) in [((1440, 900), "prepare"), ((1280, 800), "perform")] {
+        let ui = Ui::open(size);
+        ui.app.ui.invoke_set_mode(mode.into());
+        ui.pump(300);
+        let check = |u: &Ui, when: &str| {
+            let col = Rect::of(&u.get("browser.lists"));
+            let table = Rect::of(&u.get("browser.list"));
+            assert!(col.right() <= table.x + 0.5, "{size:?} {mode} {when}: column {col:?} meets table {table:?}");
+            for prefix in ["browser.tree", "browser.rail"] {
+                for (l, _, e) in u.with_prefix(prefix) {
+                    let r = Rect::of(&e);
+                    if r.w <= 0.0 || r.h <= 0.0 || r.y >= col.bottom() || r.bottom() <= col.y {
+                        continue; // scrolled out of the tree's view
+                    }
+                    assert!(r.x >= col.x - 0.5 && r.right() <= col.right() + 0.5, "{size:?} {mode} {when}: {l} {r:?} outside {col:?}");
+                    assert!(r.overlap(&table) <= 0.0, "{size:?} {mode} {when}: {l} over the table");
+                }
+            }
+            col
+        };
+        let wide = check(&ui, "at rest");
+        let split = Rect::of(&ui.get("browser.splitter")).centre();
+        ui.drag_points(split, LogicalPosition::new(4.0, split.y));
+        let narrow = check(&ui, "far left");
+        assert!(narrow.w <= wide.w, "no wider after a drag left: {narrow:?}");
+        let keys = ["browser.tree.new-set", "browser.tree.new-smart", "browser.tree.new-folder"].map(|k| Rect::of(&ui.get(k)));
+        assert!(keys[2].right() <= narrow.right() + 0.5, "{size:?}: + FOLDER fits");
+        // A second drag further left does not move it.
+        let split = Rect::of(&ui.get("browser.splitter")).centre();
+        ui.drag_points(split, LogicalPosition::new(4.0, split.y));
+        assert!((Rect::of(&ui.get("browser.lists")).w - narrow.w).abs() <= 0.5, "stops at the content");
+        let split = Rect::of(&ui.get("browser.splitter")).centre();
+        ui.drag_points(split, LogicalPosition::new(size.0 as f32 - 4.0, split.y));
+        let far = check(&ui, "far right");
+        assert!(far.w > narrow.w + 100.0 && far.w <= 481.0, "widens up to 480 px: {far:?}");
+        // A stored width under the minimum shows at the minimum.
+        ui.app.ui.set_sidebar_width(60.0);
+        ui.pump(200);
+        let stored = check(&ui, "stored 60 px");
+        assert!((stored.w - narrow.w).abs() <= 0.5, "{stored:?} vs {narrow:?}");
+
+        // Player / browser: the browser keeps its height both ways.
+        let up = Rect::of(&ui.get("browser.upper-splitter")).centre();
+        ui.drag_points(up, LogicalPosition::new(up.x, 4.0));
+        check(&ui, "upper split far up");
+        let up = Rect::of(&ui.get("browser.upper-splitter")).centre();
+        ui.drag_points(up, LogicalPosition::new(up.x, size.1 as f32 - 4.0));
+        let col = check(&ui, "upper split far down");
+        assert!(col.h >= 200.0, "{size:?} {mode}: the browser keeps its room: {col:?}");
+        assert!(Rect::of(&ui.get("browser.upper-splitter")).bottom() <= col.y + 8.0, "splitter above the browser");
+    }
+}
