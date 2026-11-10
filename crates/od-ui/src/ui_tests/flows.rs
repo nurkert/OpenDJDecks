@@ -222,6 +222,7 @@ fn add_to_playlist() {
 /// Bring an edited playlist onto a registered USB stick: no step at all.
 #[test]
 fn sync_stick() {
+    let _volumes = volumes_lock();
     let fx = Fixture::new();
     let stick = test_env().join(format!(
         "volumes/STICK-{}",
