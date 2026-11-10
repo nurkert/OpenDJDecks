@@ -136,6 +136,8 @@ pub struct AnalysisWorker {
     pub wake: Sender<()>,
     pub control: Arc<Mutex<AnalysisControl>>,
     stop: Arc<AtomicBool>,
+    /// While decks play: only tracks asked for by hand are analysed.
+    paused: Arc<AtomicBool>,
 }
 
 impl AnalysisWorker {
@@ -150,6 +152,8 @@ impl AnalysisWorker {
         let (wake_tx, wake_rx): (Sender<()>, Receiver<()>) = unbounded();
         let stop = Arc::new(AtomicBool::new(false));
         let stop2 = stop.clone();
+        let paused = Arc::new(AtomicBool::new(false));
+        let paused2 = paused.clone();
         std::thread::Builder::new()
             .name("od-analysis".into())
             .spawn(move || {
@@ -168,10 +172,11 @@ impl AnalysisWorker {
                     .build()
                     .expect("analysis pool");
                 while !stop2.load(Ordering::Relaxed) {
+                    let hold = paused2.load(Ordering::Relaxed);
                     let (opts, detect_key, auto_cues, todo) = {
                         let mut c = control2.lock().unwrap_or_else(|e| e.into_inner());
                         let requested = std::mem::take(&mut c.requested);
-                        let todo = if c.auto {
+                        let todo = if c.auto && !hold {
                             lib.tracks_needing_analysis(od_analysis::ANALYSIS_VERSION)
                                 .unwrap_or_default()
                         } else {
@@ -179,6 +184,11 @@ impl AnalysisWorker {
                         };
                         (c.options.clone(), c.detect_key, c.auto_cues, todo)
                     };
+                    if todo.is_empty() && hold {
+                        // Decks play: the automatic batch waits (not idle).
+                        let _ = wake_rx.recv_timeout(Duration::from_millis(500));
+                        continue;
+                    }
                     if todo.is_empty() {
                         let _ = events.send(WorkerEvent::AnalysisIdle);
                         let _ = wake_rx.recv_timeout(Duration::from_secs(30));
@@ -191,6 +201,10 @@ impl AnalysisWorker {
                     for chunk in todo.chunks(threads * 2) {
                         if stop2.load(Ordering::Relaxed) {
                             return;
+                        }
+                        // Decks started: an automatic batch stops here.
+                        if !hold && paused2.load(Ordering::Relaxed) {
+                            break;
                         }
                         let paths: Vec<_> = chunk
                             .iter()
@@ -248,7 +262,19 @@ impl AnalysisWorker {
             wake: wake_tx,
             control,
             stop,
+            paused,
         }
+    }
+
+    /// Holds the automatic analysis (decks play); tracks asked for by hand
+    /// still run.
+    pub fn set_paused(&self, on: bool) {
+        self.paused.store(on, Ordering::Relaxed);
+    }
+
+    #[cfg(test)]
+    pub fn is_paused(&self) -> bool {
+        self.paused.load(Ordering::Relaxed)
     }
 }
 

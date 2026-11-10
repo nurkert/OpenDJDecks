@@ -6281,3 +6281,48 @@ msgstr "LEER STARTEN"
 msgctxt "RestoreBar"
 msgid "OK"
 msgstr "OK"
+
+#: ui/app.slint:605
+msgctxt "AppWindow"
+msgid "Lock for the Set"
+msgstr "Für das Set sperren"
+
+#: ui/app.slint:998
+msgctxt "AppWindow"
+msgid "Locked for the set: nothing is deleted"
+msgstr "Für das Set gesperrt: nichts wird gelöscht"
+
+#: ui/perform.slint:309
+msgctxt "GridKey"
+msgid "Locked for the set: no grid edits"
+msgstr "Für das Set gesperrt: keine Grid-Änderungen"
+
+#: ui/safety.slint:311
+msgctxt "LockKey"
+msgid "LOCKED"
+msgstr "GESPERRT"
+
+#: ui/safety.slint:311
+msgctxt "LockKey"
+msgid "LOCK"
+msgstr "SPERREN"
+
+#: ui/safety.slint:318
+msgctxt "LockKey"
+msgid "Locked: no loading onto a playing deck, no deleting, no grid edits. Click to unlock"
+msgstr "Gesperrt: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen. Klick zum Entsperren"
+
+#: ui/safety.slint:319
+msgctxt "LockKey"
+msgid "Lock for the set: no loading onto a playing deck, no deleting, no grid edits"
+msgstr "Für das Set sperren: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen"
+
+#: ui/topbar.slint:717
+msgctxt "TopBar"
+msgid "Unlock"
+msgstr "Entsperren"
+
+#: ui/topbar.slint:717
+msgctxt "TopBar"
+msgid "Lock for the set"
+msgstr "Für das Set sperren"

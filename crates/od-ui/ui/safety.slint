@@ -4,7 +4,7 @@
 // dialog, because nothing may interrupt a set.
 
 import { Theme } from "tokens.slint";
-import { Caps, PlateButton } from "controls.slint";
+import { Caps, PlateButton, TipArea } from "controls.slint";
 import { VLine } from "lines.slint";
 
 // Audio output health, set from Rust (audio_health.rs).
@@ -277,5 +277,48 @@ export component RestoreBar inherits Rectangle {
                 clicked => { Restore.dismiss(); }
             }
         }
+    }
+}
+
+// The performance lock (roadmap [11]), and what the app does while decks
+// play.
+export global PerformLock {
+    in property <bool> locked;
+    // A deck plays: the computer is kept awake and background work waits.
+    in property <bool> playing;
+    // Keeping awake works on this system ("" fine, else why not).
+    in property <string> awake-note;
+    callback toggle();
+}
+
+// Top bar, status zone: LOCK at rest, LOCKED filled in sodium while on
+// (the legend sodium already has for a locked grid).
+export component LockKey inherits Rectangle {
+    in property <bool> narrow;
+    accessible-role: checkbox;
+    accessible-label: "topbar.lock";
+    accessible-checkable: true;
+    accessible-checked: PerformLock.locked;
+    accessible-value: PerformLock.playing ? "playing" : "idle";
+    width: l.preferred-width + (root.narrow ? 12px : 24px);
+    Rectangle {
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: Theme.face(true, t.pressed, t.has-hover, false, PerformLock.locked, Theme.attention);
+    }
+    l := Text {
+        x: root.narrow ? 6px : 12px; height: parent.height;
+        text: PerformLock.locked ? @tr("LOCKED") : @tr("LOCK");
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: Theme.ink(true, t.pressed, t.has-hover, false, PerformLock.locked);
+        vertical-alignment: center;
+    }
+    t := TipArea {
+        tooltip: PerformLock.locked
+            ? @tr("Locked: no loading onto a playing deck, no deleting, no grid edits. Click to unlock")
+            : @tr("Lock for the set: no loading onto a playing deck, no deleting, no grid edits");
+        command: "perform.lock";
+        mouse-cursor: pointer;
+        clicked => { PerformLock.toggle(); }
     }
 }

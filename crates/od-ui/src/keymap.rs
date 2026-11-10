@@ -528,6 +528,14 @@ fn build() -> Vec<Action> {
         Global,
         &["Mod+Alt+Shift+C"],
     );
+    b.add(
+        "perform.lock",
+        "Lock for the set: no loading onto a playing deck, no deleting, no grid edits",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+K"],
+    );
     b.add_split(
         "app.check-updates",
         "Check for updates",

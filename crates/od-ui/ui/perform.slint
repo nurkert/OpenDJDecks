@@ -16,6 +16,7 @@ import { SamplerPadView, SamplerView, DeckTime, DeckGrid, DeckGridView, GridEdit
 import { WaveLane, VerticalLane } from "wave.slint";
 import { MicControls } from "mic.slint";
 import { RecStrip } from "rec.slint";
+import { PerformLock } from "safety.slint";
 import { LightingStrip, Lighting } from "lighting.slint";
 import { ClubPlayer, ClubSteps, Club } from "club.slint";
 
@@ -284,26 +285,30 @@ component GridKey inherits Rectangle {
     in property <length> size: 24px;
     in property <bool> on;
     callback clicked();
+    // Locked for the set: the panel does not open (it still closes).
+    property <bool> enabled: root.on || !PerformLock.locked;
     width: label.preferred-width + 30px; height: root.size;
     // Mark and caption centred when the key is wider than they are.
     property <length> ox: max(0px, (self.width - label.preferred-width - 30px) / 2);
-    background: Theme.face(true, gk.pressed, gk.has-hover, false, root.on, Theme.attention);
+    background: Theme.face(root.enabled, gk.pressed, gk.has-hover, false, root.on, Theme.attention);
     border-radius: Theme.r-control;
+    border-width: root.enabled ? 0px : Theme.hair;
+    border-color: Theme.rule;
     for i in 3: Rectangle {
         x: root.ox + 8px + i * 4px; width: 2px;
         y: i == 1 ? 5px : 8px; height: parent.height - (i == 1 ? 10px : 16px);
-        background: Theme.ink(true, gk.pressed, gk.has-hover, false, root.on);
+        background: Theme.ink(root.enabled, gk.pressed, gk.has-hover, false, root.on);
     }
     label := Text {
         x: root.ox + 23px; height: parent.height;
         text: @tr("GRID");
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
-        color: Theme.ink(true, gk.pressed, gk.has-hover, false, root.on); vertical-alignment: center;
+        color: Theme.ink(root.enabled, gk.pressed, gk.has-hover, false, root.on); vertical-alignment: center;
     }
     gk := TipArea {
-        tooltip: root.on ? @tr("Back to the pads") : @tr("Beatgrid and gain: fix the grid at the playhead while the track plays");
-        mouse-cursor: pointer;
-        clicked => { root.clicked(); }
+        tooltip: root.on ? @tr("Back to the pads") : !root.enabled ? @tr("Locked for the set: no grid edits") : @tr("Beatgrid and gain: fix the grid at the playhead while the track plays");
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { if (root.enabled) { root.clicked(); } }
     }
 }
 

@@ -198,7 +198,7 @@ pub(crate) fn type_bpm(app: &App, text: &str) {
 
 /// Sets the tempo of the current track's grid about the cursor.
 fn set_grid_bpm(app: &App, bpm: f64, label: &str) {
-    if app.guard_read_only() {
+    if app.guard_read_only() || app.guard_locked(crate::perform_lock::Blocked::Grid) {
         return;
     }
     let Some(id) = app.state.borrow().player.current else {
@@ -1252,6 +1252,9 @@ pub(crate) fn next_cue(
 
 /// Deletes the memory cue at the cursor (within 50 ms).
 pub(crate) fn delete_memory_cue(app: &App) {
+    if app.guard_locked(crate::perform_lock::Blocked::Delete) {
+        return;
+    }
     edit_cues(app, "Memory cue removed", |cues, cursor| {
         cues.retain(|c| !(c.kind == CueKind::Memory && (c.start - cursor).abs() < 0.05))
     });

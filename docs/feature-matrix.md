@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 226 features; 220 in scope: 220 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 227 features; 221 in scope: 221 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -296,6 +296,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Audio health: device, latency and dropouts always shown, device-lost alert, recovery and device change without a restart | DONE | The status band names the output, its latency and the dropouts. A lost device (reported by the backend, or no callback for 1.5 s) raises a band at once; the engine is kept and goes on with SWITCH OUTPUT, TRY AGAIN or by itself when the device is plugged back in. Device, buffer and headphone routing in Preferences apply at once. Device loss is injected in tests (virtual output); it has not been checked with a real interface being unplugged.; (Roadmap [10]) | 4 | **P1** |
 | Gig check: audio output, controller, space for the recording and missing track files | DONE | From the gig menu in the top bar or View > Gig Check: a band with one result per check in the line grammar (solid ready, dashed look at it, struck fix it).; (Roadmap [10]) | 4 | P2 |
 | Restore after a crash: deck state saved every second, offered back after an abnormal exit; a running recording survives | DONE | session.json beside the library, written atomically once a second (tracks, positions, tempo, keylock, key shift, sync, loops, hot cue bank, channel faders, trim, EQ, crossfader assign, crossfader, master level, the running recording). A run that did not end cleanly is offered back; the recording's WAV header is brought up to date every second and repaired on the next start. Tested by killing a child process with SIGKILL.; (Roadmap [9]) | 6 | **P1** |
+| Performance lock: no loading onto a playing deck, no deleting, no grid edits; keep awake and pause background work while decks play | DONE | LOCK in the top bar, View menu and Alt+Shift+Cmd+K. Guards sit in load_track, the delete paths (lists, list entries, collection, hot and memory cues, sticks) and every grid entry point. Keep awake: IOPMAssertion (macOS, checked against pmset in a test), SetThreadExecutionState (Windows, compiled but not run here), systemd-inhibit (Linux, best effort without it). Automatic analysis, the stem batch and automatic stick sync wait while decks play.; (Roadmap [11]) | 3 | **P1** |
 | Top-bar panel toggles: FX, Mix Preview, Sampler, Mixer, Recording | DONE | FX, PREVIEW, SAMPLER and MIXER in the top bar (stored): MIXER hides the mixer column, PREVIEW shows the Mix Preview panel, the key beside RECORD shows or hides the recording section, plus CLUB and LIGHT; (UX §1.2, §2.8) | 3 | P2 |
 | Mix Preview (mix in / mix out points between decks) | DONE | `crates/od-ui/src/mix_preview.rs`, `crates/od-ui/ui/mix_preview.slint`; MIX PREVIEW panel above the waveforms: MIX IN / MIX OUT at the edited deck's playhead (stored per track), ◀ ▶ through the points (memory cues and mix points), EDIT switches the deck, LINK starts the waiting deck from its mix-in point when the playing deck passes its mix-out point; (UX §1.5; SPEC §16.3) | 5 | P3 |
 | Draggable splitters with persisted sizes, double-click reset | DONE | `crates/od-ui/src/shell.rs`; Upper/lower and sidebar splitters: drag, persisted across restarts, double-click reset (UI test). Per-layout sizes and waveform-zone collapse / expand are not there; (SPEC §12; UX §2.6) | 2 |  |
@@ -335,13 +336,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 220 |
+| DONE | 221 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **226** |
+| **Total** | **227** |
 
 ## P1 gaps and implementation notes
 

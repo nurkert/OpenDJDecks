@@ -477,6 +477,10 @@ impl Decks {
 
 /// Loads `track` (of the current source) into `deck` in the background.
 pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Option<f64>) {
+    if crate::perform_lock::blocks_load(app, deck) {
+        app.guard_locked(crate::perform_lock::Blocked::Load(deck));
+        return;
+    }
     if deck == PREVIEW_DECK {
         crate::player::reset_shift_for(app, track);
     }
@@ -2089,6 +2093,9 @@ fn editable(app: &App, d: usize) -> Option<TrackId> {
 /// MEMORY (controller): stores a memory cue at the playhead, or deletes the
 /// one at the playhead; saved to the library like any cue edit.
 pub(crate) fn memory_cue(app: &App, d: usize, add: bool) {
+    if !add && app.guard_locked(crate::perform_lock::Blocked::Delete) {
+        return;
+    }
     let Some(id) = editable(app, d) else { return };
     let Some(st) = deck_state(app, d) else { return };
     // While a loop plays, MEMORY stores the loop (a saved memory loop).
@@ -2161,6 +2168,9 @@ pub(crate) fn follow_grid(app: &App, id: TrackId, grid: &Beatgrid) {
 /// TAP (controller): after three taps the track gets a constant grid at the
 /// tapped tempo, keeping its first downbeat.
 pub(crate) fn tap_bpm(app: &App, d: usize) {
+    if app.guard_locked(crate::perform_lock::Blocked::Grid) {
+        return;
+    }
     let t = TAP_EPOCH.with(|e| e.elapsed().as_secs_f64());
     let Some(bpm) = app.decks.borrow_mut().taps[d].tap(t) else {
         return;

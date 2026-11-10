@@ -2546,3 +2546,58 @@ msgstr ""
 msgctxt "RestoreBar"
 msgid "OK"
 msgstr ""
+
+#: ui/app.slint:605
+msgctxt "AppWindow"
+msgid "Lock for the Set"
+msgstr ""
+
+#: ui/app.slint:998
+msgctxt "AppWindow"
+msgid "Locked for the set: nothing is deleted"
+msgstr ""
+
+#: ui/perform.slint:309
+msgctxt "GridKey"
+msgid "Locked for the set: no grid edits"
+msgstr ""
+
+#: ui/perform.slint:449
+msgctxt "GridPanel"
+msgid "LOCKED"
+msgstr ""
+
+#: ui/perform.slint:449
+msgctxt "GridPanel"
+msgid "LOCK"
+msgstr ""
+
+#: ui/safety.slint:311
+msgctxt "LockKey"
+msgid "LOCKED"
+msgstr ""
+
+#: ui/safety.slint:311
+msgctxt "LockKey"
+msgid "LOCK"
+msgstr ""
+
+#: ui/safety.slint:318
+msgctxt "LockKey"
+msgid "Locked: no loading onto a playing deck, no deleting, no grid edits. Click to unlock"
+msgstr ""
+
+#: ui/safety.slint:319
+msgctxt "LockKey"
+msgid "Lock for the set: no loading onto a playing deck, no deleting, no grid edits"
+msgstr ""
+
+#: ui/topbar.slint:717
+msgctxt "TopBar"
+msgid "Unlock"
+msgstr ""
+
+#: ui/topbar.slint:717
+msgctxt "TopBar"
+msgid "Lock for the set"
+msgstr ""

@@ -2936,6 +2936,21 @@ spec = "Roadmap [9]"
 note = "session.json beside the library, written atomically once a second (tracks, positions, tempo, keylock, key shift, sync, loops, hot cue bank, channel faders, trim, EQ, crossfader assign, crossfader, master level, the running recording). A run that did not end cleanly is offered back; the recording's WAV header is brought up to date every second and repaired on the next start. Tested by killing a child process with SIGKILL."
 
 [[feature]]
+id = "shell-perform-lock"
+area = "shell"
+name = "Performance lock: no loading onto a playing deck, no deleting, no grid edits; keep awake and pause background work while decks play"
+scope = "in"
+status = "done"
+prio = "P1"
+tests = [
+  "od-ui::ui_tests::set_safety::lock_blocks_accidents_and_playing_keeps_awake",
+  "od-ui::perform_lock::tests::every_block_explains_itself",
+  "od-ui::keep_awake::tests::a_guard_holds_or_says_why",
+]
+spec = "Roadmap [11]"
+note = "LOCK in the top bar, View menu and Alt+Shift+Cmd+K. Guards sit in load_track, the delete paths (lists, list entries, collection, hot and memory cues, sticks) and every grid entry point. Keep awake: IOPMAssertion (macOS, checked against pmset in a test), SetThreadExecutionState (Windows, compiled but not run here), systemd-inhibit (Linux, best effort without it). Automatic analysis, the stem batch and automatic stick sync wait while decks play."
+
+[[feature]]
 id = "shell-panel-toggles"
 area = "shell"
 name = "Top-bar panel toggles: FX, Mix Preview, Sampler, Mixer, Recording"

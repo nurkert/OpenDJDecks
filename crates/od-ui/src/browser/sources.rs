@@ -112,7 +112,7 @@ pub(crate) fn extra_copies(groups: &[od_library::duplicates::DuplicateGroup]) ->
 /// Duplicates view: "remove-selected" or "keep-first" remove tracks from
 /// the collection (their files stay on disk).
 pub(crate) fn duplicates_action(app: &App, action: &str) {
-    if app.guard_read_only() {
+    if app.guard_read_only() || app.guard_locked(crate::perform_lock::Blocked::Delete) {
         return;
     }
     let ids = match action {

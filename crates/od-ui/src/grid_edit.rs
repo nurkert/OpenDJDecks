@@ -458,7 +458,7 @@ fn refresh_errors(s: &mut Session, list: Option<&[Transient]>) {
 /// Starts the session on the player's track. False (with a status) when
 /// there is nothing to edit.
 pub(crate) fn start(app: &App) -> bool {
-    if app.guard_read_only() {
+    if app.guard_read_only() || app.guard_locked(crate::perform_lock::Blocked::Grid) {
         return false;
     }
     // The grid is edited at the track's own tempo and key.
@@ -570,6 +570,9 @@ pub(crate) fn open_deck(app: &App, deck: usize) {
 
 /// Runs an operation in the session (at the cursor).
 pub(crate) fn apply(app: &App, op: Op) {
+    if app.guard_locked(crate::perform_lock::Blocked::Grid) {
+        return;
+    }
     let cursor = app.state.borrow().player.cursor;
     let Some((hash, grid, pins, duration)) =
         SESSION.with(|s| s.borrow().as_ref().map(|s| (s.hash.clone(), s.grid.clone(), s.pins.clone(), s.duration)))
@@ -653,6 +656,9 @@ fn set_click(app: &App, on: bool) {
 /// and while the preview plays, the phase: taps that land near a
 /// transient move the grid by their median offset.
 pub(crate) fn tap(app: &App, bpm: Option<f64>) {
+    if app.guard_locked(crate::perform_lock::Blocked::Grid) {
+        return;
+    }
     let (previewing, cursor) = {
         let st = app.state.borrow();
         (st.player.previewing, st.player.cursor)
@@ -814,7 +820,7 @@ fn jump_worst(app: &App) {
 /// Outside a session: an operation on the stored grid of the player's
 /// track at the cursor, one undo step; decks follow.
 pub(crate) fn apply_stored(app: &App, op: Op) {
-    if app.guard_read_only() {
+    if app.guard_read_only() || app.guard_locked(crate::perform_lock::Blocked::Grid) {
         return;
     }
     let (id, cursor) = {

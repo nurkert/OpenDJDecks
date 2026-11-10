@@ -1,8 +1,8 @@
 ---
 title: Safe during a set
 description: The audio line in the status band, what happens when the audio interface is lost, and the check before the gig.
-keywords: [crash, restore, recover, killed, power cut, session, audio, output, device, interface, latency, dropouts, xrun, lost, unplugged, disconnected, sound card, gig check, before the gig, disk space, missing files, safety]
-features: [shell-audio-health, shell-gig-check, shell-crash-restore]
+keywords: [lock, locked, performance lock, sleep, awake, screen saver, background, pause analysis, crash, restore, recover, killed, power cut, session, audio, output, device, interface, latency, dropouts, xrun, lost, unplugged, disconnected, sound card, gig check, before the gig, disk space, missing files, safety]
+features: [shell-audio-health, shell-gig-check, shell-crash-restore, shell-perform-lock]
 ---
 
 OpenDJDecks keeps an eye on the things that can end a set early. This page explains what it shows and what you can do.
@@ -57,3 +57,24 @@ If the app did not close properly, the next start offers it back in a band under
 - **START EMPTY** leaves the decks empty.
 
 A recording that was running is kept either way. Its file is made whole up to the moment of the crash and is listed under Recordings with the tracklist so far. The band says how long it is.
+
+## The performance lock
+
+**LOCK** in the top bar (or **View › Lock for the Set**, `⌥⇧⌘K`, `Ctrl+Alt+Shift+K` on Linux and Windows) turns into a yellow **LOCKED**. While it is on:
+
+- No track is loaded onto a deck that is playing. A stopped deck still loads, from the list, by dragging or from the controller.
+- Nothing is deleted: no list, no tracks from a list or the collection, no hot or memory cue, no registered stick.
+- No beatgrid changes: the GRID key does not open, and grid keys, tap tempo and analysis lock do nothing.
+
+Whatever is blocked says so in the status line. Click **LOCKED** to unlock.
+
+![LOCKED in the top bar during a set](../img/lock.png)
+
+## While decks play
+
+As long as a deck in Perform plays, and for five seconds after the last one stops:
+
+- The computer and its display stay awake. macOS and Windows are asked directly; on Linux this uses `systemd-inhibit`, and on a system without it the screen may still go dark, so set the power settings there by hand.
+- Background work waits: automatic analysis, separating stems for a batch of tracks, and automatic stick sync. A track you ask to analyse by hand still runs, and the stems of a track on a deck are still separated.
+
+This happens whether or not the lock is on.

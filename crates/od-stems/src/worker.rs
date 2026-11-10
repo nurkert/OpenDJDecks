@@ -95,6 +95,8 @@ struct Shared {
     cancel_current: AtomicBool,
     /// Cancels the running job and stops the worker.
     stop: AtomicBool,
+    /// Holds the queue (and the running job between its segments).
+    paused: AtomicBool,
 }
 
 /// A background thread separating queued tracks one at a time (the model
@@ -112,6 +114,7 @@ impl StemWorker {
             wake: Condvar::new(),
             cancel_current: AtomicBool::new(false),
             stop: AtomicBool::new(false),
+            paused: AtomicBool::new(false),
         });
         let (tx, rx) = crossbeam_channel::unbounded();
         let s = shared.clone();
@@ -161,6 +164,19 @@ impl StemWorker {
         if q.current.is_some() {
             self.shared.cancel_current.store(true, Ordering::Relaxed);
         }
+    }
+
+    /// Holds the work while `on` (decks play): no job starts, and a
+    /// running one waits between its segments. Cancelling still works.
+    pub fn set_paused(&self, on: bool) {
+        self.shared.paused.store(on, Ordering::Relaxed);
+        if !on {
+            self.shared.wake.notify_all();
+        }
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.shared.paused.load(Ordering::Relaxed)
     }
 
     /// The running track, if any.
@@ -214,6 +230,10 @@ fn run(shared: Arc<Shared>, cache: StemCache, opts: StemWorkerOptions, tx: Sende
             loop {
                 if q.shutdown {
                     return;
+                }
+                if shared.paused.load(Ordering::Relaxed) {
+                    shared.wake.wait_for(&mut q, std::time::Duration::from_millis(200));
+                    continue;
                 }
                 if let Some(j) = q.jobs.pop_front() {
                     q.current = Some(j.track);
@@ -313,6 +333,12 @@ fn process(
     let stems = sep.separate_file(
         &job.path,
         &mut |f| {
+            while shared.paused.load(Ordering::Relaxed)
+                && !cancel.load(Ordering::Relaxed)
+                && !shared.stop.load(Ordering::Relaxed)
+            {
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
             if f - last >= 0.01 || f >= 1.0 {
                 last = f;
                 let _ = tx.send(StemEvent::Progress {

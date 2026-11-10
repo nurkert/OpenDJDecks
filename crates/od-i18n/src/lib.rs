@@ -1180,6 +1180,25 @@ const DE: &[(&str, &str)] = &[
     ("Deck {}: {} at {}", "Deck {}: {} bei {}"),
     ("The recording {} was kept: {}", "Die Aufnahme {} ist erhalten: {}"),
     ("Restored deck {}: press PLAY to go on", "Deck {} wiederhergestellt: PLAY drücken, um weiterzuspielen"),
+    // Performance lock (roadmap [11]).
+    (
+        "Locked: deck {} is playing. Load onto a stopped deck, or unlock",
+        "Gesperrt: Deck {} spielt. Lade auf ein gestopptes Deck oder entsperre",
+    ),
+    ("Locked: nothing is deleted until you unlock", "Gesperrt: Bis zum Entsperren wird nichts gelöscht"),
+    (
+        "Locked: the beatgrid stays as it is until you unlock",
+        "Gesperrt: Das Beatgrid bleibt, wie es ist, bis du entsperrst",
+    ),
+    (
+        "Locked for the set: no loading onto a playing deck, no deleting, no grid edits",
+        "Für das Set gesperrt: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen",
+    ),
+    ("Unlocked", "Entsperrt"),
+    (
+        "Lock for the set: no loading onto a playing deck, no deleting, no grid edits",
+        "Für das Set sperren: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen",
+    ),
 ];
 
 /// Whether `english` has a German translation (independent of the

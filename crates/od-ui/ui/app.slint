@@ -9,8 +9,8 @@ export { DeckTime, GridEdit, DeckGrid, DeckGridView } from "structs.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
 import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark } from "controls.slint";
 import { FirstStartBar } from "first_start.slint";
-import { AudioHealth, GigCheck, GigCheckRow, AudioStatusLine, DeviceLostBar, GigCheckBar, Restore, RestoreBar } from "safety.slint";
-export { AudioHealth, GigCheck, GigCheckRow, Restore }
+import { AudioHealth, GigCheck, GigCheckRow, AudioStatusLine, DeviceLostBar, GigCheckBar, Restore, RestoreBar, PerformLock } from "safety.slint";
+export { AudioHealth, GigCheck, GigCheckRow, Restore, PerformLock }
 export { FirstStart }
 import { TooltipLayer } from "tooltip.slint";
 import { Sidebar, RailItem } from "sidebar.slint";
@@ -602,6 +602,7 @@ export component AppWindow inherits Window {
             MenuSeparator { }
             MenuItem { title: @tr("First-Start Guide"); activated => { FirstStart.reopen(); } }
             MenuItem { title: @tr("Gig Check"); activated => { GigCheck.run(); } }
+            MenuItem { title: @tr("Lock for the Set"); checkable: true; checked: PerformLock.locked; activated => { PerformLock.toggle(); } }
         }
     }
 
@@ -994,7 +995,7 @@ export component AppWindow inherits Window {
                         if root.node-kind == "duplicates" && !root.kiosk && root.duplicate-groups > 0: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.duplicates.keep-first"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("KEEP ONE OF EACH"); tone: Theme.fault; tooltip: @tr("Remove every copy but the oldest of each group from the collection (the files stay on disk)"); clicked => { root.duplicates-action("keep-first"); } } }
                         if root.node-kind == "taglist" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.tag-list.save"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("SAVE AS PLAYLIST"); tone: Theme.live; tooltip: @tr("Make a playlist of the tag list"); clicked => { root.tag-list-action("save"); } } }
                         if root.node-kind == "taglist" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.tag-list.clear"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("CLEAR"); tone: Theme.fault; tooltip: @tr("Empty the tag list"); clicked => { root.tag-list-action("clear"); } } }
-                        if root.node-kind != "all" && root.node-kind != "stick" && root.node-kind != "explorer" && root.node-kind != "similar" && root.node-kind != "history" && root.node-kind != "taglist" && root.node-kind != "auto" && !root.read-only && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.delete-list"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("DELETE"); tone: Theme.fault; tooltip: @tr("Delete the open list"); command: "browser.delete.list"; clicked => { root.delete-node(); } } }
+                        if root.node-kind != "all" && root.node-kind != "stick" && root.node-kind != "explorer" && root.node-kind != "similar" && root.node-kind != "history" && root.node-kind != "taglist" && root.node-kind != "auto" && !root.read-only && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.delete-list"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("DELETE"); tone: Theme.fault; enabled: !PerformLock.locked; tooltip: PerformLock.locked ? @tr("Locked for the set: nothing is deleted") : @tr("Delete the open list"); command: "browser.delete.list"; clicked => { root.delete-node(); } } }
                         // Load target of a double-click (Perform): the free deck or a fixed one.
                         VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton {
                             accessible-label: "browser.target"; accessible-role: button;

@@ -199,6 +199,11 @@ pub(crate) fn send(app: &App, cmd: Command) {
 }
 
 pub(crate) fn deck_cmd(app: &App, deck: usize, cmd: DeckCommand) {
+    if matches!(cmd, DeckCommand::DeleteHotCue { .. })
+        && app.guard_locked(crate::perform_lock::Blocked::Delete)
+    {
+        return;
+    }
     send(app, Command::Deck(deck, cmd));
 }
 
@@ -456,6 +461,7 @@ fn frame(app: &App) {
     player::follow_preview(app, &state);
     recorder::frame(app, &state);
     crate::restore::frame(app, &state);
+    crate::perform_lock::frame(app, &state);
     if app.ui.get_mode() != "perform" {
         return;
     }

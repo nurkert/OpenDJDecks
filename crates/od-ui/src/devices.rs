@@ -522,6 +522,9 @@ pub(crate) fn wire(app: &Rc<App>) {
         refresh(&a);
     }));
     ui.on_forget_device(handler!(app, |a, id: i32| {
+        if a.guard_locked(crate::perform_lock::Blocked::Delete) {
+            return;
+        }
         let r = a.state.borrow_mut().lib.forget_device(DeviceId(id as i64));
         if a.report(r).is_some() {
             a.state.borrow_mut().devices.selected = None;

@@ -234,3 +234,81 @@ fn killed_mid_set_restores_decks_and_keeps_the_recording() {
     assert!(!ui.has("app.restore"), "the offer goes");
     assert_eq!(ui.app.ui.get_mode(), "perform");
 }
+
+fn status(ui: &Ui) -> String {
+    ui.app.ui.get_status_text().to_string()
+}
+
+/// [11] Locked, nothing happens by accident: no load onto the playing deck
+/// (a stopped deck still loads), no deleting a list or a hot cue, no grid
+/// edit; each says why. While a deck plays the computer is kept awake and
+/// background work waits, and it resumes after the decks stop.
+#[test]
+fn lock_blocks_accidents_and_playing_keeps_awake() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    play(&ui, 0, 0);
+    assert!(ui.wait_until(2.0, |_| crate::perform_lock::paused()), "background work waits");
+    assert!(ui.app.analysis.is_paused());
+    #[cfg(target_os = "macos")]
+    assert!(crate::perform_lock::awake(), "the Mac is kept awake");
+    assert_eq!(ui.value("topbar.lock"), "playing");
+
+    ui.click("topbar.lock");
+    assert!(crate::perform_lock::locked());
+    assert!(ui.app.ui.global::<crate::PerformLock>().get_locked());
+
+    // Loading onto the playing deck.
+    crate::decks::load_track(&ui.app, 0, ui.fx.tracks[1].0, None);
+    ui.pump(200);
+    assert!(status(&ui).starts_with("Locked: deck 1 is playing"), "{}", status(&ui));
+    assert_eq!(
+        crate::engine::snapshot(&ui.app).unwrap().decks[0].track,
+        Some(ui.fx.tracks[0].0),
+        "deck 1 keeps its track"
+    );
+    // A stopped deck still loads.
+    crate::decks::load_track(&ui.app, 1, ui.fx.tracks[1].0, None);
+    assert!(ui.wait_until(20.0, |u| crate::engine::snapshot(&u.app)
+        .is_some_and(|s| s.decks[1].track == Some(u.fx.tracks[1].0))));
+
+    // Deleting a list.
+    ui.app.state.borrow_mut().browser.node = Some(ui.fx.playlist);
+    ui.app.ui.invoke_delete_node();
+    assert!(ui.fx.lib().node(ui.fx.playlist).is_ok(), "the list stays");
+    assert_eq!(status(&ui), "Locked: nothing is deleted until you unlock");
+    // Deleting a hot cue.
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::SetHotCue { slot: 0 });
+    assert!(
+        ui.wait_until(3.0, |u| crate::engine::snapshot(&u.app).unwrap().decks[0].hot_cues[0].is_some()),
+        "hot cue A set"
+    );
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::DeleteHotCue { slot: 0 });
+    ui.pump(100);
+    assert!(crate::engine::snapshot(&ui.app).unwrap().decks[0].hot_cues[0].is_some(), "hot cue A stays");
+    // Moving the grid.
+    let grid = ui.fx.lib().beatgrid(ui.fx.tracks[0].0).unwrap();
+    crate::deck_grid::act(&ui.app, 0, "shift", "10");
+    ui.pump(100);
+    assert_eq!(ui.fx.lib().beatgrid(ui.fx.tracks[0].0).unwrap(), grid, "the grid stays");
+    assert_eq!(status(&ui), "Locked: the beatgrid stays as it is until you unlock");
+
+    // Unlocked, the same load goes through.
+    ui.click("topbar.lock");
+    assert!(!crate::perform_lock::locked());
+    crate::decks::load_track(&ui.app, 0, ui.fx.tracks[2].0, None);
+    assert!(ui.wait_until(20.0, |u| crate::engine::snapshot(&u.app)
+        .is_some_and(|s| s.decks[0].track == Some(u.fx.tracks[2].0))));
+
+    // Decks stopped: background work resumes and the Mac may sleep again.
+    for d in 0..2 {
+        crate::engine::deck_cmd(&ui.app, d, od_engine::DeckCommand::Pause);
+    }
+    assert!(
+        ui.wait_until(10.0, |_| !crate::perform_lock::paused()),
+        "background work resumes after the decks stop"
+    );
+    assert!(!ui.app.analysis.is_paused());
+    assert!(!crate::perform_lock::awake());
+    assert_eq!(ui.value("topbar.lock"), "idle");
+}
