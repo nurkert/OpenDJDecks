@@ -193,11 +193,13 @@ export component WaveLane inherits Rectangle {
         // Tall lanes: GRID opens the deck's track in EDIT GRID (Prepare).
         if root.deck.loaded && parent.height >= 60px: Rectangle {
             accessible-role: button; accessible-label: "wave.grid-edit\{root.deck.deck}";
-            x: 6px; y: 30px; width: root.gutter - 12px; height: 16px;
+            // Fully inside the numeral column, clear of its divider.
+            x: 6px; y: 30px; width: root.gutter - 14px; height: 16px;
             border-radius: 3px;
+            clip: true;
             background: grid-key.has-hover ? Theme.plate-raised : Theme.plate;
             border-width: 1px; border-color: Theme.rule;
-            Text { text: @tr("GRID"); font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 0.8px; color: Theme.bone-2; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: @tr("GRID"); font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.4px; color: Theme.bone-2; horizontal-alignment: center; vertical-alignment: center; }
             grid-key := TouchArea { mouse-cursor: pointer; clicked => { GridEdit.open-deck(root.deck.deck); } }
         }
         VLine { x: parent.width - 1px; height: parent.height; weight: 1px; tone: Theme.rule; }

@@ -342,3 +342,42 @@ fn club_keys_wrap_the_jog() {
         assert_eq!(crate::engine::snapshot(&ui.app).map(|s| s.decks[0].position), before, "{size:?}: the jog is not a key");
     }
 }
+
+/// [50] The waveform zone's view keys stand in one column (zoom in, zoom
+/// out, centre, then the two height keys), each whole and inside the
+/// zone's height; the lanes start right after the column. When the zone is
+/// too short (four decks, collapsed) the height keys move behind ⋯. The
+/// GRID badge sits inside the numeral column, clear of its divider.
+#[test]
+fn waveform_view_keys_stand_in_one_column() {
+    let order = ["wave.zoom-in", "wave.zoom-out", "wave.zoom-reset", "wave.collapse", "wave.expand"];
+    for (size, decks) in [((1440, 900), 2), ((1280, 800), 2), ((1440, 900), 4)] {
+        let ui = Ui::open(size);
+        perform(&ui);
+        if decks == 4 {
+            ui.app.ui.invoke_set_deck_count(4);
+            ui.pump(300);
+        }
+        load(&ui, 0, 0);
+        assert!(ui.wait_until(10.0, |u| u.has("wave.lane1") && u.has("wave.zoom-in")));
+        let lanes: Vec<Rect> = (1..=decks).map(|d| Rect::of(&ui.get(&format!("wave.lane{d}")))).collect();
+        let (top, bottom) = (lanes[0].y, lanes[decks - 1].bottom());
+        let shown: Vec<Rect> = order.iter().filter(|l| ui.has(l)).map(|l| Rect::of(&ui.get(l))).collect();
+        assert!(shown.len() >= 3, "{size:?} x{decks}: the zoom keys stay");
+        if shown.len() < 5 {
+            assert!(ui.has("wave.more"), "{size:?} x{decks}: the rest behind ⋯");
+        }
+        for (i, k) in shown.iter().enumerate() {
+            assert!((k.x - shown[0].x).abs() < 0.5, "{size:?} x{decks}: one column");
+            assert!(k.y >= top - 0.5 && k.bottom() <= bottom + 0.5 + 26.0, "{size:?} x{decks}: key {i} inside the zone");
+            if i > 0 {
+                assert!(k.y >= shown[i - 1].bottom() - 0.5, "{size:?} x{decks}: in order, no overlap");
+            }
+            assert!(lanes[0].x >= k.right() - 0.5 && lanes[0].x - k.right() <= 1.0, "{size:?} x{decks}: lanes take the freed width");
+        }
+        if ui.has("wave.grid-edit1") {
+            let g = Rect::of(&ui.get("wave.grid-edit1"));
+            assert!(g.x >= lanes[0].x && g.right() <= lanes[0].x + 44.0 - 2.0, "{size:?}: GRID clear of the divider: {g:?}");
+        }
+    }
+}
