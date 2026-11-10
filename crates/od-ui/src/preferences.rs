@@ -1106,6 +1106,16 @@ pub(crate) fn page_for_search(text: &str) -> Option<&'static str> {
         .map(|(p, _)| *p)
 }
 
+/// Documentation screenshots: Preferences on `page`, scrolled to `y`.
+pub(crate) fn demo_page(app: &App, page: &str, y: f32) {
+    select_page(app, page);
+    refresh(app);
+    with_window(app, |w| {
+        w.set_controller_scroll(-y);
+        w.window().set_size(slint::LogicalSize::new(1440.0, 900.0));
+    });
+}
+
 fn select_page(app: &App, page: &str) {
     app.prefs.borrow_mut().recording = None;
     with_window(app, |w| w.set_page(page.into()));

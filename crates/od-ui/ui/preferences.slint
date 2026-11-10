@@ -298,6 +298,8 @@ export component PreferencesWindow inherits Window {
     in property <int> test-seen;
     in property <int> test-lights;
     in property <[SelfTestRow]> test-rows;
+    // Scroll position of the Controller page (documentation screenshots).
+    in-out property <length> controller-scroll;
 
     // Keyboard.
     in property <[KeyRow]> key-rows;
@@ -521,6 +523,7 @@ export component PreferencesWindow inherits Window {
                 // ── Controller ──
                 if root.page == "controller": Flickable {
                     vertical-stretch: 1;
+                    viewport-y <=> root.controller-scroll;
                     content-width: self.width;
                     VerticalLayout {
                         width: parent.width;
