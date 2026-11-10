@@ -7290,8 +7290,8 @@ mode = "lighting"
 source = "SPEC §10.5"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "lighting"]
-features = ["lighting-views", "lighting-easy", "lighting-pro", "lighting-fixtures", "lighting-outputs"]
-note = "RIG | STAGE | SHOW columns; the browser stays below"
+features = ["lighting-views", "lighting-easy", "lighting-pro", "lighting-fixtures", "lighting-outputs", "lighting-patch-table", "lighting-failsafe", "lighting-safety"]
+note = "SETUP (RIG / OUTPUT / SAFETY) | STAGE / PATCH / CHANNELS | SHOW columns; the browser stays below"
 
 [[view.region]]
 id = "topbar.modes"
@@ -7307,7 +7307,7 @@ elements = [
 [[view.region]]
 id = "lighting.rig"
 band = "lighting"
-place = "left column: patch list, add fixture"
+place = "left column, RIG tab: add fixtures"
 order = "row"
 elements = [
   "lighting.rig.name",
@@ -7316,14 +7316,25 @@ elements = [
 ]
 
 [[view.region]]
-id = "lighting.output"
+id = "lighting.setup"
 band = "lighting"
-place = "left column, below the patch"
+place = "left column, top: RIG, OUTPUT and SAFETY tabs"
 order = "row"
 elements = [
-  "lighting.output.artnet",
-  "lighting.output.sacn",
-  "lighting.output.enttec",
+  "lighting.setup.rig",
+  "lighting.setup.output",
+  "lighting.setup.safety",
+]
+
+[[view.region]]
+id = "lighting.centre"
+band = "lighting"
+place = "centre column, top: STAGE, PATCH and CHANNELS"
+order = "row"
+elements = [
+  "lighting.centre.stage",
+  "lighting.centre.patch",
+  "lighting.centre.channels",
 ]
 
 [[view.region]]

@@ -961,8 +961,11 @@ fn lighting_cmd(path: &std::path::Path, cmd: &LightCmd) -> anyhow::Result<()> {
             // 16-bar phrases at 128 BPM.
             let script = [Intro, Up, Chorus, Down, Up, Chorus, Outro];
             let mut lighting = Lighting::new(rig.patch.clone(), Show::new(rig.settings.clone()));
+            // The rig's limits apply here too (fog and lasers stay locked).
+            lighting.limits = rig.safety.clone();
+            lighting.failsafe = rig.failsafe;
             for (u, kind) in &rig.outputs {
-                lighting.add_output(*u, kind.clone())?;
+                lighting.add_output(*u, kind.clone());
             }
             let fps = 40;
             let started = std::time::Instant::now();

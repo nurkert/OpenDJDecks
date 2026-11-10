@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 232 features; 226 in scope: 226 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 235 features; 229 in scope: 229 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -320,6 +320,9 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 |---|---|---|---|---|
 | DMX outputs: Enttec USB-DMX, Art-Net, sACN, several universes | DONE | Art-Net, sACN and USB-DMX (Enttec Pro) from the LIGHTING view or od-cli, several universes; (SPEC §10.5) | 4 | P2 |
 | Fixture library (OFL), patch, groups, moving heads / bars / PARs / strobes / lasers / fog | DONE | Built-in PAR / mover / bar / strobe / blinder / laser / fog types and Open Fixture Library files (IMPORT FIXTURE FILE… or od-cli), patch with groups and overlap checks; (SPEC §10.5) | 6 | P2 |
+| Patch table: universe, address, mode and channel count editable, bulk add, collisions, identify | DONE | Roadmap [14]. PATCH in the LIGHTING view: fields for universe, address and channel count (Enter applies), a stepper for the mode; ADD places n fixtures from a start address, all or nothing; overlaps and addresses past 512 are kept and shown with the reason (struck line, red text); ID blinks one fixture at 1.5 Hz; (SPEC §10.5) | 4 | P2 |
+| Output status per universe, live channel view, reconnect and failsafe (hold, safe scene, blackout) | DONE | Roadmap [16]. A failed send marks the link lost; it is reopened every second. While any link is lost the whole rig shows the chosen failsafe; the same choice applies after a show panic and on quit. Status per universe in OUTPUT, compact in the Perform strip and the top bar; CHANNELS shows the 512 values as sent. Loss and recovery are tested with an injected link (and the OPENDJDECKS_DMX_FAULT hook), not with a real interface; (SPEC §10.5) | 5 | P2 |
+| Safety limits: strobe and flash cap, fog and laser lockout, level caps per group, setup PIN | DONE | Roadmap [19]. Enforced on the rendered frame right before sending, so every source passes through: strobe channels capped (default 3 per second, assuming the fastest value is 25 per second), dark-to-bright flashes per fixture held to the same rate, level caps per group, fog and laser channels zero until armed (arming is not saved). A PIN locks patch, outputs and limits; the show controls stay free; (SPEC §10.5) | 6 | P2 |
 | Automatic light show from beat, phrase, energy and the mix (crossfade-aware) | DONE | AUTO follows phrase, beat and energy; looks of both decks blend by their share of the mix; phrase changes crossfade over one bar; the LIGHTING view and the Perform strip show what it follows; (SPEC §10.5) | 5 | P2 |
 | Easy manual mode: scene pads, dimmer, strobe, blackout, tap/sync, controller pad mode | DONE | EASY: look pads, colour swatches, master dimmer, BLACKOUT, FLASH / STROBE / FOG hold, TAP tempo when no deck plays; LIGHTING pad mode on the decks (and the controller pads): A–F looks, G strobe, H flash; (SPEC §10.5) | 4 | P2 |
 | Pro mode: programmer, effects engine, cue stacks, per-track lighting cues, MIDI mapping | DONE | PRO: program / colour / attribute effect (sine, saw, square, random on dimmer, pan, tilt; phase spread; beat-synced) and an XY pan / tilt programmer per group; cue stack with GO / BACK / STORE and beat fades; track cue timeline (cues stored at bars of the track you hear, recalled whenever it plays); every lighting control MIDI-mappable (`lighting.*` mapping actions); (SPEC §10.5) | 6 | P2 |
@@ -341,13 +344,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 226 |
+| DONE | 229 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **232** |
+| **Total** | **235** |
 
 ## P1 gaps and implementation notes
 

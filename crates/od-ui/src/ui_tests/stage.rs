@@ -18,8 +18,12 @@ fn lighting_view_patches_and_controls_the_show() {
     ui.type_text("Front");
     ui.click("lighting.rig.add");
     ui.pump(100);
-    assert!(ui.has("lighting.rig.row0"), "the patched fixture is listed");
-    assert!(ui.has("lighting.stage.fixture0"), "and drawn on the stage");
+    assert!(ui.has("lighting.stage.fixture0"), "drawn on the stage");
+    ui.click("lighting.centre.patch");
+    assert!(
+        ui.wait_until(2.0, |u| u.has("lighting.patch.row0")),
+        "and listed in the patch table"
+    );
     {
         let rt = ui.app.lighting.borrow();
         assert_eq!(rt.config.patch.fixtures.len(), 1);
@@ -28,6 +32,8 @@ fn lighting_view_patches_and_controls_the_show() {
 
     ui.click("lighting.mode.easy");
     ui.click("lighting.blackout");
+    ui.click("lighting.setup.output");
+    ui.pump(100);
     ui.click("lighting.output.sacn");
     ui.click("lighting.output.apply");
     ui.pump(100);
@@ -41,9 +47,215 @@ fn lighting_view_patches_and_controls_the_show() {
     );
     assert!(rig.enabled);
 
-    ui.click("lighting.rig.remove0");
+    ui.click("lighting.patch.remove0");
+    assert!(ui.wait_until(2.0, |u| !u.has("lighting.patch.row0")));
+}
+
+fn type_into(ui: &Ui, label: &str, text: &str) {
+    ui.click(label);
+    ui.key(slint::platform::Key::End);
+    for _ in 0..8 {
+        ui.key(slint::platform::Key::Backspace);
+    }
+    ui.type_text(text);
+    ui.key(slint::platform::Key::Return);
+    ui.pump(50);
+}
+
+/// [14] Bulk add from a start address, then edit universe, address, mode
+/// and channel count in the patch table; a collision is shown, not refused;
+/// identify blinks one fixture.
+#[test]
+fn patch_table_bulk_add_edit_collision_identify() {
+    let ui = Ui::open((1440, 900));
+    ui.click("topbar.mode.lighting");
+    ui.pump(200);
+    // RGBW par (type 2), 4 from address 101 on universe 2.
+    ui.app.ui.global::<crate::Lighting>().invoke_add_fixtures(
+        2,
+        "Front".into(),
+        "".into(),
+        "4".into(),
+        "2".into(),
+        "101".into(),
+    );
+    assert!(
+        ui.wait_until(2.0, |u| u.app.lighting.borrow().config.patch.fixtures.len()
+            == 4)
+    );
+    // The same through the fields: 2 fixtures, next free addresses.
+    type_into(&ui, "lighting.rig.count", "2");
+    ui.click("lighting.rig.add");
+    assert!(
+        ui.wait_until(2.0, |u| u.app.lighting.borrow().config.patch.fixtures.len()
+            == 6)
+    );
+    {
+        let rt = ui.app.lighting.borrow();
+        let p = &rt.config.patch;
+        let places: Vec<(u16, u16)> = p.fixtures.iter().map(|f| (f.universe, f.address)).collect();
+        assert_eq!(&places[..4], &[(1, 101), (1, 107), (1, 113), (1, 119)]);
+        assert_eq!(p.fixtures[3].name, "Front 4");
+        assert!(p.collisions().iter().all(Option::is_none));
+    }
+    ui.click("lighting.centre.patch");
+    assert!(ui.wait_until(2.0, |u| u.has("lighting.patch.row5")));
+    // Move Front 2 onto Front 1: kept, and both rows say so.
+    type_into(&ui, "lighting.patch.address1", "103");
+    assert!(ui.wait_until(2.0, |u| {
+        u.value("lighting.patch.clash1")
+            .contains("OVERLAPS FRONT 1")
+    }));
+    assert!(
+        ui.value("lighting.patch.clash0")
+            .contains("OVERLAPS FRONT 2")
+    );
+    assert_eq!(
+        ui.app.lighting.borrow().config.patch.fixtures[1].address,
+        103
+    );
+    // Universe 3 resolves it.
+    type_into(&ui, "lighting.patch.universe1", "3");
+    assert!(ui.wait_until(2.0, |u| u.value("lighting.patch.clash1").is_empty()));
+    assert_eq!(
+        ui.app.lighting.borrow().config.patch.fixtures[1].universe,
+        2
+    );
+    // Mode and channel count.
+    ui.click("lighting.patch.mode0.next");
+    assert!(ui.wait_until(
+        2.0,
+        |u| u.app.lighting.borrow().config.patch.fixtures[0].def.mode == "4ch"
+    ));
+    type_into(&ui, "lighting.patch.channels0", "12");
+    assert!(ui.wait_until(2.0, |u| {
+        let rt = u.app.lighting.borrow();
+        let d = &rt.config.patch.fixtures[0].def;
+        d.mode == "Custom" && d.channels.len() == 12
+    }));
+    // Identify toggles one fixture.
+    ui.click("lighting.patch.identify2");
+    assert!(ui.wait_until(2.0, |u| u.app.lighting.borrow().identify == Some(2)));
+    ui.click("lighting.patch.identify2");
+    assert!(ui.wait_until(2.0, |u| u.app.lighting.borrow().identify.is_none()));
+    // Saved without editing files.
+    let rig = od_lighting::RigConfig::load(&crate::lighting::rig_path(&ui.fx.library)).unwrap();
+    assert_eq!(rig.patch.fixtures[1].universe, 2);
+    assert_eq!(rig.patch.fixtures[0].def.channels.len(), 12);
+}
+
+/// [16] An output link that goes away is shown per universe, in the view and
+/// in Perform, and comes back by itself (test link, not real hardware).
+#[test]
+fn lost_output_is_shown_and_recovers() {
+    let ui = Ui::open((1440, 900));
+    let link = od_lighting::TestLink::default();
+    ui.app.lighting.borrow().use_opener(link.opener());
+    ui.click("topbar.mode.lighting");
+    ui.pump(200);
+    crate::lighting::add_fixture(&mut ui.app.lighting.borrow_mut().config.patch, 2, "", "")
+        .unwrap();
+    ui.click("lighting.setup.output");
     ui.pump(100);
-    assert!(!ui.has("lighting.rig.row0"));
+    ui.click("lighting.output.sacn");
+    ui.click("lighting.output.apply");
+    assert!(
+        ui.wait_until(5.0, |u| u.app.ui.global::<crate::Lighting>().get_link()
+            == "ok")
+    );
+    assert!(
+        ui.wait_until(3.0, |_| link.count() > 0),
+        "frames reach the link"
+    );
+    assert!(ui.wait_until(2.0, |u| u.value("lighting.output.row0").contains("ok")));
+
+    link.set_unplugged(true);
+    assert!(
+        ui.wait_until(5.0, |u| u.app.ui.global::<crate::Lighting>().get_link()
+            == "lost")
+    );
+    assert!(ui.value("lighting.output.row0").contains("lost"));
+    let text = ui.app.ui.global::<crate::Lighting>().get_link_text();
+    assert!(text.contains("U1"), "{text}");
+    // Perform shows it without the strip.
+    ui.click("topbar.mode.perform");
+    assert!(ui.wait_until(3.0, |u| u.has("lighting.link")));
+    assert!(ui.value("lighting.link").contains("lost"));
+
+    link.set_unplugged(false);
+    assert!(
+        ui.wait_until(5.0, |u| u.app.ui.global::<crate::Lighting>().get_link()
+            == "back")
+    );
+    assert!(
+        ui.wait_until(3.0, |u| !u.has("lighting.link")),
+        "gone from the top bar"
+    );
+}
+
+/// [19] The PIN keeps guests out of setup; the strobe cap and arming are
+/// set in SAFETY and reach the show.
+#[test]
+fn safety_tab_and_setup_pin() {
+    let ui = Ui::open((1440, 900));
+    ui.click("topbar.mode.lighting");
+    ui.pump(200);
+    crate::lighting::add_fixture(&mut ui.app.lighting.borrow_mut().config.patch, 8, "", "")
+        .unwrap();
+    ui.click("lighting.setup.safety");
+    assert!(ui.wait_until(2.0, |u| u.has("lighting.safety.strobe")));
+    assert!(
+        ui.value("lighting.safety.strobe").contains('3'),
+        "safe default"
+    );
+    ui.click("lighting.safety.strobe.down");
+    assert!(
+        ui.wait_until(2.0, |u| u.app.lighting.borrow().config.safety.strobe_hz
+            == 2.0)
+    );
+    ui.click("lighting.safety.fog");
+    assert!(ui.wait_until(2.0, |u| u.app.lighting.borrow().arming.fog));
+    ui.click("lighting.safety.cap0.down");
+    assert!(ui.wait_until(2.0, |u| {
+        u.app
+            .lighting
+            .borrow()
+            .config
+            .safety
+            .group_caps
+            .values()
+            .any(|c| (*c - 0.9).abs() < 1e-4)
+    }));
+
+    // PIN: too short is refused, then set and lock.
+    type_into(&ui, "lighting.pin.new", "12");
+    ui.click("lighting.pin.set");
+    assert!(ui.wait_until(
+        2.0,
+        |u| u.app.ui.global::<crate::Lighting>().get_pin_error() != ""
+    ));
+    type_into(&ui, "lighting.pin.new", "2468");
+    ui.click("lighting.pin.set");
+    assert!(ui.wait_until(2.0, |u| u.app.lighting.borrow().config.safety.pin == "2468"));
+    ui.click("lighting.pin.lock");
+    assert!(ui.wait_until(2.0, |u| u.has("lighting.pin.entry")));
+    assert!(!ui.has("lighting.safety.strobe") && !ui.has("lighting.rig.add"));
+    // Locked: setup edits are ignored, the show stays free.
+    ui.app.ui.global::<crate::Lighting>().invoke_step_strobe(5);
+    ui.click("lighting.blackout");
+    ui.pump(100);
+    {
+        let rt = ui.app.lighting.borrow();
+        assert_eq!(rt.config.safety.strobe_hz, 2.0);
+        assert!(rt.config.settings.blackout);
+    }
+    type_into(&ui, "lighting.pin.entry", "1111");
+    assert!(ui.wait_until(
+        2.0,
+        |u| u.app.ui.global::<crate::Lighting>().get_pin_error() != ""
+    ));
+    type_into(&ui, "lighting.pin.entry", "2468");
+    assert!(ui.wait_until(2.0, |u| u.has("lighting.safety.strobe")));
 }
 
 /// Club mode swaps the deck panels for player screens; CUE and PLAY act with
@@ -432,22 +644,65 @@ fn club_players_fit_side_by_side() {
         ui.click("topbar.club");
         ui.pump(300);
         let (ww, wh) = ui.size();
-        let win = Rect { x: 0.0, y: 0.0, w: ww, h: wh };
+        let win = Rect {
+            x: 0.0,
+            y: 0.0,
+            w: ww,
+            h: wh,
+        };
         for n in [1, 2] {
             let player = Rect::of(&ui.get(&format!("deck{n}.club")));
-            assert!(win.contains(&player, 0.5), "{size:?} player {n} in the window");
-            for part in ["browse", "overview", "search-back", "search-fwd", "call-prev", "call-next", "time", "bpm", "loop-in", "loop-out", "reloop", "loop-4", "jump-back", "jump-fwd", "cue", "play", "jog", "tempo-range", "keylock", "tempo"] {
+            assert!(
+                win.contains(&player, 0.5),
+                "{size:?} player {n} in the window"
+            );
+            for part in [
+                "browse",
+                "overview",
+                "search-back",
+                "search-fwd",
+                "call-prev",
+                "call-next",
+                "time",
+                "bpm",
+                "loop-in",
+                "loop-out",
+                "reloop",
+                "loop-4",
+                "jump-back",
+                "jump-fwd",
+                "cue",
+                "play",
+                "jog",
+                "tempo-range",
+                "keylock",
+                "tempo",
+            ] {
                 let r = Rect::of(&ui.get(&format!("deck{n}.club.{part}")));
-                assert!(player.contains(&r, 0.5) && r.w > 1.0, "{size:?} deck{n}.club.{part} at {:?} outside its player {:?}", (r.x, r.y, r.w, r.h), (player.x, player.y, player.w, player.h));
+                assert!(
+                    player.contains(&r, 0.5) && r.w > 1.0,
+                    "{size:?} deck{n}.club.{part} at {:?} outside its player {:?}",
+                    (r.x, r.y, r.w, r.h),
+                    (player.x, player.y, player.w, player.h)
+                );
             }
             let cue = Rect::of(&ui.get(&format!("deck{n}.club.cue")));
             let play = Rect::of(&ui.get(&format!("deck{n}.club.play")));
             let jog = Rect::of(&ui.get(&format!("deck{n}.club.jog")));
             let loop_in = Rect::of(&ui.get(&format!("deck{n}.club.loop-in")));
             let tempo = Rect::of(&ui.get(&format!("deck{n}.club.tempo")));
-            assert!((cue.w - cue.h).abs() < 0.5 && (jog.w - jog.h).abs() < 0.5, "round keys and jog");
-            assert!((cue.y - play.y).abs() < 0.5 && cue.right() <= play.x, "CUE left of PLAY on one line");
-            assert!(cue.x < jog.x && cue.y > loop_in.y, "CUE / PLAY bottom left, loop above");
+            assert!(
+                (cue.w - cue.h).abs() < 0.5 && (jog.w - jog.h).abs() < 0.5,
+                "round keys and jog"
+            );
+            assert!(
+                (cue.y - play.y).abs() < 0.5 && cue.right() <= play.x,
+                "CUE left of PLAY on one line"
+            );
+            assert!(
+                cue.x < jog.x && cue.y > loop_in.y,
+                "CUE / PLAY bottom left, loop above"
+            );
             assert!(tempo.x > jog.right(), "tempo fader right of the jog");
         }
     }

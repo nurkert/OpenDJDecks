@@ -7,7 +7,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Field, LineToggle, Fader, HoldButton } from "controls.slint";
+import { Caps, PlateButton, Field, LineToggle, Fader, HoldButton, Stepper } from "controls.slint";
 import { ChoiceList } from "fx.slint";
 
 export struct LightFixtureView {
@@ -40,6 +40,37 @@ export struct LightGroupView {
     pan: float,
     tilt: float,
     has-movers: bool,
+}
+
+// One row of the patch table.
+export struct LightPatchRow {
+    name: string,
+    group: string,
+    // 1-based, as text for the fields.
+    universe: string,
+    address: string,
+    mode: string,
+    channels: string,
+    // What is wrong with the place ("" = fine), e.g. "OVERLAPS PAR 2".
+    clash: string,
+    identify: bool,
+    // "fog" | "laser" | "".
+    hazard: string,
+}
+
+// One output link and its state.
+export struct LightOutputRow {
+    universe: string,
+    target: string,
+    // "ok" | "lost" | "back" (came back in the last 20 s).
+    state: string,
+    detail: string,
+}
+
+export struct LightCapRow {
+    name: string,
+    // 0..1.
+    cap: float,
 }
 
 export global Lighting {
@@ -80,9 +111,9 @@ export global Lighting {
     callback choose-easy-color(int);
     callback group-program(int, int);
     callback group-color(int, int);
-    callback add-fixture(int, string, string);
     callback remove-fixture(int);
-    callback set-output(string, string);
+    // Kind, target, universe (1-based text, "" = 1).
+    callback set-output(string, string, string);
     callback cue-go();
     callback cue-back();
     callback cue-store(string);
@@ -99,6 +130,52 @@ export global Lighting {
     in property <[string]> timeline;
     callback timeline-add();
     callback timeline-delete(int);
+
+    // Centre of the view: "stage" | "patch" | "channels".
+    in-out property <string> centre: "stage";
+    // Setup panel: "rig" | "output" | "safety".
+    in-out property <string> setup-tab: "rig";
+    // Patch table.
+    in property <[LightPatchRow]> patch-rows;
+    callback patch-universe(int, string);
+    callback patch-address(int, string);
+    callback patch-mode(int, int);
+    callback patch-channels(int, string);
+    callback identify(int);
+    // Type, name, group, count, universe, start address.
+    callback add-fixtures(int, string, string, string, string, string);
+    // Outputs and failsafe.
+    in property <[LightOutputRow]> outputs;
+    // Summary for Perform: "off" | "ok" | "lost" | "back" | "fault".
+    in property <string> link: "off";
+    in property <string> link-text;
+    // "hold" | "safe" | "blackout".
+    in property <string> failsafe: "hold";
+    callback remove-output(int);
+    callback set-failsafe(string);
+    // Live channel view of one universe.
+    in property <[int]> channels;
+    in property <[string]> universes;
+    in property <int> channel-universe;
+    callback choose-universe(int);
+    // Safety limits.
+    in property <float> strobe-hz: 3;
+    in property <bool> fog-armed;
+    in property <bool> laser-armed;
+    in property <bool> has-fog;
+    in property <bool> has-laser;
+    in property <[LightCapRow]> caps;
+    in property <bool> pin-set;
+    // Setup is locked by the PIN (the show controls stay free).
+    in property <bool> locked;
+    in property <string> pin-error;
+    callback step-strobe(int);
+    callback arm-fog(bool);
+    callback arm-laser(bool);
+    callback step-cap(int, int);
+    callback unlock(string);
+    callback lock();
+    callback set-pin(string);
 }
 
 component SectionTitle inherits HorizontalLayout {
@@ -198,88 +275,442 @@ component Stage inherits Rectangle {
     }
 }
 
-component RigPanel inherits VerticalLayout {
-    property <int> type-index: 0;
-    property <string> output-kind: "artnet";
-    spacing: Theme.s2;
-    padding: Theme.s3;
+// The status line of an output: solid green sending, dashed sodium came
+// back a moment ago, struck when lost.
+component LinkLine inherits VLine {
+    in property <string> state;
+    tone: root.state == "ok" ? Theme.live : root.state == "back" ? Theme.attention : root.state == "off" ? Theme.rule-strong : Theme.bone-3;
+    form: root.state == "ok" ? "solid" : root.state == "back" ? "dashed" : root.state == "off" ? "half" : "struck";
+}
 
-    SectionTitle { text: @tr("RIG"); }
-    for f[i] in Lighting.fixtures: Rectangle {
-        accessible-label: "lighting.rig.row" + i; accessible-role: list-item;
-        accessible-value: f.name;
-        height: 26px;
-        background: ta.has-hover ? Theme.plate-raised : transparent;
-        ta := TouchArea {}
-        HorizontalLayout {
-            spacing: Theme.s2; padding-left: Theme.s2; padding-right: Theme.s1;
-            Rectangle { width: 10px; Rectangle { height: 10px; width: 10px; border-radius: 5px; background: f.color.with-alpha(0.3 + 0.7 * f.intensity); } }
-            Text { text: f.name; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
-            Caps { text: f.group; vertical-alignment: center; width: 70px; overflow: elide; }
-            Caps { text: f.address; vertical-alignment: center; width: 54px; }
+component Body inherits Text {
+    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
+    wrap: word-wrap;
+}
+
+// Setup is locked: the PIN opens it again.
+component LockedSetup inherits VerticalLayout {
+    spacing: Theme.s2;
+    Caps { text: @tr("SETUP LOCKED"); color: Theme.attention; }
+    Body { text: @tr("Patch, outputs and safety limits need the PIN. The show controls on the right stay free."); }
+    HorizontalLayout {
+        spacing: Theme.s2;
+        pin := Field {
+            accessible-label: "lighting.pin.entry"; accessible-role: text-input;
+            input-type: InputType.password; placeholder: @tr("PIN"); horizontal-stretch: 1;
+            accepted(t) => { Lighting.unlock(t); self.text = ""; }
+        }
+        VerticalLayout {
+            horizontal-stretch: 0;
+            alignment: center;
             PlateButton {
-                accessible-label: "lighting.rig.remove" + i; accessible-role: button;
-                compact: true; glyph: "close"; width: 30px; tooltip: @tr("Remove this fixture");
-                clicked => { Lighting.remove-fixture(i); }
+                accessible-label: "lighting.pin.unlock"; accessible-role: button;
+                compact: true; label: @tr("UNLOCK"); tooltip: @tr("Open the setup with the PIN");
+                clicked => { Lighting.unlock(pin.text); pin.text = ""; }
             }
         }
     }
-    HLine { }
-    Caps { text: @tr("ADD FIXTURE"); }
+    if Lighting.pin-error != "": Text {
+        text: Lighting.pin-error;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.fault;
+    }
+}
+
+component RigTab inherits VerticalLayout {
+    property <int> type-index: 0;
+    spacing: Theme.s2;
+    Caps { text: @tr("ADD FIXTURES"); }
     ChoiceList {
         accessible-label: "lighting.rig.type"; accessible-role: list;
-        items: Lighting.fixture-types; current: root.type-index; columns: 2; cell-w: 132px; cell-h: 24px;
+        items: Lighting.fixture-types; current: root.type-index; columns: 2; cell-w: 150px; cell-h: 24px;
         chosen(i) => { root.type-index = i; }
     }
     HorizontalLayout {
         spacing: Theme.s2;
         name := Field { accessible-label: "lighting.rig.name"; accessible-role: text-input; placeholder: @tr("Name"); horizontal-stretch: 1; }
-        group := Field { accessible-label: "lighting.rig.group"; accessible-role: text-input; placeholder: @tr("Group"); width: 90px; }
-        VerticalLayout {
-            alignment: center;
-            PlateButton {
-                accessible-label: "lighting.rig.add"; accessible-role: button;
-                compact: true; glyph: "plus"; label: @tr("ADD"); tone: Theme.live;
-                tooltip: @tr("Patch the fixture at the next free DMX address");
-                clicked => { Lighting.add-fixture(root.type-index, name.text, group.text); name.text = ""; }
-            }
-        }
-    }
-    HLine { }
-    Caps { text: @tr("OUTPUT"); }
-    HorizontalLayout {
-        spacing: Theme.s1;
-        for k[i] in [{ id: "artnet", label: "ART-NET" }, { id: "sacn", label: "SACN" }, { id: "enttec", label: "USB-DMX" }]: PlateButton {
-            accessible-label: "lighting.output." + k.id; accessible-role: tab;
-            compact: true; label: k.label; selected: root.output-kind == k.id;
-            tooltip: @tr("Choose how universe 1 leaves the computer");
-            clicked => { root.output-kind = k.id; }
-        }
+        group := Field { accessible-label: "lighting.rig.group"; accessible-role: text-input; placeholder: @tr("Group"); width: 110px; }
     }
     HorizontalLayout {
         spacing: Theme.s2;
-        target := Field {
-            accessible-label: "lighting.output.target"; accessible-role: text-input;
-            horizontal-stretch: 1;
-            placeholder: root.output-kind == "artnet" ? "2.0.0.10:6454" : root.output-kind == "sacn" ? "1" : "/dev/tty.usbserial";
+        VerticalLayout {
+            spacing: Theme.key-gap;
+            Caps { text: @tr("COUNT"); }
+            count := Field { accessible-label: "lighting.rig.count"; accessible-role: text-input; placeholder: "1"; width: 56px; }
         }
         VerticalLayout {
-            alignment: center;
+            spacing: Theme.key-gap;
+            Caps { text: @tr("UNIVERSE"); }
+            universe := Field { accessible-label: "lighting.rig.universe"; accessible-role: text-input; placeholder: @tr("free"); width: 66px; }
+        }
+        VerticalLayout {
+            spacing: Theme.key-gap;
+            Caps { text: @tr("START"); }
+            start := Field { accessible-label: "lighting.rig.start"; accessible-role: text-input; placeholder: @tr("free"); width: 66px; }
+        }
+        VerticalLayout {
+            alignment: end;
             PlateButton {
-                accessible-label: "lighting.output.apply"; accessible-role: button;
-                compact: true; label: @tr("SET"); tooltip: @tr("Send universe 1 to this output");
-                clicked => { Lighting.set-output(root.output-kind, target.text); }
+                accessible-label: "lighting.rig.add"; accessible-role: button;
+                label: @tr("ADD"); glyph: "plus"; tone: Theme.live;
+                tooltip: @tr("Patch the fixtures one after another from the start address (empty: the first free addresses)");
+                clicked => {
+                    Lighting.add-fixtures(root.type-index, name.text, group.text, count.text, universe.text, start.text);
+                    name.text = ""; count.text = ""; start.text = "";
+                }
             }
         }
     }
-    Caps { text: Lighting.output-text; overflow: elide; color: Theme.bone-3; }
+    Body { text: @tr("Change universe, address, mode and channel count in the patch table in the middle."); color: Theme.bone-3; }
+    HLine { }
     PlateButton {
         accessible-label: "lighting.rig.import-ofl"; accessible-role: button;
         compact: true; label: @tr("IMPORT FIXTURE FILE…");
         tooltip: @tr("Patch a fixture from an Open Fixture Library file (.json)");
         clicked => { Lighting.import-ofl(); }
     }
+}
+
+component OutputTab inherits VerticalLayout {
+    property <string> output-kind: "artnet";
+    spacing: Theme.s2;
+    Caps { text: @tr("OUTPUTS"); }
+    if Lighting.outputs.length == 0: Body { text: @tr("No output set. The show runs in the preview only."); color: Theme.bone-3; }
+    for o[i] in Lighting.outputs: Rectangle {
+        accessible-label: "lighting.output.row" + i; accessible-role: list-item;
+        accessible-value: o.universe + " " + o.state + " " + o.detail;
+        height: 44px;
+        HorizontalLayout {
+            spacing: Theme.s2;
+            VerticalLayout { padding-top: Theme.s1; padding-bottom: Theme.s1; LinkLine { state: o.state; } }
+            VerticalLayout {
+                horizontal-stretch: 1; alignment: center; spacing: Theme.key-gap;
+                HorizontalLayout {
+                    spacing: Theme.s2;
+                    Text { text: o.universe; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; }
+                    Text { text: o.target; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; overflow: elide; horizontal-stretch: 1; }
+                }
+                Text {
+                    text: o.detail; overflow: elide;
+                    font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: Theme.tracking-index;
+                    color: o.state == "lost" ? Theme.fault : o.state == "back" ? Theme.attention : Theme.bone-3;
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                PlateButton {
+                    accessible-label: "lighting.output.remove" + i; accessible-role: button;
+                    compact: true; glyph: "close"; width: 30px; tooltip: @tr("Remove this output");
+                    clicked => { Lighting.remove-output(i); }
+                }
+            }
+        }
+    }
+    HLine { }
+    Caps { text: @tr("SET OUTPUT"); }
+    HorizontalLayout {
+        spacing: Theme.s1;
+        for k[i] in [{ id: "artnet", label: "ART-NET" }, { id: "sacn", label: "SACN" }, { id: "enttec", label: "USB-DMX" }]: PlateButton {
+            accessible-label: "lighting.output." + k.id; accessible-role: tab;
+            compact: true; label: k.label; selected: root.output-kind == k.id; horizontal-stretch: 1;
+            tooltip: @tr("Choose how the universe leaves the computer");
+            clicked => { root.output-kind = k.id; }
+        }
+    }
+    HorizontalLayout {
+        spacing: Theme.s2;
+        universe := Field { accessible-label: "lighting.output.universe"; accessible-role: text-input; placeholder: "U 1"; width: 56px; }
+        target := Field {
+            accessible-label: "lighting.output.target"; accessible-role: text-input;
+            horizontal-stretch: 1;
+            placeholder: root.output-kind == "artnet" ? "2.0.0.10:6454" : root.output-kind == "sacn" ? "1" : "/dev/tty.usbserial";
+        }
+        VerticalLayout {
+            horizontal-stretch: 0;
+            alignment: center;
+            PlateButton {
+                accessible-label: "lighting.output.apply"; accessible-role: button;
+                compact: true; label: @tr("SET"); tooltip: @tr("Send this universe to the output");
+                clicked => { Lighting.set-output(root.output-kind, target.text, universe.text); }
+            }
+        }
+    }
+    Caps { text: Lighting.output-text; overflow: elide; color: Theme.bone-3; }
+    HLine { }
+    Caps { text: @tr("WHEN A LINK IS LOST"); }
+    HorizontalLayout {
+        spacing: Theme.s1;
+        for f in [{ id: "hold", label: @tr("HOLD") }, { id: "safe", label: @tr("SAFE SCENE") }, { id: "blackout", label: @tr("BLACKOUT") }]: PlateButton {
+            accessible-label: "lighting.failsafe." + f.id; accessible-role: tab;
+            compact: true; label: f.label; selected: Lighting.failsafe == f.id; horizontal-stretch: 1;
+            clicked => { Lighting.set-failsafe(f.id); }
+        }
+    }
+    Body {
+        text: Lighting.failsafe == "hold" ? @tr("The whole rig keeps the last look until every link is back, then fades back to the show in one second.")
+            : Lighting.failsafe == "safe" ? @tr("The whole rig fades to a calm warm wash at 30 % in two seconds: no strobe, no fog, no lasers.")
+            : @tr("The whole rig goes dark at once and fades back in when every link is back.");
+    }
+    Body { text: @tr("The same choice applies when the show fails and when the app quits."); color: Theme.bone-3; }
+}
+
+component SafetyTab inherits VerticalLayout {
+    spacing: Theme.s2;
+    Caps { text: @tr("STROBE AND FLASH CAP"); }
+    HorizontalLayout {
+        spacing: Theme.s2;
+        Stepper {
+            accessible-label: "lighting.safety.strobe"; accessible-role: spinbox;
+            accessible-value: self.value;
+            a11y-prev: "lighting.safety.strobe.down"; a11y-next: "lighting.safety.strobe.up";
+            value: Lighting.strobe-hz <= 0 ? @tr("NO STROBE") : @tr("{} PER SECOND", Lighting.strobe-hz);
+            template: "00 PER SECOND"; size: 26px; lit: true;
+            tooltip: @tr("Most flashes per second any look may send");
+            step(d) => { Lighting.step-strobe(d); }
+        }
+        Rectangle { horizontal-stretch: 1; }
+    }
+    Body { text: @tr("Fast flashing can trigger seizures in people with photosensitive epilepsy. 3 per second or less is the safe default; every look, button and cue is held to it."); }
+    HLine { }
+    Caps { text: @tr("LOCKOUT"); }
+    HorizontalLayout {
+        spacing: Theme.s2;
+        PlateButton {
+            accessible-label: "lighting.safety.fog"; accessible-role: button;
+            accessible-checkable: true; accessible-checked: Lighting.fog-armed;
+            label: Lighting.fog-armed ? @tr("FOG ARMED") : @tr("ARM FOG"); active: Lighting.fog-armed; tone: Theme.attention;
+            horizontal-stretch: 1;
+            tooltip: @tr("Fog machines stay off until armed. Arming ends when the app quits.");
+            clicked => { Lighting.arm-fog(!Lighting.fog-armed); }
+        }
+        PlateButton {
+            accessible-label: "lighting.safety.laser"; accessible-role: button;
+            accessible-checkable: true; accessible-checked: Lighting.laser-armed;
+            label: Lighting.laser-armed ? @tr("LASERS ARMED") : @tr("ARM LASERS"); active: Lighting.laser-armed; tone: Theme.fault;
+            horizontal-stretch: 1;
+            tooltip: @tr("Lasers stay dark until armed. Arming ends when the app quits.");
+            clicked => { Lighting.arm-laser(!Lighting.laser-armed); }
+        }
+    }
+    Body {
+        color: Theme.bone-3;
+        text: !Lighting.has-fog && !Lighting.has-laser ? @tr("No fog machine or laser is patched.")
+            : @tr("Arming lasts until the app quits; each start begins locked.");
+    }
+    HLine { }
+    Caps { text: @tr("LEVEL CAP PER GROUP"); }
+    if Lighting.caps.length == 0: Body { text: @tr("Groups appear here once fixtures are patched."); color: Theme.bone-3; }
+    for c[i] in Lighting.caps: HorizontalLayout {
+        spacing: Theme.s2; height: 26px;
+        Text { text: c.name; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+        Stepper {
+            accessible-label: "lighting.safety.cap" + i; accessible-role: spinbox;
+            accessible-value: self.value;
+            a11y-prev: "lighting.safety.cap" + i + ".down"; a11y-next: "lighting.safety.cap" + i + ".up";
+            value: Math.round(c.cap * 100) + " %"; template: "100 %"; size: 26px; lit: c.cap < 1;
+            tooltip: @tr("Highest level this group may reach");
+            step(d) => { Lighting.step-cap(i, d); }
+        }
+    }
+    HLine { }
+    Caps { text: @tr("SETUP PIN"); }
+    HorizontalLayout {
+        spacing: Theme.s2;
+        newpin := Field {
+            accessible-label: "lighting.pin.new"; accessible-role: text-input;
+            input-type: InputType.password; placeholder: Lighting.pin-set ? @tr("New PIN (empty clears it)") : @tr("4 to 8 digits");
+            horizontal-stretch: 1;
+        }
+        VerticalLayout {
+            horizontal-stretch: 0;
+            alignment: center;
+            PlateButton {
+                accessible-label: "lighting.pin.set"; accessible-role: button;
+                compact: true; label: Lighting.pin-set && newpin.text == "" ? @tr("CLEAR") : @tr("SET");
+                tooltip: @tr("With a PIN, guests can play the show but not change the setup");
+                clicked => { Lighting.set-pin(newpin.text); newpin.text = ""; }
+            }
+        }
+    }
+    if Lighting.pin-error != "": Text {
+        text: Lighting.pin-error;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.fault;
+    }
+}
+
+component SetupPanel inherits VerticalLayout {
+    spacing: Theme.s2;
+    padding: Theme.s3;
+    HorizontalLayout {
+        height: 26px;
+        spacing: Theme.s1;
+        for t in [{ id: "rig", label: @tr("RIG") }, { id: "output", label: @tr("OUTPUT") }, { id: "safety", label: @tr("SAFETY") }]: PlateButton {
+            accessible-label: "lighting.setup." + t.id; accessible-role: tab;
+            compact: true; label: t.label; selected: Lighting.setup-tab == t.id; horizontal-stretch: 1;
+            clicked => { Lighting.setup-tab = t.id; }
+        }
+        if Lighting.pin-set && !Lighting.locked: PlateButton {
+            accessible-label: "lighting.pin.lock"; accessible-role: button;
+            compact: true; label: @tr("LOCK"); tooltip: @tr("Lock the setup with the PIN");
+            clicked => { Lighting.lock(); }
+        }
+    }
+    if Lighting.locked: LockedSetup { }
+    if !Lighting.locked && Lighting.setup-tab == "rig": RigTab { }
+    if !Lighting.locked && Lighting.setup-tab == "output": OutputTab { }
+    if !Lighting.locked && Lighting.setup-tab == "safety": SafetyTab { }
     Rectangle { vertical-stretch: 1; }
+}
+
+// Patch table: every fixture with its place. Collisions are kept and shown
+// (struck line, the reason in red) rather than refused, so a rig can be
+// re-addressed step by step.
+component PatchTable inherits VerticalLayout {
+    spacing: 0;
+    HorizontalLayout {
+        height: 26px; spacing: Theme.s2; padding-left: Theme.s3; padding-right: Theme.s1;
+        Caps { text: @tr("NAME"); horizontal-stretch: 1; vertical-alignment: center; }
+        Caps { text: @tr("GROUP"); width: 90px; vertical-alignment: center; }
+        Caps { text: @tr("UNIV"); width: 50px; vertical-alignment: center; }
+        Caps { text: @tr("ADDRESS"); width: 62px; vertical-alignment: center; }
+        Caps { text: @tr("MODE"); width: 120px; vertical-alignment: center; }
+        Caps { text: @tr("CH"); width: 50px; vertical-alignment: center; }
+        Caps { text: @tr("CHECK"); width: 130px; vertical-alignment: center; }
+        Rectangle { width: 30px + 30px + Theme.s2; }
+    }
+    HLine { }
+    if Lighting.patch-rows.length == 0: Body {
+        text: @tr("No fixtures patched yet. Add your lights on the left.");
+        color: Theme.bone-3; horizontal-alignment: center; vertical-alignment: center; vertical-stretch: 1;
+    }
+    if Lighting.patch-rows.length > 0: Flickable {
+        vertical-stretch: 1;
+        content-height: rows.preferred-height;
+        rows := VerticalLayout {
+            width: parent.width;
+            alignment: start;
+            for r[i] in Lighting.patch-rows: Rectangle {
+                accessible-label: "lighting.patch.row" + i; accessible-role: list-item;
+                accessible-value: r.name + " " + r.universe + "." + r.address + " " + r.clash;
+                height: 32px;
+                background: ta.has-hover ? Theme.plate-raised.with-alpha(0.4) : transparent;
+                ta := TouchArea { }
+                HorizontalLayout {
+                    spacing: Theme.s2; padding-right: Theme.s1;
+                    VerticalLayout {
+                        padding-top: Theme.s1; padding-bottom: Theme.s1; padding-left: Theme.s1; width: Theme.s3;
+                        if r.clash != "": VLine { tone: Theme.bone-3; form: "struck"; }
+                    }
+                    Text { text: r.name; font-family: Theme.family; font-size: Theme.body; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                    Text { text: r.group; width: 90px; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
+                    VerticalLayout {
+                        alignment: center;
+                        Field {
+                            accessible-label: "lighting.patch.universe" + i; accessible-role: text-input;
+                            width: 50px; height: 26px; text: r.universe; enabled: !Lighting.locked;
+                            accepted(t) => { Lighting.patch-universe(i, t); }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Field {
+                            accessible-label: "lighting.patch.address" + i; accessible-role: text-input;
+                            width: 62px; height: 26px; text: r.address; enabled: !Lighting.locked;
+                            accepted(t) => { Lighting.patch-address(i, t); }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Stepper {
+                            accessible-label: "lighting.patch.mode" + i; accessible-role: spinbox; accessible-value: r.mode;
+                            a11y-prev: "lighting.patch.mode" + i + ".prev"; a11y-next: "lighting.patch.mode" + i + ".next";
+                            width: 120px; size: 26px; value: r.mode; template: "Custom"; enabled: !Lighting.locked;
+                            tooltip: @tr("DMX mode of the fixture");
+                            step(d) => { Lighting.patch-mode(i, d); }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Field {
+                            accessible-label: "lighting.patch.channels" + i; accessible-role: text-input;
+                            width: 50px; height: 26px; text: r.channels; enabled: !Lighting.locked;
+                            accepted(t) => { Lighting.patch-channels(i, t); }
+                        }
+                    }
+                    Text {
+                        accessible-label: "lighting.patch.clash" + i; accessible-role: text; accessible-value: self.text;
+                        width: 130px; text: r.clash != "" ? r.clash : r.hazard == "fog" ? @tr("FOG · LOCKOUT") : r.hazard == "laser" ? @tr("LASER · LOCKOUT") : "";
+                        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: Theme.tracking-index;
+                        color: r.clash != "" ? Theme.fault : Theme.bone-3; vertical-alignment: center; overflow: elide;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        PlateButton {
+                            accessible-label: "lighting.patch.identify" + i; accessible-role: button;
+                            accessible-checkable: true; accessible-checked: r.identify;
+                            compact: true; label: "ID"; width: 30px; active: r.identify; tone: Theme.attention;
+                            tooltip: @tr("Identify: blink this fixture");
+                            clicked => { Lighting.identify(i); }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        PlateButton {
+                            accessible-label: "lighting.patch.remove" + i; accessible-role: button;
+                            compact: true; glyph: "close"; width: 30px; enabled: !Lighting.locked;
+                            tooltip: @tr("Remove this fixture");
+                            clicked => { Lighting.remove-fixture(i); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Body { text: @tr("Type a value and press Enter to apply it."); color: Theme.bone-3; height: 24px; vertical-alignment: center; }
+}
+
+// What leaves the computer: 512 channels of one universe after the safety
+// limits, 32 to a row.
+component ChannelGrid inherits VerticalLayout {
+    spacing: Theme.s2;
+    HorizontalLayout {
+        spacing: Theme.s1; height: 26px;
+        for u[i] in Lighting.universes: PlateButton {
+            accessible-label: "lighting.channels.universe" + i; accessible-role: tab;
+            compact: true; label: u; selected: Lighting.channel-universe == i;
+            clicked => { Lighting.choose-universe(i); }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        Caps { text: @tr("AS SENT, AFTER THE SAFETY LIMITS"); vertical-alignment: center; }
+    }
+    if Lighting.universes.length == 0: Body { text: @tr("No fixtures patched yet. Add your lights on the left."); color: Theme.bone-3; }
+    grid := Rectangle {
+        vertical-stretch: 1;
+        accessible-label: "lighting.channels"; accessible-role: table;
+        property <length> label-w: 30px;
+        property <length> cw: (self.width - self.label-w) / 32;
+        property <length> ch: min(self.height / 16, 34px);
+        for r in 16: Text {
+            x: 0; y: r * grid.ch; width: grid.label-w - 4px; height: grid.ch;
+            text: r * 32 + 1;
+            font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
+            horizontal-alignment: right; vertical-alignment: center;
+        }
+        for v[i] in Lighting.channels: Rectangle {
+            x: grid.label-w + Math.mod(i, 32) * grid.cw;
+            y: Math.floor(i / 32) * grid.ch;
+            width: grid.cw - 1px; height: grid.ch - 1px;
+            background: Theme.plate;
+            Rectangle {
+                y: parent.height - self.height; height: parent.height * v / 255;
+                background: Theme.bone-3.with-alpha(0.45);
+            }
+            Text {
+                text: v; font-family: Theme.family; font-size: Theme.label;
+                color: v > 0 ? Theme.bone : Theme.bone-3;
+                horizontal-alignment: center; vertical-alignment: center;
+            }
+        }
+    }
 }
 
 component ShowPanel inherits VerticalLayout {
@@ -352,7 +783,7 @@ component ShowPanel inherits VerticalLayout {
                 HoldButton {
                     accessible-label: "lighting.fog"; accessible-role: button;
                     label: @tr("FOG"); on: Lighting.fog; size: 30px; tone: Theme.attention; horizontal-stretch: 1;
-                    tooltip: @tr("Fog machines on while held");
+                    tooltip: Lighting.fog-armed ? @tr("Fog machines on while held") : @tr("Fog is locked out: arm it under SAFETY");
                     pressed => { Lighting.fog-held(true); }
                     released => { Lighting.fog-held(false); }
                 }
@@ -497,7 +928,7 @@ export component LightingView inherits Rectangle {
     accessible-label: "lighting.view"; accessible-role: groupbox;
     background: Theme.ground-band; border-radius: Theme.r-panel;
     HorizontalLayout {
-        RigPanel { width: 330px; }
+        SetupPanel { width: 340px; }
         VLine { }
         VerticalLayout {
             horizontal-stretch: 1;
@@ -505,7 +936,14 @@ export component LightingView inherits Rectangle {
             HorizontalLayout {
                 height: 26px;
                 spacing: Theme.s2;
-                SectionTitle { text: @tr("STAGE"); }
+                HorizontalLayout {
+                    spacing: Theme.s1;
+                    for c in [{ id: "stage", label: @tr("STAGE") }, { id: "patch", label: @tr("PATCH") }, { id: "channels", label: @tr("CHANNELS") }]: PlateButton {
+                        accessible-label: "lighting.centre." + c.id; accessible-role: tab;
+                        compact: true; label: c.label; selected: Lighting.centre == c.id;
+                        clicked => { Lighting.centre = c.id; }
+                    }
+                }
                 Rectangle { horizontal-stretch: 1; }
                 if root.detachable: PlateButton {
                     accessible-label: "lighting.detach"; accessible-role: button;
@@ -517,10 +955,27 @@ export component LightingView inherits Rectangle {
                     text: Lighting.status; color: Theme.attention; vertical-alignment: center;
                 }
             }
-            Stage { vertical-stretch: 1; accessible-label: "lighting.stage"; accessible-role: image; }
+            if Lighting.centre == "stage": Stage { vertical-stretch: 1; accessible-label: "lighting.stage"; accessible-role: image; }
+            if Lighting.centre == "patch": PatchTable { vertical-stretch: 1; }
+            if Lighting.centre == "channels": ChannelGrid { vertical-stretch: 1; }
         }
         VLine { }
         ShowPanel { width: 340px; }
+    }
+}
+
+// Compact output state: line, DMX, and what is wrong (Perform strip and top bar).
+export component LinkStatus inherits HorizontalLayout {
+    accessible-label: "lighting.link"; accessible-role: text;
+    accessible-value: Lighting.link + " " + Lighting.link-text;
+    spacing: Theme.s2;
+    VerticalLayout { padding-top: Theme.s1; padding-bottom: Theme.s1; LinkLine { state: Lighting.link == "fault" ? "lost" : Lighting.link; } }
+    Caps { text: "DMX"; vertical-alignment: center; }
+    Text {
+        text: Lighting.link-text; overflow: elide;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: Lighting.link == "lost" || Lighting.link == "fault" ? Theme.fault : Theme.bone-2;
+        vertical-alignment: center;
     }
 }
 
@@ -547,7 +1002,12 @@ export component LightingStrip inherits Rectangle {
                     toggled(on) => { Lighting.set-enabled(on); }
                 }
             }
-            Caps { text: Lighting.status; color: Theme.attention; overflow: elide; }
+            HorizontalLayout {
+                spacing: Theme.s3; height: 18px;
+                // A lost link takes the whole line: it is what needs you.
+                LinkStatus { horizontal-stretch: Lighting.link == "lost" || Lighting.link == "fault" ? 1 : 0; }
+                if Lighting.link != "lost" && Lighting.link != "fault": Caps { text: Lighting.status; color: Theme.attention; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+            }
             HorizontalLayout {
                 spacing: Theme.s1;
                 PlateButton {
