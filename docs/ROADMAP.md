@@ -52,9 +52,9 @@ These come first because every later screen builds on them.
 
 ### Step 6: a lighting rig you can trust
 
-- [ ] **[14] Patch table.** Universe, address, mode and channel count are editable, with bulk add, collision display and identify. Done when a real rig can be patched without editing files.
-- [ ] **[16] Output status and failsafe.** Status per universe, also visible in Perform, a live channel view, USB reconnect, and a chosen behaviour for a lost link or crash. Done when pulling the interface is shown and recovers by itself.
-- [ ] **[19] Safety limits.** A strobe rate cap with a safe default, lockout for fog and lasers, level caps per group, and a PIN that keeps guests out of setup. Done when automatic looks cannot exceed the limits.
+- [x] **[14] Patch table.** Universe, address, mode and channel count are editable, with bulk add, collision display and identify. Done when a real rig can be patched without editing files.
+- [x] **[16] Output status and failsafe.** Status per universe, also visible in Perform, a live channel view, USB reconnect, and a chosen behaviour for a lost link or crash. Done when pulling the interface is shown and recovers by itself. Loss and recovery are tested with a simulated link; pulling a real USB-DMX interface has not been tried yet.
+- [x] **[19] Safety limits.** A strobe rate cap with a safe default, lockout for fog and lasers, level caps per group, and a PIN that keeps guests out of setup. Done when automatic looks cannot exceed the limits.
 
 ### Hardware checks
 

@@ -13,19 +13,21 @@ use std::time::{Duration, Instant};
 
 use od_core::{MusicalKey, Phrase, PhraseMood};
 use od_engine::{DeckState, EngineState, MAX_DECKS};
+#[cfg(test)]
+pub use od_lighting::add_fixture;
+pub use od_lighting::parse_output;
 use od_lighting::{
-    Attr, DeckMusic, Effect, FixtureDef, FixtureRole, LightCue, Lighting, Look, Mode, Momentary,
-    OutputKind, Patch, Patched, Program, RigConfig, Show, ShowSettings, Universe, Wave,
-    hue_for_key,
+    Arming, Attr, DeckMusic, Effect, Failsafe, FixtureDef, FixtureRole, LightCue, Lighting, Look,
+    Mode, Momentary, OutputKind, Patch, Patched, Program, RigConfig, SafetyLimits, Show,
+    ShowSettings, Universe, Wave, hue_for_key,
 };
-pub use od_lighting::{add_fixture, parse_output};
-use slint::{Color, ComponentHandle, ModelRc, SharedString, VecModel};
+use slint::{Color, ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use crate::app::{App, handler};
 use crate::models::Rows;
-use crate::{LightFixtureView, LightGroupView};
+use crate::{LightCapRow, LightFixtureView, LightGroupView, LightOutputRow, LightPatchRow};
 
 /// Frames per second sent to the outputs (DMX refreshes at most ~44 Hz).
 pub const FPS: u32 = 40;
@@ -92,6 +94,10 @@ pub struct Snapshot {
     pub universes: Vec<Universe>,
     /// Pro cue in effect.
     pub cue: Option<usize>,
+    /// Status per output link.
+    pub outputs: Vec<od_lighting::OutputStatus>,
+    /// The show failed and only the failsafe scene is sent.
+    pub faulted: bool,
 }
 
 enum Msg {
@@ -104,6 +110,11 @@ enum Msg {
     TapBpm(Option<f64>),
     ClearOutputs,
     Cue(Option<usize>),
+    Limits(SafetyLimits),
+    Arming(Arming),
+    Failsafe(Failsafe),
+    Identify(Option<usize>),
+    Opener(od_lighting::Opener),
     Stop,
 }
 
@@ -162,6 +173,27 @@ impl Runner {
         let _ = self.tx.send(Msg::Cue(cue));
     }
 
+    pub fn limits(&self, limits: SafetyLimits) {
+        let _ = self.tx.send(Msg::Limits(limits));
+    }
+
+    pub fn arming(&self, arming: Arming) {
+        let _ = self.tx.send(Msg::Arming(arming));
+    }
+
+    pub fn failsafe(&self, f: Failsafe) {
+        let _ = self.tx.send(Msg::Failsafe(f));
+    }
+
+    pub fn identify(&self, fixture: Option<usize>) {
+        let _ = self.tx.send(Msg::Identify(fixture));
+    }
+
+    /// Test outputs: links are opened by `opener` from now on.
+    pub fn set_opener(&self, opener: od_lighting::Opener) {
+        let _ = self.tx.send(Msg::Opener(opener));
+    }
+
     pub fn active_cue(&self) -> Option<usize> {
         self.snapshot.lock().ok().and_then(|s| s.cue)
     }
@@ -191,15 +223,20 @@ fn run(rx: Receiver<Msg>, mut rig: Lighting, snapshot: Arc<Mutex<Snapshot>>) {
             Ok(Msg::Patch(p)) => rig.patch = p,
             Ok(Msg::Settings(s)) => rig.show.settings = s,
             Ok(Msg::Momentary(m)) => rig.show.momentary = m,
-            Ok(Msg::Output(u, kind)) => {
-                if let Err(e) = rig.add_output(u, kind) {
-                    tracing::warn!("lighting output: {e}");
-                }
-            }
+            Ok(Msg::Output(u, kind)) => rig.add_output(u, kind),
             Ok(Msg::ClearOutputs) => rig.clear_outputs(),
             Ok(Msg::TapBpm(b)) => rig.show.tap_bpm = b,
             Ok(Msg::Cue(c)) => rig.show.manual_cue = c,
-            Ok(Msg::Stop) | Err(mpsc::RecvTimeoutError::Disconnected) => return,
+            Ok(Msg::Limits(l)) => rig.limits = l,
+            Ok(Msg::Arming(a)) => rig.arming = a,
+            Ok(Msg::Failsafe(f)) => rig.failsafe = f,
+            Ok(Msg::Identify(i)) => rig.identify = i,
+            Ok(Msg::Opener(o)) => rig.set_opener(o),
+            // Quitting: the failsafe choice decides the last frame.
+            Ok(Msg::Stop) | Err(mpsc::RecvTimeoutError::Disconnected) => {
+                rig.shutdown();
+                return;
+            }
             Err(mpsc::RecvTimeoutError::Timeout) => {}
         }
         let now = Instant::now();
@@ -212,11 +249,13 @@ fn run(rx: Receiver<Msg>, mut rig: Lighting, snapshot: Arc<Mutex<Snapshot>>) {
         if next < now {
             next = now + frame;
         }
-        rig.tick(&music(&state, &tracks), dt);
+        rig.tick_guarded(&music(&state, &tracks), dt);
         if let Ok(mut s) = snapshot.lock() {
             s.looks.clone_from(&rig.looks);
             s.universes.clone_from(&rig.frame);
             s.cue = rig.show.active_cue();
+            s.outputs = rig.status();
+            s.faulted = rig.faulted;
         }
     }
 }
@@ -429,6 +468,20 @@ pub struct LightingRuntime {
     seen: Option<std::time::SystemTime>,
     /// Last look at the rig file and the live inbox.
     polled: Option<Instant>,
+    /// Fog and lasers armed (never saved: each start begins locked).
+    pub arming: Arming,
+    /// Fixture blinking for identification.
+    pub identify: Option<usize>,
+    /// Setup opened with the PIN (always open without a PIN).
+    pub unlocked: bool,
+    pin_error: String,
+    /// Universe shown in the channel view.
+    channel_universe: usize,
+    channels: Rc<VecModel<i32>>,
+    outputs: Rows<LightOutputRow>,
+    patch_rows: Rows<LightPatchRow>,
+    /// Last link summary sent to the UI.
+    link: (String, String),
 }
 
 impl LightingRuntime {
@@ -452,9 +505,40 @@ impl LightingRuntime {
             focus: None,
             seen,
             polled: None,
+            arming: Arming::default(),
+            identify: None,
+            unlocked: false,
+            pin_error: String::new(),
+            channel_universe: 0,
+            channels: Rc::new(VecModel::from(vec![0; 512])),
+            outputs: Rows::default(),
+            patch_rows: Rows::default(),
+            link: Default::default(),
         };
+        rt.push();
         rt.apply_outputs();
         rt
+    }
+
+    /// Setup is closed by the PIN.
+    pub fn locked(&self) -> bool {
+        !self.config.safety.pin.is_empty() && !self.unlocked
+    }
+
+    /// Sends everything the show thread keeps to it.
+    fn push(&self) {
+        self.runner.patch(self.config.patch.clone());
+        self.runner.settings(self.config.settings.clone());
+        self.runner.limits(self.config.safety.clone());
+        self.runner.failsafe(self.config.failsafe);
+        self.runner.arming(self.arming);
+        self.runner.identify(self.identify);
+    }
+
+    /// Routes every output through `opener` (tests) and reopens them.
+    pub fn use_opener(&self, opener: od_lighting::Opener) {
+        self.runner.set_opener(opener);
+        self.apply_outputs();
     }
 
     fn apply_outputs(&self) {
@@ -475,8 +559,13 @@ impl LightingRuntime {
 
     /// Sends patch and settings to the show and stores the rig.
     fn commit(&mut self) {
-        self.runner.patch(self.config.patch.clone());
-        self.runner.settings(self.config.settings.clone());
+        if self
+            .identify
+            .is_some_and(|i| i >= self.config.patch.fixtures.len())
+        {
+            self.identify = None;
+        }
+        self.push();
         self.save();
     }
 }
@@ -529,6 +618,22 @@ fn refresh(app: &App) {
         })
         .collect();
     let (timeline_title, timeline) = timeline_rows(&rt);
+    let patch = &rt.config.patch;
+    let has_fog = patch.fixtures.iter().any(|f| f.def.is_fog());
+    let has_laser = patch.fixtures.iter().any(|f| f.def.is_laser());
+    let caps: Vec<LightCapRow> = patch
+        .groups()
+        .into_iter()
+        .map(|name| LightCapRow {
+            cap: rt.config.safety.group_cap(&name),
+            name: name.into(),
+        })
+        .collect();
+    let caps = ModelRc::new(VecModel::from(caps));
+    let universes: Vec<SharedString> = (0..patch.universes())
+        .map(|u| SharedString::from(format!("U{}", u + 1)))
+        .collect();
+    let universes = ModelRc::new(VecModel::from(universes));
     let timeline = ModelRc::new(VecModel::from(timeline));
     let output_text: SharedString = if outputs.is_empty() {
         "No output set".into()
@@ -564,7 +669,27 @@ fn refresh(app: &App) {
         g.set_rig_path(rt.path.display().to_string().into());
         g.set_timeline_title(timeline_title.clone());
         g.set_timeline(timeline.clone());
+        g.set_strobe_hz(rt.config.safety.strobe_cap());
+        g.set_fog_armed(rt.arming.fog);
+        g.set_laser_armed(rt.arming.laser);
+        g.set_has_fog(has_fog);
+        g.set_has_laser(has_laser);
+        g.set_caps(caps.clone());
+        g.set_pin_set(!rt.config.safety.pin.is_empty());
+        g.set_locked(rt.locked());
+        g.set_pin_error(rt.pin_error.clone().into());
+        g.set_failsafe(
+            match rt.config.failsafe {
+                Failsafe::Hold => "hold",
+                Failsafe::Safe => "safe",
+                Failsafe::Blackout => "blackout",
+            }
+            .into(),
+        );
+        g.set_universes(universes.clone());
+        g.set_channel_universe(rt.channel_universe as i32);
     });
+    rt.patch_rows.sync_eq(patch_rows(&rt));
     // Rows also when no frame arrives (engine stopped): the rig list.
     let looks = rt
         .runner
@@ -574,6 +699,145 @@ fn refresh(app: &App) {
         .unwrap_or_default();
     rt.fixtures
         .sync(fixture_views(&rt.config.patch, &looks), |_, _| false);
+}
+
+/// Rows of the patch table.
+fn patch_rows(rt: &LightingRuntime) -> Vec<LightPatchRow> {
+    let patch = &rt.config.patch;
+    let clashes = patch.collisions();
+    patch
+        .fixtures
+        .iter()
+        .enumerate()
+        .map(|(i, f)| LightPatchRow {
+            name: f.name.as_str().into(),
+            group: f.group.as_str().into(),
+            universe: (f.universe + 1).to_string().into(),
+            address: f.address.to_string().into(),
+            mode: f.def.mode.as_str().into(),
+            channels: f.def.channels.len().to_string().into(),
+            clash: match clashes[i] {
+                Some(od_lighting::Collision::Overlaps(j)) => {
+                    od_i18n::trf("OVERLAPS {}", &[&patch.fixtures[j].name.to_uppercase()]).into()
+                }
+                Some(od_lighting::Collision::OutOfRange) => od_i18n::tr("PAST CHANNEL 512").into(),
+                None => SharedString::new(),
+            },
+            identify: rt.identify == Some(i),
+            hazard: if f.def.is_laser() {
+                "laser"
+            } else if f.def.is_fog() {
+                "fog"
+            } else {
+                ""
+            }
+            .into(),
+        })
+        .collect()
+}
+
+/// Output rows and the one-line summary for Perform, from the show
+/// thread's link status.
+pub fn link_rows(
+    config: &RigConfig,
+    status: &[od_lighting::OutputStatus],
+    faulted: bool,
+) -> (Vec<LightOutputRow>, String, String) {
+    use od_lighting::LinkState;
+    let target = |k: &OutputKind| match k {
+        OutputKind::ArtNet { target, .. } => format!("Art-Net {target}"),
+        OutputKind::Sacn { universe } => format!("sACN {universe}"),
+        OutputKind::EnttecPro { device } => format!("USB-DMX {device}"),
+    };
+    let rows: Vec<LightOutputRow> = config
+        .outputs
+        .iter()
+        .enumerate()
+        .map(|(i, (u, k))| {
+            let st = status.get(i).filter(|_| config.enabled);
+            let (state, detail) = match st {
+                None => ("off", od_i18n::tr("DMX OUT IS OFF").to_string()),
+                Some(s) if s.state == LinkState::Lost => (
+                    "lost",
+                    od_i18n::trf(
+                        "LOST {} S AGO · RETRYING · {}",
+                        &[&(s.since as u32), &s.error],
+                    ),
+                ),
+                Some(s) if s.reconnects > 0 && s.since < 20.0 => (
+                    "back",
+                    od_i18n::trf("BACK {} S AGO · SENDING", &[&(s.since as u32)]),
+                ),
+                Some(_) => ("ok", od_i18n::tr("SENDING").to_string()),
+            };
+            LightOutputRow {
+                universe: format!("U{}", u + 1).into(),
+                target: target(k).into(),
+                state: state.into(),
+                detail: detail.into(),
+            }
+        })
+        .collect();
+    let lost: Vec<String> = rows
+        .iter()
+        .filter(|r| r.state == "lost")
+        .map(|r| r.universe.to_string())
+        .collect();
+    let (link, text) = if !config.enabled || rows.is_empty() {
+        ("off", od_i18n::tr("OFF").to_string())
+    } else if faulted {
+        ("fault", od_i18n::tr("SHOW FAILED · FAILSAFE").to_string())
+    } else if !lost.is_empty() {
+        (
+            "lost",
+            od_i18n::trf("{} LOST · RETRYING", &[&lost.join(" ")]),
+        )
+    } else if rows.iter().any(|r| r.state == "back") {
+        ("back", od_i18n::tr("BACK · SENDING").to_string())
+    } else {
+        ("ok", od_i18n::trf("{} SENDING", &[&rows.len()]))
+    };
+    (rows, link.to_string(), text)
+}
+
+/// Output status and the live channel view, from the show thread.
+fn refresh_link(app: &App) {
+    let mut rt = app.lighting.borrow_mut();
+    let (status, faulted, universe) = {
+        let snap = rt.runner.snapshot.lock();
+        match snap {
+            Ok(s) => (
+                s.outputs.clone(),
+                s.faulted,
+                s.universes.get(rt.channel_universe).copied(),
+            ),
+            Err(_) => return,
+        }
+    };
+    let (rows, link, text) = link_rows(&rt.config, &status, faulted);
+    rt.outputs.sync_eq(rows);
+    let channels_shown = app.ui.global::<crate::Lighting>().get_centre() == "channels"
+        || app
+            .lighting_window
+            .borrow()
+            .as_ref()
+            .is_some_and(|w| w.global::<crate::Lighting>().get_centre() == "channels");
+    if channels_shown {
+        let data = universe.unwrap_or([0; 512]);
+        for (i, v) in data.iter().enumerate() {
+            if rt.channels.row_data(i) != Some(*v as i32) {
+                rt.channels.set_row_data(i, *v as i32);
+            }
+        }
+    }
+    if rt.link != (link.clone(), text.clone()) {
+        rt.link = (link.clone(), text.clone());
+        drop(rt);
+        each(app, |g| {
+            g.set_link(link.as_str().into());
+            g.set_link_text(text.as_str().into());
+        });
+    }
 }
 
 /// Title and rows ("BAR 17 → Drop") of the focused track's lighting cues.
@@ -634,12 +898,87 @@ fn edit(app: &App, f: impl FnOnce(&mut LightingRuntime)) {
 pub(crate) fn wire(app: &Rc<App>) {
     wire_global(app, &app.ui.global::<crate::Lighting>());
     refresh(app);
+    demo(app);
+}
+
+/// Documentation screenshots, in memory only (nothing is saved):
+/// `OPENDJDECKS_DEMO_PROOF` parts `light-patch` (patch table with a
+/// collision), `light-lost` (a second universe on a USB-DMX link that is
+/// missing), `light-safety`, `light-channels` and `light-strip` (the strip
+/// in Perform).
+fn demo(app: &Rc<App>) {
+    let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
+    let parts: Vec<String> = v.split(',').map(str::to_string).collect();
+    if !parts.iter().any(|p| p.starts_with("light-")) {
+        return;
+    }
+    let has = |p: &str| parts.iter().any(|x| x == p);
+    let g = app.ui.global::<crate::Lighting>();
+    {
+        let mut rt = app.lighting.borrow_mut();
+        if has("light-patch") {
+            let _ = od_lighting::add_fixtures(&mut rt.config.patch, 2, 4, Some(0), Some(60), "Back", "Wash");
+            if let Some(i) = rt.config.patch.fixtures.iter().position(|f| f.def.role() == FixtureRole::Bar) {
+                let u = rt.config.patch.fixtures[i].universe;
+                rt.config.patch.set_place(i, u, 12);
+            }
+            rt.identify = Some(0);
+            g.set_centre("patch".into());
+        }
+        if has("light-lost") {
+            rt.config.enabled = true;
+            rt.config.failsafe = Failsafe::Safe;
+            rt.config.outputs.retain(|(u, _)| *u == 0);
+            rt.config.outputs.push((
+                1,
+                OutputKind::EnttecPro {
+                    device: "/dev/tty.usbserial-DMX".into(),
+                },
+            ));
+            let link = od_lighting::TestLink::default();
+            rt.runner.set_opener(Box::new(move |k: &OutputKind| {
+                if matches!(k, OutputKind::EnttecPro { .. }) {
+                    Err(std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "no such device",
+                    ))
+                } else {
+                    link.opener()(k)
+                }
+            }));
+            g.set_setup_tab("output".into());
+        }
+        if has("light-safety") {
+            rt.config.safety.pin = "2468".into();
+            rt.unlocked = true;
+            rt.config.safety.group_caps.insert("Bars".into(), 0.6);
+            g.set_setup_tab("safety".into());
+        }
+        if has("light-channels") {
+            g.set_centre("channels".into());
+        }
+        if has("light-strip") {
+            g.set_panel(true);
+        }
+        rt.push();
+        rt.apply_outputs();
+    }
+    refresh(app);
 }
 
 /// Binds models and callbacks of one window's Lighting state.
 fn wire_global(app: &Rc<App>, g: &crate::Lighting<'_>) {
     g.on_detach(handler!(app, |a| detach(&a)));
     g.set_fixtures(app.lighting.borrow().fixtures.handle());
+    {
+        let rt = app.lighting.borrow();
+        g.set_patch_rows(rt.patch_rows.handle());
+        g.set_outputs(rt.outputs.handle());
+        g.set_channels(ModelRc::from(rt.channels.clone()));
+        g.set_link(rt.link.0.as_str().into());
+        g.set_link_text(rt.link.1.as_str().into());
+    }
+    wire_setup(app, g);
     g.set_programs(ModelRc::new(VecModel::from(
         Program::ALL
             .iter()
@@ -715,35 +1054,28 @@ fn wire_global(app: &Rc<App>, g: &crate::Lighting<'_>) {
                 .color = SWATCHES.get(ci as usize).copied();
         }
     })));
-    g.on_add_fixture(handler!(
-        app,
-        |a, ti: i32, name: SharedString, group: SharedString| {
-            let result = add_fixture(
-                &mut a.lighting.borrow_mut().config.patch,
-                ti as usize,
-                name.as_str(),
-                group.as_str(),
-            );
-            match result {
-                Ok(_) => edit(&a, |_| {}),
-                Err(e) => a.status(format!("Lighting: {e}")),
-            }
-        }
-    ));
-    g.on_remove_fixture(handler!(app, |a, i: i32| edit(&a, |rt| {
+    g.on_remove_fixture(handler!(app, |a, i: i32| setup(&a, |rt| {
         if (i as usize) < rt.config.patch.fixtures.len() {
             rt.config.patch.fixtures.remove(i as usize);
         }
     })));
     g.on_set_output(handler!(
         app,
-        |a, kind: SharedString, target: SharedString| {
+        |a, kind: SharedString, target: SharedString, universe: SharedString| {
+            if a.lighting.borrow().locked() {
+                return;
+            }
+            let u = match parse_universe(&universe) {
+                Ok(u) => u.unwrap_or(0),
+                Err(e) => return a.status(e),
+            };
             match parse_output(kind.as_str(), target.as_str()) {
                 Ok(k) => {
                     {
                         let mut rt = a.lighting.borrow_mut();
-                        rt.config.outputs.retain(|(u, _)| *u != 0);
-                        rt.config.outputs.push((0, k));
+                        rt.config.outputs.retain(|(x, _)| *x != u);
+                        rt.config.outputs.push((u, k));
+                        rt.config.outputs.sort_by_key(|(x, _)| *x);
                         rt.config.enabled = true;
                         rt.apply_outputs();
                         rt.save();
@@ -794,6 +1126,9 @@ fn wire_global(app: &Rc<App>, g: &crate::Lighting<'_>) {
         else {
             return;
         };
+        if a.lighting.borrow().locked() {
+            return;
+        }
         match import_ofl(&mut a.lighting.borrow_mut().config.patch, &path) {
             Ok(_) => edit(&a, |_| {}),
             Err(e) => a.status(format!("Lighting: {e}")),
@@ -850,6 +1185,241 @@ fn wire_global(app: &Rc<App>, g: &crate::Lighting<'_>) {
             rt.config.settings.cues.remove(i as usize);
         }
     })));
+}
+
+/// An edit of the setup (patch, outputs, safety): ignored while the PIN
+/// locks it.
+fn setup(app: &App, f: impl FnOnce(&mut LightingRuntime)) {
+    if app.lighting.borrow().locked() {
+        return;
+    }
+    edit(app, f);
+}
+
+/// "3" → universe index 2; "" → None.
+pub fn parse_universe(text: &str) -> Result<Option<u16>, String> {
+    let t = text.trim().trim_start_matches(['U', 'u']).trim();
+    if t.is_empty() {
+        return Ok(None);
+    }
+    match t.parse::<u16>() {
+        Ok(n) if (1..=od_lighting::MAX_UNIVERSES).contains(&n) => Ok(Some(n - 1)),
+        _ => Err(od_i18n::trf(
+            "Lighting: universes are 1 to {}",
+            &[&od_lighting::MAX_UNIVERSES],
+        )),
+    }
+}
+
+/// "17" → address 17; "" → None.
+pub fn parse_address(text: &str) -> Result<Option<u16>, String> {
+    let t = text.trim();
+    if t.is_empty() {
+        return Ok(None);
+    }
+    match t.parse::<u16>() {
+        Ok(n) if (1..=512).contains(&n) => Ok(Some(n)),
+        _ => Err(od_i18n::tr("Lighting: addresses are 1 to 512").to_string()),
+    }
+}
+
+/// Callbacks of the patch table, outputs and safety limits.
+fn wire_setup(app: &Rc<App>, g: &crate::Lighting<'_>) {
+    g.on_add_fixtures(handler!(
+        app,
+        |a,
+         ti: i32,
+         name: SharedString,
+         group: SharedString,
+         count: SharedString,
+         universe: SharedString,
+         start: SharedString| {
+            if a.lighting.borrow().locked() {
+                return;
+            }
+            let count = match count.trim() {
+                "" => 1,
+                t => match t.parse::<u16>() {
+                    Ok(n) if (1..=512).contains(&n) => n,
+                    _ => return a.status(od_i18n::tr("Lighting: the count is 1 to 512")),
+                },
+            };
+            let (universe, start) = match (parse_universe(&universe), parse_address(&start)) {
+                (Ok(u), Ok(s)) => (u, s),
+                (Err(e), _) | (_, Err(e)) => return a.status(e),
+            };
+            let universe = universe.or(start.map(|_| 0));
+            let result = od_lighting::add_fixtures(
+                &mut a.lighting.borrow_mut().config.patch,
+                ti as usize,
+                count,
+                universe,
+                start,
+                name.as_str(),
+                group.as_str(),
+            );
+            match result {
+                Ok(r) => {
+                    edit(&a, |_| {});
+                    a.status(od_i18n::trf("Lighting: {} fixture(s) patched", &[&r.len()]));
+                }
+                Err(e) => a.status(format!("Lighting: {e}")),
+            }
+        }
+    ));
+    g.on_patch_universe(handler!(app, |a, i: i32, t: SharedString| {
+        match parse_universe(&t) {
+            Ok(Some(u)) => setup(&a, |rt| {
+                let addr = rt.config.patch.fixtures.get(i as usize).map(|f| f.address);
+                if let Some(addr) = addr {
+                    rt.config.patch.set_place(i as usize, u, addr);
+                }
+            }),
+            Ok(None) => refresh(&a),
+            Err(e) => a.status(e),
+        }
+    }));
+    g.on_patch_address(handler!(app, |a, i: i32, t: SharedString| {
+        match parse_address(&t) {
+            Ok(Some(addr)) => setup(&a, |rt| {
+                let u = rt.config.patch.fixtures.get(i as usize).map(|f| f.universe);
+                if let Some(u) = u {
+                    rt.config.patch.set_place(i as usize, u, addr);
+                }
+            }),
+            Ok(None) => refresh(&a),
+            Err(e) => a.status(e),
+        }
+    }));
+    g.on_patch_mode(handler!(app, |a, i: i32, step: i32| setup(&a, |rt| {
+        if let Some(f) = rt.config.patch.fixtures.get_mut(i as usize) {
+            let names = f.def.mode_names();
+            let at = names.iter().position(|n| *n == f.def.mode).unwrap_or(0) as i32;
+            let next = (at + step).rem_euclid(names.len() as i32) as usize;
+            f.def.set_mode(&names[next]);
+        }
+    })));
+    g.on_patch_channels(handler!(app, |a, i: i32, t: SharedString| {
+        match t.trim().parse::<u16>() {
+            Ok(n) if (1..=512).contains(&n) => setup(&a, |rt| {
+                if let Some(f) = rt.config.patch.fixtures.get_mut(i as usize) {
+                    f.def.set_channel_count(n);
+                }
+            }),
+            _ => a.status(od_i18n::tr("Lighting: a fixture has 1 to 512 channels")),
+        }
+    }));
+    g.on_identify(handler!(app, |a, i: i32| {
+        {
+            let mut rt = a.lighting.borrow_mut();
+            let i = i as usize;
+            rt.identify = if rt.identify == Some(i) {
+                None
+            } else {
+                Some(i)
+            };
+            rt.runner.identify(rt.identify);
+        }
+        refresh(&a);
+    }));
+    g.on_remove_output(handler!(app, |a, i: i32| {
+        if a.lighting.borrow().locked() {
+            return;
+        }
+        {
+            let mut rt = a.lighting.borrow_mut();
+            if (i as usize) < rt.config.outputs.len() {
+                rt.config.outputs.remove(i as usize);
+            }
+            rt.apply_outputs();
+            rt.save();
+        }
+        refresh(&a);
+    }));
+    g.on_set_failsafe(handler!(app, |a, f: SharedString| setup(&a, |rt| {
+        rt.config.failsafe = match f.as_str() {
+            "safe" => Failsafe::Safe,
+            "blackout" => Failsafe::Blackout,
+            _ => Failsafe::Hold,
+        }
+    })));
+    g.on_choose_universe(handler!(app, |a, u: i32| {
+        a.lighting.borrow_mut().channel_universe = u.max(0) as usize;
+        refresh(&a);
+        refresh_link(&a);
+    }));
+    g.on_step_strobe(handler!(app, |a, d: i32| setup(&a, |rt| {
+        let hz = rt.config.safety.strobe_cap() + d as f32;
+        rt.config.safety.strobe_hz = hz.clamp(0.0, od_lighting::safety::MAX_STROBE_HZ).round();
+    })));
+    g.on_step_cap(handler!(app, |a, i: i32, d: i32| setup(&a, |rt| {
+        if let Some(name) = rt.config.patch.groups().get(i as usize).cloned() {
+            let cap = (rt.config.safety.group_cap(&name) + d as f32 * 0.1).clamp(0.0, 1.0);
+            let cap = (cap * 10.0).round() / 10.0;
+            if cap >= 1.0 {
+                rt.config.safety.group_caps.remove(&name);
+            } else {
+                rt.config.safety.group_caps.insert(name, cap);
+            }
+        }
+    })));
+    g.on_arm_fog(handler!(app, |a, on: bool| arm(&a, |m| m.fog = on)));
+    g.on_arm_laser(handler!(app, |a, on: bool| arm(&a, |m| m.laser = on)));
+    g.on_unlock(handler!(app, |a, pin: SharedString| {
+        {
+            let mut rt = a.lighting.borrow_mut();
+            if pin.trim() == rt.config.safety.pin {
+                rt.unlocked = true;
+                rt.pin_error.clear();
+            } else {
+                rt.pin_error = od_i18n::tr("Wrong PIN").to_string();
+            }
+        }
+        refresh(&a);
+    }));
+    g.on_lock(handler!(app, |a| {
+        a.lighting.borrow_mut().unlocked = false;
+        refresh(&a);
+    }));
+    g.on_set_pin(handler!(app, |a, pin: SharedString| {
+        if a.lighting.borrow().locked() {
+            return;
+        }
+        let pin = pin.trim().to_string();
+        let ok = pin.is_empty()
+            || ((4..=8).contains(&pin.len()) && pin.chars().all(|c| c.is_ascii_digit()));
+        if !ok {
+            a.lighting.borrow_mut().pin_error = od_i18n::tr("The PIN is 4 to 8 digits").to_string();
+            return refresh(&a);
+        }
+        let cleared = pin.is_empty();
+        edit(&a, |rt| {
+            rt.config.safety.pin = pin;
+            rt.unlocked = true;
+            rt.pin_error.clear();
+        });
+        a.status(if cleared {
+            od_i18n::tr("Lighting: setup PIN removed")
+        } else {
+            od_i18n::tr("Lighting: setup PIN set. LOCK closes the setup.")
+        });
+    }));
+}
+
+/// Fog and laser arming: only from an open setup; disarming always works.
+fn arm(app: &App, f: impl FnOnce(&mut Arming)) {
+    {
+        let mut rt = app.lighting.borrow_mut();
+        let mut next = rt.arming;
+        f(&mut next);
+        let arming_more = (next.fog && !rt.arming.fog) || (next.laser && !rt.arming.laser);
+        if arming_more && rt.locked() {
+            return;
+        }
+        rt.arming = next;
+        rt.runner.arming(next);
+    }
+    refresh(app);
 }
 
 fn momentary(app: &App, f: impl FnOnce(&mut Momentary)) {
@@ -1012,8 +1582,7 @@ pub(crate) fn poll_remote(app: &App) {
                     rt.seen = now;
                     if rt.config != config {
                         rt.config = config;
-                        rt.runner.patch(rt.config.patch.clone());
-                        rt.runner.settings(rt.config.settings.clone());
+                        rt.push();
                         rt.apply_outputs();
                     }
                 }
@@ -1063,6 +1632,7 @@ fn tap(app: &App) {
 
 /// Per engine frame: feeds the show and, in LIGHTING mode, the preview.
 pub(crate) fn frame(app: &App, state: Option<&EngineState>) {
+    refresh_link(app);
     let Some(state) = state else {
         if app.ui.get_mode() == "lighting" {
             refresh_stage(app, &[]);
