@@ -73,7 +73,9 @@ component Row inherits HorizontalLayout {
     spacing: Theme.s4;
     min-height: 30px;
     VerticalLayout {
-        width: 190px;
+        // Narrow window: the label column gives way first (its text wraps).
+        min-width: 130px; preferred-width: 190px; max-width: 190px;
+        horizontal-stretch: 0;
         padding-top: Theme.s1;
         Text {
             text: root.label;
@@ -109,7 +111,8 @@ component Swatches inherits HorizontalLayout {
     }
 }
 
-component Choice inherits HorizontalLayout {
+// The plates wrap onto a second line when the row is narrow.
+component Choice inherits FlexboxLayout {
     in property <[string]> options;
     in property <int> selected;
     callback picked(int);
@@ -134,7 +137,11 @@ component Switch inherits Rectangle {
     accessible-checkable: true;
     accessible-checked: root.on;
     height: 28px;
-    min-width: t.preferred-width + 44px;
+    // A narrow row elides the text; the tooltip then shows it whole.
+    min-width: 120px;
+    preferred-width: probe.preferred-width + 44px;
+    probe := Text { visible: false; text: root.label; font-family: Theme.family; font-size: Theme.body; }
+    property <bool> elided: root.width < probe.preferred-width + 34px;
     // A filled track with a thumb (DESIGN.md, Toggles and status lines).
     Rectangle {
         x: 0; y: (parent.height - 14px) / 2; width: 26px; height: 14px; border-radius: 7px;
@@ -146,13 +153,13 @@ component Switch inherits Rectangle {
         }
     }
     t := Text {
-        x: 34px; height: parent.height;
+        x: 34px; width: parent.width - 34px; height: parent.height;
         text: root.label;
-        font-family: Theme.family; font-size: Theme.body;
+        font-family: Theme.family; font-size: Theme.body; overflow: elide;
         color: root.on ? Theme.bone : Theme.bone-2;
         vertical-alignment: center;
     }
-    TouchArea { mouse-cursor: pointer; clicked => { root.toggled(!root.on); } }
+    TipArea { tooltip: root.elided ? root.label : ""; mouse-cursor: pointer; clicked => { root.toggled(!root.on); } }
 }
 
 // A choice among many (devices): one line per option.
@@ -470,7 +477,7 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Phrases"); Switch { accessible-label: "prefs.view.phrase-enlarged"; label: @tr("Show phrases on the enlarged waveforms"); on: root.phrases; toggled(v) => { root.flag("view.phrases", v); } } }
                         Row { label: ""; Switch { accessible-label: "prefs.view.phrase-overview"; label: @tr("Show the phrase bar under the overviews"); on: root.phrases-overview; toggled(v) => { root.flag("view.phrases-overview", v); } } }
                         Row { label: @tr("Phrase types"); Choice { accessible-label: "prefs.view.phrase-types"; options: [@tr("NAMES"), @tr("COLOURS ONLY")]; selected: root.phrase-types; picked(i) => { root.choose("view.phrase-types", i); } } }
-                        Row { label: @tr("Waveform colour"); HorizontalLayout { alignment: start; spacing: Theme.s4; Choice { accessible-label: "prefs.view.waveform-colour"; options: [@tr("3-BAND"), @tr("ONE COLOUR"), "RGB"]; selected: root.waveform; picked(i) => { root.choose("view.waveform", i); } } if root.waveform == 0: PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-customise"; label: @tr("OWN COLOURS"); selected: root.waveform-own; clicked => { root.waveform-own = !root.waveform-own; } } } }
+                        Row { label: @tr("Waveform colour"); FlexboxLayout { alignment: start; spacing: Theme.s4; Choice { accessible-label: "prefs.view.waveform-colour"; options: [@tr("3-BAND"), @tr("ONE COLOUR"), "RGB"]; selected: root.waveform; picked(i) => { root.choose("view.waveform", i); } } if root.waveform == 0: PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-customise"; label: @tr("OWN COLOURS"); selected: root.waveform-own; clicked => { root.waveform-own = !root.waveform-own; } } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Lows"); Swatches { key: "prefs.view.waveform-low"; colours: root.waveform-swatches; selected: root.waveform-low; picked(i) => { root.choose("view.waveform-low", i); } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Mids"); Swatches { key: "prefs.view.waveform-mid"; colours: root.waveform-swatches; selected: root.waveform-mid; picked(i) => { root.choose("view.waveform-mid", i); } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Highs"); Swatches { key: "prefs.view.waveform-high"; colours: root.waveform-swatches; selected: root.waveform-high; picked(i) => { root.choose("view.waveform-high", i); } } }
@@ -710,7 +717,7 @@ export component PreferencesWindow inherits Window {
                                 }
                                 if !r.header && r.scope != "": Caps {
                                     x: parent.width - 420px; width: 76px; height: parent.height;
-                                    text: r.scope; vertical-alignment: center; horizontal-alignment: right;
+                                    text: r.scope; vertical-alignment: center; horizontal-alignment: right; overflow: elide;
                                 }
                                 rt := TouchArea {
                                     enabled: !r.header;
@@ -812,7 +819,11 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("At start"); Switch { accessible-label: "prefs.advanced.backup-on-start"; label: @tr("Back up the library every time the app starts"); on: root.backup-on-start; toggled(v) => { root.flag("adv.backup", v); } } }
                         Row {
                             label: @tr("Backups");
-                            Text { horizontal-stretch: 1; text: root.backups-text; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; }
+                            Rectangle {
+                                horizontal-stretch: 1; min-width: 40px;
+                                Text { width: parent.width; height: parent.height; text: root.backups-text; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
+                                TipArea { tooltip: root.backups-text; }
+                            }
                             Button { a11y-label: "prefs.advanced.backups"; label: @tr("BACK UP NOW"); tone: Theme.live; tooltip: @tr("Copy the library to the backups folder now"); clicked => { root.act("backup.now"); } }
                             Button { a11y-label: "prefs.advanced.backup-show"; label: @tr("SHOW"); tooltip: @tr("Show the backups folder"); clicked => { root.act("backup.show"); } }
                         }

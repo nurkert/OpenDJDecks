@@ -12,6 +12,7 @@
     "check-links": "node scripts/check-links.mjs",
     "check-translations": "node scripts/check-translations.mjs",
     "check-features": "node scripts/check-features.mjs",
+    "check-labels": "node scripts/check-labels.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
     "visual": "node scripts/visual.mjs",
     "placeholders": "node scripts/make-install-placeholders.mjs",

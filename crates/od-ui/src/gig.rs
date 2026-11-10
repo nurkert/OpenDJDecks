@@ -147,6 +147,23 @@ pub(crate) fn wire(app: &Rc<App>) {
         .global::<crate::Gig>()
         .on_act(handler!(app, |a, what: slint::SharedString| act(&a, &what)));
     refresh(app);
+    demo(app);
+}
+
+/// Documentation screenshots: `OPENDJDECKS_DEMO_PROOF=gig-menu` opens the
+/// GIG menu of the top bar a few seconds after the start.
+fn demo(app: &Rc<App>) {
+    let Some(v) = od_core::env::var("DEMO_PROOF") else {
+        return;
+    };
+    if v.split(',').any(|p| p == "gig-menu") {
+        let weak = Rc::downgrade(app);
+        slint::Timer::single_shot(std::time::Duration::from_secs(6), move || {
+            if let Some(a) = weak.upgrade() {
+                a.ui.global::<crate::Gig>().set_show_menu(true);
+            }
+        });
+    }
 }
 
 #[cfg(test)]

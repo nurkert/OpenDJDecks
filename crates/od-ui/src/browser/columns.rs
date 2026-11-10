@@ -78,6 +78,46 @@ pub(crate) const EXPLORER_COLUMNS: &[&str] = &[
     "artwork", "preview", "title", "bpm", "key", "artist", "time",
 ];
 
+/// Order in which columns stay when the table is narrow: the title always,
+/// then what you browse by. Columns not listed step out first.
+const KEEP_ORDER: &[&str] = &[
+    "title", "bpm", "key", "artist", "time", "artwork", "match", "rating", "genre", "user-tag",
+    "colour", "album", "label", "year", "plays", "comment", "stems", "date-added", "bitrate",
+    "preview",
+];
+
+/// Room a column takes in the table: its default fixed width, or the least
+/// a shared column is useful at (title 120 px, others 60 px). Widths the user
+/// dragged do not count: a drag never makes other columns step out.
+fn room(c: &ColumnView) -> f32 {
+    let fixed = column(&c.id).map(|d| d.width).unwrap_or(0.0);
+    if fixed > 0.0 {
+        fixed
+    } else if c.id == FIXED {
+        120.0
+    } else {
+        60.0
+    }
+}
+
+/// Sets each column's `hide_below`: the table width it needs together with
+/// the columns kept before it. The base is the row's paddings (16 + 24 +
+/// 12), the position and state columns and the 12 px gaps between the cells
+/// (a stepped-out column keeps its gap). 2 px of rounding are forgiven.
+pub(crate) fn with_thresholds(mut views: Vec<ColumnView>) -> Vec<ColumnView> {
+    const GAP: f32 = 12.0;
+    let base = 16.0 + 24.0 + 12.0 + 34.0 + 24.0 + GAP * (views.len() as f32 + 1.0) - 2.0;
+    let rank = |id: &str| KEEP_ORDER.iter().position(|k| *k == id).unwrap_or(KEEP_ORDER.len());
+    let mut order: Vec<usize> = (0..views.len()).collect();
+    order.sort_by_key(|&i| rank(&views[i].id));
+    let mut need = base;
+    for i in order {
+        need += room(&views[i]);
+        views[i].hide_below = if views[i].id == FIXED { 0.0 } else { need };
+    }
+    views
+}
+
 /// The column that cannot be hidden.
 pub(crate) const FIXED: &str = "title";
 
@@ -214,9 +254,11 @@ pub(crate) fn refresh(app: &App) {
                 sort: c.sort.into(),
                 rank,
                 descending,
+                hide_below: 0.0,
             }
         })
         .collect();
+    let views = if kiosk { views } else { with_thresholds(views) };
     let choices: Vec<ColumnChoice> = COLUMNS
         .iter()
         .filter(|c| c.id != FIXED)

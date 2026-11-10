@@ -530,8 +530,8 @@ export component FxPanel inherits Rectangle {
     callback release(int, int, bool);
     background: Theme.ground-band; border-radius: Theme.r-panel;
     // Side by side while both units show one effect; one unit per line
-    // once a unit chains three.
-    property <bool> stack: root.units.length > 1 && (root.units[0].multi || root.units[1].multi);
+    // once a unit chains three, or when the window is too narrow for two.
+    property <bool> stack: root.units.length > 1 && (root.units[0].multi || root.units[1].multi || root.width < 1140px);
     VerticalLayout {
         if !root.stack: HorizontalLayout {
             spacing: 0;

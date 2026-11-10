@@ -85,6 +85,9 @@ export struct ColumnView {
     // 1 = primary sort, 2.. = secondary (⇧-click), 0 = not sorted.
     rank: int,
     descending: bool,
+    // The table is narrower than this: the column steps out (a small
+    // window keeps the columns you browse by); 0 = always shown.
+    hide-below: length,
 }
 
 // An entry of the column menu (header right-click).

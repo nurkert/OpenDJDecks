@@ -131,6 +131,8 @@ export global Gig {
     in property <bool> colorblind;
     // Index into 100, 125, 150 %; -1 = another stored scale.
     in property <int> scale: 0;
+    // Opens the menu (documentation screenshots, `DEMO_PROOF=gig-menu`).
+    in property <bool> show-menu;
     callback act(string);
 }
 
@@ -168,10 +170,14 @@ component GigKey inherits Rectangle {
         mouse-cursor: pointer;
         clicked => { pop.show(); }
     }
+    property <bool> want-menu: Gig.show-menu;
+    changed want-menu => { if (self.want-menu) { pop.show(); } }
     pop := PopupWindow {
-        x: PopupPlace.x(root.absolute-position.x, 0, 240px);
+        // As wide as its widest row of keys (longer in German), never under 240 px.
+        property <length> w: max(240px, pop-body.min-width);
+        x: PopupPlace.x(root.absolute-position.x, 0, self.w);
         y: PopupPlace.y(root.absolute-position.y, root.height + 2px, -pop-body.preferred-height - 2px, pop-body.preferred-height);
-        width: 240px; height: pop-body.preferred-height;
+        width: self.w; height: pop-body.preferred-height;
         close-policy: close-on-click-outside;
         Rectangle {
             background: Theme.plate; border-radius: Theme.r-overlay;
@@ -299,7 +305,7 @@ component ViewMenu inherits Rectangle {
                     background: vi.has-hover ? Theme.plate-raised : transparent;
                     HorizontalLayout {
                         padding-left: Theme.s3; padding-right: Theme.s3; spacing: Theme.s3;
-                        Text { width: 10px; text: root.current == v.id ? "✓" : ""; font-size: Theme.control; color: Theme.attention; vertical-alignment: center; }
+                        Text { width: 12px; text: root.current == v.id ? "✓" : ""; font-size: Theme.control; color: Theme.attention; vertical-alignment: center; }
                         VerticalLayout { alignment: center; ViewIcon { view: v.id; tone: root.current == v.id ? Theme.attention : Theme.bone-2; } }
                         Text {
                             text: v.label; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
@@ -450,7 +456,9 @@ export component TopBar inherits Rectangle {
     in property <length> chrome-inset;
     callback window-drag();
     callback window-zoom();
-    height: 44px;
+    // Both groups side by side, or the live group on a second row.
+    out property <bool> two-rows: !root.kiosk && modes-row.preferred-width + live-row.min-width > root.width;
+    height: root.two-rows ? 88px : 44px;
     // Space between zones, always more than inside them.
     property <length> zone: root.narrow ? Theme.s3 : Theme.s5;
     // Below this width the brand is its rail mark, so live values keep room.
@@ -464,7 +472,8 @@ export component TopBar inherits Rectangle {
         }
         double-clicked => { root.window-zoom(); }
     }
-    if !root.kiosk: Rectangle {
+    Rectangle {
+        visible: !root.kiosk;
         // Test / accessibility hook: the work-mode tab group (no visuals, no
         // input; it only spans the tabs).
         Rectangle {
@@ -474,9 +483,13 @@ export component TopBar inherits Rectangle {
             width: light.x + light.width - prep.x; height: prep.height;
         }
 
-        HorizontalLayout {
+        // The bar is two groups: the modes and what they show, then what
+        // is live. When both do not fit side by side (a small window or a
+        // large interface scale), the live group moves to a second row.
+        modes-row := HorizontalLayout {
+            x: 0; y: 0; height: 44px;
+            width: root.two-rows ? root.width : self.preferred-width;
             padding-left: Theme.s4 + root.chrome-inset;
-            padding-right: Theme.s3;
             spacing: 0px;
             // Brand on the rail.
             Rectangle {
@@ -586,6 +599,17 @@ export component TopBar inherits Rectangle {
                 command: "perform.mixer.panel";
                 clicked => { root.toggle-mixer-panel(); }
             }
+            // The first row ends here when the bar wraps.
+            Rectangle { horizontal-stretch: 1; }
+        }
+        live-row := HorizontalLayout {
+            // On its own row it starts where the first row does.
+            x: root.two-rows ? Theme.s4 - root.zone : modes-row.width;
+            y: root.two-rows ? 44px : 0px;
+            height: 44px;
+            width: root.width - self.x;
+            padding-right: Theme.s3;
+            spacing: 0px;
             // ── Third zone: what is live now ──
             Rectangle { width: root.zone; }
             Rectangle {

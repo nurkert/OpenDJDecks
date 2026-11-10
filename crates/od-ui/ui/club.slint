@@ -68,15 +68,20 @@ component Key inherits Rectangle {
     in property <length> key-h: 30px;
     callback clicked();
     callback held(bool);
-    min-width: max(44px, t.preferred-width + 20px);
+    min-width: max(44px, probe.preferred-width + 20px);
     height: root.key-h;
     background: Theme.face(true, ta.pressed, ta.has-hover, false, root.on, root.tone);
     border-radius: Theme.r-control;
+    // A legend wider than its key: one rank smaller and tighter, and only
+    // then elided (the tooltip names the key).
+    probe := Text { visible: false; text: root.label; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px; }
+    property <bool> squeezed: probe.preferred-width + 8px > root.width;
     t := Text {
+        x: 4px; width: parent.width - 8px;
         text: root.label;
-        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+        font-family: Theme.family; font-size: root.squeezed ? Theme.label : Theme.control; font-weight: Theme.weight-semi; letter-spacing: root.squeezed ? 0.4px : 1.2px;
         color: Theme.ink(true, ta.pressed, ta.has-hover, false, root.on);
-        horizontal-alignment: center; vertical-alignment: center;
+        horizontal-alignment: center; vertical-alignment: center; overflow: elide;
     }
     ta := TipArea {
         tooltip: root.tooltip; mouse-cursor: pointer;
@@ -247,9 +252,11 @@ export component ClubPlayer inherits Rectangle {
     // Column widths (from the window, never from the height): loop / jump
     // and CUE / PLAY left, range / MT and the tempo fader right; the centre
     // (hot cues, search and the jog) takes the rest.
-    property <length> left-w: clamp(PopupPlace.window-width * 0.115, 140px, 224px);
-    property <length> right-w: clamp(PopupPlace.window-width * 0.08, 100px, 160px);
+    property <length> left-w: clamp(PopupPlace.window-width * 0.115, PopupPlace.window-width < 1200px ? 112px : 140px, 224px);
+    property <length> right-w: clamp(PopupPlace.window-width * 0.08, PopupPlace.window-width < 1200px ? 88px : 100px, 160px);
     property <length> readout: root.narrow ? Theme.heading : Theme.hero;
+    // Too narrow for the display on one line: the read-outs move below it.
+    property <bool> tight: PopupPlace.window-width < 1200px;
     accessible-role: groupbox;
     accessible-label: "deck\{root.n}.club";
     background: Theme.ground-band; border-radius: Theme.r-panel;
@@ -271,13 +278,13 @@ export component ClubPlayer inherits Rectangle {
                     if root.deck.master: Caps { text: "MASTER"; color: Theme.attention; }
                 }
             }
-            HeaderRule { }
-            DisplayValue { caption: DeckTime.label(); value: DeckTime.main(root.deck); value-label: "deck\{root.n}.club.time"; template: "-00:00.0"; font-size: root.readout; align: right; }
-            HeaderRule { }
-            DisplayValue { caption: "BPM"; value: root.deck.bpm; value-label: "deck\{root.n}.club.bpm"; template: "000.00"; font-size: root.readout; align: right; }
-            DisplayValue { caption: @tr("TEMPO"); value: root.deck.tempo; value-label: "deck\{root.n}.club.tempo-value"; template: "+00.0%"; font-size: Theme.heading; align: right; }
-            HeaderRule { }
-            DisplayValue { caption: @tr("KEY"); value: root.deck.key; value-label: "deck\{root.n}.club.key"; template: "00A"; font-size: Theme.heading; align: right; }
+            if !root.tight: HeaderRule { }
+            if !root.tight: DisplayValue { caption: DeckTime.label(); value: DeckTime.main(root.deck); value-label: "deck\{root.n}.club.time"; template: "-00:00.0"; font-size: root.readout; align: right; }
+            if !root.tight: HeaderRule { }
+            if !root.tight: DisplayValue { caption: "BPM"; value: root.deck.bpm; value-label: "deck\{root.n}.club.bpm"; template: "000.00"; font-size: root.readout; align: right; }
+            if !root.tight: DisplayValue { caption: @tr("TEMPO"); value: root.deck.tempo; value-label: "deck\{root.n}.club.tempo-value"; template: "+00.0%"; font-size: Theme.heading; align: right; }
+            if !root.tight: HeaderRule { }
+            if !root.tight: DisplayValue { caption: @tr("KEY"); value: root.deck.key; value-label: "deck\{root.n}.club.key"; template: "00A"; font-size: Theme.heading; align: right; }
             VerticalLayout {
                 alignment: center;
                 Key {
@@ -287,6 +294,16 @@ export component ClubPlayer inherits Rectangle {
                     clicked => { Club.browse(root.n); }
                 }
             }
+        }
+        // Tight (a small window): the read-outs on a line of their own.
+        if root.tight: FlexboxLayout {
+            spacing-horizontal: Theme.s3; spacing-vertical: 0px; alignment: start;
+            DisplayValue { caption: DeckTime.label(); value: DeckTime.main(root.deck); value-label: "deck\{root.n}.club.time"; template: "-00:00.0"; font-size: Theme.body; height: 40px; align: right; }
+            HeaderRule { height: 40px; }
+            DisplayValue { caption: "BPM"; value: root.deck.bpm; value-label: "deck\{root.n}.club.bpm"; template: "000.00"; font-size: Theme.body; height: 40px; align: right; }
+            DisplayValue { caption: @tr("TEMPO"); value: root.deck.tempo; value-label: "deck\{root.n}.club.tempo-value"; template: "+00.0%"; font-size: Theme.body; height: 40px; align: right; }
+            HeaderRule { height: 40px; }
+            DisplayValue { caption: @tr("KEY"); value: root.deck.key; value-label: "deck\{root.n}.club.key"; template: "00A"; font-size: Theme.body; height: 40px; align: right; }
         }
         // Zoomed waveform, the beat of the bar, the overview with cue marks.
         WaveLane {
@@ -310,7 +327,8 @@ export component ClubPlayer inherits Rectangle {
         }
         Rectangle {
             accessible-role: slider; accessible-label: "deck\{root.n}.club.overview"; accessible-value: root.deck.progress;
-            height: root.short ? 24px : 30px;
+            // Short: still room for the 26 px LOAD SELECTED key.
+            height: root.short ? 26px : 30px;
             clip: true;
             background: Theme.ground-band;
             Image { width: parent.width; height: parent.height; source: root.deck.overview; image-fit: fill; }
@@ -417,28 +435,28 @@ export component ClubPlayer inherits Rectangle {
                         accessible-label: "deck\{root.n}.club.search-back"; accessible-role: button;
                         x: 0; y: 0; width: parent.kw; height: parent.kh;
                         inner-right: true; cy: parent.height / 2; arc-r: parent.arc; gap: root.kgap;
-                        label: "◀◀"; tooltip: @tr("Search back while held");
+                        label: root.tight ? "«" : "◀◀"; tooltip: @tr("Search back while held");
                         held(down) => { Club.search(root.n, down ? -4 : 0); }
                     }
                     ConcaveKey {
                         accessible-label: "deck\{root.n}.club.call-prev"; accessible-role: button;
                         x: 0; y: parent.kh + root.kgap; width: parent.kw; height: parent.kh;
                         inner-right: true; cy: parent.height / 2 - self.y; arc-r: parent.arc; gap: root.kgap;
-                        label: "◀ CALL"; tooltip: @tr("Previous memory cue");
+                        label: root.tight ? "◀" : "◀ CALL"; tooltip: @tr("Previous memory cue");
                         clicked => { Club.action(root.n, "memory.prev"); }
                     }
                     ConcaveKey {
                         accessible-label: "deck\{root.n}.club.search-fwd"; accessible-role: button;
                         x: parent.rx; y: 0; width: parent.kw; height: parent.kh;
                         inner-right: false; cy: parent.height / 2; arc-r: parent.arc; gap: root.kgap;
-                        label: "▶▶"; tooltip: @tr("Search forward while held");
+                        label: root.tight ? "»" : "▶▶"; tooltip: @tr("Search forward while held");
                         held(down) => { Club.search(root.n, down ? 4 : 0); }
                     }
                     ConcaveKey {
                         accessible-label: "deck\{root.n}.club.call-next"; accessible-role: button;
                         x: parent.rx; y: parent.kh + root.kgap; width: parent.kw; height: parent.kh;
                         inner-right: false; cy: parent.height / 2 - self.y; arc-r: parent.arc; gap: root.kgap;
-                        label: "CALL ▶"; tooltip: @tr("Next memory cue");
+                        label: root.tight ? "▶" : "CALL ▶"; tooltip: @tr("Next memory cue");
                         clicked => { Club.action(root.n, "memory.next"); }
                     }
                 }
@@ -518,32 +536,42 @@ export component ClubPlayer inherits Rectangle {
 // The guided checklist over the decks.
 export component ClubSteps inherits Rectangle {
     accessible-role: list; accessible-label: "app.club.steps";
-    height: Club.show-steps ? 30px : 0px;
+    // One 30 px line; a narrow window wraps the steps onto more lines.
+    height: Club.show-steps ? max(30px, lay.preferred-height) : 0px;
     visible: Club.show-steps;
     background: Theme.ground-band; border-radius: Theme.r-panel;
-    HorizontalLayout {
+    lay := HorizontalLayout {
         padding-left: Theme.s3; padding-right: Theme.s2; spacing: Theme.s4;
-        Caps { text: @tr("CLUB MODE"); color: Theme.attention; vertical-alignment: center; }
-        for s[i] in Club.steps: HorizontalLayout {
-            spacing: Theme.s1;
-            Rectangle {
-                width: 12px; height: 12px; y: (parent.height - 12px) / 2;
-                border-width: 1px; border-color: s.done ? Theme.live : Theme.rule-strong;
-                background: s.done ? Theme.live.with-alpha(0.7) : transparent;
-            }
-            Text {
-                text: (i + 1) + " " + s.text;
-                font-family: Theme.family; font-size: Theme.label;
-                color: s.done ? Theme.bone-3 : Theme.bone; vertical-alignment: center;
+        VerticalLayout { alignment: start; Caps { height: 30px; text: @tr("CLUB MODE"); color: Theme.attention; vertical-alignment: center; } }
+        FlexboxLayout {
+            horizontal-stretch: 1;
+            spacing-horizontal: Theme.s4; spacing-vertical: 0px;
+            alignment: start;
+            for s[i] in Club.steps: HorizontalLayout {
+                height: 30px;
+                spacing: Theme.s1;
+                Rectangle {
+                    width: 12px; height: 12px; y: (parent.height - 12px) / 2;
+                    border-width: 1px; border-color: s.done ? Theme.live : Theme.rule-strong;
+                    background: s.done ? Theme.live.with-alpha(0.7) : transparent;
+                }
+                Text {
+                    text: (i + 1) + " " + s.text;
+                    font-family: Theme.family; font-size: Theme.label;
+                    color: s.done ? Theme.bone-3 : Theme.bone; vertical-alignment: center;
+                }
             }
         }
-        Rectangle { horizontal-stretch: 1; }
+        // The key centred on the first 30 px line.
         VerticalLayout {
-            alignment: center;
-            PlateButton {
-                accessible-label: "app.club.steps-hide"; accessible-role: button;
-                compact: true; glyph: "close"; width: 30px; tooltip: @tr("Hide the checklist");
-                clicked => { Club.show-steps = false; }
+            alignment: start;
+            VerticalLayout {
+                height: 30px; alignment: center;
+                PlateButton {
+                    accessible-label: "app.club.steps-hide"; accessible-role: button;
+                    compact: true; glyph: "close"; width: 30px; tooltip: @tr("Hide the checklist");
+                    clicked => { Club.show-steps = false; }
+                }
             }
         }
     }

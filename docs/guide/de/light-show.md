@@ -90,7 +90,7 @@ Verlust und Wiederkehr sind mit einer simulierten Verbindung getestet. Mit einem
 
 - **AUTO** folgt Phrasen, Beat und Energie. Intros atmen, Build-ups jagen schneller und enden im Strobe, Choruses schwenken die Moving Heads im Takt, Breakdowns beruhigen sich, Outros blenden aus. Im Mix verschmelzen die Looks beider Tracks je nach Lautstärke, und Phrasenwechsel blenden über einen Takt.
 - **EASY** ist ein **LOOK** für das ganze Rig, im Takt, mit Farbfeldern, Master-Dimmer, **BLACKOUT** und **FLASH**, **STROBE** und **NEBEL**, solange gehalten. **TAP** setzt das Tempo, wenn kein Deck läuft.
-- **PRO** setzt pro Gruppe ein **PROGRAMM**, eine **FARBE** und einen Attribut-Effekt (Sinus, Säge, Rechteck, Zufall auf Dimmer, Pan, Tilt; Phasenversatz; im Takt), einen XY-Programmer für Pan und Tilt, und einen **CUE-STACK** mit **GO**, **ZURÜCK** und **SPEICHERN** mit Fades in Beats. **TRACK-CUES** speichert einen Cue an einem Takt des Tracks, den du hörst, und ruft ihn ab, wann immer er läuft.
+- **PRO** setzt pro Gruppe ein Programm (**MUSIK** folgt der Musik, oder einer der Looks), eine Farbe und einen Attribut-Effekt (Sinus, Säge, Rechteck, Zufall auf Dimmer, Pan, Tilt; Phasenversatz; im Takt), einen XY-Programmer für Pan und Tilt, und einen **CUE-STACK** mit **GO**, **ZURÜCK** und **SPEICHERN** mit Fades in Beats. **TRACK-CUES** speichert einen Cue an einem Takt des Tracks, den du hörst, und ruft ihn ab, wann immer er läuft.
 
 Am Deck legt der Pad-Modus **LIGHTING** dir deine eigenen Pads der aktuellen Seite auf die Pads, oder die Looks A bis F, Strobe (G) und Flash (H), wo ein Pad leer ist. Jedes Licht-Bedienelement lässt sich auch auf MIDI legen.
 

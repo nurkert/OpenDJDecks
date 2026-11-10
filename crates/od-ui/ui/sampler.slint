@@ -299,7 +299,7 @@ export component SamplerPanel inherits Rectangle {
             HorizontalLayout {
                 accessible-role: tab-list; accessible-label: "sampler.bank"; accessible-value: root.s.bank + 1;
                 spacing: Theme.key-gap;
-                Caps { text: @tr("BANK"); font-size: Theme.label; vertical-alignment: center; width: 30px; }
+                Caps { text: @tr("BANK"); font-size: Theme.label; vertical-alignment: center; min-width: 30px; }
                 for b in 4: Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.s.bank == b;
                     accessible-label: "sampler.bank\{b + 1}";
@@ -374,6 +374,8 @@ export component SamplerPanel inherits Rectangle {
                     border-width: 1px;
                     border-color: self.playing ? Theme.bone : on ? Theme.w546 : Theme.rule;
                     if Math.mod(k, 4) == 0: Text {
+                        // Only where the step is wide enough for its number.
+                        visible: parent.width >= 14px;
                         x: 4px; text: Math.floor(k / 4) + 1;
                         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
                         color: Theme.bone-3; vertical-alignment: center;

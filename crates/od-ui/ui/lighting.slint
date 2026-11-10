@@ -395,8 +395,10 @@ component Stage inherits Rectangle {
         }
     }
     if Lighting.fixtures.length == 0: Text {
+        // Wraps inside a small stage (the Perform strip).
+        x: Theme.s2; width: parent.width - 2 * Theme.s2;
         text: @tr("No fixtures patched yet. Add your lights on the left.");
-        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
+        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
         horizontal-alignment: center; vertical-alignment: center;
     }
 }
@@ -412,6 +414,8 @@ component LinkLine inherits VLine {
 component Body inherits Text {
     font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
     wrap: word-wrap;
+    // Wraps to the width its column gives it and never asks for more.
+    min-width: 0px; preferred-width: 0px;
 }
 
 // Setup is locked: the PIN opens it again.
@@ -647,9 +651,13 @@ component ConnectGuide inherits VerticalLayout {
 
 component OutputTab inherits Flickable {
     property <string> output-kind: "artnet";
-    content-height: col.preferred-height;
+    // Never shorter than the column's minimum (wrapped notes in nested rows
+    // can ask for more than its preferred height), with room after the last
+    // note so the end of the page scrolls clear of the panel's edge.
+    content-height: max(col.min-height, col.preferred-height) + Theme.s5;
     col := VerticalLayout {
         width: root.width;
+        alignment: start;
         spacing: Theme.s2;
         if Lighting.guide-step > 0: ConnectGuide { }
         if Lighting.guide-step == 0: VerticalLayout {
@@ -1346,7 +1354,8 @@ component OrderChain inherits VerticalLayout {
     accessible-label: "lighting.order"; accessible-role: text; accessible-value: Lighting.layer;
     spacing: Theme.key-gap;
     for row in [[{ id: "blackout", label: @tr("BLACKOUT") }, { id: "momentary", label: @tr("FLASH / STROBE KEY") }, { id: "flash-pad", label: @tr("FLASH PAD") }],
-                [{ id: "latched", label: @tr("LATCHED PAD") }, { id: "hold", label: @tr("HOLD") }, { id: "base", label: @tr("AUTO") }]]: HorizontalLayout {
+                [{ id: "latched", label: @tr("LATCHED PAD") }, { id: "hold", label: @tr("HOLD") }, { id: "base", label: @tr("AUTO") }]]: FlexboxLayout {
+        // A row that does not fit (German, a narrow panel) wraps.
         spacing: Theme.s1;
         for item[i] in row: HorizontalLayout {
             spacing: Theme.s1;
@@ -1357,7 +1366,6 @@ component OrderChain inherits VerticalLayout {
             }
             if item.id != "base": Caps { text: "›"; color: Theme.bone-3; }
         }
-        Rectangle { horizontal-stretch: 1; }
     }
 }
 
@@ -1644,8 +1652,31 @@ export component LightingView inherits Rectangle {
     in property <bool> detachable: true;
     accessible-label: "lighting.view"; accessible-role: groupbox;
     background: Theme.ground-band; border-radius: Theme.r-panel;
+    // Too narrow for setup, centre and show side by side (a small window or
+    // a large interface scale): one side column that shows SETUP or SHOW.
+    // Follows the width through a plain property, so it does not feed back
+    // into the layout.
+    property <bool> one-side;
+    init => { self.one-side = self.width < 1240px; }
+    changed width => { self.one-side = self.width < 1240px; }
+    property <string> side: "show";
     HorizontalLayout {
-        SetupPanel { width: 340px; }
+        if !root.one-side: SetupPanel { width: 340px; }
+        if root.one-side: VerticalLayout {
+            width: 320px;
+            HorizontalLayout {
+                padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.s3;
+                spacing: Theme.s1;
+                for t in [{ id: "setup", label: @tr("SETUP") }, { id: "show", label: @tr("SHOW") }]: PlateButton {
+                    accessible-label: "lighting.side." + t.id; accessible-role: tab;
+                    compact: true; horizontal-stretch: 1;
+                    label: t.label; selected: root.side == t.id;
+                    clicked => { root.side = t.id; }
+                }
+            }
+            if root.side == "setup": SetupPanel { vertical-stretch: 1; }
+            if root.side == "show": ShowPanel { vertical-stretch: 1; }
+        }
         VLine { }
         VerticalLayout {
             horizontal-stretch: 1;
@@ -1669,16 +1700,24 @@ export component LightingView inherits Rectangle {
                 }
                 Caps {
                     accessible-label: "lighting.status"; accessible-role: text; accessible-value: self.text;
+                    overflow: elide;
                     text: Lighting.layer-text; color: Lighting.layer == "blackout" ? Theme.fault : Theme.attention; vertical-alignment: center;
                 }
             }
             if Lighting.centre == "stage": Stage { vertical-stretch: 1; accessible-label: "lighting.stage"; accessible-role: image; }
             if Lighting.centre == "pads": PadsCentre { vertical-stretch: 1; }
-            if Lighting.centre == "patch": PatchTable { vertical-stretch: 1; }
+            // The patch table keeps its columns: a narrow centre scrolls it
+            // sideways (the wheel with ⇧, or the trackpad).
+            if Lighting.centre == "patch": Flickable {
+                vertical-stretch: 1;
+                mouse-drag-pan-enabled: false;
+                content-width: max(self.width, patch.min-width);
+                patch := PatchTable { width: parent.content-width; height: parent.height; }
+            }
             if Lighting.centre == "channels": ChannelGrid { vertical-stretch: 1; }
         }
-        VLine { }
-        ShowPanel { width: 340px; }
+        if !root.one-side: VLine { }
+        if !root.one-side: ShowPanel { width: 340px; }
     }
 }
 
