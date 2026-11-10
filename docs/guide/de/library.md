@@ -2,7 +2,7 @@
 title: Bibliothek, Playlists und Smart-Listen
 description: Tracks finden, sortieren und taggen. Playlists, Smart-Listen, Tags, Auto-Sortierung, die MATCH-Spalte, passende Tracks und der Explorer.
 keywords: [bibliothek, sammlung, playlist, playlists, smart liste, smart playlist, ordner, suche, suchen, filter, tag, tags, bewertung, sterne, farbe, kommentar, sortieren, auto sortierung, match, match spalte, passend, duplikate, doppelt, verschoben, fehlende dateien, explorer, verlauf, spalten, rückgängig, backup]
-features: [browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck]
+features: [browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck, browser-calm-table]
 ---
 
 Der Browser ist in Prepare und Perform derselbe. Links liegen deine Quellen und Listen, in der Mitte die Tracks, rechts eine Leiste mit Panels.
@@ -82,6 +82,12 @@ Sammle beim Stöbern Kandidaten: mit `⌥⌘T`, über das Zeilenmenü oder durch
 Klicke eine Spaltenüberschrift zum Sortieren, ein zweiter Klick kehrt um. `⇧`-Klick fügt eine zweite und dritte Sortierspalte hinzu. Ziehe eine Überschrift auf eine andere Spalte, um sie zu verschieben, oder eine Spaltenkante, um die Breite zu ändern. Rechtsklick auf die Kopfzeile oder der Spaltenknopf am rechten Ende wählen die sichtbaren Spalten; **Standardspalten** setzt zurück.
 
 Zeilen zeigen außerdem, wo ein Track geladen ist (eine Decknummer), einen Haken, sobald er in dieser Session insgesamt 30 Sekunden lief, und das Cover in der Spalte **ART**.
+
+### Die Liste lesen
+
+Die Liste ist so gezeichnet, dass der Titel führt: Titel sind heller und kräftiger, Artist und Zahlen kommen danach, die übrigen Spalten treten zurück. Zahlen (**BPM**, **TONART**, **ZEIT**, **JAHR**, **WIEDERGABEN** und die übrigen) stehen rechtsbündig mit gleich breiten Ziffern, so lesen sie sich von oben nach unten wie ein Register. Die ausgewählte Zeile ist heller grau hinterlegt, mit einem kurzen gelben Strich am linken Rand. Ein Track, der auf einem Deck liegt, trägt Linie und Nummer dieses Decks in der Deckfarbe (blau für 1, orange für 2, grün für 3, violett für 4).
+
+Der Trenner zwischen den Listen links und der Trackliste hält dort an, wo die Listen noch passen: die drei **+**-Tasten, ein Name und seine Anzahl. Die Listen zeichnen nie über die Tracks.
 
 ## Zeilenmenü
 

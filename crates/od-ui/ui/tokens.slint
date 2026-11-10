@@ -17,6 +17,9 @@ export global Theme {
     // Phrase types written on the phrase bars (Preferences > View; off:
     // colour blocks only).
     in-out property <bool> phrase-names: true;
+    // Calm waveform (Preferences > View): the playhead is a crisp 1 px line
+    // with dark rims; Rust draws faint beat lines and softer colours.
+    in-out property <bool> calm-wave: false;
 
     // Appearance (Preferences > View, the sun / moon in the top bar):
     // "dark", "light" or "system". `system` follows the OS through Slint's
@@ -72,8 +75,26 @@ export global Theme {
     out property <length> focus-width: 2px;
     out property <length> focus-offset: 2px;
 
-    // State changes slide with one damped overshoot.
-    out property <easing> spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+    // Motion (DESIGN.md, Motion): four named timings and one curve. Every
+    // `animate` in the interface uses one of them; with reduced motion
+    // (`motion` off) they are all 0 ms. Audio-linked visuals (meters,
+    // waveforms, playheads, the phase meter) never animate: they show the
+    // value as it is.
+    // Press: hover and press fills of keys, plates and tabs.
+    out property <duration> t-press: root.motion ? 90ms : 0ms;
+    // Toggle: a control changes state (switch thumb, disclosure arrow).
+    out property <duration> t-toggle: root.motion ? 140ms : 0ms;
+    // Panel: a part opens, a rail tick grows, a progress line fills.
+    out property <duration> t-panel: root.motion ? 180ms : 0ms;
+    // Mode change: the current work mode moves, a stick finishes syncing.
+    out property <duration> t-mode: root.motion ? 240ms : 0ms;
+    // The one curve: a quick start that settles without overshoot.
+    out property <easing> ease: cubic-bezier(0.2, 0, 0, 1);
+    // Periods of things that repeat while they wait (not transitions): the
+    // armed pulse and the loading sweep; still when motion is off.
+    out property <duration> t-pulse: 900ms;
+    // Hover delay before a tooltip opens.
+    out property <duration> t-tip: 500ms;
 
     // Line weights.
     out property <length> hair: high-contrast ? 2px : 1px;

@@ -135,10 +135,10 @@ band = "wave"
 place = "far left, 14 pt column"
 order = "column"
 elements = [
-  "wave.collapse",
   "wave.zoom-in",
-  "wave.zoom-reset",
   "wave.zoom-out",
+  "wave.zoom-reset",
+  "wave.collapse",
   "wave.expand",
 ]
 note = "UX §1.3"
@@ -273,12 +273,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck1.platter"
 band = "deck-row"
 place = "left deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck1.platter",
   "deck1.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck1.sync"
@@ -433,12 +433,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck2.platter"
 band = "deck-row"
 place = "right deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck2.platter",
   "deck2.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck2.sync"
@@ -767,10 +767,10 @@ band = "wave"
 place = "far left, 14 pt column"
 order = "column"
 elements = [
-  "wave.collapse",
   "wave.zoom-in",
-  "wave.zoom-reset",
   "wave.zoom-out",
+  "wave.zoom-reset",
+  "wave.collapse",
   "wave.expand",
 ]
 note = "UX §1.3"
@@ -1229,10 +1229,10 @@ band = "wave"
 place = "far left, 14 pt column"
 order = "column"
 elements = [
-  "wave.collapse",
   "wave.zoom-in",
-  "wave.zoom-reset",
   "wave.zoom-out",
+  "wave.zoom-reset",
+  "wave.collapse",
   "wave.expand",
 ]
 note = "UX §1.3"
@@ -1369,12 +1369,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck1.platter"
 band = "deck-row"
 place = "left deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck1.platter",
   "deck1.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck1.sync"
@@ -1497,12 +1497,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck3.platter"
 band = "deck-row"
 place = "left deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck3.platter",
   "deck3.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck3.sync"
@@ -1689,12 +1689,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck2.platter"
 band = "deck-row"
 place = "right deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck2.platter",
   "deck2.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck2.sync"
@@ -1817,12 +1817,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck4.platter"
 band = "deck-row"
 place = "right deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck4.platter",
   "deck4.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck4.sync"
@@ -2312,12 +2312,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck1.platter"
 band = "deck-row"
 place = "left deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck1.platter",
   "deck1.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck1.sync"
@@ -2472,12 +2472,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck2.platter"
 band = "deck-row"
 place = "right deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck2.platter",
   "deck2.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck2.sync"
@@ -2924,12 +2924,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck1.platter"
 band = "deck-row"
 place = "left deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck1.platter",
   "deck1.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck1.sync"
@@ -3052,12 +3052,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck3.platter"
 band = "deck-row"
 place = "left deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck3.platter",
   "deck3.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck3.sync"
@@ -3244,12 +3244,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck2.platter"
 band = "deck-row"
 place = "right deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck2.platter",
   "deck2.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck2.sync"
@@ -3372,12 +3372,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck4.platter"
 band = "deck-row"
 place = "right deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck4.platter",
   "deck4.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck4.sync"
@@ -3970,10 +3970,10 @@ band = "wave"
 place = "far left, 14 pt column"
 order = "column"
 elements = [
-  "wave.collapse",
   "wave.zoom-in",
-  "wave.zoom-reset",
   "wave.zoom-out",
+  "wave.zoom-reset",
+  "wave.collapse",
   "wave.expand",
 ]
 note = "UX §1.3"
@@ -4108,12 +4108,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck1.platter"
 band = "deck-row"
 place = "left deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck1.platter",
   "deck1.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck1.sync"
@@ -4236,12 +4236,12 @@ note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
 id = "deck2.platter"
 band = "deck-row"
 place = "right deck control area, before the sync column"
-order = "column"
+order = "any"
 elements = [
   "deck2.platter",
   "deck2.pitch",
 ]
-note = "Platter shows BPM large and pitch % with range"
+note = "Platter shows BPM large and pitch % with range; the platter is centred on the deck's axis while the tempo fader spans the rows, so their tops differ"
 
 [[view.region]]
 id = "deck2.sync"

@@ -2,16 +2,16 @@
 title: Der Mixer
 description: Trim, EQ, Channel FX, Fader, Crossfader, Kopfhörer und Master und ihre Optionen.
 keywords: [mixer, eq, kill, bass swap, basswechsel, tauschen, clip, übersteuerung, trim, gain, fader, kanalfader, crossfader, kopfhörer, phones, cue, master, pegel, limiter, anzeige, vu, booth, mikrofon, mic, talkover, auto fader, stem taste, auto gain]
-features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-eq-values, mixer-clip-indicator]
+features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
 ---
 
 Der Mixer steht zwischen den Decks. Drücke **MIXER** in der oberen Leiste (`⌥⌘M`), um ihn auszublenden, wenn dein Controller das übernimmt; die Decks treffen sich dann in der Mitte.
 
 ## Ein Kanal
 
-Von oben nach unten: die Kanalnummer mit ihrer **CLIP**-Lampe, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (der Channel-FX-Regler), **STEM** und **CUE** nebeneinander und der Kanalfader mit seiner Anzeige. Zieh einen Regler nach oben oder unten, um ihn zu drehen; Doppelklick (oder doppeltes Tippen) setzt ihn auf die Mitte zurück.
+Von oben nach unten: die Kanalnummer mit ihrer **CLIP**-Lampe, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (der Channel-FX-Regler), **STEM** und **CUE** nebeneinander und der Kanalfader mit seiner Anzeige. Alle Regler und der Fader stehen auf der Mittellinie des Kanals, und der Name jedes Reglers steht direkt darunter. Zieh einen Regler nach oben oder unten, um ihn zu drehen; Doppelklick (oder doppeltes Tippen) setzt ihn auf die Mitte zurück.
 
-Unter jedem Regler wird sein Name zu seinem Wert, sobald du ihn drehst: TRIM und EQ in dB (**AUS**, wenn ein Isolator-Band ganz heruntergedreht ist), CH FX als Seite und Stärke des Filters (**LP40** ist ein Tiefpass bei 40 %, **HP25** ein Hochpass bei 25 %), andere Channel FX als Prozent mit Vorzeichen.
+Während du einen Regler drehst, zeigt der Name darunter seinen Wert, und beim Loslassen wieder den Namen: TRIM und EQ in dB (**AUS**, wenn ein Isolator-Band ganz heruntergedreht ist), CH FX als Seite und Stärke des Filters (**LP40** ist ein Tiefpass bei 40 %, **HP25** ein Hochpass bei 25 %), andere Channel FX als Prozent mit Vorzeichen.
 
 - **TRIM** stellt den Kanalpegel ein. **Auto Gain** unter **Einstellungen › Controller › Mixer** gleicht Tracks vorher nach ihrer analysierten Lautheit an. Jeder Track lässt sich in 0,5-dB-Schritten im [GRID-Panel](beatgrid.md#ein-grid-korrigieren-waehrend-der-track-laeuft) korrigieren.
 - Die **EQ**-Regler sind standardmäßig ein Isolator. **Einstellungen › Controller › Mixer › EQ** wechselt zwischen **ISOLATOR** und **KLASSISCHER EQ**.
@@ -19,11 +19,17 @@ Unter jedem Regler wird sein Name zu seinem Wert, sobald du ihn drehst: TRIM und
 - **STEM** macht aus HI, MID und LOW des Kanals Regler für die Vocals, die Instrumente und die Drums dieses Tracks. Die Mitte ist voller Pegel; der normale EQ bleibt, wie du ihn gelassen hast. Siehe [Stems](stems.md).
 - **CLIP** leuchtet rot, sobald der Kanal vor dem Fader (nach Trim und EQ) über Vollaussteuerung gegangen ist, und bleibt an, damit du es auch siehst, wenn du gerade woanders hingeschaut hast. Dreh den Trim herunter und klick auf die Lampe, um sie zu löschen; der Klick löscht alle Übersteuerungsanzeigen, auch die des Masters.
 
+## Regler, Fader und Pegel
+
+Jeder Drehregler zeichnet seinen Wert als Bogen auf seinem Ring: von der kleinen Marke oben bei **TRIM**, den EQ-Reglern und **CH FX**, die von der Mitte aus in beide Richtungen drehen, und vom Anfang bei **MIX** und **LEVEL**. Während du einen Regler ziehst, steht sein Wert darüber und in der Beschriftung darunter (`−6.0`, `LP35`). Die Faderkappen haben eine Mittellinie zum Ablesen.
+
+Die Kanalpegel und der **MASTER**-Pegel in der oberen Leiste halten ihre Spitze: Ein kurzer Strich bleibt etwa anderthalb Sekunden am höchsten Pegel der letzten Zeit und fällt dann zurück. Nahe oben wird er gelb, beim Übersteuern rot. Die Pegel werden nie geglättet: Sie zeigen den Klang so, wie er ist.
+
 ## Basswechsel
 
 ![Der Mixer mit gekilltem LOW auf einem Deck und einem LOW-Tausch, der auf den nächsten Takt wartet](../img/mixer-bass-swap.png)
 
-Die Taste **K** (Kill) neben HI, MID und LOW nimmt dieses Band heraus, solange sie leuchtet. Der Regler bleibt, wo er ist; lässt du den Kill los, kommt das Band mit dem Wert des Reglers zurück. Mit dem Isolator-EQ ist ein gekilltes Band stumm, mit dem klassischen EQ steht es auf der tiefsten Stellung des Reglers (−26 dB). Die Beschriftung unter dem Regler zeigt **KILL**, solange er an ist.
+Die Namen **HI**, **MID** und **LOW** unter den EQ-Reglern sind Kill-Tasten: Tippe darauf, um das Band herauszunehmen (die Taste wird gelb und zeigt **KILL**), tippe erneut, um es zurückzuholen. Der Regler bleibt, wo er ist; lässt du den Kill los, kommt das Band mit dem Wert des Reglers zurück. Mit dem Isolator-EQ ist ein gekilltes Band stumm, mit dem klassischen EQ steht es auf der tiefsten Stellung des Reglers (−26 dB).
 
 Die Tauschreihe unter den Kanälen (mit zwei gegenläufigen Pfeilen markiert) tauscht mit einem Tippen ein Band zwischen den zwei Decks im Mix:
 

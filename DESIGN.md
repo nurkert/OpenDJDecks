@@ -215,7 +215,7 @@ A charcoal continuum with bone ink and seven narrow spectral lines; each wavelen
 
 **The Fixed Wavelength Rule.** Each wavelength keeps its role across the product: deck 1 = 486, deck 2 = 615, deck 3 = 546, deck 4 = 405; live = 546, attention = 589, fault = 656. Never introduce an eighth hue or a tint between lines.
 
-**The Doubled Sodium Rule.** A doubled sodium line means "this is where now is" or "this needs you": playheads and preview cursors, a track loaded on a deck, changes from players awaiting review. A master deck is its own deck line doubled. Do not double anything else.
+**The Doubled Sodium Rule.** A doubled sodium line means "this is where now is" or "this needs you": playheads and preview cursors, changes from players awaiting review. A master deck is its own deck line doubled. Do not double anything else.
 
 ## Typography
 
@@ -274,12 +274,17 @@ Controls have a 4px radius, panels 8px, dialogs and menus 10px. The platter and 
 
 Borders are the exception: focus, the on-state of a key that sits on a coloured area, and hollow empty slots such as an unset hot cue.
 
+### Named Rules
+**The Concave Neighbour Rule.** A round element (the jog, the platter) gets concave neighbours. A key beside it has an inner edge that is an arc concentric with the ring, one key gap (4 px) from it all the way round; above and below the arc it fills its corner up to half a key gap short of the centre line, so no dead background is left between keys and ring. Outer edges stay straight with the control radius, the legend sits toward the outer edge and never touches the curve, the fill follows the state language, and the key takes the pointer only where it is drawn (never over the ring), at least over the rectangle it replaced. Built from one component (`ConcaveKey`).
+
+**The Centred Group Rule.** Groups centre instead of stretching. When a deck has spare height, its parts grow a little up to a limit (the platter to 300 px, its key block with it, the transport rows to 1.6 times their base) and the room left over goes evenly above and below the group, never into the gaps between its keys. The platter, its key block and SYNC / CUE / PLAY share one horizontal axis, and the two decks mirror each other.
+
 ## Components
 
 ### Emission Lines (the primitive)
 - **Forms:** solid (full height); dashed (4px dash, 7px period); half (lower half only); struck (line at 45% alpha crossed by a 1px deep-red tick extending 4px each side); double (two lines 3px apart).
 - **Weights:** hair 1px (2px high contrast); line 2px; 3px only for the selected set-flow position.
-- **Progress:** a dashed line at 50% alpha filled solid from the start by progress, 180ms ease-out.
+- **Progress:** a dashed line at 50% alpha filled solid from the start by progress, over the panel timing.
 
 ### State Language
 
@@ -303,7 +308,7 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 - **Shape:** ash plate, 4px radius, no outline at rest. Label in Control rank. A hairline glyph is optional.
 - **Sizes:** 32px default, 26px compact, 44px tall on touch. Keys inside a group touch with 2px gaps, and groups are separated by 12px or more.
 - **Grouped choices** (pad mode, tempo range, tabs) are one segmented control with a filled current segment.
-- **Motion:** background over 90ms, gated on the motion switch.
+- **Motion:** background over the press timing.
 
 ### Inputs / Fields
 - **Style:** ash plate, 4px radius, 32px tall (44px on touch), text in Body rank, placeholder in bone 3.
@@ -320,8 +325,10 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 
 ### Track Table
 - No boxes, no zebra fills. Caps header with a bone sort label and hairline arrow, 1px rule beneath.
-- **Selection:** a 12x2px sodium tick at the row's left edge, ink lifting to bone and the title to weight 500.
-- **Loaded on a deck:** a doubled sodium hairline, then the deck's 2px line, then the deck numeral in its colour.
+- **Titles lead:** the title in bone at weight 500 (600 when selected); the artist and the figures BPM and TIME in bone 2; every other column recedes to bone 3, never fainter (4.5:1 on every surface, the selection fill included).
+- **Figures:** tabular digits (the bundled fonts' default), right-aligned in fixed-width columns; text columns share the rest.
+- **Selection:** an ash plate fill (raised ash under the pointer) and a 12x2px sodium tick at the row's left edge; ink lifts one step.
+- **Loaded on a deck:** a 3px line in the deck colour at the row's left edge and the deck numeral beside it in Control rank, in the same colour (the numeral is the second channel). No sodium: the mark is the deck's own.
 - **Harmonic fit** (vs. the selected track): a 1px green line in the KEY column, solid for same or adjacent key, dashed for two steps.
 - **Analysis state:** nothing when analysed; half-height sodium when pending; struck deep red when the file is missing (ink drops to bone-3).
 
@@ -354,7 +361,7 @@ Nothing here is a dialog: nothing may interrupt a set.
 
 ### Device Line (signature)
 - One stick, one line: 2px, inset 8px top and bottom, 64px rows (78px in the Devices section). In sync is solid green; pending is dashed sodium; error is struck with the detail text in deep red; unknown or unregistered is half-height.
-- **Syncing:** the dashed sodium line (60% alpha) fills solid green from the bottom by progress, animated 320ms on the spring easing (one damped overshoot). Motion off sets it to 0ms.
+- **Syncing:** the dashed sodium line (60% alpha) fills solid green from the bottom by progress, animated over the mode timing. Motion off sets it to 0ms.
 - Name in Body at weight 600, detail in Label, capacity and formats in Label caps; compact SYNC / EJECT plates on the right.
 
 ### Set Flow
@@ -368,9 +375,40 @@ Nothing here is a dialog: nothing may interrupt a set.
 - **Stems row:** VOCAL / INST / DRUMS / BASS mute toggles (disabled until the track has stems, SEPARATING… while separating) and KEY LOCK.
 - **Performance row:** hot cue pads A–D | E–H in two columns, LOOP (½, size, 2×), BEAT JUMP −4 / +4, Q and SLIP, round CUE and PLAY, the tempo fader with its range.
 - **Tiers:** a deck has three visual ranks. First: PLAY, CUE (round, mark and legend grow with the key), SYNC (one rank larger label, same column as CUE and PLAY) and the faders (larger handle). Second: pads and loop keys on the full rows. Third, setup keys (SLIP, QUANTIZE, KEYLOCK, tempo range, pad mode, GRID, KEY SYNC, key shift): 24px and not growing with the rows. Windows narrower than 1300 px keep the same rows with tighter columns, tighter header gaps and a one-rank smaller BPM in the header (the platter keeps the Hero BPM), and still spell out KEY SYNC and MASTER; the compact deck is for narrower windows and four decks. Empty hot cues are hollow; set ones filled in the cue colour. On the kiosk the transport keys stay at 44 px.
-- **Mixer:** per channel a knob column (TRIM, HI, MID, LOW, CH FX) beside the channel numeral, CUE toggle, a 4px level line (deep red at clip) and the channel fader. Knobs are drawn rings with a single indicator line; a changed knob's line takes its band wavelength; double-click resets.
+- **Mixer:** per channel a knob column (TRIM, HI, MID, LOW, CH FX) beside the channel numeral, CUE toggle, a 4px level line (deep red at clip) and the channel fader. Knobs follow the control anatomy below; a changed knob's line takes its band wavelength; double-click resets. Every knob, its legend and the fader stand on the channel's axis; a legend sits right under its knob and the knob groups stand a little further apart. On HI, MID and LOW the legend is the kill key: a small plate with a hover state that fills in sodium and reads KILL while killed (TRIM and CH FX legends are plain text). The legend shows the value while the knob is held. Each meter holds its peak.
 - The crossfader is a single 2px bone line on a strong-rule ruler between A and B.
 - **Layouts:** Simple, Standard and Full. Simple is a calm deck of about 25 controls on larger rows (34px base): pads A–D | E–H, a loop column (size, ½ / 2×, LOOP, jump − / +), SYNC / CUE / PLAY as on the full deck, the tempo fader; no platter and no setup tier, the header keeps the hero readouts. Groups (pads, loops, stems, effects, mixer, phase strip, setup keys) are hidden whole and then not built, never left in place invisible. The view menu holds the layout as a segmented control, the groups as on-keys and the saved layouts as rows with a hairline ×.
+
+## Motion
+
+Motion says that something changed and where; it never decorates. Four named timings and one curve, as tokens in `tokens.slint` (a test forbids any other timing in the `.slint` files):
+
+| Token | Time | Used for |
+|---|---|---|
+| `t-press` | 90 ms | hover and press fills of keys, plates and tabs |
+| `t-toggle` | 140 ms | a control changes state: switch thumb, disclosure arrow |
+| `t-panel` | 180 ms | a part opens, a rail tick grows, a progress line fills, the grid meter moves |
+| `t-mode` | 240 ms | the current work mode moves; a stick finishes syncing |
+
+The curve is `ease`, cubic-bezier(0.2, 0, 0, 1): a quick start that settles without overshoot. Things that wait repeat on `t-pulse` (900 ms: the armed outline, the loading sweep); the tooltip delay is `t-tip` (500 ms).
+
+**Reduce motion** (Preferences › View) sets every timing to 0 ms and stills the pulse, the loading sweep and the strobe preview. Slint does not report the system's reduced-motion setting, so the switch starts off.
+
+**The Live Signal Rule.** Audio-linked visuals are never smoothed: meters, waveforms, playheads, the phase meter and the booth show the value as it is.
+
+## Control anatomy
+
+- **Knob:** a ring (hairline, strong rule; bone 3 under the pointer) with a 2px indicator line, bone at its default and in its tone once moved. A **value arc** on the ring in the knob's tone runs from the start of the travel, or, on a bipolar knob (trim, EQ, filter, FX parameter: the range spans 0), from a **centre mark** at the top, a 2px notch through the ring.
+- **Fader:** a strong-rule track and a **cap** in raised ash with a hairline edge, two grip ridges (caps 16px and taller) and a bone **centre line**, the point the value is read at. A bipolar fader (tempo) has a **centre detent**: two bone 3 ticks beside the track at 0.
+- **Drag readout:** while a knob or fader is held, its value sits on a small bone plate (Label rank, ground ink): above a knob, beside a fader cap on the deck's side. It floats over neighbours and takes no room. The waveform lanes show the scrub offset or nudge the same way at the playhead.
+- **Meter:** the level as a filled line (live, attention near the top, fault at clip) and a 2px **peak-hold** tick at the highest recent peak (bone, attention or fault by level), unsmoothed.
+- Sizes do not change: the anatomy fits inside the controls' existing boxes.
+
+## Waveform options
+
+- **Calm waveform** (Preferences › View, off by default): a crisp 1px bone playhead between two ground rims, beat lines faint (plain beats only as short ticks at the edges; bars and phrases thinner and fainter through the wave) and band colours drawn halfway towards their own grey, so neighbouring columns flicker less in hue while the bands keep their order of lightness.
+- **Anchor:** the Perform lanes' playhead stands on the window's centre, the mixer's axis; past and future are drawn around it. The vertical lanes, Club and the booth keep their own centre.
+- **Dragging a lane:** a paused deck scrubs 1:1, a playing deck is nudged by the drag's speed (a temporary bend); a grab cursor on hover.
 
 ## Do's and Don'ts
 
@@ -382,7 +420,7 @@ Nothing here is a dialog: nothing may interrupt a set.
 - **Do** keep status lines in lists, devices and Set Flow in the line grammar: solid live, dashed pending, half stale, struck error, double outranks.
 - **Do** keep text at the type scale, and at 4.5:1 on the surface it sits on.
 - **Do** raise touch targets to 44px on touch screens.
-- **Do** gate every animation on the motion switch, and leave playheads and meters unsmoothed.
+- **Do** animate only with the named timings and the one curve, and leave playheads, meters, waveforms and the phase meter unsmoothed.
 
 ### Don't:
 - **Don't** draw an outline around every control, or stack panels inside panels.

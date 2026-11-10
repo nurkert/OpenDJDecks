@@ -2,7 +2,7 @@
 title: Library, playlists and smart lists
 description: Find, sort and tag your tracks. Playlists, smart lists, Tags, auto sort, the match column, similar tracks and the explorer.
 keywords: [library, collection, playlist, playlists, smart list, smart playlist, folder, search, filter, tag, tags, rating, stars, colour, comment, sort, auto sort, match, match column, similar, duplicates, relocate, moved files, missing files, explorer, history, histories, column, columns, undo, backup]
-features: [browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck]
+features: [browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck, browser-calm-table]
 ---
 
 The browser is the same in Prepare and Perform. On the left are your sources and lists, in the middle the tracks, on the right a strip of panels.
@@ -82,6 +82,12 @@ Collect candidates while you browse: press `⌥⌘T`, use the row menu or drag r
 Click a column header to sort, click again to reverse. `⇧`-click adds a second and third sort column. Drag a header onto another column to move it, or drag a column edge to resize. Right-click the header or use the columns button at the right end to choose which columns appear; **Default columns** resets.
 
 Rows also show where a track is loaded (a deck number), a tick when it has been on air this session for 30 seconds in all, and cover art in the **ART** column.
+
+### Reading the list
+
+The list is drawn so the title leads: titles are brighter and heavier, the artist and the figures come second, and the other columns step back. Numbers (**BPM**, **KEY**, **TIME**, **YEAR**, **PLAYS** and the rest) sit right-aligned with digits of one width, so they read down the page like a register. The selected row is filled in a lighter grey with a short yellow tick at its left edge. A track that is loaded on a deck carries that deck's line and number in the deck's colour (blue for 1, orange for 2, green for 3, violet for 4).
+
+The divider between the lists on the left and the track list stops where the lists still fit: the three **+** keys, a name and its count. The lists never draw over the tracks.
 
 ## Row menu
 

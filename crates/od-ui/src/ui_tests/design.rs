@@ -315,6 +315,126 @@ fn type_scale_and_floors_hold() {
     assert!(problems.is_empty(), "{}", problems.join("\n"));
 }
 
+/// Milliseconds written as literals (`90ms`); `1ms` and `0ms` are unit
+/// conversions and the off value, not timings.
+fn ms_literals(src: &str) -> Vec<String> {
+    let bytes = src.as_bytes();
+    let mut found = vec![];
+    let mut i = 0;
+    while let Some(off) = src[i..].find("ms") {
+        let end = i + off;
+        i = end + 2;
+        let after = bytes.get(end + 2).copied().unwrap_or(b' ');
+        if after.is_ascii_alphanumeric() || after == b'-' || after == b'_' {
+            continue;
+        }
+        let mut s = end;
+        while s > 0 && (bytes[s - 1].is_ascii_digit() || bytes[s - 1] == b'.') {
+            s -= 1;
+        }
+        if s == end || (s > 0 && (bytes[s - 1].is_ascii_alphabetic() || bytes[s - 1] == b'-')) {
+            continue;
+        }
+        let lit = &src[s..end + 2];
+        if lit != "1ms" && lit != "0ms" {
+            found.push(lit.to_string());
+        }
+    }
+    found
+}
+
+/// The motion language (DESIGN.md, Motion): four named timings and one
+/// curve in the token file, all 0 ms with reduced motion; every `animate`
+/// uses them, no timing is written as a number anywhere else, and the
+/// audio-linked visuals (waveform lanes, phase meter, booth) never animate.
+#[test]
+fn motion_uses_the_named_timings_and_one_curve() {
+    let tokens = std::fs::read_to_string(ui_dir().join("tokens.slint")).unwrap();
+    let mut problems = vec![];
+    for name in ["t-press", "t-toggle", "t-panel", "t-mode"] {
+        let line = tokens
+            .lines()
+            .find(|l| l.contains(&format!("out property <duration> {name}:")))
+            .unwrap_or_else(|| panic!("token {name} missing"));
+        if !line.contains("root.motion ?") || !line.contains(": 0ms") {
+            problems.push(format!("{name} is not 0 ms with reduced motion: {line}"));
+        }
+    }
+    let curves = tokens.lines().filter(|l| l.contains("out property <easing>")).count();
+    if curves != 1 {
+        problems.push(format!("{curves} easing curves in the tokens, want one"));
+    }
+    for (name, src) in sources() {
+        if name == "tokens.slint" {
+            continue;
+        }
+        for lit in ms_literals(&src) {
+            problems.push(format!("{name}: hard-coded timing {lit}"));
+        }
+        let mut at = 0;
+        while let Some(i) = src[at..].find("animate ") {
+            let start = at + i;
+            at = start + 8;
+            let block = &src[start..start + src[start..].find('}').unwrap_or(src.len() - start)];
+            let duration = block.split("duration:").nth(1).map(|v| v.split(';').next().unwrap().trim());
+            if !duration.is_some_and(|d| ["Theme.t-press", "Theme.t-toggle", "Theme.t-panel", "Theme.t-mode"].contains(&d)) {
+                problems.push(format!("{name}: animation without a named timing: {block}"));
+            }
+            if !block.contains("easing: Theme.ease;") {
+                problems.push(format!("{name}: animation without the one curve: {block}"));
+            }
+        }
+        if ["wave.slint", "phase.slint", "booth.slint"].contains(&name.as_str()) && src.contains("animate ") {
+            problems.push(format!("{name}: audio-linked visuals are smoothed"));
+        }
+    }
+    assert!(problems.is_empty(), "{}", problems.join("\n"));
+}
+
+/// The calmer track table and the control anatomy (DESIGN.md, Track Table
+/// and Control anatomy): the selected row is filled in ash plate, the title
+/// leads in bone at a heavier weight, secondary columns recede to bone 2 /
+/// bone 3 (never fainter), the loaded mark is the deck's own colour (no
+/// sodium double); knobs carry a value arc and a centre mark, faders a cap
+/// with a centre line, and both a drag readout.
+#[test]
+fn table_and_controls_follow_their_anatomy() {
+    let table = sources().remove("table.slint").unwrap();
+    let controls = sources().remove("controls.slint").unwrap();
+    let line = table
+        .lines()
+        .find(|l| l.trim_start().starts_with("background: root.item.selected"))
+        .expect("selection fill");
+    let mut problems = vec![];
+    if !line.contains("Theme.plate") {
+        problems.push(format!("selected row not filled in plate: {line}"));
+    }
+    let ink = &table[table.find("pure function ink-of").expect("ink-of")..];
+    let ink = &ink[..ink.find("\n    }").unwrap()];
+    if !ink.contains(r#"if (id == "title") { return Theme.bone; }"#) {
+        problems.push("the title does not lead in bone".into());
+    }
+    for faint in ["Theme.rule", "with-alpha"] {
+        if ink.contains(faint) {
+            problems.push(format!("a column recedes below bone 3: {faint}"));
+        }
+    }
+    if !table.contains(r#"font-weight: c.id == "title" ? (root.item.selected ? Theme.weight-semi : Theme.weight-medium)"#) {
+        problems.push("the title is not the heaviest cell".into());
+    }
+    let loaded = &table[table.find("if root.item.deck > 0:").expect("loaded mark")..];
+    let loaded = &loaded[..loaded.find("\n    }").unwrap()];
+    if loaded.contains("Theme.attention") || !loaded.contains("Theme.deck-color(root.item.deck)") {
+        problems.push("the loaded mark is not in the deck colour".into());
+    }
+    for needed in ["ArcTo", "knob.centre", "knob.arc", "fader.cap", "fader.detent", "component DragReadout"] {
+        if !controls.contains(needed) {
+            problems.push(format!("controls.slint lacks {needed}"));
+        }
+    }
+    assert!(problems.is_empty(), "{}", problems.join("\n"));
+}
+
 /// Spacing goes through the scale, keys and fields never use dashed
 /// outlines, and text colours are readable tokens.
 #[test]

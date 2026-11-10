@@ -194,6 +194,8 @@ pub(crate) fn channel_view(channel: usize, c: &ChannelState, classic: bool) -> C
         cue: c.cue,
         level: c.meter.rms.min(1.0),
         peak: c.meter.peak,
+        // Peak hold: the highest recent peak, falling back after ~1.5 s.
+        hold: c.meter.peak_hold.min(1.0),
     }
 }
 

@@ -6610,18 +6610,18 @@ msgstr "Leuchtet, wenn der Kanal vor dem Fader übersteuert. Klick setzt zurück
 
 #: ui/perform.slint
 msgctxt "ChannelStrip"
-msgid "Kill HI: silent while lit, the knob stays"
-msgstr "HI-Kill: stumm, solange es leuchtet; der Regler bleibt"
+msgid "Kill HI (tap)"
+msgstr "HI stumm schalten (tippen)"
 
 #: ui/perform.slint
 msgctxt "ChannelStrip"
-msgid "Kill MID: silent while lit, the knob stays"
-msgstr "MID-Kill: stumm, solange es leuchtet; der Regler bleibt"
+msgid "Kill MID (tap)"
+msgstr "MID stumm schalten (tippen)"
 
 #: ui/perform.slint
 msgctxt "ChannelStrip"
-msgid "Kill LOW: silent while lit, the knob stays"
-msgstr "LOW-Kill: stumm, solange es leuchtet; der Regler bleibt"
+msgid "Kill LOW (tap)"
+msgstr "LOW stumm schalten (tippen)"
 
 #: ui/perform.slint
 msgctxt "MixerPanel"
@@ -8215,3 +8215,31 @@ msgstr "Nebel ist gesperrt: unter SICHERHEIT scharf schalten"
 msgctxt "PreferencesWindow"
 msgid "Pad, page or group"
 msgstr "Pad, Seite oder Gruppe"
+
+msgctxt "PreferencesWindow"
+msgid "Calm waveform"
+msgstr "Ruhige Wellenform"
+
+msgctxt "PreferencesWindow"
+msgid "Crisp playhead, faint beat lines, softer colours"
+msgstr "Scharfe Abspielmarke, zarte Beatlinien, sanftere Farben"
+
+msgctxt "PlatterGroup"
+msgid "Slip: the track keeps running underneath loops, scratches and reverse"
+msgstr "Slip: Der Track läuft unter Loops, Scratches und Rückwärtslauf weiter"
+
+msgctxt "PlatterGroup"
+msgid "Quantize cues, loops and jumps to the beat"
+msgstr "Cues, Loops und Sprünge auf den Beat quantisieren"
+
+msgctxt "PlatterGroup"
+msgid "Keylock: the key stays when the tempo changes"
+msgstr "Keylock: Die Tonart bleibt, wenn sich das Tempo ändert"
+
+msgctxt "PlatterGroup"
+msgid "Tempo range of the fader — click for the next"
+msgstr "Tempobereich des Faders — klicken für den nächsten"
+
+msgctxt "WaveZoneColumn"
+msgid "More waveform keys"
+msgstr "Weitere Wellenform-Tasten"

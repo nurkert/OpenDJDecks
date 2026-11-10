@@ -44,6 +44,7 @@ pub struct App {
     /// Loaded tracks, stems and the deck view models.
     pub(crate) decks: RefCell<decks::Decks>,
     pub(crate) mixer: mixer::MixerView,
+    pub(crate) lane_drag: crate::lane_drag::LaneDragState,
     /// Tempo FX panel rows and tap tempo.
     pub(crate) fx: fx::FxRuntime,
     /// Sampler slots, bank and panel rows.
@@ -126,6 +127,7 @@ impl App {
             engine: RefCell::new(engine::EngineHost::default()),
             decks: RefCell::new(decks::Decks::default()),
             mixer: mixer::MixerView::default(),
+            lane_drag: Default::default(),
             fx: fx::FxRuntime::default(),
             sampler: sampler::SamplerRuntime::default(),
             recorder: RefCell::new(recorder::RecorderState::default()),
@@ -156,6 +158,7 @@ impl App {
         mixer::wire(&app);
         fx::wire(&app);
         crate::key_mix::wire(&app);
+        crate::lane_drag::wire(&app);
         sampler::wire(&app);
         preferences::wire(&app);
         crate::appearance::wire(&app);

@@ -9,7 +9,7 @@ use od_library::NodeKind;
 use slint::ComponentHandle;
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 
-fn prefs(ui: &Ui, page: &str) -> crate::PreferencesWindow {
+pub(super) fn prefs(ui: &Ui, page: &str) -> crate::PreferencesWindow {
     ui.click("topbar.settings");
     let w = ui
         .app
@@ -26,13 +26,13 @@ fn prefs(ui: &Ui, page: &str) -> crate::PreferencesWindow {
     w
 }
 
-fn prefs_el(w: &crate::PreferencesWindow, label: &str) -> ElementHandle {
+pub(super) fn prefs_el(w: &crate::PreferencesWindow, label: &str) -> ElementHandle {
     ElementHandle::find_by_accessible_label(w, label)
         .next()
         .unwrap_or_else(|| panic!("no `{label}` in Preferences"))
 }
 
-fn stored(ui: &Ui) -> crate::settings::Settings {
+pub(super) fn stored(ui: &Ui) -> crate::settings::Settings {
     crate::settings::Settings::from_json(
         &ui.fx
             .lib()

@@ -40,6 +40,7 @@ mod grid_edit;
 mod import;
 mod keep_awake;
 mod key_mix;
+mod lane_drag;
 mod keymap;
 mod lighting;
 mod lighting_pads;

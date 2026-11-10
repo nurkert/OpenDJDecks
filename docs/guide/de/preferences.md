@@ -2,7 +2,7 @@
 title: Einstellungen und Tastenkürzel
 description: Audiogeräte, Sprache und Darstellung, Wellenformen, Deck-Standards, alle Tastenkürzel und wie du sie änderst.
 keywords: [einstellungen, optionen, audio, ausgabegerät, puffer, abtastrate, sprache, deutsch, englisch, theme, darstellung, dunkel, hell, farbenblind, kontrast, skalierung, zoom, wellenform, tastenkürzel, kürzel, tastatur, tasten, belegen, belegung, shortcut]
-features: [analysis-bpm-ranges, prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends]
+features: [analysis-bpm-ranges, prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends, shell-motion-language]
 ---
 
 Öffne die **Einstellungen** mit dem Zahnrad oben, oder `⌘,` auf dem Mac und `Strg+,` auf Windows und Linux. `Esc` schließt das Fenster. **EINSTELLUNG FINDEN** oben durchsucht alle Seiten.
@@ -22,7 +22,8 @@ Unter Windows läuft Audio über WASAPI, unter macOS über CoreAudio und unter L
 Sprache, Tonart-Schreibweise (**Camelot**, **Open Key** oder **musikalisch**), die Darstellung (dunkel, hell oder wie das System), **Skalierung** von 75 bis 200 % (gilt sofort) und die **Wellenform-Farbe**: 3 Bänder, einfarbig oder RGB. Unter **EIGENE FARBEN** wählst du die Farben für Tiefen, Mitten und Höhen selbst; **STANDARDFARBEN** stellt die vorgegebenen wieder her.
 
 - **Palette für Farbenblinde** und **Hoher Kontrast (helles Licht)** gelten sofort.
-- **Bewegung reduzieren** beruhigt die Oberfläche.
+- **Bewegung reduzieren** schaltet jede Animation ab: Tasten, Schalter, Bereiche und die Modus-Reiter wechseln sofort, und das Pulsieren einer scharfen Taste, der Ladestreifen und die Stroboskop-Vorschau stehen still. Die Einstellung ist zunächst aus, weil sich die Systemeinstellung nicht auslesen lässt. Pegel, Wellenformen und Abspielmarken animieren nie: Sie zeigen den Klang immer so, wie er ist.
+- **Ruhige Wellenform** (aus in der Voreinstellung) zeichnet auf den großen Wellenformen eine scharfe, dünne Abspielmarke, zarte Beatlinien und sanftere Bandfarben, für lange Sets oder helle Räume. Siehe [Perform](perform-basics.md#ruhige-wellenform).
 - **Waveform-Zoom** legt fest, wie viele Sekunden eine Wellenform beim Öffnen eines Tracks zeigt; das Mausrad zoomt weiterhin.
 - Unter **Browser** stellst du **Schriftgröße** und **Zeilenabstand** der Liste ein.
 

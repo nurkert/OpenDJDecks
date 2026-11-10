@@ -90,7 +90,7 @@ export component TipArea inherits TouchArea {
 // filling it; it takes no input.
 export component TooltipLayer inherits Rectangle {
     // Hover delay before the tooltip opens.
-    in property <duration> delay: 500ms;
+    in property <duration> delay: Theme.t-tip;
     Timer {
         interval: root.delay;
         running: TooltipState.pending;

@@ -147,7 +147,9 @@ fn search_buttons_run_while_held() {
             .is_some_and(|d| d.loaded)
     }));
     ui.pump(200);
-    let p = Rect::of(&ui.get("deck1.club.search-fwd")).centre();
+    // On its legend, toward the outer edge (the inner edge wraps the jog).
+    let k = Rect::of(&ui.get("deck1.club.search-fwd"));
+    let p = slint::LogicalPosition::new(k.right() - 16.0, k.y + k.h / 2.0);
     ui.press_at(p, slint::platform::PointerEventButton::Left);
     assert!(
         ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)
@@ -449,10 +451,10 @@ fn mixer_and_phones_knobs_are_centred() {
             for knob in ["trim", "eq-high", "eq-mid", "eq-low"] {
                 let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{knob}")));
                 assert!(
-                    (k.x - high.x).abs() <= 1.0,
-                    "{size:?} ch{ch} {knob}: knob left {} vs column {}",
-                    k.x,
-                    high.x
+                    (k.centre().x - high.centre().x).abs() <= 1.0,
+                    "{size:?} ch{ch} {knob}: knob centre {} vs column {}",
+                    k.centre().x,
+                    high.centre().x
                 );
                 assert!(
                     k.x >= stem.x - 1.0 && k.right() <= cue.right() + 1.0,
@@ -804,7 +806,8 @@ fn cues_show_on_the_waveform_lane() {
     let motion = slint::Model::row_data(&ui.app.ui.get_lane_motion(), 0).unwrap();
     let pos = motion.pos as f32;
     let area = lane.w - 44.0;
-    let playhead = lane.x + 44.0 + area / 2.0;
+    // The playhead is anchored on the window's centre (the mixer's axis).
+    let playhead = Rect::of(&ui.get("wave.playhead")).centre().x;
     for (label, t) in [("wave.cue1.A", 1.0f32), ("wave.memory1.1", 2.0)] {
         let m = ui.get(label);
         let r = Rect::of(&m);
@@ -849,9 +852,10 @@ fn lane_context_menu_opens_edit_grid() {
     crate::decks::load_track(&ui.app, 0, id, None);
     assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.loaded && d.title == title.as_str())));
     assert!(ui.wait_until(30.0, |u| u.fx.lib().beatgrid(id).ok().flatten().is_some_and(|g| !g.beats.is_empty())));
+    // Away from the bar counter at the playhead.
     let lane = Rect::of(&ui.get("wave.lane1"));
-    ui.right_click_el(&ui.get("wave.lane1"));
-    let _ = lane;
+    ui.click_at(slint::LogicalPosition::new(lane.x + lane.w * 0.3, lane.y + lane.h / 2.0), slint::platform::PointerEventButton::Right);
+    ui.pump(100);
     assert!(ui.click_menu_item("Edit beatgrid…"), "menu item");
     assert_eq!(ui.app.ui.get_mode(), "prepare");
     assert!(ui.app.ui.global::<crate::GridEdit>().get_active());

@@ -12,7 +12,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Fader, Jog, TipArea, PopupPlace, Glyph } from "controls.slint";
+import { Caps, PlateButton, Fader, Jog, TipArea, PopupPlace, Glyph, ConcaveKey } from "controls.slint";
 import { DeckView, LaneMotion, PadView, DeckTime } from "structs.slint";
 import { WaveLane } from "wave.slint";
 
@@ -386,18 +386,15 @@ export component ClubPlayer inherits Rectangle {
                 ClubRow {
                     base: root.base; span: 4;
                     // The jog as large as the rows allow (keeping room for a
-                    // key column each side); the keys take the rest.
+                    // key column each side); the keys wrap it: their inner
+                    // edges are arcs concentric with the ring, one key gap
+                    // away, and they fill the corners up to the centre line.
                     property <length> d: max(0px, min(self.height, self.width - 2 * (56px + root.gap)));
-                    property <length> kw: (self.width - self.d) / 2 - root.gap;
+                    property <length> kw: (self.width - root.kgap) / 2;
                     property <length> kh: (self.height - root.kgap) / 2;
                     property <length> rx: self.width - self.kw;
-                    Key {
-                        accessible-label: "deck\{root.n}.club.search-back"; accessible-role: button;
-                        x: 0; y: 0; width: parent.kw; key-h: parent.kh;
-                        label: "◀◀"; tooltip: @tr("Search back while held");
-                        held(down) => { Club.search(root.n, down ? -4 : 0); }
-                    }
-                    Key { accessible-label: "deck\{root.n}.club.call-prev"; accessible-role: button; x: 0; y: parent.kh + root.kgap; width: parent.kw; key-h: parent.kh; label: "◀ CALL"; tooltip: @tr("Previous memory cue"); clicked => { Club.action(root.n, "memory.prev"); } }
+                    property <length> arc: self.d / 2 + root.kgap;
+                    // Drawn first: the keys around it take the pointer up to its ring.
                     // A thin ring around the platter in the deck colour while it plays.
                     Rectangle {
                         x: (parent.width - parent.d) / 2; y: (parent.height - parent.d) / 2;
@@ -416,13 +413,34 @@ export component ClubPlayer inherits Rectangle {
                         main-text: DeckTime.main(root.deck);
                         sub-text: root.deck.phrase;
                     }
-                    Key {
+                    ConcaveKey {
+                        accessible-label: "deck\{root.n}.club.search-back"; accessible-role: button;
+                        x: 0; y: 0; width: parent.kw; height: parent.kh;
+                        inner-right: true; cy: parent.height / 2; arc-r: parent.arc; gap: root.kgap;
+                        label: "◀◀"; tooltip: @tr("Search back while held");
+                        held(down) => { Club.search(root.n, down ? -4 : 0); }
+                    }
+                    ConcaveKey {
+                        accessible-label: "deck\{root.n}.club.call-prev"; accessible-role: button;
+                        x: 0; y: parent.kh + root.kgap; width: parent.kw; height: parent.kh;
+                        inner-right: true; cy: parent.height / 2 - self.y; arc-r: parent.arc; gap: root.kgap;
+                        label: "◀ CALL"; tooltip: @tr("Previous memory cue");
+                        clicked => { Club.action(root.n, "memory.prev"); }
+                    }
+                    ConcaveKey {
                         accessible-label: "deck\{root.n}.club.search-fwd"; accessible-role: button;
-                        x: parent.rx; y: 0; width: parent.kw; key-h: parent.kh;
+                        x: parent.rx; y: 0; width: parent.kw; height: parent.kh;
+                        inner-right: false; cy: parent.height / 2; arc-r: parent.arc; gap: root.kgap;
                         label: "▶▶"; tooltip: @tr("Search forward while held");
                         held(down) => { Club.search(root.n, down ? 4 : 0); }
                     }
-                    Key { accessible-label: "deck\{root.n}.club.call-next"; accessible-role: button; x: parent.rx; y: parent.kh + root.kgap; width: parent.kw; key-h: parent.kh; label: "CALL ▶"; tooltip: @tr("Next memory cue"); clicked => { Club.action(root.n, "memory.next"); } }
+                    ConcaveKey {
+                        accessible-label: "deck\{root.n}.club.call-next"; accessible-role: button;
+                        x: parent.rx; y: parent.kh + root.kgap; width: parent.kw; height: parent.kh;
+                        inner-right: false; cy: parent.height / 2 - self.y; arc-r: parent.arc; gap: root.kgap;
+                        label: "CALL ▶"; tooltip: @tr("Next memory cue");
+                        clicked => { Club.action(root.n, "memory.next"); }
+                    }
                 }
             }
             VerticalLayout {
@@ -454,6 +472,7 @@ export component ClubPlayer inherits Rectangle {
                         x: parent.cx - self.width / 2; y: 6px; height: parent.height - 12px;
                         tone: root.tone;
                         value: (1 - root.deck.tempo-value) / 2;
+                        bipolar: true; readout: root.deck.tempo;
                         tooltip: @tr("Tempo (up = slower, like a player)");
                         changed(v) => { Club.tempo(root.n, 1 - v * 2); }
                     }

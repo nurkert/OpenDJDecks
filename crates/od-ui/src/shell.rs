@@ -166,6 +166,8 @@ pub(crate) fn apply_theme(theme: &crate::Theme<'_>, settings: &Settings, lite: b
     theme.set_phrase_names(settings.view.phrase_types != "colors");
     crate::appearance::apply(theme, &settings.view.appearance);
     crate::render::set_colorblind_safe(settings.view.colorblind_safe);
+    theme.set_calm_wave(settings.view.calm_waveform);
+    crate::render::set_calm_waveform(settings.view.calm_waveform);
     crate::render::set_waveform_style(&settings.view.waveform);
     crate::render::set_waveform_colours([
         settings.view.waveform_low.as_str(),

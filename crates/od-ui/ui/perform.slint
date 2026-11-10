@@ -7,7 +7,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Glyph, Knob, Fader, Toggle, Transport, Jog, Stepper, TipArea, PopupPlace, Field, GuideMark } from "controls.slint";
+import { Caps, PlateButton, Glyph, Knob, Fader, Toggle, Transport, Jog, Stepper, TipArea, PopupPlace, Field, GuideMark, ConcaveKey } from "controls.slint";
 import { DropZone } from "drag.slint";
 import { DeckView, CueMark, HotCueSlot, ChannelView, PhraseMark, LaneMotion, FxUnitView, PadView } from "structs.slint";
 import { FxPanel, ChannelFxSelector, ChoiceList } from "fx.slint";
@@ -219,7 +219,8 @@ component Readout inherits VerticalLayout {
 component LoadingVeil inherits Rectangle {
     in property <color> tone;
     background: Theme.ground.with-alpha(0.45);
-    property <float> phase: mod(animation-tick() / 1ms, 900) / 900;
+    // Still (the sweep parked in the middle) when motion is off.
+    property <float> phase: Theme.motion ? Math.mod(animation-tick() / Theme.t-pulse, 1.0) : 0.5;
     Rectangle {
         x: (parent.width + self.width) * root.phase - self.width;
         width: max(24px, parent.width * 0.18);
@@ -451,7 +452,7 @@ component GridMeter inherits Rectangle {
         x: root.mid + root.span * root.v.err / 20 - 1.5px; y: root.height / 2 - 8px;
         width: 3px; height: 17px;
         background: root.v.err-tone == 0 ? Theme.bone : root.v.err-tone == 1 ? Theme.attention : Theme.fault;
-        animate x { duration: Theme.motion ? 160ms : 0ms; easing: ease-out; }
+        animate x { duration: Theme.t-panel; easing: Theme.ease; }
     }
 }
 
@@ -767,6 +768,8 @@ component StateColumn inherits VerticalLayout {
 // Slim tempo fader (for mouse use without a controller).
 component TempoColumn inherits VerticalLayout {
     in property <DeckView> deck;
+    // Right-hand deck: the readout opens to the right, over its own deck.
+    in property <bool> mirror;
     callback tempo(float);
     width: 30px;
     spacing: Theme.key-gap;
@@ -781,6 +784,9 @@ component TempoColumn inherits VerticalLayout {
         // Fader handle down = faster, as on the hardware.
         value: (1 - root.deck.tempo-value) / 2;
         tone: Theme.bone-2;
+        bipolar: true;
+        readout: root.deck.tempo;
+        readout-left: !root.mirror;
         guide: "deck\{root.deck.deck}.pitch";
         changed(v) => { root.tempo(1 - v * 2); }
     }
@@ -946,7 +952,9 @@ component GridRow inherits Rectangle {
     // follow the row's height.
     min-height: root.base * root.span + 4px * (root.span - 1);
     preferred-height: self.min-height;
-    max-height: 100000px;
+    // How far the row may grow (a group that centres caps its rows).
+    in property <float> cap: 1000;
+    max-height: self.min-height * root.cap;
     min-width: 0px;
     vertical-stretch: root.grows;
 }
@@ -1073,13 +1081,16 @@ component TransportRows inherits VerticalLayout {
     callback toggle-play();
     callback sync();
     spacing: Theme.s1;
+    // A group that centres on the platter's axis: its rows grow a little
+    // with the deck, then the spare room goes above and below it.
+    alignment: center;
     // At least as wide as a round key two base rows tall; it takes a little
     // of the deck's spare width so the keys can grow with the rows.
     min-width: 2 * root.base + 4px;
     max-width: 3 * root.base + 6px;
     horizontal-stretch: 0.25;
     GridRow {
-        base: root.base;
+        base: root.base; cap: 1.6;
         Toggle {
             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync";
             width: parent.width; size: parent.height;
@@ -1089,11 +1100,11 @@ component TransportRows inherits VerticalLayout {
         }
     }
     GridRow {
-        base: root.base; span: 2;
+        base: root.base; cap: 1.6; span: 2;
         Transport { accessible-role: button; accessible-label: "deck\{root.deck.deck}.cue"; kind: "cue"; tone: Theme.attention; guide: "deck\{root.deck.deck}.cue"; size: min(parent.width, parent.height); x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; clicked => { root.cue(); } }
     }
     GridRow {
-        base: root.base; span: 2; grows: 1;
+        base: root.base; cap: 1.6; span: 2; grows: 1;
         Transport {
             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play";
             accessible-value: root.deck.start-armed ? "armed" : "";
@@ -1106,25 +1117,49 @@ component TransportRows inherits VerticalLayout {
     }
 }
 
-// The platter over all five rows: as wide as the grid is tall.
-component Platter inherits Rectangle {
+// The platter with its setup keys (DESIGN.md, Shapes: round elements get
+// concave neighbours; groups centre instead of stretching). The platter is
+// centred in the rows, as large as they allow up to 300 px; SLIP, QUANTIZE,
+// KEYLOCK and the tempo range stand as one block on its inner side, their
+// inner edges arcs one key gap from the ring, the block centred on the
+// platter's axis. Spare room goes evenly around the group, never between
+// its parts. Mirrored for the right deck (keys on the left).
+component PlatterGroup inherits Rectangle {
     in property <DeckView> deck;
     in property <color> tone;
     in property <length> base: 30px;
     in property <bool> narrow;
+    in property <bool> mirror;
+    in property <bool> setup: true;
     callback set-bpm(string);
     callback range();
+    callback slip();
+    callback quantize();
+    callback keylock();
+    callback tempo-range();
+    property <length> kgap: Theme.s1;
+    // The key column: as before at desktop and laptop sizes, a little larger
+    // with a larger platter.
+    property <length> kh: clamp(root.d * 0.145, 24px, 30px);
+    property <length> kw: (root.narrow ? 56px : 72px) * root.kh / 24px;
+    property <length> kcol: root.setup ? root.kw + root.kgap : 0px;
     min-height: 5 * root.base + 16px;
-    min-width: root.narrow ? 124px : 5 * root.base + 16px;
-    max-width: 300px;
+    min-width: (root.narrow ? 124px : 5 * root.base + 16px) + (root.setup ? (root.narrow ? 56px : 72px) + Theme.s3 : 0px);
+    max-width: 300px + (root.setup ? 90px + Theme.s3 : 0px);
     horizontal-stretch: 1;
+    // The platter: centred in the rows, never above 300 px.
+    property <length> d: max(0px, min(300px, min(root.height, root.width - (root.setup ? (root.narrow ? 56px : 72px) + Theme.s3 : 0px))));
+    // The group (platter, gap, keys) centred across the width.
+    property <length> gx: (root.width - root.d - root.kcol) / 2;
+    property <length> px: root.mirror ? root.gx + root.kcol : root.gx;
+    property <length> cx: root.px + root.d / 2;
+    property <length> cy: root.height / 2;
     Jog {
         accessible-role: text;
         accessible-label: "deck\{root.deck.deck}.platter";
         accessible-value: self.main-text;
-        size: min(parent.width, parent.height);
-        // Top edge on row 1, like every other column.
-        x: (parent.width - self.width) / 2; y: 0;
+        size: root.d;
+        x: root.px; y: root.cy - root.d / 2;
         angle: root.deck.jog-angle; progress: root.deck.progress;
         playing: root.deck.playing; loaded: root.deck.loaded; tone: root.tone;
         top-text: root.deck.phrase; main-text: root.deck.loaded ? root.deck.bpm : "—";
@@ -1135,26 +1170,46 @@ component Platter inherits Rectangle {
         set-bpm(t) => { root.set-bpm(t); }
         range => { root.range(); }
     }
-}
-
-// Setup keys: small and even, not growing with the rows, so the transport
-// and the pads keep the deck's weight. SLIP / QUANTIZE / KEYLOCK at the top,
-// the tempo range beside the fader at the bottom.
-component StateRows inherits VerticalLayout {
-    in property <DeckView> deck;
-    in property <length> base: 30px;
-    in property <bool> narrow;
-    callback slip();
-    callback quantize();
-    callback keylock();
-    callback tempo-range();
-    width: root.narrow ? 56px : 72px;
-    spacing: Theme.s1;
-    GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; y: (parent.height - self.height) / 2; width: parent.width; size: 24px; label: "SLIP"; on: root.deck.slip; tone: Theme.attention; clicked => { root.slip(); } } }
-    GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; y: (parent.height - self.height) / 2; width: parent.width; size: 24px; label: root.narrow ? "Q" : "QUANTIZE"; on: root.deck.quantize; tone: Theme.setup-on; clicked => { root.quantize(); } } }
-    GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; y: (parent.height - self.height) / 2; width: parent.width; size: 24px; label: root.narrow ? "LOCK" : "KEYLOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } } }
-    GridRow { base: root.base; }
-    GridRow { base: root.base; grows: 0; TempoRange { deck: root.deck; y: (parent.height - self.height) / 2; width: parent.width; size: 24px; clicked => { root.tempo-range(); } } }
+    // The key block: four keys centred on the platter's axis.
+    property <length> top: root.cy - (4 * root.kh + 3 * root.kgap) / 2;
+    property <length> arc: root.d / 2 + root.kgap;
+    // A key's box starts where its arc reaches deepest towards the centre
+    // (at its edge farthest from the axis), so the box holds only the key.
+    pure function reach(y: length) -> length {
+        return Math.sqrt(Math.max(0, (root.arc / 1px) * (root.arc / 1px) - Math.pow(Math.max(Math.abs(root.cy - y), Math.abs(root.cy - y - root.kh)) / 1px, 2))) * 1px;
+    }
+    if root.setup: ConcaveKey {
+        accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip";
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.top); y: root.top; width: root.arc + root.kw - root.reach(root.top); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.top);
+        label: "SLIP"; on: root.deck.slip; tone: Theme.attention;
+        tooltip: @tr("Slip: the track keeps running underneath loops, scratches and reverse");
+        clicked => { root.slip(); }
+    }
+    if root.setup: ConcaveKey {
+        accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize";
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.top + root.kh + root.kgap); y: root.top + root.kh + root.kgap; width: root.arc + root.kw - root.reach(root.top + root.kh + root.kgap); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.top + root.kh + root.kgap);
+        label: root.narrow ? "Q" : "QUANTIZE"; on: root.deck.quantize; tone: Theme.setup-on;
+        tooltip: @tr("Quantize cues, loops and jumps to the beat");
+        clicked => { root.quantize(); }
+    }
+    if root.setup: ConcaveKey {
+        accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock";
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.top + 2 * (root.kh + root.kgap)); y: root.top + 2 * (root.kh + root.kgap); width: root.arc + root.kw - root.reach(root.top + 2 * (root.kh + root.kgap)); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.top + 2 * (root.kh + root.kgap));
+        label: root.narrow ? "LOCK" : "KEYLOCK"; on: root.deck.keylock; tone: Theme.w436;
+        tooltip: @tr("Keylock: the key stays when the tempo changes");
+        clicked => { root.keylock(); }
+    }
+    if root.setup: ConcaveKey {
+        accessible-role: button; accessible-label: "deck\{root.deck.deck}.tempo-mode"; accessible-value: root.deck.tempo-range;
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.top + 3 * (root.kh + root.kgap)); y: root.top + 3 * (root.kh + root.kgap); width: root.arc + root.kw - root.reach(root.top + 3 * (root.kh + root.kgap)); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.top + 3 * (root.kh + root.kgap));
+        label: root.deck.tempo-range == "" ? "±10%" : root.deck.tempo-range;
+        tooltip: @tr("Tempo range of the fader — click for the next");
+        clicked => { root.tempo-range(); }
+    }
 }
 
 // Full deck controls on one five-row grid: pads (four rows and the pad
@@ -1191,9 +1246,8 @@ component DeckControls inherits HorizontalLayout {
     // The GRID panel replaces the pads (its key is in the loop column).
     property <bool> grid-open;
 
-    if root.mirror: tempo-r := VerticalLayout { TempoColumn { vertical-stretch: 1; deck: root.deck; tempo(v) => { root.tempo(v); } } }
-    if root.mirror && DeckLayout.setup: state-r := StateRows { deck: root.deck; base: root.base; narrow: root.narrow; slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
-    if root.mirror: Platter { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } }
+    if root.mirror: tempo-r := VerticalLayout { TempoColumn { vertical-stretch: 1; mirror: true; deck: root.deck; tempo(v) => { root.tempo(v); } } }
+    if root.mirror: PlatterGroup { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; mirror: true; setup: DeckLayout.setup; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
     if root.mirror: TransportRows { deck: root.deck; base: root.base; cue => { root.cue(); } toggle-play => { root.toggle-play(); } sync => { root.sync(); } }
     if root.mirror && DeckLayout.loops: LoopRows { deck: root.deck; base: root.base; narrow: root.narrow; grid-open: root.grid-open; grid-toggle => { root.grid-open = !root.grid-open; } loop(b) => { root.loop(b); } loop-exit => { root.loop-exit(); } loop-scale(f) => { root.loop-scale(f); } beat-jump-step(f) => { root.beat-jump-step(f); } loop-manual => { root.loop-manual(); } }
 
@@ -1205,8 +1259,7 @@ component DeckControls inherits HorizontalLayout {
 
     if !root.mirror && DeckLayout.loops: LoopRows { deck: root.deck; base: root.base; narrow: root.narrow; grid-open: root.grid-open; grid-toggle => { root.grid-open = !root.grid-open; } loop(b) => { root.loop(b); } loop-exit => { root.loop-exit(); } loop-scale(f) => { root.loop-scale(f); } beat-jump-step(f) => { root.beat-jump-step(f); } loop-manual => { root.loop-manual(); } }
     if !root.mirror: TransportRows { deck: root.deck; base: root.base; cue => { root.cue(); } toggle-play => { root.toggle-play(); } sync => { root.sync(); } }
-    if !root.mirror: Platter { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } }
-    if !root.mirror && DeckLayout.setup: StateRows { deck: root.deck; base: root.base; narrow: root.narrow; slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
+    if !root.mirror: PlatterGroup { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; mirror: false; setup: DeckLayout.setup; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
     if !root.mirror: VerticalLayout { TempoColumn { vertical-stretch: 1; deck: root.deck; tempo(v) => { root.tempo(v); } } }
 }
 
@@ -1373,7 +1426,7 @@ component SimpleControls inherits HorizontalLayout {
     callback sync();
     callback tempo(float);
     spacing: Theme.s4;
-    if root.mirror: VerticalLayout { TempoColumn { vertical-stretch: 1; deck: root.deck; tempo(v) => { root.tempo(v); } } }
+    if root.mirror: VerticalLayout { TempoColumn { vertical-stretch: 1; mirror: true; deck: root.deck; tempo(v) => { root.tempo(v); } } }
     if root.mirror: TransportRows { deck: root.deck; base: root.base; cue => { root.cue(); } toggle-play => { root.toggle-play(); } sync => { root.sync(); } }
     if root.mirror && DeckLayout.loops: simple-loop-r := VerticalLayout {
         width: 104px;
@@ -1765,6 +1818,7 @@ component ZoneKey inherits Rectangle {
     callback act();
     property <bool> live: root.id == "collapse" ? PerformLayout.wave-size > 0 : root.id == "expand" ? PerformLayout.wave-size < 2 : true;
     accessible-role: button; accessible-label: "wave." + root.id;
+    accessible-description: root.tip;
     accessible-enabled: root.live;
     width: Theme.target; height: Theme.target;
     background: zt.has-hover && root.live ? Theme.plate-raised : Theme.plate;
@@ -1773,41 +1827,84 @@ component ZoneKey inherits Rectangle {
     // reset: a centred dot.
     if root.id == "collapse" || root.id == "expand": Rectangle { x: 5px; y: root.id == "collapse" ? 4px : parent.height - 6px; width: parent.width - 10px; height: 2px; background: root.live ? Theme.bone-3 : Theme.rule; }
     if root.glyph != "": Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; width: 10px; height: 10px; kind: root.glyph; tone: root.live ? Theme.bone-2 : Theme.rule-strong; }
-    if root.glyph == "": Rectangle { width: 5px; height: 5px; border-radius: 2.5px; background: Theme.bone-2; }
+    if root.glyph == "" && root.id != "more": Rectangle { width: 5px; height: 5px; border-radius: 2.5px; background: Theme.bone-2; }
+    // More: three dots in a row.
+    if root.id == "more": HorizontalLayout {
+        alignment: center; spacing: Theme.key-gap;
+        for i in 3: VerticalLayout { alignment: center; Rectangle { width: 3px; height: 3px; border-radius: 1.5px; background: Theme.bone-2; } }
+    }
     zt := TipArea { tooltip: root.tip; enabled: root.live; clicked => { root.act(); } }
 }
 
-// The waveform zone's keys at the far left (two columns, read row by row):
-// collapse, zoom in, reset zoom, zoom out, expand (zoom acts on every deck).
-component WaveZoneColumn inherits VerticalLayout {
+// The waveform zone's keys at the far left (zoom acts on every deck).
+component WaveZoneColumn inherits Rectangle {
     callback zoom(float);
     callback zoom-reset();
-    alignment: start;
+    // Its height comes from the lanes, never from the keys.
+    width: Theme.touch ? 3 * Theme.target : root.all-fit ? Theme.target : 2 * Theme.target;
+    min-height: Theme.touch ? 2 * Theme.target : Theme.target;
+    preferred-height: self.min-height;
+    vertical-stretch: 1;
     // Touch layout: three keys over two (44 px).
     if Theme.touch: GridLayout {
+        width: root.width; height: 2 * Theme.target;
         spacing: 0px;
         Row {
-            ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
             ZoneKey { id: "zoom-in"; glyph: "plus"; tip: @tr("Zoom in (all decks)"); act => { root.zoom(120); } }
+            ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
             ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
         }
         Row {
-            ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
+            ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
             ZoneKey { id: "expand"; glyph: "plus"; tip: @tr("Larger waveform zone"); act => { PerformLayout.wave-size = min(2, PerformLayout.wave-size + 1); } }
         }
     }
-    if !Theme.touch: GridLayout {
+    // Desktop: one column, most used first: zoom in, zoom out, centre,
+    // then the zone height keys. Lanes too short for five keys get two
+    // columns in the same order (three rows); shorter still, the height
+    // keys move behind a ⋯ key (a popup beside it). Only whole keys show.
+    property <int> fits: Math.floor(root.height / Theme.target);
+    property <bool> all-fit: root.fits >= 5;
+    property <bool> two-cols: !root.all-fit && root.fits >= 3;
+    if !Theme.touch && !root.two-cols: VerticalLayout {
+        width: root.width; height: root.height;
+        spacing: 0px;
+        alignment: start;
+        ZoneKey { id: "zoom-in"; glyph: "plus"; tip: @tr("Zoom in (all decks)"); act => { root.zoom(120); } }
+        if root.fits >= 2: ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
+        if root.all-fit: ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
+        if root.all-fit: ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
+        if root.all-fit: ZoneKey { id: "expand"; glyph: "plus"; tip: @tr("Larger waveform zone"); act => { PerformLayout.wave-size = min(2, PerformLayout.wave-size + 1); } }
+        if !root.all-fit: ZoneKey {
+            id: "more"; glyph: ""; tip: @tr("More waveform keys");
+            act => { overflow.show(); }
+        }
+    }
+    if !Theme.touch && root.two-cols: GridLayout {
+        width: root.width; height: 3 * Theme.target;
         spacing: 0px;
         Row {
-            ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
             ZoneKey { id: "zoom-in"; glyph: "plus"; tip: @tr("Zoom in (all decks)"); act => { root.zoom(120); } }
-        }
-        Row {
-            ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
             ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
         }
         Row {
+            ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
+            ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
+        }
+        Row {
             ZoneKey { id: "expand"; glyph: "plus"; tip: @tr("Larger waveform zone"); act => { PerformLayout.wave-size = min(2, PerformLayout.wave-size + 1); } }
+        }
+    }
+    overflow := PopupWindow {
+        x: Theme.target; y: Math.min(root.fits - 1, 4) * Theme.target;
+        Rectangle {
+            background: Theme.ground-band; border-radius: Theme.r-control;
+            VerticalLayout {
+                if root.fits < 2: ZoneKey { id: "zoom-out"; glyph: "minus"; tip: @tr("Zoom out (all decks)"); act => { root.zoom(-120); } }
+                ZoneKey { id: "zoom-reset"; glyph: ""; tip: @tr("Reset the zoom (all decks)"); act => { root.zoom-reset(); } }
+                ZoneKey { id: "collapse"; glyph: "minus"; tip: @tr("Smaller waveform zone"); act => { PerformLayout.wave-size = max(0, PerformLayout.wave-size - 1); } }
+                ZoneKey { id: "expand"; glyph: "plus"; tip: @tr("Larger waveform zone"); act => { PerformLayout.wave-size = min(2, PerformLayout.wave-size + 1); } }
+            }
         }
     }
 }
@@ -1834,11 +1931,13 @@ export global MixerParts {
     callback reset-clip();
 }
 
-// One EQ or filter row of a channel strip: the knob, whose legend shows
-// the band's name at the centre and its value once turned (KILL while
-// killed), and for the EQ bands a narrow kill key beside it. Double-click
-// (double-tap) resets.
-component BandRow inherits HorizontalLayout {
+// One knob group of a channel strip: the knob centred on the channel's
+// axis with its legend right under it. The legend names the band, shows
+// the value while the knob is turned, and on the EQ bands is the kill key
+// itself: a small plate that fills in sodium and reads KILL while killed.
+// TRIM and CH FX legends are plain text. Double-click (double-tap) the
+// knob to reset.
+component BandRow inherits Rectangle {
     in property <string> id;
     in property <string> label;
     in property <float> value;
@@ -1852,33 +1951,57 @@ component BandRow inherits HorizontalLayout {
     in property <int> channel;
     callback changed(float);
     callback toggle-kill();
-    property <bool> moved: root.kill || Math.abs(root.value) > 0.01;
-    spacing: Theme.key-gap;
-    alignment: start;
-    Knob {
+    property <length> legend-h: root.compact ? 11px : 12px;
+    // The legend touches its knob; the groups stand further apart (the
+    // strip's key gap plus this), so each legend clearly names its knob.
+    property <length> apart: root.compact ? 1px : 2px;
+    height: root.knob + root.legend-h + root.apart;
+    k := Knob {
         accessible-role: slider; accessible-label: root.id; accessible-value: root.value;
-        label: root.moved ? root.readout : root.label; value: root.value; tone: root.tone;
-        legend-id: root.id + ".value";
-        // A fixed box, so the kill key does not move as the value changes.
-        width: root.compact ? 24px : 32px;
-        legend-color: root.kill ? Theme.attention : root.moved ? Theme.bone : Theme.bone-3;
-        size: root.knob; label-h: root.compact ? 11px : 12px;
+        x: (parent.width - self.width) / 2; y: 0;
+        // The knob takes the pointer over its legend too (a 24 px target
+        // and more); the kill plate drawn over it keeps its own taps.
+        height: root.knob + root.legend-h;
+        label: ""; value: root.value; tone: root.tone;
+        readout: root.readout;
+        size: root.knob;
         guide: root.id;
         tooltip: @tr("Drag to turn, double-click to reset");
         changed(v) => { root.changed(v); }
     }
-    if root.has-kill: VerticalLayout {
-        alignment: start;
-        Toggle {
-            accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.kill;
-            accessible-label: root.id + ".kill";
-            width: 16px; min-w: 16px;
-            size: root.compact ? 16px : 18px; label-size: Theme.label;
-            label: "K";
-            on: root.kill; tone: Theme.attention;
+    // The legend: the value while turned, else KILL or the band's name.
+    property <string> shown: k.held ? root.readout : root.kill ? "KILL" : root.label;
+    if root.has-kill: Rectangle {
+        accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.kill;
+        accessible-label: root.id + ".kill";
+        accessible-action-default => { root.toggle-kill(); }
+        property <bool> over: kt.has-hover;
+        x: (parent.width - self.width) / 2; y: root.knob;
+        width: max(root.knob + 6px, kl.preferred-width + 8px); height: root.legend-h;
+        border-radius: 2px;
+        background: Theme.face(true, kt.pressed, kt.has-hover, false, root.kill, Theme.attention);
+        animate background { duration: Theme.t-press; easing: Theme.ease; }
+        kl := Text {
+            accessible-role: text; accessible-label: root.id + ".value"; accessible-value: self.text;
+            text: root.shown;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
+            color: Theme.ink(true, kt.pressed, kt.has-hover, false, root.kill);
+            horizontal-alignment: center; vertical-alignment: center;
+            width: parent.width; height: parent.height;
+        }
+        kt := TipArea {
             tooltip: root.kill-tip;
+            mouse-cursor: pointer;
             clicked => { root.toggle-kill(); }
         }
+    }
+    if !root.has-kill: Text {
+        accessible-role: text; accessible-label: root.id + ".value"; accessible-value: self.text;
+        x: 0; y: root.knob; width: parent.width; height: root.legend-h;
+        text: root.shown;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
+        color: k.held || Math.abs(root.value) > 0.01 ? Theme.bone : Theme.bone-3;
+        horizontal-alignment: center; vertical-alignment: center;
     }
 }
 
@@ -1929,7 +2052,7 @@ component ChannelStrip inherits Rectangle {
             id: "mixer.ch\{root.ch.channel}.eq-high"; channel: root.ch.channel;
             label: root.ch.parts ? "VOCAL" : "HI"; value: root.ch.high; readout: root.ch.high-text; tone: Theme.w486;
             compact: root.compact; knob: root.band;
-            has-kill: !root.ch.parts; kill: root.ch.kill-high; kill-tip: @tr("Kill HI: silent while lit, the knob stays");
+            has-kill: !root.ch.parts; kill: root.ch.kill-high; kill-tip: @tr("Kill HI (tap)");
             changed(v) => { root.eq(2, v); }
             toggle-kill => { MixerParts.kill(root.ch.channel, 2); }
         }
@@ -1937,7 +2060,7 @@ component ChannelStrip inherits Rectangle {
             id: "mixer.ch\{root.ch.channel}.eq-mid"; channel: root.ch.channel;
             label: root.ch.parts ? "INST" : "MID"; value: root.ch.mid; readout: root.ch.mid-text; tone: Theme.w546;
             compact: root.compact; knob: root.band;
-            has-kill: !root.ch.parts; kill: root.ch.kill-mid; kill-tip: @tr("Kill MID: silent while lit, the knob stays");
+            has-kill: !root.ch.parts; kill: root.ch.kill-mid; kill-tip: @tr("Kill MID (tap)");
             changed(v) => { root.eq(1, v); }
             toggle-kill => { MixerParts.kill(root.ch.channel, 1); }
         }
@@ -1945,7 +2068,7 @@ component ChannelStrip inherits Rectangle {
             id: "mixer.ch\{root.ch.channel}.eq-low"; channel: root.ch.channel;
             label: root.ch.parts ? "DRUMS" : "LOW"; value: root.ch.low; readout: root.ch.low-text; tone: Theme.w656;
             compact: root.compact; knob: root.band;
-            has-kill: !root.ch.parts; kill: root.ch.kill-low; kill-tip: @tr("Kill LOW: silent while lit, the knob stays");
+            has-kill: !root.ch.parts; kill: root.ch.kill-low; kill-tip: @tr("Kill LOW (tap)");
             changed(v) => { root.eq(0, v); }
             toggle-kill => { MixerParts.kill(root.ch.channel, 0); }
         }
@@ -1969,13 +2092,15 @@ component ChannelStrip inherits Rectangle {
             }
             Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.cue; accessible-label: "mixer.ch\{root.ch.channel}.cue"; width: 24px; min-w: 24px; size: 24px; label: "CUE"; label-size: Theme.label; tracking: 0.3px; on: root.ch.cue; tone: Theme.attention; clicked => { root.cue(); } }
         }
-        HorizontalLayout {
+        // The fader on the channel's axis, the meter beside it.
+        fader-row := Rectangle {
             vertical-stretch: 1;
             min-height: root.compact ? 30px : 56px;
-            spacing: Theme.key-gap;
-            alignment: center;
-            // Level meter: amber near the top, red at clip.
+            // Level meter: amber near the top, red at clip; the peak hold is
+            // a 2px tick at the highest recent peak (unsmoothed, like the
+            // level).
             Rectangle {
+                x: (parent.width - 30px) / 2 - Theme.key-gap - 4px; height: parent.height;
                 width: 4px;
                 background: Theme.ground;
                 Rectangle {
@@ -1983,8 +2108,16 @@ component ChannelStrip inherits Rectangle {
                     height: parent.height * clamp(root.ch.level, 0, 1);
                     background: root.ch.peak > 0.99 || root.ch.clip ? Theme.fault : root.ch.level > 0.8 ? Theme.attention : Theme.live;
                 }
+                if root.ch.hold > 0.01: Rectangle {
+                    accessible-role: image;
+                    accessible-label: "mixer.ch\{root.ch.channel}.peak-hold";
+                    accessible-value: Math.round(clamp(root.ch.hold, 0, 1) * 100);
+                    y: (parent.height - 2px) * (1 - clamp(root.ch.hold, 0, 1));
+                    height: 2px;
+                    background: root.ch.hold > 0.99 || root.ch.clip ? Theme.fault : root.ch.hold > 0.8 ? Theme.attention : Theme.bone;
+                }
             }
-            Fader { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.fader"; accessible-value: root.ch.fader; value: root.ch.fader; tone: root.tone; handle: 20px; width: 30px; guide: "mixer.ch\{root.ch.channel}.fader"; changed(v) => { root.fader(v); } }
+            Fader { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.fader"; accessible-value: root.ch.fader; x: (parent.width - 30px) / 2; height: parent.height; value: root.ch.fader; tone: root.tone; handle: 20px; width: 30px; guide: "mixer.ch\{root.ch.channel}.fader"; changed(v) => { root.fader(v); } }
         }
     }
 }
@@ -2365,6 +2498,9 @@ export component PerformView inherits Rectangle {
         for d[i] in root.decks: WaveLane {
             accessible-role: groupbox;
             accessible-label: "wave.lane\{d.deck}";
+            // The playhead on the window's centre, the mixer's axis.
+            anchor-x: PopupPlace.window-width / 2;
+            draggable: true;
             playhead-label: i == root.decks.length - 1;
             overlay-on: true;
             deck: d;

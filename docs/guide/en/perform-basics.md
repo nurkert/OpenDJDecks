@@ -2,7 +2,7 @@
 title: The basics of Perform
 description: Decks, layouts, sync, keylock, tempo, loops and beat jump, and every pad mode on the deck.
 keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, key clash, harmonic mixing, compatible key, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom, simple, standard, full, deck layout, hide, groups, saved layout]
-features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
+features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag]
 ---
 
 Perform is the live mode: the decks, the mixer and the browser in one view.
@@ -19,7 +19,30 @@ The deck header shows the number, the artwork, title and artist, **BPM**, the re
 
 The narrow waveform in each deck is the whole track with hot cues and phrases. Click it to jump there (needle search); on a controller the touch strip does the same.
 
-Above the decks, the wide zone shows one scrolling waveform per deck. Turn the wheel over a lane to zoom that deck, double-click to reset, and use the zoom keys at the left for all decks.
+Above the decks, the wide zone shows one scrolling waveform per deck. Turn the wheel over a lane to zoom that deck, double-click to reset, and use the keys at the left for all decks: one column with zoom in, zoom out, centre the zoom, then a smaller and a larger waveform zone. When the lanes are too short for all five, the last keys move behind **⋯**. The playhead stands on the window's centre, in line with the mixer below, so the past side of a lane is a little narrower than the future side.
+
+### Dragging a waveform
+
+Drag a lane with the mouse (the pointer turns into a hand over a lane with a track):
+
+- **Paused deck:** the waveform follows the pointer one to one at the current zoom, and the track stays where you put it. Drag left to move later in the track.
+- **Playing deck:** nothing jumps. The speed of your drag bends the tempo for a moment, like a hand on a platter, so you can push the beats into line; a still hand lets the deck run, and on release it plays at its tempo again. With **SLIP** on, release returns to where the track would have been.
+
+While you drag, a small readout at the playhead shows the offset in seconds (paused) or the bend in percent (playing). A click without movement does what it did before, and the performance lock blocks neither.
+
+### Calm waveform
+
+**Preferences › View › Calm waveform** draws the large waveforms more quietly: a crisp, thin playhead between two dark edges, faint beat lines (plain beats only as short ticks at the edges) and softer band colours. It is off by default.
+
+## The centre of the deck
+
+![Perform in a large window: the platter centred with its keys, SYNC, CUE and PLAY on the same axis](../img/perform-large.png)
+
+The platter sits in the middle of the deck's rows, with **SLIP**, **QUANTIZE**, **KEYLOCK** and the tempo range as one block on its inner side. Their inner edges follow the ring, one key gap away, and **SYNC**, **CUE** and **PLAY** stand on the same axis. In a larger window the platter grows up to a limit and the keys grow with it; any room left goes above and below, never between the keys. On the player screens of Club mode, the ◀◀ / ◀ CALL and ▶▶ / CALL ▶ keys wrap the jog the same way.
+
+## Knobs, faders and meters
+
+A knob shows its value as an arc on its ring. Knobs that turn both ways from a middle (trim, EQ, filter, the FX parameter) have a small mark at the top and draw the arc from there. While you drag a knob, its value stands above it; while you drag the tempo fader, the tempo stands beside the cap, towards the deck. The tempo fader has a centre detent mark at 0, and every fader cap has a centre line to read it by. See [The mixer](mixer.md#knobs-faders-and-meters) for the meters.
 
 ## Layout and views
 
@@ -87,7 +110,7 @@ The booth view is a window of the desktop app; the Raspberry Pi kiosk has no sec
 
 ## Jog wheels
 
-On a controller the jog wheel scratches, bends or searches. Vinyl mode is switched per deck, and in **Preferences › Controller › Decks › Jog wheel**. The on-screen platter shows where you are. On the player screens the ◀◀ and ▶▶ keys search while held.
+On a controller the jog wheel scratches, bends or searches. Vinyl mode is switched per deck, and in **Preferences › Controller › Decks › Jog wheel**. The on-screen platter shows where you are. On the player screens the ◀◀ and ▶▶ keys search while held; they and the CALL keys wrap the jog ([The centre of the deck](#the-centre-of-the-deck)).
 
 ## Slip and censor
 

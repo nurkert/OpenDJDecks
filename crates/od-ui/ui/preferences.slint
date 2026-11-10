@@ -142,7 +142,7 @@ component Switch inherits Rectangle {
         Rectangle {
             y: (parent.height - 10px) / 2; x: root.on ? parent.width - self.width - 2px : 2px;
             width: 10px; height: 10px; border-radius: 5px; background: root.on ? Theme.ink-on : Theme.bone-3;
-            animate x { duration: Theme.motion ? 90ms : 0ms; }
+            animate x { duration: Theme.t-toggle; easing: Theme.ease; }
         }
     }
     t := Text {
@@ -354,6 +354,7 @@ export component PreferencesWindow inherits Window {
     in property <bool> tooltips: true;
     in property <bool> club-other-beat: true;
     in property <bool> incoming-overlay: true;
+    in property <bool> calm-waveform;
     callback record-key(string);
     callback reset-key(string);
     callback clear-key(string);
@@ -484,6 +485,7 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("UI scale"); Choice { accessible-label: "prefs.view.scale"; options: root.scale-options; selected: root.scale; picked(i) => { root.choose("view.scale", i); } } }
                         Row { label: @tr("Club mode"); Switch { accessible-label: "prefs.view.club-other-beat"; label: @tr("Show the other deck's beat under the beat boxes"); on: root.club-other-beat; toggled(v) => { root.flag("view.club-other-beat", v); } } }
                         Row { label: @tr("Incoming track"); Switch { accessible-label: "prefs.view.incoming-overlay"; label: @tr("Draw the incoming track over the playing waveform"); on: root.incoming-overlay; toggled(v) => { root.flag("view.incoming-overlay", v); } } }
+                        Row { label: @tr("Calm waveform"); Switch { accessible-label: "prefs.view.calm-waveform"; label: @tr("Crisp playhead, faint beat lines, softer colours"); on: root.calm-waveform; toggled(v) => { root.flag("view.calm-waveform", v); } } }
                     }
                 }
 

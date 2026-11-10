@@ -506,15 +506,18 @@ fn top_bar(app: &App, state: Option<&od_engine::EngineState>) {
     if app.ui.get_midi_device() != midi.as_str() {
         app.ui.set_midi_device(midi.into());
     }
-    let (meter, clip) = state
+    let (meter, hold, clip) = state
         .map(|s| {
+            let meter = s.master_meter.rms.max(s.master_meter.peak * 0.8).min(1.0);
             (
-                s.master_meter.rms.max(s.master_meter.peak * 0.8).min(1.0),
+                meter,
+                (s.master_meter.peak_hold * 0.8).min(1.0).max(meter),
                 s.master_meter.clipped,
             )
         })
-        .unwrap_or((0.0, false));
+        .unwrap_or((0.0, 0.0, false));
     app.ui.set_master_meter(meter);
+    app.ui.set_master_hold(hold);
     app.ui.set_master_clip(clip);
     let minute = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

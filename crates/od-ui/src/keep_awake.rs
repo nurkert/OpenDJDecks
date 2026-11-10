@@ -16,6 +16,10 @@
 /// Why the assertion exists, as the operating system shows it.
 pub(crate) const REASON: &str = "OpenDJDecks: decks are playing";
 
+/// Guards alive in this process (the unit test tells its own assertion
+/// from those of apps running beside it in the same test process).
+static LIVE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
 /// A held "stay awake" request.
 pub(crate) struct KeepAwake {
     inner: Option<imp::Held>,
@@ -27,10 +31,13 @@ impl KeepAwake {
     /// no way, the guard holds nothing and [`KeepAwake::note`] says why.
     pub(crate) fn acquire() -> Self {
         match imp::acquire() {
-            Ok(h) => Self {
-                inner: Some(h),
-                note: String::new(),
-            },
+            Ok(h) => {
+                LIVE.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                Self {
+                    inner: Some(h),
+                    note: String::new(),
+                }
+            }
             Err(why) => {
                 tracing::info!(%why, "cannot keep the computer awake");
                 Self {
@@ -57,6 +64,7 @@ impl Drop for KeepAwake {
     fn drop(&mut self) {
         if let Some(h) = self.inner.take() {
             imp::release(h);
+            LIVE.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
         }
     }
 }
@@ -211,11 +219,32 @@ mod tests {
                 .map(|o| String::from_utf8_lossy(&o.stdout).contains(REASON))
                 .unwrap_or(false)
         };
+        // Apps under test in this process (a playing deck) hold their own
+        // assertion with the same name: wait until none does.
+        let quiet = |secs: u64| {
+            let end = std::time::Instant::now() + std::time::Duration::from_secs(secs);
+            while LIVE.load(std::sync::atomic::Ordering::SeqCst) > 0 && std::time::Instant::now() < end {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+        };
+        quiet(60);
         let guard = KeepAwake::acquire();
         assert!(guard.held(), "{}", guard.note());
         assert!(listed(), "pmset lists the assertion");
         drop(guard);
-        assert!(!listed(), "released again");
+        // The system list follows a moment later; other guards may come
+        // and go meanwhile.
+        let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        let released = loop {
+            if LIVE.load(std::sync::atomic::Ordering::SeqCst) > 0 || !listed() {
+                break true;
+            }
+            if std::time::Instant::now() > end {
+                break false;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        };
+        assert!(released, "released again");
     }
 
     /// Wherever it runs, acquiring and dropping never panics, and a guard

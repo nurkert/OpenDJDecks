@@ -4,6 +4,7 @@ import { UpdateBar, UpdatePrompt } from "update.slint";
 import { StemsModelBar, StemsModelPrompt } from "stems_model.slint";
 import { DragGhost, DragState } from "drag.slint";
 export { DragState }
+export { LaneDrag } from "wave.slint";
 export { PopupPlace }
 export { DeckTime, GridEdit, DeckGrid, DeckGridView, DeckMix, AnalysisSure } from "structs.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
@@ -268,6 +269,8 @@ export component AppWindow inherits Window {
     // Top bar: connected controller, master meter (0..1, clip) and the clock.
     in property <string> midi-device;
     in property <float> master-meter;
+    // Peak hold of the master meter (0..1).
+    in property <float> master-hold;
     in property <bool> master-clip;
     in property <string> clock;
     in property <float> crossfader: 0.5;
@@ -679,6 +682,7 @@ export component AppWindow inherits Window {
                 midi-device: root.midi-device;
                 master-level: root.master-level;
                 master-meter: root.master-meter;
+                master-hold: root.master-hold;
                 master-clip: root.master-clip;
                 clock: root.clock;
                 set-master-level(v) => { root.set-master-level(v); }
@@ -905,8 +909,11 @@ export component AppWindow inherits Window {
                 min-height: root.kiosk ? 180px : 218px;
                 background: Theme.ground-band; border-radius: Theme.r-panel;
                 HorizontalLayout {
-                Sidebar {
-                    width: root.kiosk ? 190px : root.list-tight ? min(root.sidebar-width, 240px) : root.sidebar-width;
+                lists := Sidebar {
+                    accessible-label: "browser.lists"; accessible-role: groupbox;
+                    // Never narrower than its content (a saved width or a
+                    // narrow window cannot squeeze it either).
+                    width: root.kiosk ? 190px : max(self.content-min, root.list-tight ? min(root.sidebar-width, 240px) : root.sidebar-width);
                     tight: root.list-tight;
                     tree: root.tree;
                     selected-node: root.selected-node;
@@ -954,7 +961,10 @@ export component AppWindow inherits Window {
                     thickness: Theme.target;
                     horizontal: false;
                     tooltip: @tr("Drag to resize, double-click to reset");
-                    dragged(d) => { root.sidebar-width = clamp(root.sidebar-width + d, 180px, 480px); }
+                    // Stops at the lists' content width: the drag starts from
+                    // the width shown, so a stored width below it never
+                    // makes the splitter feel stuck.
+                    dragged(d) => { root.sidebar-width = clamp(lists.width + d, max(180px, lists.content-min), 480px); }
                     reset => { root.sidebar-width = 294px; }
                 }
                 VerticalLayout {
