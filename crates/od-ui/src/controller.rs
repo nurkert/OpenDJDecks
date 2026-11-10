@@ -87,6 +87,18 @@ pub(crate) fn light_all(app: &App, device: &str, on: bool) {
     }
 }
 
+/// MIDI learn, the monitor and the guided setup need the controllers no
+/// mapping knows: their ports are open while one of them runs.
+pub(crate) fn refresh_unmapped(app: &App) {
+    let want = {
+        let p = app.prefs.borrow();
+        p.midi.learning || p.midi.monitoring
+    } || app.controller_setup.borrow().active();
+    if let Some(m) = app.controller.borrow().manager.as_ref() {
+        m.set_open_unmapped(want);
+    }
+}
+
 /// Mapping id of the connected controller.
 pub(crate) fn connected_id(app: &App) -> Option<String> {
     app.controller.borrow().name.clone()

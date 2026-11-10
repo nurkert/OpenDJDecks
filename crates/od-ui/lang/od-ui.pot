@@ -3186,3 +3186,415 @@ msgstr ""
 msgctxt "LightingView"
 msgid "CHANNELS"
 msgstr ""
+
+msgctxt "AppWindow"
+msgid "Deck Layout"
+msgstr ""
+
+msgctxt "AppWindow"
+msgid "Simple"
+msgstr ""
+
+msgctxt "AppWindow"
+msgid "Full"
+msgstr ""
+
+msgctxt "AppWindow"
+msgid "Controller Setup"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Press PLAY on deck {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Press CUE on deck {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Press SYNC on deck {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Touch the top of jog wheel {} without turning it"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Turn jog wheel {} a little, both ways"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Move the tempo fader of deck {} up and down"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Press LOAD for deck {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Press hot cue pad {} of deck {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Move the channel fader {} up and down"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Turn the TRIM knob of channel {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Turn the HI knob of channel {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Turn the MID knob of channel {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Turn the LOW knob of channel {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Press the headphone CUE of channel {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Move the crossfader from side to side"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Turn the browse knob"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Press the browse knob"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Turn the master level knob"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Turn the headphone level knob"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "CONTROLLER SETUP"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Control {} of {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Connect the controller by USB, then choose what it is closest to. Nothing it sends is used until you save."
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Choose what {} is closest to. Nothing it sends is used until you save."
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "START"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Ask for the controls one by one"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "That control is already used for control {}. Move another one, or SKIP."
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Heard: {}"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Waiting for a press …"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Waiting for the wheel to turn …"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Waiting for the control to move …"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "BACK"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Back one control, to learn it again"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "AGAIN"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Forget what arrived for this control and listen again"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "SKIP"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "The controller has no such control: go on without it"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "{} of {} controls learned. Name the controller and save; the crossfader curve becomes CUT."
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "{} of {} controls learned. Name the controller and save the mapping."
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "CONTROLLER NAME"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "SAVE MAPPING"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Write the mapping file and use it from the next start"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Saved as {}. It is used from the next start, and you can share the file. Nobody has confirmed it on other units yet."
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "DONE"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "CLOSE"
+msgstr ""
+
+msgctxt "ControllerSetupBar"
+msgid "Close the setup; nothing is saved unless you saved it"
+msgstr ""
+
+msgctxt "Jog"
+msgid "Click to type a BPM: the tempo fader goes there (the range widens if needed)"
+msgstr ""
+
+msgctxt "Jog"
+msgid "Click for the next tempo range: ±6 %, ±10 %, ±16 %, WIDE"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "DECKS"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "SIMPLE"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "STANDARD"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "FULL"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "Simple: about 25 large controls per deck, for a first mix"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "Full: everything, with the Tempo FX panel open"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "Standard: the usual deck"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "DECKS: SIMPLE"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "DECKS: FULL"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "DECKS: STANDARD"
+msgstr ""
+
+msgctxt "FirstStartBar"
+msgid "Deck layout: Simple, Standard or Full — click for the next"
+msgstr ""
+
+msgctxt "LoadingVeil"
+msgid "LOADING"
+msgstr ""
+
+msgctxt "LoopRows"
+msgid "Auto loop of the shown length; press again to leave it"
+msgstr ""
+
+msgctxt "LoopRows"
+msgid "Beat jump back (size: ‹ › in Beat Jump pad mode)"
+msgstr ""
+
+msgctxt "LoopRows"
+msgid "Beat jump forward"
+msgstr ""
+
+msgctxt "SimpleControls"
+msgid "Halve the loop"
+msgstr ""
+
+msgctxt "SimpleControls"
+msgid "Double the loop"
+msgstr ""
+
+msgctxt "SimpleControls"
+msgid "Auto loop of the shown length; press again to leave it"
+msgstr ""
+
+msgctxt "SimpleControls"
+msgid "Beat jump back"
+msgstr ""
+
+msgctxt "SimpleControls"
+msgid "Beat jump forward"
+msgstr ""
+
+msgctxt "PreparePlayer"
+msgid "TEMPO"
+msgstr ""
+
+msgctxt "PreparePlayer"
+msgid "RESET"
+msgstr ""
+
+msgctxt "PreferencesWindow"
+msgid "Guided setup"
+msgstr ""
+
+msgctxt "PreferencesWindow"
+msgid "For a controller without a mapping: choose what kind it is, then move each control when asked. The result is a mapping file you can share."
+msgstr ""
+
+msgctxt "PreferencesWindow"
+msgid "SET UP A CONTROLLER"
+msgstr ""
+
+msgctxt "PreferencesWindow"
+msgid "Open the guided setup in the main window"
+msgstr ""
+
+msgctxt "SamplerPanel"
+msgid "Gain of the selected slot (double-click: unity)"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "DECK LAYOUT"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "SIMPLE"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "STANDARD"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "FULL"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "Simple: about 25 large controls per deck"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "Full: everything, with the Tempo FX panel open"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "Standard: the usual deck"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "SHOW"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "PADS"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "LOOPS"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "STEMS"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "MIXER"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "PHASE"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "SETUP KEYS"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "Shown: press to hide the whole group"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "Hidden: press to show the group"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "SAVED LAYOUTS"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "Use this layout"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "Delete this saved layout"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "NAME"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "SAVE"
+msgstr ""
+
+msgctxt "ViewMenu"
+msgid "Save the deck layout and the groups shown under this name"
+msgstr ""
+
+msgctxt "WaveLane"
+msgid "TO CUE"
+msgstr ""
+
+msgctxt "WaveLane"
+msgid "BAR"
+msgstr ""
+
+msgctxt "WaveLane"
+msgid "TO PHRASE"
+msgstr ""

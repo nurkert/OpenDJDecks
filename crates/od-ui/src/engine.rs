@@ -311,7 +311,18 @@ fn perform_crowd(app: &App) {
         layout.get_layout(),
         layout.get_wave_size(),
         slint::Model::row_count(&ui.get_decks()),
-        format!("{}{}", ui.get_update_state(), ui.global::<crate::FirstStart>().get_visible()),
+        format!(
+            "{}{}{} {}{}{}{}{}{}",
+            ui.get_update_state(),
+            ui.global::<crate::FirstStart>().get_visible(),
+            ui.global::<crate::ControllerSetup>().get_visible(),
+            ui.global::<crate::DeckLayout>().get_level(),
+            ui.global::<crate::DeckLayout>().get_pads(),
+            ui.global::<crate::DeckLayout>().get_loops(),
+            ui.global::<crate::DeckLayout>().get_stems(),
+            ui.global::<crate::DeckLayout>().get_fx(),
+            ui.global::<crate::DeckLayout>().get_phase(),
+        ),
     );
     let changed = CROWD_KEY.with(|k| {
         let mut k = k.borrow_mut();

@@ -78,6 +78,8 @@ pub struct App {
     pub(crate) mic: RefCell<crate::mic::MicRuntime>,
     /// The first-start guide.
     pub(crate) first_start: RefCell<crate::first_start::Guide>,
+    /// The guided controller setup (roadmap [13]).
+    pub(crate) controller_setup: RefCell<crate::controller_setup::Runtime>,
     worker_events: Receiver<WorkerEvent>,
     tick_timer: slint::Timer,
 }
@@ -120,6 +122,7 @@ impl App {
             club: RefCell::new(crate::club::ClubRuntime::default()),
             mic: RefCell::new(crate::mic::MicRuntime::default()),
             first_start: RefCell::new(crate::first_start::Guide::default()),
+            controller_setup: RefCell::new(Default::default()),
             engine: RefCell::new(engine::EngineHost::default()),
             decks: RefCell::new(decks::Decks::default()),
             mixer: mixer::MixerView::default(),
@@ -163,6 +166,8 @@ impl App {
         crate::club::wire(&app);
         crate::mic::wire(&app);
         crate::first_start::wire(&app);
+        crate::controller_setup::wire(&app);
+        crate::deck_layout::wire(&app);
         crate::audio_health::wire(&app);
         crate::gig_check::wire(&app);
         crate::stick_check::wire(&app);

@@ -4,10 +4,10 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Glyph, TipArea, Knob, PopupPlace, GuideMark } from "controls.slint";
+import { Caps, PlateButton, Glyph, TipArea, Knob, PopupPlace, GuideMark, Field } from "controls.slint";
 import { Club } from "club.slint";
 import { Lighting, LinkStatus } from "lighting.slint";
-import { PerformLayout } from "perform.slint";
+import { PerformLayout, DeckLayout } from "perform.slint";
 import { GigCheck, LockKey, PerformLock } from "safety.slint";
 
 component ModeTab inherits Rectangle {
@@ -246,6 +246,8 @@ component ViewMenu inherits Rectangle {
     in property <bool> narrow;
     in property <int> deck-count;
     in property <string> layout;
+    // The mixer column is shown (its group key in the menu).
+    in property <bool> mixer-on;
     callback chose(string);
     property <string> current: root.layout == "browse" ? "browse" : (root.deck-count >= 4 ? "4" : "2") + (root.layout == "vertical" ? "v" : "h");
     width: max(root.narrow ? 52px : 64px, row.preferred-width + (root.narrow ? 14px : 22px));
@@ -265,14 +267,23 @@ component ViewMenu inherits Rectangle {
         mouse-cursor: pointer;
         clicked => { pop.show(); }
     }
+    // The menu: the view (deck count, lane direction, Browse), then the deck
+    // layout (Simple / Standard / Full), the groups it shows and the saved
+    // layouts. A click inside keeps it open, except on a view.
+    property <length> pop-w: 300px;
+    property <bool> want-menu: DeckLayout.show-menu;
+    changed want-menu => { if (self.want-menu) { pop.show(); } }
+    property <length> pop-h: 5 * 36px + 2px + 208px + DeckLayout.saved.length * 30px;
     pop := PopupWindow {
-        x: PopupPlace.x(root.absolute-position.x, 0, 220px);
-        y: PopupPlace.y(root.absolute-position.y, root.height - 6px, -5 * 36px - 2px, 5 * 36px + 2px);
-        width: 220px; height: 5 * 36px + 2px;
+        x: PopupPlace.x(root.absolute-position.x, 0, root.pop-w);
+        y: PopupPlace.y(root.absolute-position.y, root.height - 6px, -root.pop-h, root.pop-h);
+        width: root.pop-w; height: root.pop-h;
+        close-policy: close-on-click-outside;
         Rectangle {
             background: Theme.plate; border-radius: Theme.r-control;
             VerticalLayout {
                 padding: Theme.key-gap;
+                alignment: start;
                 for v in [
                     { id: "2h", label: @tr("2 Decks · horizontal") },
                     { id: "2v", label: @tr("2 Decks · vertical") },
@@ -294,6 +305,96 @@ component ViewMenu inherits Rectangle {
                         }
                     }
                     vi := TouchArea { mouse-cursor: pointer; clicked => { root.chose(v.id); pop.close(); } }
+                }
+                Rectangle { height: Theme.s1; }
+                Rectangle { height: Theme.hair; background: Theme.rule-strong; }
+                // Deck layout: one segmented choice.
+                HorizontalLayout {
+                    padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.s2;
+                    height: 26px;
+                    Caps { text: @tr("DECK LAYOUT"); vertical-alignment: center; }
+                }
+                HorizontalLayout {
+                    padding-left: Theme.s2; padding-right: Theme.s2;
+                    spacing: Theme.key-gap;
+                    for l in [{ id: "simple", label: @tr("SIMPLE") }, { id: "standard", label: @tr("STANDARD") }, { id: "full", label: @tr("FULL") }]: PlateButton {
+                        accessible-role: button; accessible-label: "topbar.layout.level.\{l.id}";
+                        accessible-checkable: true; accessible-checked: DeckLayout.level == l.id;
+                        compact: true; horizontal-stretch: 1;
+                        label: l.label; selected: DeckLayout.level == l.id;
+                        tooltip: l.id == "simple" ? @tr("Simple: about 25 large controls per deck") : l.id == "full" ? @tr("Full: everything, with the Tempo FX panel open") : @tr("Standard: the usual deck");
+                        clicked => { DeckLayout.set-level(l.id); }
+                    }
+                }
+                // Groups: on keys, a press hides or shows the whole group.
+                HorizontalLayout {
+                    padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.s2;
+                    height: 26px;
+                    Caps { text: @tr("SHOW"); vertical-alignment: center; }
+                }
+                for group-row in [
+                    [{ id: "pads", label: @tr("PADS"), on: DeckLayout.pads }, { id: "loops", label: @tr("LOOPS"), on: DeckLayout.loops }, { id: "stems", label: @tr("STEMS"), on: DeckLayout.stems }, { id: "fx", label: "FX", on: DeckLayout.fx }],
+                    [{ id: "mixer", label: @tr("MIXER"), on: root.mixer-on }, { id: "phase", label: @tr("PHASE"), on: DeckLayout.phase }, { id: "setup", label: @tr("SETUP KEYS"), on: DeckLayout.setup }],
+                ]: HorizontalLayout {
+                    padding-left: Theme.s2; padding-right: Theme.s2; padding-bottom: Theme.key-gap;
+                    spacing: Theme.key-gap;
+                    for g in group-row: PlateButton {
+                        accessible-role: checkbox; accessible-label: "topbar.layout.group.\{g.id}";
+                        accessible-checkable: true; accessible-checked: g.on;
+                        compact: true; horizontal-stretch: 1;
+                        label: g.label; active: g.on;
+                        tooltip: g.on ? @tr("Shown: press to hide the whole group") : @tr("Hidden: press to show the group");
+                        clicked => { DeckLayout.toggle(g.id); }
+                    }
+                }
+                // Saved layouts: a press uses one, × deletes it.
+                HorizontalLayout {
+                    padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.s1;
+                    height: 26px;
+                    Caps { text: @tr("SAVED LAYOUTS"); vertical-alignment: center; }
+                }
+                for name[i] in DeckLayout.saved: HorizontalLayout {
+                    height: 30px;
+                    padding-left: Theme.s2; padding-right: Theme.s2;
+                    spacing: Theme.key-gap;
+                    Rectangle {
+                        accessible-role: button; accessible-label: "topbar.layout.saved.slot\{i + 1}";
+                        accessible-value: name; accessible-checked: DeckLayout.current == name;
+                        horizontal-stretch: 1;
+                        background: si.has-hover ? Theme.plate-raised : transparent;
+                        border-radius: Theme.r-control;
+                        HorizontalLayout {
+                            padding-left: Theme.s1; spacing: Theme.s2;
+                            Text { width: 10px; text: DeckLayout.current == name ? "✓" : ""; font-size: Theme.control; color: Theme.attention; vertical-alignment: center; }
+                            Text { text: name; font-family: Theme.family; font-size: Theme.body; color: DeckLayout.current == name ? Theme.bone : Theme.bone-2; vertical-alignment: center; overflow: elide; }
+                        }
+                        si := TipArea { tooltip: @tr("Use this layout"); mouse-cursor: pointer; clicked => { DeckLayout.apply(name); } }
+                    }
+                    Rectangle {
+                        accessible-role: button; accessible-label: "topbar.layout.saved.slot\{i + 1}.delete";
+                        width: 26px;
+                        background: sd.has-hover ? Theme.fault : transparent;
+                        border-radius: Theme.r-control;
+                        Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; width: 10px; height: 10px; kind: "close"; tone: sd.has-hover ? Theme.ink-on : Theme.bone-3; }
+                        sd := TipArea { tooltip: @tr("Delete this saved layout"); mouse-cursor: pointer; clicked => { DeckLayout.remove(name); } }
+                    }
+                }
+                HorizontalLayout {
+                    padding-left: Theme.s2; padding-right: Theme.s2; padding-top: Theme.key-gap;
+                    spacing: Theme.key-gap;
+                    name-field := Field {
+                        accessible-role: text-input; accessible-label: "topbar.layout.save-name";
+                        horizontal-stretch: 1;
+                        placeholder: @tr("NAME");
+                        accepted(t) => { if (t != "") { DeckLayout.save(t); self.text = ""; } }
+                    }
+                    PlateButton {
+                        accessible-role: button; accessible-label: "topbar.layout.save";
+                        label: @tr("SAVE"); tone: Theme.live;
+                        enabled: name-field.text != "";
+                        tooltip: @tr("Save the deck layout and the groups shown under this name");
+                        clicked => { DeckLayout.save(name-field.text); name-field.text = ""; }
+                    }
                 }
             }
         }
@@ -405,7 +506,7 @@ export component TopBar inherits Rectangle {
             Rectangle { width: root.zone; }
             if root.mode == "perform" && !root.kiosk: ViewMenu {
                 narrow: root.narrow;
-                deck-count: root.deck-count; layout: PerformLayout.layout;
+                deck-count: root.deck-count; layout: PerformLayout.layout; mixer-on: root.mixer-panel;
                 chose(v) => { root.set-perform-view(v); }
             }
             if root.mode == "perform" && !root.kiosk: Rectangle { width: Theme.s2; }
@@ -443,7 +544,7 @@ export component TopBar inherits Rectangle {
                 LinkStatus { }
             }
             if root.show-panels: Rectangle { width: Theme.key-gap; }
-            if root.show-panels: PanelToggle {
+            if root.show-panels && DeckLayout.fx: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.fx"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: self.on;
@@ -452,7 +553,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.fx.panel";
                 clicked => { root.toggle-fx-panel(); }
             }
-            if root.show-panels: Rectangle { width: Theme.key-gap; }
+            if root.show-panels && DeckLayout.fx: Rectangle { width: Theme.key-gap; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.mix-preview"; accessible-role: button;
@@ -630,7 +731,7 @@ export component TopBar inherits Rectangle {
         }
         if root.mode == "perform": ViewMenu {
             narrow: true;
-            deck-count: root.deck-count; layout: PerformLayout.layout;
+            deck-count: root.deck-count; layout: PerformLayout.layout; mixer-on: root.mixer-panel;
             chose(v) => { root.set-perform-view(v); }
         }
         if root.show-panels: PanelToggle {

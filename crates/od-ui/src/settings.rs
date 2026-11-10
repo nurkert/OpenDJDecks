@@ -287,6 +287,38 @@ pub struct PerformSettings {
     pub rec_panel: bool,
     /// Mix Preview panel above the waveforms (top bar MIX PREVIEW toggle).
     pub mix_preview_panel: bool,
+    /// Deck layout (roadmap [6]): "simple", "standard" or "full".
+    pub layout: String,
+    /// Groups hidden on top of the layout: "pads", "loops", "stems", "fx",
+    /// "phase", "setup" (the mixer column is `mixer_panel`).
+    pub hidden: Vec<String>,
+    /// Saved layouts, in the order they were saved.
+    pub saved_layouts: Vec<SavedLayout>,
+    /// The saved layout in use ("" none, or changed since it was applied).
+    pub saved_current: String,
+}
+
+/// A named deck layout: the layout, the hidden groups and the panels.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SavedLayout {
+    pub name: String,
+    pub layout: String,
+    pub hidden: Vec<String>,
+    pub mixer_panel: bool,
+    pub fx_panel: bool,
+}
+
+impl Default for SavedLayout {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            layout: "standard".into(),
+            hidden: Vec::new(),
+            mixer_panel: true,
+            fx_panel: false,
+        }
+    }
 }
 
 impl Default for PerformSettings {
@@ -298,6 +330,10 @@ impl Default for PerformSettings {
             mixer_panel: true,
             rec_panel: true,
             mix_preview_panel: false,
+            layout: "standard".into(),
+            hidden: Vec::new(),
+            saved_layouts: Vec::new(),
+            saved_current: String::new(),
         }
     }
 }
@@ -512,6 +548,22 @@ impl Settings {
             }
             b.artwork_offered = true;
         }
+        let p = &mut self.perform;
+        if !crate::deck_layout::LEVELS.contains(&p.layout.as_str()) {
+            p.layout = "standard".into();
+        }
+        p.hidden
+            .retain(|g| crate::deck_layout::HIDEABLE.contains(&g.as_str()));
+        p.hidden.sort();
+        p.hidden.dedup();
+        for l in &mut p.saved_layouts {
+            if !crate::deck_layout::LEVELS.contains(&l.layout.as_str()) {
+                l.layout = "standard".into();
+            }
+            l.hidden
+                .retain(|g| crate::deck_layout::HIDEABLE.contains(&g.as_str()));
+        }
+        p.saved_layouts.retain(|l| !l.name.trim().is_empty());
         let v = &mut self.view;
         if !(0.75..=2.0).contains(&v.scale) || !v.scale.is_finite() {
             v.scale = 1.0;
