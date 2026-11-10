@@ -133,6 +133,9 @@ fn mixer_kills_swaps_values_and_clip() {
     );
     ui.app.ui.invoke_mixer_trim(1, 0.0);
     ui.pump(200);
+    // Samples already on their way may still clip: clear once the level is
+    // down (on a loaded machine that takes a few blocks).
+    assert!(ui.wait_until(10.0, |u| snapshot(u).channels[0].meter.peak < 0.95));
     ui.click("mixer.ch1.clip");
     assert!(ui.wait_until(5.0, |u| u.value("mixer.ch1.clip").is_empty()));
 }
@@ -154,7 +157,7 @@ fn mixer_rows_line_up() {
                 // The legend under the knob is the kill key.
                 let kill = Rect::of(&ui.get(&format!("mixer.ch{ch}.{band}.kill")));
                 let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{band}")));
-                assert!(kill.y >= k.bottom() - 9.0 && (kill.centre().x - k.centre().x).abs() <= 1.0, "{size:?} ch{ch} {band}: kill under the knob");
+                assert!(kill.y >= k.y + 15.0 && kill.y <= k.bottom() && (kill.centre().x - k.centre().x).abs() <= 1.0, "{size:?} ch{ch} {band}: kill under the ring");
             }
             let high = Rect::of(&ui.get(&format!("mixer.ch{ch}.eq-high")));
             // Larger than before at desktop size (22 px): 24 px; the compact tier keeps 16 px.

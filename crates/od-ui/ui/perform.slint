@@ -1959,6 +1959,9 @@ component BandRow inherits Rectangle {
     k := Knob {
         accessible-role: slider; accessible-label: root.id; accessible-value: root.value;
         x: (parent.width - self.width) / 2; y: 0;
+        // The knob takes the pointer over its legend too (a 24 px target
+        // and more); the kill plate drawn over it keeps its own taps.
+        height: root.knob + root.legend-h;
         label: ""; value: root.value; tone: root.tone;
         readout: root.readout;
         size: root.knob;

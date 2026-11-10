@@ -553,7 +553,8 @@ fn mixer_knobs_on_the_axis_with_legend_kill_keys() {
                 assert!((knob.centre().x - axis).abs() <= 1.0, "{size:?} ch{ch} {band}: knob {} vs fader {axis}", knob.centre().x);
                 let legend = r(&format!("mixer.ch{ch}.{band}.value"));
                 assert!((legend.centre().x - axis).abs() <= 1.0, "{size:?} ch{ch} {band}: legend centred");
-                assert!(legend.y >= knob.bottom() - 9.0 && legend.y - knob.bottom() <= 3.0, "{size:?} ch{ch} {band}: legend under its knob");
+                // The knob's box runs over its legend; the ring is its top.
+                assert!(legend.y >= knob.y + 15.0 && legend.y <= knob.y + 25.0, "{size:?} ch{ch} {band}: legend right under its ring");
             }
             let knob = r(&format!("fx.channel-fx.ch{ch}"));
             assert!((knob.centre().x - axis).abs() <= 1.0, "{size:?} ch{ch} CH FX centred");
