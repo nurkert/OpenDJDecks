@@ -676,7 +676,7 @@ export component PreparePlayer inherits Rectangle {
                         x: self.px; y: 0; height: parent.height;
                         cue: c; loop-w: self.lw;
                     }
-                    Rectangle { x: parent.width / 2 - 1px; width: 2px; height: parent.height; background: Theme.bone; }
+                    if root.has-track: Rectangle { x: parent.width / 2 - 1px; width: 2px; height: parent.height; background: Theme.bone; }
                     wave-touch := TouchArea {
                         mouse-cursor: GridEdit.active ? (self.pressed ? grabbing : grab) : ew-resize;
                         // Drag the zoomed waveform to nudge the cursor (8 s across).

@@ -400,19 +400,28 @@ pub(crate) fn snap_to_beat(grid: &Beatgrid, t: f64) -> f64 {
         .unwrap_or(t)
 }
 
+/// No track in the player: eight empty hot cue slots keep the key row's
+/// layout (they are hollow, as for a track without cues).
+fn clear_detail(app: &App) {
+    app.ui.set_has_track(false);
+    let slots = hot_cue_slots(&[]);
+    app.ui.set_hot_cues_top(model(slots[..4].to_vec()));
+    app.ui.set_hot_cues_bottom(model(slots[4..].to_vec()));
+    app.ui.set_hot_cues(model(slots));
+    refresh_minis(app);
+}
+
 pub(crate) fn refresh_detail(app: &App) {
     crate::browser::refresh_info(app);
     let st = app.state.borrow();
     let Some(id) = st.player.current else {
-        app.ui.set_has_track(false);
         drop(st);
-        refresh_minis(app);
+        clear_detail(app);
         return;
     };
     let Ok(t) = st.src().track(id) else {
-        app.ui.set_has_track(false);
         drop(st);
-        refresh_minis(app);
+        clear_detail(app);
         return;
     };
     let ui = &app.ui;

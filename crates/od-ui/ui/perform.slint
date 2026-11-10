@@ -1264,7 +1264,7 @@ export component DeckPanel inherits Rectangle {
         // Header: numeral, title / artist, BPM, remaining / elapsed, key, SYNC / MASTER.
         HorizontalLayout {
             vertical-stretch: 0;
-            spacing: root.tight-header ? Theme.s2 : Theme.s3;
+            spacing: root.tight-header ? Theme.s1 : Theme.s3;
             Text {
                 accessible-role: text;
                 accessible-label: "deck\{root.deck.deck}.number";
@@ -1316,11 +1316,11 @@ export component DeckPanel inherits Rectangle {
             if root.key-column: VerticalLayout {
                 spacing: root.compact ? Theme.key-gap : Theme.key-gap;
                 alignment: center;
-                width: root.four ? 62px : root.tight-header ? 68px : 78px;
+                width: root.four ? 62px : 78px;
                 Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.key-sync;
                     accessible-label: "deck\{root.deck.deck}.key-sync";
-                    size: 24px; label: root.four || root.tight-header ? "KEY" : "KEY SYNC"; on: root.deck.key-sync; tone: Theme.w436;
+                    size: 24px; label: root.four ? "KEY" : "KEY SYNC"; on: root.deck.key-sync; tone: Theme.w436;
                     tooltip: @tr("Key sync: match the key of the master deck");
                     command: "deck" + root.deck.deck + ".keysync";
                     clicked => { root.key-sync(); }
@@ -1340,10 +1340,10 @@ export component DeckPanel inherits Rectangle {
             VerticalLayout {
                 spacing: root.compact ? Theme.key-gap : Theme.key-gap;
                 alignment: center;
-                width: root.four || root.tight-header ? 58px : 70px;
+                width: root.four ? 58px : 70px;
                 // SYNC moves to the transport column on the full deck.
                 if root.compact || root.browse: Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; guide: "deck\{root.deck.deck}.beat-sync"; size: 24px; label: "SYNC"; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
-                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 24px; label: root.four || root.tight-header ? "MSTR" : "MASTER"; on: root.deck.master; tone: root.tone; clicked => { root.master(); } }
+                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 24px; label: root.four ? "MSTR" : "MASTER"; on: root.deck.master; tone: root.tone; clicked => { root.master(); } }
             }
         }
 

@@ -161,6 +161,8 @@ export component PlateButton inherits Rectangle {
     height: tall ? 44px : compact ? 26px : 32px;
     background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.danger && !root.active && root.over ? Theme.fault : root.tone);
     border-radius: Theme.r-control;
+    border-width: root.enabled || root.selected || root.filled ? 0px : Theme.hair;
+    border-color: Theme.rule;
     animate background { duration: Theme.motion ? 90ms : 0ms; }
 
     lbl := Text {
@@ -448,6 +450,10 @@ export component Toggle inherits Rectangle {
     height: root.size;
     background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.tone);
     border-radius: Theme.r-control;
+    // Disabled: band charcoal with a hairline edge, so the key keeps its
+    // shape on a band-charcoal panel.
+    border-width: root.enabled || root.selected || root.filled ? 0px : Theme.hair;
+    border-color: Theme.rule;
     animate background { duration: Theme.motion ? 90ms : 0ms; }
     t := Text {
         y: (parent.height - self.height) / 2 + (touch.pressed && root.enabled ? 1px : 0);
@@ -677,6 +683,8 @@ export component Stepper inherits Rectangle {
     min-width: probe.preferred-width + 2 * root.arrow + 12px;
     background: root.enabled ? Theme.plate : Theme.ground-band;
     border-radius: Theme.r-control;
+    border-width: root.enabled ? 0px : Theme.hair;
+    border-color: Theme.rule;
     probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px; }
     Rectangle {
         x: 0; width: root.arrow;

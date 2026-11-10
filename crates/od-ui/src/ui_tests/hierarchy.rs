@@ -293,3 +293,45 @@ fn first_start_fits_and_offers_the_test_tone() {
     ui.click("guide.tone");
     assert!(!ui.app.ui.global::<crate::FirstStart>().get_tone_on());
 }
+
+/// [8] / [4] The narrow full deck (1280 px) spells out KEY SYNC and MASTER:
+/// both keys keep their full width, and the title keeps room.
+#[test]
+fn narrow_deck_header_keeps_full_words() {
+    let ui = Ui::open((1280, 800));
+    ui.click("topbar.mode.perform");
+    ui.pump(400);
+    let (key_sync, master, title) = (
+        rect(&ui, "deck1.key-sync"),
+        rect(&ui, "deck1.master"),
+        rect(&ui, "deck1.title"),
+    );
+    assert!(key_sync.w >= 78.0, "KEY SYNC {}", key_sync.w);
+    assert!(master.w >= 70.0, "MASTER {}", master.w);
+    assert!(title.w >= 60.0, "title {}", title.w);
+    assert!(key_sync.right() <= master.x, "KEY SYNC and MASTER side by side");
+}
+
+/// The Prepare player without a track: the key row keeps its layout (eight
+/// empty hot cue slots, disabled keys at their own width) and no playhead
+/// runs through the hint.
+#[test]
+fn empty_player_keeps_its_key_row() {
+    let ui = start_empty((1440, 900));
+    assert!(!ui.app.ui.get_has_track());
+    for l in ["A", "H"] {
+        assert!(ui.has(&format!("player1.hot-cue.{l}")), "slot {l}");
+    }
+    let del = rect(&ui, "player1.memory.delete");
+    assert!(del.w < 80.0, "DEL keeps its width, {}", del.w);
+    let src = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui/player.slint"),
+    )
+    .unwrap();
+    assert!(src.contains("if root.has-track: Rectangle { x: parent.width / 2 - 1px; width: 2px;"));
+    let controls = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui/controls.slint"),
+    )
+    .unwrap();
+    assert!(controls.contains("border-width: root.enabled || root.selected || root.filled ? 0px : Theme.hair;"));
+}

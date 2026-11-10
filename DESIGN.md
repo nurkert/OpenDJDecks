@@ -294,7 +294,7 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 | On (a function is active) | Filled in its tone | Ground | Fill itself, and the label stays |
 | Armed (will act on the next event) | Ash plate with a 2px outline in its tone, slow pulse | Bone | Pulse, off when motion is off |
 | Running (recording, syncing) | Filled in its tone with a timer or percent | Ground | Moving value |
-| Disabled | Band charcoal | Bone 3 | No hover |
+| Disabled | Band charcoal with a hairline rule edge | Bone 3 | No hover; keeps its width |
 | Focused | Any of the above | | 2px bone ring, 2px offset, used for nothing else |
 
 **One job per colour.** Sodium: now and attention, meaning playheads, the selected item in a list, and things that need you. Green: playing, and in sync. Red: recording, clash, danger. Cyan, orange, green and violet also name decks 1 to 4, and appear on a deck only as that deck's identity. Master is shown by the deck's own line doubled and a MASTER key filled in the deck colour.
@@ -349,7 +349,7 @@ A band under the top bar on an empty library: four steps with hollow rings, a so
 - **Overview** (34px, 26px compact) with played-portion veil, cue lines, doubled sodium position line and needle search; LOAD SELECTED when empty.
 - **Stems row:** VOCAL / INST / DRUMS / BASS mute toggles (disabled until the track has stems, SEPARATING… while separating) and KEY LOCK.
 - **Performance row:** hot cue pads A–D | E–H in two columns, LOOP (½, size, 2×), BEAT JUMP −4 / +4, Q and SLIP, round CUE and PLAY, the tempo fader with its range.
-- **Tiers:** a deck has three visual ranks. First: PLAY, CUE (round, mark and legend grow with the key), SYNC (one rank larger label, same column as CUE and PLAY) and the faders (larger handle). Second: pads and loop keys on the full rows. Third, setup keys (SLIP, QUANTIZE, KEYLOCK, tempo range, pad mode, GRID, KEY SYNC, key shift): 24px and not growing with the rows. Windows narrower than 1300 px keep the same rows with tighter columns and a one-rank smaller BPM in the header (the platter keeps the Hero BPM); the compact deck is for narrower windows and four decks. Empty hot cues are hollow; set ones filled in the cue colour. On the kiosk the transport keys stay at 44 px.
+- **Tiers:** a deck has three visual ranks. First: PLAY, CUE (round, mark and legend grow with the key), SYNC (one rank larger label, same column as CUE and PLAY) and the faders (larger handle). Second: pads and loop keys on the full rows. Third, setup keys (SLIP, QUANTIZE, KEYLOCK, tempo range, pad mode, GRID, KEY SYNC, key shift): 24px and not growing with the rows. Windows narrower than 1300 px keep the same rows with tighter columns, tighter header gaps and a one-rank smaller BPM in the header (the platter keeps the Hero BPM), and still spell out KEY SYNC and MASTER; the compact deck is for narrower windows and four decks. Empty hot cues are hollow; set ones filled in the cue colour. On the kiosk the transport keys stay at 44 px.
 - **Mixer:** per channel a knob column (TRIM, HI, MID, LOW, CH FX) beside the channel numeral, CUE toggle, a 4px level line (deep red at clip) and the channel fader. Knobs are drawn rings with a single indicator line; a changed knob's line takes its band wavelength; double-click resets.
 - The crossfader is a single 2px bone line on a strong-rule ruler between A and B.
 
