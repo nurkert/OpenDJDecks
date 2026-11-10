@@ -2601,3 +2601,38 @@ msgstr ""
 msgctxt "TopBar"
 msgid "Lock for the set"
 msgstr ""
+
+#: ui/phase.slint:80
+msgctxt "PhaseRuler"
+msgid "IN SYNC"
+msgstr ""
+
+#: ui/phase.slint:101
+msgctxt "PhaseStrip"
+msgid "PHASE TO {}"
+msgstr ""
+
+#: ui/phase.slint:101
+msgctxt "PhaseStrip"
+msgid "PHASE"
+msgstr ""
+
+#: ui/phase.slint:105
+msgctxt "PhaseStrip"
+msgid "Load two tracks with a beatgrid to compare them"
+msgstr ""
+
+#: ui/phase.slint:118
+msgctxt "PhaseStrip"
+msgid "PRACTICE"
+msgstr ""
+
+#: ui/phase.slint:119
+msgctxt "PhaseStrip"
+msgid "Practice on: SYNC is off. Click to allow SYNC again"
+msgstr ""
+
+#: ui/phase.slint:119
+msgctxt "PhaseStrip"
+msgid "Practise beatmatching by ear and eye: SYNC goes off and stays off"
+msgstr ""

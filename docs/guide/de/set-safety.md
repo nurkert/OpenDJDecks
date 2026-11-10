@@ -60,7 +60,7 @@ Eine laufende Aufnahme bleibt in jedem Fall erhalten. Ihre Datei wird bis zum Mo
 
 ## Die Sperre für das Set
 
-**SPERREN** in der oberen Leiste (oder **Ansicht › Für das Set sperren**, `⌥⇧⌘K`, unter Linux und Windows `Strg+Alt+Umschalt+K`) wird zu einem gelben **GESPERRT**. Solange sie an ist:
+**SPERREN** in der oberen Leiste (oder **Ansicht › Für das Set sperren**, `⌥⇧⌘K`, unter Linux und Windows `Strg+Alt+Umschalt+K`) wird zu einem gelben **GESPERRT** (in Fenstern unter 1500 px Breite ist die Taste ein Schloss, das sich gelb füllt). Solange sie an ist:
 
 - Auf ein spielendes Deck wird kein Track geladen. Ein gestopptes Deck lädt weiterhin, aus der Liste, per Ziehen oder vom Controller.
 - Nichts wird gelöscht: keine Liste, keine Tracks aus einer Liste oder der Sammlung, kein Hot Cue oder Memory Cue, kein registrierter Stick.

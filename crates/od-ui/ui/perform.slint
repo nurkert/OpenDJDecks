@@ -17,6 +17,7 @@ import { WaveLane, VerticalLane } from "wave.slint";
 import { MicControls } from "mic.slint";
 import { RecStrip } from "rec.slint";
 import { PerformLock } from "safety.slint";
+import { PhaseMeter, PhaseStrip } from "phase.slint";
 import { LightingStrip, Lighting } from "lighting.slint";
 import { ClubPlayer, ClubSteps, Club } from "club.slint";
 
@@ -946,7 +947,7 @@ component TransportRows inherits VerticalLayout {
             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync";
             width: parent.width; size: parent.height;
             guide: "deck\{root.deck.deck}.beat-sync";
-            label: "SYNC"; label-size: Theme.body; on: root.deck.sync; tone: Theme.live;
+            label: "SYNC"; enabled: !PhaseMeter.practice; label-size: Theme.body; on: root.deck.sync; tone: Theme.live;
             clicked => { root.sync(); }
         }
     }
@@ -1137,7 +1138,7 @@ component KioskDeck inherits Rectangle {
                 step(d) => { root.key-shift(d); }
                 value-clicked => { root.key-shift(0); }
             }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: 44px; width: 48px; label: "SYNC"; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: 44px; width: 48px; label: "SYNC"; enabled: !PhaseMeter.practice; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
             Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 44px; width: 48px; label: "MSTR"; on: root.deck.master; tone: root.tone; tooltip: @tr("Master deck: the others sync to it"); clicked => { root.master(); } }
         }
         // Overview (needle search) and the part mutes.
@@ -1347,7 +1348,7 @@ export component DeckPanel inherits Rectangle {
                 alignment: center;
                 width: root.four ? 58px : 70px;
                 // SYNC moves to the transport column on the full deck.
-                if root.compact || root.browse: Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; guide: "deck\{root.deck.deck}.beat-sync"; size: 24px; label: "SYNC"; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
+                if root.compact || root.browse: Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; guide: "deck\{root.deck.deck}.beat-sync"; size: 24px; label: "SYNC"; enabled: !PhaseMeter.practice; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
                 Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 24px; label: root.four ? "MSTR" : "MASTER"; on: root.deck.master; tone: root.tone; clicked => { root.master(); } }
             }
         }
@@ -1842,7 +1843,10 @@ export component PerformView inherits Rectangle {
     // REC section in the global bar (top bar REC toggle).
     in property <bool> show-rec: true;
     // Smallest lane height of the waveform zone.
-    property <length> lane-min: root.touch-size ? (root.decks.length > 2 ? 22px : 44px) : PerformLayout.wave-size == 0 ? (root.decks.length > 2 ? 24px : 36px) : root.tight ? 36px : root.decks.length > 2 ? (root.short ? 24px : 32px) : 36px;
+    property <length> lane-min-base: root.touch-size ? (root.decks.length > 2 ? 22px : 44px) : PerformLayout.wave-size == 0 ? (root.decks.length > 2 ? 24px : 36px) : root.tight ? 36px : root.decks.length > 2 ? (root.short ? 24px : 32px) : 36px;
+    // Four decks on a short window keep their lanes instead.
+    property <bool> show-phase: !Club.enabled && root.crowd < 4 && !root.touch-size && PerformLayout.layout == "standard" && (root.decks.length <= 2 || !root.short);
+    property <length> lane-min: root.lane-min-base;
     // Below the width of the full deck: tighter columns down to 1220 px,
     // compact decks below that.
     property <bool> narrow: root.width < 1300px;
@@ -1926,6 +1930,8 @@ export component PerformView inherits Rectangle {
                 : (root.tight ? 46px : root.decks.length > 2 ? 50px : 72px) * (PerformLayout.wave-size == 2 ? 2 : 1);
             vertical-stretch: PerformLayout.wave-size == 0 ? 0 : 1;
         }
+        // Phase and tempo between the decks, under the lanes.
+        if root.show-phase: PhaseStrip { }
         }
         }
         // Kiosk: the upright waveforms as a band across the screen (the

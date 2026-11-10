@@ -135,14 +135,14 @@ export global Gig {
 // GIG in the bar: a click switches the preset, the arrow opens its parts.
 component GigKey inherits Rectangle {
     in property <bool> narrow;
-    width: l.preferred-width + 32px;
+    width: l.preferred-width + (root.narrow ? 26px : 32px);
     Rectangle {
         y: Theme.s2; height: parent.height - 2 * Theme.s2;
         border-radius: Theme.r-control;
         background: Theme.face(true, tog.pressed, tog.has-hover || open.has-hover, false, Gig.active, Theme.setup-on);
     }
     l := Text {
-        x: 10px; height: parent.height;
+        x: root.narrow ? 6px : 10px; height: parent.height;
         text: @tr("GIG");
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
         color: Theme.ink(true, tog.pressed, tog.has-hover, false, Gig.active);
@@ -515,7 +515,7 @@ export component TopBar inherits Rectangle {
                 TipArea { tooltip: root.midi-device != "" ? @tr("Controller connected: {}", root.midi-device) : @tr("No controller connected"); }
             }
             LockKey { narrow: root.narrow; }
-            if !root.narrow: Rectangle { width: Theme.s2; }
+            Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             // App tools.
             GigKey { narrow: root.narrow; }
             Rectangle { width: root.narrow ? Theme.s1 : Theme.s2; }

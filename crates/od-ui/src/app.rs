@@ -159,6 +159,7 @@ impl App {
         engine::start(&app);
         crate::restore::wire(&app);
         crate::perform_lock::wire(&app);
+        crate::phase::wire(&app);
         decks::autoload(&app);
 
         let _ = app.state.borrow_mut().lib.check_missing();

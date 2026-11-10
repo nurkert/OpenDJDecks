@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 227 features; 221 in scope: 221 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 228 features; 222 in scope: 222 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -172,6 +172,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Pad mode: Memory Cue | DONE | (UX §1.3) | 2 | P3 |
 | Pad mode: Pattern Recall | DONE | Pad mode PATTERN: an empty pad stores the sampler sequence patterns, a stored pad recalls them and starts the sequencer, the shifted pad clears it; (UX §1.3) | 1 | P3 |
 | Pad mode: Timed Censor | DONE | Pad mode CENSOR: each pad censors (reverse with slip) for ¼ … 32 beats of the deck tempo, then playback continues where it would be; (UX §1.3) | 2 | P3 |
+| Phase meter and tempo difference between decks with a clear in-sync state; practice without SYNC | DONE | A strip under the waveforms in Perform (desktop layouts; not in Club mode or the kiosk touch layout): one ruler per deck against the sync master (else the playing deck), half a beat each way, with the tempo difference in BPM and the phase in ms. IN SYNC (solid green centre) within 0.05 BPM and 0.02 beat. PRACTICE turns SYNC off on all decks and blocks it.; (Roadmap [12]) | 5 | **P1** |
 | Club mode: player-style screens and behaviour driven by the controller | DONE | CLUB toggle (Alt+J): player screens per deck (waveform, overview needle search, jog display with remaining time / bar counter / phrase, four-segment beat position under the waveform (beat 1 accented) for visual beat matching, hot cues with hold, memory cue call, loop in / out / reloop, beat jump, search, tempo range, master tempo), BROWSE screen (source → playlists → tracks, from the library or a stick), player cue rules, sync off, self-ticking checklist; (SPEC §10.3c) | 5 | P2 |
 | Playback reservation (queue for Mix Preview) | DONE | `mix-preview.rs::tick`, `ui/mix_preview.slint`; RESERVE in the MIX PREVIEW panel queues the tracks selected in the list; when a panel deck is empty or has played out while the other plays, the next reserved track loads there and waits at its mix-in point for the next link; NEXT shows what comes, CLEAR empties the queue | 2 | P3 |
 | Beatgrid and gain panel on the Perform deck | DONE (beyond the usual) | `deck_grid.rs::act`, `deck_grid.rs::tick`, `ui/perform.slint::GridPanel`, `ui/perform.slint::GridMeter`; The grid key beside the pad mode swaps the pads for the panel (the deck keeps its width), working while the track plays: a meter of how far the grid sits off the kicks (median of the last 8 beats, −20…+20 ms), FIT, the tempo and CLICK (metronome in the headphones); SET 1 (the kick just heard, ±60 ms, becomes the 1), ±1 / ±10 ms, ±1 beat; −.01 / +.01 and ÷2 / ×2 about the playhead, PIN (two pins solve the tempo), AUTO-FIX; EDIT … opens the Prepare editor, LOCK, and the track's auto-gain correction ±0.5 dB. Grid changes go to the library at once (decks follow without a gap); nudges within 1.5 s are one undo step | 5 | P2 |
@@ -336,13 +337,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 221 |
+| DONE | 222 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **227** |
+| **Total** | **228** |
 
 ## P1 gaps and implementation notes
 

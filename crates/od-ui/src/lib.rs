@@ -44,6 +44,7 @@ mod models;
 mod mix_preview;
 mod pads;
 mod perform_lock;
+mod phase;
 mod phrase_edit;
 mod player;
 mod preferences;

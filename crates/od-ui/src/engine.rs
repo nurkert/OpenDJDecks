@@ -199,6 +199,10 @@ pub(crate) fn send(app: &App, cmd: Command) {
 }
 
 pub(crate) fn deck_cmd(app: &App, deck: usize, cmd: DeckCommand) {
+    if matches!(cmd, DeckCommand::SetSync(true)) && crate::phase::practice() {
+        app.status(od_i18n::tr("Practice: SYNC stays off until you turn practice off"));
+        return;
+    }
     if matches!(cmd, DeckCommand::DeleteHotCue { .. })
         && app.guard_locked(crate::perform_lock::Blocked::Delete)
     {
@@ -466,6 +470,7 @@ fn frame(app: &App) {
         return;
     }
     decks::project(app, &state);
+    crate::phase::project(app, &state);
     crate::deck_grid::tick(app, &state);
     crate::club::frame(app, &state);
     player::settle_shift(app, &state);

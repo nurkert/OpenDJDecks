@@ -60,7 +60,7 @@ A recording that was running is kept either way. Its file is made whole up to th
 
 ## The performance lock
 
-**LOCK** in the top bar (or **View › Lock for the Set**, `⌥⇧⌘K`, `Ctrl+Alt+Shift+K` on Linux and Windows) turns into a yellow **LOCKED**. While it is on:
+**LOCK** in the top bar (or **View › Lock for the Set**, `⌥⇧⌘K`, `Ctrl+Alt+Shift+K` on Linux and Windows) turns into a yellow **LOCKED** (on windows narrower than 1500 px the key is a padlock that fills yellow). While it is on:
 
 - No track is loaded onto a deck that is playing. A stopped deck still loads, from the list, by dragging or from the controller.
 - Nothing is deleted: no list, no tracks from a list or the collection, no hot or memory cue, no registered stick.

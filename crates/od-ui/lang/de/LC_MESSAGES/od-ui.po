@@ -6326,3 +6326,38 @@ msgstr "Entsperren"
 msgctxt "TopBar"
 msgid "Lock for the set"
 msgstr "Für das Set sperren"
+
+#: ui/phase.slint:80
+msgctxt "PhaseRuler"
+msgid "IN SYNC"
+msgstr "SYNCHRON"
+
+#: ui/phase.slint:101
+msgctxt "PhaseStrip"
+msgid "PHASE TO {}"
+msgstr "PHASE ZU {}"
+
+#: ui/phase.slint:101
+msgctxt "PhaseStrip"
+msgid "PHASE"
+msgstr "PHASE"
+
+#: ui/phase.slint:105
+msgctxt "PhaseStrip"
+msgid "Load two tracks with a beatgrid to compare them"
+msgstr "Lade zwei Tracks mit Beatgrid, um sie zu vergleichen"
+
+#: ui/phase.slint:118
+msgctxt "PhaseStrip"
+msgid "PRACTICE"
+msgstr "ÜBEN"
+
+#: ui/phase.slint:119
+msgctxt "PhaseStrip"
+msgid "Practice on: SYNC is off. Click to allow SYNC again"
+msgstr "Üben an: SYNC ist aus. Klick gibt SYNC wieder frei"
+
+#: ui/phase.slint:119
+msgctxt "PhaseStrip"
+msgid "Practise beatmatching by ear and eye: SYNC goes off and stays off"
+msgstr "Beatmatching nach Gehör und Auge üben: SYNC geht aus und bleibt aus"

@@ -1195,6 +1195,16 @@ const DE: &[(&str, &str)] = &[
         "Für das Set gesperrt: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen",
     ),
     ("Unlocked", "Entsperrt"),
+    // Phase and tempo between decks (roadmap [12]).
+    (
+        "Practice: SYNC is off. Match tempo and phase by ear and with the phase meter",
+        "Üben: SYNC ist aus. Gleiche Tempo und Phase nach Gehör und mit der Phasenanzeige an",
+    ),
+    ("SYNC can be used again", "SYNC ist wieder verfügbar"),
+    (
+        "Practice: SYNC stays off until you turn practice off",
+        "Üben: SYNC bleibt aus, bis du das Üben beendest",
+    ),
     (
         "Lock for the set: no loading onto a playing deck, no deleting, no grid edits",
         "Für das Set sperren: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen",

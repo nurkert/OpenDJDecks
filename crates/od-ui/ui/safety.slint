@@ -300,18 +300,30 @@ export component LockKey inherits Rectangle {
     accessible-checkable: true;
     accessible-checked: PerformLock.locked;
     accessible-value: PerformLock.playing ? "playing" : "idle";
-    width: l.preferred-width + (root.narrow ? 12px : 24px);
+    // Narrow bar: a padlock instead of the word, so live values keep room.
+    width: root.narrow ? 20px : l.preferred-width + 24px;
     Rectangle {
         y: Theme.s2; height: parent.height - 2 * Theme.s2;
         border-radius: Theme.r-control;
         background: Theme.face(true, t.pressed, t.has-hover, false, PerformLock.locked, Theme.attention);
     }
     l := Text {
-        x: root.narrow ? 6px : 12px; height: parent.height;
+        visible: !root.narrow;
+        x: 12px; height: parent.height;
         text: PerformLock.locked ? @tr("LOCKED") : @tr("LOCK");
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
         color: Theme.ink(true, t.pressed, t.has-hover, false, PerformLock.locked);
         vertical-alignment: center;
+    }
+    if root.narrow: Rectangle {
+        // Shackle (open while unlocked) over the body.
+        property <color> ink: Theme.ink(true, t.pressed, t.has-hover, false, PerformLock.locked);
+        x: (parent.width - 10px) / 2; y: (parent.height - 14px) / 2; width: 10px; height: 14px;
+        Rectangle {
+            x: PerformLock.locked ? 2px : 4px; y: PerformLock.locked ? 1px : 0px; width: 6px; height: 8px;
+            border-width: 1.5px; border-radius: 3px; border-color: parent.ink;
+        }
+        Rectangle { x: 0; y: 6px; width: 10px; height: 8px; border-radius: 1px; background: parent.ink; }
     }
     t := TipArea {
         tooltip: PerformLock.locked

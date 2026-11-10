@@ -312,3 +312,57 @@ fn lock_blocks_accidents_and_playing_keeps_awake() {
     assert!(!crate::perform_lock::awake());
     assert_eq!(ui.value("topbar.lock"), "idle");
 }
+
+fn phase_rows(ui: &Ui) -> Vec<crate::PhaseRow> {
+    use slint::Model;
+    ui.app.ui.global::<crate::PhaseMeter>().get_rows().iter().collect()
+}
+
+/// [12] Beatmatching can be judged from the screen: the strip under the
+/// waveforms names the tempo difference and where the beat falls, and says
+/// IN SYNC only once both match. PRACTICE turns SYNC off and keeps it off.
+#[test]
+fn phase_meter_shows_tempo_and_phase_and_practice_keeps_sync_off() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    assert!(ui.has("wave.phase"), "the strip is in Perform");
+    play(&ui, 0, 0);
+    play(&ui, 1, 1);
+    assert!(ui.wait_until(3.0, |u| phase_rows(u).len() == 1), "one deck against the other");
+    let reference = ui.app.ui.global::<crate::PhaseMeter>().get_reference();
+    let other = if reference == 1 { 1 } else { 0 };
+    assert_eq!(phase_rows(&ui)[0].deck as usize, other + 1);
+
+    // A different tempo: named, not in sync.
+    crate::engine::deck_cmd(&ui.app, other, od_engine::DeckCommand::SetTempoFader(0.5));
+    assert!(ui.wait_until(3.0, |u| phase_rows(u)[0].tempo.starts_with('+')));
+    let row = phase_rows(&ui)[0].clone();
+    assert!(row.tempo.ends_with("BPM") && !row.in_sync, "{row:?}");
+    let label = format!("wave.phase.deck{}", other + 1);
+    assert!(ui.value(&label).contains("BPM"));
+
+    // SYNC matches tempo and phase: IN SYNC.
+    crate::engine::deck_cmd(&ui.app, other, od_engine::DeckCommand::SetSync(true));
+    assert!(
+        ui.wait_until(5.0, |u| phase_rows(u).first().is_some_and(|r| r.in_sync)),
+        "in sync once tempo and phase match: {:?}",
+        phase_rows(&ui)
+    );
+    assert!(ui.value(&label).starts_with("in sync"));
+    assert_eq!(phase_rows(&ui)[0].tempo, "±0.00 BPM");
+
+    // Practice: SYNC goes off and stays off.
+    ui.click("wave.phase.practice");
+    assert!(crate::phase::practice());
+    assert!(ui.wait_until(2.0, |u| crate::engine::snapshot(&u.app)
+        .is_some_and(|s| !s.decks[0].sync && !s.decks[1].sync)));
+    let sync_key = format!("deck{}.beat-sync", other + 1);
+    ui.click(&sync_key);
+    crate::engine::deck_cmd(&ui.app, other, od_engine::DeckCommand::SetSync(true));
+    ui.pump(200);
+    assert!(!crate::engine::snapshot(&ui.app).unwrap().decks[other].sync, "SYNC stays off");
+    assert!(status(&ui).starts_with("Practice: SYNC stays off"), "{}", status(&ui));
+    ui.click("wave.phase.practice");
+    assert!(!crate::phase::practice());
+}
+

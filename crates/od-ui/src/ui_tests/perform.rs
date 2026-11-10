@@ -807,7 +807,9 @@ fn cues_show_on_the_waveform_lane() {
 #[test]
 fn lane_grid_key_opens_edit_grid() {
     use slint::ComponentHandle;
-    let ui = Ui::open((1440, 900));
+    // Lanes show GRID from 60 px; beside the phase strip that takes a
+    // taller window here (the testing backend draws the menu bar inside).
+    let ui = Ui::open((1440, 1000));
     perform(&ui);
     let (id, title) = ui.fx.tracks[0].clone();
     crate::decks::load_track(&ui.app, 0, id, None);
