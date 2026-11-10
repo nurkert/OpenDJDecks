@@ -1,0 +1,21 @@
+[package]
+name = "od-soak"
+description = "Long-run measurement of the OpenDJDecks engine in real time, without an audio device"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "soak"
+path = "src/main.rs"
+
+[dependencies]
+od-core.workspace = true
+od-engine.workspace = true
+od-analysis.workspace = true
+od-stems.workspace = true
+od-recorder.workspace = true
+anyhow.workspace = true
+serde_json.workspace = true
+libc = "0.2"

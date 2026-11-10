@@ -4543,6 +4543,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "od-soak"
+version = "0.6.0"
+dependencies = [
+ "anyhow",
+ "libc",
+ "od-analysis",
+ "od-core",
+ "od-engine",
+ "od-recorder",
+ "od-stems",
+ "serde_json",
+]
+
+[[package]]
 name = "od-stems"
 version = "0.6.0"
 dependencies = [
