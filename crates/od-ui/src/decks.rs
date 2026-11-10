@@ -307,6 +307,40 @@ impl Decks {
         slint::ModelRc::from(self.overlay.clone())
     }
 
+    /// The decks' own separation of `track`: `Some(progress)` while it runs
+    /// (or has made progress), `None` otherwise; see [`Self::stem_waiting`].
+    pub(crate) fn stem_running(&self, track: TrackId) -> Option<f32> {
+        let p = *self.stem_progress.get(&track)?;
+        (p > 0.0 || self.stem_current() == Some(track)).then_some(p)
+    }
+
+    /// What the STEMS column shows of the decks' own separations (track,
+    /// progress in 5 % steps, 255 = waiting); changes when it should redraw.
+    pub(crate) fn stem_signature(&self) -> Vec<(TrackId, u8)> {
+        let mut v: Vec<(TrackId, u8)> = self
+            .stem_progress
+            .keys()
+            .map(|&t| (t, self.stem_running(t).map_or(255, |p| (p * 20.0) as u8)))
+            .collect();
+        v.sort();
+        v
+    }
+
+    /// `track` waits in the decks' separation queue behind another track.
+    pub(crate) fn stem_waiting(&self, track: TrackId) -> bool {
+        self.stem_progress.contains_key(&track) && self.stem_running(track).is_none()
+    }
+
+    #[cfg(feature = "separation")]
+    fn stem_current(&self) -> Option<TrackId> {
+        self.stem_worker.as_ref().and_then(|w| w.current())
+    }
+
+    #[cfg(not(feature = "separation"))]
+    fn stem_current(&self) -> Option<TrackId> {
+        None
+    }
+
     /// Parts of the track on `deck` are being separated.
     pub(crate) fn stems_pending(&self, deck: usize) -> bool {
         self.loaded[deck]
@@ -1103,7 +1137,8 @@ pub(crate) fn poll_stems(app: &App) {
                 app.decks.borrow_mut().stem_progress.insert(track, 0.0);
             }
             StemEvent::Progress { track, fraction } => set_stem_progress(app, track, fraction),
-            StemEvent::Done { track, .. } | StemEvent::AlreadyCached { track, .. } => {
+            StemEvent::Done { track, hash, .. } | StemEvent::AlreadyCached { track, hash } => {
+                crate::stems_batch::mark_cached(&hash);
                 stems_ready(app, track)
             }
             StemEvent::Failed { track, error } => {
@@ -1722,6 +1757,9 @@ pub(crate) fn project(app: &App, state: &EngineState) {
             .or_else(|| d.loaded[i].as_ref().filter(|_| s.track.is_none()));
         // Shown but not in the engine yet.
         let loading = meta.is_some() && (d.pending[i].is_some() || playable.is_none());
+        // The decks' own separation of the track, or the stems-ahead batch's.
+        let stem_busy = meta.and_then(|m| d.stem_running(m.id).or_else(|| crate::stems_batch::running(m.id)));
+        let stem_queued = meta.is_some_and(|m| d.stem_waiting(m.id) || crate::stems_batch::is_queued(m.id));
         let lane = &mut d.views.lanes[i];
         let mut dirty = false;
         let tid = meta.map(|m| m.id);
@@ -1809,13 +1847,8 @@ pub(crate) fn project(app: &App, state: &EngineState) {
                 level: state.channels[i].meter.peak,
                 fader: state.channels[i].fader,
                 quantize: state.quantize,
-                stems_busy: meta.and_then(|m| {
-                    d.stem_progress
-                        .get(&m.id)
-                        .copied()
-                        .or_else(|| crate::stems_batch::running(m.id))
-                }),
-                stems_queued: meta.is_some_and(|m| crate::stems_batch::is_queued(m.id)),
+                stems_busy: stem_busy,
+                stems_queued: stem_queued,
                 stems_expected: d.stems_expected[i],
                 stem_solo: d.stem_solo[i].map(|x| x.stem),
                 loop_size: d.loop_size[i],

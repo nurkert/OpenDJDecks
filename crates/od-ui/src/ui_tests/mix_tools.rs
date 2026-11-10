@@ -104,7 +104,7 @@ fn build_up_tail_and_level_in_the_fx_panel() {
 
     // The level, large: a press near the right end of the bar sets it high.
     // (The percent text sits in the column the bar spans.)
-    let text = Rect::of(&ui.get("fx.unit1.level"));
+    let text = Rect::of(&ui.get("fx.unit1.slot1.depth"));
     let column = Rect::of(&ui.get("fx.unit1.tempo-fx"));
     ui.click_at(
         slint::LogicalPosition::new(column.x + 92.0 * 0.9, text.y + text.h / 2.0),
@@ -115,7 +115,7 @@ fn build_up_tail_and_level_in_the_fx_panel() {
         "level from the bar: {}",
         snapshot(&ui).tempo_fx[0].level
     );
-    assert!(ui.wait_until(5.0, |u| u.value("fx.unit1.level").ends_with('%')));
+    assert!(ui.wait_until(5.0, |u| u.value("fx.unit1.slot1.depth").ends_with('%')));
 }
 
 /// [61] XY: the unit turns into one surface; a press switches the idle

@@ -180,10 +180,11 @@ pub(crate) fn expected(replaced_had_stems: bool, others_with_stems: bool) -> boo
     replaced_had_stems || others_with_stems
 }
 
-/// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF=stems-ahead`): the
-/// library's STEMS column on, the batch shown with one track ready, one
-/// separating, the rest of the list queued (staged, nothing separates),
-/// deck 1 warning that stems were expected and deck 2 queued.
+/// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF=stems-ahead`, with
+/// two tracks without stems on the decks): the library's STEMS column on,
+/// the rest of the list shown as queued (staged, the batch separates
+/// nothing), deck 1 warning that stems were expected (or separating, when
+/// the model is installed) and deck 2 queued.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     if !v.split(',').any(|p| p == "stems-ahead") {
@@ -203,13 +204,21 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
             cols.retain(|c| c != "genre" && c != "preview");
             st.settings.browser.columns = cols;
         }
-        let ids = a.state.borrow().list_ids();
+        // Tracks with stems in the cache read READY by themselves; the
+        // others (deck 2's too) show as queued.
+        let cache = a.decks.borrow().stem_cache();
         let on_decks = a.decks.borrow().loaded_ids();
-        let rest: Vec<_> = ids.iter().copied().filter(|t| !on_decks.contains(t)).collect();
-        if rest.len() >= 2 {
-            let queued: Vec<_> = on_decks.get(1).copied().into_iter().chain(rest[2..].iter().copied()).collect();
-            crate::stems_batch::stage(&[rest[0]], Some((rest[1], 0.42)), &queued);
-        }
+        let rest: Vec<_> = a
+            .state
+            .borrow()
+            .browser
+            .rows
+            .iter()
+            .filter(|t| !on_decks.contains(&t.id) && !crate::stems_batch::cached(&cache, &t.content_hash))
+            .map(|t| t.id)
+            .collect();
+        let queued: Vec<_> = on_decks.get(1).copied().into_iter().chain(rest).collect();
+        crate::stems_batch::stage(&[], None, &queued);
         a.decks.borrow_mut().stems_expected[0] = true;
         crate::browser::apply_columns(&a);
         crate::browser::refresh_tracks(&a);

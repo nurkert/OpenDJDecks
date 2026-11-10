@@ -70,7 +70,7 @@ component Intensity inherits Rectangle {
             }
         }
         Text {
-            accessible-role: slider; accessible-label: "fx.unit\{root.u.unit}.level"; accessible-value: root.u.level-text;
+            accessible-role: slider; accessible-label: "fx.unit\{root.u.unit}.slot1.depth"; accessible-value: root.u.level-text;
             text: root.u.level-text;
             font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
             color: root.lit ? root.tone : Theme.bone-2;
@@ -405,6 +405,16 @@ component FxUnit inherits Rectangle {
                 }
                 // The level, large: percent over a bar (also the depth control).
                 if !root.tiny: Intensity { u: root.u; tone: root.tone; show-bpm: true; level(v) => { root.level(v); } }
+                // Very narrow: the unit's number alone (level on the controller).
+                if root.tiny: VerticalLayout {
+                    alignment: center;
+                    Text {
+                        accessible-role: text; accessible-label: "fx.unit\{root.u.unit}.tempo-fx"; accessible-value: FxNames.beat[root.u.kind];
+                        text: "FX" + root.u.unit;
+                        font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; letter-spacing: 1px;
+                        color: root.u.on ? root.tone : root.u.ringing ? Theme.bone-2 : Theme.bone-3;
+                    }
+                }
                 if !root.narrow: VerticalLayout {
                     alignment: center;
                     Knob {

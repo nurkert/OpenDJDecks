@@ -85,6 +85,8 @@ impl TrackStems {
 }
 
 thread_local! {
+    /// The decks' own separations as last shown in the STEMS column.
+    static DECK_SIGNATURE: RefCell<Vec<(TrackId, u8)>> = const { RefCell::new(Vec::new()) };
     /// Whether the stem cache holds a track's parts, by content hash (one
     /// file check per track; finished batch jobs update it).
     static CACHED: RefCell<HashMap<String, bool>> = RefCell::new(HashMap::new());
@@ -141,6 +143,11 @@ pub(crate) fn cached(cache: &od_stems::StemCache, hash: &od_core::ContentHash) -
     })
 }
 
+/// The parts of the file with `hash` are now in the cache.
+pub(crate) fn mark_cached(hash: &od_core::ContentHash) {
+    CACHED.with(|c| c.borrow_mut().insert(hash.0.clone(), true));
+}
+
 /// Forgets what is known about the cache (parts removed in Preferences).
 pub(crate) fn forget_cached() {
     CACHED.with(|c| c.borrow_mut().clear());
@@ -181,7 +188,14 @@ pub(crate) fn tick(app: &App) {
     }
     #[cfg(not(feature = "separation"))]
     let _ = fresh;
-    if dirty && crate::browser::stems_shown(&app.state.borrow()) {
+    let sig = app.decks.borrow().stem_signature();
+    let deck_changed = DECK_SIGNATURE.with(|d| {
+        let mut d = d.borrow_mut();
+        let changed = *d != sig;
+        *d = sig;
+        changed
+    });
+    if (dirty || deck_changed) && crate::browser::stems_shown(&app.state.borrow()) {
         crate::browser::refresh_tracks(app);
     }
 }

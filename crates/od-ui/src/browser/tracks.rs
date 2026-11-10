@@ -600,12 +600,19 @@ fn refresh_list(app: &App) {
     // [60] STEMS column: the cache (one file check per track, remembered)
     // and the stems-ahead batch.
     let stems: Vec<(&'static str, String)> = if super::stems_shown(&st) && !st.read_only() {
-        let cache = app.decks.borrow().stem_cache();
+        let decks = app.decks.borrow();
+        let cache = decks.stem_cache();
         b.rows
             .iter()
             .map(|t| {
                 let cached = crate::stems_batch::cached(&cache, &t.content_hash);
-                crate::stems_batch::track_state(t.id, cached).view()
+                // A deck separating the track itself counts too.
+                let state = match (decks.stem_running(t.id), decks.stem_waiting(t.id)) {
+                    (Some(p), _) if !cached => crate::stems_batch::TrackStems::Running(p),
+                    (_, true) if !cached => crate::stems_batch::TrackStems::Queued,
+                    _ => crate::stems_batch::track_state(t.id, cached),
+                };
+                state.view()
             })
             .collect()
     } else {

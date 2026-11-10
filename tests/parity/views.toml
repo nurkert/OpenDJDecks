@@ -4032,7 +4032,6 @@ elements = [
   "fx.unit1.assign.master",
   "fx.unit1.menu",
   "fx.unit1.slot1.type",
-  "fx.unit1.slot1.depth",
   "fx.unit1.slot1.beats-down",
   "fx.unit1.slot1.beats",
   "fx.unit1.slot1.beats-up",
@@ -4047,11 +4046,12 @@ elements = [
   "fx.unit1.slot3.beats",
   "fx.unit1.slot3.beats-up",
   "fx.unit1.tempo-fx",
+  "fx.unit1.slot1.depth",
   "fx.unit1.auto",
   "fx.unit1.tap",
   "fx.unit1.on",
 ]
-note = "assign grid 1 2 S / 3 4 M, three slots, tempo-FX, AUTO, TAP"
+note = "assign grid 1 2 S / 3 4 M, three slots, tempo-FX over the level (slot 1 depth, large, in percent), AUTO, TAP"
 
 [[view.region]]
 id = "fx.unit2"
@@ -4067,7 +4067,6 @@ elements = [
   "fx.unit2.assign.master",
   "fx.unit2.menu",
   "fx.unit2.slot1.type",
-  "fx.unit2.slot1.depth",
   "fx.unit2.slot1.beats-down",
   "fx.unit2.slot1.beats",
   "fx.unit2.slot1.beats-up",
@@ -4082,10 +4081,31 @@ elements = [
   "fx.unit2.slot3.beats",
   "fx.unit2.slot3.beats-up",
   "fx.unit2.tempo-fx",
+  "fx.unit2.slot1.depth",
   "fx.unit2.auto",
   "fx.unit2.tap",
   "fx.unit2.on",
 ]
+
+[[view.region]]
+id = "fx.drops"
+band = "fx"
+place = "in each unit: BUILD under the assign keys, TAIL under AUTO / TAP / ON, XY at the end of the first line (on the second under 1400 px); ALL FX OFF at the end of the last unit's second line"
+order = "any"
+elements = [
+  "fx.unit1.build8",
+  "fx.unit1.build16",
+  "fx.unit1.build32",
+  "fx.unit1.tail",
+  "fx.unit1.xy",
+  "fx.unit2.build8",
+  "fx.unit2.build16",
+  "fx.unit2.build32",
+  "fx.unit2.tail",
+  "fx.unit2.xy",
+  "fx.panic",
+]
+note = "Roadmap [61]: bar-locked build-ups, tails after release, the XY surface per unit and the panic key"
 
 [[view.region]]
 id = "fx.channel-fx"
@@ -4104,6 +4124,22 @@ omit = [
   "topbar.master-volume",
 ]
 reason = "The controller’s MASTER LEVEL knob; the master meter stays on screen."
+
+[[view.kiosk]]
+omit = [
+  "fx.unit1.build8",
+  "fx.unit1.build16",
+  "fx.unit1.build32",
+  "fx.unit1.tail",
+  "fx.unit1.xy",
+  "fx.unit2.build8",
+  "fx.unit2.build16",
+  "fx.unit2.build32",
+  "fx.unit2.tail",
+  "fx.unit2.xy",
+  "fx.panic",
+]
+reason = "The kiosk's FX units are a narrow strip; build-ups, tails and the panic come from the controller (tempo_fx.build_up, fx_panic)."
 
 [[view.kiosk]]
 omit = [
