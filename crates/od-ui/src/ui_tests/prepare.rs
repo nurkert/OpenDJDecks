@@ -985,3 +985,84 @@ fn reserved_track_loads_into_the_free_deck() {
     );
     assert!(!ui.has("mix-preview.clear-queue"), "queue empty again");
 }
+
+/// Preferences ▸ Controller ▸ Self-test: every control of the chosen
+/// mapping is listed with its hardware status and ticked when its MIDI
+/// message arrives (simulated here through the monitor); FLASH LEDS lights
+/// the mapping's LEDs for two seconds.
+#[test]
+fn controller_self_test_ticks_controls_and_flashes_leds() {
+    use od_controller::monitor::{Direction, MidiMonitor};
+    use slint::Model;
+    use slint::platform::PointerEventButton;
+    let ui = Ui::open((1440, 900));
+    let m = MidiMonitor::new(256);
+    // The test environment has no mapping folder: offer the bundled ones.
+    let bundled: Vec<std::sync::Arc<od_controller::Mapping>> = ["ddj-flx10.toml", "ddj-flx4.toml"]
+        .iter()
+        .map(|f| {
+            let p = od_controller::bundled_mappings_dir().join("controllers").join(f);
+            std::sync::Arc::new(od_controller::Mapping::load(&p).unwrap())
+        })
+        .collect();
+    {
+        let mut p = ui.app.prefs.borrow_mut();
+        p.midi.monitor = Some(m.clone());
+        p.midi.test_mappings = bundled;
+    }
+    ui.click("topbar.settings");
+    let w = ui
+        .app
+        .prefs
+        .borrow()
+        .window
+        .as_ref()
+        .map(|w| w.clone_strong())
+        .expect("Preferences open");
+    w.set_page("controller".into());
+    w.window().set_size(slint::LogicalSize::new(900.0, 2600.0));
+    ui.pump(200);
+    let names: Vec<String> = w.get_test_mappings().iter().map(|s| s.to_string()).collect();
+    let flx4 = names.iter().position(|n| n.ends_with("FLX4")).expect("the two-deck mapping");
+    w.invoke_choose("test.mapping".into(), flx4 as i32);
+    ui.pump(50);
+    let rows = w.get_test_rows();
+    assert!(rows.row_count() > 50, "every control is listed");
+    assert!(
+        rows.iter().all(|r| r.status == "partial" || r.status == "untested"),
+        "nothing is verified on hardware yet"
+    );
+    assert_eq!(w.get_test_seen(), 0);
+    prefs_el(&w, "prefs.controller.test-start").mock_single_click(PointerEventButton::Left);
+    ui.pump(50);
+    assert!(w.get_test_active());
+    let mapping = ui.app.prefs.borrow().midi.selftest.as_ref().unwrap().mapping().clone();
+    let play = mapping.inputs.iter().find(|b| b.name.starts_with("Play")).unwrap().clone();
+    let fader = mapping.inputs.iter().find(|b| b.name.starts_with("Crossfader")).unwrap().clone();
+    m.record("DDJ", Direction::In, &play.addr.message(0x7F), Vec::new());
+    m.record("DDJ", Direction::In, &play.addr.message(0x00), Vec::new());
+    m.record("DDJ", Direction::In, &fader.addr.message(0x40), Vec::new());
+    assert!(
+        ui.wait_until(5.0, |_| w.get_test_seen() == 2),
+        "two controls answered: {}",
+        w.get_test_seen()
+    );
+    let seen: Vec<String> = w
+        .get_test_rows()
+        .iter()
+        .filter(|r| r.seen)
+        .map(|r| r.name.to_string())
+        .collect();
+    assert_eq!(seen, vec![play.name.clone(), fader.name.clone()]);
+    assert!(w.get_test_lights() > 10, "the mapping drives LEDs");
+    prefs_el(&w, "prefs.controller.test-flash").mock_single_click(PointerEventButton::Left);
+    ui.pump(50);
+    assert!(w.get_test_flashing());
+    assert!(
+        ui.wait_until(6.0, |_| !w.get_test_flashing()),
+        "the LEDs go back after two seconds"
+    );
+    prefs_el(&w, "prefs.controller.test-start").mock_single_click(PointerEventButton::Left);
+    ui.pump(50);
+    assert!(!w.get_test_active());
+}

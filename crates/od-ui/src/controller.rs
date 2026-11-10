@@ -67,6 +67,31 @@ pub(crate) fn mapping_names() -> Vec<String> {
     v
 }
 
+/// The mappings the self-test can check: the own mapping file first, then
+/// the built-in ones (those that load).
+pub(crate) fn test_mappings(app: &App) -> Vec<Arc<od_controller::Mapping>> {
+    let own = app.state.borrow().settings.controller.mapping_file.clone();
+    let mut files = od_controller::Mapping::load_dir(&mappings_dir());
+    files.sort_by(|a, b| a.0.cmp(&b.0));
+    if !own.is_empty() {
+        let p = PathBuf::from(&own);
+        files.insert(0, (p.clone(), od_controller::Mapping::load(&p)));
+    }
+    files.into_iter().filter_map(|(_, m)| m.ok().map(Arc::new)).collect()
+}
+
+/// Self-test: every LED of `device`'s mapping on, or back to normal.
+pub(crate) fn light_all(app: &App, device: &str, on: bool) {
+    if let Some(m) = app.controller.borrow().manager.as_ref() {
+        m.light_all(Some(device), on);
+    }
+}
+
+/// Mapping id of the connected controller.
+pub(crate) fn connected_id(app: &App) -> Option<String> {
+    app.controller.borrow().name.clone()
+}
+
 /// Starts the controller layer (MIDI) once.
 pub(crate) fn start(app: &Rc<App>) {
     let mut c = app.controller.borrow_mut();

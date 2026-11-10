@@ -28,12 +28,20 @@ pub(crate) struct MidiTools {
     /// Deck / channel of the learned entry (1-based; 0 = none).
     pub deck: u8,
     pub suggestion: Option<LearnedInput>,
+    /// Self-test: the mappings to choose from, the chosen one, and whether
+    /// it listens.
+    pub test_mappings: Vec<std::sync::Arc<od_controller::Mapping>>,
+    pub test_index: usize,
+    pub testing: bool,
+    pub selftest: Option<od_controller::hardware::SelfTest>,
+    /// Every LED is on (for two seconds).
+    pub flashing: bool,
 }
 
 impl MidiTools {
     /// Starts or stops the monitor / learn stream.
     fn ensure_stream(&mut self) {
-        let want = self.monitoring || self.learning;
+        let want = self.monitoring || self.learning || self.testing;
         match (want, &self.rx, &self.monitor) {
             (true, None, Some(m)) => {
                 m.set_enabled(true);
@@ -79,6 +87,11 @@ impl MidiTools {
                     self.lines.push_back(l.to_string());
                 }
             }
+            if self.testing && e.direction == Direction::In {
+                if let Some(t) = self.selftest.as_mut() {
+                    t.feed(&e.bytes);
+                }
+            }
             if self.learning && e.direction == Direction::In {
                 self.learn.feed(&e.bytes);
                 if self.learn_port.is_empty() {
@@ -88,6 +101,33 @@ impl MidiTools {
             }
         }
         true
+    }
+
+    /// The self-test of the chosen mapping (built on first use, rebuilt
+    /// when another mapping is chosen).
+    pub fn select_test(&mut self, index: usize) {
+        self.test_index = index.min(self.test_mappings.len().saturating_sub(1));
+        self.selftest = self
+            .test_mappings
+            .get(self.test_index)
+            .map(|m| od_controller::hardware::SelfTest::new(m.clone()));
+    }
+
+    /// START: listen and tick from zero.
+    pub fn start_test(&mut self) {
+        if self.selftest.is_none() {
+            self.select_test(self.test_index);
+        }
+        if let Some(t) = self.selftest.as_mut() {
+            t.reset();
+        }
+        self.testing = true;
+        self.ensure_stream();
+    }
+
+    pub fn stop_test(&mut self) {
+        self.testing = false;
+        self.ensure_stream();
     }
 
     pub fn action_name(&self) -> &'static str {
@@ -246,6 +286,35 @@ mod tests {
         t.set_monitoring(false);
         m.record("CTRL-TEST", Direction::In, &[0x90, 0x0C, 0x7F], Vec::new());
         assert!(!t.poll(), "nothing is read while both are off");
+    }
+
+    #[test]
+    fn the_self_test_ticks_from_the_monitor_stream() {
+        let m = MidiMonitor::new(64);
+        let path = od_controller::bundled_mappings_dir().join("controllers/ddj-flx4.toml");
+        let mapping = std::sync::Arc::new(od_controller::Mapping::load(&path).unwrap());
+        let play = mapping.inputs.iter().find(|b| b.name.starts_with("Play")).unwrap().clone();
+        let mut t = MidiTools {
+            monitor: Some(m.clone()),
+            test_mappings: vec![mapping],
+            ..Default::default()
+        };
+        t.start_test();
+        assert!(t.testing);
+        let total = t.selftest.as_ref().unwrap().controls.len();
+        assert!(total > 50, "{total}");
+        m.record("CTRL", Direction::In, &play.addr.message(0x7F), Vec::new());
+        m.record("CTRL", Direction::Out, &[0x90, 0x00, 0x7F], Vec::new());
+        assert!(t.poll());
+        let st = t.selftest.as_ref().unwrap();
+        assert_eq!(st.seen(), 1);
+        assert!(st.controls.iter().any(|c| c.seen && c.name == play.name));
+        t.stop_test();
+        m.record("CTRL", Direction::In, &[0x96, 0x46, 0x7F], Vec::new());
+        assert!(!t.poll());
+        // START again begins from zero.
+        t.start_test();
+        assert_eq!(t.selftest.as_ref().unwrap().seen(), 0);
     }
 
     #[test]

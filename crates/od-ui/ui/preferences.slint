@@ -20,6 +20,15 @@ export struct KeyRow {
     header: bool,
 }
 
+// One control in the controller self-test.
+export struct SelfTestRow {
+    name: string,
+    // "verified", "partial", "untested".
+    status: string,
+    // Its MIDI message arrived since START.
+    seen: bool,
+}
+
 // One category on the left rail.
 component Category inherits Rectangle {
     in property <string> label;
@@ -281,6 +290,14 @@ export component PreferencesWindow inherits Window {
     in property <string> learn-entry;
     in property <string> learn-file;
     in property <bool> mapping-pending;
+    // Self-test before a gig.
+    in property <[string]> test-mappings;
+    in property <int> test-mapping;
+    in property <bool> test-active;
+    in property <bool> test-flashing;
+    in property <int> test-seen;
+    in property <int> test-lights;
+    in property <[SelfTestRow]> test-rows;
 
     // Keyboard.
     in property <[KeyRow]> key-rows;
@@ -547,6 +564,47 @@ export component PreferencesWindow inherits Window {
                         Heading { text: @tr("Detected"); }
                         if root.controllers.length == 0: Note { text: @tr("No MIDI controller found. Connect a supported controller by USB; it is picked up within a few seconds."); }
                         for c in root.controllers: Text { text: c; font-family: Theme.family; font-size: Theme.body; color: Theme.bone; height: 24px; vertical-alignment: center; }
+                        Heading { a11y: "prefs.controller.self-test"; text: @tr("Self-test"); }
+                        Row {
+                            label: @tr("Mapping");
+                            ComboBox { accessible-label: "prefs.controller.test-mapping"; horizontal-stretch: 1; model: root.test-mappings; current-index: root.test-mapping; selected => { root.choose("test.mapping", self.current-index); } }
+                        }
+                        Row {
+                            label: root.test-rows.length == 0 ? "" : @tr("{} of {} answered", root.test-seen, root.test-rows.length);
+                            Button { a11y-label: "prefs.controller.test-start"; label: root.test-active ? @tr("STOP") : @tr("START"); tone: Theme.live; tooltip: root.test-active ? @tr("Stop listening") : @tr("Listen to the controller and tick each control that answers"); clicked => { root.act(root.test-active ? "test.stop" : "test.start"); } }
+                            Button { a11y-label: "prefs.controller.test-flash"; label: root.test-flashing ? @tr("LEDS ON…") : @tr("FLASH LEDS"); tone: Theme.attention; tooltip: @tr("Light every LED of the mapping for two seconds ({} lights)", root.test-lights); clicked => { root.act("test.flash"); } }
+                            Rectangle { horizontal-stretch: 1; }
+                        }
+                        if root.test-rows.length > 0: Rectangle {
+                            accessible-role: list; accessible-label: "prefs.controller.test-list";
+                            accessible-value: root.test-seen + "/" + root.test-rows.length;
+                            height: 240px;
+                            background: Theme.ground-band;
+                            border-radius: Theme.r-panel;
+                            Flickable {
+                                content-height: max(self.height, root.test-rows.length * 26px + 8px);
+                                VerticalLayout {
+                                    padding: Theme.s1; padding-left: Theme.s3; padding-right: Theme.s3; alignment: start;
+                                    for r in root.test-rows: HorizontalLayout {
+                                        accessible-role: AccessibleRole.text;
+                                        accessible-label: "prefs.controller.test-row";
+                                        accessible-value: (r.seen ? "seen " : "waiting ") + r.status + " " + r.name;
+                                        height: 26px; spacing: Theme.s2;
+                                        VerticalLayout {
+                                            padding-top: 5px; padding-bottom: 5px;
+                                            VLine { tone: r.seen ? Theme.live : Theme.rule-strong; form: r.seen ? "solid" : "half"; }
+                                        }
+                                        Text { horizontal-stretch: 1; text: r.name; overflow: elide; font-family: Theme.family; font-size: Theme.body; color: r.seen ? Theme.bone : Theme.bone-2; vertical-alignment: center; }
+                                        Caps {
+                                            width: 96px; horizontal-alignment: right; vertical-alignment: center;
+                                            text: r.status == "verified" ? @tr("VERIFIED") : r.status == "partial" ? @tr("PARTIAL") : @tr("UNTESTED");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Note { text: @tr("Press START and move every control once; each is ticked when its message arrives. FLASH LEDS lights every mapped LED. VERIFIED: confirmed on a unit. PARTIAL: from a public source, not yet tried on a unit. UNTESTED: neither."); }
+
                         Heading { text: @tr("Mappings"); note: root.mapping-pending ? @tr("APPLIES AFTER RESTART") : ""; }
                         for m in root.mappings: Text { text: m; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; height: 22px; vertical-alignment: center; overflow: elide; }
                         Row {
