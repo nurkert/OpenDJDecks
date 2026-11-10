@@ -549,6 +549,25 @@ tests = [
 evidence = ["crates/od-ui/src/import.rs::export_xml", "crates/od-ui/src/import.rs::import_xml"]
 note = "File ▸ Import / Export Library XML (rekordbox-compatible), also `od-cli xml-export` / `xml-import`; File ▸ Import Music / iTunes Library XML reads a `Library.xml` export (tracks with tags and rating, playlist folders; built-in lists skipped)"
 
+
+[[feature]]
+id = "import-review"
+area = "browser"
+name = "Library import you can check: preview, before and after, what did not transfer, undo"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-import::review::tests::library_xml_preview_then_import_then_undo",
+  "od-import::review::tests::music_xml_preview_names_what_stays_behind",
+  "od-import::review::tests::only_local_locations_count_as_files",
+  "od-library::backup::tests::restore_in_place_undoes_everything_since_the_snapshot",
+  "od-ui::import::tests::review_rows_and_reasons",
+  "od-ui::ui_tests::mix::library_import_preview_result_and_undo",
+]
+evidence = ["crates/od-import/src/review.rs::plan", "crates/od-ui/src/import.rs::open_review", "crates/od-library/src/backup.rs::restore_in_place"]
+note = "Roadmap [54]. For the documented export formats (library XML, Music / iTunes Library.xml) the user picked: what carries over and what will not, with the reason, before anything is written; then the library's counts before and after, the list of what did not transfer, and UNDO IMPORT (an undo copy taken right before) while the window is open. Nothing reads other software's private files on its own; the preferences import asks for the folder"
+
 [[feature]]
 id = "browser-relocate"
 area = "browser"
@@ -1779,6 +1798,74 @@ tests = [
 ]
 evidence = ["ChannelCommand::SetEqMode", "crates/od-ui/src/preferences.rs::mixer_settings"]
 note = "Preferences > Controller > Mixer: isolator / classic EQ, stored and applied live and at engine start"
+
+[[feature]]
+id = "mixer-eq-kill"
+area = "mixer"
+name = "Kill per EQ band"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::dsp::eq::tests::kill_silences_the_band_and_release_returns_to_the_knob",
+  "od-engine::dsp::eq::tests::classic_kill_is_the_knobs_floor",
+  "od-engine::mixer_swap::kill_holds_the_band_down_and_releases_to_the_knob",
+  "od-controller::templates::tests::eq_kill_and_swap_map",
+  "od-ui::ui_tests::mix::mixer_kills_swaps_values_and_clip",
+]
+evidence = ["ChannelCommand::SetEqKill", "crates/od-ui/src/mixer.rs::toggle_kill"]
+note = "Roadmap [55]. KILL beside HI, MID and LOW on each channel (and `mixer.eq_kill` in mappings): the band goes silent (isolator) or to −26 dB (classic EQ) while lit; the knob keeps its place and the release returns to it"
+
+[[feature]]
+id = "mixer-eq-swap"
+area = "mixer"
+name = "One-tap EQ swap between two decks, now or on the next beat or bar"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::mixer::tests::swap_lands_on_the_next_beat_or_downbeat",
+  "od-engine::mixer::tests::eq_band_round_trips_knob_and_kill",
+  "od-engine::mixer_swap::swap_now_exchanges_at_once",
+  "od-engine::mixer_swap::swap_on_the_next_beat",
+  "od-engine::mixer_swap::swap_on_the_next_bar",
+  "od-engine::mixer_swap::a_second_tap_cancels_a_waiting_swap",
+  "od-engine::mixer_swap::without_a_playing_master_a_quantised_swap_happens_at_once",
+  "od-ui::mixer::tests::swap_pair_follows_the_playing_decks",
+  "od-ui::mixer::tests::swap_timing_cycles",
+  "od-ui::ui_tests::mix::mixer_kills_swaps_values_and_clip",
+]
+evidence = ["MixerCommand::SwapEq", "crates/od-ui/src/mixer.rs::swap"]
+note = "Roadmap [55]. SWAP LOW / MID / HI under the channels (and `eq_swap` in mappings) exchanges the knob and kill of that band between the two loudest playing decks (one playing: it and the next loaded deck); NOW / BEAT / BAR sets the timing on the master clock, a waiting swap shows armed and a second tap cancels it. Landing is block-accurate in the engine"
+
+[[feature]]
+id = "mixer-eq-values"
+area = "mixer"
+name = "Larger EQ and filter knobs with their values, double-click reset"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::mixer::tests::readouts_show_values_kills_and_clip",
+  "od-ui::ui_tests::mix::mixer_kills_swaps_values_and_clip",
+  "od-ui::ui_tests::mix::mixer_rows_line_up",
+]
+evidence = ["ui/perform.slint::BandRow", "crates/od-ui/src/mixer.rs::eq_text"]
+note = "Roadmap [55]. EQ and CH FX knobs 28 px (20 px compact, before 22 / 16) with the value beside them: dB for TRIM and EQ, OFF at the isolator's full cut, KILL while killed, LP / HP and percent for the filter; double-click (double-tap) resets"
+
+[[feature]]
+id = "mixer-clip-indicator"
+area = "mixer"
+name = "Clip lamp per channel"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::mixer::tests::readouts_show_values_kills_and_clip",
+  "od-ui::ui_tests::mix::mixer_kills_swaps_values_and_clip",
+]
+evidence = ["MeterReading::clipped", "MixerCommand::ResetClipIndicators"]
+note = "Roadmap [55]. CLIP beside the channel number lights red once the channel went over full scale before the fader and stays lit until clicked; the click clears all clip indicators, the master's too"
 
 [[feature]]
 id = "mixer-channel-fx-knob"

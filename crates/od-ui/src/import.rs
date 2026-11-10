@@ -256,7 +256,30 @@ fn pick_encrypted_file(app: &App) {
     app.ui.set_encrypted_import_error("".into());
 }
 
+/// Documentation screenshots: `OPENDJDECKS_DEMO_PROOF=import-preview:<xml>`
+/// opens the review of a library XML file; `import-done:<xml>` also runs
+/// the import (on the demo library).
+fn demo(app: &Rc<App>) {
+    let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
+    let Some((run, path)) = v.split(',').find_map(|p| {
+        p.strip_prefix("import-preview:")
+            .map(|f| (false, f.to_string()))
+            .or_else(|| p.strip_prefix("import-done:").map(|f| (true, f.to_string())))
+    }) else {
+        return;
+    };
+    let weak = Rc::downgrade(app);
+    slint::Timer::single_shot(std::time::Duration::from_secs(6), move || {
+        let Some(a) = weak.upgrade() else { return };
+        open_review(&a, Path::new(&path), ExportFormat::LibraryXml);
+        if run {
+            run_review(&a);
+        }
+    });
+}
+
 pub(crate) fn wire(app: &Rc<App>) {
+    demo(app);
     let ui = &app.ui;
     ui.on_pick_encrypted_import_file(handler!(app, |a| pick_encrypted_file(&a)));
     ui.on_run_encrypted_import(handler!(app, |a| start_encrypted_import(&a)));
@@ -292,13 +315,13 @@ pub(crate) fn reason_text(r: &LeftOutReason) -> String {
         }
         LeftOutReason::NotMusic => od_i18n::tr("video or podcast").into(),
         LeftOutReason::UnreadableCues(n) => {
-            od_i18n::trf("{} cue points could not be read", &[n])
+            od_i18n::trf("cue points that cannot be read: {}", &[n])
         }
         LeftOutReason::BuiltInList => {
             od_i18n::tr("a list the other app makes itself").into()
         }
         LeftOutReason::ListEntries(n) => {
-            od_i18n::trf("{} entries whose tracks do not carry over", &[n])
+            od_i18n::trf("tracks that do not carry over: {}", &[n])
         }
     }
 }
@@ -1077,7 +1100,7 @@ mod tests {
         assert_eq!((shown.len(), more), (LEFT_OUT_SHOWN, 5));
         assert_eq!(
             reason_text(&LeftOutReason::UnreadableCues(3)),
-            "3 cue points could not be read"
+            "cue points that cannot be read: 3"
         );
     }
 
@@ -1087,9 +1110,9 @@ mod tests {
             "file not found",
             "not a file on this computer (stream or cloud)",
             "video or podcast",
-            "{} cue points could not be read",
+            "cue points that cannot be read: {}",
             "a list the other app makes itself",
-            "{} entries whose tracks do not carry over",
+            "tracks that do not carry over: {}",
             "LIBRARY XML",
             "MUSIC / ITUNES LIBRARY",
             "New tracks",

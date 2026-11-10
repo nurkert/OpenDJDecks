@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 235 features; 229 in scope: 229 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 240 features; 234 in scope: 234 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -65,6 +65,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Import folder / files | DONE | `app.rs` `on_import_folder`, `od-cli import` | 1 |  |
 | Preferences and keyboard shortcuts import (rekordbox-compatible) | DONE | `crates/od-import/src/settings.rs`, `crates/od-ui/src/import.rs::import_settings`; File ▸ Import rekordbox Preferences and Shortcuts and Preferences > Advanced: view, analysis, recording, deck and mixer values are applied; shortcuts are taken where they do not collide; `od-cli rekordbox-settings` reports the mapping; (SPEC §7) | 5 |  |
 | Library XML (rekordbox-compatible) and iTunes library import / export | DONE | `crates/od-ui/src/import.rs::export_xml`, `crates/od-ui/src/import.rs::import_xml`; File ▸ Import / Export Library XML (rekordbox-compatible), also `od-cli xml-export` / `xml-import`; File ▸ Import Music / iTunes Library XML reads a `Library.xml` export (tracks with tags and rating, playlist folders; built-in lists skipped) | 6 | P3 |
+| Library import you can check: preview, before and after, what did not transfer, undo | DONE | `crates/od-import/src/review.rs::plan`, `crates/od-ui/src/import.rs::open_review`, `crates/od-library/src/backup.rs::restore_in_place`; Roadmap [54]. For the documented export formats (library XML, Music / iTunes Library.xml) the user picked: what carries over and what will not, with the reason, before anything is written; then the library's counts before and after, the list of what did not transfer, and UNDO IMPORT (an undo copy taken right before) while the window is open. Nothing reads other software's private files on its own; the preferences import asks for the folder | 6 | P2 |
 | Missing files / relocate | DONE | `relocate.rs::check_missing/find_relocations`; `on_find_moved_files` | 1 |  |
 | Consolidate | DONE | `relocate.rs::consolidate`, `crates/od-ui/src/import.rs::consolidate`; File ▸ Consolidate Library copies every track into <folder>/<Artist>/ in the background and points the library at the copies; originals stay | 2 |  |
 | Undo/redo with history | DONE (beyond the usual) | `journal.rs`; Cmd-Z / Shift-Cmd-Z in `app.rs::key` | 3 |  |
@@ -185,6 +186,10 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Trim | DONE | `ChannelCommand::SetTrim`; UI knob + controller | 2 |  |
 | 3-band EQ (isolator) | DONE | `dsp/eq.rs` default `Isolator`; UI + controller | 3 |  |
 | EQ mode classic/isolator | DONE | `ChannelCommand::SetEqMode`, `crates/od-ui/src/preferences.rs::mixer_settings`; Preferences > Controller > Mixer: isolator / classic EQ, stored and applied live and at engine start | 2 |  |
+| Kill per EQ band | DONE | `ChannelCommand::SetEqKill`, `crates/od-ui/src/mixer.rs::toggle_kill`; Roadmap [55]. KILL beside HI, MID and LOW on each channel (and `mixer.eq_kill` in mappings): the band goes silent (isolator) or to −26 dB (classic EQ) while lit; the knob keeps its place and the release returns to it | 5 | P2 |
+| One-tap EQ swap between two decks, now or on the next beat or bar | DONE | `MixerCommand::SwapEq`, `crates/od-ui/src/mixer.rs::swap`; Roadmap [55]. SWAP LOW / MID / HI under the channels (and `eq_swap` in mappings) exchanges the knob and kill of that band between the two loudest playing decks (one playing: it and the next loaded deck); NOW / BEAT / BAR sets the timing on the master clock, a waiting swap shows armed and a second tap cancels it. Landing is block-accurate in the engine | 10 | P2 |
+| Larger EQ and filter knobs with their values, double-click reset | DONE | `ui/perform.slint::BandRow`, `crates/od-ui/src/mixer.rs::eq_text`; Roadmap [55]. EQ and CH FX knobs 28 px (20 px compact, before 22 / 16) with the value beside them: dB for TRIM and EQ, OFF at the isolator's full cut, KILL while killed, LP / HP and percent for the filter; double-click (double-tap) resets | 3 | P2 |
+| Clip lamp per channel | DONE | `MeterReading::clipped`, `MixerCommand::ResetClipIndicators`; Roadmap [55]. CLIP beside the channel number lights red once the channel went over full scale before the fader and stays lit until clicked; the click clears all clip indicators, the master's too | 2 | P2 |
 | Channel FX knob (filter) | DONE | `SetChannelFxAmount`; UI + controller (default kind = filter) | 1 |  |
 | Channel fader | DONE | UI + controller | 3 |  |
 | Channel fader curve | DONE | `crates/od-ui/src/preferences.rs::mixer_settings`; Preferences > Controller > Mixer: linear / smooth / sharp | 3 |  |
@@ -344,13 +349,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 229 |
+| DONE | 234 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **235** |
+| **Total** | **240** |
 
 ## P1 gaps and implementation notes
 

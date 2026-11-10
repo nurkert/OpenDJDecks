@@ -68,8 +68,8 @@ These need the real devices. They do not hold up any release: until one is confi
 
 ### For the mix
 
-- [ ] **[54] A library import people can trust.** A preview of what will carry over before anything is written, then a before and after count, a list of what did not transfer, and undo. Covers documented export formats. No automatic reading of other software's private files.
-- [ ] **[55] A mixer for bass swaps.** A kill per EQ band, a one-tap and optionally quantised swap between decks, larger EQ and filter with values and double-tap reset, and clip display.
+- [x] **[54] A library import people can trust.** A preview of what will carry over before anything is written, then a before and after count, a list of what did not transfer, and undo. Covers documented export formats. No automatic reading of other software's private files. Done for the library XML and Music / iTunes `Library.xml` exports; undo restores a copy taken right before the import and is offered while the result window is open. The preferences import now asks for the folder instead of looking for it.
+- [x] **[55] A mixer for bass swaps.** A kill per EQ band, a one-tap and optionally quantised swap between decks, larger EQ and filter with values and double-tap reset, and clip display. Done in the app and as the mapping actions `mixer.eq_kill` and `eq_swap`; the swap lands within one audio block of the beat or bar. Not tried on a hardware controller or a real touch screen yet (double-tap is the Slint double-click on touch), and no shipped mapping uses the new actions.
 - [ ] **[56] Phrase-aligned blends.** Bars to the next phrase, breakdown or drop on each deck, phrase-snapped sync, start on the next phrase, and the incoming track drawn over the playing waveform.
 - [ ] **[57] High tempos.** Detection up to and beyond 200 BPM without halving, a visible active range, and one-press half and double on the deck.
 - [ ] **[59] Loop roll and loop capture,** quantised from 1/32 beat to 4 beats and shown on the key and waveform.
