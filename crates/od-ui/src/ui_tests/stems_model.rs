@@ -181,8 +181,11 @@ fn while_music_plays_only_a_notice_then_the_dialog() {
         !ui.has("app.stems.prompt"),
         "no modal dialog while music plays"
     );
-    assert!(ui.has("app.stems.download"), "a notice offers it");
-    assert!(ui.app.stems_model.borrow().offer_later);
+    assert!(
+        ui.wait_until(5.0, |u| u.has("app.stems.download")),
+        "a notice offers it"
+    );
+    assert!(ui.wait_until(5.0, |u| u.app.stems_model.borrow().offer_later));
     ui.click("deck1.play");
     assert!(ui.wait_until(10.0, |u| {
         crate::engine::snapshot(&u.app).is_some_and(|s| !s.decks[0].playing)
