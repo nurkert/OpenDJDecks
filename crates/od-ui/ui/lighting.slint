@@ -1710,7 +1710,7 @@ export component LightingPanel inherits Rectangle {
         if root.roomy: Stage { compact: true; width: 220px; accessible-label: "lighting.strip.stage"; accessible-role: image; }
         VerticalLayout {
             horizontal-stretch: 1; min-width: 4 * 80px;
-            spacing: 4px;
+            spacing: Theme.s1;
             HorizontalLayout {
                 height: 44px; spacing: Theme.s2;
                 Caps { text: @tr("PAGE"); vertical-alignment: center; }
@@ -1740,7 +1740,7 @@ export component LightingPanel inherits Rectangle {
             }
         }
         VerticalLayout {
-            width: 300px; spacing: 4px;
+            width: 300px; spacing: Theme.s1;
             HorizontalLayout {
                 spacing: Theme.key-gap;
                 for m in [{ id: "auto", label: "AUTO" }, { id: "easy", label: "EASY" }, { id: "pro", label: "PRO" }]: PlateButton {
