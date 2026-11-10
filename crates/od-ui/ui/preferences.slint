@@ -467,7 +467,6 @@ export component PreferencesWindow inherits Window {
                         Heading { text: @tr("Waveforms and phrases"); }
                         Row { label: @tr("Phrases"); Switch { accessible-label: "prefs.view.phrase-enlarged"; label: @tr("Show phrases on the enlarged waveforms"); on: root.phrases; toggled(v) => { root.flag("view.phrases", v); } } }
                         Row { label: ""; Switch { accessible-label: "prefs.view.phrase-overview"; label: @tr("Show the phrase bar under the overviews"); on: root.phrases-overview; toggled(v) => { root.flag("view.phrases-overview", v); } } }
-                        Row { label: @tr("Incoming track"); Switch { accessible-label: "prefs.view.incoming-overlay"; label: @tr("Draw the incoming track over the playing waveform"); on: root.incoming-overlay; toggled(v) => { root.flag("view.incoming-overlay", v); } } }
                         Row { label: @tr("Phrase types"); Choice { accessible-label: "prefs.view.phrase-types"; options: [@tr("NAMES"), @tr("COLOURS ONLY")]; selected: root.phrase-types; picked(i) => { root.choose("view.phrase-types", i); } } }
                         Row { label: @tr("Waveform colour"); HorizontalLayout { alignment: start; spacing: Theme.s4; Choice { accessible-label: "prefs.view.waveform-colour"; options: [@tr("3-BAND"), @tr("ONE COLOUR"), "RGB"]; selected: root.waveform; picked(i) => { root.choose("view.waveform", i); } } if root.waveform == 0: PlateButton { compact: true; accessible-role: button; accessible-label: "prefs.view.waveform-customise"; label: @tr("OWN COLOURS"); selected: root.waveform-own; clicked => { root.waveform-own = !root.waveform-own; } } } }
                         if root.waveform == 0 && root.waveform-own: Row { label: @tr("Lows"); Swatches { key: "prefs.view.waveform-low"; colours: root.waveform-swatches; selected: root.waveform-low; picked(i) => { root.choose("view.waveform-low", i); } } }
@@ -483,6 +482,7 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Motion"); Switch { accessible-label: "prefs.view.reduced-motion"; label: @tr("Reduce motion"); on: root.reduced-motion; toggled(v) => { root.flag("view.motion", v); } } }
                         Row { label: @tr("UI scale"); Choice { accessible-label: "prefs.view.scale"; options: root.scale-options; selected: root.scale; picked(i) => { root.choose("view.scale", i); } } }
                         Row { label: @tr("Club mode"); Switch { accessible-label: "prefs.view.club-other-beat"; label: @tr("Show the other deck's beat under the beat boxes"); on: root.club-other-beat; toggled(v) => { root.flag("view.club-other-beat", v); } } }
+                        Row { label: @tr("Incoming track"); Switch { accessible-label: "prefs.view.incoming-overlay"; label: @tr("Draw the incoming track over the playing waveform"); on: root.incoming-overlay; toggled(v) => { root.flag("view.incoming-overlay", v); } } }
                     }
                 }
 
