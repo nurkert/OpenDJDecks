@@ -94,6 +94,8 @@ export component DeviceLostBar inherits Rectangle {
     accessible-value: AudioHealth.lost-device;
     height: max(56px, body.preferred-height + 2 * Theme.s3);
     background: Theme.ground-band; border-radius: Theme.r-panel;
+    // Drawn over the waveform zone: it takes the pointer there.
+    TouchArea { }
     HorizontalLayout {
         padding-left: Theme.s4; padding-right: Theme.s3;
         spacing: Theme.s4;

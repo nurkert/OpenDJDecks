@@ -677,7 +677,6 @@ export component AppWindow inherits Window {
                 progress: root.update-progress;
                 act(what) => { root.update-action(what); }
             }
-            if AudioHealth.lost-device != "": DeviceLostBar { }
             if Restore.visible: RestoreBar { }
             if GigCheck.visible: GigCheckBar { }
             if FirstStart.visible: FirstStartBar { }
@@ -1382,6 +1381,14 @@ export component AppWindow inherits Window {
                 }
             }
         }
+    }
+
+    // The audio device is lost: over the waveform zone (no sound plays, so
+    // nothing there is needed), so the decks do not move mid-set.
+    if AudioHealth.lost-device != "": DeviceLostBar {
+        x: root.kiosk ? 0px : Theme.gutter;
+        y: 44px + Theme.key-gap;
+        width: root.width - 2 * self.x;
     }
 
     // Files from Finder / the file manager: the whole window takes them.
