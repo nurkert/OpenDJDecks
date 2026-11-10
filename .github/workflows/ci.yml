@@ -28,6 +28,10 @@ env:
   CARGO_TERM_COLOR: always
   # Zero in-scope gaps: a new gap fails feature_set_complete.
   OD_PARITY_STRICT: "1"
+  # Line tables only: the UI test binary with full debug info needs more
+  # memory to build and link than the free runners have.
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+  CARGO_PROFILE_TEST_DEBUG: line-tables-only
 
 jobs:
   # Repository rules from CONTRIBUTING.md, "Independence".
