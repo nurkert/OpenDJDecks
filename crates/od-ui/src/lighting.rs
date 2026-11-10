@@ -995,7 +995,7 @@ pub(crate) fn wire(app: &Rc<App>) {
 /// group masters), `light-edit` (PADS with a look open in the editor),
 /// `light-auto` (a palette, a pad in the phrase table, HOLD), `light-connect`
 /// (ports, a fake Art-Net node at 192.0.2.10 found on the loopback address,
-/// the test pattern) and `light-guide` (the guided setup at its second step).
+/// the COLOURS test pattern) and `light-guide` (the guided setup at its second step).
 fn demo(app: &Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -1082,7 +1082,7 @@ fn demo(app: &Rc<App>) {
             g.set_setup_tab("output".into());
         }
         if has("light-connect") {
-            rt.test = Some(od_lighting::TestPattern::Each);
+            rt.test = Some(od_lighting::TestPattern::Colours);
             rt.runner.test(rt.test);
         }
         if has("light-guide") {

@@ -674,4 +674,32 @@ mod tests {
         }
         assert!(seen.contains(&0) && seen.contains(&255), "{seen:?}");
     }
+
+    #[test]
+    fn test_pattern_steps_through_the_fixtures_and_stops() {
+        let link = TestLink::default();
+        let mut rig = par_rig(&link, Failsafe::Hold);
+        let def = FixtureDef::builtin("rgbw-par").unwrap();
+        rig.patch
+            .add_many(&def, 2, Some(0), Some(20), "Par", "Wash")
+            .unwrap();
+        rig.tick(&[], 0.025);
+        rig.set_test(Some(TestPattern::Each));
+        let mut lit_frames = 0;
+        let mut seen = std::collections::BTreeSet::new();
+        for _ in 0..1200 {
+            rig.tick(&[], 0.025);
+            let lit: Vec<usize> = (0..3).filter(|i| rig.looks[*i].intensity > 0.5).collect();
+            assert!(lit.len() <= 1, "{lit:?}");
+            if let Some(i) = lit.first() {
+                lit_frames += 1;
+                seen.insert(*i);
+            }
+        }
+        assert_eq!(seen.len(), 3, "every fixture in turn");
+        assert!(lit_frames > 800, "lit three quarters of the time ({lit_frames})");
+        rig.set_test(None);
+        rig.tick(&[], 0.025);
+        assert!(rig.looks[0].intensity < 0.5 || rig.show.settings.mode == Mode::Easy);
+    }
 }

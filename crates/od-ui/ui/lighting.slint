@@ -511,7 +511,7 @@ component UseList inherits VerticalLayout {
             padding-left: Theme.s2; spacing: Theme.s2;
             Text { text: t; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
             VerticalLayout {
-                alignment: center;
+                alignment: center; horizontal-stretch: 0;
                 PlateButton {
                     accessible-label: root.a11y + i + ".use"; accessible-role: button;
                     compact: true; label: root.use-label;
@@ -576,7 +576,7 @@ component ConnectGuide inherits VerticalLayout {
         HorizontalLayout {
             spacing: Theme.s2;
             addr := Field { accessible-label: "lighting.guide.address"; accessible-role: text-input; placeholder: @tr("or type its address"); horizontal-stretch: 1; accepted(t) => { Lighting.guide("target:" + t); } }
-            VerticalLayout { alignment: center; PlateButton { accessible-label: "lighting.guide.address.use"; accessible-role: button; compact: true; label: @tr("CHOOSE"); clicked => { Lighting.guide("target:" + addr.text); } } }
+            VerticalLayout { alignment: center; horizontal-stretch: 0; PlateButton { accessible-label: "lighting.guide.address.use"; accessible-role: button; compact: true; label: @tr("CHOOSE"); clicked => { Lighting.guide("target:" + addr.text); } } }
         }
     }
     if Lighting.guide-step == 2 && Lighting.guide-kind == "usb": VerticalLayout {

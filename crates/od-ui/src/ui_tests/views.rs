@@ -116,6 +116,11 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             }
             w.invoke_set_mode("lighting".into());
         }
+        "panel.lighting" => {
+            perform(2);
+            slint::ComponentHandle::global::<crate::Lighting>(w).set_panel(true);
+            ui.wait_until(5.0, |u| u.has("lighting.strip.pad7"));
+        }
         "panel.fx" => {
             perform(2);
             if !w.get_fx_panel() {
