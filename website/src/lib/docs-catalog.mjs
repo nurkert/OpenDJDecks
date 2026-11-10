@@ -46,7 +46,7 @@ export const guideGroups = [
   {
     key: 'perform',
     title: { en: 'Performing', de: 'Auflegen' },
-    slugs: ['perform-basics', 'mixer', 'stems', 'effects', 'sampler', 'mix-preview', 'club-mode', 'recording'],
+    slugs: ['perform-basics', 'mixer', 'stems', 'effects', 'sampler', 'mix-preview', 'club-mode', 'recording', 'set-safety'],
   },
   { key: 'setup', title: { en: 'Setup', de: 'Einrichten' }, slugs: ['controllers', 'light-show', 'raspberry-pi', 'preferences'] },
   { key: 'more', title: { en: 'More', de: 'Mehr' }, slugs: ['mcp', 'troubleshooting'] },

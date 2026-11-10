@@ -264,6 +264,9 @@ pub(crate) fn cycle_list(app: &App, forward: bool) {
 
 /// Removes the selected rows from the open playlist or set.
 pub(crate) fn remove_selected(app: &App) {
+    if app.guard_locked(crate::perform_lock::Blocked::Delete) {
+        return;
+    }
     {
         let st = app.state.borrow();
         if st.read_only() || st.explorer.open.is_some() {
@@ -547,7 +550,7 @@ pub(crate) fn wire(app: &Rc<App>) {
         }
     }));
     ui.on_delete_node(handler!(app, |a| {
-        if a.guard_read_only() {
+        if a.guard_read_only() || a.guard_locked(crate::perform_lock::Blocked::Delete) {
             return;
         }
         let node = a.state.borrow().browser.node;
@@ -1139,7 +1142,7 @@ fn row_menu(app: &App, i: usize, action: &str) {
         "remove" => remove_selected(app),
         "import" => crate::explorer::import_selection(app),
         "analysis-lock" => {
-            if app.guard_read_only() {
+            if app.guard_read_only() || app.guard_locked(crate::perform_lock::Blocked::Grid) {
                 return;
             }
             let ids = app.state.borrow().selected_ids();

@@ -118,6 +118,9 @@ pub(crate) fn act(app: &App, d: usize, action: &str, arg: &str) {
         refresh_row(app, d, true, None);
         return;
     }
+    if app.guard_locked(crate::perform_lock::Blocked::Grid) {
+        return;
+    }
     let op = match action {
         "set-one" => Op::SetOne(pos),
         "shift" => Op::Shift(num / 1000.0),

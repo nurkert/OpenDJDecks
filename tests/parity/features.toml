@@ -2886,6 +2886,101 @@ spec = "Roadmap [7]"
 note = "With an empty library a checklist under the top bar ticks itself (add music, analysis, two tracks, play and sync) and outlines the next control. Two sample tracks are synthesised by the app; TEST TONE plays a quiet tone on master and headphones."
 
 [[feature]]
+id = "shell-audio-health"
+area = "shell"
+name = "Audio health: device, latency and dropouts always shown, device-lost alert, recovery and device change without a restart"
+scope = "in"
+status = "done"
+prio = "P1"
+tests = [
+  "od-audio-io::device_loss::loss_is_seen_at_once_and_the_engine_moves_to_another_device",
+  "od-audio-io::device_loss::a_device_that_stops_calling_back_counts_as_lost",
+  "od-audio-io::device_loss::a_device_that_cannot_open_gives_the_processor_back",
+  "od-ui::ui_tests::set_safety::device_loss_is_shown_at_once_and_recovers",
+]
+spec = "Roadmap [10]"
+note = "The status band names the output, its latency and the dropouts. A lost device (reported by the backend, or no callback for 1.5 s) raises a band at once; the engine is kept and goes on with SWITCH OUTPUT, TRY AGAIN or by itself when the device is plugged back in. Device, buffer and headphone routing in Preferences apply at once. Device loss is injected in tests (virtual output); it has not been checked with a real interface being unplugged."
+
+[[feature]]
+id = "shell-gig-check"
+area = "shell"
+name = "Gig check: audio output, controller, space for the recording and missing track files"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::gig_check::tests::a_ready_setup_passes_every_check",
+  "od-ui::gig_check::tests::each_problem_is_named",
+  "od-ui::gig_check::tests::dropouts_and_a_missing_headphone_output_are_warnings",
+  "od-ui::ui_tests::set_safety::gig_check_reports_each_item",
+]
+spec = "Roadmap [10]"
+note = "From the gig menu in the top bar or View > Gig Check: a band with one result per check in the line grammar (solid ready, dashed look at it, struck fix it)."
+
+[[feature]]
+id = "shell-crash-restore"
+area = "shell"
+name = "Restore after a crash: deck state saved every second, offered back after an abnormal exit; a running recording survives"
+scope = "in"
+status = "done"
+prio = "P1"
+tests = [
+  "od-ui::ui_tests::set_safety::killed_mid_set_restores_decks_and_keeps_the_recording",
+  "od-ui::restore::tests::atomic_write_replaces_the_whole_file",
+  "od-ui::restore::tests::a_clean_or_empty_session_is_not_offered",
+  "od-recorder::killed::killed_recording_plays_after_repair",
+  "od-recorder::killed::repair_cuts_a_torn_frame_and_fixes_the_sizes",
+  "od-engine::deck_features::set_loop_restores_a_loop_as_it_was",
+]
+spec = "Roadmap [9]"
+note = "session.json beside the library, written atomically once a second (tracks, positions, tempo, keylock, key shift, sync, loops, hot cue bank, channel faders, trim, EQ, crossfader assign, crossfader, master level, the running recording). A run that did not end cleanly is offered back; the recording's WAV header is brought up to date every second and repaired on the next start. Tested by killing a child process with SIGKILL."
+
+[[feature]]
+id = "shell-perform-lock"
+area = "shell"
+name = "Performance lock: no loading onto a playing deck, no deleting, no grid edits; keep awake and pause background work while decks play"
+scope = "in"
+status = "done"
+prio = "P1"
+tests = [
+  "od-ui::ui_tests::set_safety::lock_blocks_accidents_and_playing_keeps_awake",
+  "od-ui::perform_lock::tests::every_block_explains_itself",
+  "od-ui::keep_awake::tests::a_guard_holds_or_says_why",
+]
+spec = "Roadmap [11]"
+note = "LOCK in the top bar, View menu and Alt+Shift+Cmd+K. Guards sit in load_track, the delete paths (lists, list entries, collection, hot and memory cues, sticks) and every grid entry point. Keep awake: IOPMAssertion (macOS, checked against pmset in a test), SetThreadExecutionState (Windows, compiled but not run here), systemd-inhibit (Linux, best effort without it). Automatic analysis, the stem batch and automatic stick sync wait while decks play."
+
+[[feature]]
+id = "deck-phase-meter"
+area = "deck"
+name = "Phase meter and tempo difference between decks with a clear in-sync state; practice without SYNC"
+scope = "in"
+status = "done"
+prio = "P1"
+tests = [
+  "od-ui::phase::tests::phase_wraps_to_half_a_beat_each_way",
+  "od-ui::phase::tests::in_sync_needs_both_tempo_and_phase",
+  "od-ui::phase::tests::readouts_name_direction_and_size",
+  "od-ui::phase::tests::the_master_is_the_reference_else_the_deck_that_plays",
+  "od-ui::ui_tests::set_safety::phase_meter_shows_tempo_and_phase_and_practice_keeps_sync_off",
+]
+spec = "Roadmap [12]"
+note = "A strip under the waveforms in Perform (desktop layouts; not in Club mode or the kiosk touch layout): one ruler per deck against the sync master (else the playing deck), half a beat each way, with the tempo difference in BPM and the phase in ms. IN SYNC (solid green centre) within 0.05 BPM and 0.02 beat. PRACTICE turns SYNC off on all decks and blocks it."
+
+[[feature]]
+id = "perform-booth-view"
+area = "deck"
+name = "Booth view: the decks large in their own window (waveform, BPM, key, remaining time, phrase countdown)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::set_safety::booth_view_shows_the_decks_large",
+]
+spec = "Roadmap [58]"
+note = "A separate window like the detached LIGHTING view (View > Booth View, Alt+Shift+Cmd+B), sharing the deck models of Perform. The deck's type ranks are multiplied by one zoom that fills the window (640 x 360 canvas): about 96 px hero figures at 1080p. Double-click for full screen. Not on the kiosk (single screen)."
+
+[[feature]]
 id = "shell-panel-toggles"
 area = "shell"
 name = "Top-bar panel toggles: FX, Mix Preview, Sampler, Mixer, Recording"

@@ -50,6 +50,8 @@ struct Batch {
 }
 
 thread_local! {
+    /// Decks play: the queue waits (roadmap [11]).
+    static PAUSED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static BATCH: RefCell<Batch> = RefCell::new(Batch::default());
     static TIMER: slint::Timer = slint::Timer::default();
 }
@@ -57,6 +59,18 @@ thread_local! {
 /// Whether the worker found the model damaged since the last call.
 pub(crate) fn take_damaged() -> bool {
     BATCH.with(|b| std::mem::take(&mut b.borrow_mut().damaged))
+}
+
+/// Holds the batch while decks play (the parts of loaded tracks are
+/// separated by the decks' own worker and do not wait).
+pub(crate) fn set_paused(on: bool) {
+    PAUSED.with(|p| p.set(on));
+    #[cfg(feature = "separation")]
+    BATCH.with(|b| {
+        if let Some(w) = b.borrow().worker.as_ref() {
+            w.set_paused(on);
+        }
+    });
 }
 
 /// The current batch count (tests, status).
@@ -123,10 +137,12 @@ pub(crate) fn separate(app: &App, ids: &[TrackId]) {
         }
         let b = &mut *b;
         let worker = b.worker.get_or_insert_with(|| {
-            od_stems::StemWorker::spawn(
+            let w = od_stems::StemWorker::spawn(
                 od_stems::StemCache::open_default(),
                 od_stems::StemWorkerOptions::default(),
-            )
+            );
+            w.set_paused(PAUSED.with(|p| p.get()));
+            w
         });
         let mut added = Vec::new();
         for j in jobs {

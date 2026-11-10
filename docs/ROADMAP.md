@@ -38,11 +38,11 @@ These come first because every later screen builds on them.
 
 ### Step 4: nothing goes wrong during a set
 
-- [ ] **[10] Audio health and gig check.** A permanent status with device, latency and dropouts, a clear alert when the device is lost, device change without a restart, and a check before the gig for outputs, controller, disk and missing files. Done when unplugging the audio interface is shown at once and can be recovered from.
-- [ ] **[9] Restore after a crash.** Deck state is saved continuously and offered back after an abnormal exit, and a running recording survives. Done when killing the app mid-set restores tracks and positions and keeps the recording.
-- [ ] **[11] Performance lock.** Blocks loading onto a playing deck, deleting and grid editing. Keeps the computer awake and pauses background work while decks play. Done when none of these can happen by accident while locked.
-- [ ] **[12] Phase and tempo between decks.** A phase meter and tempo difference in Perform with a clear in-sync state, and an option to practise without sync. Done when manual beatmatching can be judged from the screen.
-- [ ] **[58] Booth view.** A large view with two big waveforms and large BPM, key, remaining time and phrase countdown. Done when it is readable from a few metres away.
+- [x] **[10] Audio health and gig check.** A permanent status with device, latency and dropouts, a clear alert when the device is lost, device change without a restart, and a check before the gig for outputs, controller, disk and missing files. Done when unplugging the audio interface is shown at once and can be recovered from.
+- [x] **[9] Restore after a crash.** Deck state is saved continuously and offered back after an abnormal exit, and a running recording survives. Done when killing the app mid-set restores tracks and positions and keeps the recording.
+- [x] **[11] Performance lock.** Blocks loading onto a playing deck, deleting and grid editing. Keeps the computer awake and pauses background work while decks play. Done when none of these can happen by accident while locked.
+- [x] **[12] Phase and tempo between decks.** A phase meter and tempo difference in Perform with a clear in-sync state, and an option to practise without sync. Done when manual beatmatching can be judged from the screen.
+- [x] **[58] Booth view.** A large view with two big waveforms and large BPM, key, remaining time and phrase countdown. Done when it is readable from a few metres away.
 
 ### Step 5: proof that it holds up
 

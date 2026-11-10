@@ -8,6 +8,7 @@ import { Caps, PlateButton, Glyph, TipArea, Knob, PopupPlace, GuideMark } from "
 import { Club } from "club.slint";
 import { Lighting } from "lighting.slint";
 import { PerformLayout } from "perform.slint";
+import { GigCheck, LockKey, PerformLock } from "safety.slint";
 
 component ModeTab inherits Rectangle {
     in property <bool> narrow;
@@ -134,14 +135,14 @@ export global Gig {
 // GIG in the bar: a click switches the preset, the arrow opens its parts.
 component GigKey inherits Rectangle {
     in property <bool> narrow;
-    width: l.preferred-width + 32px;
+    width: l.preferred-width + (root.narrow ? 26px : 32px);
     Rectangle {
         y: Theme.s2; height: parent.height - 2 * Theme.s2;
         border-radius: Theme.r-control;
         background: Theme.face(true, tog.pressed, tog.has-hover || open.has-hover, false, Gig.active, Theme.setup-on);
     }
     l := Text {
-        x: 10px; height: parent.height;
+        x: root.narrow ? 6px : 10px; height: parent.height;
         text: @tr("GIG");
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
         color: Theme.ink(true, tog.pressed, tog.has-hover, false, Gig.active);
@@ -202,6 +203,16 @@ component GigKey inherits Rectangle {
                         label: s; selected: Gig.scale == i;
                         clicked => { Gig.act("scale:" + i); }
                     }
+                }
+                Rectangle { height: Theme.hair; background: Theme.rule; }
+                Text {
+                    text: @tr("Before the set: outputs, controller, space for the recording and missing track files.");
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; wrap: word-wrap;
+                }
+                PlateButton {
+                    accessible-role: button; accessible-label: "topbar.gig.check";
+                    label: @tr("RUN GIG CHECK"); command: "gig.check";
+                    clicked => { pop.close(); GigCheck.run(); }
                 }
             }
         }
@@ -503,6 +514,8 @@ export component TopBar inherits Rectangle {
                 if !root.narrow: Caps { x: 20px; height: parent.height; text: "MIDI"; vertical-alignment: center; color: root.midi-device != "" ? Theme.bone : Theme.bone-3; }
                 TipArea { tooltip: root.midi-device != "" ? @tr("Controller connected: {}", root.midi-device) : @tr("No controller connected"); }
             }
+            LockKey { narrow: root.narrow; }
+            Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             // App tools.
             GigKey { narrow: root.narrow; }
             Rectangle { width: root.narrow ? Theme.s1 : Theme.s2; }
@@ -701,6 +714,7 @@ export component TopBar inherits Rectangle {
             Menu {
                 MenuItem { title: Club.enabled ? @tr("Back to the full deck controls") : @tr("Club mode"); enabled: root.show-panels; activated => { Club.set-enabled(!Club.enabled); } }
                 MenuItem { title: Lighting.panel ? @tr("Hide the lighting strip") : @tr("Show the lighting strip"); enabled: root.show-panels; activated => { Lighting.panel = !Lighting.panel; } }
+                MenuItem { title: PerformLock.locked ? @tr("Unlock") : @tr("Lock for the set"); activated => { PerformLock.toggle(); } }
                 MenuItem { title: Gig.active ? @tr("Gig preset: off") : @tr("Gig preset: on"); activated => { Gig.act("toggle"); } }
                 MenuItem { title: @tr("Appearance: dark, light or system"); activated => { root.cycle-appearance(); } }
                 MenuItem { title: @tr("Undo the last change"); enabled: root.undo-label != "" && root.mode == "prepare"; activated => { root.undo(); } }

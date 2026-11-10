@@ -45,6 +45,13 @@ pub(crate) struct RecorderState {
     pub(crate) played: HashSet<TrackId>,
 }
 
+impl RecorderState {
+    /// The recorder while a recording runs.
+    pub(crate) fn recording(&self) -> Option<&Recorder> {
+        self.recorder.as_ref().filter(|r| r.is_recording())
+    }
+}
+
 impl Default for RecorderState {
     fn default() -> Self {
         Self {

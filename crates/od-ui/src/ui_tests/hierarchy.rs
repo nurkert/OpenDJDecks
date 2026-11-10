@@ -1,7 +1,7 @@
 //! Roadmap step 3: the top bar's zones, the three tiers of a deck and the
 //! first-start guide.
 
-use super::harness::{Fixture, Rect, Ui};
+use super::harness::{Fixture, Rect, Ui, volumes_lock};
 use crate::settings::{META_SETTINGS, Settings};
 use slint::ComponentHandle;
 
@@ -162,8 +162,10 @@ fn empty_hot_cues_are_hollow() {
 
 // ── [7] Guided first start ─────────────────────────────────────────────────
 
-fn start_empty(size: (u32, u32)) -> Ui {
-    Ui::start(Fixture::empty(), size, false)
+/// An empty library with no stick around (see [`volumes_lock`]).
+fn start_empty(size: (u32, u32)) -> (std::sync::MutexGuard<'static, ()>, Ui) {
+    let volumes = volumes_lock();
+    (volumes, Ui::start(Fixture::empty(), size, false))
 }
 
 fn guide(ui: &Ui) -> (i32, String, String) {
@@ -178,7 +180,25 @@ fn assert_points_at(ui: &Ui, label: &str) {
     ui.wait_until(5.0, |u| u.by_value("guide.highlight", label).is_some());
     let (_, mark) = ui
         .by_value("guide.highlight", label)
-        .unwrap_or_else(|| panic!("no highlight on {label}"));
+        .unwrap_or_else(|| {
+            let g = ui.app.ui.global::<crate::FirstStart>();
+            let marks: Vec<_> = ui
+                .with_prefix("guide.")
+                .into_iter()
+                .map(|(l, v, e)| format!("{l}={v} {:?}", Rect::of(&e)))
+                .collect();
+            panic!(
+                "no highlight on {label}: visible {} target {:?} node {:?} section {:?} rows {} mode {:?} control {:?} window {:?} marks {marks:?}",
+                g.get_visible(),
+                g.get_target().to_string(),
+                ui.app.ui.get_node_kind().to_string(),
+                ui.app.ui.get_section().to_string(),
+                slint::Model::row_count(&ui.app.ui.get_tracks()),
+                ui.app.ui.get_mode().to_string(),
+                ui.by_value("browser.empty.add-music", "").map(|(_, e)| Rect::of(&e)),
+                ui.app.ui.window().size(),
+            )
+        });
     let mark = Rect::of(&mark);
     let real = rect(ui, label);
     assert!(
@@ -192,7 +212,7 @@ fn assert_points_at(ui: &Ui, label: &str) {
 /// at the real control for each step, driven only by real input.
 #[test]
 fn first_start_walks_every_step_on_real_controls() {
-    let ui = start_empty((1440, 900));
+    let (_volumes, ui) = start_empty((1440, 900));
     assert!(ui.has("guide.bar"), "the guide opens on an empty library");
     assert_eq!(guide(&ui).0, 0, "step 1 first");
     assert_eq!(guide(&ui).1, "add-music");
@@ -281,7 +301,7 @@ fn first_start_leaves_an_existing_library_alone() {
 /// [7] The band holds at the small laptop size and offers the test tone.
 #[test]
 fn first_start_fits_and_offers_the_test_tone() {
-    let ui = start_empty((1280, 800));
+    let (_volumes, ui) = start_empty((1280, 800));
     for label in ["guide.bar", "guide.samples", "guide.tone", "guide.hide"] {
         assert!(ui.has(label), "{label}");
     }
@@ -317,7 +337,7 @@ fn narrow_deck_header_keeps_full_words() {
 /// runs through the hint.
 #[test]
 fn empty_player_keeps_its_key_row() {
-    let ui = start_empty((1440, 900));
+    let (_volumes, ui) = start_empty((1440, 900));
     assert!(!ui.app.ui.get_has_track());
     for l in ["A", "H"] {
         assert!(ui.has(&format!("player1.hot-cue.{l}")), "slot {l}");

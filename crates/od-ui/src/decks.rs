@@ -280,9 +280,16 @@ pub(crate) struct Decks {
     /// The track data each deck plays (a grid edit swaps in a copy with
     /// the new grid, sharing the audio).
     engine_data: [Option<Arc<od_engine::TrackData>>; DECKS],
+    /// A deck being restored after a crash: applied when its track is in.
+    pub restore: [Option<crate::restore::DeckSnap>; DECKS],
 }
 
 impl Decks {
+    /// The waveform lanes' motion rows (shared with the booth window).
+    pub(crate) fn lane_motion(&self) -> slint::ModelRc<crate::LaneMotion> {
+        slint::ModelRc::from(self.motion.clone())
+    }
+
     /// Parts of the track on `deck` are being separated.
     pub(crate) fn stems_pending(&self, deck: usize) -> bool {
         self.loaded[deck]
@@ -312,6 +319,7 @@ impl Default for Decks {
             stem_worker: None,
             stem_progress: HashMap::new(),
             engine_data: Default::default(),
+            restore: Default::default(),
             views: DeckViews::default(),
             zoom: [1.0; DECKS],
             scroll: Default::default(),
@@ -474,6 +482,10 @@ impl Decks {
 
 /// Loads `track` (of the current source) into `deck` in the background.
 pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Option<f64>) {
+    if crate::perform_lock::blocks_load(app, deck) {
+        app.guard_locked(crate::perform_lock::Blocked::Load(deck));
+        return;
+    }
     if deck == PREVIEW_DECK {
         crate::player::reset_shift_for(app, track);
     }
@@ -749,6 +761,11 @@ pub(crate) fn receive_prepared(app: &App) {
         if let Some(t) = play_from {
             engine::deck_cmd(app, deck, DeckCommand::Seek { seconds: t });
             engine::deck_cmd(app, deck, DeckCommand::Play);
+        }
+        let on_deck = app.decks.borrow().loaded_id(deck).map(|t| t.0);
+        let restore = app.decks.borrow_mut().restore[deck].take_if(|r| Some(r.track) == on_deck);
+        if let Some(r) = restore {
+            crate::restore::apply_deck(app, deck, &r);
         }
         engine::show_message(app);
         app.status(format!("Loaded {title} on deck {}", deck + 1));
@@ -2081,6 +2098,9 @@ fn editable(app: &App, d: usize) -> Option<TrackId> {
 /// MEMORY (controller): stores a memory cue at the playhead, or deletes the
 /// one at the playhead; saved to the library like any cue edit.
 pub(crate) fn memory_cue(app: &App, d: usize, add: bool) {
+    if !add && app.guard_locked(crate::perform_lock::Blocked::Delete) {
+        return;
+    }
     let Some(id) = editable(app, d) else { return };
     let Some(st) = deck_state(app, d) else { return };
     // While a loop plays, MEMORY stores the loop (a saved memory loop).
@@ -2153,6 +2173,9 @@ pub(crate) fn follow_grid(app: &App, id: TrackId, grid: &Beatgrid) {
 /// TAP (controller): after three taps the track gets a constant grid at the
 /// tapped tempo, keeping its first downbeat.
 pub(crate) fn tap_bpm(app: &App, d: usize) {
+    if app.guard_locked(crate::perform_lock::Blocked::Grid) {
+        return;
+    }
     let t = TAP_EPOCH.with(|e| e.elapsed().as_secs_f64());
     let Some(bpm) = app.decks.borrow_mut().taps[d].tap(t) else {
         return;

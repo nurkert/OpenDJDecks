@@ -13,6 +13,8 @@ Drücke den runden Aufnahmeknopf neben dem Master-Pegel (oder `⌘Return`, oder 
 
 **AUFNAHME** in der oberen Leiste startet und stoppt eine Aufnahme; sie wird rot mit der laufenden Zeit. Die kleine Taste daneben zeigt den Aufnahmebereich: Pegel, Anzeige, verstrichene Zeit und Dateigröße, und die Trackliste, die mitwächst. Tracks kommen hinzu, sobald sie hörbar werden. Der Aufnahmepegel reicht von −12 bis +12 dB.
 
+Die Datei auf der Festplatte ist jederzeit ein vollständiges WAV und wird jede Sekunde nachgeführt. Stürzt die App oder der Rechner ab, behält die Aufnahme alles bis zum Absturz und erscheint beim nächsten Start von OpenDJDecks mit ihrer Trackliste unter Aufnahmen. Siehe [Sicher durch das Set](set-safety.md#nach-einem-absturz).
+
 ## Nach der Aufnahme
 
 Öffne **Aufnahmen** über die Leiste **AUFNAHMEN**: Jeder Mix steht dort mit seiner Datei. Direkt dort:

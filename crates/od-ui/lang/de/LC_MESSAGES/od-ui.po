@@ -6126,3 +6126,263 @@ msgstr "Aufnahmebereich einblenden: Pegel, Meter und Aufnahmetaste"
 msgctxt "TopBar"
 msgid "MASTER {} BPM"
 msgstr "MASTER {} BPM"
+
+#: ui/safety.slint:66
+msgctxt "AudioStatusLine"
+msgid "AUDIO"
+msgstr "AUDIO"
+
+#: ui/safety.slint:69
+msgctxt "AudioStatusLine"
+msgid "starts with the first track"
+msgstr "startet mit dem ersten Track"
+
+#: ui/safety.slint:70
+msgctxt "AudioStatusLine"
+msgid "{} lost"
+msgstr "{} verloren"
+
+#: ui/safety.slint:83
+msgctxt "AudioStatusLine"
+msgid "1 dropout"
+msgstr "1 Aussetzer"
+
+#: ui/safety.slint:83
+msgctxt "AudioStatusLine"
+msgid "{} dropouts"
+msgstr "{} Aussetzer"
+
+#: ui/safety.slint:109
+msgctxt "DeviceLostBar"
+msgid "Audio output lost: {}"
+msgstr "Audioausgang verloren: {}"
+
+#: ui/safety.slint:115
+msgctxt "DeviceLostBar"
+msgid "The decks are held where they were. Plug the interface back in and the sound returns by itself, or switch to {}."
+msgstr "Die Decks bleiben, wo sie waren. Steck das Interface wieder ein, dann kommt der Ton von selbst zurück, oder wechsle zu {}."
+
+#: ui/safety.slint:116
+msgctxt "DeviceLostBar"
+msgid "The decks are held where they were. Plug the interface back in and the sound returns by itself."
+msgstr "Die Decks bleiben, wo sie waren. Steck das Interface wieder ein, dann kommt der Ton von selbst zurück."
+
+#: ui/safety.slint:125
+msgctxt "DeviceLostBar"
+msgid "SWITCH OUTPUT"
+msgstr "AUSGANG WECHSELN"
+
+#: ui/safety.slint:126
+msgctxt "DeviceLostBar"
+msgid "Go on on {}"
+msgstr "Auf {} weiterspielen"
+
+#: ui/safety.slint:134
+msgctxt "DeviceLostBar"
+msgid "TRY AGAIN"
+msgstr "NOCHMAL VERSUCHEN"
+
+#: ui/safety.slint:135
+msgctxt "DeviceLostBar"
+msgid "Open {} again"
+msgstr "{} erneut öffnen"
+
+#: ui/safety.slint:157
+msgctxt "CheckItem"
+msgid "AUDIO OUTPUT"
+msgstr "AUDIOAUSGANG"
+
+#: ui/safety.slint:158
+msgctxt "CheckItem"
+msgid "CONTROLLER"
+msgstr "CONTROLLER"
+
+#: ui/safety.slint:159
+msgctxt "CheckItem"
+msgid "RECORDING SPACE"
+msgstr "PLATZ FÜR AUFNAHME"
+
+#: ui/safety.slint:160
+msgctxt "CheckItem"
+msgid "TRACK FILES"
+msgstr "TRACKDATEIEN"
+
+#: ui/safety.slint:186
+msgctxt "GigCheckBar"
+msgid "GIG CHECK"
+msgstr "GIG-CHECK"
+
+#: ui/safety.slint:188
+msgctxt "GigCheckBar"
+msgid "Ready"
+msgstr "Bereit"
+
+#: ui/safety.slint:188
+msgctxt "GigCheckBar"
+msgid "Look at the dashed ones"
+msgstr "Gestrichelte ansehen"
+
+#: ui/safety.slint:188
+msgctxt "GigCheckBar"
+msgid "Fix the struck ones"
+msgstr "Durchgestrichene beheben"
+
+#: ui/safety.slint:198
+msgctxt "GigCheckBar"
+msgid "CHECK AGAIN"
+msgstr "ERNEUT PRÜFEN"
+
+#: ui/safety.slint:199
+msgctxt "GigCheckBar"
+msgid "Look at outputs, controller, disk space and track files again"
+msgstr "Ausgänge, Controller, Speicherplatz und Trackdateien erneut prüfen"
+
+#: ui/safety.slint:207
+msgctxt "GigCheckBar"
+msgid "CLOSE"
+msgstr "SCHLIESSEN"
+
+#: ui/topbar.slint:209
+msgctxt "GigKey"
+msgid "Before the set: outputs, controller, space for the recording and missing track files."
+msgstr "Vor dem Set: Ausgänge, Controller, Platz für die Aufnahme und fehlende Trackdateien."
+
+#: ui/topbar.slint:214
+msgctxt "GigKey"
+msgid "RUN GIG CHECK"
+msgstr "GIG-CHECK STARTEN"
+
+#: ui/app.slint:604
+msgctxt "AppWindow"
+msgid "Gig Check"
+msgstr "Gig-Check"
+
+#: ui/safety.slint:248
+msgctxt "RestoreBar"
+msgid "OpenDJDecks did not close properly at {}"
+msgstr "OpenDJDecks wurde um {} nicht richtig beendet"
+
+#: ui/safety.slint:267
+msgctxt "RestoreBar"
+msgid "RESTORE DECKS"
+msgstr "DECKS WIEDERHERSTELLEN"
+
+#: ui/safety.slint:268
+msgctxt "RestoreBar"
+msgid "Load the tracks back where they were, with tempo, loops and mixer; the decks wait for PLAY"
+msgstr "Die Tracks dorthin laden, wo sie waren, mit Tempo, Loops und Mixer; die Decks warten auf PLAY"
+
+#: ui/safety.slint:276
+msgctxt "RestoreBar"
+msgid "START EMPTY"
+msgstr "LEER STARTEN"
+
+#: ui/safety.slint:276
+msgctxt "RestoreBar"
+msgid "OK"
+msgstr "OK"
+
+#: ui/app.slint:605
+msgctxt "AppWindow"
+msgid "Lock for the Set"
+msgstr "Für das Set sperren"
+
+#: ui/app.slint:998
+msgctxt "AppWindow"
+msgid "Locked for the set: nothing is deleted"
+msgstr "Für das Set gesperrt: nichts wird gelöscht"
+
+#: ui/perform.slint:309
+msgctxt "GridKey"
+msgid "Locked for the set: no grid edits"
+msgstr "Für das Set gesperrt: keine Grid-Änderungen"
+
+#: ui/safety.slint:311
+msgctxt "LockKey"
+msgid "LOCKED"
+msgstr "GESPERRT"
+
+#: ui/safety.slint:311
+msgctxt "LockKey"
+msgid "LOCK"
+msgstr "SPERREN"
+
+#: ui/safety.slint:318
+msgctxt "LockKey"
+msgid "Locked: no loading onto a playing deck, no deleting, no grid edits. Click to unlock"
+msgstr "Gesperrt: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen. Klick zum Entsperren"
+
+#: ui/safety.slint:319
+msgctxt "LockKey"
+msgid "Lock for the set: no loading onto a playing deck, no deleting, no grid edits"
+msgstr "Für das Set sperren: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen"
+
+#: ui/topbar.slint:717
+msgctxt "TopBar"
+msgid "Unlock"
+msgstr "Entsperren"
+
+#: ui/topbar.slint:717
+msgctxt "TopBar"
+msgid "Lock for the set"
+msgstr "Für das Set sperren"
+
+#: ui/phase.slint:80
+msgctxt "PhaseRuler"
+msgid "IN SYNC"
+msgstr "SYNCHRON"
+
+#: ui/phase.slint:101
+msgctxt "PhaseStrip"
+msgid "PHASE TO {}"
+msgstr "PHASE ZU {}"
+
+#: ui/phase.slint:101
+msgctxt "PhaseStrip"
+msgid "PHASE"
+msgstr "PHASE"
+
+#: ui/phase.slint:105
+msgctxt "PhaseStrip"
+msgid "Load two tracks with a beatgrid to compare them"
+msgstr "Lade zwei Tracks mit Beatgrid, um sie zu vergleichen"
+
+#: ui/phase.slint:118
+msgctxt "PhaseStrip"
+msgid "PRACTICE"
+msgstr "ÜBEN"
+
+#: ui/phase.slint:119
+msgctxt "PhaseStrip"
+msgid "Practice on: SYNC is off. Click to allow SYNC again"
+msgstr "Üben an: SYNC ist aus. Klick gibt SYNC wieder frei"
+
+#: ui/phase.slint:119
+msgctxt "PhaseStrip"
+msgid "Practise beatmatching by ear and eye: SYNC goes off and stays off"
+msgstr "Beatmatching nach Gehör und Auge üben: SYNC geht aus und bleibt aus"
+
+#: ui/app.slint:610
+msgctxt "AppWindow"
+msgid "Booth View"
+msgstr "Booth-Ansicht"
+
+#: ui/booth.slint:67
+msgctxt "BoothDeck"
+msgid "Not loaded"
+msgstr "Nicht geladen"
+
+#: ui/booth.slint:84
+msgctxt "BoothDeck"
+msgid "KEY"
+msgstr "TONART"
+
+#: ui/booth.slint:101
+msgctxt "BoothDeck"
+msgid "REMAINING"
+msgstr "REST"
+
+#: ui/booth.slint:108
+msgctxt "BoothDeck"
+msgid "PHRASE · TO THE NEXT"
+msgstr "PHRASE · BIS ZUR NÄCHSTEN"

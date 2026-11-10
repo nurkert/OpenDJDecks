@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 223 features; 217 in scope: 217 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 229 features; 223 in scope: 223 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -172,6 +172,8 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Pad mode: Memory Cue | DONE | (UX §1.3) | 2 | P3 |
 | Pad mode: Pattern Recall | DONE | Pad mode PATTERN: an empty pad stores the sampler sequence patterns, a stored pad recalls them and starts the sequencer, the shifted pad clears it; (UX §1.3) | 1 | P3 |
 | Pad mode: Timed Censor | DONE | Pad mode CENSOR: each pad censors (reverse with slip) for ¼ … 32 beats of the deck tempo, then playback continues where it would be; (UX §1.3) | 2 | P3 |
+| Phase meter and tempo difference between decks with a clear in-sync state; practice without SYNC | DONE | A strip under the waveforms in Perform (desktop layouts; not in Club mode or the kiosk touch layout): one ruler per deck against the sync master (else the playing deck), half a beat each way, with the tempo difference in BPM and the phase in ms. IN SYNC (solid green centre) within 0.05 BPM and 0.02 beat. PRACTICE turns SYNC off on all decks and blocks it.; (Roadmap [12]) | 5 | **P1** |
+| Booth view: the decks large in their own window (waveform, BPM, key, remaining time, phrase countdown) | DONE | A separate window like the detached LIGHTING view (View > Booth View, Alt+Shift+Cmd+B), sharing the deck models of Perform. The deck's type ranks are multiplied by one zoom that fills the window (640 x 360 canvas): about 96 px hero figures at 1080p. Double-click for full screen. Not on the kiosk (single screen).; (Roadmap [58]) | 1 | P2 |
 | Club mode: player-style screens and behaviour driven by the controller | DONE | CLUB toggle (Alt+J): player screens per deck (waveform, overview needle search, jog display with remaining time / bar counter / phrase, four-segment beat position under the waveform (beat 1 accented) for visual beat matching, hot cues with hold, memory cue call, loop in / out / reloop, beat jump, search, tempo range, master tempo), BROWSE screen (source → playlists → tracks, from the library or a stick), player cue rules, sync off, self-ticking checklist; (SPEC §10.3c) | 5 | P2 |
 | Playback reservation (queue for Mix Preview) | DONE | `mix-preview.rs::tick`, `ui/mix_preview.slint`; RESERVE in the MIX PREVIEW panel queues the tracks selected in the list; when a panel deck is empty or has played out while the other plays, the next reserved track loads there and waits at its mix-in point for the next link; NEXT shows what comes, CLEAR empties the queue | 2 | P3 |
 | Beatgrid and gain panel on the Perform deck | DONE (beyond the usual) | `deck_grid.rs::act`, `deck_grid.rs::tick`, `ui/perform.slint::GridPanel`, `ui/perform.slint::GridMeter`; The grid key beside the pad mode swaps the pads for the panel (the deck keeps its width), working while the track plays: a meter of how far the grid sits off the kicks (median of the last 8 beats, −20…+20 ms), FIT, the tempo and CLICK (metronome in the headphones); SET 1 (the kick just heard, ±60 ms, becomes the 1), ±1 / ±10 ms, ±1 beat; −.01 / +.01 and ÷2 / ×2 about the playhead, PIN (two pins solve the tempo), AUTO-FIX; EDIT … opens the Prepare editor, LOCK, and the track's auto-gain correction ±0.5 dB. Grid changes go to the library at once (decks follow without a gap); nudges within 1.5 s are one undo step | 5 | P2 |
@@ -293,6 +295,10 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Perform layouts: 2 / 4 decks horizontal and vertical, Browse | DONE | 2 and 4 decks in three layouts (persisted): standard (lanes across the top), vertical (Alt+V: upright lanes with zoom keys above the mixer) and Browse (Alt+B: header, overview and parts per deck, browser enlarged); (SPEC §10.1; UX §1.4) | 5 | P2 |
 | Prepare layouts: 1 player, 2 players, dual, simple, full browser | DONE | `crates/od-ui/src/shell.rs::set_prepare_layout`; Player and browser, 2 players (full player plus a compact second player), dual (two compact players side by side), simple (one compact player) and full browser: top-bar switch, View menu, ⌥⌘4–⌥⌘8, persisted. Player 2 takes the selected track (LOAD) or a dragged row and plays on the preview deck; (UX §1.7) | 3 | P2 |
 | First-start guide: self-ticking checklist that points at the real controls, sample tracks, test tone | DONE | With an empty library a checklist under the top bar ticks itself (add music, analysis, two tracks, play and sync) and outlines the next control. Two sample tracks are synthesised by the app; TEST TONE plays a quiet tone on master and headphones.; (Roadmap [7]) | 3 | P2 |
+| Audio health: device, latency and dropouts always shown, device-lost alert, recovery and device change without a restart | DONE | The status band names the output, its latency and the dropouts. A lost device (reported by the backend, or no callback for 1.5 s) raises a band at once; the engine is kept and goes on with SWITCH OUTPUT, TRY AGAIN or by itself when the device is plugged back in. Device, buffer and headphone routing in Preferences apply at once. Device loss is injected in tests (virtual output); it has not been checked with a real interface being unplugged.; (Roadmap [10]) | 4 | **P1** |
+| Gig check: audio output, controller, space for the recording and missing track files | DONE | From the gig menu in the top bar or View > Gig Check: a band with one result per check in the line grammar (solid ready, dashed look at it, struck fix it).; (Roadmap [10]) | 4 | P2 |
+| Restore after a crash: deck state saved every second, offered back after an abnormal exit; a running recording survives | DONE | session.json beside the library, written atomically once a second (tracks, positions, tempo, keylock, key shift, sync, loops, hot cue bank, channel faders, trim, EQ, crossfader assign, crossfader, master level, the running recording). A run that did not end cleanly is offered back; the recording's WAV header is brought up to date every second and repaired on the next start. Tested by killing a child process with SIGKILL.; (Roadmap [9]) | 6 | **P1** |
+| Performance lock: no loading onto a playing deck, no deleting, no grid edits; keep awake and pause background work while decks play | DONE | LOCK in the top bar, View menu and Alt+Shift+Cmd+K. Guards sit in load_track, the delete paths (lists, list entries, collection, hot and memory cues, sticks) and every grid entry point. Keep awake: IOPMAssertion (macOS, checked against pmset in a test), SetThreadExecutionState (Windows, compiled but not run here), systemd-inhibit (Linux, best effort without it). Automatic analysis, the stem batch and automatic stick sync wait while decks play.; (Roadmap [11]) | 3 | **P1** |
 | Top-bar panel toggles: FX, Mix Preview, Sampler, Mixer, Recording | DONE | FX, PREVIEW, SAMPLER and MIXER in the top bar (stored): MIXER hides the mixer column, PREVIEW shows the Mix Preview panel, the key beside RECORD shows or hides the recording section, plus CLUB and LIGHT; (UX §1.2, §2.8) | 3 | P2 |
 | Mix Preview (mix in / mix out points between decks) | DONE | `crates/od-ui/src/mix_preview.rs`, `crates/od-ui/ui/mix_preview.slint`; MIX PREVIEW panel above the waveforms: MIX IN / MIX OUT at the edited deck's playhead (stored per track), ◀ ▶ through the points (memory cues and mix points), EDIT switches the deck, LINK starts the waiting deck from its mix-in point when the playing deck passes its mix-out point; (UX §1.5; SPEC §16.3) | 5 | P3 |
 | Draggable splitters with persisted sizes, double-click reset | DONE | `crates/od-ui/src/shell.rs`; Upper/lower and sidebar splitters: drag, persisted across restarts, double-click reset (UI test). Per-layout sizes and waveform-zone collapse / expand are not there; (SPEC §12; UX §2.6) | 2 |  |
@@ -332,13 +338,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 217 |
+| DONE | 223 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **223** |
+| **Total** | **229** |
 
 ## P1 gaps and implementation notes
 

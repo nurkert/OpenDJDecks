@@ -1,0 +1,124 @@
+// Phase and tempo between decks (roadmap [12]): one ruler per deck against
+// the reference deck (the sync master, else the deck that plays). The
+// ruler spans half a beat each way; the deck's own line sits where its beat
+// falls against the reference, the centre is "together". Green, solid and
+// named IN SYNC only when tempo and phase both match.
+
+import { Theme } from "tokens.slint";
+import { Caps, Toggle } from "controls.slint";
+
+export struct PhaseRow {
+    deck: int,
+    // Beat offset against the reference, -0.5 .. 0.5 (positive = ahead).
+    offset: float,
+    // "+12 ms" / "−4 ms".
+    ms: string,
+    // "+0.40 BPM" / "±0.00 BPM".
+    tempo: string,
+    in-sync: bool,
+}
+
+export global PhaseMeter {
+    in property <[PhaseRow]> rows;
+    // The deck the others are measured against (1-based, 0 = none).
+    in property <int> reference;
+    // Practice: SYNC is off and stays off.
+    in property <bool> practice;
+    callback toggle-practice();
+}
+
+component PhaseRuler inherits Rectangle {
+    in property <PhaseRow> reading;
+    accessible-role: progress-indicator;
+    accessible-label: "wave.phase.deck\{root.reading.deck}";
+    accessible-value: (root.reading.in-sync ? "in sync" : root.reading.ms) + " " + root.reading.tempo;
+    min-width: 160px;
+    horizontal-stretch: 1;
+    property <length> ruler-x: num.width + Theme.s2;
+    property <length> ruler-w: root.width - self.ruler-x - info.width - Theme.s2;
+    num := Text {
+        x: 0; height: parent.height; width: 14px;
+        text: root.reading.deck;
+        font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
+        color: Theme.deck-color(root.reading.deck); vertical-alignment: center;
+    }
+    // Ruler: strong rule baseline, quarter-beat ticks, the centre mark.
+    Rectangle {
+        x: root.ruler-x; y: parent.height / 2; width: root.ruler-w; height: Theme.hair;
+        background: Theme.rule-strong;
+    }
+    for t in [0.25, 0.75]: Rectangle {
+        x: root.ruler-x + root.ruler-w * t; y: parent.height / 2 - 3px; width: Theme.hair; height: 7px;
+        background: Theme.rule-strong;
+    }
+    // Centre: where the reference beat is. Green and full height in sync.
+    Rectangle {
+        x: root.ruler-x + root.ruler-w / 2 - (root.reading.in-sync ? 1px : 0px);
+        y: root.reading.in-sync ? 2px : 4px;
+        width: root.reading.in-sync ? Theme.line : Theme.hair;
+        height: parent.height - (root.reading.in-sync ? 4px : 8px);
+        background: root.reading.in-sync ? Theme.live : Theme.bone-3;
+    }
+    // The deck's beat (unsmoothed, like any meter).
+    if !root.reading.in-sync: Rectangle {
+        x: root.ruler-x + root.ruler-w * (0.5 + clamp(root.reading.offset, -0.5, 0.5)) - 1px;
+        y: 3px; width: Theme.line; height: parent.height - 6px;
+        background: Theme.deck-color(root.reading.deck);
+    }
+    info := HorizontalLayout {
+        width: 74px + 62px + Theme.s2;
+        x: root.width - self.width; height: parent.height;
+        spacing: Theme.s2;
+        Text {
+            width: 74px; horizontal-alignment: right;
+            text: root.reading.tempo;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+            color: root.reading.in-sync ? Theme.bone-2 : Theme.bone; vertical-alignment: center;
+        }
+        Text {
+            width: 62px;
+            text: root.reading.in-sync ? @tr("IN SYNC") : root.reading.ms;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+            letter-spacing: root.reading.in-sync ? 1.4px : 0px;
+            color: root.reading.in-sync ? Theme.live : Theme.bone; vertical-alignment: center;
+        }
+    }
+}
+
+// The strip under the waveforms: PHASE, one ruler per compared deck, and
+// the practice switch.
+export component PhaseStrip inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: "wave.phase";
+    accessible-value: PhaseMeter.reference;
+    height: 26px;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    HorizontalLayout {
+        padding-left: Theme.s3; padding-right: Theme.s2;
+        spacing: Theme.s4;
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            Caps { text: PhaseMeter.reference > 0 ? @tr("PHASE TO {}", PhaseMeter.reference) : @tr("PHASE"); }
+        }
+        if PhaseMeter.rows.length == 0: Text {
+            horizontal-stretch: 1;
+            text: @tr("Load two tracks with a beatgrid to compare them");
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; vertical-alignment: center;
+        }
+        if PhaseMeter.rows.length > 0: HorizontalLayout {
+            horizontal-stretch: 1;
+            spacing: Theme.s5;
+            for r in PhaseMeter.rows: PhaseRuler { reading: r; }
+        }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            Toggle {
+                accessible-role: checkbox; accessible-checkable: true; accessible-checked: PhaseMeter.practice;
+                accessible-label: "wave.phase.practice";
+                size: 22px; label: @tr("PRACTICE"); on: PhaseMeter.practice; tone: Theme.attention;
+                tooltip: PhaseMeter.practice ? @tr("Practice on: SYNC is off. Click to allow SYNC again") : @tr("Practise beatmatching by ear and eye: SYNC goes off and stays off");
+                clicked => { PhaseMeter.toggle-practice(); }
+            }
+        }
+    }
+}

@@ -1,0 +1,338 @@
+// Set safety (roadmap step 4): the permanent audio line in the status band,
+// the band when the audio device is lost, and the check before the gig.
+// Bands sit under the top bar like the first-start guide: nothing here is a
+// dialog, because nothing may interrupt a set.
+
+import { Theme } from "tokens.slint";
+import { Caps, PlateButton, TipArea } from "controls.slint";
+import { VLine } from "lines.slint";
+
+// Audio output health, set from Rust (audio_health.rs).
+export global AudioHealth {
+    // "off" (not started), "ok", "dropouts" (in the last 20 s), "lost".
+    in property <string> state: "off";
+    in property <string> device;
+    // "5.3 ms" ("" unknown).
+    in property <string> latency;
+    in property <int> dropouts;
+    // The device that went away ("" while audio runs).
+    in property <string> lost-device;
+    // The output offered instead ("" when there is none).
+    in property <string> fallback;
+    callback retry();
+    callback use-fallback();
+}
+
+export struct GigCheckRow {
+    // "outputs", "controller", "disk", "files".
+    id: string,
+    // "ok", "warn", "fail".
+    state: string,
+    detail: string,
+}
+
+export global GigCheck {
+    in-out property <bool> visible;
+    in property <[GigCheckRow]> rows;
+    // The worst result: "ok", "warn" or "fail".
+    in property <string> result;
+    callback run();
+    callback close();
+}
+
+// The line form of a check result: solid green ready, dashed sodium needs a
+// look, struck red will go wrong.
+component ResultLine inherits VLine {
+    in property <string> state;
+    tone: root.state == "ok" ? Theme.live : root.state == "warn" ? Theme.attention : Theme.bone-3;
+    form: root.state == "ok" ? "solid" : root.state == "warn" ? "dashed" : "struck";
+}
+
+// Status band, right: the output that plays, its latency and the dropouts
+// so far. Always there; the line says the state at a glance.
+export component AudioStatusLine inherits HorizontalLayout {
+    accessible-role: text;
+    accessible-label: "status.audio";
+    accessible-value: AudioHealth.state + " " + AudioHealth.device + " " + AudioHealth.latency + " " + AudioHealth.dropouts;
+    spacing: Theme.s2;
+    property <string> state: AudioHealth.state;
+    VerticalLayout {
+        padding-top: Theme.s1; padding-bottom: Theme.s1;
+        VLine {
+            tone: root.state == "ok" ? Theme.live : root.state == "dropouts" ? Theme.attention : root.state == "lost" ? Theme.bone-3 : Theme.rule-strong;
+            form: root.state == "ok" ? "solid" : root.state == "dropouts" ? "dashed" : root.state == "lost" ? "struck" : "half";
+        }
+    }
+    Caps { text: @tr("AUDIO"); vertical-alignment: center; }
+    Text {
+        max-width: 220px;
+        text: root.state == "off" ? @tr("starts with the first track")
+            : root.state == "lost" ? @tr("{} lost", AudioHealth.device)
+            : AudioHealth.device;
+        overflow: elide;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: root.state == "lost" ? Theme.fault : Theme.bone-2;
+        vertical-alignment: center;
+    }
+    if root.state != "off" && root.state != "lost" && AudioHealth.latency != "": Text {
+        text: AudioHealth.latency;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: Theme.bone-2; vertical-alignment: center;
+    }
+    if root.state != "off": Text {
+        text: AudioHealth.dropouts == 1 ? @tr("1 dropout") : @tr("{} dropouts", AudioHealth.dropouts);
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: root.state == "dropouts" ? Theme.bone : Theme.bone-3;
+        vertical-alignment: center;
+    }
+}
+
+// The device is gone: a band that cannot be missed, with the way out.
+export component DeviceLostBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: "app.audio-lost";
+    accessible-value: AudioHealth.lost-device;
+    height: max(56px, body.preferred-height + 2 * Theme.s3);
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    // Drawn over the waveform zone: it takes the pointer there.
+    TouchArea { }
+    HorizontalLayout {
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        spacing: Theme.s4;
+        VerticalLayout {
+            padding-top: Theme.s2; padding-bottom: Theme.s2;
+            VLine { form: "struck"; tone: Theme.fault; }
+        }
+        body := VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: Theme.key-gap;
+            Text {
+                text: @tr("Audio output lost: {}", AudioHealth.lost-device);
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+                color: Theme.fault; overflow: elide;
+            }
+            Text {
+                text: AudioHealth.fallback != ""
+                    ? @tr("The decks are held where they were. Plug the interface back in and the sound returns by itself, or switch to {}.", AudioHealth.fallback)
+                    : @tr("The decks are held where they were. Plug the interface back in and the sound returns by itself.");
+                wrap: word-wrap;
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            }
+        }
+        if AudioHealth.fallback != "": VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.audio-lost.switch";
+                label: @tr("SWITCH OUTPUT"); tone: Theme.live; active: true;
+                tooltip: @tr("Go on on {}", AudioHealth.fallback);
+                clicked => { AudioHealth.use-fallback(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.audio-lost.retry";
+                label: @tr("TRY AGAIN");
+                tooltip: @tr("Open {} again", AudioHealth.lost-device);
+                clicked => { AudioHealth.retry(); }
+            }
+        }
+    }
+}
+
+// One check: its line, its name and what was found.
+component CheckItem inherits HorizontalLayout {
+    in property <GigCheckRow> check;
+    accessible-role: text;
+    accessible-label: "app.gig-check." + root.check.id;
+    accessible-value: root.check.state + ": " + root.check.detail;
+    spacing: Theme.s2;
+    VerticalLayout {
+        padding-top: Theme.s1; padding-bottom: Theme.s1;
+        ResultLine { state: root.check.state; height: 34px; }
+    }
+    VerticalLayout {
+        alignment: center;
+        spacing: Theme.key-gap;
+        Caps {
+            text: root.check.id == "outputs" ? @tr("AUDIO OUTPUT")
+                : root.check.id == "controller" ? @tr("CONTROLLER")
+                : root.check.id == "disk" ? @tr("RECORDING SPACE")
+                : @tr("TRACK FILES");
+            color: root.check.state == "ok" ? Theme.bone-3 : Theme.bone-2;
+        }
+        Text {
+            text: root.check.detail;
+            overflow: elide;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+            color: root.check.state == "fail" ? Theme.fault : Theme.bone;
+        }
+    }
+}
+
+// The check before the gig: four results side by side, the worst first in
+// the summary, again and close on the right.
+export component GigCheckBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: "app.gig-check";
+    accessible-value: GigCheck.result;
+    height: 56px;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    HorizontalLayout {
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        spacing: Theme.s5;
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 0;
+            Caps { text: @tr("GIG CHECK"); }
+            Text {
+                text: GigCheck.result == "ok" ? @tr("Ready") : GigCheck.result == "warn" ? @tr("Look at the dashed ones") : @tr("Fix the struck ones");
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
+                color: GigCheck.result == "fail" ? Theme.fault : Theme.bone;
+            }
+        }
+        for r in GigCheck.rows: CheckItem { check: r; horizontal-stretch: 1; min-width: 120px; }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.gig-check.again";
+                compact: true; label: @tr("CHECK AGAIN");
+                tooltip: @tr("Look at outputs, controller, disk space and track files again");
+                clicked => { GigCheck.run(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.gig-check.close";
+                compact: true; label: @tr("CLOSE");
+                clicked => { GigCheck.close(); }
+            }
+        }
+    }
+}
+
+// The last run did not end cleanly: what can come back.
+export global Restore {
+    in-out property <bool> visible;
+    // Local time of the last saved state ("23:41").
+    in property <string> when;
+    // "Deck 1: Night Drive at 1:15 · Deck 2: …".
+    in property <string> summary;
+    in property <bool> has-decks;
+    // "The recording … was kept: 41:12" ("" without one).
+    in property <string> recording;
+    callback restore();
+    callback dismiss();
+}
+
+// Offered once after a crash. Sodium, because it needs you; it never
+// covers a control and goes as soon as you choose.
+export component RestoreBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: "app.restore";
+    accessible-value: Restore.summary + (Restore.recording != "" ? " | " + Restore.recording : "");
+    height: max(56px, body.preferred-height + 2 * Theme.s3);
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    HorizontalLayout {
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        spacing: Theme.s4;
+        VerticalLayout {
+            padding-top: Theme.s2; padding-bottom: Theme.s2;
+            VLine { form: "double"; tone: Theme.attention; }
+        }
+        body := VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: Theme.key-gap;
+            Text {
+                text: @tr("OpenDJDecks did not close properly at {}", Restore.when);
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+                color: Theme.bone; overflow: elide;
+            }
+            if Restore.has-decks: Text {
+                text: Restore.summary;
+                overflow: elide;
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            }
+            if Restore.recording != "": Text {
+                text: Restore.recording;
+                overflow: elide;
+                font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2;
+            }
+        }
+        if Restore.has-decks: VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.restore.restore";
+                label: @tr("RESTORE DECKS"); tone: Theme.live; active: true;
+                tooltip: @tr("Load the tracks back where they were, with tempo, loops and mixer; the decks wait for PLAY");
+                clicked => { Restore.restore(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.restore.dismiss";
+                label: Restore.has-decks ? @tr("START EMPTY") : @tr("OK");
+                clicked => { Restore.dismiss(); }
+            }
+        }
+    }
+}
+
+// The performance lock (roadmap [11]), and what the app does while decks
+// play.
+export global PerformLock {
+    in property <bool> locked;
+    // A deck plays: the computer is kept awake and background work waits.
+    in property <bool> playing;
+    // Keeping awake works on this system ("" fine, else why not).
+    in property <string> awake-note;
+    callback toggle();
+}
+
+// Top bar, status zone: LOCK at rest, LOCKED filled in sodium while on
+// (the legend sodium already has for a locked grid).
+export component LockKey inherits Rectangle {
+    in property <bool> narrow;
+    accessible-role: checkbox;
+    accessible-label: "topbar.lock";
+    accessible-checkable: true;
+    accessible-checked: PerformLock.locked;
+    accessible-value: PerformLock.playing ? "playing" : "idle";
+    // Narrow bar: a padlock instead of the word, so live values keep room.
+    width: root.narrow ? 20px : l.preferred-width + 24px;
+    Rectangle {
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: Theme.face(true, t.pressed, t.has-hover, false, PerformLock.locked, Theme.attention);
+    }
+    l := Text {
+        visible: !root.narrow;
+        x: 12px; height: parent.height;
+        text: PerformLock.locked ? @tr("LOCKED") : @tr("LOCK");
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: Theme.ink(true, t.pressed, t.has-hover, false, PerformLock.locked);
+        vertical-alignment: center;
+    }
+    if root.narrow: Rectangle {
+        // Shackle (open while unlocked) over the body.
+        property <color> ink: Theme.ink(true, t.pressed, t.has-hover, false, PerformLock.locked);
+        x: (parent.width - 10px) / 2; y: (parent.height - 14px) / 2; width: 10px; height: 14px;
+        Rectangle {
+            x: PerformLock.locked ? 2px : 4px; y: PerformLock.locked ? 1px : 0px; width: 6px; height: 8px;
+            border-width: 1.5px; border-radius: 3px; border-color: parent.ink;
+        }
+        Rectangle { x: 0; y: 6px; width: 10px; height: 8px; border-radius: 1px; background: parent.ink; }
+    }
+    t := TipArea {
+        tooltip: PerformLock.locked
+            ? @tr("Locked: no loading onto a playing deck, no deleting, no grid edits. Click to unlock")
+            : @tr("Lock for the set: no loading onto a playing deck, no deleting, no grid edits");
+        command: "perform.lock";
+        mouse-cursor: pointer;
+        clicked => { PerformLock.toggle(); }
+    }
+}

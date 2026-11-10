@@ -1156,6 +1156,64 @@ const DE: &[(&str, &str)] = &[
     ("This library database is encrypted. Enter its key under Advanced.", "Diese Bibliotheksdatenbank ist verschlüsselt. Gib ihren Schlüssel unter Erweitert ein."),
     ("Choose the library database file first", "Wähle zuerst die Datei der Bibliotheksdatenbank"),
     ("Choose the library database file", "Datei der Bibliotheksdatenbank wählen"),
+    // Audio health and the gig check (roadmap [10]).
+    ("Audio output lost: {}", "Audioausgang verloren: {}"),
+    ("Audio back on {}", "Ton wieder auf {}"),
+    ("Audio output: {}", "Audioausgang: {}"),
+    ("Audio output could not start: {}", "Audioausgang konnte nicht starten: {}"),
+    ("{} dropouts so far", "bisher {} Aussetzer"),
+    ("no headphone output", "kein Kopfhörerausgang"),
+    ("master and headphones", "Master und Kopfhörer"),
+    ("{} is lost", "{} ist verloren"),
+    ("No controller connected", "Kein Controller verbunden"),
+    ("{} GB free, about {} hours of recording", "{} GB frei, etwa {} Stunden Aufnahme"),
+    ("Free space unknown", "Freier Platz unbekannt"),
+    ("Every track file is in place", "Alle Trackdateien sind da"),
+    ("{} missing: {}", "{} fehlen: {}"),
+    (" and {} more", " und {} weitere"),
+    ("No audio output", "Kein Audioausgang"),
+    (
+        "Check before the gig: outputs, controller, disk, files",
+        "Vor dem Gig prüfen: Ausgänge, Controller, Speicher, Dateien",
+    ),
+    // Restore after a crash (roadmap [9]).
+    ("Deck {}: {} at {}", "Deck {}: {} bei {}"),
+    ("The recording {} was kept: {}", "Die Aufnahme {} ist erhalten: {}"),
+    ("Restored deck {}: press PLAY to go on", "Deck {} wiederhergestellt: PLAY drücken, um weiterzuspielen"),
+    // Performance lock (roadmap [11]).
+    (
+        "Locked: deck {} is playing. Load onto a stopped deck, or unlock",
+        "Gesperrt: Deck {} spielt. Lade auf ein gestopptes Deck oder entsperre",
+    ),
+    ("Locked: nothing is deleted until you unlock", "Gesperrt: Bis zum Entsperren wird nichts gelöscht"),
+    (
+        "Locked: the beatgrid stays as it is until you unlock",
+        "Gesperrt: Das Beatgrid bleibt, wie es ist, bis du entsperrst",
+    ),
+    (
+        "Locked for the set: no loading onto a playing deck, no deleting, no grid edits",
+        "Für das Set gesperrt: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen",
+    ),
+    ("Unlocked", "Entsperrt"),
+    // Phase and tempo between decks (roadmap [12]).
+    (
+        "Practice: SYNC is off. Match tempo and phase by ear and with the phase meter",
+        "Üben: SYNC ist aus. Gleiche Tempo und Phase nach Gehör und mit der Phasenanzeige an",
+    ),
+    ("SYNC can be used again", "SYNC ist wieder verfügbar"),
+    // Booth view (roadmap [58]).
+    (
+        "Booth view: the decks large in their own window",
+        "Booth-Ansicht: die Decks groß in einem eigenen Fenster",
+    ),
+    (
+        "Practice: SYNC stays off until you turn practice off",
+        "Üben: SYNC bleibt aus, bis du das Üben beendest",
+    ),
+    (
+        "Lock for the set: no loading onto a playing deck, no deleting, no grid edits",
+        "Für das Set sperren: kein Laden auf ein spielendes Deck, kein Löschen, keine Grid-Änderungen",
+    ),
 ];
 
 /// Whether `english` has a German translation (independent of the

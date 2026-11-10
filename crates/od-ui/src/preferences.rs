@@ -356,7 +356,9 @@ pub(crate) fn refresh(app: &App) {
             &s.audio.headphones.as_str(),
         ));
         w.set_audio_status(engine_line.into());
-        w.set_audio_pending(s.audio != started.audio);
+        // Device, buffer and headphones apply at once; the engine's sample rate
+        // is fixed while it runs.
+        w.set_audio_pending(s.audio.sample_rate != started.audio.sample_rate);
         // View.
         w.set_language(index_of(&["", "en", "de"], &s.view.language.as_str()));
         w.set_notation(index_of(
@@ -1099,6 +1101,7 @@ fn apply_live(app: &App) {
     };
     shell::apply_language(&settings.language());
     shell::apply_theme(&app.ui.global::<crate::Theme>(), &settings, lite);
+    crate::booth::apply_theme(app);
     with_window(app, |w| {
         shell::apply_theme(&w.global::<crate::Theme>(), &settings, lite)
     });
@@ -1211,16 +1214,21 @@ fn choose(app: &App, key: &str, i: i32) {
                 return; // the "not connected" entry: keep it
             }
             change(app, |s| s.audio.device = name.clone());
+            crate::audio_health::apply_settings(app);
         }
-        "audio.buffer" => change(app, |s| {
-            s.audio.buffer = BUFFER_SIZES.get(i).copied().unwrap_or(0)
-        }),
+        "audio.buffer" => {
+            change(app, |s| s.audio.buffer = BUFFER_SIZES.get(i).copied().unwrap_or(0));
+            crate::audio_health::apply_settings(app);
+        }
         "audio.rate" => change(app, |s| {
             s.audio.sample_rate = SAMPLE_RATES.get(i).copied().unwrap_or(0)
         }),
-        "audio.headphones" => change(app, |s| {
-            s.audio.headphones = ["auto", "34", "off"].get(i).unwrap_or(&"auto").to_string()
-        }),
+        "audio.headphones" => {
+            change(app, |s| {
+                s.audio.headphones = ["auto", "34", "off"].get(i).unwrap_or(&"auto").to_string()
+            });
+            crate::audio_health::apply_settings(app);
+        }
         "view.language" => change(app, |s| {
             s.view.language = ["", "en", "de"].get(i).unwrap_or(&"").to_string()
         }),

@@ -520,6 +520,30 @@ fn build() -> Vec<Action> {
         Global,
         &["Mod+,"],
     );
+    b.add(
+        "gig.check",
+        "Check before the gig: outputs, controller, disk, files",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+C"],
+    );
+    b.add(
+        "perform.lock",
+        "Lock for the set: no loading onto a playing deck, no deleting, no grid edits",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+K"],
+    );
+    b.add(
+        "view.booth",
+        "Booth view: the decks large in their own window",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+B"],
+    );
     b.add_split(
         "app.check-updates",
         "Check for updates",

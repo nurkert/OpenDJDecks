@@ -91,6 +91,9 @@ pub(crate) fn run(app: &Rc<App>, id: &str) {
     };
     match id {
         "prefs.open" => crate::preferences::open(app),
+        "gig.check" => crate::gig_check::run(app),
+        "perform.lock" => crate::perform_lock::toggle(app),
+        "view.booth" => crate::booth::open(app),
         "app.check-updates" => crate::update::check_now(app, true),
         "library.undo" => app.undo(),
         "library.redo" => app.redo(),

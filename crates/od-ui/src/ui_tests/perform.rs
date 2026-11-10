@@ -768,7 +768,11 @@ fn deck_switches_survive_loads_and_restarts() {
         ui.wait_until(10.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].keylock && s.decks[0].tempo_range == range && !s.decks[1].keylock)),
         "MT and range back after a restart"
     );
-    assert_eq!(ui.get("deck1.keylock").accessible_checked(), Some(true));
+    // The screen key follows a frame later.
+    assert!(
+        ui.wait_until(5.0, |u| u.get("deck1.keylock").accessible_checked() == Some(true)),
+        "KEYLOCK shown on after a restart"
+    );
 }
 
 /// Cues on the zoomed lane: hot cue A at 1 s as a flag with its letter and
@@ -807,7 +811,9 @@ fn cues_show_on_the_waveform_lane() {
 #[test]
 fn lane_grid_key_opens_edit_grid() {
     use slint::ComponentHandle;
-    let ui = Ui::open((1440, 900));
+    // Lanes show GRID from 60 px; beside the phase strip that takes a
+    // taller window here (the testing backend draws the menu bar inside).
+    let ui = Ui::open((1440, 1000));
     perform(&ui);
     let (id, title) = ui.fx.tracks[0].clone();
     crate::decks::load_track(&ui.app, 0, id, None);

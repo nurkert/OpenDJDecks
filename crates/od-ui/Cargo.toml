@@ -52,6 +52,10 @@ hound = "3"
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSResponder", "NSView", "NSWindow", "objc2-core-foundation"] }
 
+# Keeping the computer awake while decks play (SetThreadExecutionState).
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_Power"] }
+
 [dev-dependencies]
 tempfile.workspace = true
 # Headless UI tests: the Slint testing backend (must match the slint version).
