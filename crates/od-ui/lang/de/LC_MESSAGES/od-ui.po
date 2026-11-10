@@ -8223,3 +8223,23 @@ msgstr "Ruhige Wellenform"
 msgctxt "PreferencesWindow"
 msgid "Crisp playhead, faint beat lines, softer colours"
 msgstr "Scharfe Abspielmarke, zarte Beatlinien, sanftere Farben"
+
+msgctxt "PlatterGroup"
+msgid "Slip: the track keeps running underneath loops, scratches and reverse"
+msgstr "Slip: Der Track läuft unter Loops, Scratches und Rückwärtslauf weiter"
+
+msgctxt "PlatterGroup"
+msgid "Quantize cues, loops and jumps to the beat"
+msgstr "Cues, Loops und Sprünge auf den Beat quantisieren"
+
+msgctxt "PlatterGroup"
+msgid "Keylock: the key stays when the tempo changes"
+msgstr "Keylock: Die Tonart bleibt, wenn sich das Tempo ändert"
+
+msgctxt "PlatterGroup"
+msgid "Tempo range of the fader — click for the next"
+msgstr "Tempobereich des Faders – Klick für den nächsten"
+
+msgctxt "WaveZoneColumn"
+msgid "More waveform keys"
+msgstr "Weitere Wellenform-Tasten"

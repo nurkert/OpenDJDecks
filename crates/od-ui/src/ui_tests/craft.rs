@@ -480,3 +480,49 @@ fn dragging_a_playing_lane_nudges() {
     );
     assert!(snap(&ui).position >= during - 0.01, "still no jump back");
 }
+
+/// [46] The deck's centre: the platter, its setup-key block and SYNC / CUE
+/// / PLAY share one horizontal axis; the keys hug the platter (their boxes
+/// start at the ring, one key gap from it at the axis) and the two decks
+/// mirror each other. At 1440 × 900 and 1280 × 800 nothing gets smaller.
+#[test]
+fn deck_centre_groups_round_the_platter() {
+    for (size, platter, key) in [((1440, 900), 166.0, 24.0), ((1280, 800), 136.0, 24.0), ((1440, 1200), 166.0, 24.0), ((2560, 1440), 166.0, 24.0)] {
+        let ui = Ui::open(size);
+        perform(&ui);
+        load(&ui, 0, 0);
+        ui.pump(300);
+        let r = |l: &str| Rect::of(&ui.get(l));
+        for d in [1, 2] {
+            let p = r(&format!("deck{d}.platter"));
+            assert!(p.w + 0.5 >= platter, "{size:?} deck {d}: platter {}", p.w);
+            let axis = p.centre().y;
+            let keys: Vec<Rect> = ["slip", "quantize", "keylock", "tempo-mode"].iter().map(|k| r(&format!("deck{d}.{k}"))).collect();
+            let block = (keys[0].y + keys[3].bottom()) / 2.0;
+            assert!((block - axis).abs() <= 1.5, "{size:?} deck {d}: key block on the axis ({block} vs {axis})");
+            let transport = (r(&format!("deck{d}.beat-sync")).y + r(&format!("deck{d}.play")).bottom()) / 2.0;
+            assert!((transport - axis).abs() <= 2.0, "{size:?} deck {d}: transport on the axis ({transport} vs {axis})");
+            for (i, k) in keys.iter().enumerate() {
+                assert!(k.h + 0.5 >= key, "{size:?} deck {d}: key {i} {}", k.h);
+                if i > 0 {
+                    assert!((k.y - keys[i - 1].bottom() - 4.0).abs() <= 0.5, "{size:?} deck {d}: a fixed key gap");
+                }
+                // Deck 1 has its keys right of the platter, deck 2 left.
+                if d == 1 {
+                    assert!(k.x >= p.centre().x && k.right() > p.right(), "{size:?}: deck 1 keys right of the platter");
+                } else {
+                    assert!(k.right() <= p.centre().x && k.x < p.x, "{size:?}: deck 2 keys left of the platter");
+                }
+            }
+            // The keys' click centre is on the key, not on the platter.
+            let k = &keys[1];
+            let c = k.centre();
+            let dist = ((c.x - p.centre().x).powi(2) + (c.y - axis).powi(2)).sqrt();
+            assert!(dist > p.w / 2.0 + 4.0, "{size:?} deck {d}: key centre clear of the ring");
+        }
+        // Mirror: the decks' platters sit symmetric about the window centre.
+        let (p1, p2) = (r("deck1.platter"), r("deck2.platter"));
+        let centre = size.0 as f32 / 2.0;
+        assert!(((centre - p1.centre().x) - (p2.centre().x - centre)).abs() <= 5.0, "{size:?}: decks mirror: {} vs {}", centre - p1.centre().x, p2.centre().x - centre);
+    }
+}

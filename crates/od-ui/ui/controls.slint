@@ -390,6 +390,10 @@ export component ConcaveKey inherits Rectangle {
     in property <length> cy;
     in property <length> arc-r;
     in property <length> gap: Theme.s1;
+    // How far beyond the inner edge the round element's centre lies; by
+    // default half a gap (keys that meet at the centre line). A key beside
+    // the ring that stops where its arc is deepest sets it larger.
+    in property <length> centre-offset: root.gap / 2;
     callback clicked();
     // Press and release (hold keys).
     callback held(bool);
@@ -404,11 +408,11 @@ export component ConcaveKey inherits Rectangle {
     property <float> w: root.width / 1px;
     property <float> h: root.height / 1px;
     property <float> c: Theme.r-control / 1px;
-    property <float> ccx: root.w + root.gap / 2px;
+    property <float> ccx: root.w + root.centre-offset / 1px;
     property <float> ccy: root.cy / 1px;
     property <float> rr: root.arc-r / 1px;
     // Half chord where the arc leaves the inner straight edge.
-    property <float> k: Math.sqrt(Math.max(0, root.rr * root.rr - (root.gap / 2px) * (root.gap / 2px)));
+    property <float> k: Math.sqrt(Math.max(0, root.rr * root.rr - (root.centre-offset / 1px) * (root.centre-offset / 1px)));
     property <float> ya: clamp(root.ccy - root.k, 0, root.h);
     property <float> yb: clamp(root.ccy + root.k, 0, root.h);
     // The inner edge at y (left orientation).
