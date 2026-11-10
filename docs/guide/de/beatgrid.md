@@ -1,8 +1,8 @@
 ---
 title: Beatgrids
 description: Beatgrids mit den Kicks im Blick prüfen und korrigieren. GRID BEARBEITEN mit Pins, Drift, FIT, AUTO-FIX und Klick, und das GRID-Panel am Perform-Deck.
-keywords: [beatgrid, beat grid, beatgrit, grid, raster, tempo, bpm, downbeat, die 1, pin, pins, auto fix, drift, fit, klick, metronom, tempowechsel, tempo ändern, live aufnahme, falsches bpm, daneben, doppeltes tempo, halbes tempo, tap, korrigieren]
-features: [analysis-variable-grid, analysis-grid-editor, analysis-grid-tap-bpm, analysis-bpm-range, deck-grid-panel, deck-tap-bpm, analysis-high-tempo, deck-bpm-half-double]
+keywords: [sicherheit, unsicher, falsche tonart, neu analysieren, beatgrid, beat grid, beatgrit, grid, raster, tempo, bpm, downbeat, die 1, pin, pins, auto fix, drift, fit, klick, metronom, tempowechsel, tempo ändern, live aufnahme, falsches bpm, daneben, doppeltes tempo, halbes tempo, tap, korrigieren]
+features: [analysis-confidence, analysis-variable-grid, analysis-grid-editor, analysis-grid-tap-bpm, analysis-bpm-range, deck-grid-panel, deck-tap-bpm, analysis-high-tempo, deck-bpm-half-double]
 ---
 
 Die Analyse findet das Tempo und die erste Zählzeit automatisch, und für die meiste elektronische Musik reicht das. Liegt ein Grid daneben, zeigt OpenDJDecks dir, wo, und korrigiert es mit sehr wenig Arbeit.
@@ -74,6 +74,20 @@ Jedes Perform-Deck hat neben dem Pad-Modus eine **GRID**-Taste. Sie tauscht die 
 Öffne **Einstellungen › Analyse › BPM-Bereich**, wähle einen, der zur Musik passt, und **analysiere** den Track neu. Ein gesperrtes Grid fasst die Analyse nicht an.
 
 Der aktive Bereich steht dort, wo Tracks analysiert werden: als **BPM-BEREICH** im Tab **INFO** des Prepare-Players und neben dem Fortschritt, während Tracks analysiert werden (**ANALYSE 3/10 · 70–180 BPM**).
+
+## Wie sicher die Analyse ist
+
+Ab Version 0.8 sagt die Analyse, wie sicher sie sich bei Tonart und Grid ist. Öffne in Prepare **INFO** neben der Cue-Liste: **BPM** und **TONART** zeigen je einen Prozentwert.
+
+![Der INFO-Tab in Prepare mit der Sicherheit der Analyse bei BPM und Tonart](../img/analysis-confidence.png)
+
+- Ab 50 % steht der Wert grau da und braucht nichts.
+- Unter 50 % wird er gelb, mit einer kurzen gelben Linie davor. **NEHMEN** daneben übernimmt mit einem Druck die wahrscheinliche Alternative: bei der Tonart wird die zweitbeste zu deiner Tonart (sie zählt dann als deine, und Rückgängig (`⌘Z`) holt die alte zurück); beim Tempo geht das Grid auf das halbe oder doppelte Tempo, je nachdem, was knapp war.
+- **NEU ANALYSIEREN** in der **RASTER**-Zeile analysiert den Track noch einmal. Eine selbst gesetzte Tonart und ein gesperrtes Grid bleiben, wie sie sind.
+
+Der Prozentwert der Tonart sagt, wie weit die beste Tonart vor der nächsten liegt; ein Track auf einer leeren Quinte oder einem Riff ohne Terz kommt oft niedrig heraus. Der Prozentwert des Grids ist der Anteil der Beats, die auf einen Schlag fallen, und sinkt, wenn halbes oder doppeltes Tempo knapp war. Tracks, die vor Version 0.8 analysiert wurden, zeigen keinen Prozentwert, bis du **NEU ANALYSIEREN** drückst. Eine unsichere Tonart zeigt ihren Prozentwert in Perform auch unter der **TONART** am Deck.
+
+Geprüft sind diese Werte an erzeugten Testtracks, noch nicht an einer Sammlung echter Platten.
 
 ## Schnelle Musik und halb oder doppelt am Deck
 

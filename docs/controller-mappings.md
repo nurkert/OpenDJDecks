@@ -181,6 +181,10 @@ release.
 | `deck.pad` | momentary | `index` | `Pad { index, pressed, velocity }` (generic, interpreted by pad mode) |
 | `deck.needle_search` | absolute | | `NeedleSearch(0..1)` |
 | `deck.select` | press | optional `deck` | `DeckSelect` for the bound deck, or for `deck` |
+| `deck.stem_level` | absolute | `stem` = `vocals` / `drums` / `bass` / `inst` | `StemLevel { stem, level }`: centre and above full level, fully left muted |
+| `deck.stem_mute` | press | `stem` | `StemMuteToggle { stem }` |
+| `deck.stem_solo` | momentary | `stem` | `StemSolo { stem, on }`: only this stem while held; the others come back as they were on release |
+| `deck.stem_keep` | press | `stem` | `StemKeepOnly { stem }`: the other stems muted, and they stay muted |
 | `mixer.trim`, `mixer.eq_high`, `mixer.eq_mid`, `mixer.eq_low`, `mixer.fader` | absolute | | `MixerAction::*` |
 | `mixer.channel_fx` | absolute | | `ChannelFx(-1..1)` |
 | `mixer.cue` | press | | `CueToggle` (headphone cue) |
@@ -194,6 +198,8 @@ release.
 | `tempo_fx.level` | absolute | `unit` | |
 | `tempo_fx.select` | press | `effect` (name), `unit` | |
 | `tempo_fx.assign` | press | `channel` (0 = master), `unit` | |
+| `tempo_fx.build_up` | press | `bars` = `8` / `16` / `32` (default 16), `unit` | `BuildUp(bars)`: a build-up that peaks on the next line of that many bars and drops; the same press again stops it |
+| `fx_panic` | press | | `FxPanic`: every effect off at once (both Tempo FX units with tails, exit and hold FX, the channel FX knobs) |
 | `channel_fx.select` | press | `effect` | |
 | `channel_fx.next`, `channel_fx.toggle` | press | | |
 | `browse.rotate` | relative | `shifted` (bool) | `Rotate { delta, shifted }` |

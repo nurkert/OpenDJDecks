@@ -1,8 +1,8 @@
 ---
 title: Beatgrids
 description: Check and correct beatgrids with the kicks in view. EDIT GRID with pins, drift, FIT, AUTO-FIX and the click, and the GRID panel on the Perform deck.
-keywords: [beatgrid, beat grid, grid, beatgrit, gridt, tempo, bpm, downbeat, the 1, pins, pin, auto fix, drift, fit, click, metronome, tempo change, tempo changes, live recording, wrong bpm, off beat, double tempo, half tempo, tap, hardcore, gabber, 200 bpm, fast, high tempo]
-features: [analysis-variable-grid, analysis-grid-editor, analysis-grid-tap-bpm, analysis-bpm-range, deck-grid-panel, deck-tap-bpm, analysis-high-tempo, deck-bpm-half-double]
+keywords: [confidence, unsure, wrong key, analyse again, beatgrid, beat grid, grid, beatgrit, gridt, tempo, bpm, downbeat, the 1, pins, pin, auto fix, drift, fit, click, metronome, tempo change, tempo changes, live recording, wrong bpm, off beat, double tempo, half tempo, tap, hardcore, gabber, 200 bpm, fast, high tempo]
+features: [analysis-confidence, analysis-variable-grid, analysis-grid-editor, analysis-grid-tap-bpm, analysis-bpm-range, deck-grid-panel, deck-tap-bpm, analysis-high-tempo, deck-bpm-half-double]
 ---
 
 The analysis finds the tempo and the first beat of the bar automatically, and for most electronic music that is enough. When a grid is off, OpenDJDecks shows you where and fixes it with very little work.
@@ -74,6 +74,20 @@ Changes are stored at once and the decks follow without a gap; nudges within a s
 Open **Preferences › Analysis › BPM range** and pick one that fits the music, then **Analyse** the track again. A locked grid is not touched by analysis.
 
 The range in use shows where tracks are analysed: as **BPM RANGE** in the **INFO** tab of the Prepare player, and beside the progress while tracks are being analysed (**ANALYSING 3/10 · 70–180 BPM**).
+
+## How sure the analysis is
+
+From version 0.8 the analysis says how sure it is of the key and the grid. Open **INFO** beside the cue list in Prepare: **BPM** and **KEY** each show a percentage.
+
+![Prepare's INFO tab with how sure the analysis is of BPM and key](../img/analysis-confidence.png)
+
+- From 50 % up the value is shown in grey and needs nothing.
+- Below 50 % it turns yellow with a short yellow line in front. **USE** beside it takes the likely alternative with one press: for the key, the runner-up becomes your key (it then counts as yours, and Undo (`⌘Z`) brings the old one back); for the tempo, the grid goes to half or double, whichever was the close call.
+- **ANALYSE AGAIN** in the **GRID** row analyses the track once more. A key you set yourself and a locked grid stay as they are.
+
+The key's percentage says how far the best key is ahead of the next one; a track built on a bare fifth or a riff without a third often reads low. The grid's percentage is the share of beats that land on a hit, lowered when half or double tempo was a close call. Tracks analysed before version 0.8 show no percentage until you press **ANALYSE AGAIN**. An unsure key also shows its percentage under the **KEY** on the deck in Perform.
+
+These values were checked against generated test tracks, not yet against a collection of real records.
 
 ## Fast music and half or double on the deck
 

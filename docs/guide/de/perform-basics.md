@@ -1,8 +1,8 @@
 ---
 title: Die Grundlagen von Perform
 description: Decks, Layouts, Sync, Keylock, Tempo, Loops und Beat Jump und jeder Pad-Modus am Deck.
-keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom]
-features: [deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
+keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, tonarten passen, harmonisch mischen, passende tonart, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom]
+features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
 ---
 
 Perform ist der Live-Modus: Decks, Mixer und Browser in einer Ansicht.
@@ -36,6 +36,18 @@ Die obere Leiste hat drei Zonen. Links stehen die Arbeitsmodi, in der Mitte das,
 - **‹ ±0 ›** im Deck-Kopf verschiebt die Tonart um je einen Halbton; Klick auf den Wert setzt zurück.
 - **KEYLOCK** hält die Tonart, wenn sich das Tempo ändert (auch bekannt als Master Tempo).
 - Bend per Tastatur: `W` / `E` und `U` / `I`, solange gehalten.
+
+### Tonart gegenüber den anderen Decks
+
+Ab Version 0.8 ist die **TONART** im Kopf jedes Decks unterstrichen, solange ein anderes Deck spielt. So siehst du auf einen Blick, ob die beiden Tonarten zusammenpassen:
+
+- eine durchgehende grüne Linie: die Tonarten **passen** (dieselbe Tonart, ein Schritt im Quintenzirkel oder die parallele Dur- bzw. Molltonart);
+- eine gestrichelte gelbe Linie: ein **Energiewechsel** (ein Ganzton oder Halbton nach oben oder unten, oder ein Schritt mit getauschtem Dur und Moll), ein Wechsel, der die Stimmung bewusst hebt oder senkt;
+- eine rote Linie, mit zwei Strichen durchgestrichen: die Tonarten **beißen sich**.
+
+![Zwei Decks, deren Tonarten sich nach einer Tonverschiebung von +1 auf Deck 2 beißen](../img/key-relation.png)
+
+Verglichen wird die Tonart, die du hörst: Die Tonverschiebung zählt mit, und ohne **KEYLOCK** auch das Tempo (auf den nächsten Halbton). Spielen mehr Decks, zeigt die Linie die schlechteste Paarung. Fahr mit der Maus über die Linie, dann steht es in Worten da, etwa „Beißt sich mit Deck 1 (11B)“. War sich die Analyse bei einer Tonart unsicher, steht der Prozentwert gelb darunter; siehe [Wie sicher die Analyse ist](beatgrid.md#wie-sicher-die-analyse-ist). Die Farben sind unsere eigenen und folgen dem Rest der App: Grün passt, Gelb will bedacht sein, Rot warnt.
 
 ## Phase und Tempo zwischen den Decks
 
