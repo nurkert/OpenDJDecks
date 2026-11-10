@@ -2,7 +2,7 @@
 title: Controllers and MIDI learn
 description: Plug in a compatible controller and play. For anything else, map controls with MIDI learn and see what your controller sends in the MIDI monitor.
 keywords: [controller, controllers, midi, midi learn, mapping, ddj, ddj-flx10, ddj-flx4, flx10, flx4, pioneer, led, soft takeover, browse, encoder, midi monitor, hardware]
-features: [ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
+features: [ctrl-self-test, ctrl-hardware-status, ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
 ---
 
 OpenDJDecks ships with mappings compatible with the Pioneer DJ DDJ-FLX10 and DDJ-FLX4, with LED feedback for play, cue, sync, master, key lock, slip, loop and the pads, and the VU meters. The mappings are not yet fully confirmed on real devices, so individual controls or LEDs may not work: try them before a gig. Connect a controller by USB; it is picked up within a few seconds, and its audio interface is used automatically (**Preferences › Audio › Output device**).
@@ -36,6 +36,10 @@ In **Preferences › Controller › Self-test**, check a controller before you r
 1. Pick the controller under **Mapping**. A connected controller is picked for you.
 2. Press **START** and move every control once: press each button and pad, turn each knob, move each fader and the jog wheels. Each control is ticked as soon as its message arrives. The count shows how many have answered.
 3. Press **FLASH LEDS**. Every LED the mapping drives lights up for two seconds and then goes back to what the decks show. An LED that stays dark is not mapped correctly for your unit.
+
+The self-test lists the controls of each deck separately, so its count is larger than the list below.
+
+![The controller self-test in Preferences](../img/controller-self-test.png)
 
 A control that stays unticked after you moved it does not reach OpenDJDecks the way the mapping expects. Turn on the **Monitor** to see what it sends instead, and report it with the monitor lines.
 

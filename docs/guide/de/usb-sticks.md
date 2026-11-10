@@ -2,7 +2,7 @@
 title: USB-Sticks und Sync
 description: Registriere einen Stick einmal. Danach erreicht ihn jede Änderung automatisch und schrittweise, bereit für OpenDJDecks auf einem anderen Rechner oder den Raspberry Pi.
 keywords: [usb, stick, sticks, usb stick, sync, synchronisieren, sychronisieren, export, exportieren, registrieren, auswerfen, neu schreiben, stick status, gerät, sync manager]
-features: [export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
+features: [export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
 ---
 
 Der Stick ist ein Spiegel deiner Bibliothek. Registriere ihn einmal mit den Listen, die darauf gehören, und jeder geänderte Cue, jede Playlist und jedes Grid ist innerhalb von Sekunden auf dem Stick, solange er steckt. Es gibt keinen Export-Schritt, an den du denken musst.
@@ -68,3 +68,27 @@ Trägt ein Stick zusätzlich das OpenDJDecks-Format, bleibt das Original neben d
 ### Einen Stick von anderer Software importieren
 
 Ab Version 0.6 liest **Ablage › Club-Player-USB importieren…** einen Club-Player-USB, den andere Software geschrieben hat: Tracks, Tags, Cues, Beatgrids, Phrasen, Playlists und die Historie. Wähle den Hauptordner des Sticks. Auf dem Stick ändert sich nichts; importierte Listen erscheinen in einem Ordner **Library import**.
+
+## Einen Stick vor dem Gig prüfen
+
+Wähle den Stick unter **Geräte** und drücke **STICK PRÜFEN**. OpenDJDecks liest den Stick zurück und vergleicht ihn mit deiner Bibliothek:
+
+- für jeden Track: Die Audiodatei ist da und lässt sich als Audio öffnen (**DATEI**), die Cues sind deine (**CUES**), das Beatgrid ist deins (**GRID**);
+- für den ganzen Stick: Jede Playlist enthält die Tracks der Bibliothek in deren Reihenfolge, die gewählten Formate sind da, und kein Sync wurde abgebrochen.
+
+Beide Formate werden zurückgelesen, wenn der Stick sie trägt: die OpenDJDecks-Bibliothek und der Club-Player-USB-Export. Jede Markierung nutzt die Linienformen aus der Stick-Liste: durchgezogen heißt wie in der Bibliothek, gestrichelt heißt seit dem letzten Sync geändert, durchgestrichen heißt fehlt oder nicht lesbar, halb heißt es gibt nichts zu vergleichen (ein Track ohne Cues). Probleme stehen oben. Die Prüfung endet mit **Bereit** oder **Nicht bereit**; eine gestrichelte Markierung oder eine abweichende Playlist verschwindet mit **JETZT SYNCHRONISIEREN**.
+
+![Die Stick-Prüfung auf der Geräte-Seite](../img/stick-check.png)
+
+Die Prüfung sagt dir, ob der Stick enthält, was die Bibliothek sagt. Ob ein bestimmtes Player-Modell den Stick annimmt, kann sie nicht sagen; dazu der nächste Abschnitt.
+
+## Kompatibilität nach Player-Familie
+
+Was ein synchronisierter Stick für welche Art von Player enthält und wie weit das bestätigt ist. Das Club-Player-USB-Format wird nach öffentlicher Formatdokumentation geschrieben. **Nichts davon ist bisher auf echten Club-Playern bestätigt**; diese Prüfung steht auf der Roadmap noch aus. Bis dahin: Probiere einen Stick vor dem Gig auf den Playern aus, die du benutzen wirst.
+
+| Player-Familie | Hot Cues | Memory-Punkte | Beatgrid | Playlists | Stand |
+|---|---|---|---|---|---|
+| OpenDJDecks auf einem Rechner oder dem Raspberry-Pi-Gerät (OpenDJDecks-Format) | ja, alle Bänke, mit Farben und Loops | ja | ja | ja, mit Ordnern | von OpenDJDecks selbst geschrieben und zurückgelesen, in automatischen Tests und von der Stick-Prüfung |
+| Aktuelle Club-Player, die Club-Player-USB mit erweiterter Analyse lesen | ja, mit Farben (`.EXT`) | ja | ja | ja, mit Ordnern | nach Formatdokumentation geschrieben, nicht auf Playern bestätigt |
+| Ältere Club-Player, die nur die Grundanalyse lesen | ja, ohne Farben (`.DAT`) | ja | ja | ja, mit Ordnern | nach Formatdokumentation geschrieben, nicht auf Playern bestätigt; FLAC- und AAC/ALAC-Dateien brauchen **Maximale Kompatibilität** |
+| Andere Software, die Club-Player-USB importiert | wie die importierende Software sie liest | | | | der eigene Import von OpenDJDecks liest es in automatischen Tests zurück; andere Software nicht geprüft |

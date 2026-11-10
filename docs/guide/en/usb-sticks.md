@@ -2,7 +2,7 @@
 title: USB sticks and sync
 description: Register a stick once. From then on every change reaches it automatically and incrementally, ready for OpenDJDecks on another computer or the Raspberry Pi.
 keywords: [usb, stick, sticks, usb stick, sync, synchronise, export, export stick, register, eject, rebuild, stick status, device, sync manager]
-features: [export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
+features: [export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
 ---
 
 The stick is a mirror of your library. Register it once with the lists that belong on it, and every changed cue, playlist or beatgrid reaches it within seconds, while it is plugged in. There is no export step to remember.
@@ -68,3 +68,27 @@ If a player changes cues on the stick or writes a history, OpenDJDecks does not 
 ### Import a stick from other software
 
 From version 0.6, **File › Import a Club Player USB…** reads a Club player USB written by other software: tracks, tags, cues, beatgrids, phrases, playlists and the history. Choose the stick's root folder. Nothing on the stick is changed; imported lists appear in a **Library import** folder.
+
+## Check a stick before a gig
+
+Select the stick under **Devices** and press **CHECK STICK**. OpenDJDecks reads the stick back and compares it with your library:
+
+- for every track: the audio file is there and opens as audio (**FILE**), the cues are yours (**CUES**), the beatgrid is yours (**GRID**);
+- for the whole stick: every playlist holds the library's tracks in the library's order, the formats you chose are there, and no sync was cut off.
+
+Both formats are read back when the stick carries them: the OpenDJDecks library and the Club player USB export. Each mark uses the line forms you know from the stick list: solid means as in the library, dashed means changed since the last sync, struck means missing or unreadable, half means there is nothing to compare (a track without cues). Problems are listed first. The check ends with **Ready** or **Not ready**; a dashed mark or a playlist that differs goes away with **SYNC NOW**.
+
+![The stick check on the Devices page](../img/stick-check.png)
+
+The check tells you whether the stick holds what the library says. It cannot tell you whether a particular player model accepts the stick; see the next section.
+
+## Compatibility per player family
+
+What a synced stick carries for each kind of player, and how far that is confirmed. The Club player USB format is written from public format documentation. **None of it has been confirmed on real club players yet**; that check is still open on the roadmap. Until then, try a stick on the players you will use before a gig.
+
+| Player family | Hot cues | Memory points | Beatgrid | Playlists | Status |
+|---|---|---|---|---|---|
+| OpenDJDecks on a computer or the Raspberry Pi unit (OpenDJDecks format) | yes, all banks, with colours and loops | yes | yes | yes, with folders | written and read back by OpenDJDecks itself, in automated tests and by the stick check |
+| Current club players reading the Club player USB with extended analysis | yes, with colours (`.EXT`) | yes | yes | yes, with folders | written per format documentation, not confirmed on players |
+| Older club players reading only the basic analysis | yes, without colours (`.DAT`) | yes | yes | yes, with folders | written per format documentation, not confirmed on players; FLAC and AAC/ALAC files need **Maximum compatibility** |
+| Other software importing the Club player USB | as the importing software reads them | | | | OpenDJDecks' own import reads it back in automated tests; other software not checked |

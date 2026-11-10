@@ -2,7 +2,7 @@
 title: Controller und MIDI-Learn
 description: Kompatiblen Controller einstecken und spielen. Für alles andere Regler mit MIDI-Learn zuordnen und im MIDI-Monitor sehen, was dein Controller sendet.
 keywords: [controller, midi, midi learn, mapping, ddj, ddj-flx10, ddj-flx4, flx10, flx4, pioneer, led, soft takeover, browse, encoder, midi monitor, hardware, belegen]
-features: [ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
+features: [ctrl-self-test, ctrl-hardware-status, ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
 ---
 
 OpenDJDecks bringt Mappings mit, kompatibel mit Pioneer DJ DDJ-FLX10 und DDJ-FLX4, mit LED-Rückmeldung für Play, Cue, Sync, Master, Keylock, Slip, Loop, die Pads und die Pegelanzeigen. Die Mappings sind noch nicht vollständig auf echten Geräten bestätigt, einzelne Regler oder LEDs funktionieren vielleicht nicht: Probiere sie vor einem Gig aus. Stecke einen Controller per USB ein; er wird in wenigen Sekunden erkannt und sein Audio-Interface automatisch benutzt (**Einstellungen › Audio › Ausgabegerät**).
@@ -36,6 +36,10 @@ Unter **Einstellungen › Controller › Selbsttest** prüfst du einen Controlle
 1. Wähle den Controller unter **Mapping**. Ein angeschlossener Controller ist schon gewählt.
 2. Drücke **START** und bewege jedes Bedienelement einmal: jede Taste und jedes Pad drücken, jeden Regler drehen, jeden Fader und die Jogwheels bewegen. Jedes Element wird abgehakt, sobald seine Nachricht ankommt. Die Zahl zeigt, wie viele sich gemeldet haben.
 3. Drücke **LEDS BLINKEN**. Jede LED aus dem Mapping leuchtet zwei Sekunden und zeigt danach wieder, was die Decks anzeigen. Bleibt eine LED dunkel, ist sie für dein Gerät nicht richtig zugeordnet.
+
+Der Selbsttest führt die Elemente jedes Decks einzeln auf, darum ist seine Zahl größer als in der Liste unten.
+
+![Der Controller-Selbsttest in den Einstellungen](../img/controller-self-test.png)
 
 Bleibt ein Element nach dem Bewegen offen, kommt es nicht so bei OpenDJDecks an, wie das Mapping es erwartet. Schalte den **Monitor** an, um zu sehen, was es stattdessen sendet, und melde es mit den Monitor-Zeilen.
 
