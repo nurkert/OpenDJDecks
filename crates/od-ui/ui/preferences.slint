@@ -594,7 +594,7 @@ export component PreferencesWindow inherits Window {
                                         accessible-value: (r.seen ? "seen " : "waiting ") + r.status + " " + r.name;
                                         height: 26px; spacing: Theme.s2;
                                         VerticalLayout {
-                                            padding-top: 5px; padding-bottom: 5px;
+                                            padding-top: Theme.s1; padding-bottom: Theme.s1;
                                             VLine { tone: r.seen ? Theme.live : Theme.rule-strong; form: r.seen ? "solid" : "half"; }
                                         }
                                         Text { horizontal-stretch: 1; text: r.name; overflow: elide; font-family: Theme.family; font-size: Theme.body; color: r.seen ? Theme.bone : Theme.bone-2; vertical-alignment: center; }

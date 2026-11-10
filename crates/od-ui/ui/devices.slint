@@ -160,7 +160,7 @@ component CheckMark inherits HorizontalLayout {
     in property <string> label;
     width: 64px; spacing: Theme.s1;
     VerticalLayout {
-        padding-top: 7px; padding-bottom: 7px;
+        padding-top: Theme.s2; padding-bottom: Theme.s2;
         VLine {
             tone: root.state == "ok" ? Theme.live : root.state == "differs" ? Theme.attention : root.state == "none" ? Theme.rule-strong : Theme.bone-3;
             form: root.state == "ok" ? "solid" : root.state == "differs" ? "dashed" : root.state == "none" ? "half" : "struck";
