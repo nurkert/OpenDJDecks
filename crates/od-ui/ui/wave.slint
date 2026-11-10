@@ -63,6 +63,17 @@ export component CueMarker inherits Rectangle {
     }
 }
 
+// Dragging a Perform lane (Rust: lane_drag.rs): a paused deck scrubs 1:1,
+// a playing one nudges by the drag's speed. `to` gets the drag as seconds
+// of audio (positive = later in the track); `text` is the readout.
+export global LaneDrag {
+    callback start(int);
+    callback to(int, float);
+    callback end(int);
+    in-out property <int> deck;
+    in-out property <string> text;
+}
+
 export component WaveLane inherits Rectangle {
     in property <DeckView> deck;
     in property <LaneMotion> motion;
@@ -86,6 +97,8 @@ export component WaveLane inherits Rectangle {
     // window coordinates. Past and future are drawn around it, so the past
     // side may be a little narrower than the future side.
     in property <length> anchor-x: -1px;
+    // Perform: the lane can be dragged (scrub or nudge, see LaneDrag).
+    in property <bool> draggable;
     property <length> head: root.anchor-x >= 0 ? clamp(root.anchor-x - self.absolute-position.x, root.gutter + 8px, root.width - 8px) : root.gutter + root.area / 2;
     // Fraction of the span left of the playhead.
     property <float> past: (root.head - root.gutter) / max(1px, root.area);
@@ -224,14 +237,51 @@ export component WaveLane inherits Rectangle {
         accessible-label: root.playhead-label ? "wave.playhead" : "";
         background: root.deck.loaded ? Theme.bone : Theme.rule-strong;
     }
-    // Scroll to zoom; double-click resets.
-    TouchArea {
+    // Scroll to zoom; double-click resets. Drag (Perform, a track loaded):
+    // past a few px a paused deck scrubs and a playing one is nudged; a
+    // click without movement stays a click.
+    property <bool> dragging;
+    lane-touch := TouchArea {
         x: root.gutter; width: root.area;
+        mouse-cursor: root.draggable && root.motion.loaded ? (root.dragging ? MouseCursor.grabbing : MouseCursor.grab) : MouseCursor.default;
         scroll-event(e) => {
             root.zoom(e.delta-y / 1px);
             accept
         }
         double-clicked => { root.zoom-reset(); }
+        moved => {
+            if (self.pressed && root.draggable && root.motion.loaded && root.motion.span > 0) {
+                if (!root.dragging && Math.abs(self.mouse-x - self.pressed-x) > 4px) {
+                    root.dragging = true;
+                    LaneDrag.start(root.deck.deck);
+                }
+                if (root.dragging) {
+                    LaneDrag.to(root.deck.deck, -(self.mouse-x - self.pressed-x) / root.area * root.motion.span);
+                }
+            }
+        }
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.up && root.dragging) {
+                root.dragging = false;
+                LaneDrag.end(root.deck.deck);
+            }
+        }
+    }
+    // While dragging: the offset (paused) or the bend (playing) at the playhead.
+    if root.dragging && LaneDrag.deck == root.deck.deck: Rectangle {
+        accessible-role: text;
+        accessible-label: "wave.drag\{root.deck.deck}";
+        accessible-value: LaneDrag.text;
+        x: root.head + 5px; y: parent.height - self.height - 4px;
+        width: drag-text.preferred-width + 10px; height: 16px;
+        border-radius: Theme.r-control;
+        background: Theme.bone;
+        drag-text := Text {
+            text: LaneDrag.text;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi;
+            color: Theme.ground;
+            horizontal-alignment: center; vertical-alignment: center;
+        }
     }
     // Right-click on the waveform: edit this deck's beatgrid (any lane
     // height; tall lanes also have the GRID key in the gutter).

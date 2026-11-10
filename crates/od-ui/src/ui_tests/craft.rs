@@ -402,3 +402,81 @@ fn lane_playhead_sits_on_the_window_centre() {
         assert!((counter.x - head).abs() <= 8.0, "{size:?}: counter at the playhead");
     }
 }
+
+/// Drags lane `deck` (1-based) by `dx` px in small steps, `hold` frames
+/// per step, and returns before release (the caller releases).
+fn drag_lane(ui: &Ui, deck: usize, dx: f32, steps: usize) -> LogicalPosition {
+    let lane = Rect::of(&ui.get(&format!("wave.lane{deck}")));
+    let from = LogicalPosition::new(lane.x + lane.w * 0.7, lane.y + lane.h / 2.0);
+    ui.press_at(from, PointerEventButton::Left);
+    ui.pump(16);
+    let mut at = from;
+    for i in 1..=steps {
+        at = LogicalPosition::new(from.x + dx * i as f32 / steps as f32, from.y);
+        move_to(ui, at);
+    }
+    at
+}
+
+/// [50] A paused deck scrubs: dragging the lane moves the track 1:1 with
+/// the pointer at the current zoom (dragging left moves later), a readout
+/// shows the offset at the playhead, and the track stays where it is put.
+/// A click without movement does not move it.
+#[test]
+fn dragging_a_paused_lane_scrubs() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    load(&ui, 0, 0);
+    let pos = |u: &Ui| crate::engine::snapshot(&u.app).unwrap().decks[0].position;
+    assert!(ui.wait_until(10.0, |u| u.has("wave.lane1") && !crate::engine::snapshot(&u.app).unwrap().decks[0].playing));
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::Seek { seconds: 4.0 });
+    assert!(ui.wait_until(5.0, |u| (pos(u) - 4.0).abs() < 0.01));
+    let lane = Rect::of(&ui.get("wave.lane1"));
+    ui.click_at(LogicalPosition::new(lane.x + lane.w * 0.7, lane.y + lane.h / 2.0), PointerEventButton::Left);
+    ui.pump(200);
+    assert!((pos(&ui) - 4.0).abs() < 0.01, "a click does not scrub");
+    let span = {
+        use slint::Model;
+        ui.app.ui.get_lane_motion().row_data(0).unwrap().span as f64
+    };
+    let area = lane.w as f64 - 44.0;
+    let at = drag_lane(&ui, 1, -120.0, 12);
+    assert!(ui.wait_until(2.0, |u| u.has("wave.drag1")), "readout while dragging");
+    assert!(ui.value("wave.drag1").ends_with(" s"), "{}", ui.value("wave.drag1"));
+    ui.release_at(at, PointerEventButton::Left);
+    ui.pump(200);
+    let want = 4.0 + 120.0 / area * span;
+    assert!(ui.wait_until(5.0, |u| (pos(u) - want).abs() < 0.05), "scrubbed to {want:.2}, at {:.2}", pos(&ui));
+    ui.pump(500);
+    assert!((pos(&ui) - want).abs() < 0.05, "stays where it was put");
+    assert!(!ui.has("wave.drag1"));
+}
+
+/// [50] A playing deck never jumps when its lane is dragged: the drag's
+/// speed bends the tempo (the deck runs faster while dragged towards the
+/// future), the position stays continuous, and on release the deck plays
+/// at its tempo again.
+#[test]
+fn dragging_a_playing_lane_nudges() {
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    load(&ui, 0, 0);
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::Play);
+    let snap = |u: &Ui| crate::engine::snapshot(&u.app).unwrap().decks[0];
+    assert!(ui.wait_until(10.0, |u| snap(u).playing && snap(u).position > 0.2));
+    let tempo = snap(&ui).speed;
+    let before = snap(&ui).position;
+    let at = drag_lane(&ui, 1, -60.0, 15);
+    assert!(ui.wait_until(2.0, |u| u.has("wave.drag1")));
+    assert!(ui.value("wave.drag1").ends_with('%'), "{}", ui.value("wave.drag1"));
+    let during = snap(&ui).position;
+    assert!(during >= before - 0.01 && during - before < 2.0, "no jump: {before:.2} → {during:.2}");
+    ui.release_at(at, PointerEventButton::Left);
+    ui.pump(100);
+    assert!(
+        ui.wait_until(5.0, |u| (snap(u).speed - tempo).abs() < 1e-3),
+        "back to its tempo: {} vs {tempo}",
+        snap(&ui).speed
+    );
+    assert!(snap(&ui).position >= during - 0.01, "still no jump back");
+}

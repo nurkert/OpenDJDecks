@@ -2412,6 +2412,7 @@ export component PerformView inherits Rectangle {
             accessible-label: "wave.lane\{d.deck}";
             // The playhead on the window's centre, the mixer's axis.
             anchor-x: PopupPlace.window-width / 2;
+            draggable: true;
             playhead-label: i == root.decks.length - 1;
             overlay-on: true;
             deck: d;
