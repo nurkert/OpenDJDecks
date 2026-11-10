@@ -10,11 +10,13 @@
 //!   of [`crate::render`]: 255 open, 64..=254 strobing from slow to fast. The
 //!   cap assumes the fastest value means [`STROBE_CHANNEL_MAX_HZ`] flashes a
 //!   second and lowers the value to the capped rate.
-//! * **Flash rate cap.** Software flashing (a dimmer jumping from dark to
-//!   bright) is held to the same rate per fixture: a fixture that went dark
-//!   may not come back bright sooner than one cap period after its last
-//!   flash. This covers fast chases and square-wave effects on fixtures
-//!   without a strobe channel.
+//! * **Flash rate cap.** Software flashing (a fixture's level rising by
+//!   [`FLASH_RISE`] or more) is held to the same rate per fixture: a fixture
+//!   may not rise again sooner than one cap period after its last flash.
+//!   The rise is counted from the darkest level since the last flash, so a
+//!   dim look or a group capped low is held to the cap as well. This covers
+//!   fast chases and square-wave effects on fixtures without a strobe
+//!   channel.
 //! * **Level cap per group.** The intensity of every fixture of a group is
 //!   scaled down to the group's cap.
 //! * **Fog and laser lockout.** Fog channels and every channel of a laser
@@ -38,8 +40,14 @@ pub const DEFAULT_STROBE_HZ: f32 = 3.0;
 /// Highest cap the settings allow.
 pub const MAX_STROBE_HZ: f32 = 10.0;
 
-/// Dark and bright thresholds of the flash counter (0..255).
+/// Rise in level (0..255, about a fifth of full) that counts as a flash,
+/// and the fall that ends one.
+pub const FLASH_RISE: u8 = 48;
+
+/// Dark and bright thresholds the tests use to count full flashes.
+#[cfg(test)]
 const DARK: u8 = 64;
+#[cfg(test)]
 const BRIGHT: u8 = 128;
 
 /// The limits a rig keeps in `lighting.json`.
@@ -93,8 +101,11 @@ pub struct Arming {
 
 #[derive(Clone, Copy, Debug, Default)]
 struct Flash {
-    /// Last seen bright (after a dark phase).
+    /// Last seen bright (after a rise).
     bright: bool,
+    /// Darkest level since the last flash while dark, brightest while
+    /// bright.
+    mark: u8,
     /// Time of the last allowed flash, if any.
     last: Option<f64>,
 }
@@ -217,19 +228,26 @@ impl Limiter {
             let level = levels.iter().map(|s| u[*s]).max().unwrap_or(0);
             let flash = &mut self.flashes[i];
             if flash.bright {
-                if level < DARK {
+                flash.mark = flash.mark.max(level);
+                if flash.mark - level >= FLASH_RISE {
                     flash.bright = false;
+                    flash.mark = level;
                 }
-            } else if level > BRIGHT {
-                if flash.last.is_some_and(|t| self.clock - t < period - 1e-6) {
-                    // Too soon: stay dark until the period is over.
-                    let k = (DARK - 1) as f32 / level as f32;
-                    for s in &levels {
-                        u[*s] = (u[*s] as f32 * k).floor() as u8;
+            } else {
+                flash.mark = flash.mark.min(level);
+                if level - flash.mark >= FLASH_RISE {
+                    if flash.last.is_some_and(|t| self.clock - t < period - 1e-6) {
+                        // Too soon: stay just below a flash until the period
+                        // is over.
+                        let k = (flash.mark + FLASH_RISE - 1) as f32 / level as f32;
+                        for s in &levels {
+                            u[*s] = (u[*s] as f32 * k).floor() as u8;
+                        }
+                    } else {
+                        flash.bright = true;
+                        flash.mark = level;
+                        flash.last = Some(self.clock);
                     }
-                } else {
-                    flash.bright = true;
-                    flash.last = Some(self.clock);
                 }
             }
         }
@@ -626,5 +644,55 @@ mod tests {
         rig.tick(&[], 0.1);
         let first = rig.frame[0][0];
         assert!(first > 128, "first fixture lit ({first})");
+    }
+
+    /// Rises of [`FLASH_RISE`] or more in `levels`, counted like the
+    /// limiter counts them.
+    fn rises(levels: &[u8]) -> usize {
+        let (mut bright, mut mark, mut n) = (false, 0u8, 0);
+        for &l in levels {
+            if bright {
+                mark = mark.max(l);
+                if mark - l >= FLASH_RISE {
+                    (bright, mark) = (false, l);
+                }
+            } else {
+                mark = mark.min(l);
+                if l - mark >= FLASH_RISE {
+                    (bright, mark, n) = (true, l, n + 1);
+                }
+            }
+        }
+        n
+    }
+
+    /// A flicker that never reaches half level, from a dim look or a group
+    /// capped low, is held to the cap as well: a flash is a rise, not a
+    /// crossing of a fixed level.
+    #[test]
+    fn a_dim_or_capped_flicker_is_held_to_the_cap() {
+        let patch = rig(&[("dimmer", "Low")]);
+        let slots = level_slots(&patch.fixtures[0]);
+        for (cap, peak) in [(0.35, 255u8), (1.0, 100u8)] {
+            let mut limits = SafetyLimits::default();
+            limits.group_caps.insert("Low".into(), cap);
+            let mut limiter = Limiter::default();
+            let dt = 1.0 / 40.0;
+            let mut out = Vec::new();
+            // 10 flashes a second for 10 s: dark and lit every other frame.
+            for frame in 0..400 {
+                let mut u = vec![[0u8; 512]];
+                if (frame / 2) % 2 == 0 {
+                    for s in &slots {
+                        u[0][*s] = peak;
+                    }
+                }
+                limiter.apply(&patch, &limits, Arming::default(), &mut u, dt);
+                out.push(slots.iter().map(|s| u[0][*s]).max().unwrap());
+            }
+            assert!(out.iter().all(|l| *l < BRIGHT), "never above half ({cap}, {peak})");
+            let n = rises(&out);
+            assert!(n > 0 && n <= 31, "cap {cap}, peak {peak}: {n} flashes in 10 s");
+        }
     }
 }
