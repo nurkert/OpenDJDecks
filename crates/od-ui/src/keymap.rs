@@ -1023,6 +1023,15 @@ fn build() -> Vec<Action> {
         &["Mod+Alt+Shift+S"],
         &["Alt+Shift+S"],
     );
+    b.add_split(
+        "browser.stems-list",
+        "Separate the stems of every track in the list",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+P"],
+        &["Alt+Shift+P"],
+    );
 
     // ── Prepare player ──
     let g = Group::Player;
@@ -1795,6 +1804,14 @@ fn build() -> Vec<Action> {
         g,
         Perform,
         &["Shift+S"],
+    );
+    b.add(
+        "fx.panic",
+        "All effects off (panic)",
+        None,
+        g,
+        Perform,
+        &["Shift+Escape"],
     );
 
     // ── Sampler: the bottom letter row ──

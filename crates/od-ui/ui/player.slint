@@ -11,7 +11,7 @@ import { Pad } from "perform.slint";
 import { CueMarker } from "wave.slint";
 import { ChoiceList } from "fx.slint";
 import { DropZone } from "drag.slint";
-import { CueMark, HotCueSlot, PhraseMark, GridEdit } from "structs.slint";
+import { CueMark, HotCueSlot, PhraseMark, GridEdit, AnalysisSure } from "structs.slint";
 
 component Tab inherits Rectangle {
     in property <string> label;
@@ -41,8 +41,50 @@ component Reading inherits HorizontalLayout {
     in property <string> template;
     // Test / screen-reader identifier of the value (empty: none).
     in property <string> a11y-label;
+    // [62] How sure the analysis is of this value ("92 %", "" = none),
+    // whether that is unsure (a half-height sodium line before it, the
+    // percent in sodium), and the likely alternative to take with one press.
+    in property <string> sure;
+    in property <bool> unsure;
+    in property <string> alt;
+    in property <string> sure-a11y;
+    in property <string> alt-tip;
+    // A key of its own in the row instead (e.g. ANALYSE AGAIN).
+    in property <string> action;
+    in property <string> action-a11y;
+    in property <string> action-tip;
+    callback use-alt();
+    callback act();
     spacing: Theme.s2;
     Caps { text: root.label; font-size: Theme.label; vertical-alignment: center; }
+    if root.sure != "" || root.action != "": Rectangle { horizontal-stretch: 1; }
+    if root.sure != "": HorizontalLayout {
+        spacing: Theme.s1;
+        if root.unsure: VerticalLayout { alignment: center; VLine { height: 14px; weight: 2px; tone: Theme.attention; form: "half"; } }
+        Text {
+            accessible-role: text; accessible-label: root.sure-a11y; accessible-value: self.text;
+            accessible-description: root.unsure ? "unsure" : "sure";
+            text: root.sure; font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.6px;
+            color: root.unsure ? Theme.attention : Theme.bone-3; vertical-alignment: center;
+        }
+    }
+    if root.unsure && root.alt != "": VerticalLayout {
+        alignment: center;
+        PlateButton {
+            accessible-role: button; accessible-label: root.sure-a11y + ".use";
+            compact: true; label: @tr("USE {}", root.alt); tone: Theme.attention;
+            tooltip: root.alt-tip;
+            clicked => { root.use-alt(); }
+        }
+    }
+    if root.action != "": VerticalLayout {
+        alignment: center;
+        PlateButton {
+            accessible-role: button; accessible-label: root.action-a11y;
+            compact: true; label: root.action; tooltip: root.action-tip;
+            clicked => { root.act(); }
+        }
+    }
     Text {
         accessible-role: text;
         accessible-label: root.a11y-label;
@@ -469,7 +511,7 @@ export component PreparePlayer inherits Rectangle {
     // EDIT GRID shows the GRID tools.
     property <bool> grid-editing: GridEdit.active;
     changed grid-editing => { if (self.grid-editing) { root.tool-tab = "grid"; } }
-    property <string> list-tab: "all";
+    property <string> list-tab: AnalysisSure.first-tab;
     // Cue list row being edited (index into `cues`), -1 = none.
     property <int> selected-cue: -1;
     background: Theme.ground-band; border-radius: Theme.r-panel;
@@ -538,12 +580,31 @@ export component PreparePlayer inherits Rectangle {
                             }
                             if root.list-tab == "info": VerticalLayout {
                                 spacing: Theme.s2;
-                                Reading { label: "BPM"; value: root.bpm; }
+                                // [62] BPM and KEY say how sure the analysis is, with
+                                // the likely alternative one press away; GRID offers
+                                // a fresh analysis when something is unsure.
+                                Reading {
+                                    label: "BPM"; value: root.bpm;
+                                    sure: root.has-track ? AnalysisSure.grid : ""; unsure: AnalysisSure.grid-unsure; alt: AnalysisSure.bpm-alt;
+                                    sure-a11y: "player1.grid-sure"; alt-tip: @tr("Set the grid to the likely other tempo (half or double)");
+                                    use-alt => { AnalysisSure.fix("bpm"); }
+                                }
+                                Reading {
+                                    label: @tr("KEY"); value: root.key;
+                                    sure: root.has-track ? AnalysisSure.key : ""; unsure: AnalysisSure.key-unsure; alt: AnalysisSure.key-alt;
+                                    sure-a11y: "player1.key-sure"; alt-tip: @tr("Take the likely other key as your key (one undo step)");
+                                    use-alt => { AnalysisSure.fix("key"); }
+                                }
+                                Reading {
+                                    label: @tr("GRID"); value: root.grid-source;
+                                    action: root.analysed && root.has-track && !root.read-only && (AnalysisSure.key == "" || AnalysisSure.key-unsure || AnalysisSure.grid-unsure) ? @tr("ANALYSE AGAIN") : "";
+                                    action-a11y: "player1.reanalyse";
+                                    action-tip: AnalysisSure.key == "" ? @tr("Analyse again to see how sure key and grid are") : @tr("Analyse the track again (your own key and locked grid stay)");
+                                    act => { AnalysisSure.fix("analyse"); }
+                                }
+                                Reading { label: @tr("TIME"); value: root.duration; }
                                 // The tempo range the analysis folds into (Preferences › Analysis).
                                 Reading { a11y-label: "player1.bpm-range"; label: @tr("BPM RANGE"); value: root.bpm-range; }
-                                Reading { label: @tr("KEY"); value: root.key; }
-                                Reading { label: @tr("TIME"); value: root.duration; }
-                                Reading { label: @tr("GRID"); value: root.grid-source; }
                                 if !root.analysed && root.has-track: PlateButton { accessible-role: button; accessible-label: "player1.analyse"; label: @tr("ANALYSE"); tone: Theme.attention; enabled: !root.read-only; clicked => { root.analyse(); } }
                             }
                         }

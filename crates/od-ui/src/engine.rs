@@ -436,6 +436,7 @@ fn frame(app: &App) {
     perform_crowd(app);
     decks::receive_prepared(app);
     decks::poll_stems(app);
+    crate::stems_batch::tick(app);
     explorer::poll(app);
     crate::browser::poll_artworks(app);
     crate::lighting::poll_remote(app);

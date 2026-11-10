@@ -66,6 +66,10 @@ export struct TrackRow {
     // playing deck, else the selected track), 0..3 segments; -1 = none.
     match-score: int,
     match-tip: string,
+    // [60] STEMS column: "ready", "queued", "running", "failed" ("" = not
+    // separated) and its text ("READY", "42 %").
+    stems: string,
+    stems-text: string,
 }
 
 // A shown column of the track table, in display order.
@@ -338,6 +342,16 @@ export struct DeckView {
     // A loop roll is held (its size, e.g. "1/8").
     rolling: bool,
     roll-size: string,
+    // [62] Key against the other playing decks: "fits", "energy", "clash"
+    // ("" = no other deck plays), in words; "41 %" when the key is unsure.
+    key-relation: string,
+    key-relation-text: string,
+    key-unsure: string,
+    // [60] Stem keys: "ready", "separating", "queued", "none" ("" = no
+    // track); stems were expected here and are missing; the soloed part.
+    stems-state: string,
+    stems-expected: bool,
+    stem-solo: string,
     // Where playback resumes after a roll or slip (seconds, < 0: none).
     slip-pos: float,
     // The track's grid can be halved / doubled (loaded, not locked).
@@ -410,6 +424,16 @@ export struct FxUnitView {
     // Multi mode: slots 2 and 3 chained after the unit's effect.
     multi: bool,
     slots: [FxSlotView],
+    // [61] Depth as "60 %"; what rings out after release (0 off, 1 echo,
+    // 2 reverb); a bar-locked build-up (8 / 16 / 32 bars, 0 = none), its
+    // progress 0..1 and the bars left ("-6").
+    level-text: string,
+    tail: int,
+    build-bars: int,
+    build-progress: float,
+    build-left: string,
+    // The unit shows its XY surface.
+    xy: bool,
 }
 
 
@@ -487,6 +511,24 @@ export global DeckMix {
     callback phrase-start(int);
     callback capture(int);
     callback bpm-scale(int, float);
+    // [60] Solo a part (toggle) and keep only a part, per deck.
+    callback stem-solo(int, string);
+    callback stem-keep(int, string);
+}
+
+// [62] How sure the analysis of the Prepare player's track is: key and
+// grid as "92 %" ("" = an older analysis without the values), whether each
+// is unsure, and the likely alternatives. fix("key" | "bpm" | "analyse").
+export global AnalysisSure {
+    in property <string> key;
+    in property <bool> key-unsure;
+    in property <string> key-alt;
+    in property <string> grid;
+    in property <bool> grid-unsure;
+    in property <string> bpm-alt;
+    // The cue list tab the player opens with (documentation screenshots).
+    in property <string> first-tab: "all";
+    callback fix(string);
 }
 
 export global DeckGrid {

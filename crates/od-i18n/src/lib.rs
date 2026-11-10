@@ -1302,7 +1302,22 @@ const DE: &[(&str, &str)] = &[
     ("Undo failed: {}", "Rückgängig fehlgeschlagen: {}"),
     ("The library is as it was before the import.", "Die Bibliothek ist wieder so wie vor dem Import."),
     ("Library import undone", "Bibliotheksimport rückgängig gemacht"),
-    ("Choose the rekordbox preferences folder", "rekordbox-Einstellungsordner wählen"),
+    ("Choose the rekordbox preferences folder", "rekordbox-Einstellungsordner wählen"),    ("Fits deck {} ({})", "Passt zu Deck {} ({})"),
+    ("Energy change against deck {} ({})", "Energiewechsel gegenüber Deck {} ({})"),
+    ("Clashes with deck {} ({})", "Beißt sich mit Deck {} ({})"),
+    ("Key set to {}", "Tonart auf {} gesetzt"),
+    ("Could not set the key: {}", "Tonart ließ sich nicht setzen: {}"),
+    ("Deck {}: only {} plays", "Deck {}: nur {} spielt"),
+    ("No stems yet for {} on deck {}: separating now, the stem keys work when it is done", "Noch keine Stems für {} auf Deck {}: wird jetzt getrennt, die Stem-Tasten gehen, sobald es fertig ist"),
+    ("No stems for {} on deck {}: press a stem key to separate it, or prepare the set ahead", "Keine Stems für {} auf Deck {}: eine Stem-Taste drücken, um ihn zu trennen, oder das Set vorher vorbereiten"),
+    ("QUEUED", "WARTET"),
+    ("READY", "BEREIT"),
+    ("FAILED", "FEHLER"),
+    ("Every track here has its stems already", "Jeder Track hier hat seine Stems schon"),
+    ("All effects off", "Alle Effekte aus"),
+    ("All effects off (panic)", "Alle Effekte aus (Panik)"),
+    ("Separate the stems of every track in the list", "Die Stems aller Tracks der Liste trennen"),
+    ("STEMS", "STEMS"),
 ];
 
 /// Whether `english` has a German translation (independent of the

@@ -11,6 +11,7 @@ mod tracks;
 mod tree;
 
 pub(crate) use columns::sanitize as sanitize_columns;
+pub(crate) use columns::{refresh as apply_columns, toggle as toggle_column};
 #[cfg(test)]
 pub(crate) use sources::load_tag_list;
 pub(crate) use tracks::{
@@ -1033,6 +1034,13 @@ pub(crate) fn match_shown(st: &crate::state::AppState) -> bool {
         && columns::sanitize(&st.settings.browser.columns).iter().any(|c| c == "match")
 }
 
+/// The STEMS column is on screen.
+pub(crate) fn stems_shown(st: &crate::state::AppState) -> bool {
+    !st.config.kiosk
+        && st.explorer.open.is_none()
+        && columns::sanitize(&st.settings.browser.columns).iter().any(|c| c == "stems")
+}
+
 /// Re-resolves the filter reference and reloads the list.
 pub(crate) fn refresh_filter(app: &App) {
     let reference = if app.state.borrow().browser.filter.uses_reference() {
@@ -1256,6 +1264,7 @@ fn row_menu(app: &App, i: usize, action: &str) {
         }
         "taglist" => sources::add_selected_to_tag_list(app),
         "stems" => crate::stems_batch::separate_selected(app),
+        "stems-list" => crate::stems_batch::separate_list(app),
         "similar" => {
             let track = app.state.borrow().player.current;
             sources::open(app, sources::SIMILAR);

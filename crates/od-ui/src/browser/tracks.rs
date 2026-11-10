@@ -282,6 +282,14 @@ impl AppState {
             .collect()
     }
 
+    /// Library tracks of every row of the list on screen.
+    pub fn list_ids(&self) -> Vec<TrackId> {
+        if self.explorer.open.is_some() {
+            return self.explorer.selected_ids(&(0..self.explorer.files.len()).collect());
+        }
+        self.browser.rows.iter().map(|t| t.id).collect()
+    }
+
     /// Number of rows in the list on screen.
     pub fn row_count(&self) -> usize {
         if self.explorer.open.is_some() {
@@ -389,6 +397,8 @@ pub(crate) fn same_row(a: &TrackRow, b: &TrackRow) -> bool {
         && a.user_tag == b.user_tag
         && a.match_score == b.match_score
         && a.match_tip == b.match_tip
+        && a.stems == b.stems
+        && a.stems_text == b.stems_text
         && a.preview.size() == b.preview.size()
         && a.artwork.size() == b.artwork.size()
 }
@@ -587,6 +597,20 @@ fn refresh_list(app: &App) {
         _ => vec![],
     };
     let show_match = super::match_shown(&st);
+    // [60] STEMS column: the cache (one file check per track, remembered)
+    // and the stems-ahead batch.
+    let stems: Vec<(&'static str, String)> = if super::stems_shown(&st) && !st.read_only() {
+        let cache = app.decks.borrow().stem_cache();
+        b.rows
+            .iter()
+            .map(|t| {
+                let cached = crate::stems_batch::cached(&cache, &t.content_hash);
+                crate::stems_batch::track_state(t.id, cached).view()
+            })
+            .collect()
+    } else {
+        vec![("", String::new()); b.rows.len()]
+    };
     let matches: Vec<super::filter::Match> = b
         .rows
         .iter()
@@ -627,6 +651,8 @@ fn refresh_list(app: &App) {
             key_distance: key_distance(current_key, t.key),
             match_score: matches[i].score,
             match_tip: matches[i].tip(b.match_ref.as_ref()).into(),
+            stems: stems[i].0.into(),
+            stems_text: stems[i].1.clone().into(),
             time: format::time(t.duration).into(),
             rating: t.tags.rating as i32,
             analysed: t.analysis_version >= od_analysis::ANALYSIS_VERSION,

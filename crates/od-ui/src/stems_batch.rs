@@ -6,6 +6,7 @@
 use crate::app::App;
 use od_core::TrackId;
 use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 
 /// A finished or running batch: (done, failed, total).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -47,9 +48,46 @@ struct Batch {
     last_error: String,
     /// The worker found the model damaged; stems_model.rs takes this up.
     damaged: bool,
+    /// The track being separated now and how far.
+    running: Option<(TrackId, f32)>,
+    /// Finished (parts in the cache) and failed tracks of the batch.
+    finished: HashSet<TrackId>,
+    failed: HashSet<TrackId>,
+    /// Finished since the last frame: decks holding them take the parts.
+    fresh: Vec<TrackId>,
+    /// Something changed that the STEMS column shows.
+    dirty: bool,
+}
+
+/// What the library's STEMS column shows for a track.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum TrackStems {
+    /// Not separated (and not queued).
+    None,
+    Queued,
+    /// Being separated, this far (0..1).
+    Running(f32),
+    Ready,
+    Failed,
+}
+
+impl TrackStems {
+    /// The row's state id and its text ("READY", "42 %").
+    pub fn view(self) -> (&'static str, String) {
+        match self {
+            TrackStems::None => ("", String::new()),
+            TrackStems::Queued => ("queued", od_i18n::tr("QUEUED").to_string()),
+            TrackStems::Running(f) => ("running", format!("{:.0} %", (f.clamp(0.0, 1.0) * 100.0).floor())),
+            TrackStems::Ready => ("ready", od_i18n::tr("READY").to_string()),
+            TrackStems::Failed => ("failed", od_i18n::tr("FAILED").to_string()),
+        }
+    }
 }
 
 thread_local! {
+    /// Whether the stem cache holds a track's parts, by content hash (one
+    /// file check per track; finished batch jobs update it).
+    static CACHED: RefCell<HashMap<String, bool>> = RefCell::new(HashMap::new());
     /// Decks play: the queue waits (roadmap [11]).
     static PAUSED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static BATCH: RefCell<Batch> = RefCell::new(Batch::default());
@@ -76,6 +114,104 @@ pub(crate) fn set_paused(on: bool) {
 /// The current batch count (tests, status).
 pub(crate) fn count() -> BatchCount {
     BATCH.with(|b| b.borrow().count)
+}
+
+/// Progress of `track` while the batch separates it now.
+pub(crate) fn running(track: TrackId) -> Option<f32> {
+    BATCH.with(|b| b.borrow().running.filter(|r| r.0 == track).map(|r| r.1))
+}
+
+/// `track` waits in the batch.
+pub(crate) fn is_queued(track: TrackId) -> bool {
+    BATCH.with(|b| {
+        let b = b.borrow();
+        b.queued.contains(&track)
+            && !b.finished.contains(&track)
+            && !b.failed.contains(&track)
+            && b.running.is_none_or(|r| r.0 != track)
+    })
+}
+
+/// Whether the stem cache holds the parts of the file with `hash`.
+pub(crate) fn cached(cache: &od_stems::StemCache, hash: &od_core::ContentHash) -> bool {
+    CACHED.with(|c| {
+        *c.borrow_mut()
+            .entry(hash.0.clone())
+            .or_insert_with(|| cache.exists(hash))
+    })
+}
+
+/// Forgets what is known about the cache (parts removed in Preferences).
+pub(crate) fn forget_cached() {
+    CACHED.with(|c| c.borrow_mut().clear());
+}
+
+/// The STEMS column's state of a track.
+pub(crate) fn track_state(track: TrackId, in_cache: bool) -> TrackStems {
+    BATCH.with(|b| {
+        let b = b.borrow();
+        if let Some((t, f)) = b.running.filter(|r| r.0 == track) {
+            let _ = t;
+            return TrackStems::Running(f);
+        }
+        if in_cache || b.finished.contains(&track) {
+            TrackStems::Ready
+        } else if b.failed.contains(&track) {
+            TrackStems::Failed
+        } else if b.queued.contains(&track) {
+            TrackStems::Queued
+        } else {
+            TrackStems::None
+        }
+    })
+}
+
+/// Frame tick: decks holding a track the batch just finished take its
+/// parts, and the STEMS column follows the batch.
+pub(crate) fn tick(app: &App) {
+    let (fresh, dirty) = BATCH.with(|b| {
+        let mut b = b.borrow_mut();
+        (std::mem::take(&mut b.fresh), std::mem::take(&mut b.dirty))
+    });
+    #[cfg(feature = "separation")]
+    for t in &fresh {
+        if app.decks.borrow().loaded_ids().contains(t) {
+            crate::decks::stems_ready(app, *t);
+        }
+    }
+    #[cfg(not(feature = "separation"))]
+    let _ = fresh;
+    if dirty && crate::browser::stems_shown(&app.state.borrow()) {
+        crate::browser::refresh_tracks(app);
+    }
+}
+
+/// Documentation screenshots only: shows `ready`, `running` and `queued`
+/// as if a batch ran (nothing is separated).
+pub(crate) fn stage(ready: &[TrackId], running: Option<(TrackId, f32)>, queued: &[TrackId]) {
+    BATCH.with(|b| {
+        let mut b = b.borrow_mut();
+        for t in ready.iter().chain(queued) {
+            b.failed.remove(t);
+        }
+        for t in queued {
+            b.finished.remove(t);
+        }
+        b.finished.extend(ready.iter().copied());
+        b.queued.extend(ready.iter().chain(queued).copied());
+        b.queued.extend(running.map(|r| r.0));
+        b.running = running;
+        b.dirty = true;
+    });
+}
+
+/// "Separate stems for the whole list": every track of the list shown.
+pub(crate) fn separate_list(app: &App) {
+    if app.guard_read_only() {
+        return;
+    }
+    let ids = app.state.borrow().list_ids();
+    separate(app, &ids);
 }
 
 /// "Separate parts" for the selected tracks of the library.
@@ -129,12 +265,24 @@ pub(crate) fn separate(app: &App, ids: &[TrackId]) {
             })
             .collect()
     };
+    // Already separated: nothing to queue (the column shows READY).
+    let jobs: Vec<od_stems::StemJob> = {
+        let cache = app.decks.borrow().stem_cache();
+        jobs.into_iter().filter(|j| !cached(&cache, &j.hash)).collect()
+    };
+    if jobs.is_empty() {
+        app.status(od_i18n::tr("Every track here has its stems already"));
+        return;
+    }
     BATCH.with(|b| {
         let mut b = b.borrow_mut();
         if b.count.finished() {
             b.count = BatchCount::default();
             b.queued.clear();
+            b.finished.clear();
+            b.failed.clear();
         }
+        b.dirty = true;
         let b = &mut *b;
         let worker = b.worker.get_or_insert_with(|| {
             let w = od_stems::StemWorker::spawn(
@@ -195,29 +343,42 @@ fn poll() -> (bool, String, bool) {
             .unwrap_or_default();
         let mut changed = false;
         for e in events {
+            if !matches!(e, StemEvent::ModelDownload { .. }) {
+                b.dirty = true;
+            }
             match e {
-                StemEvent::Done { .. } | StemEvent::AlreadyCached { .. } => {
+                StemEvent::Done { track, hash, .. } | StemEvent::AlreadyCached { track, hash } => {
                     b.count.done += 1;
+                    b.finished.insert(track);
+                    b.fresh.push(track);
+                    b.running = None;
+                    CACHED.with(|c| c.borrow_mut().insert(hash.0.clone(), true));
                     changed = true;
                 }
-                StemEvent::Failed { error, .. } => {
+                StemEvent::Failed { error, track } => {
                     b.count.failed += 1;
+                    b.failed.insert(track);
+                    b.running = None;
                     b.last_error = error;
                     changed = true;
                 }
-                StemEvent::Cancelled { .. } => {
+                StemEvent::Cancelled { track } => {
                     b.count.failed += 1;
+                    b.failed.insert(track);
+                    b.running = None;
                     changed = true;
                 }
-                StemEvent::ModelDamaged { .. } => {
+                StemEvent::ModelDamaged { track } => {
                     b.count.failed += 1;
+                    b.failed.insert(track);
+                    b.running = None;
                     b.last_error = od_i18n::tr("The stem model is damaged").to_string();
                     b.damaged = true;
                     changed = true;
                 }
-                StemEvent::ModelDownload { .. }
-                | StemEvent::Started { .. }
-                | StemEvent::Progress { .. } => {}
+                StemEvent::Started { track } => b.running = Some((track, 0.0)),
+                StemEvent::Progress { track, fraction } => b.running = Some((track, fraction)),
+                StemEvent::ModelDownload { .. } => {}
             }
         }
         let msg = b.count.message(&b.last_error);
@@ -245,5 +406,17 @@ mod tests {
         c.failed = 0;
         c.done = 3;
         assert!(c.message("").contains('3'));
+    }
+
+    #[test]
+    fn column_states() {
+        assert_eq!(TrackStems::Ready.view().0, "ready");
+        assert_eq!(TrackStems::Running(0.426).view().1, "42 %");
+        assert_eq!(TrackStems::None.view(), ("", String::new()));
+        assert_eq!(TrackStems::Queued.view().0, "queued");
+        assert_eq!(TrackStems::Failed.view().0, "failed");
+        // Nothing queued: only the cache decides.
+        assert_eq!(track_state(TrackId(987_654), true), TrackStems::Ready);
+        assert_eq!(track_state(TrackId(987_654), false), TrackStems::None);
     }
 }

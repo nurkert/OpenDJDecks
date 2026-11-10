@@ -114,6 +114,12 @@ component Readout inherits VerticalLayout {
     in property <bool> scale-keys;
     in property <bool> scale-enabled: true;
     in property <string> a11y;
+    // [62] A relation mark under the value ("fits", "energy", "clash") in the
+    // line grammar, with its words for hover and screen readers.
+    in property <string> relation;
+    in property <string> relation-text;
+    // Ink of the sub line (bone-2; sodium for a value that needs you).
+    in property <color> sub-tone: Theme.bone-2;
     callback scale(float);
     spacing: 0;
     alignment: center;
@@ -134,6 +140,25 @@ component Readout inherits VerticalLayout {
         font-family: Theme.family; font-size: root.size; font-weight: Theme.weight-semi;
         color: root.tone; horizontal-alignment: root.align;
         probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.size; font-weight: Theme.weight-semi; }
+        // [62] Under the value, in the line grammar: solid green fits,
+        // dashed sodium an energy change, struck deep red a clash (the line
+        // at 45 % with red ticks across). Drawn over the value's foot, so it
+        // takes no height of its own.
+        if root.relation != "": Rectangle {
+            accessible-role: text;
+            accessible-label: root.value-label + "-relation";
+            accessible-value: root.relation;
+            accessible-description: root.relation-text;
+            x: 0; y: parent.height - 3px; width: parent.width; height: 2px;
+            HLine {
+                x: 0; y: 0; width: parent.width; height: 2px;
+                tone: root.relation == "fits" ? Theme.live : root.relation == "energy" ? Theme.attention : Theme.fault.with-alpha(0.45);
+                form: root.relation == "energy" ? "dashed" : "solid";
+            }
+            if root.relation == "clash": Rectangle { x: parent.width * 0.3; y: -3px; width: 1px; height: 8px; background: Theme.fault; }
+            if root.relation == "clash": Rectangle { x: parent.width * 0.7; y: -3px; width: 1px; height: 8px; background: Theme.fault; }
+            TipArea { y: -12px; height: 16px; tooltip: root.relation-text; }
+        }
     }
     if root.sub != "" && root.sub2 == "": Text {
         accessible-role: text;
@@ -141,7 +166,7 @@ component Readout inherits VerticalLayout {
         accessible-value: root.sub;
         text: root.sub;
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-medium;
-        color: Theme.bone-2; horizontal-alignment: root.align;
+        color: root.sub-tone; horizontal-alignment: root.align;
     }
     if root.sub2 != "": HorizontalLayout {
         alignment: root.align == TextHorizontalAlignment.left ? LayoutAlignment.start : LayoutAlignment.end;
@@ -754,6 +779,11 @@ component StemKey inherits Rectangle {
     in property <float> fill;
     in property <length> size: 24px;
     in property <length> key-width: 64px;
+    // [60] The deck's stem state ("ready", "separating", "queued", "none"),
+    // stems were expected and are missing, this part is soloed.
+    in property <string> state;
+    in property <bool> expected;
+    in property <bool> solo;
     callback toggle();
     callback set-level(float);
     width: root.key-width; height: root.size;
@@ -767,10 +797,29 @@ component StemKey inherits Rectangle {
     Toggle {
         accessible-role: checkbox; accessible-checkable: true; accessible-checked: !root.muted && root.enabled;
         accessible-label: "deck\{root.deck}.stem.\{root.stem}";
-        accessible-description: root.busy ? @tr("separating") : root.muted ? @tr("muted") : @tr("audible");
+        accessible-description: root.busy ? @tr("separating") : root.state == "queued" ? @tr("queued") : !root.enabled ? @tr("not separated") : root.solo ? @tr("solo") : root.muted ? @tr("muted") : @tr("audible");
+        accessible-value: root.state;
         size: root.size; width: root.key-width; label: root.label; on: root.enabled && root.muted; tone: Theme.attention; enabled: root.enabled;
-        tooltip: @tr("Filled = muted · click: mute / unmute · wheel: level");
+        // Solo: the soloed part is the selected one of the four (bone fill),
+        // the others fill as muted.
+        selected: root.solo;
+        shift-aware: true;
+        tooltip: @tr("Filled = muted · click: mute / unmute · right click: solo · ⇧-click: keep only this · wheel: level");
         clicked => { root.toggle(); }
+        alt-clicked => { DeckMix.stem-solo(root.deck, root.stem); }
+        shift-clicked => { DeckMix.stem-keep(root.deck, root.stem); }
+    }
+    // Waiting in the stems-ahead queue: a dashed sodium line along the
+    // key's foot (pending, in the line grammar).
+    if root.state == "queued": HLine {
+        x: 2px; y: parent.height - 3px; width: parent.width - 4px; height: 2px;
+        tone: Theme.attention; form: "dashed";
+    }
+    // Stems were expected and are missing: a solid sodium line along the
+    // foot (it needs you; the caption says NO STEMS).
+    if root.state == "none" && root.expected: HLine {
+        x: 2px; y: parent.height - 3px; width: parent.width - 4px; height: 2px;
+        tone: Theme.attention; form: "solid";
     }
     // Not separated: a press asks for the parts (and, the first time, for
     // the model's download) instead of doing nothing.
@@ -811,16 +860,29 @@ component StemStrip inherits HorizontalLayout {
     callback stem(string);
     callback stem-level(string, float);
     property <bool> busy: root.deck.stems-busy;
-    property <string> caption: root.busy ? Math.round(root.deck.split-progress * 100) + "%" : @tr("STEMS");
+    // [60] The strip names its state: percent while separating, QUEUED,
+    // NO STEMS (sodium when they were expected), SOLO, else STEMS.
+    property <string> caption: root.busy ? Math.round(root.deck.split-progress * 100) + "%"
+        : root.deck.stems-state == "queued" ? @tr("QUEUED")
+        : root.deck.stems-state == "none" && root.deck.stems-expected ? @tr("NO STEMS")
+        : root.deck.stem-solo != "" ? @tr("SOLO")
+        : @tr("STEMS");
+    property <color> caption-tone: root.deck.stems-expected && root.deck.stems-state == "none" ? Theme.attention : root.deck.stem-solo != "" ? Theme.bone : Theme.bone-3;
     spacing: Theme.s1;
-    if root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: Theme.bone-3; }
+    if root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: root.caption-tone; min-width: cp1.preferred-width; horizontal-alignment: root.mirror ? left : right;
+        // The widest caption keeps its room, so the keys never move.
+        cp1 := Caps { visible: false; text: @tr("NO STEMS"); font-size: Theme.label; } }
     if !root.mirror && !root.compact: Rectangle { horizontal-stretch: 1; }
-    if !root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: Theme.bone-3; }
-    if root.compact && root.busy: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: Theme.bone-3; }
-    StemKey { deck: root.deck.deck; stem: "vocal"; label: "VOCAL"; muted: root.deck.mute-vocal; level: root.deck.level-vocal; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 0); toggle => { root.stem("vocal"); } set-level(v) => { root.stem-level("vocal", v); } }
-    StemKey { deck: root.deck.deck; stem: "drums"; label: "DRUMS"; muted: root.deck.mute-drums; level: root.deck.level-drums; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 2); toggle => { root.stem("drums"); } set-level(v) => { root.stem-level("drums", v); } }
-    StemKey { deck: root.deck.deck; stem: "bass"; label: "BASS"; muted: root.deck.mute-bass; level: root.deck.level-bass; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 3); toggle => { root.stem("bass"); } set-level(v) => { root.stem-level("bass", v); } }
-    StemKey { deck: root.deck.deck; stem: "inst"; label: "INST"; muted: root.deck.mute-inst; level: root.deck.level-inst; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 1); toggle => { root.stem("inst"); } set-level(v) => { root.stem-level("inst", v); } }
+    if !root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: root.caption-tone; min-width: cp2.preferred-width; horizontal-alignment: root.mirror ? left : right;
+        // The widest caption keeps its room, so the keys never move.
+        cp2 := Caps { visible: false; text: @tr("NO STEMS"); font-size: Theme.label; } }
+    if root.compact && root.busy: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: root.caption-tone; min-width: cp3.preferred-width; horizontal-alignment: root.mirror ? left : right;
+        // The widest caption keeps its room, so the keys never move.
+        cp3 := Caps { visible: false; text: @tr("NO STEMS"); font-size: Theme.label; } }
+    StemKey { deck: root.deck.deck; stem: "vocal"; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "vocal"; label: "VOCAL"; muted: root.deck.mute-vocal; level: root.deck.level-vocal; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 0); toggle => { root.stem("vocal"); } set-level(v) => { root.stem-level("vocal", v); } }
+    StemKey { deck: root.deck.deck; stem: "drums"; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "drums"; label: "DRUMS"; muted: root.deck.mute-drums; level: root.deck.level-drums; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 2); toggle => { root.stem("drums"); } set-level(v) => { root.stem-level("drums", v); } }
+    StemKey { deck: root.deck.deck; stem: "bass"; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "bass"; label: "BASS"; muted: root.deck.mute-bass; level: root.deck.level-bass; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 3); toggle => { root.stem("bass"); } set-level(v) => { root.stem-level("bass", v); } }
+    StemKey { deck: root.deck.deck; stem: "inst"; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "inst"; label: "INST"; muted: root.deck.mute-inst; level: root.deck.level-inst; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 1); toggle => { root.stem("inst"); } set-level(v) => { root.stem-level("inst", v); } }
     if root.mirror && !root.compact: Rectangle { horizontal-stretch: 1; }
 }
 
@@ -1223,6 +1285,7 @@ component KioskDeck inherits Rectangle {
             }
             for st[i] in [{ id: "vocal", label: "VOCAL" }, { id: "drums", label: "DRUMS" }, { id: "bass", label: "BASS" }, { id: "inst", label: "INST" }]: StemKey {
                 deck: root.deck.deck; stem: st.id; label: st.label;
+                state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == st.id;
                 muted: st.id == "vocal" ? root.deck.mute-vocal : st.id == "inst" ? root.deck.mute-inst : st.id == "drums" ? root.deck.mute-drums : root.deck.mute-bass;
                 level: st.id == "vocal" ? root.deck.level-vocal : st.id == "inst" ? root.deck.level-inst : st.id == "drums" ? root.deck.level-drums : root.deck.level-bass;
                 size: 44px; key-width: 56px; enabled: root.deck.stems-available;
@@ -1381,7 +1444,13 @@ export component DeckPanel inherits Rectangle {
                 scale(f) => { DeckMix.bpm-scale(root.deck.deck, f); }
             }
             Readout { value-label: "deck\{root.deck.deck}.time-remaining"; sub-label: "deck\{root.deck.deck}.time-elapsed"; sub2-label: "deck\{root.deck.deck}.time-track"; label: DeckTime.label(); template: "-00:00.0"; value: DeckTime.main(root.deck); sub: root.deck.elapsed; sub2: DeckTime.track(root.deck); size: !root.compact ? Theme.hero : root.four ? Theme.body : Theme.heading; }
-            Readout { value-label: "deck\{root.deck.deck}.key"; label: @tr("KEY"); template: "12A"; value: root.deck.key; size: !root.compact ? Theme.heading : root.four ? Theme.control : Theme.body; }
+            // An unsure key says how sure in sodium under it ("41 %"), narrower
+            // than the key itself so the header keeps its widths.
+            Readout {
+                value-label: "deck\{root.deck.deck}.key"; label: @tr("KEY"); template: "12A"; value: root.deck.key; size: !root.compact ? Theme.heading : root.four ? Theme.control : Theme.body;
+                sub: root.deck.key-unsure; sub-label: "deck\{root.deck.deck}.key-sure"; sub-tone: Theme.attention;
+                relation: root.deck.key-relation; relation-text: root.deck.key-relation-text;
+            }
             // Key sync and key shift (semitones; the value resets). Narrow
             // decks leave them to the Key Shift pad mode and the keyboard.
             if root.key-column: VerticalLayout {

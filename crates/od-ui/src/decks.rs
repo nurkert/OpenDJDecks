@@ -57,6 +57,8 @@ pub(crate) struct Loaded {
     source: TrackSource,
     /// Your correction of the auto gain (dB, stored per track).
     pub gain_adjust: f32,
+    /// How sure key and grid analysis were ([`crate::key_mix`]).
+    confidence: Option<od_core::AnalysisConfidence>,
 }
 
 /// Perform layouts in the order of the top bar's layout button.
@@ -287,6 +289,11 @@ pub(crate) struct Decks {
     engine_data: [Option<Arc<od_engine::TrackData>>; DECKS],
     /// A deck being restored after a crash: applied when its track is in.
     pub restore: [Option<crate::restore::DeckSnap>; DECKS],
+    /// A running stem solo per deck ([`crate::stem_mix`]).
+    pub stem_solo: [Option<crate::stem_mix::Solo>; DECKS],
+    /// Stems were in use where this deck's track came in, and it has none
+    /// yet: the stem keys warn until they arrive.
+    pub stems_expected: [bool; DECKS],
 }
 
 impl Decks {
@@ -337,6 +344,8 @@ impl Default for Decks {
             overlay_scroll: Default::default(),
             overlay: Rc::new(VecModel::from(vec![LaneMotion::default(); DECKS])),
             last_loop: [None; DECKS],
+            stem_solo: [None; DECKS],
+            stems_expected: [false; DECKS],
         }
     }
 }
@@ -482,6 +491,16 @@ impl Decks {
         self.loaded_from_stick
     }
 
+    /// Tracks on the decks.
+    pub fn loaded_ids(&self) -> Vec<TrackId> {
+        self.loaded.iter().flatten().map(|l| l.id).collect()
+    }
+
+    /// Where separated parts are kept.
+    pub fn stem_cache(&self) -> od_stems::StemCache {
+        self.stem_cache.clone()
+    }
+
     pub fn loaded_id(&self, deck: usize) -> Option<TrackId> {
         self.loaded.get(deck).and_then(|l| l.as_ref()).map(|l| l.id)
     }
@@ -560,6 +579,7 @@ pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Opti
         vocals: Vec::new(),
         source: source.clone(),
         gain_adjust: crate::deck_grid::stored_gain(st.src(), track),
+        confidence: analysis.confidence,
     };
     let read_only = st.read_only();
     drop(st);
@@ -572,6 +592,13 @@ pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Opti
     engine::deck_cmd(app, deck, DeckCommand::Unload);
     let (cache, tx) = {
         let mut d = app.decks.borrow_mut();
+        // Stems in use here or on a playing deck: this track should have them too.
+        let replaced = d.engine_data[deck].as_ref().is_some_and(|t| t.has_stems());
+        let others = (0..d.deck_count.min(DECKS))
+            .filter(|&j| j != deck && j != PREVIEW_DECK)
+            .any(|j| d.engine_data[j].as_ref().is_some_and(|t| t.has_stems()));
+        d.stems_expected[deck] = deck != PREVIEW_DECK && crate::stem_mix::expected(replaced, others);
+        d.stem_solo[deck] = None;
         d.loaded[deck] = None;
         d.engine_data[deck] = None;
         d.pending[deck] = Some(meta);
@@ -746,6 +773,7 @@ pub(crate) fn receive_prepared(app: &App) {
                 app.decks.borrow_mut().engine_data[deck] = Some(data.clone());
                 engine::deck_cmd(app, deck, DeckCommand::SwapTrackData(data));
                 if why == Swap::Stems {
+                    app.decks.borrow_mut().stems_expected[deck] = false;
                     app.status(format!("Stems ready on deck {}", deck + 1));
                 }
             }
@@ -762,6 +790,10 @@ pub(crate) fn receive_prepared(app: &App) {
         let active_loop = active_loop(&meta.source.cues);
         if needs_stems && deck != PREVIEW_DECK {
             request_stems(app, meta.id, &meta.source);
+        }
+        let warn = needs_stems && app.decks.borrow().stems_expected[deck];
+        if !needs_stems {
+            app.decks.borrow_mut().stems_expected[deck] = false;
         }
         let data = if meta.grid != pr.data.beatgrid {
             pr.data.with_beatgrid(meta.grid.clone())
@@ -790,7 +822,27 @@ pub(crate) fn receive_prepared(app: &App) {
             crate::restore::apply_deck(app, deck, &r);
         }
         engine::show_message(app);
-        app.status(format!("Loaded {title} on deck {}", deck + 1));
+        if warn {
+            app.status(stems_warning(&title, deck, app.decks.borrow().stems_pending(deck)));
+        } else {
+            app.status(format!("Loaded {title} on deck {}", deck + 1));
+        }
+    }
+}
+
+/// The status line when a track without stems comes in where stems were in
+/// use ([`crate::stem_mix::expected`]).
+pub(crate) fn stems_warning(title: &str, deck: usize, separating: bool) -> String {
+    if separating {
+        od_i18n::trf(
+            "No stems yet for {} on deck {}: separating now, the stem keys work when it is done",
+            &[&title, &(deck + 1)],
+        )
+    } else {
+        od_i18n::trf(
+            "No stems for {} on deck {}: press a stem key to separate it, or prepare the set ahead",
+            &[&title, &(deck + 1)],
+        )
     }
 }
 
@@ -970,12 +1022,6 @@ impl Decks {
     /// A separation job was queued (the worker exists).
     pub(crate) fn stems_requested(&self) -> bool {
         self.stem_worker.is_some()
-    }
-
-    /// Where separated parts are kept (tests write finished parts here).
-    #[cfg(test)]
-    pub(crate) fn stem_cache(&self) -> od_stems::StemCache {
-        self.stem_cache.clone()
     }
 }
 
@@ -1183,6 +1229,16 @@ pub(crate) struct DeckFields {
     pub slip_pos: f32,
     /// ÷2 / ×2 can change the track's grid.
     pub bpm_scalable: bool,
+    /// [62] The key against the other playing decks ("fits", "energy",
+    /// "clash", "" = none) and in words; "41 %" when the key is unsure.
+    pub key_relation: SharedString,
+    pub key_relation_text: SharedString,
+    pub key_unsure: SharedString,
+    /// [60] What the stem keys show ([`crate::stem_mix::KeyState`]), the
+    /// warning that stems were expected, and the soloed part ("" = none).
+    pub stems_state: SharedString,
+    pub stems_expected: bool,
+    pub stem_solo: SharedString,
 }
 
 /// What the projection needs besides the engine's deck state.
@@ -1205,6 +1261,10 @@ pub(crate) struct DeckInputs<'a> {
     pub pad_param: String,
     /// A waiting start: bars.beats left on the master clock ("-3.2").
     pub start_wait: String,
+    /// The track waits in the stems-ahead queue.
+    pub stems_queued: bool,
+    pub stems_expected: bool,
+    pub stem_solo: Option<od_engine::Stem>,
 }
 
 /// The deck's bar counter in the chosen mode (falls back to counting up).
@@ -1377,6 +1437,24 @@ pub(crate) fn deck_fields(s: &DeckState, i: &DeckInputs) -> DeckFields {
         .into(),
         slip_pos: s.slip_position.map_or(-1.0, |p| p as f32),
         bpm_scalable: meta.is_some_and(|m| !m.grid.locked && !m.grid.beats.is_empty()) && !i.loading,
+        key_relation: SharedString::default(),
+        key_relation_text: SharedString::default(),
+        key_unsure: crate::key_mix::unsure_text(meta.and_then(|m| m.confidence).map(|c| c.key)).into(),
+        stems_state: crate::stem_mix::key_state(
+            meta.is_some(),
+            s.stems_available,
+            i.stems_busy.is_some(),
+            i.stems_queued,
+        )
+        .id()
+        .into(),
+        stems_expected: i.stems_expected && meta.is_some() && !s.stems_available,
+        stem_solo: i
+            .stem_solo
+            .filter(|_| s.stems_available)
+            .map(crate::stem_mix::part_id)
+            .unwrap_or_default()
+            .into(),
     }
 }
 
@@ -1519,6 +1597,12 @@ impl Lane {
             roll_size: f.roll_size,
             slip_pos: f.slip_pos,
             bpm_scalable: f.bpm_scalable,
+            key_relation: f.key_relation,
+            key_relation_text: f.key_relation_text,
+            key_unsure: f.key_unsure,
+            stems_state: f.stems_state,
+            stems_expected: f.stems_expected,
+            stem_solo: f.stem_solo,
         }
     }
 }
@@ -1601,6 +1685,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
     let show_overview_phrases = app.ui.get_show_phrases_overview();
     let bar_mode = app.state.borrow().settings.view.bar_counter.clone();
     let show_overlay = app.state.borrow().settings.view.incoming_overlay;
+    let notation = app.state.borrow().settings.key_notation();
     let scale = app.ui.window().scale_factor();
     let sampler_bank = app.sampler.bank.get();
     let sampler_slots = app.sampler.slots.borrow();
@@ -1724,7 +1809,15 @@ pub(crate) fn project(app: &App, state: &EngineState) {
                 level: state.channels[i].meter.peak,
                 fader: state.channels[i].fader,
                 quantize: state.quantize,
-                stems_busy: meta.and_then(|m| d.stem_progress.get(&m.id).copied()),
+                stems_busy: meta.and_then(|m| {
+                    d.stem_progress
+                        .get(&m.id)
+                        .copied()
+                        .or_else(|| crate::stems_batch::running(m.id))
+                }),
+                stems_queued: meta.is_some_and(|m| crate::stems_batch::is_queued(m.id)),
+                stems_expected: d.stems_expected[i],
+                stem_solo: d.stem_solo[i].map(|x| x.stem),
                 loop_size: d.loop_size[i],
                 bar_counter: &bar_mode,
                 pad_mode: d.pad_mode[i],
@@ -1735,6 +1828,11 @@ pub(crate) fn project(app: &App, state: &EngineState) {
                 },
             },
         );
+        // [62] The key against the other playing decks.
+        let mut fields = fields;
+        let rel = if loading { None } else { crate::key_mix::relation(&state.decks, count, i) };
+        fields.key_relation = crate::key_mix::relation_id(rel.map(|r| r.0)).into();
+        fields.key_relation_text = crate::key_mix::relation_text(rel, notation).into();
         // The loop heard last (a roll too), for CAPTURE.
         if s.loop_state.active
             && let (Some(t), Some(a), Some(b)) = (s.track, s.loop_state.start, s.loop_state.end)
@@ -1865,7 +1963,7 @@ fn project_overlay(
 
 // ── Controls ────────────────────────────────────────────────────────────
 
-fn deck_state(app: &App, d: usize) -> Option<DeckState> {
+pub(crate) fn deck_state(app: &App, d: usize) -> Option<DeckState> {
     engine::snapshot(app).map(|s| s.decks[d])
 }
 
@@ -2362,6 +2460,35 @@ pub(crate) fn bpm_scale(app: &App, d: usize, factor: f64) {
     crate::deck_grid::act(app, d, "scale", if factor < 1.0 { "0.5" } else { "2" });
 }
 
+/// The key of `track` changed (one-button fix): decks holding it show and
+/// play with the new key.
+pub(crate) fn refresh_key(app: &App, track: TrackId, key: od_core::MusicalKey) {
+    let notation = app.state.borrow().settings.key_notation();
+    let decks: Vec<usize> = {
+        let mut d = app.decks.borrow_mut();
+        (0..DECKS)
+            .filter(|&i| {
+                d.loaded[i].as_mut().is_some_and(|m| {
+                    if m.id != track {
+                        return false;
+                    }
+                    m.key = key.format(notation);
+                    m.musical_key = Some(key);
+                    if let Some(c) = m.confidence.as_mut() {
+                        c.key = 1.0;
+                        c.key_alt = None;
+                    }
+                    true
+                })
+            })
+            .collect()
+    };
+    for i in decks {
+        engine::deck_cmd(app, i, DeckCommand::SetTrackKey(Some(key)));
+        app.decks.borrow_mut().views.lanes[i].fields = None;
+    }
+}
+
 /// Makes the memory cue at `start` a saved loop ending at `end`.
 pub(crate) fn set_memory_loop_end(cues: &mut [od_core::Cue], start: f64, end: f64) {
     if let Some(c) = cues
@@ -2592,6 +2719,16 @@ pub(crate) fn wire(app: &Rc<App>) {
     mix.on_phrase_start(handler!(app, |a, d: i32| phrase_start(&a, idx(d))));
     mix.on_capture(handler!(app, |a, d: i32| capture_loop(&a, idx(d))));
     mix.on_bpm_scale(handler!(app, |a, d: i32, f: f32| bpm_scale(&a, idx(d), f as f64)));
+    mix.on_stem_solo(handler!(app, |a, d: i32, stem: SharedString| {
+        if let Some(s) = stem_of_ui(stem.as_str()) {
+            crate::stem_mix::toggle_solo(&a, idx(d), s);
+        }
+    }));
+    mix.on_stem_keep(handler!(app, |a, d: i32, stem: SharedString| {
+        if let Some(s) = stem_of_ui(stem.as_str()) {
+            crate::stem_mix::keep_only(&a, idx(d), s);
+        }
+    }));
     ui.on_deck_seek(handler!(app, |a, d: i32, f: f32| engine::deck_cmd(
         &a,
         d as usize - 1,
@@ -2658,6 +2795,11 @@ pub(crate) fn wire(app: &Rc<App>) {
             "bass" => od_engine::Stem::Bass,
             _ => od_engine::Stem::Inst,
         };
+        // A click during a solo ends it first: the levels from before return.
+        if a.decks.borrow().stem_solo[d].is_some() {
+            crate::stem_mix::end_solo(&a, d);
+            return;
+        }
         let level = deck_state(&a, d)
             .map(|st| st.stem_levels[s.index()])
             .unwrap_or(1.0);
@@ -2997,6 +3139,9 @@ mod tests {
                 pad_mode: PadMode::HotCue,
                 pad_param: String::new(),
                 start_wait: String::new(),
+                stems_queued: false,
+                stems_expected: false,
+                stem_solo: None,
             },
         );
         assert_eq!(f.deck, 2);
@@ -3021,6 +3166,9 @@ mod tests {
                 pad_mode: PadMode::HotCue,
                 pad_param: String::new(),
                 start_wait: String::new(),
+                stems_queued: false,
+                stems_expected: false,
+                stem_solo: None,
             },
         );
         assert_eq!(f, g);
