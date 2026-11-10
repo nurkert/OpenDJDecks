@@ -1,38 +1,36 @@
-OpenDJDecks 0.7.0, the open-source DJ software for macOS, Linux, Windows and the Raspberry Pi. Website and guides: [opendjdecks.de](https://opendjdecks.de). Still a beta.
+OpenDJDecks 0.8.0, the open-source DJ software for macOS, Linux, Windows and the Raspberry Pi. Website and guides: [opendjdecks.de](https://opendjdecks.de). Still a beta.
 
-## New in 0.7.0: beautiful, readable and safe at a gig
+## New in 0.8.0: what electronic DJs need, and it adapts to you
 
-- **A new look:** visible surface levels instead of outlines everywhere, one spacing scale, one type scale, and one state language for off, on, armed, running and disabled, with a visible focus ring.
-- **Readable live:** labels are at least 11 px and live values at least 12 px, with measured contrast. A gig preset combines high contrast, a colour-blind palette and the interface scale, and the scale applies without a restart.
-- **Clearer layout:** a top bar in zones, with a red RECORD key and timer. Perform has three tiers: play, cue, sync and faders first, loops and pads second, setup keys last.
-- **A guided first start:** a checklist that highlights the real controls, with sample tracks and an audio test tone.
-- **Safe during a set:**
-  - An audio status with device, latency and dropouts, and a clear alert when the device is lost.
-  - A gig check before you start.
-  - Restore after a crash, including a running recording.
-  - A performance lock that also keeps the computer awake.
-  - A phase meter with a PRACTICE mode, and a booth view to read from a few metres away.
-- **Proof:** four-hour measurements with two and four decks are published in the guide, with the logs and the command to repeat them. There is also a hardware status for every mapped control, a self-test for controllers and a check for sticks before a gig.
-- **Lighting you can trust:** a patch table with collision display and identify, a status per universe that is also shown in Perform, automatic reconnect, a choice of what happens when a link is lost, and safety limits: a strobe cap (3 per second by default), lockout for fog and lasers, level caps per group and a setup PIN.
-- **Stem model:** a guided one-time download with progress, retry and repair.
+### For the mix
 
-## Already in from 0.8.0
-
-- **Library import with a preview:** what will carry over and what won't, a before and after count, and undo.
-- **A mixer for bass swaps:** a kill per EQ band, a one-tap swap between decks (now, on the beat or on the bar), values on the knobs and a clip lamp per channel.
+- **A library import you can check:** a preview of what will carry over and what will not, then a before and after count and undo.
+- **A mixer for bass swaps:** a kill on every EQ band and a one-tap swap between decks, now, on the beat or on the bar. Knobs show their values, and each channel has a clip lamp.
 - **Phrase-aligned blends:** bars to the next drop and break, start on the next phrase, a PHRASE sync mode, and the incoming track drawn over the playing waveform.
 - **High tempos:** a 150–300 BPM range, and ½ and 2× on the deck.
 - **Loop roll and capture**, from 1/32 to 4 beats.
+- **Stems ready before the gig:** separate a whole list ahead of time, see the stem state per track, get a warning on load, and solo or keep only one stem.
+- **Effects for drops:** a large level, build-ups locked to 8, 16 or 32 bars, tails after release, an XY surface and ALL FX OFF.
+- **Key relation on the deck,** and how sure the analysis is of key and grid, with a one-button fix.
+
+### For you
+
+- **Simple, Standard and Full layouts,** and your own saved layouts. Whole groups can be hidden.
+- **A controller list and a guided setup** that learns an unlisted controller one control at a time.
+- **Your own lighting looks and chases** on pads with pages and group masters, and the full lighting controls in Perform and Club.
+- **AUTO you can steer:** palettes, a phrase-to-look table, HOLD and RELEASE, and a visible order of who is in control.
+- **Connecting lighting interfaces:** several universes, a USB-DMX port picker, Art-Net node discovery, a test pattern and a guided setup.
+- **Safer flash limit:** every quick rise in brightness now counts as a flash, so dim or capped lights keep to the flash limit as well.
 
 ## Good to know
 
-Many of these features have not yet been tried on real hardware or at a gig, including:
+Many of these features have not yet been tried on real hardware, at a gig or by ear, including:
 
-- the controller self-test and mappings,
-- unplugging a real audio or DMX interface,
-- sticks on club players,
-- keep-awake on Windows and Linux.
+- controller mappings and the guided setup,
+- Art-Net, sACN and USB-DMX interfaces,
+- touch screens,
+- real records above 200 BPM.
 
-The long-run measurements were made on a computer in daily use; the guide explains what that means. Try your setup before a gig.
+Try your setup before a gig.
 
 OpenDJDecks is an independent project, not affiliated with or endorsed by AlphaTheta Corporation or any other manufacturer. rekordbox and Pioneer DJ are trademarks of AlphaTheta Corporation; names are used only to state compatibility.
