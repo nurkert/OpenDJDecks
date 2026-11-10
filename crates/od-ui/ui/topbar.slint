@@ -4,7 +4,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Glyph, TipArea, Knob, PopupPlace } from "controls.slint";
+import { Caps, PlateButton, Glyph, TipArea, Knob, PopupPlace, GuideMark } from "controls.slint";
 import { Club } from "club.slint";
 import { Lighting } from "lighting.slint";
 import { PerformLayout } from "perform.slint";
@@ -15,6 +15,7 @@ component ModeTab inherits Rectangle {
     in property <bool> current;
     in property <string> tooltip;
     in property <string> command;
+    in property <string> guide;
     callback clicked();
     min-width: t.preferred-width + (root.narrow ? 18px : 32px);
     // One segmented control: the current mode is the filled segment.
@@ -29,6 +30,7 @@ component ModeTab inherits Rectangle {
         color: root.current ? Theme.ground : touch.has-hover ? Theme.bone : Theme.bone-2;
         vertical-alignment: center;
     }
+    GuideMark { y: Theme.s2; width: parent.width; height: parent.height - 2 * Theme.s2; id: root.guide; }
     touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
@@ -377,12 +379,12 @@ export component TopBar inherits Rectangle {
                 narrow: root.narrow;
                 accessible-label: "topbar.mode.prepare"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
-                label: @tr("PREPARE"); tooltip: @tr("Prepare: library, beatgrids, cues and sticks"); command: "mode.prepare"; current: root.mode == "prepare"; clicked => { root.set-mode("prepare"); } }
+                label: @tr("PREPARE"); guide: "topbar.mode.prepare"; tooltip: @tr("Prepare: library, beatgrids, cues and sticks"); command: "mode.prepare"; current: root.mode == "prepare"; clicked => { root.set-mode("prepare"); } }
             perf := ModeTab {
                 narrow: root.narrow;
                 accessible-label: "topbar.mode.perform"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
-                label: @tr("PERFORM"); tooltip: @tr("Perform: decks and mixer"); command: "mode.perform"; current: root.mode == "perform"; clicked => { root.set-mode("perform"); } }
+                label: @tr("PERFORM"); guide: "topbar.mode.perform"; tooltip: @tr("Perform: decks and mixer"); command: "mode.perform"; current: root.mode == "perform"; clicked => { root.set-mode("perform"); } }
             light := ModeTab {
                 narrow: root.narrow;
                 accessible-label: "topbar.mode.lighting"; accessible-role: tab;

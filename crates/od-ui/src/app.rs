@@ -71,6 +71,8 @@ pub struct App {
     pub(crate) club: RefCell<crate::club::ClubRuntime>,
     /// Microphone / aux input.
     pub(crate) mic: RefCell<crate::mic::MicRuntime>,
+    /// The first-start guide.
+    pub(crate) first_start: RefCell<crate::first_start::Guide>,
     worker_events: Receiver<WorkerEvent>,
     tick_timer: slint::Timer,
 }
@@ -111,6 +113,7 @@ impl App {
             lighting_window: RefCell::new(None),
             club: RefCell::new(crate::club::ClubRuntime::default()),
             mic: RefCell::new(crate::mic::MicRuntime::default()),
+            first_start: RefCell::new(crate::first_start::Guide::default()),
             engine: RefCell::new(engine::EngineHost::default()),
             decks: RefCell::new(decks::Decks::default()),
             mixer: mixer::MixerView::default(),
@@ -150,6 +153,7 @@ impl App {
         crate::lighting::wire(&app);
         crate::club::wire(&app);
         crate::mic::wire(&app);
+        crate::first_start::wire(&app);
         engine::start(&app);
         decks::autoload(&app);
 
@@ -228,6 +232,7 @@ impl App {
                     }
                 }
                 WorkerEvent::Message(m) => self.status(m),
+                WorkerEvent::SamplesDone => crate::first_start::samples_done(self),
                 WorkerEvent::EncryptedImportStarted => crate::import::close_encrypted_dialog(self),
                 WorkerEvent::EncryptedImportFailed(m) => {
                     self.ui.set_encrypted_import_busy(false);
@@ -237,6 +242,7 @@ impl App {
         }
         crate::appearance::tick(self);
         crate::gig::tick(self);
+        crate::first_start::tick(self);
         shell::tick_chrome(self);
         browser::tick(self);
         if !self.state.borrow().config.headless {

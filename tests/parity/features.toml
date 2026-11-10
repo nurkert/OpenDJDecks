@@ -2871,6 +2871,21 @@ note = "Player and browser, 2 players (full player plus a compact second player)
 spec = "UX §1.7"
 
 [[feature]]
+id = "shell-first-start-guide"
+area = "shell"
+name = "First-start guide: self-ticking checklist that points at the real controls, sample tracks, test tone"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::hierarchy::first_start_walks_every_step_on_real_controls",
+  "od-ui::ui_tests::hierarchy::first_start_leaves_an_existing_library_alone",
+  "od-ui::ui_tests::hierarchy::first_start_fits_and_offers_the_test_tone",
+]
+spec = "Roadmap [7]"
+note = "With an empty library a checklist under the top bar ticks itself (add music, analysis, two tracks, play and sync) and outlines the next control. Two sample tracks are synthesised by the app; TEST TONE plays a quiet tone on master and headphones."
+
+[[feature]]
 id = "shell-panel-toggles"
 area = "shell"
 name = "Top-bar panel toggles: FX, Mix Preview, Sampler, Mixer, Recording"
@@ -2883,7 +2898,7 @@ tests = [
   "od-ui::ui_tests::prepare::top_bar_mixer_rec_and_mix_preview_toggles",
 ]
 spec = "UX §1.2, §2.8"
-note = "FX, PREVIEW, SAMPLER, MIXER and REC in the top bar (stored): MIXER hides the mixer column, PREVIEW shows the Mix Preview panel, REC shows or hides the recording section, plus CLUB and LIGHT"
+note = "FX, PREVIEW, SAMPLER and MIXER in the top bar (stored): MIXER hides the mixer column, PREVIEW shows the Mix Preview panel, the key beside RECORD shows or hides the recording section, plus CLUB and LIGHT"
 
 [[feature]]
 id = "shell-mix-preview"

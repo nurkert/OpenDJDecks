@@ -2,12 +2,18 @@
 title: Getting started
 description: Install OpenDJDecks, add your music and let the analysis run. Ten minutes from download to your first tracks on the decks.
 keywords: [install, installation, first steps, start, setup, add music, import music, music folder, analysis, analyse, beginner, new, tutorial, begin]
-features: [browser-import-files, analysis-beatgrid, analysis-key, analysis-waveform-3band, analysis-loudness-auto-gain, shell-mode-switch, shell-status-band, browser-track-preview, analysis-reanalyse-priority, shell-i18n]
+features: [shell-first-start-guide, browser-import-files, analysis-beatgrid, analysis-key, analysis-waveform-3band, analysis-loudness-auto-gain, shell-mode-switch, shell-status-band, browser-track-preview, analysis-reanalyse-priority, shell-i18n]
 ---
 
 OpenDJDecks has two work modes. **Prepare** is where you sort music and set cues at home. **Perform** is the decks and the mixer for the gig. You switch between them at the top left at any time; whatever is loaded stays loaded.
 
 ![The Prepare view with a track in the player above a set](../img/first-start.png)
+
+## The guide on the first start
+
+![The checklist under the top bar with the first step current](../img/first-start-guide.png)
+
+With an empty library, a checklist appears under the top bar: **Add music**, **Analysis**, **Two tracks** and **Play and sync**. Each step ticks itself when it is done, and the control to use next gets a pulsing outline. **SAMPLE TRACKS** writes two short tracks made by the app, so you can try a first mix without your own music. **TEST TONE** plays a quiet tone on the master output and the headphones. **HIDE** closes the guide; **View › First-Start Guide** brings it back.
 
 ## 1. Install
 

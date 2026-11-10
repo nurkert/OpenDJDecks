@@ -5,7 +5,7 @@ import { ListView } from "std-widgets.slint";
 import { Theme } from "tokens.slint";
 import { DragState, DragTargets, DropZone } from "drag.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, Glyph, Star, TipArea } from "controls.slint";
+import { Caps, Glyph, Star, TipArea, GuideMark } from "controls.slint";
 import { TrackRow, MenuTarget, ColumnView, ColumnChoice, FilterView } from "structs.slint";
 import { FilterBar } from "filter.slint";
 import { TooltipState } from "tooltip.slint";
@@ -446,6 +446,8 @@ component TrackLine inherits Rectangle {
 }
 
 export component TrackTable inherits Rectangle {
+    // First-start guide: the id the list can be pointed at by.
+    in property <string> guide;
     in property <[TrackRow]> rows;
     in property <string> sort-column;
     in property <bool> descending;
@@ -621,4 +623,5 @@ export component TrackTable inherits Rectangle {
             }
         }
     }
+    if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; }
 }

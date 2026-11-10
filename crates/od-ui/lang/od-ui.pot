@@ -2242,6 +2242,116 @@ msgctxt "UpdatePrompt"
 msgid "UPDATE NOW"
 msgstr ""
 
+#: ui/app.slint:601
+msgctxt "AppWindow"
+msgid "First-Start Guide"
+msgstr ""
+
+#: ui/first_start.slint:62
+msgctxt "FirstStartBar"
+msgid "Add music"
+msgstr ""
+
+#: ui/first_start.slint:64
+msgctxt "FirstStartBar"
+msgid "Analysis"
+msgstr ""
+
+#: ui/first_start.slint:66
+msgctxt "FirstStartBar"
+msgid "Two tracks"
+msgstr ""
+
+#: ui/first_start.slint:68
+msgctxt "FirstStartBar"
+msgid "Play and sync"
+msgstr ""
+
+#: ui/first_start.slint:76
+msgctxt "FirstStartBar"
+msgid "Add a folder with your music, or start with two sample tracks made on this computer."
+msgstr ""
+
+#: ui/first_start.slint:77
+msgctxt "FirstStartBar"
+msgid "Writing the two sample tracks. This takes a few seconds."
+msgstr ""
+
+#: ui/first_start.slint:78
+msgctxt "FirstStartBar"
+msgid "Working out tempo, key and waveform. Everything else stays usable meanwhile."
+msgstr ""
+
+#: ui/first_start.slint:79
+msgctxt "FirstStartBar"
+msgid "Open PERFORM to see the decks."
+msgstr ""
+
+#: ui/first_start.slint:80
+msgctxt "FirstStartBar"
+msgid "Click a track in the list."
+msgstr ""
+
+#: ui/first_start.slint:81
+msgctxt "FirstStartBar"
+msgid "Press LOAD SELECTED on deck 1, or double-click a track."
+msgstr ""
+
+#: ui/first_start.slint:82
+msgctxt "FirstStartBar"
+msgid "Choose a second track and load it on deck 2."
+msgstr ""
+
+#: ui/first_start.slint:83
+msgctxt "FirstStartBar"
+msgid "Press PLAY on deck 1."
+msgstr ""
+
+#: ui/first_start.slint:84
+msgctxt "FirstStartBar"
+msgid "Press SYNC on deck 2: it follows the tempo of deck 1."
+msgstr ""
+
+#: ui/first_start.slint:85
+msgctxt "FirstStartBar"
+msgid "Press PLAY on deck 2. Now both run in time."
+msgstr ""
+
+#: ui/first_start.slint:86
+msgctxt "FirstStartBar"
+msgid "Both tracks run in time. Move the crossfader to hear the mix."
+msgstr ""
+
+#: ui/first_start.slint:93
+msgctxt "FirstStartBar"
+msgid "SAMPLE TRACKS"
+msgstr ""
+
+#: ui/first_start.slint:95
+msgctxt "FirstStartBar"
+msgid "Writes two short sample tracks to your library folder: synthesised here, no download"
+msgstr ""
+
+#: ui/first_start.slint:104
+msgctxt "FirstStartBar"
+msgid "TEST TONE"
+msgstr ""
+
+#: ui/first_start.slint:105
+msgctxt "FirstStartBar"
+msgid "A quiet tone on the master output and the headphones, so you know you can hear the deck"
+msgstr ""
+
+#: ui/first_start.slint:113
+msgctxt "FirstStartBar"
+msgid "HIDE"
+msgstr ""
+
+#: ui/first_start.slint:114
+msgctxt "FirstStartBar"
+msgid "Hide this guide. View › First-Start Guide brings it back"
+msgstr ""
+
 #: ui/topbar.slint:94 ui/topbar.slint:98
 msgctxt "RecordKey"
 msgid "REC {}"

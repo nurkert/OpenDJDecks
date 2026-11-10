@@ -17,6 +17,8 @@ pub enum WorkerEvent {
     AnalysisProgress { done: usize, total: usize },
     AnalysisIdle,
     Message(String),
+    /// The sample tracks of the first-start guide are written and added.
+    SamplesDone,
     /// The encrypted library import started: its dialog can close.
     EncryptedImportStarted,
     /// The encrypted library import was refused (shown in its dialog).

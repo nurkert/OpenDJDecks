@@ -7,7 +7,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Glyph, Knob, Fader, Toggle, Transport, Jog, Stepper, TipArea, PopupPlace, Field } from "controls.slint";
+import { Caps, PlateButton, Glyph, Knob, Fader, Toggle, Transport, Jog, Stepper, TipArea, PopupPlace, Field, GuideMark } from "controls.slint";
 import { DropZone } from "drag.slint";
 import { DeckView, CueMark, HotCueSlot, ChannelView, PhraseMark, LaneMotion, FxUnitView, PadView } from "structs.slint";
 import { FxPanel, ChannelFxSelector, ChoiceList } from "fx.slint";
@@ -189,7 +189,7 @@ component Overview inherits VerticalLayout {
             background: Theme.ground-band;
             HorizontalLayout {
                 alignment: center;
-                VerticalLayout { alignment: center; PlateButton { compact: true; label: @tr("LOAD SELECTED"); tone: Theme.deck-color(root.deck.deck); clicked => { root.load(); } } }
+                VerticalLayout { alignment: center; PlateButton { accessible-role: button; accessible-label: "deck\{root.deck.deck}.load"; compact: true; label: @tr("LOAD SELECTED"); tone: Theme.deck-color(root.deck.deck); guide: "deck\{root.deck.deck}.load"; clicked => { root.load(); } } }
             }
         }
     }
@@ -772,6 +772,7 @@ component StemStrip inherits HorizontalLayout {
 // Horizontal crossfader.
 component Crossfader inherits Rectangle {
     in-out property <float> value: 0.5;
+    in property <string> guide;
     callback changed(float);
     height: 26px;
     Rectangle { x: 0; y: parent.height / 2 - 1px; width: parent.width; height: 2px; background: Theme.rule-strong; }
@@ -786,6 +787,7 @@ component Crossfader inherits Rectangle {
         moved => { if (self.pressed) { root.value = clamp((self.mouse-x - 7px) / (root.width - 14px), 0, 1); root.changed(root.value); } }
         double-clicked => { root.value = 0.5; root.changed(0.5); }
     }
+    if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; }
 }
 
 // One row of the deck's control grid: every column of the full deck lays
@@ -938,18 +940,18 @@ component TransportRows inherits VerticalLayout {
         Toggle {
             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync";
             width: parent.width; size: parent.height;
-           
+            guide: "deck\{root.deck.deck}.beat-sync";
             label: "SYNC"; label-size: Theme.body; on: root.deck.sync; tone: Theme.live;
             clicked => { root.sync(); }
         }
     }
     GridRow {
         base: root.base; span: 2;
-        Transport { accessible-role: button; accessible-label: "deck\{root.deck.deck}.cue"; kind: "cue"; tone: Theme.attention; size: min(parent.width, parent.height); x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; clicked => { root.cue(); } }
+        Transport { accessible-role: button; accessible-label: "deck\{root.deck.deck}.cue"; kind: "cue"; tone: Theme.attention; guide: "deck\{root.deck.deck}.cue"; size: min(parent.width, parent.height); x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; clicked => { root.cue(); } }
     }
     GridRow {
         base: root.base; span: 2; grows: 1;
-        Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; size: min(parent.width, parent.height); x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; clicked => { root.toggle-play(); } }
+        Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; guide: "deck\{root.deck.deck}.play"; size: min(parent.width, parent.height); x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; clicked => { root.toggle-play(); } }
     }
 }
 
@@ -1340,7 +1342,7 @@ export component DeckPanel inherits Rectangle {
                 alignment: center;
                 width: root.four || root.tight-header ? 58px : 70px;
                 // SYNC moves to the transport column on the full deck.
-                if root.compact || root.browse: Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: 24px; label: "SYNC"; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
+                if root.compact || root.browse: Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; guide: "deck\{root.deck.deck}.beat-sync"; size: 24px; label: "SYNC"; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
                 Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 24px; label: root.four || root.tight-header ? "MSTR" : "MASTER"; on: root.deck.master; tone: root.tone; clicked => { root.master(); } }
             }
         }
@@ -1392,7 +1394,7 @@ export component DeckPanel inherits Rectangle {
                 spacing: Theme.key-gap;
                 TempoRange { deck: root.deck; size: root.touch-size ? 44px : 30px; clicked => { root.tempo-range(); } }
                 Transport { accessible-role: button; accessible-label: "deck\{root.deck.deck}.cue"; kind: "cue"; tone: Theme.attention; size: root.touch-size ? 44px : 30px; clicked => { root.cue(); } }
-                Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; size: root.touch-size ? 44px : 30px; clicked => { root.toggle-play(); } }
+                Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; guide: "deck\{root.deck.deck}.play"; size: root.touch-size ? 44px : 30px; clicked => { root.toggle-play(); } }
                 for c in root.deck.pads: DeckPad { accessible-role: button; accessible-label: "deck\{root.deck.deck}.pad." + PadLetters.of[c.index]; horizontal-stretch: 1; height: root.pad-h; p: c; mode: root.deck.pad-mode; press(d) => { root.pad(c.index, d); } alt => { root.pad-alt(c.index); } }
                 VerticalLayout { alignment: center; Toggle {
                     accessible-role: combobox;
@@ -1722,7 +1724,7 @@ component GlobalBar inherits Rectangle {
             VerticalLayout {
                 horizontal-stretch: 1;
                 alignment: center;
-                Crossfader { accessible-role: slider; accessible-label: "global.xfader"; accessible-value: root.crossfader; value: root.crossfader; changed(v) => { root.set-crossfader(v); } }
+                Crossfader { accessible-role: slider; accessible-label: "global.xfader"; guide: "global.xfader"; accessible-value: root.crossfader; value: root.crossfader; changed(v) => { root.set-crossfader(v); } }
             }
             VerticalLayout {
                 alignment: center;

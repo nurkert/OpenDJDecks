@@ -2,12 +2,18 @@
 title: Erste Schritte
 description: OpenDJDecks installieren, Musik hinzufügen und die Analyse laufen lassen. In zehn Minuten vom Download zu den ersten Tracks auf den Decks.
 keywords: [installieren, installation, erste schritte, start, einrichten, musik hinzufügen, musik importieren, musikordner, analyse, analysieren, anfänger, neu, anleitung, loslegen, einstieg]
-features: [browser-import-files, analysis-beatgrid, analysis-key, analysis-waveform-3band, analysis-loudness-auto-gain, shell-mode-switch, shell-status-band, browser-track-preview, analysis-reanalyse-priority, shell-i18n]
+features: [shell-first-start-guide, browser-import-files, analysis-beatgrid, analysis-key, analysis-waveform-3band, analysis-loudness-auto-gain, shell-mode-switch, shell-status-band, browser-track-preview, analysis-reanalyse-priority, shell-i18n]
 ---
 
 OpenDJDecks hat zwei Arbeitsmodi. In **Prepare** sortierst du Musik und setzt Cues, zu Hause. **Perform** sind die Decks und der Mixer für den Gig. Oben links schaltest du jederzeit um; was geladen ist, bleibt geladen.
 
 ![Die Prepare-Ansicht mit einem Track im Player über einem Set](../img/first-start.png)
+
+## Die Checkliste beim ersten Start
+
+![Die Checkliste unter der oberen Leiste mit dem ersten Schritt](../img/first-start-guide.png)
+
+Bei einer leeren Bibliothek erscheint unter der oberen Leiste eine Checkliste: **Musik hinzufügen**, **Analyse**, **Zwei Tracks** und **Abspielen und Sync**. Jeder Schritt hakt sich von selbst ab, und das Bedienelement für den nächsten Schritt bekommt einen pulsierenden Rahmen. **BEISPIELTRACKS** schreibt zwei kurze Tracks, die die App selbst erzeugt, damit du einen ersten Mix ohne eigene Musik ausprobieren kannst. **TESTTON** spielt einen leisen Ton auf Master und Kopfhörer. **AUSBLENDEN** schließt die Checkliste; **Ansicht › Einstiegs-Checkliste** holt sie zurück.
 
 ## 1. Installieren
 

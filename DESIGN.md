@@ -331,6 +331,9 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 - **Hot cue ruler:** letters A to H on a strong-rule baseline 18px from the bottom. A set cue is a 2px solid line in its colour with a bone letter and its time; an empty slot is a hollow outline in bone 3, and a set one is filled in its cue colour.
 - **Beatgrid:** compact plates, struck while the grid is locked; LOCK goes dashed-active in sodium with a LOCKED caps legend.
 
+### First-Start Guide
+A band under the top bar on an empty library: four steps with hollow rings, a sodium ring on the current one, a green ring with a tick when done, a sentence that says what to do now, and the armed outline in sodium on the real control. Sample tracks and a test tone are offered in the band. Hidden in the kiosk. Never covers a control and never shows while a library exists unless asked for.
+
 ### Device Line (signature)
 - One stick, one line: 2px, inset 8px top and bottom, 64px rows (78px in the Devices section). In sync is solid green; pending is dashed sodium; error is struck with the detail text in deep red; unknown or unregistered is half-height.
 - **Syncing:** the dashed sodium line (60% alpha) fills solid green from the bottom by progress, animated 320ms on the spring easing (one damped overshoot). Motion off sets it to 0ms.

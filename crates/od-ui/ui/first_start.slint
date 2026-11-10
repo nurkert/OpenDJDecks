@@ -1,0 +1,119 @@
+// The guided first start: a band under the top bar with four steps that tick
+// themselves. It points at the real controls (GuideMark in controls.slint)
+// and never covers one.
+
+import { Theme } from "tokens.slint";
+import { Caps, PlateButton, Glyph, FirstStart } from "controls.slint";
+
+// One step: a hollow ring, a sodium ring while current (it needs you), a
+// filled tick when done; the name stays.
+component StepMark inherits HorizontalLayout {
+    in property <string> label;
+    in property <int> index;
+    // 0 open, 1 current, 2 done.
+    in property <int> state;
+    spacing: Theme.s1;
+    alignment: start;
+    accessible-role: text;
+    accessible-label: "guide.step.\{root.index}";
+    accessible-value: root.state == 2 ? "done" : root.state == 1 ? "current" : "open";
+    VerticalLayout {
+        alignment: center;
+        Rectangle {
+            width: 16px; height: 16px; border-radius: 8px;
+            border-width: root.state == 1 ? 2px : root.state == 0 ? 1px : 0px;
+            border-color: root.state == 1 ? Theme.attention : Theme.bone-3;
+            background: root.state == 2 ? Theme.live : transparent;
+            if root.state == 2: Glyph { x: 3px; y: 3px; width: 10px; height: 10px; kind: "check"; tone: Theme.ink-on; }
+        }
+    }
+    Text {
+        text: root.label;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: root.state == 1 ? Theme.bone : root.state == 2 ? Theme.bone-2 : Theme.bone-3;
+        vertical-alignment: center;
+    }
+}
+
+// The line between two steps: solid once the earlier one is done.
+component StepLink inherits VerticalLayout {
+    in property <bool> done;
+    alignment: center;
+    Rectangle {
+        width: 14px; height: 2px;
+        background: root.done ? Theme.live : Theme.rule-strong;
+    }
+}
+
+export component FirstStartBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: "guide.bar";
+    height: 48px;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    property <string> hint: FirstStart.hint;
+    property <int> step: FirstStart.step;
+    HorizontalLayout {
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        spacing: Theme.s4;
+        // The checklist.
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: Theme.s1;
+            StepMark { index: 0; label: @tr("Add music"); state: root.step > 0 ? 2 : 1; }
+            StepLink { done: root.step > 0; }
+            StepMark { index: 1; label: @tr("Analysis"); state: root.step > 1 ? 2 : root.step == 1 ? 1 : 0; }
+            StepLink { done: root.step > 1; }
+            StepMark { index: 2; label: @tr("Two tracks"); state: root.step > 2 ? 2 : root.step == 2 ? 1 : 0; }
+            StepLink { done: root.step > 2; }
+            StepMark { index: 3; label: @tr("Play and sync"); state: root.step > 3 ? 2 : root.step == 3 ? 1 : 0; }
+        }
+        // What to do now.
+        Text {
+            accessible-role: text; accessible-label: "guide.hint"; accessible-value: root.hint;
+            horizontal-stretch: 1; min-width: 80px;
+            vertical-alignment: center; wrap: word-wrap; overflow: elide;
+            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            text: root.hint == "add-music" ? @tr("Add a folder with your music, or start with two sample tracks made on this computer.")
+                : root.hint == "samples" ? @tr("Writing the two sample tracks. This takes a few seconds.")
+                : root.hint == "analysing" ? @tr("Working out tempo, key and waveform. Everything else stays usable meanwhile.")
+                : root.hint == "go-perform" ? @tr("Open PERFORM to see the decks.")
+                : root.hint == "select-track" ? @tr("Click a track in the list.")
+                : root.hint == "load-1" ? @tr("Press LOAD SELECTED on deck 1, or double-click a track.")
+                : root.hint == "load-2" ? @tr("Choose a second track and load it on deck 2.")
+                : root.hint == "play-1" ? @tr("Press PLAY on deck 1.")
+                : root.hint == "sync-2" ? @tr("Press SYNC on deck 2: it follows the tempo of deck 1.")
+                : root.hint == "play-2" ? @tr("Press PLAY on deck 2. Now both run in time.")
+                : root.hint == "done" ? @tr("Both tracks run in time. Move the crossfader to hear the mix.")
+                : "";
+        }
+        if root.step == 0: VerticalLayout {
+            alignment: center;
+            PlateButton {
+                accessible-role: button; accessible-label: "guide.samples";
+                compact: true; label: @tr("SAMPLE TRACKS"); tone: Theme.live;
+                enabled: !FirstStart.samples-busy;
+                tooltip: @tr("Writes two short sample tracks to your library folder: synthesised here, no download");
+                clicked => { FirstStart.add-samples(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            PlateButton {
+                accessible-role: checkbox; accessible-label: "guide.tone";
+                accessible-checkable: true; accessible-checked: FirstStart.tone-on;
+                compact: true; label: @tr("TEST TONE"); active: FirstStart.tone-on; tone: Theme.attention;
+                tooltip: @tr("A quiet tone on the master output and the headphones, so you know you can hear the deck");
+                clicked => { FirstStart.toggle-tone(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            PlateButton {
+                accessible-role: button; accessible-label: "guide.hide";
+                compact: true; label: @tr("HIDE");
+                tooltip: @tr("Hide this guide. View › First-Start Guide brings it back");
+                clicked => { FirstStart.close(); }
+            }
+        }
+    }
+}

@@ -32,9 +32,9 @@ These come first because every later screen builds on them.
 
 ### Step 3: hierarchy and orientation
 
-- [ ] **[5] Top bar in zones.** Modes, panels and status are visibly separate. Recording is red with a timer. Live values are never cut off, and editing actions appear only where editing happens. Done when each element in the bar has a clear kind and state.
-- [ ] **[8] Three tiers in Perform.** Play, cue, sync and faders dominate, loops and pads form a middle tier, setup keys recede, and empty hot cues are drawn hollow. Done when a deck's state can be read at a glance from arm's length.
-- [ ] **[7] Guided first start.** A checklist that ticks itself and highlights the real control: add music, wait for analysis, load two tracks, play and sync, with sample tracks and an audio test tone. Done when a new user reaches a first mix without the guides.
+- [x] **[5] Top bar in zones.** Modes, panels and status are visibly separate. Recording is red with a timer. Live values are never cut off, and editing actions appear only where editing happens. Done when each element in the bar has a clear kind and state.
+- [x] **[8] Three tiers in Perform.** Play, cue, sync and faders dominate, loops and pads form a middle tier, setup keys recede, and empty hot cues are drawn hollow. Done when a deck's state can be read at a glance from arm's length.
+- [x] **[7] Guided first start.** A checklist that ticks itself and highlights the real control: add music, wait for analysis, load two tracks, play and sync, with sample tracks and an audio test tone. Done when a new user reaches a first mix without the guides.
 
 ### Step 4: nothing goes wrong during a set
 

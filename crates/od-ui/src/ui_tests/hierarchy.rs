@@ -159,3 +159,137 @@ fn empty_hot_cues_are_hollow() {
     assert!(src.contains("border-width: root.p.set || root.filled ? 0px : 1px;"));
     assert!(src.contains("background: root.filled ? root.tone : root.p.set ?"));
 }
+
+// ── [7] Guided first start ─────────────────────────────────────────────────
+
+fn start_empty(size: (u32, u32)) -> Ui {
+    Ui::start(Fixture::empty(), size, false)
+}
+
+fn guide(ui: &Ui) -> (i32, String, String) {
+    let g = ui.app.ui.global::<crate::FirstStart>();
+    (g.get_step(), g.get_hint().to_string(), g.get_target().to_string())
+}
+
+/// The sodium mark sits on the element the guide names.
+fn assert_points_at(ui: &Ui, label: &str) {
+    let (_, _, target) = guide(ui);
+    assert_eq!(target, label, "guide points elsewhere");
+    ui.wait_until(5.0, |u| u.by_value("guide.highlight", label).is_some());
+    let (_, mark) = ui
+        .by_value("guide.highlight", label)
+        .unwrap_or_else(|| panic!("no highlight on {label}"));
+    let mark = Rect::of(&mark);
+    let real = rect(ui, label);
+    assert!(
+        real.overlap(&mark) > 0.0,
+        "highlight on {label} misses the real control: {mark:?} / {real:?}"
+    );
+}
+
+/// [7] The walk: from an empty library through the sample tracks, analysis,
+/// two loaded decks, play and sync to the end, ticking by itself and pointing
+/// at the real control for each step, driven only by real input.
+#[test]
+fn first_start_walks_every_step_on_real_controls() {
+    let ui = start_empty((1440, 900));
+    assert!(ui.has("guide.bar"), "the guide opens on an empty library");
+    assert_eq!(guide(&ui).0, 0, "step 1 first");
+    assert_eq!(guide(&ui).1, "add-music");
+    assert_points_at(&ui, "browser.empty.add-music");
+
+    ui.click("guide.samples");
+    assert!(
+        ui.wait_until(60.0, |u| guide(u).0 >= 1),
+        "the sample tracks tick step 1"
+    );
+    assert_eq!(ui.value("guide.step.0"), "done");
+    // Short sample tracks analyse fast: this step can be over by the time the
+    // test gets here (steps_tick_in_order_and_stay_ticked covers it).
+    if guide(&ui).0 == 1 {
+        assert_eq!(guide(&ui).1, "analysing");
+        assert_points_at(&ui, "status.activity");
+    }
+
+    assert!(
+        ui.wait_until(90.0, |u| guide(u).0 >= 2),
+        "analysis ticks step 2"
+    );
+    assert_eq!(guide(&ui).1, "go-perform");
+    assert_points_at(&ui, "topbar.mode.perform");
+
+    ui.click("topbar.mode.perform");
+    ui.pump(300);
+    assert_eq!(guide(&ui).1, "select-track");
+    assert_points_at(&ui, "browser.list");
+
+    ui.click("browser.row0");
+    assert!(ui.wait_until(3.0, |u| guide(u).1 == "load-1"));
+    assert_points_at(&ui, "deck1.load");
+    ui.click("deck1.load");
+    assert!(
+        ui.wait_until(60.0, |u| guide(u).1 == "load-2"),
+        "deck 1 loads: {:?}",
+        guide(&ui)
+    );
+    assert_points_at(&ui, "deck2.load");
+    ui.click("browser.row1");
+    ui.pump(100);
+    ui.click("deck2.load");
+
+    assert!(
+        ui.wait_until(60.0, |u| guide(u).0 >= 3),
+        "two tracks tick step 3: {:?}",
+        guide(&ui)
+    );
+    assert_eq!(guide(&ui).1, "play-1");
+    assert_points_at(&ui, "deck1.play");
+    ui.click("deck1.play");
+    assert!(ui.wait_until(5.0, |u| guide(u).1 == "sync-2"));
+    assert_points_at(&ui, "deck2.beat-sync");
+    ui.click("deck2.beat-sync");
+    assert!(ui.wait_until(5.0, |u| guide(u).1 == "play-2"));
+    assert_points_at(&ui, "deck2.play");
+    ui.click("deck2.play");
+    assert!(
+        ui.wait_until(8.0, |u| guide(u).0 == 4),
+        "play and sync tick the last step: {:?}",
+        guide(&ui)
+    );
+    assert_eq!(guide(&ui).1, "done");
+    for i in 0..4 {
+        assert_eq!(ui.value(&format!("guide.step.{i}")), "done", "step {i}");
+    }
+    assert_points_at(&ui, "global.xfader");
+
+    ui.click("guide.hide");
+    assert!(!ui.has("guide.bar"), "HIDE closes the band");
+    assert_eq!(
+        ui.app.state.borrow().settings.view.first_start,
+        "off",
+        "and it stays closed"
+    );
+}
+
+/// [7] An existing library is not interrupted.
+#[test]
+fn first_start_leaves_an_existing_library_alone() {
+    let ui = Ui::open((1440, 900));
+    assert!(!ui.has("guide.bar"));
+}
+
+/// [7] The band holds at the small laptop size and offers the test tone.
+#[test]
+fn first_start_fits_and_offers_the_test_tone() {
+    let ui = start_empty((1280, 800));
+    for label in ["guide.bar", "guide.samples", "guide.tone", "guide.hide"] {
+        assert!(ui.has(label), "{label}");
+    }
+    let bar = rect(&ui, "guide.bar");
+    let last = rect(&ui, "guide.hide");
+    assert!(last.right() <= bar.right(), "hide fits at 1280");
+    ui.click("guide.tone");
+    assert!(ui.app.ui.global::<crate::FirstStart>().get_tone_on());
+    ui.click("guide.tone");
+    assert!(!ui.app.ui.global::<crate::FirstStart>().get_tone_on());
+}

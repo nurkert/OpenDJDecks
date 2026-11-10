@@ -193,6 +193,8 @@ pub struct ViewSettings {
     /// "tempo" (real time left at the current tempo, the default) or "both"
     /// (real time, the track time small beside it).
     pub deck_time: String,
+    /// First-start guide: "" = not decided yet, "active" or "off".
+    pub first_start: String,
     /// Seconds across the zoomed waveform at start (Prepare player; the
     /// decks start at the matching zoom).
     pub zoom_span: f32,
@@ -424,6 +426,7 @@ impl Default for ViewSettings {
             phrase_types: "names".into(),
             bar_counter: "to-phrase".into(),
             deck_time: "tempo".into(),
+            first_start: String::new(),
             zoom_span: 8.0,
             tooltips: true,
             club_other_beat: true,

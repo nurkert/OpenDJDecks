@@ -431,6 +431,9 @@ pub enum MixerCommand {
     SetSamplerLevel(f32),
     /// Sampler to the headphone cue bus.
     SetSamplerCue(bool),
+    /// Test tone (a quiet 440 Hz sine) on the master bus, before the master
+    /// level, and the headphone cue bus.
+    SetTestTone(bool),
     /// Booth output level 0..=1 (square law, 1 = 0 dB). The booth output is
     /// the master bus after Tempo FX, before master level and limiter,
     /// soft-clipped; see [`crate::Outputs::booth`].
