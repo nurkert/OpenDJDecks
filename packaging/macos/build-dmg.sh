@@ -66,7 +66,9 @@ python3 -m venv "$VENV" >/dev/null
 "$VENV/bin/pip" install --quiet "dmgbuild==1.6.5"
 OUT="$DIST/OpenDJDecks-${VERSION}-macos-${ARCH}.dmg"
 rm -f "$OUT"
-"$VENV/bin/dmgbuild" -s packaging/macos/dmg-settings.py \
+# The CI runners sometimes keep the image busy for a while ("Resource
+# busy" on detach); retry longer than dmgbuild's default.
+"$VENV/bin/dmgbuild" --detach-retries 30 -s packaging/macos/dmg-settings.py \
   -D app="$APP" -D background=packaging/assets/dmg-background.tiff -D icon=packaging/assets/OpenDJDecks.icns \
   "OpenDJDecks" "$OUT"
 echo "$OUT"
