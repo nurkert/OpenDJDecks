@@ -64,7 +64,9 @@ export component StemsModelPrompt inherits Rectangle {
     Rectangle {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
-        width: min(parent.width - 48px, 520px);
+        // Wider than 520 px when its keys need it (German); the keys wrap
+        // in a narrow window.
+        width: min(parent.width - 48px, max(520px, card.min-width));
         height: card.preferred-height;
         background: Theme.ground-band;
         border-width: 1px;
@@ -84,7 +86,7 @@ export component StemsModelPrompt inherits Rectangle {
                 font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                 wrap: word-wrap;
             }
-            HorizontalLayout {
+            FlexboxLayout {
                 spacing: Theme.s2;
                 alignment: end;
                 PlateButton { accessible-label: "app.stems.prompt.later"; accessible-role: button; compact: true; label: @tr("NOT NOW"); clicked => { root.act("later"); } }

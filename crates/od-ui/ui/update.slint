@@ -67,7 +67,9 @@ export component UpdatePrompt inherits Rectangle {
     Rectangle {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
-        width: min(parent.width - 48px, 520px);
+        // Wider than 520 px when its keys need it (German); the keys wrap
+        // in a narrow window.
+        width: min(parent.width - 48px, max(520px, card.min-width));
         height: card.preferred-height;
         background: Theme.ground-band;
         border-width: 1px;
@@ -92,7 +94,7 @@ export component UpdatePrompt inherits Rectangle {
                 max-height: 170px;
                 overflow: elide;
             }
-            HorizontalLayout {
+            FlexboxLayout {
                 spacing: Theme.s2;
                 alignment: end;
                 PlateButton { accessible-label: "app.update.prompt.skip"; accessible-role: button; compact: true; label: @tr("SKIP THIS VERSION"); clicked => { root.act("skip"); } }

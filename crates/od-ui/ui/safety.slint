@@ -177,7 +177,8 @@ export component GigCheckBar inherits Rectangle {
     accessible-role: groupbox;
     accessible-label: "app.gig-check";
     accessible-value: GigCheck.result;
-    height: 56px;
+    // One 56 px line; a narrow window wraps the checks onto more lines.
+    height: max(56px, checks.preferred-height);
     background: Theme.ground-band; border-radius: Theme.r-panel;
     HorizontalLayout {
         padding-left: Theme.s4; padding-right: Theme.s3;
@@ -192,7 +193,12 @@ export component GigCheckBar inherits Rectangle {
                 color: GigCheck.result == "fail" ? Theme.fault : Theme.bone;
             }
         }
-        for r in GigCheck.rows: CheckItem { check: r; horizontal-stretch: 1; min-width: 120px; }
+        checks := FlexboxLayout {
+            horizontal-stretch: 1;
+            alignment: stretch;
+            spacing-horizontal: Theme.s5; spacing-vertical: 0px;
+            for r in GigCheck.rows: CheckItem { check: r; horizontal-stretch: 1; min-width: 120px; preferred-width: 120px; height: 56px; }
+        }
         VerticalLayout {
             alignment: center; horizontal-stretch: 0;
             PlateButton {

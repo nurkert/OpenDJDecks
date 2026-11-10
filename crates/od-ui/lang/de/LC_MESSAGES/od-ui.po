@@ -8243,3 +8243,15 @@ msgstr "Tempobereich des Faders — klicken für den nächsten"
 msgctxt "WaveZoneColumn"
 msgid "More waveform keys"
 msgstr "Weitere Wellenform-Tasten"
+
+msgctxt "LightingView"
+msgid "SETUP"
+msgstr "SETUP"
+
+msgctxt "LightingView"
+msgid "SHOW"
+msgstr "SHOW"
+
+msgctxt "PreparePlayer"
+msgid "Add a memory cue at the cursor"
+msgstr "Memory-Cue am Cursor setzen"

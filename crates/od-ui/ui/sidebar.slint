@@ -209,10 +209,14 @@ export component RailItem inherits Rectangle {
         border-radius: Theme.r-control;
         background: root.current ? Theme.bone : touch.pressed || touch.has-hover ? Theme.plate-raised : transparent;
     }
+    // A word wider than the narrow rail (German): one rank smaller and
+    // tighter, so it never breaks inside the word.
+    probe := Text { visible: false; text: root.label; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 0.2px; wrap: word-wrap; }
+    property <bool> squeezed: probe.min-width > root.width - 6px;
     Text {
-        x: 4px; width: parent.width - 6px;
+        x: root.squeezed ? 2px : 4px; width: parent.width - (root.squeezed ? 4px : 6px);
         text: root.label;
-        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 0.2px;
+        font-family: Theme.family; font-size: root.squeezed ? Theme.label : Theme.control; font-weight: Theme.weight-semi; letter-spacing: root.squeezed ? 0px : 0.2px;
         wrap: word-wrap;
         color: !root.enabled ? Theme.bone-3 : root.current ? Theme.ground : Theme.bone-3;
         horizontal-alignment: center; vertical-alignment: center;
@@ -502,10 +506,14 @@ export component Sidebar inherits Rectangle {
                     }
                 }
                 hist-h := Heading { label: @tr("HISTORIES"); }
-                if root.histories.length == 0: Text {
-                    x: 12px; width: root.width - 24px;
-                    text: @tr("Every session you play is listed here.");
-                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
+                if root.histories.length == 0: HorizontalLayout {
+                    padding-left: Theme.s3; padding-right: Theme.s3;
+                    // Wraps to the tree's width, never wider.
+                    Text {
+                        min-width: 0px; preferred-width: 0px; horizontal-stretch: 1;
+                        text: @tr("Every session you play is listed here.");
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
+                    }
                 }
                 // Year, then the sessions played in it (newest first).
                 HorizontalLayout {

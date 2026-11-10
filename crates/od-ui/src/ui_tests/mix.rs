@@ -136,8 +136,20 @@ fn mixer_kills_swaps_values_and_clip() {
     // Samples already on their way may still clip: clear once the level is
     // down (on a loaded machine that takes a few blocks).
     assert!(ui.wait_until(10.0, |u| snapshot(u).channels[0].meter.peak < 0.95));
-    ui.click("mixer.ch1.clip");
-    assert!(ui.wait_until(5.0, |u| u.value("mixer.ch1.clip").is_empty()));
+    // A block rendered before the trim came down can still latch the lamp
+    // again just after the click: click until it stays clear.
+    let mut cleared = false;
+    for _ in 0..10 {
+        ui.click("mixer.ch1.clip");
+        if ui.wait_until(1.0, |u| u.value("mixer.ch1.clip").is_empty()) {
+            ui.pump(300);
+            if ui.value("mixer.ch1.clip").is_empty() {
+                cleared = true;
+                break;
+            }
+        }
+    }
+    assert!(cleared, "a click clears the lamp once the level is down");
 }
 
 /// [55] The larger knobs line up in one column per strip, with the kill

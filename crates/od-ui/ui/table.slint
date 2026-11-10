@@ -172,6 +172,8 @@ component Cell inherits Text {
 component TrackLine inherits Rectangle {
     in property <TrackRow> item;
     in property <[ColumnView]> columns;
+    // Width of the table: columns step out below their `hide-below`.
+    in property <length> room: 100000px;
     in property <bool> show-position;
     // Model index (accessible label `browser.row<index>`).
     in property <int> index;
@@ -370,10 +372,13 @@ component TrackLine inherits Rectangle {
             font-size: Theme.control;
         }
         for c in root.columns: Rectangle {
-            min-width: ColumnResize.of(c) > 0 ? ColumnResize.of(c) : 0px;
-            max-width: ColumnResize.of(c) > 0 ? ColumnResize.of(c) : 100000px;
-            preferred-width: ColumnResize.of(c);
-            horizontal-stretch: ColumnResize.of(c) > 0 ? 0 : c.stretch;
+            // Stepped out of a narrow table (ColumnView.hide-below).
+            property <bool> shown: root.room >= c.hide-below;
+            visible: self.shown;
+            min-width: !self.shown ? 0px : ColumnResize.of(c) > 0 ? ColumnResize.of(c) : 0px;
+            max-width: !self.shown ? 0px : ColumnResize.of(c) > 0 ? ColumnResize.of(c) : 100000px;
+            preferred-width: self.shown ? ColumnResize.of(c) : 0px;
+            horizontal-stretch: !self.shown ? 0 : ColumnResize.of(c) > 0 ? 0 : c.stretch;
             if c.id == "artwork": Rectangle {
                 x: 0; y: (parent.height - 22px) / 2; width: 22px; height: 22px;
                 border-radius: 2px;
@@ -484,6 +489,14 @@ component TrackLine inherits Rectangle {
 }
 
 export component TrackTable inherits Rectangle {
+    // The columns step out to fit (ColumnView.hide-below), so the table
+    // never asks for more than the title and its frame.
+    min-width: 240px;
+    // The width the columns are fitted to (follows the table's width; a
+    // plain property, so the fit does not feed back into the layout).
+    property <length> room: 100000px;
+    init => { self.room = self.width; }
+    changed width => { self.room = self.width; }
     // First-start guide: the id the list can be pointed at by.
     in property <string> guide;
     in property <[TrackRow]> rows;
@@ -558,10 +571,13 @@ export component TrackTable inherits Rectangle {
                 }
                 for c[i] in root.columns: HeaderCell {
                     accessible-label: "browser.header.\{c.id}"; accessible-role: button;
-                    min-width: ColumnResize.of(c) > 0 ? ColumnResize.of(c) : 0px;
-                    max-width: ColumnResize.of(c) > 0 ? ColumnResize.of(c) : 100000px;
-                    preferred-width: ColumnResize.of(c);
-                    horizontal-stretch: ColumnResize.of(c) > 0 ? 0 : c.stretch;
+                    // Stepped out of a narrow table (ColumnView.hide-below).
+                    property <bool> shown: root.room >= c.hide-below;
+                    visible: self.shown;
+                    min-width: !self.shown ? 0px : ColumnResize.of(c) > 0 ? ColumnResize.of(c) : 0px;
+                    max-width: !self.shown ? 0px : ColumnResize.of(c) > 0 ? ColumnResize.of(c) : 100000px;
+                    preferred-width: self.shown ? ColumnResize.of(c) : 0px;
+                    horizontal-stretch: !self.shown ? 0 : ColumnResize.of(c) > 0 ? 0 : c.stretch;
                     column: c;
                     index: i;
                     sort(s, shift) => { if (shift) { root.sort-then(s); } else { root.sort(s); } }
@@ -648,6 +664,7 @@ export component TrackTable inherits Rectangle {
                 index: i;
                 item: row;
                 columns: root.columns;
+                room: root.room;
                 reorderable: root.reorderable;
                 show-position: root.show-position;
                 clicked(ctrl, shift) => { root.row-clicked(i, ctrl, shift); }

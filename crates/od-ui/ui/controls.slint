@@ -199,7 +199,8 @@ export component PlateButton inherits Rectangle {
     property <bool> danger: root.tone == Theme.fault;
     property <bool> over: touch.has-hover && root.enabled;
     property <bool> filled: root.active || (root.danger && root.over);
-    min-width: max(root.tall ? 44px : 0px, lbl.preferred-width + (glyph != "" ? 22px : 0px) + 28px);
+    // A glyph without a legend (a narrow window) is a square key.
+    min-width: max(root.tall ? 44px : 0px, root.label == "" && root.glyph != "" ? 32px : lbl.preferred-width + (glyph != "" ? 22px : 0px) + 28px);
     height: tall ? 44px : compact ? 26px : 32px;
     background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.danger && !root.active && root.over ? Theme.fault : root.tone);
     border-radius: Theme.r-control;
@@ -220,7 +221,7 @@ export component PlateButton inherits Rectangle {
         height: parent.height;
     }
     if root.glyph != "": Glyph {
-        x: parent.width - 20px;
+        x: root.label == "" ? (parent.width - self.width) / 2 : parent.width - 20px;
         y: (parent.height - self.height) / 2;
         kind: root.glyph;
         tone: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
@@ -309,8 +310,8 @@ export component Field inherits Rectangle {
 
     border-radius: Theme.r-control;
     if input.text == "": Text {
-        x: 10px; height: parent.height;
-        text: root.placeholder;
+        x: 10px; width: parent.width - 20px; height: parent.height;
+        text: root.placeholder; overflow: elide;
         font-family: Theme.family; font-size: Theme.control; letter-spacing: 1.4px;
         color: Theme.bone-3;
         vertical-alignment: center;

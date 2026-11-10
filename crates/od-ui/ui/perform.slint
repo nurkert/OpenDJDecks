@@ -1284,6 +1284,12 @@ component KioskDeck inherits Rectangle {
     callback stem(string);
     callback stem-level(string, float);
     callback load();
+    // A desktop window too narrow for the full decks: the same deck with
+    // smaller keys (desktop targets), no artwork, keys as wide as their legend.
+    in property <bool> tight;
+    property <length> key: root.tight ? 32px : 44px;
+    property <length> legend: root.tight ? Theme.label : Theme.control;
+    property <length> tracking: root.tight ? 0.6px : 1.2px;
     property <color> tone: Theme.deck-color(root.deck.deck);
     background: Theme.ground-band; border-radius: Theme.r-panel;
     VerticalLayout {
@@ -1292,13 +1298,13 @@ component KioskDeck inherits Rectangle {
         // Number, cover, title / artist, BPM / remaining / elapsed, KEY,
         // key shift, SYNC, MASTER.
         HorizontalLayout {
-            height: 44px;
+            height: root.key;
             spacing: Theme.s1;
             Text {
                 accessible-role: text; accessible-label: "deck\{root.deck.deck}.number"; accessible-value: root.deck.deck;
                 text: root.deck.deck; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: root.tone; vertical-alignment: center;
             }
-            VerticalLayout { alignment: center; Rectangle {
+            if !root.tight: VerticalLayout { alignment: center; Rectangle {
                 accessible-role: image; accessible-label: "deck\{root.deck.deck}.artwork";
                 width: 26px; height: 26px;
                 background: Theme.plate; border-width: root.deck.has-artwork ? 0px : 1px; border-color: Theme.rule;
@@ -1323,27 +1329,58 @@ component KioskDeck inherits Rectangle {
                 Text { accessible-role: text; accessible-label: "deck\{root.deck.deck}.time-remaining"; accessible-value: DeckTime.main(root.deck); text: DeckTime.main(root.deck) == "" ? "—" : DeckTime.main(root.deck); font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: right; }
                 Text { accessible-role: text; accessible-label: "deck\{root.deck.deck}.time-elapsed"; accessible-value: root.deck.elapsed; text: root.deck.elapsed; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: right; }
             }
-            Toggle {
+            if !root.tight: Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.key-sync;
                 accessible-label: "deck\{root.deck.deck}.key-sync";
-                size: 44px; width: 44px; label: "KEY"; on: root.deck.key-sync; tone: Theme.w436;
+                size: root.key; width: root.tight ? self.min-width : 44px; label-size: root.legend; tracking: root.tracking; label: "KEY"; on: root.deck.key-sync; tone: Theme.w436;
                 tooltip: @tr("Key sync: match the key of the master deck");
                 clicked => { root.key-sync(); }
             }
-            Stepper {
+            if !root.tight: Stepper {
                 accessible-role: spinbox; accessible-label: "deck\{root.deck.deck}.key-shift"; accessible-value: root.deck.key-shift;
-                size: 44px; arrow: 16px; font-size: Theme.control; template: "+12";
+                size: root.key; arrow: 16px; font-size: root.legend; template: "+12";
                 value: root.deck.key-shift; lit: root.deck.key-shift != "±0"; tone: Theme.w436;
                 tooltip: @tr("Key shift: down / up a semitone — click the value to reset");
                 step(d) => { root.key-shift(d); }
                 value-clicked => { root.key-shift(0); }
             }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: 44px; width: 48px; label: "SYNC"; enabled: !PhaseMeter.practice; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 44px; width: 48px; label: "MSTR"; on: root.deck.master; tone: root.tone; tooltip: @tr("Master deck: the others sync to it"); clicked => { root.master(); } }
+            if !root.tight: Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: root.key; width: root.tight ? self.min-width : 48px; label-size: root.legend; tracking: root.tracking; label: "SYNC"; enabled: !PhaseMeter.practice; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
+            if !root.tight: Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: root.key; width: root.tight ? self.min-width : 48px; label-size: root.legend; tracking: root.tracking; label: "MSTR"; on: root.deck.master; tone: root.tone; tooltip: @tr("Master deck: the others sync to it"); clicked => { root.master(); } }
+        }
+        // Tight: KEY, key shift, SYNC, MASTER and the channel's STEM on a row
+        // of their own, so the deck fits a quarter of the smallest window.
+        if root.tight: HorizontalLayout {
+            height: root.key;
+            spacing: Theme.s1;
+            Toggle {
+                accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.key-sync;
+                accessible-label: "deck\{root.deck.deck}.key-sync";
+                size: root.key; width: root.tight ? self.min-width : 44px; label-size: root.legend; tracking: root.tracking; label: "KEY"; on: root.deck.key-sync; tone: Theme.w436;
+                tooltip: @tr("Key sync: match the key of the master deck");
+                clicked => { root.key-sync(); }
+            }
+            Stepper {
+                accessible-role: spinbox; accessible-label: "deck\{root.deck.deck}.key-shift"; accessible-value: root.deck.key-shift;
+                size: root.key; arrow: 16px; font-size: root.legend; template: "+12";
+                value: root.deck.key-shift; lit: root.deck.key-shift != "±0"; tone: Theme.w436;
+                tooltip: @tr("Key shift: down / up a semitone — click the value to reset");
+                step(d) => { root.key-shift(d); }
+                value-clicked => { root.key-shift(0); }
+            }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: root.key; width: root.tight ? self.min-width : 48px; label-size: root.legend; tracking: root.tracking; label: "SYNC"; enabled: !PhaseMeter.practice; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: root.key; width: root.tight ? self.min-width : 48px; label-size: root.legend; tracking: root.tracking; label: "MSTR"; on: root.deck.master; tone: root.tone; tooltip: @tr("Master deck: the others sync to it"); clicked => { root.master(); } }
+            Toggle {
+                accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.parts;
+                accessible-label: "mixer.ch\{root.deck.deck}.stem";
+                size: root.key; width: root.tight ? self.min-width : 52px; label-size: root.legend; tracking: root.tracking; label: "STEM"; on: root.parts; tone: Theme.setup-on;
+                tooltip: @tr("The channel's EQ knobs control the stems: HI vocals, MID inst, LOW drums");
+                clicked => { MixerParts.toggle(root.deck.deck); }
+            }
+            Rectangle { horizontal-stretch: 1; }
         }
         // Overview (needle search) and the part mutes.
         HorizontalLayout {
-            height: 44px;
+            height: root.key;
             spacing: Theme.s1;
             Rectangle {
                 accessible-role: slider; accessible-label: "deck\{root.deck.deck}.overview"; accessible-value: root.deck.progress;
@@ -1359,7 +1396,7 @@ component KioskDeck inherits Rectangle {
                 if root.deck.loading: LoadingVeil { tone: Theme.deck-color(root.deck.deck); }
                 if !root.deck.loaded && !root.deck.loading: Rectangle {
                     background: Theme.ground-band;
-                    HorizontalLayout { alignment: center; VerticalLayout { alignment: center; PlateButton { tall: true; label: @tr("LOAD SELECTED"); tone: root.tone; clicked => { root.load(); } } } }
+                    HorizontalLayout { alignment: center; VerticalLayout { alignment: center; PlateButton { tall: !root.tight; compact: root.tight; label: @tr("LOAD SELECTED"); tone: root.tone; clicked => { root.load(); } } } }
                 }
             }
             for st[i] in [{ id: "vocal", label: "VOCAL" }, { id: "drums", label: "DRUMS" }, { id: "bass", label: "BASS" }, { id: "inst", label: "INST" }]: StemKey {
@@ -1367,7 +1404,7 @@ component KioskDeck inherits Rectangle {
                 state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == st.id;
                 muted: st.id == "vocal" ? root.deck.mute-vocal : st.id == "inst" ? root.deck.mute-inst : st.id == "drums" ? root.deck.mute-drums : root.deck.mute-bass;
                 level: st.id == "vocal" ? root.deck.level-vocal : st.id == "inst" ? root.deck.level-inst : st.id == "drums" ? root.deck.level-drums : root.deck.level-bass;
-                size: 44px; key-width: 56px; enabled: root.deck.stems-available;
+                size: root.key; key-width: root.tight ? 48px : 56px; enabled: root.deck.stems-available;
                 busy: root.deck.stems-busy; fill: StemFill.of(root.deck.split-progress, i);
                 toggle => { root.stem(st.id); }
                 set-level(v) => { root.stem-level(st.id, v); }
@@ -1375,17 +1412,17 @@ component KioskDeck inherits Rectangle {
         }
         // CUE, PLAY, SLIP, Q, MT, the channel's STEM and the platter read-out.
         if !root.browse: HorizontalLayout {
-            height: 44px;
+            height: root.key;
             spacing: Theme.s1;
-            Transport { accessible-role: button; accessible-label: "deck\{root.deck.deck}.cue"; kind: "cue"; tone: Theme.attention; size: 44px; clicked => { root.cue(); } }
-            Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; size: 44px; clicked => { root.toggle-play(); } }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: 44px; width: 48px; label: "SLIP"; on: root.deck.slip; tone: Theme.attention; clicked => { root.slip(); } }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: 44px; width: 44px; label: "Q"; on: root.deck.quantize; tone: Theme.setup-on; clicked => { root.quantize(); } }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; size: 44px; width: 72px; label: "KEYLOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
-            Toggle {
+            Transport { accessible-role: button; accessible-label: "deck\{root.deck.deck}.cue"; kind: "cue"; tone: Theme.attention; size: root.key; clicked => { root.cue(); } }
+            Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; size: root.key; clicked => { root.toggle-play(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: root.key; width: root.tight ? self.min-width : 48px; label-size: root.legend; tracking: root.tracking; label: "SLIP"; on: root.deck.slip; tone: Theme.attention; clicked => { root.slip(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: root.key; width: root.tight ? self.min-width : 44px; label-size: root.legend; tracking: root.tracking; label: "Q"; on: root.deck.quantize; tone: Theme.setup-on; clicked => { root.quantize(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; size: root.key; width: root.tight ? self.min-width : 72px; label-size: root.legend; tracking: root.tracking; label: "KEYLOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
+            if !root.tight: Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.parts;
                 accessible-label: "mixer.ch\{root.deck.deck}.stem";
-                size: 44px; width: 52px; label: "STEM"; on: root.parts; tone: Theme.setup-on;
+                size: root.key; width: root.tight ? self.min-width : 52px; label-size: root.legend; tracking: root.tracking; label: "STEM"; on: root.parts; tone: Theme.setup-on;
                 tooltip: @tr("The channel's EQ knobs control the stems: HI vocals, MID inst, LOW drums");
                 clicked => { MixerParts.toggle(root.deck.deck); }
             }
@@ -2198,7 +2235,8 @@ export component MixerPanel inherits Rectangle {
             }
             Toggle {
                 accessible-role: button; accessible-label: "mixer.swap.at"; accessible-value: MixerParts.swap-at;
-                width: 30px; size: root.compact ? 18px : 22px; label-size: Theme.label; label: MixerParts.swap-at;
+                // Wide enough for the legend in every language (2 px clear on each side).
+                width: max(30px, self.min-width - 12px); size: root.compact ? 18px : 22px; label-size: Theme.label; label: MixerParts.swap-at;
                 tooltip: @tr("When a swap happens: at once, on the next beat or on the next bar");
                 clicked => { MixerParts.cycle-swap-at(); }
             }
@@ -2296,8 +2334,8 @@ component GlobalBar inherits Rectangle {
             padding-right: Theme.s4;
             // Too narrow for both: the headphones keep their place, the
             // microphone gives way.
-            if root.width >= 1000px: MicControls { }
-            if root.width >= 1000px: Rectangle { width: Theme.s3; }
+            if root.width >= 1200px: MicControls { }
+            if root.width >= 1200px: Rectangle { width: Theme.s3; }
             Caps { text: @tr("PHONES"); vertical-alignment: center; }
             VerticalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "global.phones.mix"; accessible-value: root.headphone-mix; label: "MIX"; size: 20px; minimum: 0; maximum: 1; default-value: 0.5; value: root.headphone-mix; changed(v) => { root.set-headphone-mix(v); } } }
             VerticalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "global.phones.level"; accessible-value: root.headphone-level; label: @tr("LEVEL"); size: 20px; guide: "global.phones.level"; minimum: 0; maximum: 1; default-value: 0.8; value: root.headphone-level; changed(v) => { root.set-headphone-level(v); } } }
@@ -2429,6 +2467,10 @@ export component PerformView inherits Rectangle {
     // Below the width of the full deck: tighter columns down to 1220 px,
     // compact decks below that.
     property <bool> narrow: root.width < 1300px;
+    // Narrower than two compact decks and the mixer (a small window or a
+    // large interface scale): the decks of the touch screen, which fit the
+    // smallest window.
+    property <bool> small-decks: root.touch-size || root.width < 1140px;
     property <bool> deck-compact: root.tight || root.width < 1220px || root.decks.length > 2 || root.crowd >= 3;
     in property <bool> recording;
     in property <string> recording-time;
@@ -2574,13 +2616,14 @@ export component PerformView inherits Rectangle {
                         seek(p) => { root.seek(d.deck, p); }
                         load => { root.load(d.deck); }
                     }
-                    if !Club.enabled && root.touch-size: KioskDeck {
+                    if !Club.enabled && root.small-decks: KioskDeck {
+                        tight: !root.touch-size;
                         deck: d; browse: PerformLayout.layout == "browse"; parts: d.deck <= root.channels.length && root.channels[d.deck - 1].parts;
                         toggle-play => { root.toggle-play(d.deck); } cue => { root.cue(d.deck); } sync => { root.sync(d.deck); } master => { root.master(d.deck); }
                         keylock => { root.keylock(d.deck); } quantize => { root.quantize(d.deck); } slip => { root.slip(d.deck); } seek(p) => { root.seek(d.deck, p); }
                         key-sync => { root.key-sync(d.deck); } key-shift(x) => { root.key-shift(d.deck, x); } stem(x) => { root.stem(d.deck, x); } stem-level(x, v) => { root.stem-level(d.deck, x, v); } load => { root.load(d.deck); }
                     }
-                    if !Club.enabled && !root.touch-size: DeckPanel {
+                    if !Club.enabled && !root.small-decks: DeckPanel {
                     deck: d;
                     browse: PerformLayout.layout == "browse";
                     compact: root.deck-compact;
@@ -2689,13 +2732,14 @@ export component PerformView inherits Rectangle {
                         seek(p) => { root.seek(d.deck, p); }
                         load => { root.load(d.deck); }
                     }
-                    if !Club.enabled && root.touch-size: KioskDeck {
+                    if !Club.enabled && root.small-decks: KioskDeck {
+                        tight: !root.touch-size;
                         deck: d; browse: PerformLayout.layout == "browse"; parts: d.deck <= root.channels.length && root.channels[d.deck - 1].parts;
                         toggle-play => { root.toggle-play(d.deck); } cue => { root.cue(d.deck); } sync => { root.sync(d.deck); } master => { root.master(d.deck); }
                         keylock => { root.keylock(d.deck); } quantize => { root.quantize(d.deck); } slip => { root.slip(d.deck); } seek(p) => { root.seek(d.deck, p); }
                         key-sync => { root.key-sync(d.deck); } key-shift(x) => { root.key-shift(d.deck, x); } stem(x) => { root.stem(d.deck, x); } stem-level(x, v) => { root.stem-level(d.deck, x, v); } load => { root.load(d.deck); }
                     }
-                    if !Club.enabled && !root.touch-size: DeckPanel {
+                    if !Club.enabled && !root.small-decks: DeckPanel {
                     deck: d;
                     browse: PerformLayout.layout == "browse";
                     mirror: true;

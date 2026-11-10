@@ -13,6 +13,8 @@ component StepMark inherits HorizontalLayout {
     in property <int> index;
     // 0 open, 1 current, 2 done.
     in property <int> state;
+    // A narrow band: only the current step keeps its name.
+    in property <bool> compact;
     spacing: Theme.s1;
     alignment: start;
     accessible-role: text;
@@ -28,7 +30,7 @@ component StepMark inherits HorizontalLayout {
             if root.state == 2: Glyph { x: 3px; y: 3px; width: 10px; height: 10px; kind: "check"; tone: Theme.ink-on; }
         }
     }
-    Text {
+    if !root.compact || root.state == 1: Text {
         text: root.label;
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
         color: root.state == 1 ? Theme.bone : root.state == 2 ? Theme.bone-2 : Theme.bone-3;
@@ -60,13 +62,13 @@ export component FirstStartBar inherits Rectangle {
         HorizontalLayout {
             horizontal-stretch: 0;
             spacing: Theme.s1;
-            StepMark { index: 0; label: @tr("Add music"); state: root.step > 0 ? 2 : 1; }
+            StepMark { compact: root.width < 1100px; index: 0; label: @tr("Add music"); state: root.step > 0 ? 2 : 1; }
             StepLink { done: root.step > 0; }
-            StepMark { index: 1; label: @tr("Analysis"); state: root.step > 1 ? 2 : root.step == 1 ? 1 : 0; }
+            StepMark { compact: root.width < 1100px; index: 1; label: @tr("Analysis"); state: root.step > 1 ? 2 : root.step == 1 ? 1 : 0; }
             StepLink { done: root.step > 1; }
-            StepMark { index: 2; label: @tr("Two tracks"); state: root.step > 2 ? 2 : root.step == 2 ? 1 : 0; }
+            StepMark { compact: root.width < 1100px; index: 2; label: @tr("Two tracks"); state: root.step > 2 ? 2 : root.step == 2 ? 1 : 0; }
             StepLink { done: root.step > 2; }
-            StepMark { index: 3; label: @tr("Play and sync"); state: root.step > 3 ? 2 : root.step == 3 ? 1 : 0; }
+            StepMark { compact: root.width < 1100px; index: 3; label: @tr("Play and sync"); state: root.step > 3 ? 2 : root.step == 3 ? 1 : 0; }
         }
         // What to do now.
         Text {

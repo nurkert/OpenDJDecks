@@ -5,7 +5,7 @@
 
 import { Theme } from "tokens.slint";
 import { HLine, VLine } from "lines.slint";
-import { Caps, PlateButton } from "controls.slint";
+import { Caps, PlateButton, PopupPlace } from "controls.slint";
 
 export struct MixPreviewDeck {
     deck: int,
@@ -63,8 +63,10 @@ component DeckPoints inherits HorizontalLayout {
 }
 
 export component MixPreviewPanel inherits Rectangle {
-    // Kiosk: 44 px keys on one line, the points of the decks on the next.
-    height: Theme.touch ? 84px : 40px;
+    // Kiosk and narrow windows: the keys on one line, the points of the
+    // decks on the next.
+    property <bool> two-lines: Theme.touch || PopupPlace.window-width < 1360px;
+    height: Theme.touch ? 84px : root.two-lines ? 72px : 40px;
     background: Theme.ground-band;
     VerticalLayout {
     padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.touch ? Theme.key-gap : Theme.s2; padding-bottom: Theme.touch ? Theme.key-gap : Theme.s2;
@@ -107,7 +109,7 @@ export component MixPreviewPanel inherits Rectangle {
             clicked => { MixPreview.act("link"); }
         }
         Rectangle { width: Theme.s3; }
-        if !Theme.touch: HorizontalLayout { spacing: Theme.s2; for d in MixPreview.decks: DeckPoints { d: d; editing: d.deck == MixPreview.edit-deck; } }
+        if !root.two-lines: HorizontalLayout { spacing: Theme.s2; for d in MixPreview.decks: DeckPoints { d: d; editing: d.deck == MixPreview.edit-deck; } }
         Rectangle { horizontal-stretch: 1; }
         // Playback reservation: queue the selected tracks; the next one
         // loads into the deck that has played out.
@@ -131,7 +133,7 @@ export component MixPreviewPanel inherits Rectangle {
             clicked => { MixPreview.act("clear-queue"); }
         }
     }
-    if Theme.touch: HorizontalLayout {
+    if root.two-lines: HorizontalLayout {
         spacing: Theme.s4;
         for d in MixPreview.decks: DeckPoints { d: d; editing: d.deck == MixPreview.edit-deck; }
         Rectangle { horizontal-stretch: 1; }
