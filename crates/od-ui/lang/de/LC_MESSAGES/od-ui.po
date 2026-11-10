@@ -6610,18 +6610,18 @@ msgstr "Leuchtet, wenn der Kanal vor dem Fader übersteuert. Klick setzt zurück
 
 #: ui/perform.slint
 msgctxt "ChannelStrip"
-msgid "Kill HI: silent while lit, the knob stays"
-msgstr "HI-Kill: stumm, solange es leuchtet; der Regler bleibt"
+msgid "Kill HI (tap)"
+msgstr "HI stumm schalten (tippen)"
 
 #: ui/perform.slint
 msgctxt "ChannelStrip"
-msgid "Kill MID: silent while lit, the knob stays"
-msgstr "MID-Kill: stumm, solange es leuchtet; der Regler bleibt"
+msgid "Kill MID (tap)"
+msgstr "MID stumm schalten (tippen)"
 
 #: ui/perform.slint
 msgctxt "ChannelStrip"
-msgid "Kill LOW: silent while lit, the knob stays"
-msgstr "LOW-Kill: stumm, solange es leuchtet; der Regler bleibt"
+msgid "Kill LOW (tap)"
+msgstr "LOW stumm schalten (tippen)"
 
 #: ui/perform.slint
 msgctxt "MixerPanel"

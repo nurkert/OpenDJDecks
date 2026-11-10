@@ -534,3 +534,46 @@ fn deck_centre_groups_round_the_platter() {
         assert!(((centre - p1.centre().x) - (p2.centre().x - centre)).abs() <= 5.0, "{size:?}: decks mirror: {} vs {}", centre - p1.centre().x, p2.centre().x - centre);
     }
 }
+
+/// [46] Mixer: every knob stands on its channel's axis, in line with the
+/// fader, and its legend sits right under it; on the EQ bands the legend
+/// is the kill key (a tap kills, KILL shows, a second tap brings it back),
+/// TRIM and CH FX legends are not keys. The strips keep 50 px.
+#[test]
+fn mixer_knobs_on_the_axis_with_legend_kill_keys() {
+    for size in [(1440, 900), (1280, 800)] {
+        let ui = Ui::open(size);
+        perform(&ui);
+        assert!(ui.wait_until(10.0, |u| u.has("mixer.ch1.eq-low.kill")));
+        let r = |l: &str| Rect::of(&ui.get(l));
+        for ch in 1..=2 {
+            let axis = r(&format!("mixer.ch{ch}.fader")).centre().x;
+            for band in ["trim", "eq-high", "eq-mid", "eq-low"] {
+                let knob = r(&format!("mixer.ch{ch}.{band}"));
+                assert!((knob.centre().x - axis).abs() <= 1.0, "{size:?} ch{ch} {band}: knob {} vs fader {axis}", knob.centre().x);
+                let legend = r(&format!("mixer.ch{ch}.{band}.value"));
+                assert!((legend.centre().x - axis).abs() <= 1.0, "{size:?} ch{ch} {band}: legend centred");
+                assert!(legend.y >= knob.bottom() - 9.0 && legend.y - knob.bottom() <= 3.0, "{size:?} ch{ch} {band}: legend under its knob");
+            }
+            let knob = r(&format!("fx.channel-fx.ch{ch}"));
+            assert!((knob.centre().x - axis).abs() <= 1.0, "{size:?} ch{ch} CH FX centred");
+            assert!(!ui.has(&format!("mixer.ch{ch}.trim.kill")), "TRIM is not a kill key");
+            // Each legend is nearer its own knob than the next knob.
+            let (hi_l, mid_k) = (r(&format!("mixer.ch{ch}.eq-high.value")), r(&format!("mixer.ch{ch}.eq-mid")));
+            let hi_k = r(&format!("mixer.ch{ch}.eq-high"));
+            assert!(mid_k.y - hi_l.bottom() > hi_l.y - hi_k.bottom(), "{size:?} ch{ch}: groups stand apart");
+        }
+        let w = r("mixer.ch1.cue").right() - r("mixer.ch1.stem").x;
+        assert!((w - 50.0).abs() <= 1.0, "{size:?}: strip {w}");
+    }
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    assert!(ui.wait_until(10.0, |u| u.has("mixer.ch1.eq-mid.kill")));
+    let kill = |u: &Ui| crate::engine::snapshot(&u.app).map(|s| s.channels[0].eq_kill[1]);
+    ui.click("mixer.ch1.eq-mid.kill");
+    assert!(ui.wait_until(5.0, |u| kill(u) == Some(true)), "a tap on MID kills it");
+    assert!(ui.wait_until(2.0, |u| u.value("mixer.ch1.eq-mid.value") == "KILL"));
+    ui.click("mixer.ch1.eq-mid.kill");
+    assert!(ui.wait_until(5.0, |u| kill(u) == Some(false)), "a second tap brings it back");
+    assert!(ui.wait_until(2.0, |u| u.value("mixer.ch1.eq-mid.value") == "MID"));
+}

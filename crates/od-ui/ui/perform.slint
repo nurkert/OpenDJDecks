@@ -1931,11 +1931,13 @@ export global MixerParts {
     callback reset-clip();
 }
 
-// One EQ or filter row of a channel strip: the knob, whose legend shows
-// the band's name at the centre and its value once turned (KILL while
-// killed), and for the EQ bands a narrow kill key beside it. Double-click
-// (double-tap) resets.
-component BandRow inherits HorizontalLayout {
+// One knob group of a channel strip: the knob centred on the channel's
+// axis with its legend right under it. The legend names the band, shows
+// the value while the knob is turned, and on the EQ bands is the kill key
+// itself: a small plate that fills in sodium and reads KILL while killed.
+// TRIM and CH FX legends are plain text. Double-click (double-tap) the
+// knob to reset.
+component BandRow inherits Rectangle {
     in property <string> id;
     in property <string> label;
     in property <float> value;
@@ -1949,34 +1951,54 @@ component BandRow inherits HorizontalLayout {
     in property <int> channel;
     callback changed(float);
     callback toggle-kill();
-    property <bool> moved: root.kill || Math.abs(root.value) > 0.01;
-    spacing: Theme.key-gap;
-    alignment: start;
-    Knob {
+    property <length> legend-h: root.compact ? 11px : 12px;
+    // The legend touches its knob; the groups stand further apart (the
+    // strip's key gap plus this), so each legend clearly names its knob.
+    property <length> apart: root.compact ? 1px : 2px;
+    height: root.knob + root.legend-h + root.apart;
+    k := Knob {
         accessible-role: slider; accessible-label: root.id; accessible-value: root.value;
-        label: root.moved ? root.readout : root.label; value: root.value; tone: root.tone;
+        x: (parent.width - self.width) / 2; y: 0;
+        label: ""; value: root.value; tone: root.tone;
         readout: root.readout;
-        legend-id: root.id + ".value";
-        // A fixed box, so the kill key does not move as the value changes.
-        width: root.compact ? 24px : 32px;
-        legend-color: root.kill ? Theme.attention : root.moved ? Theme.bone : Theme.bone-3;
-        size: root.knob; label-h: root.compact ? 11px : 12px;
+        size: root.knob;
         guide: root.id;
         tooltip: @tr("Drag to turn, double-click to reset");
         changed(v) => { root.changed(v); }
     }
-    if root.has-kill: VerticalLayout {
-        alignment: start;
-        Toggle {
-            accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.kill;
-            accessible-label: root.id + ".kill";
-            width: 16px; min-w: 16px;
-            size: root.compact ? 16px : 18px; label-size: Theme.label;
-            label: "K";
-            on: root.kill; tone: Theme.attention;
+    // The legend: the value while turned, else KILL or the band's name.
+    property <string> shown: k.held ? root.readout : root.kill ? "KILL" : root.label;
+    if root.has-kill: Rectangle {
+        accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.kill;
+        accessible-label: root.id + ".kill";
+        accessible-action-default => { root.toggle-kill(); }
+        property <bool> over: kt.has-hover;
+        x: (parent.width - self.width) / 2; y: root.knob;
+        width: max(root.knob + 6px, kl.preferred-width + 8px); height: root.legend-h;
+        border-radius: 2px;
+        background: Theme.face(true, kt.pressed, kt.has-hover, false, root.kill, Theme.attention);
+        animate background { duration: Theme.t-press; easing: Theme.ease; }
+        kl := Text {
+            accessible-role: text; accessible-label: root.id + ".value"; accessible-value: self.text;
+            text: root.shown;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
+            color: Theme.ink(true, kt.pressed, kt.has-hover, false, root.kill);
+            horizontal-alignment: center; vertical-alignment: center;
+            width: parent.width; height: parent.height;
+        }
+        kt := TipArea {
             tooltip: root.kill-tip;
+            mouse-cursor: pointer;
             clicked => { root.toggle-kill(); }
         }
+    }
+    if !root.has-kill: Text {
+        accessible-role: text; accessible-label: root.id + ".value"; accessible-value: self.text;
+        x: 0; y: root.knob; width: parent.width; height: root.legend-h;
+        text: root.shown;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
+        color: k.held || Math.abs(root.value) > 0.01 ? Theme.bone : Theme.bone-3;
+        horizontal-alignment: center; vertical-alignment: center;
     }
 }
 
@@ -2027,7 +2049,7 @@ component ChannelStrip inherits Rectangle {
             id: "mixer.ch\{root.ch.channel}.eq-high"; channel: root.ch.channel;
             label: root.ch.parts ? "VOCAL" : "HI"; value: root.ch.high; readout: root.ch.high-text; tone: Theme.w486;
             compact: root.compact; knob: root.band;
-            has-kill: !root.ch.parts; kill: root.ch.kill-high; kill-tip: @tr("Kill HI: silent while lit, the knob stays");
+            has-kill: !root.ch.parts; kill: root.ch.kill-high; kill-tip: @tr("Kill HI (tap)");
             changed(v) => { root.eq(2, v); }
             toggle-kill => { MixerParts.kill(root.ch.channel, 2); }
         }
@@ -2035,7 +2057,7 @@ component ChannelStrip inherits Rectangle {
             id: "mixer.ch\{root.ch.channel}.eq-mid"; channel: root.ch.channel;
             label: root.ch.parts ? "INST" : "MID"; value: root.ch.mid; readout: root.ch.mid-text; tone: Theme.w546;
             compact: root.compact; knob: root.band;
-            has-kill: !root.ch.parts; kill: root.ch.kill-mid; kill-tip: @tr("Kill MID: silent while lit, the knob stays");
+            has-kill: !root.ch.parts; kill: root.ch.kill-mid; kill-tip: @tr("Kill MID (tap)");
             changed(v) => { root.eq(1, v); }
             toggle-kill => { MixerParts.kill(root.ch.channel, 1); }
         }
@@ -2043,7 +2065,7 @@ component ChannelStrip inherits Rectangle {
             id: "mixer.ch\{root.ch.channel}.eq-low"; channel: root.ch.channel;
             label: root.ch.parts ? "DRUMS" : "LOW"; value: root.ch.low; readout: root.ch.low-text; tone: Theme.w656;
             compact: root.compact; knob: root.band;
-            has-kill: !root.ch.parts; kill: root.ch.kill-low; kill-tip: @tr("Kill LOW: silent while lit, the knob stays");
+            has-kill: !root.ch.parts; kill: root.ch.kill-low; kill-tip: @tr("Kill LOW (tap)");
             changed(v) => { root.eq(0, v); }
             toggle-kill => { MixerParts.kill(root.ch.channel, 0); }
         }
@@ -2067,15 +2089,15 @@ component ChannelStrip inherits Rectangle {
             }
             Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.cue; accessible-label: "mixer.ch\{root.ch.channel}.cue"; width: 24px; min-w: 24px; size: 24px; label: "CUE"; label-size: Theme.label; tracking: 0.3px; on: root.ch.cue; tone: Theme.attention; clicked => { root.cue(); } }
         }
-        HorizontalLayout {
+        // The fader on the channel's axis, the meter beside it.
+        fader-row := Rectangle {
             vertical-stretch: 1;
             min-height: root.compact ? 30px : 56px;
-            spacing: Theme.key-gap;
-            alignment: center;
             // Level meter: amber near the top, red at clip; the peak hold is
             // a 2px tick at the highest recent peak (unsmoothed, like the
             // level).
             Rectangle {
+                x: (parent.width - 30px) / 2 - Theme.key-gap - 4px; height: parent.height;
                 width: 4px;
                 background: Theme.ground;
                 Rectangle {
@@ -2092,7 +2114,7 @@ component ChannelStrip inherits Rectangle {
                     background: root.ch.hold > 0.99 || root.ch.clip ? Theme.fault : root.ch.hold > 0.8 ? Theme.attention : Theme.bone;
                 }
             }
-            Fader { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.fader"; accessible-value: root.ch.fader; value: root.ch.fader; tone: root.tone; handle: 20px; width: 30px; guide: "mixer.ch\{root.ch.channel}.fader"; changed(v) => { root.fader(v); } }
+            Fader { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.fader"; accessible-value: root.ch.fader; x: (parent.width - 30px) / 2; height: parent.height; value: root.ch.fader; tone: root.tone; handle: 20px; width: 30px; guide: "mixer.ch\{root.ch.channel}.fader"; changed(v) => { root.fader(v); } }
         }
     }
 }

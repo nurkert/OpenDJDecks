@@ -34,7 +34,7 @@ While you drag, a small readout at the playhead shows the offset in seconds (pau
 
 **Preferences › View › Calm waveform** draws the large waveforms more quietly: a crisp, thin playhead between two dark edges, faint beat lines (plain beats only as short ticks at the edges) and softer band colours. It is off by default.
 
-## The deck's centre
+## The centre of the deck
 
 The platter sits in the middle of the deck's rows, with **SLIP**, **QUANTIZE**, **KEYLOCK** and the tempo range as one block on its inner side. Their inner edges follow the ring, one key gap away, and **SYNC**, **CUE** and **PLAY** stand on the same axis. In a larger window the platter grows up to a limit and the keys grow with it; any room left goes above and below, never between the keys. On the player screens of Club mode, the ◀◀ / ◀ CALL and ▶▶ / CALL ▶ keys wrap the jog the same way.
 
@@ -108,7 +108,7 @@ The booth view is a window of the desktop app; the Raspberry Pi kiosk has no sec
 
 ## Jog wheels
 
-On a controller the jog wheel scratches, bends or searches. Vinyl mode is switched per deck, and in **Preferences › Controller › Decks › Jog wheel**. The on-screen platter shows where you are. On the player screens the ◀◀ and ▶▶ keys search while held; they and the CALL keys wrap the jog ([The deck's centre](#the-decks-centre)).
+On a controller the jog wheel scratches, bends or searches. Vinyl mode is switched per deck, and in **Preferences › Controller › Decks › Jog wheel**. The on-screen platter shows where you are. On the player screens the ◀◀ and ▶▶ keys search while held; they and the CALL keys wrap the jog ([The centre of the deck](#the-centre-of-the-deck)).
 
 ## Slip and censor
 

@@ -72,13 +72,16 @@ fn mixer_kills_swaps_values_and_clip() {
     assert_eq!(snapshot(&ui).channels[1].eq[0], 0.0);
 
     // Values and double-click reset.
+    // The legend names the band at rest; the value shows while the knob
+    // is turned (drag readout) and in the knob's arc.
     ui.app.ui.invoke_mixer_eq(1, 2, -0.5);
-    assert!(ui.wait_until(5.0, |u| u.value("mixer.ch1.eq-high.value") == "\u{2212}18"));
+    assert!(ui.wait_until(5.0, |u| (snapshot(u).channels[0].eq[2] + 0.5).abs() < 1e-3));
+    assert_eq!(ui.value("mixer.ch1.eq-high.value"), "HI");
     ui.double_click("mixer.ch1.eq-high");
     assert!(ui.wait_until(5.0, |u| snapshot(u).channels[0].eq[2] == 0.0));
     assert!(ui.wait_until(2.0, |u| u.value("mixer.ch1.eq-high.value") == "HI"));
     ui.app.ui.invoke_mixer_channel_fx(2, -0.4);
-    assert!(ui.wait_until(5.0, |u| u.value("fx.channel-fx.ch2.value") == "LP40"));
+    assert!(ui.wait_until(5.0, |u| (snapshot(u).channels[1].channel_fx_amount + 0.4).abs() < 1e-3));
     ui.double_click("fx.channel-fx.ch2");
     assert!(ui.wait_until(5.0, |u| snapshot(u).channels[1].channel_fx_amount == 0.0));
 
@@ -148,9 +151,10 @@ fn mixer_rows_line_up() {
             let knob = x("eq-high");
             for band in ["eq-mid", "eq-low"] {
                 assert!((x(band) - knob).abs() <= 1.0, "{size:?} ch{ch} {band}");
+                // The legend under the knob is the kill key.
                 let kill = Rect::of(&ui.get(&format!("mixer.ch{ch}.{band}.kill")));
                 let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{band}")));
-                assert!(kill.x >= k.right() - 1.0, "{size:?} ch{ch} {band}: kill right of knob");
+                assert!(kill.y >= k.bottom() - 9.0 && (kill.centre().x - k.centre().x).abs() <= 1.0, "{size:?} ch{ch} {band}: kill under the knob");
             }
             let high = Rect::of(&ui.get(&format!("mixer.ch{ch}.eq-high")));
             // Larger than before at desktop size (22 px): 24 px; the compact tier keeps 16 px.
@@ -167,7 +171,7 @@ fn mixer_rows_line_up() {
         for ch in 1..=2 {
             let w = r(&format!("mixer.ch{ch}.cue")).right() - r(&format!("mixer.ch{ch}.stem")).x;
             assert!((w - 50.0).abs() <= 1.0, "{size:?}: strip {ch} is {w} px");
-            let row = r(&format!("mixer.ch{ch}.eq-low.kill")).right() - r(&format!("mixer.ch{ch}.eq-low")).x;
+            let row = r(&format!("mixer.ch{ch}.eq-low.kill")).w.max(r(&format!("mixer.ch{ch}.eq-low")).w);
             assert!(row <= 51.0, "{size:?}: band row {row} px");
         }
         for key in ["mixer.swap.low", "mixer.swap.mid", "mixer.swap.high", "mixer.swap.at"] {

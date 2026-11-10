@@ -451,10 +451,10 @@ fn mixer_and_phones_knobs_are_centred() {
             for knob in ["trim", "eq-high", "eq-mid", "eq-low"] {
                 let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{knob}")));
                 assert!(
-                    (k.x - high.x).abs() <= 1.0,
-                    "{size:?} ch{ch} {knob}: knob left {} vs column {}",
-                    k.x,
-                    high.x
+                    (k.centre().x - high.centre().x).abs() <= 1.0,
+                    "{size:?} ch{ch} {knob}: knob centre {} vs column {}",
+                    k.centre().x,
+                    high.centre().x
                 );
                 assert!(
                     k.x >= stem.x - 1.0 && k.right() <= cue.right() + 1.0,

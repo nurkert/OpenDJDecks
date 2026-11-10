@@ -9,9 +9,9 @@ The mixer stands between the decks. Press **MIXER** in the top bar (`⌥⌘M`) t
 
 ## A channel
 
-From top to bottom: the channel number with its **CLIP** lamp, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (the Channel FX knob), **STEM** and **CUE** side by side, and the channel fader with its meter. Drag a knob up or down to turn it; double-click (or double-tap) it to reset it to the centre.
+From top to bottom: the channel number with its **CLIP** lamp, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (the Channel FX knob), **STEM** and **CUE** side by side, and the channel fader with its meter. Every knob and the fader stand on the channel's centre line, and each knob's name sits right under it. Drag a knob up or down to turn it; double-click (or double-tap) it to reset it to the centre.
 
-Under each knob its name turns into its value as soon as you turn it: TRIM and the EQ in dB (**OFF** when an isolator band is turned fully down), CH FX as the filter side and depth (**LP40** is a low-pass at 40 %, **HP25** a high-pass at 25 %), other Channel FX as a signed percent.
+While you turn a knob, the name under it shows its value, and it goes back to the name when you let go: TRIM and the EQ in dB (**OFF** when an isolator band is turned fully down), CH FX as the filter side and depth (**LP40** is a low-pass at 40 %, **HP25** a high-pass at 25 %), other Channel FX as a signed percent.
 
 - **TRIM** sets the level of the channel. **Auto gain** in **Preferences › Controller › Mixer** levels tracks by their analysed loudness first. Each track can be corrected by ±0.5 dB steps in the [GRID panel](beatgrid.md#fix-a-grid-while-the-track-plays).
 - The **EQ** knobs default to an isolator. **Preferences › Controller › Mixer › EQ** switches between **ISOLATOR** and **CLASSIC EQ**.
@@ -21,7 +21,7 @@ Under each knob its name turns into its value as soon as you turn it: TRIM and t
 
 ## Knobs, faders and meters
 
-Each knob draws its value as an arc on its ring: from the small mark at the top for **TRIM**, the EQ knobs and **CH FX**, which turn both ways from the middle, and from the start for **MIX** and **LEVEL**. While you drag a knob its value stands above it, the same words as the legend below (`−6.0`, `KILL`, `LP 35`). The fader caps have a centre line to read them by.
+Each knob draws its value as an arc on its ring: from the small mark at the top for **TRIM**, the EQ knobs and **CH FX**, which turn both ways from the middle, and from the start for **MIX** and **LEVEL**. While you drag a knob its value stands above it and in the legend below (`−6.0`, `LP35`). The fader caps have a centre line to read them by.
 
 The channel meters and the **MASTER** meter in the top bar hold their peak: a short tick stays at the highest recent level for about a second and a half, then falls back. It turns amber near the top and red at clip. The meters are never smoothed: they show the sound as it is.
 
@@ -29,7 +29,7 @@ The channel meters and the **MASTER** meter in the top bar hold their peak: a sh
 
 ![The mixer with one deck's LOW killed and a LOW swap waiting for the next bar](../img/mixer-bass-swap.png)
 
-The **K** key (kill) beside HI, MID and LOW takes that band out while it is lit. The knob stays where it is; when you release the kill, the band comes back at the knob's value. With the isolator EQ a killed band is silent; with the classic EQ it is at the knob's lowest setting (−26 dB). The legend under the knob reads **KILL** while it is on.
+The names **HI**, **MID** and **LOW** under the EQ knobs are kill keys: tap one to take that band out (it fills in yellow and reads **KILL**), tap it again to bring the band back. The knob stays where it is; when you release the kill, the band comes back at the knob's value. With the isolator EQ a killed band is silent; with the classic EQ it is at the knob's lowest setting (−26 dB).
 
 The swap row under the channels (marked with two opposed arrows) exchanges one band between the two decks in the mix with one tap:
 

@@ -522,6 +522,8 @@ export component Knob inherits Rectangle {
     // Guide id (first-start guide, controller setup).
     in property <string> guide;
     callback changed(float);
+    // Held by the pointer (a legend elsewhere can show the value meanwhile).
+    out property <bool> held: touch.pressed;
     width: max(root.size + 8px, lbl.preferred-width + 4px);
     height: root.size + (root.label == "" ? 0px : root.label-h);
 
