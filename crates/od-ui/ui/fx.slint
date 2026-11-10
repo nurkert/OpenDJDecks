@@ -117,8 +117,8 @@ component XyPad inherits Rectangle {
     border-radius: Theme.r-control;
     property <length> px: (root.u.param + 1) / 2 * root.width;
     property <length> py: (1 - root.u.level) * root.height;
-    Rectangle { x: root.px; width: 1px; background: root.u.on ? root.tone.with-alpha(0.6) : Theme.rule-strong; }
-    Rectangle { y: root.py; height: 1px; background: root.u.on ? root.tone.with-alpha(0.6) : Theme.rule-strong; }
+    Rectangle { x: root.px; width: 1px; background: root.u.on ? root.tone : Theme.rule-strong; }
+    Rectangle { y: root.py; height: 1px; background: root.u.on ? root.tone : Theme.rule-strong; }
     Rectangle {
         x: root.px - 6px; y: root.py - 6px; width: 12px; height: 12px; border-radius: 6px;
         background: root.u.on ? root.tone : transparent;
@@ -153,7 +153,7 @@ component PanicKey inherits Rectangle {
     accessible-label: "fx.panic";
     accessible-action-default => { FxSlots.panic(); }
     min-width: t.preferred-width + 16px;
-    background: touch.pressed ? Theme.fault : touch.has-hover ? Theme.fault.with-alpha(0.85) : Theme.plate;
+    background: touch.pressed || touch.has-hover ? Theme.fault : Theme.plate;
     border-radius: Theme.r-control;
     t := Text {
         text: @tr("ALL FX OFF");
