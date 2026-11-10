@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 240 features; 234 in scope: 234 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 247 features; 241 in scope: 241 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -109,7 +109,8 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Loudness + auto gain | DONE | `od-analysis/src/loudness.rs`; gain in `perform.rs::load_track`, engine default on (`mixer.rs` `auto_gain: true`); no toggle in UI | 3 |  |
 | Re-analyse selected, never overwrite manual/imported | DONE | `on_analyse_selected`; `DataSource` priority in `tracks.rs::store_analysis` | 3 |  |
 | Phrase editing (GRID EDIT \| PHRASE EDIT, cut / clear) | DONE | `crates/od-ui/src/phrase_edit.rs`, `crates/od-library/src/tracks.rs::set_phrases`; PHRASE tab next to GRID in the Prepare player: kind of the phrase at the cursor (a gap gets a new phrase), CUT at the nearest bar (at least 4 bars each side), BOUNDARY TO CURSOR, CLEAR; keyboard commands. Stored with Library::set_phrases (normalized with od_core::normalize_phrases, one undo step, change log → sticks resync). A new analysis of the track replaces edited phrases; (UX §2.5) | 6 | P3 |
-| BPM range presets for tempo detection (70–180, 58–115, 98–195, 118–236) | DONE | `settings.rs::BPM_RANGES`, `preferences.rs::bpm_choices`, `workers.rs::AnalysisControl`, `tempo.rs::sanitize_range`; Preferences > Analysis offers four BPM ranges (70–180 is the default), used for new analyses and for analysing a track again. A range stored by an older version stays selected and in use until another is chosen | 2 | P2 |
+| BPM range presets for tempo detection (70–180, 58–115, 98–195, 118–236, 150–300) | DONE | `settings.rs::BPM_RANGES`, `preferences.rs::bpm_choices`, `workers.rs::AnalysisControl`, `tempo.rs::sanitize_range`; Preferences > Analysis offers five BPM ranges (70–180 is the default), used for new analyses and for analysing a track again. A range stored by an older version stays selected and in use until another is chosen | 2 | P2 |
+| Tempos up to 300 BPM without halving, with the active range shown | DONE | `tempo.rs::refine_tempo`, `settings.rs::BPM_RANGES`, `shell.rs::bpm_range_text`; Roadmap [57]. BPM range 150–300 in Preferences > Analysis; generated click, kick, kick-and-snare and house loops at 170, 200, 220, 250 and 280 BPM read as played in every range that holds them. The active range shows in the Prepare player's INFO tab and beside the analysis progress. Not yet checked on a set of real hardcore or speedcore records | 2 | P2 |
 
 ## 3. Cues and loops
 
@@ -150,7 +151,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Beat jump size setting | DONE | `decks.rs::step_jump_size`; ‹ › in Beat Jump pad mode (1/8 … 64); the deck's −/+ buttons and the keyboard jump by it | 1 | P3 |
 | Manual loop in/out, reloop/exit, ½ / 2× | DONE | `LoopIn/LoopOut/Reloop/LoopExit/LoopHalve/LoopDouble`; IN / OUT / EXIT key beside LOOP on every deck and in the Prepare player | 1 |  |
 | Auto beat loop (1/32 … 32) | DONE | `DeckCommand::AutoLoop`; UI size stepper | 1 |  |
-| Loop roll | DONE | `DeckCommand::LoopRoll` via controller | 1 |  |
+| Loop roll | DONE | `DeckCommand::LoopRoll`, `crates/od-ui/src/pads.rs::ROLL_BEATS`, `ui/wave.slint::WaveLane`; Roadmap [59]. ROLL pad mode on the deck (and `deck.loop_roll` / pad mode `loop_roll` in mappings): pads A–H roll 1/32 … 4 beats while held, quantised to the grid; the track carries on underneath (slip line on the waveform) and resumes there on release. The held pad is filled and the waveform's loop band carries ROLL and the size | 3 |  |
 | Needle search | DONE | `NeedleSearch`; overview click + the controller touch strip | 1 |  |
 | Search (FF/REW buttons) | DONE | ◀◀ / ▶▶ on the player screens search while held (`DeckCommand::Search`) | 2 | **P1** |
 | Tap BPM | DONE | `decks.rs::tap_bpm`; Controller TAP: three taps give a constant grid at the tapped tempo, keeping the first downbeat (saved, undoable; locked grids stay) | 2 | **P1** |
@@ -178,6 +179,12 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Club mode: player-style screens and behaviour driven by the controller | DONE | CLUB toggle (Alt+J): player screens per deck (waveform, overview needle search, jog display with remaining time / bar counter / phrase, four-segment beat position under the waveform (beat 1 accented) for visual beat matching, hot cues with hold, memory cue call, loop in / out / reloop, beat jump, search, tempo range, master tempo), BROWSE screen (source → playlists → tracks, from the library or a stick), player cue rules, sync off, self-ticking checklist; (SPEC §10.3c) | 5 | P2 |
 | Playback reservation (queue for Mix Preview) | DONE | `mix-preview.rs::tick`, `ui/mix_preview.slint`; RESERVE in the MIX PREVIEW panel queues the tracks selected in the list; when a panel deck is empty or has played out while the other plays, the next reserved track loads there and waits at its mix-in point for the next link; NEXT shows what comes, CLEAR empties the queue | 2 | P3 |
 | Beatgrid and gain panel on the Perform deck | DONE (beyond the usual) | `deck_grid.rs::act`, `deck_grid.rs::tick`, `ui/perform.slint::GridPanel`, `ui/perform.slint::GridMeter`; The grid key beside the pad mode swaps the pads for the panel (the deck keeps its width), working while the track plays: a meter of how far the grid sits off the kicks (median of the last 8 beats, −20…+20 ms), FIT, the tempo and CLICK (metronome in the headphones); SET 1 (the kick just heard, ±60 ms, becomes the 1), ±1 / ±10 ms, ±1 beat; −.01 / +.01 and ÷2 / ×2 about the playhead, PIN (two pins solve the tempo), AUTO-FIX; EDIT … opens the Prepare editor, LOCK, and the track's auto-gain correction ±0.5 dB. Grid changes go to the library at once (decks follow without a gap); nudges within 1.5 s are one undo step | 5 | P2 |
+| Loop capture: the loop or roll just heard becomes a hot loop (or memory loop) | DONE | `crates/od-ui/src/decks.rs::capture_loop`, `DeckCommand::SetHotCueAt`; Roadmap [59]. CAPTURE in the ROLL pad mode bar (and `deck.loop_capture`): the loop heard last on the deck, a roll or a loop, is stored as a hot loop on the first free pad of the bank; with all eight taken it becomes a memory loop. One undo step, saved with the track | 2 | P2 |
+| Bars to the next drop and breakdown on each deck | DONE | `crates/od-ui/src/phrase_mix.rs::ahead_text`, `ui/controls.slint::Jog`; Roadmap [56]. Under the platter's tempo line: DROP n · BREAK n in whole bars, nearest first (a drop is a chorus after something else, a breakdown a down or bridge phrase). The bars to the next phrase stay on the platter's top line and the waveform counter | 2 | P2 |
+| Start on the master deck's next phrase | DONE | `Command::StartOnBeat`, `crates/od-ui/src/decks.rs::phrase_start`; Roadmap [56]. Right click on PLAY (and `deck.phrase_start`): a cued, paused deck waits for the playing master's next phrase boundary (the next 16-bar mark without phrases) and starts within one audio block of it. The key carries the armed outline, the platter counts START -bars.beats; a second press, PLAY or CUE cancel | 5 | P2 |
+| Phrase-snapped sync | DONE | `crates/od-ui/src/phrase_mix.rs::sync_jump`, `crates/od-ui/src/decks.rs::toggle_sync`; Roadmap [56]. Preferences > Controller > Decks > Sync: PHRASE. SYNC on a playing deck also jumps it whole beats (the smallest jump) so it stands as far before one of its phrase boundaries as the master before its next one; beat sync keeps the phase | 2 | P2 |
+| The incoming track drawn over the playing waveform | DONE | `crates/od-ui/src/decks.rs::project_overlay`, `crates/od-ui/src/render.rs::outline_tile`, `ui/wave.slint::WaveLane`; Roadmap [56]. On the playing master's lane, the other deck's waveform as an outline in its deck colour, on the same time scale: where it plays now, or, while cued, from its cue placed on the master's next phrase (a numbered mark). Preferences > View > Incoming track switches it off | 3 | P2 |
+| One-press half and double BPM on the deck | DONE | `crates/od-ui/src/decks.rs::bpm_scale`, `ui/perform.slint::MiniKey`; Roadmap [57]. ÷2 and ×2 beside BPM on the full deck's readout (and `deck.bpm_half` / `deck.bpm_double`): the track's grid at half or double the tempo, one undo step, stored with the track; locked grids refuse. Narrower decks keep it in the GRID panel | 2 | P2 |
 
 ## 5. Mixer
 
@@ -349,13 +356,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 234 |
+| DONE | 241 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **240** |
+| **Total** | **247** |
 
 ## P1 gaps and implementation notes
 

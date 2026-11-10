@@ -1450,9 +1450,11 @@ scope = "in"
 status = "done"
 tests = [
   "od-engine::render::slip_returns_to_the_right_position",
+  "od-ui::pads::tests::loop_roll_pads_roll_while_held",
+  "od-ui::ui_tests::blend::loop_roll_and_capture",
 ]
-evidence = ["DeckCommand::LoopRoll"]
-note = "`DeckCommand::LoopRoll` via controller"
+evidence = ["DeckCommand::LoopRoll", "crates/od-ui/src/pads.rs::ROLL_BEATS", "ui/wave.slint::WaveLane"]
+note = "Roadmap [59]. ROLL pad mode on the deck (and `deck.loop_roll` / pad mode `loop_roll` in mappings): pads A–H roll 1/32 … 4 beats while held, quantised to the grid; the track carries on underneath (slip line on the waveform) and resumes there on release. The held pad is filled and the waveform's loop band carries ROLL and the size"
 
 [[feature]]
 id = "deck-needle-search"
@@ -3621,7 +3623,7 @@ note = "Steps of whole percents (with key lock, so the key stays) and semitones 
 [[feature]]
 id = "analysis-bpm-ranges"
 area = "analysis"
-name = "BPM range presets for tempo detection (70–180, 58–115, 98–195, 118–236)"
+name = "BPM range presets for tempo detection (70–180, 58–115, 98–195, 118–236, 150–300)"
 scope = "in"
 status = "done"
 prio = "P2"
@@ -3630,7 +3632,7 @@ tests = [
   "od-ui::ui_tests::features::bpm_range_preference_reaches_the_analysis",
 ]
 evidence = ["settings.rs::BPM_RANGES", "preferences.rs::bpm_choices", "workers.rs::AnalysisControl", "tempo.rs::sanitize_range"]
-note = "Preferences > Analysis offers four BPM ranges (70–180 is the default), used for new analyses and for analysing a track again. A range stored by an older version stays selected and in use until another is chosen"
+note = "Preferences > Analysis offers five BPM ranges (70–180 is the default), used for new analyses and for analysing a track again. A range stored by an older version stays selected and in use until another is chosen"
 
 [[feature]]
 id = "browser-key-sort"
@@ -3645,3 +3647,105 @@ tests = [
 ]
 evidence = ["browser/tracks.rs::KeyOrder", "browser/tracks.rs::compare_keys", "ui/table.slint::TrackTable"]
 note = "Two checkable items in the column menu; circle of fifths (Camelot order) is the default. Alphabetical sorts by the key text in the chosen notation. The key sort is always done in the app, not by SQL"
+
+[[feature]]
+id = "deck-loop-capture"
+area = "deck"
+name = "Loop capture: the loop or roll just heard becomes a hot loop (or memory loop)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::blend::loop_roll_and_capture",
+  "od-controller::templates::tests::mix_actions_map",
+]
+evidence = ["crates/od-ui/src/decks.rs::capture_loop", "DeckCommand::SetHotCueAt"]
+note = "Roadmap [59]. CAPTURE in the ROLL pad mode bar (and `deck.loop_capture`): the loop heard last on the deck, a roll or a loop, is stored as a hot loop on the first free pad of the bank; with all eight taken it becomes a memory loop. One undo step, saved with the track"
+
+[[feature]]
+id = "mix-phrase-ahead"
+area = "deck"
+name = "Bars to the next drop and breakdown on each deck"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::phrase_mix::tests::bars_to_drop_and_breakdown",
+  "od-ui::ui_tests::blend::phrase_start_overlay_and_phrase_sync",
+]
+evidence = ["crates/od-ui/src/phrase_mix.rs::ahead_text", "ui/controls.slint::Jog"]
+note = "Roadmap [56]. Under the platter's tempo line: DROP n · BREAK n in whole bars, nearest first (a drop is a chorus after something else, a breakdown a down or bridge phrase). The bars to the next phrase stay on the platter's top line and the waveform counter"
+
+[[feature]]
+id = "mix-phrase-start"
+area = "deck"
+name = "Start on the master deck's next phrase"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::start_on_beat::armed_deck_starts_on_the_master_beat",
+  "od-engine::start_on_beat::play_cue_or_a_cancel_drop_the_wait",
+  "od-engine::start_on_beat::without_a_playing_master_it_starts_at_once",
+  "od-ui::phrase_mix::tests::next_boundary_follows_phrases_or_16_bars",
+  "od-ui::ui_tests::blend::phrase_start_overlay_and_phrase_sync",
+]
+evidence = ["Command::StartOnBeat", "crates/od-ui/src/decks.rs::phrase_start"]
+note = "Roadmap [56]. Right click on PLAY (and `deck.phrase_start`): a cued, paused deck waits for the playing master's next phrase boundary (the next 16-bar mark without phrases) and starts within one audio block of it. The key carries the armed outline, the platter counts START -bars.beats; a second press, PLAY or CUE cancel"
+
+[[feature]]
+id = "mix-phrase-sync"
+area = "deck"
+name = "Phrase-snapped sync"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::phrase_mix::tests::phrase_sync_lines_up_the_phrase_positions",
+  "od-ui::ui_tests::blend::phrase_start_overlay_and_phrase_sync",
+]
+evidence = ["crates/od-ui/src/phrase_mix.rs::sync_jump", "crates/od-ui/src/decks.rs::toggle_sync"]
+note = "Roadmap [56]. Preferences > Controller > Decks > Sync: PHRASE. SYNC on a playing deck also jumps it whole beats (the smallest jump) so it stands as far before one of its phrase boundaries as the master before its next one; beat sync keeps the phase"
+
+[[feature]]
+id = "mix-incoming-overlay"
+area = "deck"
+name = "The incoming track drawn over the playing waveform"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::render::tests::outline_tile_draws_the_edge_on_a_clear_ground",
+  "od-ui::phrase_mix::tests::a_waiting_deck_is_drawn_at_its_start",
+  "od-ui::ui_tests::blend::phrase_start_overlay_and_phrase_sync",
+]
+evidence = ["crates/od-ui/src/decks.rs::project_overlay", "crates/od-ui/src/render.rs::outline_tile", "ui/wave.slint::WaveLane"]
+note = "Roadmap [56]. On the playing master's lane, the other deck's waveform as an outline in its deck colour, on the same time scale: where it plays now, or, while cued, from its cue placed on the master's next phrase (a numbered mark). Preferences > View > Incoming track switches it off"
+
+[[feature]]
+id = "analysis-high-tempo"
+area = "analysis"
+name = "Tempos up to 300 BPM without halving, with the active range shown"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-analysis::tempo::tests::high_tempos_read_without_halving",
+  "od-ui::ui_tests::blend::half_double_and_detection_range",
+]
+evidence = ["tempo.rs::refine_tempo", "settings.rs::BPM_RANGES", "shell.rs::bpm_range_text"]
+note = "Roadmap [57]. BPM range 150–300 in Preferences > Analysis; generated click, kick, kick-and-snare and house loops at 170, 200, 220, 250 and 280 BPM read as played in every range that holds them. The active range shows in the Prepare player's INFO tab and beside the analysis progress. Not yet checked on a set of real hardcore or speedcore records"
+
+[[feature]]
+id = "deck-bpm-half-double"
+area = "deck"
+name = "One-press half and double BPM on the deck"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::blend::half_double_and_detection_range",
+  "od-controller::templates::tests::mix_actions_map",
+]
+evidence = ["crates/od-ui/src/decks.rs::bpm_scale", "ui/perform.slint::MiniKey"]
+note = "Roadmap [57]. ÷2 and ×2 beside BPM on the full deck's readout (and `deck.bpm_half` / `deck.bpm_double`): the track's grid at half or double the tempo, one undo step, stored with the track; locked grids refuse. Narrower decks keep it in the GRID panel"

@@ -1,8 +1,8 @@
 ---
 title: Hot Cues, Memory Cues und Loops
 description: Markiere die Stellen, die du spielst. Acht Hot Cues pro Bank, Memory Cues, gespeicherte und aktive Loops, Namen und Farben, und Cues wie bei deinen anderen Tracks.
-keywords: [hot cue, hotcue, hot cues, memory cue, memory, cue punkt, cue punkte, cue setzen, loop, loops, gespeicherter loop, aktiver loop, springen, marker, banken, name, farbe, auto cue]
-features: [cues-hot-cues-prepare, cues-hot-cues-perform, cues-hot-cue-banks, cues-memory-add, cues-memory-edit, cues-memory-call, cues-memory-controller, cues-saved-loops, cues-auto-personalised, cues-active-loop, cues-colours, cues-labels, cues-auto-cue, deck-manual-loop, deck-auto-loop, deck-loop-roll]
+keywords: [hot cue, hotcue, hot cues, memory cue, memory, cue punkt, cue punkte, cue setzen, loop, loops, gespeicherter loop, aktiver loop, springen, marker, banken, name, farbe, auto cue, loop roll, roll, sichern, capture, slip]
+features: [cues-hot-cues-prepare, cues-hot-cues-perform, cues-hot-cue-banks, cues-memory-add, cues-memory-edit, cues-memory-call, cues-memory-controller, cues-saved-loops, cues-auto-personalised, cues-active-loop, cues-colours, cues-labels, cues-auto-cue, deck-manual-loop, deck-auto-loop, deck-loop-roll, deck-loop-capture]
 ---
 
 Öffne einen Track im Player oben in Prepare, um Cues zu setzen. Alles, was du hier setzt, wird mit dem Track gespeichert und erreicht deine [USB-Sticks](usb-sticks.md) von selbst.
@@ -47,9 +47,21 @@ Im Player-Tab **CUE / LOOP** und am Perform-Deck:
 
 - **LOOP** startet einen Auto-Loop der angezeigten Länge; ein zweiter Druck verlässt ihn. **½** und **2×** ändern die Länge von 1/32 bis 32 Beats.
 - **IN** und **OUT** setzen einen manuellen Loop; **EXIT** verlässt ihn. In Perform wird er mit demselben Knopf neu gestartet.
-- Ein Controller kann einen kurzen Loop rollen, der den Track darunter weiterlaufen lässt, wenn du loslässt.
+- Der Pad-Modus **ROLL** rollt einen kurzen Loop, solange du ein Pad hältst, siehe unten.
 
 Drücke **MEMORY +**, während ein Loop läuft, um ihn als Memory-Loop zu speichern, oder setze einen Hot Cue auf einen Loop. **AKTIV** im Cue-Editor macht aus einem gespeicherten Loop einen aktiven: Er greift von selbst, wenn die Wiedergabe ihn erreicht.
+
+## Loop Roll und Sichern
+
+![Deck 1 im Pad-Modus ROLL mit gehaltenem 1/8-Roll: das gefüllte Pad, das Band ROLL 1/8 auf der Wellenform und SICHERN in der Modusleiste](../img/loop-roll.png)
+
+Wähle in Perform **ROLL** als Pad-Modus. Die Pads tragen die Längen **1/32**, **1/16**, **1/8**, **1/4** (links) und **1/2**, **1**, **2**, **4** Beats (rechts).
+
+- **Halte ein Pad**, um zu rollen: Der Loop beginnt auf dem Grid (mit **Q**) und wiederholt sich, solange du hältst. Der Track läuft darunter weiter, eine feine Linie auf der Wellenform zeigt wo; lässt du los, geht es dort weiter, wie bei Slip.
+- Das gehaltene Pad ist gefüllt, und das Loop-Band auf der Wellenform nennt den Roll, zum Beispiel **ROLL 1/8**.
+- **SICHERN** in der Modusleiste behält den Loop, den du gerade gehört hast, Roll oder Loop, als Hot Loop auf dem ersten freien Pad der Bank. Sind alle acht belegt, wird er ein Memory Loop. Jedes Sichern ist ein Rückgängig-Schritt und wird mit dem Track gespeichert.
+
+Am Controller: `deck.loop_roll` mit `beats`, der Pad-Modus `loop_roll` und `deck.loop_capture`. Rolls sind in der Engine und der App getestet; auf Hardware-Pads sind sie noch nicht ausprobiert.
 
 ## Cues wie bei deinen anderen Tracks
 

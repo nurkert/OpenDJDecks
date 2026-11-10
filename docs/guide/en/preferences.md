@@ -36,12 +36,13 @@ See [Beatgrids](beatgrid.md#if-the-tempo-keeps-coming-out-wrong) for the **BPM r
 - **58–115** is for slow music like reggae or downtempo.
 - **98–195** is for faster genres, where a track should not read as half tempo.
 - **118–236** is for very fast music like drum and bass or hardcore.
+- **150–300** is for music above 200 BPM, such as gabber or speedcore; see [Beatgrids](beatgrid.md#fast-music-and-half-or-double-on-the-deck).
 
 The range only applies to tracks analysed from now on. To change an analysed track, choose **Analyse again** from its menu in the player or list.
 
 ## Controller
 
-**Decks** holds the defaults sent to every deck: tempo range, quantize, sync mode, jog mode and auto cue. **Mixer** holds EQ and fader curves. The rest is in [Controllers](controllers.md).
+**Decks** holds the defaults sent to every deck: tempo range, quantize, sync mode (**BEAT**, **TEMPO ONLY** or **PHRASE**, see [Phrases](phrases.md#mix-on-the-phrase)), jog mode and auto cue. **Mixer** holds EQ and fader curves. The rest is in [Controllers](controllers.md).
 
 ## Keyboard
 

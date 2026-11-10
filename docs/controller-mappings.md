@@ -169,12 +169,15 @@ release.
 | `deck.loop_in`, `deck.loop_out`, `deck.loop_halve`, `deck.loop_double`, `deck.reloop_exit` | press | | |
 | `deck.auto_loop` | press | `beats` | `AutoLoop { beats }` |
 | `deck.loop_roll` | momentary | `beats` | `LoopRoll { beats, pressed }` |
+| `deck.loop_capture` | press | | `LoopCapture`: the loop just heard (a roll or a loop) becomes a hot loop on the first free pad of the bank, else a memory loop |
+| `deck.phrase_start` | press | | `PhraseStart`: a cued, paused deck starts on the master deck's next phrase; a second press cancels |
+| `deck.bpm_half`, `deck.bpm_double` | press | | `BpmScale(0.5)` / `BpmScale(2.0)`: the track's grid at half or double the tempo (one undo step) |
 | `deck.beat_jump` | press | `beats` (signed) | |
 | `deck.search` | momentary | `forward` (bool) | |
 | `deck.slip`, `deck.vinyl`, `deck.reverse`, `deck.load` | press | | |
 | `deck.censor` | momentary | | `Censor(bool)` |
 | `deck.shift` | momentary | | `Shift(bool)`; also drives software shift |
-| `deck.pad_mode` | press | `mode` = `hot_cue`, `beat_loop`, `beat_jump`, `sampler`, `hold_fx1`, `hold_fx2`, `keyboard`, `key_shift`, `slicer` | |
+| `deck.pad_mode` | press | `mode` = `hot_cue`, `beat_loop`, `beat_jump`, `sampler`, `hold_fx1`, `hold_fx2`, `keyboard`, `key_shift`, `slicer`, `loop_roll` (pads roll 1/32 … 4 beats while held) | |
 | `deck.pad` | momentary | `index` | `Pad { index, pressed, velocity }` (generic, interpreted by pad mode) |
 | `deck.needle_search` | absolute | | `NeedleSearch(0..1)` |
 | `deck.select` | press | optional `deck` | `DeckSelect` for the bound deck, or for `deck` |

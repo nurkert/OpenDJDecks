@@ -15,7 +15,7 @@ Double-click a track in the browser, drag it onto a deck, or use `⇧←` and `�
 
 ## Deck readouts
 
-The deck header shows the number, the artwork, title and artist, **BPM**, the remaining or elapsed time, the **KEY** and the sync state. The platter below shows the tempo, the bar counter and the current phrase with a countdown.
+The deck header shows the number, the artwork, title and artist, **BPM**, the remaining or elapsed time, the **KEY** and the sync state. The platter below shows the tempo, the bar counter and the current phrase with a countdown, and under the tempo the bars to the next drop and break ([Phrases](phrases.md#mix-on-the-phrase)). **÷2** and **×2** beside **BPM** halve or double the track's grid ([Beatgrids](beatgrid.md#fast-music-and-half-or-double-on-the-deck)).
 
 The narrow waveform in each deck is the whole track with hot cues and phrases. Click it to jump there (needle search); on a controller the touch strip does the same.
 
@@ -30,7 +30,7 @@ The top bar has three zones. On the left are the work modes, in the middle what 
 ## Tempo and sync
 
 - The **tempo fader** changes the speed; up is slower, as on a player. The range key with the setup keys beside the fader cycles through **±6 %**, **±10 %**, **±16 %** and **WIDE**. The default comes from **Preferences › Controller › Decks**, and you can type a BPM into the field on the platter.
-- **SYNC**, above **CUE** and **PLAY**, locks a deck to the **MASTER** deck by tempo and beat position. `⇧Q` and `⇧Y` make decks 1 and 2 master. Under **Preferences › Controller › Decks › Sync** you choose full beat sync or tempo only.
+- **SYNC**, above **CUE** and **PLAY**, locks a deck to the **MASTER** deck by tempo and beat position. `⇧Q` and `⇧Y` make decks 1 and 2 master. Under **Preferences › Controller › Decks › Sync** you choose full beat sync, tempo only or phrase sync. A right click on **PLAY** starts a cued deck on the master's next phrase ([Phrases](phrases.md#mix-on-the-phrase)).
 - **Q** (quantize) makes cues, loops and jumps land on the beat.
 - **KEY SYNC** moves the deck to the key of the master deck.
 - **‹ ±0 ›** in the deck header shifts the key a semitone at a time; click the value to reset.
@@ -92,5 +92,6 @@ The sixteen pads at the left of each deck change meaning with the mode. Pick a m
 | **CENSOR** | Censor for ¼ to 32 beats, then carry on where it would be |
 | **PATTERN** | Store and recall sampler sequences |
 | **LIGHTING** | A–F looks, G strobe, H flash, see [Light show](light-show.md) |
+| **ROLL** | Roll 1/32 to 4 beats while held; CAPTURE keeps it, see [Loop roll](cues-and-loops.md#loop-roll-and-capture) |
 
 The **GRID** key next to the mode swaps the pads for the grid and gain panel; see [Beatgrids](beatgrid.md#fix-a-grid-while-the-track-plays).

@@ -1,8 +1,8 @@
 ---
 title: Beatgrids
 description: Check and correct beatgrids with the kicks in view. EDIT GRID with pins, drift, FIT, AUTO-FIX and the click, and the GRID panel on the Perform deck.
-keywords: [beatgrid, beat grid, grid, beatgrit, gridt, tempo, bpm, downbeat, the 1, pins, pin, auto fix, drift, fit, click, metronome, tempo change, tempo changes, live recording, wrong bpm, off beat, double tempo, half tempo, tap]
-features: [analysis-variable-grid, analysis-grid-editor, analysis-grid-tap-bpm, analysis-bpm-range, deck-grid-panel, deck-tap-bpm]
+keywords: [beatgrid, beat grid, grid, beatgrit, gridt, tempo, bpm, downbeat, the 1, pins, pin, auto fix, drift, fit, click, metronome, tempo change, tempo changes, live recording, wrong bpm, off beat, double tempo, half tempo, tap, hardcore, gabber, 200 bpm, fast, high tempo]
+features: [analysis-variable-grid, analysis-grid-editor, analysis-grid-tap-bpm, analysis-bpm-range, deck-grid-panel, deck-tap-bpm, analysis-high-tempo, deck-bpm-half-double]
 ---
 
 The analysis finds the tempo and the first beat of the bar automatically, and for most electronic music that is enough. When a grid is off, OpenDJDecks shows you where and fixes it with very little work.
@@ -72,3 +72,11 @@ Changes are stored at once and the decks follow without a gap; nudges within a s
 ## If the tempo keeps coming out wrong
 
 Open **Preferences › Analysis › BPM range** and pick one that fits the music, then **Analyse** the track again. A locked grid is not touched by analysis.
+
+The range in use shows where tracks are analysed: as **BPM RANGE** in the **INFO** tab of the Prepare player, and beside the progress while tracks are being analysed (**ANALYSING 3/10 · 70–180 BPM**).
+
+## Fast music and half or double on the deck
+
+For hardcore, gabber and other music above 200 BPM, choose **150–300**. Tempos are then read as played, not halved. In tests with generated click, kick, kick-and-snare and house loops at 170, 200, 220, 250 and 280 BPM, every range that holds the tempo read it to within 0.05 BPM; the default **70–180** reads 200 as 100 and 220 as 110, as it should. This has not been checked against a collection of real records at those tempos yet.
+
+When a single track still comes out at half or double, press **÷2** or **×2** beside **BPM** in the deck header. One press halves or doubles the track's grid, stored with the track and undone with one step; a locked grid stays as it is. On narrower decks the same keys are in the **GRID** panel. On a controller: `deck.bpm_half` and `deck.bpm_double`.

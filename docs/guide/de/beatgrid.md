@@ -2,7 +2,7 @@
 title: Beatgrids
 description: Beatgrids mit den Kicks im Blick prüfen und korrigieren. GRID BEARBEITEN mit Pins, Drift, FIT, AUTO-FIX und Klick, und das GRID-Panel am Perform-Deck.
 keywords: [beatgrid, beat grid, beatgrit, grid, raster, tempo, bpm, downbeat, die 1, pin, pins, auto fix, drift, fit, klick, metronom, tempowechsel, tempo ändern, live aufnahme, falsches bpm, daneben, doppeltes tempo, halbes tempo, tap, korrigieren]
-features: [analysis-variable-grid, analysis-grid-editor, analysis-grid-tap-bpm, analysis-bpm-range, deck-grid-panel, deck-tap-bpm]
+features: [analysis-variable-grid, analysis-grid-editor, analysis-grid-tap-bpm, analysis-bpm-range, deck-grid-panel, deck-tap-bpm, analysis-high-tempo, deck-bpm-half-double]
 ---
 
 Die Analyse findet das Tempo und die erste Zählzeit automatisch, und für die meiste elektronische Musik reicht das. Liegt ein Grid daneben, zeigt OpenDJDecks dir, wo, und korrigiert es mit sehr wenig Arbeit.
@@ -72,3 +72,11 @@ Jedes Perform-Deck hat neben dem Pad-Modus eine **GRID**-Taste. Sie tauscht die 
 ## Wenn das Tempo immer wieder falsch ist
 
 Öffne **Einstellungen › Analyse › BPM-Bereich**, wähle einen, der zur Musik passt, und **analysiere** den Track neu. Ein gesperrtes Grid fasst die Analyse nicht an.
+
+Der aktive Bereich steht dort, wo Tracks analysiert werden: als **BPM-BEREICH** im Tab **INFO** des Prepare-Players und neben dem Fortschritt, während Tracks analysiert werden (**ANALYSE 3/10 · 70–180 BPM**).
+
+## Schnelle Musik und halb oder doppelt am Deck
+
+Für Hardcore, Gabber und andere Musik über 200 BPM wähle **150–300**. Tempi werden dann so gelesen, wie sie gespielt sind, nicht halbiert. In Tests mit erzeugten Click-, Kick-, Kick-und-Snare- und House-Loops bei 170, 200, 220, 250 und 280 BPM hat jeder Bereich, der das Tempo enthält, es auf 0,05 BPM genau gelesen; der Standard **70–180** liest 200 als 100 und 220 als 110, wie er soll. An einer Sammlung echter Platten in diesen Tempi ist das noch nicht geprüft.
+
+Kommt ein einzelner Track trotzdem halb oder doppelt heraus, drücke **÷2** oder **×2** neben **BPM** im Deck-Kopf. Ein Druck halbiert oder verdoppelt das Grid des Tracks, gespeichert mit dem Track und mit einem Schritt rückgängig; ein gesperrtes Grid bleibt, wie es ist. Auf schmaleren Decks liegen dieselben Tasten im **GRID**-Panel. Am Controller: `deck.bpm_half` und `deck.bpm_double`.
