@@ -505,4 +505,126 @@ mod tests {
         let old: SafetyLimits = serde_json::from_str("{}").unwrap();
         assert_eq!(old, SafetyLimits::default());
     }
+
+    /// A dark and a bright look stepped by a chase as fast as it goes.
+    fn strobing_chase(step_beats: f32) -> ShowSettings {
+        use crate::looks::{PadAction, PadLook};
+        let mut dark = PadLook::new(0, "Dark");
+        let mut bright = PadLook::new(1, "Bright");
+        for (look, level, program) in [
+            (&mut dark, 0.0, Program::Blackout),
+            (&mut bright, 1.0, Program::Strobe),
+        ] {
+            for g in ["Wash", "Strobes"] {
+                look.groups.insert(
+                    g.into(),
+                    GroupSettings {
+                        program: Some(program),
+                        intensity: Some(level),
+                        color: Some([1.0; 3]),
+                        ..Default::default()
+                    },
+                );
+            }
+        }
+        let mut chase = PadLook::new(2, "Fast chase");
+        chase.steps = vec![0, 1];
+        chase.step_beats = step_beats;
+        chase.action = PadAction::Latch;
+        ShowSettings {
+            pads: vec![dark, bright, chase],
+            ..Default::default()
+        }
+    }
+
+    /// [15] A chase of a dark and a bright look at a sixteenth of a beat
+    /// would flash about 23 times a second at 174 BPM; whether latched over
+    /// AUTO or picked by the phrase table, the cap holds.
+    #[test]
+    fn a_chase_cannot_exceed_the_strobe_cap() {
+        let patch = rig(&[("rgbw-par", "Wash"), ("strobe", "Strobes")]);
+        let deck = [playing(174.0)];
+        let limits = SafetyLimits::default();
+        let unlimited = SafetyLimits {
+            strobe_hz: MAX_STROBE_HZ,
+            ..Default::default()
+        };
+        let latched = || {
+            let mut show = Show::new(strobing_chase(0.0625));
+            show.pads.latched = Some(2);
+            show
+        };
+        let (fast, _) = count_flashes(&patch, &mut latched(), &unlimited, &deck, 10.0, 0);
+        // Even at the highest cap (10 per second) it flashes far above 3.
+        assert!(fast > 60, "the chase flashes {fast} times in 10 s at the highest cap");
+        let (capped, _) = count_flashes(&patch, &mut latched(), &limits, &deck, 10.0, 0);
+        assert!(capped <= 31 && capped > 0, "{capped} flashes in 10 s");
+        // The strobe fixture's strobe channel stays at or below the cap too.
+        let (_, values) = count_flashes(&patch, &mut latched(), &limits, &deck, 4.0, 1);
+        let max = values.iter().copied().filter(|v| *v != 255).max().unwrap_or(64);
+        let hz = (max.max(64) - 64) as f32 / 190.0 * STROBE_CHANNEL_MAX_HZ;
+        assert!(hz <= DEFAULT_STROBE_HZ + 0.01, "strobe channel at {hz} Hz");
+        // AUTO with the chase in the phrase table.
+        let mut settings = strobing_chase(0.0625);
+        settings
+            .auto
+            .table
+            .set(crate::looks::PhraseSlot::Drop, crate::looks::AutoPick::Pad(2));
+        let chorus = [DeckMusic {
+            phrase: Some(od_core::PhraseKind::Chorus),
+            ..playing(174.0)
+        }];
+        let (auto, _) = count_flashes(&patch, &mut Show::new(settings), &limits, &chorus, 10.0, 0);
+        assert!(auto <= 31 && auto > 0, "AUTO: {auto} flashes in 10 s");
+    }
+
+    /// [20] The test pattern, even with very short steps, stays within the
+    /// strobe cap, the level caps and the lockout.
+    #[test]
+    fn a_test_pattern_cannot_exceed_the_strobe_cap() {
+        let patch = rig(&[("rgbw-par", "Wash"), ("fog", "Fog"), ("laser", "Laser")]);
+        for pattern in [
+            crate::TestPattern::Each,
+            crate::TestPattern::Colours,
+            crate::TestPattern::Full,
+        ] {
+            let mut rig = crate::Lighting::with_opener(
+                patch.clone(),
+                Show::default(),
+                crate::TestLink::default().opener(),
+            );
+            rig.limits.group_caps.insert("Wash".into(), 0.7);
+            rig.test_step = 0.02;
+            rig.set_test(Some(pattern));
+            let slots = level_slots(&patch.fixtures[0]);
+            let (mut bright, mut flashes) = (false, 0);
+            for _ in 0..400 {
+                rig.tick(&[], 0.025);
+                let u = &rig.frame[0];
+                let level = slots.iter().map(|s| u[*s]).max().unwrap();
+                assert!(level <= 179, "{pattern:?}: level cap held ({level})");
+                if !bright && level > BRIGHT {
+                    flashes += 1;
+                    bright = true;
+                } else if bright && level < DARK {
+                    bright = false;
+                }
+                let fog = patch.fixtures[1].address as usize - 1;
+                let laser = patch.fixtures[2].address as usize - 1;
+                assert_eq!((u[fog], u[laser]), (0, 0), "{pattern:?}: lockout");
+            }
+            // 10 s at the default cap of 3 per second.
+            assert!(flashes <= 31, "{pattern:?}: {flashes} flashes in 10 s");
+        }
+        // With normal steps the pattern lights each fixture in turn.
+        let mut rig = crate::Lighting::with_opener(
+            patch.clone(),
+            Show::default(),
+            crate::TestLink::default().opener(),
+        );
+        rig.set_test(Some(crate::TestPattern::Each));
+        rig.tick(&[], 0.1);
+        let first = rig.frame[0][0];
+        assert!(first > 128, "first fixture lit ({first})");
+    }
 }

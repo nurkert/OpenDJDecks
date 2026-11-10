@@ -165,6 +165,69 @@ impl Output {
     }
 }
 
+/// Serial devices that may be a USB-DMX interface, for the port picker.
+///
+/// macOS lists `/dev/cu.usbserial*` and `/dev/cu.usbmodem*` (the call-out
+/// devices, which open without waiting for a carrier), Linux `/dev/ttyUSB*`,
+/// `/dev/ttyACM*` and the stable names in `/dev/serial/by-id`. On Windows
+/// COM1 to COM64 are tried: a port that opens, or is busy, is listed. The
+/// directory can be set with `OPENDJDECKS_SERIAL_DIR` (tests).
+pub fn serial_ports() -> Vec<String> {
+    if let Some(dir) = od_core::env::var_os("SERIAL_DIR") {
+        return serial_ports_in(std::path::Path::new(&dir));
+    }
+    #[cfg(windows)]
+    {
+        (1..=64)
+            .map(|n| format!("COM{n}"))
+            .filter(|name| {
+                match std::fs::OpenOptions::new()
+                    .write(true)
+                    .open(format!(r"\\.\{name}"))
+                {
+                    Ok(_) => true,
+                    Err(e) => e.kind() == std::io::ErrorKind::PermissionDenied,
+                }
+            })
+            .collect()
+    }
+    #[cfg(not(windows))]
+    {
+        let mut ports = serial_ports_in(std::path::Path::new("/dev"));
+        let by_id = std::path::Path::new("/dev/serial/by-id");
+        if by_id.is_dir() {
+            ports.extend(
+                std::fs::read_dir(by_id)
+                    .into_iter()
+                    .flatten()
+                    .flatten()
+                    .map(|e| e.path().display().to_string()),
+            );
+        }
+        ports
+    }
+}
+
+/// The serial devices in `dir` that look like USB adapters (see
+/// [`serial_ports`]), sorted, as full paths.
+pub fn serial_ports_in(dir: &std::path::Path) -> Vec<String> {
+    const PREFIXES: [&str; 4] = ["cu.usbserial", "cu.usbmodem", "ttyUSB", "ttyACM"];
+    let mut ports: Vec<String> = std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            PREFIXES
+                .iter()
+                .any(|p| name.starts_with(p))
+                .then(|| dir.join(&name).display().to_string())
+        })
+        .collect();
+    ports.sort();
+    ports
+}
+
 /// Anything a universe can be sent through: a real [`Output`] or, in tests
 /// and for the fault hook, a stand-in.
 pub trait Link: Send {
@@ -318,6 +381,32 @@ mod tests {
         let p = enttec_pro_packet(&universe());
         assert_eq!(&p[..4], &[0x7E, 6, 0x01, 0x02]); // 513 bytes
         assert_eq!((p[4], p[5], p[516], p[517]), (0, 255, 7, 0xE7));
+    }
+
+    #[test]
+    fn serial_port_picker_lists_usb_adapters() {
+        let dir = tempfile::tempdir().unwrap();
+        for name in [
+            "cu.usbserial-DMX1",
+            "cu.usbmodem2101",
+            "tty.usbserial-DMX1",
+            "ttyUSB0",
+            "ttyACM1",
+            "ttyS0",
+            "null",
+        ] {
+            std::fs::write(dir.path().join(name), b"").unwrap();
+        }
+        let ports = serial_ports_in(dir.path());
+        let names: Vec<String> = ports
+            .iter()
+            .map(|p| p.rsplit(['/', '\\']).next().unwrap().to_string())
+            .collect();
+        assert_eq!(
+            names,
+            ["cu.usbmodem2101", "cu.usbserial-DMX1", "ttyACM1", "ttyUSB0"]
+        );
+        assert!(serial_ports_in(&dir.path().join("missing")).is_empty());
     }
 
     #[test]

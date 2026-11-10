@@ -21,6 +21,7 @@ use od_core::{PhraseKind, PhraseMood};
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{FixtureRole, Patch};
+use crate::looks::{self, AutoPick, AutoSettings, PadLook, PadState};
 use crate::render::Look;
 
 /// What one deck contributes, filled from the engine state each frame.
@@ -195,6 +196,27 @@ pub struct ShowSettings {
     /// Lighting cues stored with tracks: library track id → cues by beat.
     #[serde(default)]
     pub track_cues: HashMap<i64, Vec<TrackCue>>,
+    /// Own looks and chases on pads.
+    #[serde(default)]
+    pub pads: Vec<PadLook>,
+    /// Group masters, 0..1 (missing = full).
+    #[serde(default)]
+    pub group_levels: HashMap<String, f32>,
+    /// How AUTO is steered: palette and phrase-to-look table.
+    #[serde(default)]
+    pub auto: AutoSettings,
+}
+
+impl ShowSettings {
+    /// Group master of `group`, 0..1.
+    pub fn group_level(&self, group: &str) -> f32 {
+        self.group_levels
+            .get(group)
+            .copied()
+            .filter(|v| v.is_finite())
+            .unwrap_or(1.0)
+            .clamp(0.0, 1.0)
+    }
 }
 
 /// One cue of the Pro mode stack: group settings layered over the base
@@ -226,6 +248,9 @@ impl Default for ShowSettings {
             groups: HashMap::new(),
             cues: Vec::new(),
             track_cues: HashMap::new(),
+            pads: Vec::new(),
+            group_levels: HashMap::new(),
+            auto: AutoSettings::default(),
         }
     }
 }
@@ -246,10 +271,16 @@ pub struct Show {
     pub momentary: Momentary,
     /// Cue chosen by Go / Back (track cues take precedence while they apply).
     pub manual_cue: Option<usize>,
+    /// Pads latched and held, and HOLD.
+    pub pads: PadState,
     /// Cue in effect last frame.
     active_cue: Option<usize>,
-    /// Program of the dominant deck and the frame it changed.
-    current: Option<(Program, f32)>,
+    /// AUTO's pick for the dominant deck.
+    current: Option<AutoPick>,
+    /// The pick HOLD keeps.
+    held: Option<AutoPick>,
+    /// Pad in control last frame.
+    top: Option<u16>,
     /// Previous frame's looks and remaining crossfade (0..1).
     previous: Vec<Look>,
     fade: f32,
@@ -272,8 +303,11 @@ impl Show {
             settings,
             momentary: Momentary::default(),
             manual_cue: None,
+            pads: PadState::default(),
             active_cue: None,
             current: None,
+            held: None,
+            top: None,
             previous: Vec::new(),
             fade: 0.0,
             fade_time: 1.0,
@@ -294,6 +328,22 @@ impl Show {
         }
     }
 
+    /// AUTO's pick for a deck: HOLD's look, or the phrase table's.
+    fn auto_pick(&self, d: &DeckMusic) -> AutoPick {
+        self.held
+            .unwrap_or_else(|| self.settings.auto.table.pick(d.phrase))
+    }
+
+    /// AUTO's pick for the deck you hear most (for the UI).
+    pub fn current_pick(&self) -> Option<AutoPick> {
+        self.current
+    }
+
+    /// The pick HOLD keeps, while held.
+    pub fn held_pick(&self) -> Option<AutoPick> {
+        self.held
+    }
+
     /// One frame: `dt` seconds since the last.
     pub fn frame(&mut self, patch: &Patch, decks: &[DeckMusic], dt: f32) -> Vec<Look> {
         let audible: Vec<&DeckMusic> = decks
@@ -304,6 +354,21 @@ impl Show {
             .iter()
             .copied()
             .max_by(|a, b| a.weight.total_cmp(&b.weight));
+        // The beat everything else follows: the deck you hear most, else
+        // the tapped (or 120 BPM) free-running beat.
+        let music = match dominant {
+            Some(d) => *d,
+            None => self.free_music(dt),
+        };
+        self.pads.retain(&self.settings.pads);
+        // HOLD keeps the pick it found when it was pressed.
+        if self.pads.hold {
+            if self.held.is_none() {
+                self.held = self.current;
+            }
+        } else {
+            self.held = None;
+        }
 
         let mut looks: Vec<Look> = match self.settings.mode {
             Mode::Auto => {
@@ -314,11 +379,7 @@ impl Show {
                     let mut acc: Option<Vec<Look>> = None;
                     let mut acc_w = 0.0;
                     for d in &audible {
-                        let program = Program::for_phrase(d.phrase);
-                        let set = rig(patch, d, |_| Choice {
-                            program,
-                            ..Choice::default()
-                        });
+                        let set = self.pick_looks(patch, d, self.auto_pick(d));
                         acc_w += d.weight;
                         acc = Some(match acc {
                             None => set,
@@ -333,28 +394,20 @@ impl Show {
                 }
             }
             Mode::Easy => {
-                let music = match dominant {
-                    Some(d) => *d,
-                    None => self.free_music(dt),
-                };
                 let program = self.settings.easy_program;
                 let color = self.settings.easy_color;
-                rig(patch, &music, |_| Choice {
+                rig(patch, &music, None, |_| Choice {
                     program,
                     color,
                     ..Choice::default()
                 })
             }
             Mode::Pro => {
-                let music = match dominant {
-                    Some(d) => *d,
-                    None => self.free_music(dt),
-                };
                 let groups = &self.settings.groups;
                 let cue = self
                     .cue_for(dominant.copied())
                     .and_then(|i| self.settings.cues.get(i));
-                rig(patch, &music, |group| {
+                rig(patch, &music, None, |group| {
                     let base = groups.get(group).cloned().unwrap_or_default();
                     let g = match cue.and_then(|c| c.groups.get(group)) {
                         Some(o) => GroupSettings {
@@ -368,34 +421,57 @@ impl Show {
                         },
                         None => base,
                     };
-                    Choice {
-                        program: g
-                            .program
-                            .unwrap_or_else(|| Program::for_phrase(music.phrase)),
-                        color: g.color,
-                        intensity: g.intensity,
-                        pan: g.pan,
-                        tilt: g.tilt,
-                        speed: g.speed.unwrap_or(1.0),
-                        effect: g.effect,
-                    }
+                    choice(&g, &music)
                 })
             }
         };
 
+        // A pad over whatever runs: the groups its look sets.
+        let top = self.pads.top();
+        if let Some(groups) = top.and_then(|p| looks::groups_at(&self.settings.pads, p, music.beat))
+        {
+            let over = rig(patch, &music, None, |g| {
+                groups.get(g).map(|s| choice(s, &music)).unwrap_or_default()
+            });
+            for ((look, o), f) in looks.iter_mut().zip(over).zip(&patch.fixtures) {
+                if groups.contains_key(&f.group) {
+                    *look = o;
+                }
+            }
+        }
+
         // Phrase change of the dominant deck: crossfade over one bar.
-        let program = dominant.map(|d| Program::for_phrase(d.phrase));
+        let pick = dominant.map(|d| self.auto_pick(d));
         let bar = dominant
             .map(|d| (240.0 / d.bpm.max(1.0)) as f32)
             .unwrap_or(2.0);
-        match (self.current, program) {
-            (Some((old, _)), Some(new)) if old != new && self.settings.mode == Mode::Auto => {
+        let beat_secs = (60.0 / music.bpm.max(1.0)) as f32;
+        match (self.current, pick) {
+            (Some(old), Some(new)) if old != new && self.settings.mode == Mode::Auto => {
                 self.fade = 1.0;
                 self.fade_time = bar;
-                self.current = Some((new, 0.0));
+                self.current = Some(new);
             }
-            (_, Some(new)) => self.current = Some((new, 0.0)),
+            (_, Some(new)) => self.current = Some(new),
             _ => {}
+        }
+        // A latch or its release fades over one beat; a flash pad is at
+        // once, on and off.
+        if top != self.top {
+            let flash = |p: Option<u16>| {
+                p.is_some_and(|p| self.pads.flashing.contains(&p))
+                    || p.is_some_and(|p| {
+                        looks::find(&self.settings.pads, p)
+                            .is_some_and(|l| l.action == looks::PadAction::Flash)
+                    })
+            };
+            if flash(top) || flash(self.top) {
+                self.fade = 0.0;
+            } else {
+                self.fade = 1.0;
+                self.fade_time = beat_secs;
+            }
+            self.top = top;
         }
         // Pro cue change: fade over the cue's beats.
         if self.settings.mode == Mode::Pro {
@@ -424,13 +500,13 @@ impl Show {
         }
         self.previous = looks.clone();
 
-        // Master layer.
+        // Master layer: momentary keys, group masters, master dimmer.
         let master = if self.settings.blackout {
             0.0
         } else {
             self.settings.master.clamp(0.0, 1.0)
         };
-        for look in &mut looks {
+        for (look, f) in looks.iter_mut().zip(&patch.fixtures) {
             if self.momentary.flash {
                 look.intensity = 1.0;
                 look.color = [1.0; 3];
@@ -441,12 +517,54 @@ impl Show {
                 look.strobe = 1.0;
             }
             look.fog = self.momentary.fog;
-            look.intensity *= master;
+            let level = master * self.settings.group_level(&f.group);
+            look.intensity *= level;
             for p in &mut look.pixels {
-                *p = p.map(|c| c * master);
+                *p = p.map(|c| c * level);
             }
         }
         looks
+    }
+
+    /// The rig for one deck's music and an AUTO pick.
+    fn pick_looks(&self, patch: &Patch, d: &DeckMusic, pick: AutoPick) -> Vec<Look> {
+        let auto = Some(&self.settings.auto);
+        let fallback = Program::for_phrase(d.phrase);
+        match pick {
+            AutoPick::Program(program) => rig(patch, d, auto, |_| Choice {
+                program,
+                ..Choice::default()
+            }),
+            AutoPick::Pad(pad) => match looks::groups_at(&self.settings.pads, pad, d.beat) {
+                Some(groups) => rig(patch, d, auto, |g| match groups.get(g) {
+                    Some(s) => choice(s, d),
+                    None => Choice {
+                        program: fallback,
+                        ..Choice::default()
+                    },
+                }),
+                None => rig(patch, d, auto, |_| Choice {
+                    program: fallback,
+                    ..Choice::default()
+                }),
+            },
+        }
+    }
+}
+
+/// What a group's settings make it do, with the music's phrase where the
+/// program is left to follow it.
+fn choice(g: &GroupSettings, music: &DeckMusic) -> Choice {
+    Choice {
+        program: g
+            .program
+            .unwrap_or_else(|| Program::for_phrase(music.phrase)),
+        color: g.color,
+        intensity: g.intensity,
+        pan: g.pan,
+        tilt: g.tilt,
+        speed: g.speed.unwrap_or(1.0),
+        effect: g.effect,
     }
 }
 
@@ -530,7 +648,16 @@ fn idle(patch: &Patch) -> Vec<Look> {
 }
 
 /// Looks for the whole rig from one deck's music.
-fn rig(patch: &Patch, music: &DeckMusic, choose: impl Fn(&str) -> Choice) -> Vec<Look> {
+fn rig(
+    patch: &Patch,
+    music: &DeckMusic,
+    auto: Option<&AutoSettings>,
+    choose: impl Fn(&str) -> Choice,
+) -> Vec<Look> {
+    // Colour when the choice leaves it open: AUTO's palette, else the track.
+    let fallback = auto
+        .and_then(|a| a.color(music.mood, music.beat))
+        .unwrap_or_else(|| palette(music.hue, music.mood, music.beat));
     // Index of each fixture within its group, for effect phase spread.
     let mut in_group: HashMap<&str, usize> = HashMap::new();
     let group_index: Vec<usize> = patch
@@ -581,7 +708,7 @@ fn rig(patch: &Patch, music: &DeckMusic, choose: impl Fn(&str) -> Choice) -> Vec
                 } else {
                     0.5
                 },
-                color: color.unwrap_or_else(|| palette(music.hue, music.mood, music.beat)),
+                color: color.unwrap_or(fallback),
             };
             let mut look = program_look(program, &ctx);
             if let Some(i) = intensity {
@@ -1038,5 +1165,117 @@ mod tests {
             half < first,
             "pulse decays within the beat: {first} → {half}"
         );
+    }
+
+    fn red_wash(pad: u16) -> crate::looks::PadLook {
+        let mut l = crate::looks::PadLook::new(pad, "Red wash");
+        l.groups.insert(
+            "Wash".into(),
+            GroupSettings {
+                program: Some(Program::Static),
+                color: Some([1.0, 0.0, 0.0]),
+                intensity: Some(0.9),
+                ..Default::default()
+            },
+        );
+        l
+    }
+
+    /// [15] [18] A latched pad takes the groups its look sets while AUTO
+    /// runs; the others keep following the music; a flash pad wins while
+    /// held; RELEASE hands back with a fade.
+    #[test]
+    fn pads_override_auto_by_group_and_release_hands_back() {
+        let patch = rig_patch();
+        let mut settings = ShowSettings::default();
+        let mut flash = red_wash(1);
+        flash.name = "Blue hit".into();
+        flash.action = crate::looks::PadAction::Flash;
+        flash.groups.get_mut("Wash").unwrap().color = Some([0.0, 0.0, 1.0]);
+        settings.pads = vec![red_wash(0), flash];
+        let mut show = Show::new(settings);
+        let chorus = |beat| deck(PhraseKind::Chorus, beat, 0.2);
+        let before = show.frame(&patch, &[chorus(0.0)], 0.02);
+        assert_ne!(before[0].color, [1.0, 0.0, 0.0]);
+        assert!(show.pads.press(&show.settings.pads.clone(), 0, true));
+        // Fades in over a beat (0.47 s at 128 BPM).
+        let first = show.frame(&patch, &[chorus(0.1)], 0.02);
+        assert_ne!(first[0].color, [1.0, 0.0, 0.0], "fading in");
+        let mut now = first;
+        for i in 0..40 {
+            now = show.frame(&patch, &[chorus(0.2 + i as f64 * 0.04)], 0.02);
+        }
+        assert_eq!(now[0].color, [1.0, 0.0, 0.0], "the wash is the pad's");
+        assert!((now[0].intensity - 0.9).abs() < 1e-5);
+        let auto = Show::default().frame(&patch, &[chorus(0.2 + 39.0 * 0.04)], 0.02);
+        assert_eq!(now[2].pan, auto[2].pan, "movers still follow AUTO");
+        // A flash pad is at once, and wins while held.
+        let pads = show.settings.pads.clone();
+        show.pads.press(&pads, 1, true);
+        let held = show.frame(&patch, &[chorus(2.0)], 0.02);
+        assert_eq!(held[0].color, [0.0, 0.0, 1.0]);
+        show.pads.press(&pads, 1, false);
+        let back = show.frame(&patch, &[chorus(2.1)], 0.02);
+        assert_eq!(back[0].color, [1.0, 0.0, 0.0], "back to the latch at once");
+        // RELEASE: AUTO again after a beat.
+        show.pads.release();
+        for i in 0..40 {
+            now = show.frame(&patch, &[chorus(2.2 + i as f64 * 0.04)], 0.02);
+        }
+        assert_ne!(now[0].color, [1.0, 0.0, 0.0]);
+        assert_eq!(show.pads.top(), None);
+    }
+
+    /// [15] Group masters scale their group only.
+    #[test]
+    fn group_masters_scale_their_group() {
+        let patch = rig_patch();
+        let mut show = Show::new(ShowSettings {
+            mode: Mode::Easy,
+            easy_program: Program::Static,
+            ..Default::default()
+        });
+        let full = show.frame(&patch, &[], 0.02);
+        show.settings.group_levels.insert("Wash".into(), 0.5);
+        let half = show.frame(&patch, &[], 0.02);
+        assert!((half[0].intensity - full[0].intensity * 0.5).abs() < 1e-5);
+        assert_eq!(half[2].intensity, full[2].intensity, "movers untouched");
+        assert_eq!(show.settings.group_level("Nope"), 1.0);
+    }
+
+    /// [18] The phrase table picks a pad for the drop, a palette colours
+    /// AUTO, and HOLD keeps the look through a phrase change.
+    #[test]
+    fn auto_table_palette_and_hold() {
+        use crate::looks::{AutoPick, Palette, PhraseSlot};
+        let patch = rig_patch();
+        let mut settings = ShowSettings::default();
+        settings.pads = vec![red_wash(4)];
+        settings.auto.table.set(PhraseSlot::Drop, AutoPick::Pad(4));
+        settings.auto.palette = Palette::Cool;
+        let mut show = Show::new(settings);
+        let drop = show.frame(&patch, &[deck(PhraseKind::Chorus, 0.0, 0.1)], 0.02);
+        assert_eq!(drop[0].color, [1.0, 0.0, 0.0], "the drop plays pad 5");
+        assert_eq!(drop[2].color, Palette::Cool.colors()[0], "movers in the palette");
+        assert_eq!(show.current_pick(), Some(AutoPick::Pad(4)));
+        // HOLD, then the breakdown comes: the look stays.
+        show.pads.hold = true;
+        show.frame(&patch, &[deck(PhraseKind::Chorus, 1.0, 0.1)], 0.02);
+        let held = show.frame(&patch, &[deck(PhraseKind::Down, 2.0, 0.1)], 0.02);
+        assert_eq!(held[0].color, [1.0, 0.0, 0.0]);
+        assert_eq!(show.current_pick(), Some(AutoPick::Pad(4)));
+        show.pads.hold = false;
+        show.frame(&patch, &[deck(PhraseKind::Down, 2.1, 0.1)], 0.02);
+        assert_eq!(
+            show.current_pick(),
+            Some(AutoPick::Program(Program::Breathe)),
+            "free again"
+        );
+        // Old rigs load with the defaults.
+        let old: ShowSettings = serde_json::from_str(
+            r#"{"mode":"Auto","master":1.0,"blackout":false,"easy_program":"Pulse","easy_color":null,"groups":{}}"#,
+        )
+        .unwrap();
+        assert!(old.pads.is_empty() && old.auto == Default::default());
     }
 }

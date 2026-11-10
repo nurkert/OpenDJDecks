@@ -5,13 +5,18 @@
 //!   files) and the patch.
 //! * [`render`]: the attribute model ([`Look`]) rendered to DMX values.
 //! * [`show`]: automatic, easy and pro modes driven by the music.
+//! * [`looks`]: own looks and chases on pads, group masters, and how AUTO
+//!   is steered (palettes, the phrase-to-look table, hold, release).
+//! * [`discovery`]: finding Art-Net nodes on the local network.
 //! * [`rig`]: editing a rig from outside the app and its live inbox.
 //! * [`safety`]: strobe and flash cap, level caps, fog and laser lockout,
 //!   applied to every frame before it is sent.
 //! * [`Lighting`]: patch + show + outputs, ticked by the app; output links
 //!   are retried when lost, with a chosen [`Failsafe`] meanwhile.
 
+pub mod discovery;
 pub mod fixture;
+pub mod looks;
 pub mod output;
 pub mod render;
 pub mod rig;
@@ -21,7 +26,12 @@ pub mod show;
 pub use fixture::{
     ChannelKind, Collision, FixtureDef, FixtureMode, FixtureRole, MAX_UNIVERSES, Patch, Patched,
 };
-pub use output::{Link, Opener, Output, OutputKind, TestLink, Universe};
+pub use discovery::{ArtNode, FakeNode};
+pub use looks::{
+    AutoPick, AutoSettings, AutoTable, Layer, PAGE_PADS, PAGES, PADS, PadAction, PadLook,
+    PadState, Palette, PhraseSlot,
+};
+pub use output::{Link, Opener, Output, OutputKind, TestLink, Universe, serial_ports};
 pub use render::{Look, render, render_fixture};
 pub use rig::{LiveCommand, add_fixture, add_fixtures, parse_output};
 pub use safety::{Arming, Limiter, SafetyLimits};
@@ -103,6 +113,53 @@ pub const RETRY: f64 = 1.0;
 /// Identify blinks at this rate (below the default strobe cap).
 pub const IDENTIFY_HZ: f32 = 1.5;
 
+/// A test pattern for checking a new connection; it replaces the show
+/// while it runs and passes through the safety limits like everything else.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TestPattern {
+    /// One fixture after another, white, one step each.
+    Each,
+    /// The whole rig red, green, blue, white, one step each.
+    Colours,
+    /// The whole rig white.
+    Full,
+}
+
+/// Seconds per test pattern step.
+pub const TEST_STEP: f32 = 1.0;
+/// Level of the test pattern (bright enough to see, kind to eyes up close).
+pub const TEST_LEVEL: f32 = 0.8;
+
+/// Looks of a test pattern at `t` seconds with steps of `step` seconds.
+pub fn test_looks(patch: &Patch, pattern: TestPattern, t: f64, step: f32) -> Vec<Look> {
+    let step = step.max(0.001) as f64;
+    let n = (t / step).floor() as usize;
+    let within = (t / step).fract();
+    let count = patch.fixtures.len().max(1);
+    patch
+        .fixtures
+        .iter()
+        .enumerate()
+        .map(|(i, _)| {
+            let (on, color) = match pattern {
+                // Lit for the first three quarters of its step, so a rig of
+                // one fixture still blinks.
+                TestPattern::Each => (n % count == i && within < 0.75, [1.0; 3]),
+                TestPattern::Colours => (
+                    true,
+                    [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0; 3]][n % 4],
+                ),
+                TestPattern::Full => (true, [1.0; 3]),
+            };
+            Look {
+                intensity: if on { TEST_LEVEL } else { 0.0 },
+                color,
+                ..Look::default()
+            }
+        })
+        .collect()
+}
+
 /// The safe scene for a patch.
 pub fn safe_looks(patch: &Patch) -> Vec<Look> {
     patch
@@ -176,6 +233,11 @@ pub struct Lighting {
     delivered: Vec<Look>,
     /// Fixture blinking for identification.
     pub identify: Option<usize>,
+    /// Test pattern running instead of the show, and when it started.
+    pub test: Option<TestPattern>,
+    test_started: f64,
+    /// Seconds per test step ([`TEST_STEP`]).
+    pub test_step: f32,
     clock: f64,
     /// The show panicked; only the failsafe scene is sent from then on.
     pub faulted: bool,
@@ -206,6 +268,9 @@ impl Lighting {
             held: Vec::new(),
             delivered: Vec::new(),
             identify: None,
+            test: None,
+            test_started: 0.0,
+            test_step: TEST_STEP,
             clock: 0.0,
             faulted: false,
             inject_panic: false,
@@ -232,6 +297,14 @@ impl Lighting {
             frames: 0,
             reconnects: 0,
         });
+    }
+
+    /// Starts (or stops, with `None`) a test pattern.
+    pub fn set_test(&mut self, pattern: Option<TestPattern>) {
+        if pattern != self.test {
+            self.test = pattern;
+            self.test_started = self.clock;
+        }
     }
 
     pub fn clear_outputs(&mut self) {
@@ -292,6 +365,14 @@ impl Lighting {
                 panic!("injected show fault");
             }
             let mut looks = self.show.frame(&self.patch, decks, dt);
+            if let Some(pattern) = self.test {
+                looks = test_looks(
+                    &self.patch,
+                    pattern,
+                    self.clock - self.test_started,
+                    self.test_step,
+                );
+            }
             if let Some(look) = self.identify.and_then(|i| looks.get_mut(i)) {
                 let on = (self.clock * IDENTIFY_HZ as f64).fract() < 0.5;
                 *look = Look {
