@@ -36,6 +36,8 @@ While you drag, a small readout at the playhead shows the offset in seconds (pau
 
 ## The centre of the deck
 
+![Perform in a large window: the platter centred with its keys, SYNC, CUE and PLAY on the same axis](../img/perform-large.png)
+
 The platter sits in the middle of the deck's rows, with **SLIP**, **QUANTIZE**, **KEYLOCK** and the tempo range as one block on its inner side. Their inner edges follow the ring, one key gap away, and **SYNC**, **CUE** and **PLAY** stand on the same axis. In a larger window the platter grows up to a limit and the keys grow with it; any room left goes above and below, never between the keys. On the player screens of Club mode, the ◀◀ / ◀ CALL and ▶▶ / CALL ▶ keys wrap the jog the same way.
 
 ## Knobs, faders and meters

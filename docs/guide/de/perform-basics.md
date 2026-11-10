@@ -36,6 +36,8 @@ Beim Ziehen zeigt eine kleine Anzeige an der Abspielmarke den Versatz in Sekunde
 
 ## Die Mitte des Decks
 
+![Perform in einem großen Fenster: der Plattenteller mittig mit seinen Tasten, SYNC, CUE und PLAY auf derselben Achse](../img/perform-large.png)
+
 Der Plattenteller steht mittig in den Reihen des Decks, mit **SLIP**, **QUANTIZE**, **KEYLOCK** und dem Tempobereich als ein Block an seiner inneren Seite. Ihre inneren Kanten folgen dem Ring mit einem Tastenabstand, und **SYNC**, **CUE** und **PLAY** stehen auf derselben Achse. In einem größeren Fenster wächst der Plattenteller bis zu einer Grenze und die Tasten mit ihm; übriger Platz geht nach oben und unten, nie zwischen die Tasten. Auf den Player-Screens im Club-Modus umschließen die Tasten ◀◀ / ◀ CALL und ▶▶ / CALL ▶ das Jogwheel auf dieselbe Weise.
 
 ## Regler, Fader und Pegel
