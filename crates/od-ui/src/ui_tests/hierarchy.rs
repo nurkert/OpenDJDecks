@@ -97,3 +97,65 @@ fn undo_only_where_editing_happens() {
         assert!(!ui.has("topbar.undo"), "{mode} offers no undo");
     }
 }
+
+/// [8] At the small laptop size the two-deck layout is the full deck: platter
+/// and tempo fader are there, SYNC sits with CUE and PLAY and is the strongest
+/// key beside them, and the controls use the room down to the bottom of the
+/// mixer column.
+#[test]
+fn full_deck_at_laptop_size_with_transport_tier() {
+    for (w, h) in [(1280, 800), (1440, 900)] {
+        let ui = Ui::open((w, h));
+        ui.click("topbar.mode.perform");
+        ui.pump(400);
+        assert!(ui.has("deck1.platter"), "{w}: platter");
+        assert!(ui.has("deck1.pitch"), "{w}: tempo fader");
+        let (sync, cue, play) = (
+            rect(&ui, "deck1.beat-sync"),
+            rect(&ui, "deck1.cue"),
+            rect(&ui, "deck1.play"),
+        );
+        assert!(sync.bottom() <= cue.y + 1.0, "{w}: SYNC above CUE");
+        assert!(cue.bottom() <= play.y + 1.0, "{w}: CUE above PLAY");
+        assert!(cue.h >= 48.0 && play.h >= 48.0, "{w}: transport keys {} {}", cue.h, play.h);
+        let setup = rect(&ui, "deck1.quantize");
+        assert!(sync.h >= setup.h && cue.h > 2.0 * setup.h, "{w}: setup key {} not below SYNC {} / CUE {}", setup.h, sync.h, cue.h);
+        assert!(setup.h <= 26.0, "{w}: setup keys are small, {}", setup.h);
+        let pad = rect(&ui, "deck1.pad.A");
+        assert!(pad.h >= 24.0, "{w}: pad {}", pad.h);
+        // The controls reach the deck's bottom edge.
+        // Audio (and with it the mixer channels) starts with the first load.
+        let first = ui.fx.tracks[0].0;
+        crate::decks::load_track(&ui.app, 0, first, None);
+        assert!(ui.wait_until(10.0, |u| u.has("mixer.ch1.fader")), "{w}: mixer");
+        let fader = rect(&ui, "mixer.ch1.fader");
+        assert!(fader.h >= 40.0, "{w}: channel fader {}", fader.h);
+        let platter = rect(&ui, "deck1.platter");
+        assert!(platter.bottom() >= fader.bottom() - 30.0, "{w}: deck ends high");
+    }
+}
+
+/// [8] The compact deck stays for the kiosk and four decks; the kiosk keeps
+/// its 44 px keys and SYNC in its header.
+#[test]
+fn kiosk_deck_unchanged() {
+    let ui = Ui::start(Fixture::new(), (800, 480), true);
+    ui.app.ui.set_browser_open(false);
+    ui.pump(400);
+    let (sync, play) = (rect(&ui, "deck1.beat-sync"), rect(&ui, "deck1.play"));
+    assert!(sync.h >= 44.0 && play.h >= 44.0);
+    assert!(sync.y < play.y, "kiosk: SYNC in the header row above the transport");
+    assert!(!ui.has("guide.bar"), "no first-start guide on the kiosk");
+}
+
+/// [8] An empty hot cue pad is drawn hollow: no fill, a bone-3 outline and
+/// the letter in bone-3. A set pad fills in its colour.
+#[test]
+fn empty_hot_cues_are_hollow() {
+    let src = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui/perform.slint"),
+    )
+    .unwrap();
+    assert!(src.contains("border-width: root.p.set || root.filled ? 0px : 1px;"));
+    assert!(src.contains("background: root.filled ? root.tone : root.p.set ?"));
+}

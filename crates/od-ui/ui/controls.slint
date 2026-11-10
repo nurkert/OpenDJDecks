@@ -350,6 +350,8 @@ export component Fader inherits Rectangle {
     in property <string> command;
     in-out property <float> value: 0;
     in property <color> tone: Theme.bone;
+    // Handle height (the deck's strongest controls take a larger handle).
+    in property <length> handle: 12px;
     callback changed(float);
     width: 26px;
     Rectangle { x: parent.width / 2 - 1px; y: 4px; width: 2px; height: parent.height - 8px; background: Theme.rule-strong; }
@@ -360,11 +362,11 @@ export component Fader inherits Rectangle {
         background: root.tone.with-alpha(0.6);
     }
     Rectangle {
-        x: 1px; width: parent.width - 2px; height: 12px;
-        y: 4px + (parent.height - 8px - 12px) * (1 - root.value);
+        x: 1px; width: parent.width - 2px; height: root.handle;
+        y: 4px + (parent.height - 8px - root.handle) * (1 - root.value);
         background: Theme.plate-raised;
         border-radius: 2px; border-width: 1px; border-color: touch.has-hover ? Theme.bone-2 : Theme.bone-3;
-        Rectangle { y: 5px; height: 2px; x: 3px; width: parent.width - 6px; background: Theme.bone; }
+        Rectangle { y: (parent.height - 2px) / 2; height: 2px; x: 3px; width: parent.width - 6px; background: Theme.bone; }
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command;
         mouse-cursor: ns-resize;
@@ -398,6 +400,8 @@ export component Toggle inherits Rectangle {
     in property <color> tone: Theme.setup-on;
     in property <bool> enabled: true;
     in property <length> size: 26px;
+    // Legend size (Control rank; a tier-one key is one rank up).
+    in property <length> label-size: Theme.control;
     // Smallest width (44 px touch keys).
     in property <length> min-w: 0px;
     callback clicked();
@@ -410,7 +414,7 @@ export component Toggle inherits Rectangle {
     t := Text {
         y: (parent.height - self.height) / 2 + (touch.pressed && root.enabled ? 1px : 0);
         text: root.label;
-        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+        font-family: Theme.family; font-size: root.label-size; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
         color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
         horizontal-alignment: center; vertical-alignment: center;
     }
@@ -588,17 +592,19 @@ export component Transport inherits Rectangle {
     width: root.size; height: root.size;
     border-radius: root.size / 2;
     background: Theme.face(true, touch.pressed, touch.has-hover, false, root.on, root.tone);
+    // The mark and the legend grow with the key.
+    property <length> mark: max(12px, root.size * 0.32);
     if root.kind == "cue": Text {
         y: (parent.height - self.height) / 2 + (touch.pressed ? 1px : 0);
         text: "CUE";
-        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
-        color: Theme.ink(true, touch.pressed, touch.has-hover, false, root.on);
+        font-family: Theme.family; font-size: root.size >= 56px ? Theme.heading : Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: root.on ? Theme.ink-on : Theme.bone;
     }
     if root.kind != "cue": Glyph {
-        x: (parent.width - 12px) / 2 + 1px; y: (parent.height - 12px) / 2;
-        width: 12px; height: 12px;
+        x: (parent.width - root.mark) / 2 + 1px; y: (parent.height - root.mark) / 2;
+        width: root.mark; height: root.mark;
         kind: root.on ? "pause" : "play";
-        tone: Theme.ink(true, touch.pressed, touch.has-hover, false, root.on);
+        tone: root.on ? Theme.ink-on : Theme.bone;
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
 }

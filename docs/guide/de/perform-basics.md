@@ -25,12 +25,12 @@ Die schmale Wellenform in jedem Deck ist der ganze Track mit Hot Cues und Phrase
 
 Der Ansichts-Knopf oben in Perform öffnet ein Menü mit einem Bild jeder Ansicht: **2 Decks** oder **4 Decks**, jeweils **horizontal** oder **vertikal**, und **Browse**, das die Decks klein hält und dem Browser den Platz gibt. Kurzbefehle: `⌥⌘V` für vertikale Wellenformen und `⌥⌘B` für Browse. Ein Vierdeck-Controller schaltet automatisch auf vier Decks.
 
-Die obere Leiste zeigt oder verbirgt außerdem die Panels: **FX**, **VORSCHAU**, **SAMPLER**, **MIXER** und **REC**, dazu **CLUB** und **LICHTLEISTE**. Ziehe die Trennbalken zwischen den Bereichen, um die Größe zu ändern; Doppelklick setzt zurück.
+Die obere Leiste hat drei Zonen. Links stehen die Arbeitsmodi, in der Mitte das, was der aktuelle Modus zeigt, rechts das, was gerade läuft: Master-Tempo, Aufnahme, Controller und Master-Ausgang. **FX**, **VORSCHAU**, **SAMPLER** und **MIXER** blenden Panels ein und aus, dazu **CLUB** und **LICHTLEISTE**. **AUFNAHME** startet eine Aufnahme und wird rot mit der laufenden Zeit; die kleine Taste daneben zeigt oder verbirgt den Aufnahmebereich. **UNDO** erscheint in Prepare, wo du bearbeitest. Ziehe die Trennbalken zwischen den Bereichen, um die Größe zu ändern; Doppelklick setzt zurück.
 
 ## Tempo und Sync
 
-- Der **Tempo-Fader** ändert die Geschwindigkeit; oben ist langsamer, wie am Player. Die Bereichstaste über CUE schaltet durch **±6 %**, **±10 %**, **±16 %** und **WIDE**. Der Standard kommt aus **Einstellungen › Controller › Decks**, und im Feld auf dem Platter kannst du eine BPM eintippen.
-- **SYNC** koppelt ein Deck an das **MASTER**-Deck, nach Tempo und Taktposition. `⇧Q` und `⇧Y` machen Deck 1 und 2 zum Master. Unter **Einstellungen › Controller › Decks › Sync** wählst du Beat-Sync oder nur Tempo.
+- Der **Tempo-Fader** ändert die Geschwindigkeit; oben ist langsamer, wie am Player. Die Bereichstaste bei den Setup-Tasten neben dem Fader schaltet durch **±6 %**, **±10 %**, **±16 %** und **WIDE**. Der Standard kommt aus **Einstellungen › Controller › Decks**, und im Feld auf dem Platter kannst du eine BPM eintippen.
+- **SYNC**, über **CUE** und **PLAY**, koppelt ein Deck an das **MASTER**-Deck, nach Tempo und Taktposition. `⇧Q` und `⇧Y` machen Deck 1 und 2 zum Master. Unter **Einstellungen › Controller › Decks › Sync** wählst du Beat-Sync oder nur Tempo.
 - **Q** (Quantisieren) lässt Cues, Loops und Sprünge auf dem Beat landen.
 - **KEY SYNC** bringt das Deck in die Tonart des Master-Decks.
 - **‹ ±0 ›** im Deck-Kopf verschiebt die Tonart um je einen Halbton; Klick auf den Wert setzt zurück.
