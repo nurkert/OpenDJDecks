@@ -768,7 +768,11 @@ fn deck_switches_survive_loads_and_restarts() {
         ui.wait_until(10.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].keylock && s.decks[0].tempo_range == range && !s.decks[1].keylock)),
         "MT and range back after a restart"
     );
-    assert_eq!(ui.get("deck1.keylock").accessible_checked(), Some(true));
+    // The screen key follows a frame later.
+    assert!(
+        ui.wait_until(5.0, |u| u.get("deck1.keylock").accessible_checked() == Some(true)),
+        "KEYLOCK shown on after a restart"
+    );
 }
 
 /// Cues on the zoomed lane: hot cue A at 1 s as a flag with its letter and
