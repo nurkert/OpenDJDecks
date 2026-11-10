@@ -263,6 +263,102 @@ pub fn status_markdown(mappings: &[Arc<Mapping>], de: bool) -> String {
     s
 }
 
+/// The status of a whole model: verified only when every control of it is
+/// confirmed on a unit, "partly confirmed" when some are, else unconfirmed.
+pub fn model_status(controls: &[ControlStatus], de: bool) -> &'static str {
+    let (v, _, _) = counts(controls);
+    let t = |en: &'static str, de_s: &'static str| if de { de_s } else { en };
+    if !controls.is_empty() && v == controls.len() {
+        t("verified", "bestätigt")
+    } else if v > 0 {
+        t("partly confirmed", "teilweise bestätigt")
+    } else {
+        t("not confirmed", "nicht bestätigt")
+    }
+}
+
+/// The published controller list (roadmap [13]): one row per bundled
+/// mapping with how it is recognised and its status, then one row per
+/// controller class the guided setup covers. Generated like the status
+/// list, between the `controller-list` markers of the controllers guide.
+pub fn controller_list_markdown(
+    mappings: &[Arc<Mapping>],
+    templates: &[crate::guided::Template],
+    de: bool,
+) -> String {
+    let t = |en: &'static str, de_s: &'static str| if de { de_s } else { en };
+    let mut s = String::new();
+    s.push_str(t(
+        "| Controller | Decks | Mapping | Recognised by | Status |\n|---|---|---|---|---|\n",
+        "| Controller | Decks | Mapping | Erkannt an | Status |\n|---|---|---|---|---|\n",
+    ));
+    for m in mappings {
+        let d = &m.file.device;
+        let c = controls(m);
+        let (v, p, u) = counts(&c);
+        let names: Vec<String> = d
+            .matching
+            .port_names
+            .iter()
+            .map(|n| format!("`{n}`"))
+            .collect();
+        let status = if de {
+            format!(
+                "{}: {v} bestätigt, {p} teilweise, {u} ungetestet",
+                model_status(&c, true)
+            )
+        } else {
+            format!(
+                "{}: {v} verified, {p} partial, {u} untested",
+                model_status(&c, false)
+            )
+        };
+        s.push_str(&format!(
+            "| {} {} | {} | {} | {} {} | {status} |\n",
+            t("compatible with", "kompatibel mit"),
+            d.name,
+            d.decks,
+            t("built in", "eingebaut"),
+            t("MIDI port name", "MIDI-Portname"),
+            names.join(", "),
+        ));
+    }
+    for tpl in templates {
+        let class = match tpl.id.as_str() {
+            "two-deck-entry" => t("Any two-deck entry-level controller", "Jeder Einsteiger-Controller mit zwei Decks"),
+            "two-deck-battle" => t("Any two-deck battle-style controller", "Jeder Battle-Controller mit zwei Decks"),
+            "four-deck" => t("Any four-deck controller", "Jeder Controller mit vier Decks"),
+            _ => t("Other controller", "Anderer Controller"),
+        };
+        s.push_str(&format!(
+            "| {class} | {} | {} `{}` ({} {}) | {} | {} |\n",
+            tpl.decks,
+            t("guided setup, template", "geführte Einrichtung, Vorlage"),
+            tpl.id,
+            tpl.steps.len(),
+            t("controls", "Bedienelemente"),
+            t("the port of the unit you set up", "der Port des eingerichteten Geräts"),
+            t(
+                "not confirmed: your own capture, nobody else's unit",
+                "nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät"
+            ),
+        ));
+    }
+    s
+}
+
+/// Markers of the generated controller list.
+pub const LIST_START: &str = "<!-- controller-list:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->";
+pub const LIST_END: &str = "<!-- controller-list:end -->";
+
+/// `doc` with the generated controller list replaced, or `None` when its
+/// markers are missing.
+pub fn replace_list(doc: &str, section: &str) -> Option<String> {
+    let a = doc.find(LIST_START)? + LIST_START.len();
+    let b = doc[a..].find(LIST_END)? + a;
+    Some(format!("{}\n\n{}\n{}", &doc[..a], section.trim_end(), &doc[b..]))
+}
+
 /// Start and end markers of the generated section.
 pub const STATUS_START: &str = "<!-- hardware-status:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->";
 pub const STATUS_END: &str = "<!-- hardware-status:end -->";
@@ -321,6 +417,24 @@ verify = true
 
     fn mapping() -> Arc<Mapping> {
         Arc::new(Mapping::from_toml_str(MAP).unwrap())
+    }
+
+    #[test]
+    fn the_controller_list_never_claims_more_than_the_mappings() {
+        let m = mapping();
+        let tpl = crate::guided::Template::all();
+        let en = controller_list_markdown(&[m.clone()], &tpl, false);
+        // One confirmed entry makes the model "partly confirmed", never
+        // "verified"; the classes are never confirmed.
+        assert!(en.contains("| compatible with Test 2 | 2 | built in | MIDI port name `TEST2` | partly confirmed: 1 verified"), "{en}");
+        assert!(en.contains("Any two-deck battle-style controller"));
+        assert_eq!(en.matches("not confirmed").count(), 3, "{en}");
+        assert!(!en.contains("| verified"), "{en}");
+        let de = controller_list_markdown(&[m], &tpl, true);
+        assert!(de.contains("nicht bestätigt"));
+        let doc = format!("a\n{LIST_START}\nold\n{LIST_END}\nb");
+        let new = replace_list(&doc, "new").unwrap();
+        assert!(new.contains("new") && !new.contains("old") && new.ends_with("b"));
     }
 
     #[test]

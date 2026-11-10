@@ -1,0 +1,244 @@
+# OpenDJDecks controller template: Two decks, battle style.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+# A generic list of the core controls of this class of controller, in
+# the order the guided setup (Preferences > Controller) asks for them.
+# It names no model and holds no MIDI numbers: the setup fills them in
+# from the owner's own unit and writes a mapping file from them.
+# Two decks for scratching: the crossfader is the main control, so the
+# setup offers the CUT crossfader curve when the mapping is saved.
+
+template = 1
+id = "two-deck-battle"
+name = "Two decks, battle style"
+decks = 2
+module = "jog-controller"
+crossfader_curve = "cut"
+
+[[step]]
+action = "deck.play_pause"
+deck = 1
+expect = "button"
+name = "Play/Pause (deck 1)"
+screen = "deck1.play"
+
+[[step]]
+action = "deck.cue"
+deck = 1
+expect = "button"
+name = "Cue (deck 1)"
+screen = "deck1.cue"
+
+[[step]]
+action = "deck.sync"
+deck = 1
+expect = "button"
+name = "Sync (deck 1)"
+screen = "deck1.beat-sync"
+
+[[step]]
+action = "deck.jog_touch"
+deck = 1
+expect = "button"
+name = "Jog touch (deck 1)"
+
+[[step]]
+action = "deck.jog_turn"
+deck = 1
+args = { mode = "scratch" }
+expect = "wheel"
+name = "Jog wheel (deck 1)"
+
+[[step]]
+action = "deck.tempo"
+deck = 1
+expect = "fader"
+name = "Tempo fader (deck 1)"
+screen = "deck1.pitch"
+
+[[step]]
+action = "deck.load"
+deck = 1
+expect = "button"
+name = "Load (deck 1)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 0 }
+expect = "button"
+name = "Hot cue A (deck 1)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 1 }
+expect = "button"
+name = "Hot cue B (deck 1)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 2 }
+expect = "button"
+name = "Hot cue C (deck 1)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 3 }
+expect = "button"
+name = "Hot cue D (deck 1)"
+
+[[step]]
+action = "deck.play_pause"
+deck = 2
+expect = "button"
+name = "Play/Pause (deck 2)"
+screen = "deck2.play"
+
+[[step]]
+action = "deck.cue"
+deck = 2
+expect = "button"
+name = "Cue (deck 2)"
+screen = "deck2.cue"
+
+[[step]]
+action = "deck.sync"
+deck = 2
+expect = "button"
+name = "Sync (deck 2)"
+screen = "deck2.beat-sync"
+
+[[step]]
+action = "deck.jog_touch"
+deck = 2
+expect = "button"
+name = "Jog touch (deck 2)"
+
+[[step]]
+action = "deck.jog_turn"
+deck = 2
+args = { mode = "scratch" }
+expect = "wheel"
+name = "Jog wheel (deck 2)"
+
+[[step]]
+action = "deck.tempo"
+deck = 2
+expect = "fader"
+name = "Tempo fader (deck 2)"
+screen = "deck2.pitch"
+
+[[step]]
+action = "deck.load"
+deck = 2
+expect = "button"
+name = "Load (deck 2)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 0 }
+expect = "button"
+name = "Hot cue A (deck 2)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 1 }
+expect = "button"
+name = "Hot cue B (deck 2)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 2 }
+expect = "button"
+name = "Hot cue C (deck 2)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 3 }
+expect = "button"
+name = "Hot cue D (deck 2)"
+
+[[step]]
+action = "mixer.fader"
+deck = 1
+expect = "fader"
+name = "Channel fader (channel 1)"
+screen = "mixer.ch1.fader"
+
+[[step]]
+action = "mixer.eq_high"
+deck = 1
+expect = "fader"
+name = "EQ high (channel 1)"
+screen = "mixer.ch1.eq-high"
+
+[[step]]
+action = "mixer.eq_low"
+deck = 1
+expect = "fader"
+name = "EQ low (channel 1)"
+screen = "mixer.ch1.eq-low"
+
+[[step]]
+action = "mixer.cue"
+deck = 1
+expect = "button"
+name = "Headphone cue (channel 1)"
+screen = "mixer.ch1.cue"
+
+[[step]]
+action = "mixer.fader"
+deck = 2
+expect = "fader"
+name = "Channel fader (channel 2)"
+screen = "mixer.ch2.fader"
+
+[[step]]
+action = "mixer.eq_high"
+deck = 2
+expect = "fader"
+name = "EQ high (channel 2)"
+screen = "mixer.ch2.eq-high"
+
+[[step]]
+action = "mixer.eq_low"
+deck = 2
+expect = "fader"
+name = "EQ low (channel 2)"
+screen = "mixer.ch2.eq-low"
+
+[[step]]
+action = "mixer.cue"
+deck = 2
+expect = "button"
+name = "Headphone cue (channel 2)"
+screen = "mixer.ch2.cue"
+
+[[step]]
+action = "crossfader"
+expect = "fader"
+name = "Crossfader"
+screen = "global.xfader"
+
+[[step]]
+action = "browse.rotate"
+expect = "wheel"
+name = "Browse"
+
+[[step]]
+action = "browse.press"
+expect = "button"
+name = "Browse press"
+
+[[step]]
+action = "headphone_level"
+expect = "fader"
+name = "Headphone level"
+screen = "global.phones.level"

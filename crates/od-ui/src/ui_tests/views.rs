@@ -102,6 +102,10 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             perform(if id.starts_with("perform.4") { 4 } else { 2 });
             slint::ComponentHandle::global::<crate::PerformLayout>(w).set_layout("vertical".into());
         }
+        "perform.simple" => {
+            perform(2);
+            crate::deck_layout::set_level(&ui.app, "simple");
+        }
         "perform.browse" => {
             perform(2);
             slint::ComponentHandle::global::<crate::PerformLayout>(w).set_layout("browse".into());

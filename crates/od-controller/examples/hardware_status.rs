@@ -1,11 +1,14 @@
 //! Writes the hardware status of every bundled controller mapping into the
 //! controllers guide (docs/guide/{en,de}/controllers.md), between the
-//! `hardware-status` markers. Without `--write` it prints the English table.
+//! `hardware-status` markers, and the controller list (bundled mappings and
+//! the guided-setup classes) between the `controller-list` markers. Without
+//! `--write` it prints the English tables.
 //!
 //! cargo run -p od-controller --example hardware_status -- --write
 
 use od_controller::Mapping;
-use od_controller::hardware::{replace_section, status_markdown};
+use od_controller::guided::Template;
+use od_controller::hardware::{controller_list_markdown, replace_list, replace_section, status_markdown};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -18,6 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|(p, m)| m.map(Arc::new).map_err(|e| format!("{}: {e}", p.display())))
         .collect::<Result<_, _>>()?;
     if !std::env::args().any(|a| a == "--write") {
+        print!("{}", controller_list_markdown(&mappings, &Template::all(), false));
         print!("{}", status_markdown(&mappings, false));
         return Ok(());
     }
@@ -27,6 +31,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let doc = std::fs::read_to_string(&path)?;
         let new = replace_section(&doc, &status_markdown(&mappings, de))
             .ok_or_else(|| format!("{}: hardware-status markers missing", path.display()))?;
+        let new = replace_list(&new, &controller_list_markdown(&mappings, &Template::all(), de))
+            .ok_or_else(|| format!("{}: controller-list markers missing", path.display()))?;
         std::fs::write(&path, new)?;
         println!("wrote {}", path.display());
     }

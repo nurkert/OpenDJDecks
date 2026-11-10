@@ -334,6 +334,11 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 ### First-Start Guide
 A band under the top bar on an empty library: four steps with hollow rings, a sodium ring on the current one, a green ring with a tick when done, a sentence that says what to do now, and the armed outline in sodium on the real control. Sample tracks and a test tone are offered in the band. Hidden in the kiosk. Never covers a control and never shows while a library exists unless asked for.
 
+Once the decks come in, the band also offers the deck layout (SIMPLE / STANDARD / FULL as a segmented control; one key that steps through them below 1480px), so the hint keeps room for two lines.
+
+### Controller Setup
+A band in the first-start band's place (64px): CONTROLLER SETUP in caps with "Control n of m" over a dashed sodium progress line, the request in Body at weight 600 ("Move the tempo fader of deck 1 up and down") with what arrived beneath it in Control rank (sodium when the control is already used), and BACK / AGAIN / SKIP / CLOSE as compact plates. The matching control on screen gets the armed sodium outline of the guide. Never covers a control.
+
 ### Set Safety
 Nothing here is a dialog: nothing may interrupt a set.
 - **Bands under the top bar** (ground-band, panel radius, the first-start band's place): device lost (struck deep-red line, Heading in fault, SWITCH OUTPUT as the green lead), restore after a crash (doubled sodium line, it needs you; RESTORE DECKS green, START EMPTY plain), gig check (one result per check: solid green ready, dashed sodium look at it, struck fix it). The device-lost band is drawn over the waveform zone instead of pushing the layout down, so the decks do not move mid-set (no sound plays, so nothing under it is needed); the others take their place in the layout in the order restore, gig check, first start.
@@ -360,6 +365,7 @@ Nothing here is a dialog: nothing may interrupt a set.
 - **Tiers:** a deck has three visual ranks. First: PLAY, CUE (round, mark and legend grow with the key), SYNC (one rank larger label, same column as CUE and PLAY) and the faders (larger handle). Second: pads and loop keys on the full rows. Third, setup keys (SLIP, QUANTIZE, KEYLOCK, tempo range, pad mode, GRID, KEY SYNC, key shift): 24px and not growing with the rows. Windows narrower than 1300 px keep the same rows with tighter columns, tighter header gaps and a one-rank smaller BPM in the header (the platter keeps the Hero BPM), and still spell out KEY SYNC and MASTER; the compact deck is for narrower windows and four decks. Empty hot cues are hollow; set ones filled in the cue colour. On the kiosk the transport keys stay at 44 px.
 - **Mixer:** per channel a knob column (TRIM, HI, MID, LOW, CH FX) beside the channel numeral, CUE toggle, a 4px level line (deep red at clip) and the channel fader. Knobs are drawn rings with a single indicator line; a changed knob's line takes its band wavelength; double-click resets.
 - The crossfader is a single 2px bone line on a strong-rule ruler between A and B.
+- **Layouts:** Simple, Standard and Full. Simple is a calm deck of about 25 controls on larger rows (34px base): pads A–D | E–H, a loop column (size, ½ / 2×, LOOP, jump − / +), SYNC / CUE / PLAY as on the full deck, the tempo fader; no platter and no setup tier, the header keeps the hero readouts. Groups (pads, loops, stems, effects, mixer, phase strip, setup keys) are hidden whole and then not built, never left in place invisible. The view menu holds the layout as a segmented control, the groups as on-keys and the saved layouts as rows with a hairline ×.
 
 ## Do's and Don'ts
 

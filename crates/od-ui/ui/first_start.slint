@@ -4,6 +4,7 @@
 
 import { Theme } from "tokens.slint";
 import { Caps, PlateButton, Glyph, FirstStart } from "controls.slint";
+import { DeckLayout } from "perform.slint";
 
 // One step: a hollow ring, a sodium ring while current (it needs you), a
 // filled tick when done; the name stays.
@@ -94,6 +95,37 @@ export component FirstStartBar inherits Rectangle {
                 enabled: !FirstStart.samples-busy;
                 tooltip: @tr("Writes two short sample tracks to your library folder: synthesised here, no download");
                 clicked => { FirstStart.add-samples(); }
+            }
+        }
+        // How much each deck shows (roadmap [6]), also in the top bar's view
+        // menu. From the third step on (the decks come in, the hints are
+        // short); one key that steps through the three on a laptop-wide
+        // band, so every hint keeps two lines' room.
+        if root.step >= 2 && root.width >= 1480px: HorizontalLayout {
+            horizontal-stretch: 0;
+            alignment: center;
+            spacing: Theme.key-gap;
+            VerticalLayout { alignment: center; Caps { text: @tr("DECKS"); } }
+            Rectangle { width: Theme.s1; }
+            for l in [{ id: "simple", label: @tr("SIMPLE") }, { id: "standard", label: @tr("STANDARD") }, { id: "full", label: @tr("FULL") }]: VerticalLayout {
+                alignment: center;
+                PlateButton {
+                    accessible-role: button; accessible-label: "guide.layout.\{l.id}";
+                    accessible-checkable: true; accessible-checked: DeckLayout.level == l.id;
+                    compact: true; label: l.label; selected: DeckLayout.level == l.id;
+                    tooltip: l.id == "simple" ? @tr("Simple: about 25 large controls per deck, for a first mix") : l.id == "full" ? @tr("Full: everything, with the Tempo FX panel open") : @tr("Standard: the usual deck");
+                    clicked => { DeckLayout.set-level(l.id); }
+                }
+            }
+        }
+        if root.step >= 2 && root.width < 1480px: VerticalLayout {
+            alignment: center;
+            PlateButton {
+                accessible-role: button; accessible-label: "guide.layout"; accessible-value: DeckLayout.level;
+                compact: true;
+                label: DeckLayout.level == "simple" ? @tr("DECKS: SIMPLE") : DeckLayout.level == "full" ? @tr("DECKS: FULL") : @tr("DECKS: STANDARD");
+                tooltip: @tr("Deck layout: Simple, Standard or Full — click for the next");
+                clicked => { DeckLayout.set-level(DeckLayout.level == "simple" ? "standard" : DeckLayout.level == "standard" ? "full" : "simple"); }
             }
         }
         VerticalLayout {

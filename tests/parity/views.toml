@@ -732,6 +732,468 @@ reason = "On the kiosk’s browse screen, one touch (topbar.layout BROWSE) or th
 shown_in = "perform.browse"
 
 [[view]]
+id = "perform.simple"
+title = "Perform: the Simple deck layout"
+mode = "perform"
+source = "Roadmap [6]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "wave", "deck-row", "global", "browser", "status"]
+note = "Simple deck: about 25 large controls per deck. Setup keys (SLIP, QUANTIZE, KEYLOCK, tempo range, pad mode, GRID, KEY SYNC, key shift, ÷2 / ×2), the platter, the phase strip and the effects (FX toggle, CH FX knobs and selector) are not built at all; the pads always play hot cues. The kiosk keeps its own deck."
+features = ["deck-layouts", "deck-layout-groups"]
+
+[[view.region]]
+id = "topbar"
+band = "topbar"
+place = "full width, 28 pt"
+order = "row"
+elements = [
+  "topbar.mode",
+  "topbar.layout",
+  "topbar.toggle.mix-preview",
+  "topbar.toggle.sampler",
+  "topbar.toggle.mixer",
+  "topbar.toggle.rec",
+  "topbar.status.midi",
+  "topbar.settings",
+  "topbar.master-meter",
+  "topbar.master-volume",
+  "topbar.clock",
+]
+note = "UX §1.2. LINK, plan badge and cloud spinner are excluded (cloud / Pro DJ Link later)"
+
+[[view.region]]
+id = "wave.zoom"
+band = "wave"
+place = "far left, 14 pt column"
+order = "column"
+elements = [
+  "wave.collapse",
+  "wave.zoom-in",
+  "wave.zoom-reset",
+  "wave.zoom-out",
+  "wave.expand",
+]
+note = "UX §1.3"
+
+[[view.region]]
+id = "wave.lanes"
+band = "wave"
+place = "full width, one lane per deck, playhead at the horizontal centre"
+order = "column"
+elements = [
+  "wave.lane1",
+  "wave.lane2",
+]
+note = "UX §1.3; 4 decks: lane numbers at the right edge (§1.4)"
+
+[[view.region]]
+id = "wave.playhead"
+band = "wave"
+place = "centre line across all lanes"
+order = "any"
+elements = [
+  "wave.playhead",
+]
+note = "Drawn over the lanes by design, so it is not a sibling of them (no-overlap does not apply)."
+
+[[view.region]]
+id = "deck1.header"
+band = "deck-row"
+place = "left deck, top, 54 pt"
+order = "row"
+elements = [
+  "deck1.number",
+  "deck1.artwork",
+  "deck1.title",
+  "deck1.artist",
+  "deck1.bpm",
+  "deck1.time-remaining",
+  "deck1.time-elapsed",
+  "deck1.master",
+]
+note = "UX §1.3 item 1; empty deck shows dim 'Not Loaded.'"
+
+[[view.region]]
+id = "deck1.overview"
+band = "deck-row"
+place = "left deck, under the header, 43 pt"
+order = "column"
+elements = [
+  "deck1.overview",
+]
+note = "UX §1.3 item 2"
+
+[[view.region]]
+id = "deck1.stems"
+band = "deck-row"
+place = "left deck, under the overview, right-aligned, 21 pt"
+order = "row"
+elements = [
+  "deck1.stem.vocal",
+  "deck1.stem.drums",
+  "deck1.stem.bass",
+  "deck1.stem.inst",
+]
+note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
+
+[[view.region]]
+id = "deck1.pads"
+band = "deck-row"
+place = "left deck control area, after the rail"
+order = "column"
+elements = [
+  "deck1.pad.A",
+  "deck1.pad.B",
+  "deck1.pad.C",
+  "deck1.pad.D",
+]
+note = "Left pad column A–D (2 columns x 4 rows, column-major); 4 decks: one row A–H"
+
+[[view.region]]
+id = "deck1.pads.right"
+band = "deck-row"
+place = "left deck control area, after the rail"
+order = "column"
+elements = [
+  "deck1.pad.E",
+  "deck1.pad.F",
+  "deck1.pad.G",
+  "deck1.pad.H",
+]
+note = "Right pad column E–H; Simple pads always play hot cues (no pad mode)"
+
+[[view.region]]
+id = "deck1.loop"
+band = "deck-row"
+place = "left deck control area, after the pads"
+order = "column"
+elements = [
+  "deck1.loop.size",
+  "deck1.loop.halve",
+  "deck1.loop.double",
+  "deck1.loop.auto",
+  "deck1.jump.back",
+  "deck1.jump.forward",
+]
+note = "Loop length, ½ / 2×, LOOP and beat jump − / +"
+
+[[view.region]]
+id = "deck1.transport"
+band = "deck-row"
+place = "left deck control area, after the loop column"
+order = "column"
+elements = [
+  "deck1.beat-sync",
+  "deck1.cue",
+  "deck1.play",
+]
+note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
+
+[[view.region]]
+id = "deck1.tempo"
+band = "deck-row"
+place = "left deck, the column nearest the mixer"
+order = "column"
+elements = [
+  "deck1.pitch",
+]
+note = "The tempo fader; the BPM is in the header (no platter in Simple)"
+
+[[view.region]]
+id = "mixer.ch1"
+band = "deck-row"
+place = "mixer column 1 of 2"
+order = "column"
+elements = [
+  "mixer.ch1.trim",
+  "mixer.ch1.eq-high",
+  "mixer.ch1.eq-mid",
+  "mixer.ch1.eq-low",
+  "mixer.ch1.stem",
+  "mixer.ch1.cue",
+  "mixer.ch1.fader",
+]
+note = "UX §1.3 mixer; channel order 1-2. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
+
+[[view.region]]
+id = "mixer.ch2"
+band = "deck-row"
+place = "mixer column 2 of 2"
+order = "column"
+elements = [
+  "mixer.ch2.trim",
+  "mixer.ch2.eq-high",
+  "mixer.ch2.eq-mid",
+  "mixer.ch2.eq-low",
+  "mixer.ch2.stem",
+  "mixer.ch2.cue",
+  "mixer.ch2.fader",
+]
+note = "UX §1.3 mixer; channel order 1-2. STEM (with CUE beside it) sits right under the EQ knobs it switches to part isolation (SPEC §10.3), above the fader; the EQ knobs carry their kills beside them and their values in the legend"
+
+[[view.region]]
+id = "deck2.header"
+band = "deck-row"
+place = "right deck, top, 54 pt"
+order = "row"
+elements = [
+  "deck2.number",
+  "deck2.artwork",
+  "deck2.title",
+  "deck2.artist",
+  "deck2.bpm",
+  "deck2.time-remaining",
+  "deck2.time-elapsed",
+  "deck2.master",
+]
+note = "UX §1.3 item 1; empty deck shows dim 'Not Loaded.'"
+
+[[view.region]]
+id = "deck2.overview"
+band = "deck-row"
+place = "right deck, under the header, 43 pt"
+order = "column"
+elements = [
+  "deck2.overview",
+]
+note = "UX §1.3 item 2"
+
+[[view.region]]
+id = "deck2.stems"
+band = "deck-row"
+place = "right deck, under the overview, right-aligned, 21 pt"
+order = "row"
+elements = [
+  "deck2.stem.vocal",
+  "deck2.stem.drums",
+  "deck2.stem.bass",
+  "deck2.stem.inst",
+]
+note = "UX §1.3 item 3 / §2.4. BASS is ours (SPEC §10.3 four parts); visible but dimmed while separating"
+
+[[view.region]]
+id = "deck2.pads"
+band = "deck-row"
+place = "right deck control area, after the rail, mirrors deck 1 (pads on the outer right edge)"
+order = "column"
+elements = [
+  "deck2.pad.A",
+  "deck2.pad.B",
+  "deck2.pad.C",
+  "deck2.pad.D",
+]
+note = "Left pad column A–D (2 columns x 4 rows, column-major); 4 decks: one row A–H"
+
+[[view.region]]
+id = "deck2.pads.right"
+band = "deck-row"
+place = "right deck control area, after the rail, mirrors deck 1 (pads on the outer right edge)"
+order = "column"
+elements = [
+  "deck2.pad.E",
+  "deck2.pad.F",
+  "deck2.pad.G",
+  "deck2.pad.H",
+]
+note = "Right pad column E–H; Simple pads always play hot cues (no pad mode)"
+
+[[view.region]]
+id = "deck2.loop"
+band = "deck-row"
+place = "right deck control area, after the pads"
+order = "column"
+elements = [
+  "deck2.loop.size",
+  "deck2.loop.halve",
+  "deck2.loop.double",
+  "deck2.loop.auto",
+  "deck2.jump.back",
+  "deck2.jump.forward",
+]
+note = "Loop length, ½ / 2×, LOOP and beat jump − / +"
+
+[[view.region]]
+id = "deck2.transport"
+band = "deck-row"
+place = "right deck control area, after the loop column"
+order = "column"
+elements = [
+  "deck2.beat-sync",
+  "deck2.cue",
+  "deck2.play",
+]
+note = "Round CUE and PLAY (≥ 32 pt; 44 px in kiosk)"
+
+[[view.region]]
+id = "deck2.tempo"
+band = "deck-row"
+place = "right deck, the column nearest the mixer"
+order = "column"
+elements = [
+  "deck2.pitch",
+]
+note = "The tempo fader; the BPM is in the header (no platter in Simple)"
+
+[[view.region]]
+id = "global.phones"
+band = "global"
+place = "left of centre"
+order = "row"
+elements = [
+  "global.phones.mix",
+  "global.phones.level",
+]
+note = "UX §1.3 global bar"
+
+[[view.region]]
+id = "global.xf-a"
+band = "global"
+place = "left of the crossfader"
+order = "grid"
+elements = [
+  "global.xf-a.deck1",
+  "global.xf-a.deck2",
+  "global.xf-a.deck3",
+  "global.xf-a.deck4",
+]
+note = "2 x 2 assign grid"
+
+[[view.region]]
+id = "global.xfader"
+band = "global"
+place = "centred under the mixer"
+order = "row"
+elements = [
+  "global.xfader",
+]
+
+[[view.region]]
+id = "global.xf-b"
+band = "global"
+place = "right of the crossfader"
+order = "grid"
+elements = [
+  "global.xf-b.deck1",
+  "global.xf-b.deck2",
+  "global.xf-b.deck3",
+  "global.xf-b.deck4",
+]
+note = "2 x 2 assign grid"
+
+[[view.region]]
+id = "rec"
+band = "global"
+place = "right end of the global bar, under deck 2"
+order = "row"
+elements = [
+  "rec.source",
+  "rec.level",
+  "rec.meter",
+  "rec.toggle",
+  "rec.time",
+]
+note = "UX §1.3, §2.3"
+
+[[view.region]]
+id = "browser.rail"
+band = "browser"
+place = "left edge of the tree pane, 38 pt"
+order = "column"
+elements = [
+  "browser.rail.collection",
+  "browser.rail.playlists",
+  "browser.rail.similar",
+  "browser.rail.sampler",
+  "browser.rail.explorer",
+  "browser.rail.devices",
+  "browser.rail.histories",
+  "browser.rail.recordings",
+  "browser.rail.tag-list",
+]
+note = "UX §1.6 source order without the streaming, Apple Music and cloud sources (SPEC §1); Tag list added (SPEC §5.5)"
+
+[[view.region]]
+id = "browser.tree"
+band = "browser"
+place = "tree pane, 28 % of the width"
+order = "column"
+elements = [
+  "browser.tree",
+]
+
+[[view.region]]
+id = "browser.splitter"
+band = "browser"
+place = "between tree and list"
+order = "any"
+elements = [
+  "browser.splitter",
+]
+note = "draggable, double-click resets (SPEC §12)"
+
+[[view.region]]
+id = "browser.title"
+band = "browser"
+place = "list area, title row 34 pt"
+order = "row"
+elements = [
+  "browser.list-title",
+  "browser.target",
+  "browser.density",
+  "browser.search",
+]
+note = "UX §1.6 list area"
+
+[[view.region]]
+id = "browser.header"
+band = "browser"
+place = "list area, column header 29 pt"
+order = "row"
+elements = [
+  "browser.header.filter",
+  "browser.header.attribute",
+  "browser.header.columns",
+]
+
+[[view.region]]
+id = "browser.list"
+band = "browser"
+place = "list area, rows"
+order = "column"
+elements = [
+  "browser.rows",
+]
+note = "loaded rows carry the deck numeral next to the first column"
+
+[[view.region]]
+id = "browser.panels"
+band = "browser"
+place = "right panel strip"
+order = "column"
+elements = [
+  "browser.panel.user-tag",
+  "browser.panel.similar",
+  "browser.panel.sampler",
+  "browser.panel.info",
+  "browser.panel.sub-browser",
+]
+note = "UX §1.6 right panel strip"
+
+[[view.region]]
+id = "status"
+band = "status"
+place = "bottom, 30 pt"
+order = "row"
+elements = [
+  "status.activity",
+  "status.summary",
+  "status.audio",
+]
+note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
+
+# ---- Perform: 4 decks horizontal ----
+
+[[view]]
 id = "perform.4deck-horizontal"
 title = "Perform: 4 decks horizontal"
 mode = "perform"

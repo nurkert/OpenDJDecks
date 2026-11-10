@@ -117,11 +117,53 @@ export global FirstStart {
     callback reopen();
 }
 
-// Marks a control while the guide points at it: the armed outline in sodium.
+// The guided controller setup (roadmap [13]): a band under the top bar that
+// asks for one control of the controller at a time and learns it (set from
+// Rust, `controller_setup.rs`).
+export global ControllerSetup {
+    in property <bool> visible;
+    // "class" (choosing the kind of controller), "learn", "done".
+    in property <string> stage: "class";
+    // Names of the controller classes (templates) and the chosen one.
+    in property <[string]> classes;
+    in property <int> class-index;
+    // Step in progress (0-based) of `total`, and how many were learned.
+    in property <int> index;
+    in property <int> total;
+    in property <int> learned;
+    // The step: mapping action, deck / channel (0: none), what to move
+    // ("button", "fader", "wheel").
+    in property <string> action;
+    in property <int> deck;
+    in property <string> expect;
+    in property <string> args;
+    // Accessible label of the matching on-screen control ("" none).
+    in property <string> target;
+    // What arrived for this step ("" nothing yet), and the step that uses
+    // the same control already ("" none).
+    in property <string> heard;
+    in property <string> taken;
+    // Where the mapping was written (done stage) and the crossfader curve
+    // the class is played with ("" none).
+    in property <string> saved-path;
+    in property <string> curve;
+    in property <string> port;
+    callback choose(int);
+    callback start();
+    callback skip();
+    callback back();
+    callback retry();
+    callback save(string);
+    callback close();
+    callback open();
+}
+
+// Marks a control while the guide (or the controller setup) points at it:
+// the armed outline in sodium.
 export component GuideMark inherits Rectangle {
     in property <string> id;
     in property <length> radius: Theme.r-control;
-    property <bool> show: FirstStart.visible && root.id != "" && FirstStart.target == root.id;
+    property <bool> show: root.id != "" && ((FirstStart.visible && FirstStart.target == root.id) || (ControllerSetup.visible && ControllerSetup.target == root.id));
     if root.show: ArmedOutline {
         accessible-role: text;
         accessible-label: "guide.highlight";
@@ -344,6 +386,8 @@ export component Knob inherits Rectangle {
     // shows the knob's value (mixer).
     in property <color> legend-color: Theme.bone-3;
     in property <string> legend-id;
+    // Guide id (first-start guide, controller setup).
+    in property <string> guide;
     callback changed(float);
     width: max(root.size + 8px, lbl.preferred-width + 4px);
     height: root.size + (root.label == "" ? 0px : root.label-h);
@@ -389,6 +433,7 @@ export component Knob inherits Rectangle {
         }
         double-clicked => { root.value = root.default-value; root.changed(root.value); }
     }
+    if root.guide != "": GuideMark { x: (parent.width - root.size) / 2 - 2px; y: -2px; width: root.size + 4px; height: root.size + 4px; id: root.guide; radius: root.size / 2 + 2px; }
 }
 
 // Vertical fader: a track line with a plate handle.
@@ -400,6 +445,8 @@ export component Fader inherits Rectangle {
     in property <color> tone: Theme.bone;
     // Handle height (the deck's strongest controls take a larger handle).
     in property <length> handle: 12px;
+    // Guide id (first-start guide, controller setup).
+    in property <string> guide;
     callback changed(float);
     width: 26px;
     Rectangle { x: parent.width / 2 - 1px; y: 4px; width: 2px; height: parent.height - 8px; background: Theme.rule-strong; }
@@ -431,6 +478,7 @@ export component Fader inherits Rectangle {
             }
         }
     }
+    if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; }
 }
 
 // Small state button (DESIGN.md, State Language): filled in its tone when

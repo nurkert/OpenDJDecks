@@ -1,8 +1,8 @@
 ---
 title: Controller und MIDI-Learn
-description: Kompatiblen Controller einstecken und spielen. Für alles andere Regler mit MIDI-Learn zuordnen und im MIDI-Monitor sehen, was dein Controller sendet.
-keywords: [controller, midi, midi learn, mapping, ddj, ddj-flx10, ddj-flx4, flx10, flx4, pioneer, led, soft takeover, browse, encoder, midi monitor, hardware, belegen]
-features: [ctrl-self-test, ctrl-hardware-status, ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
+description: Kompatiblen Controller einstecken und spielen. Jeden anderen Controller mit der geführten Einrichtung einrichten, einzelne Regler mit MIDI-Learn zuordnen und im MIDI-Monitor sehen, was dein Controller sendet.
+keywords: [controller, midi, midi learn, mapping, ddj, ddj-flx10, ddj-flx4, flx10, flx4, pioneer, led, soft takeover, browse, encoder, midi monitor, hardware, belegen, controller-liste, geführte einrichtung, einrichten, vorlage, battle, einsteiger, unbekannter controller, neuer controller]
+features: [ctrl-controller-list, ctrl-guided-setup, ctrl-class-templates, ctrl-self-test, ctrl-hardware-status, ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
 ---
 
 OpenDJDecks bringt Mappings mit, kompatibel mit Pioneer DJ DDJ-FLX10 und DDJ-FLX4, mit LED-Rückmeldung für Play, Cue, Sync, Master, Keylock, Slip, Loop, die Pads und die Pegelanzeigen. Die Mappings sind noch nicht vollständig auf echten Geräten bestätigt, einzelne Regler oder LEDs funktionieren vielleicht nicht: Probiere sie vor einem Gig aus. Stecke einen Controller per USB ein; er wird in wenigen Sekunden erkannt und sein Audio-Interface automatisch benutzt (**Einstellungen › Audio › Ausgabegerät**).
@@ -10,6 +10,36 @@ OpenDJDecks bringt Mappings mit, kompatibel mit Pioneer DJ DDJ-FLX10 und DDJ-FLX
 Bewegst du nach einem Sprung im Preset einen Regler, sorgt Soft Takeover dafür, dass sich der Wert erst ändert, wenn der echte Regler dort angekommen ist.
 
 ![Die Seite Controller in den Einstellungen](../img/controllers.png)
+
+## Controller-Liste
+
+Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Modell gilt erst dann als **bestätigt**, wenn jedes seiner Bedienelemente mit OpenDJDecks auf einem echten Gerät bestätigt wurde. Das ist noch bei keinem der Fall, darum steht in jeder Zeile **nicht bestätigt**. Hersteller- und Modellnamen sagen nur, mit welcher Hardware ein Mapping kompatibel sein soll.
+
+<!-- controller-list:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->
+
+| Controller | Decks | Mapping | Erkannt an | Status |
+|---|---|---|---|---|
+| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | nicht bestätigt: 0 bestätigt, 125 teilweise, 135 ungetestet |
+| kompatibel mit DDJ-FLX4 | 2 | eingebaut | MIDI-Portname `DDJ-FLX4` | nicht bestätigt: 0 bestätigt, 126 teilweise, 47 ungetestet |
+| Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (39 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
+| Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (34 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
+| Jeder Controller mit vier Decks | 4 | geführte Einrichtung, Vorlage `four-deck` (73 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
+<!-- controller-list:end -->
+
+Jeder andere Controller lässt sich mit der geführten Einrichtung unten einrichten, ausgehend von einer von drei allgemeinen Vorlagen. Weitere Modell-Mappings, auch für Einsteiger- und Battle-Controller, kommen von Besitzern, die ihr eigenes Gerät mit der geführten Einrichtung aufnehmen und die Datei weitergeben. Keines davon ist schon für andere Geräte bestätigt. OpenDJDecks leitet keine Mappings aus Herstellerhandbüchern, MIDI-Tabellen, Herstellersoftware oder Mapping-Dateien anderer Projekte ab.
+
+## Geführte Einrichtung für andere Controller
+
+![Die Controller-Einrichtung unter der oberen Leiste fragt nach dem Tempo-Fader von Deck 1](../img/controller-setup.png)
+
+Für einen Controller ohne Mapping drückst du **CONTROLLER EINRICHTEN** unter **Einstellungen › Controller** (oder **Ansicht › Controller einrichten**). Unter der oberen Leiste öffnet sich ein Band:
+
+1. Schließe den Controller per USB an und wähle, was ihm am nächsten kommt: **2 DECKS · EINSTEIGER**, **2 DECKS · BATTLE** oder **4 DECKS**. Drücke **START**.
+2. Das Band fragt nach einem Bedienelement nach dem anderen: PLAY, CUE und SYNC, das Jogwheel (berühren, dann drehen), Tempo-Fader und LOAD jedes Decks, dann die Hot-Cue-Pads, die Kanalfader, TRIM und die EQ-Regler, Kopfhörer-CUE, den Crossfader, den Browse-Regler sowie Master- und Kopfhörerpegel. Das passende Element auf dem Bildschirm bekommt den Rahmen der Anleitung.
+3. Bewege das Element. **Empfangen** zeigt, was ankam; sobald das Element einen Moment ruht, ist der Schritt übernommen und der nächste kommt. Ein Element, das ein früherer Schritt schon benutzt, wird mit der Nummer dieses Schritts abgelehnt. **ÜBERSPRINGEN** lässt weg, was dein Controller nicht hat, **ZURÜCK** geht einen Schritt zurück, um ihn neu zu lernen, **NOCHMAL** vergisst, was ankam.
+4. Am Ende gibst du dem Controller einen Namen und drückst **MAPPING SPEICHERN**. Die Datei landet neben deiner Bibliothek in `mappings/`, wird deine eigene Mapping-Datei und gilt ab dem nächsten Start. Die Battle-Vorlage stellt außerdem die Crossfader-Kurve auf **CUT**.
+
+Die Datei ist eine gewöhnliche Mapping-Datei, die du weitergeben kannst. Jeder Eintrag darin ist als nicht bestätigt markiert (`verify = true`), denn gehört wurde nur dein Gerät. Solange die Einrichtung, MIDI-Learn oder der Monitor läuft, öffnet OpenDJDecks auch MIDI-Eingänge, die kein Mapping kennt; auf manchen Systemen kann ein anderes Programm einen solchen Port dann nicht gleichzeitig benutzen. Die geführte Einrichtung wurde mit simulierten MIDI-Nachrichten getestet, noch nicht mit einem echten Controller.
 
 ## Am Controller stöbern
 

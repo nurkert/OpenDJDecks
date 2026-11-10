@@ -7,8 +7,10 @@ export { DragState }
 export { PopupPlace }
 export { DeckTime, GridEdit, DeckGrid, DeckGridView, DeckMix, AnalysisSure } from "structs.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
-import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark } from "controls.slint";
+import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark, ControllerSetup } from "controls.slint";
 import { FirstStartBar } from "first_start.slint";
+import { ControllerSetupBar } from "controller_setup.slint";
+export { ControllerSetup }
 import { PhaseMeter, PhaseRow } from "phase.slint";
 export { PhaseMeter, PhaseRow }
 import { Booth, BoothWindow } from "booth.slint";
@@ -48,8 +50,8 @@ export { MiniView }
 export { CueEdit, PhraseEdit, TrackEdit }
 import { FxSlots } from "fx.slint";
 export { FxSlots }
-import { MixerParts, PerformLayout } from "perform.slint";
-export { MixerParts, PerformLayout }
+import { MixerParts, PerformLayout, DeckLayout } from "perform.slint";
+export { MixerParts, PerformLayout, DeckLayout }
 export { Lighting, LightFixtureView, LightGroupView, LightingWindow }
 import { PreferencesWindow, KeyRow } from "preferences.slint";
 import { VocalMark, TreeRow, TrackRow, CueMark, HotCueSlot, DeviceRow, VolumeRow, FlowPoint, DeckView, ChannelView, PhraseMark, ExplorerRow, LaneMotion, MenuTarget } from "structs.slint";
@@ -599,6 +601,12 @@ export component AppWindow inherits Window {
                 MenuItem { title: @tr("Vertical Waveforms"); checkable: true; checked: PerformLayout.layout == "vertical"; activated => { root.menu-action("perform.layout.set.vertical"); } }
                 MenuItem { title: @tr("Browse"); checkable: true; checked: PerformLayout.layout == "browse"; activated => { root.menu-action("perform.layout.set.browse"); } }
             }
+            Menu {
+                title: @tr("Deck Layout");
+                MenuItem { title: @tr("Simple"); checkable: true; checked: DeckLayout.level == "simple"; activated => { DeckLayout.set-level("simple"); } }
+                MenuItem { title: @tr("Standard"); checkable: true; checked: DeckLayout.level == "standard"; activated => { DeckLayout.set-level("standard"); } }
+                MenuItem { title: @tr("Full"); checkable: true; checked: DeckLayout.level == "full"; activated => { DeckLayout.set-level("full"); } }
+            }
             MenuSeparator { }
             MenuItem { title: @tr("Tags"); checkable: true; checked: root.user-tag-open; activated => { root.menu-action("view.panel.user-tag"); } }
             MenuItem { title: @tr("Similar Tracks"); checkable: true; checked: root.similar-open; activated => { root.menu-action("view.panel.similar"); } }
@@ -611,6 +619,7 @@ export component AppWindow inherits Window {
             MenuItem { title: @tr("Recordings"); activated => { root.select-section("recordings"); } }
             MenuSeparator { }
             MenuItem { title: @tr("First-Start Guide"); activated => { FirstStart.reopen(); } }
+            MenuItem { title: @tr("Controller Setup"); activated => { ControllerSetup.open(); } }
             MenuItem { title: @tr("Gig Check"); activated => { GigCheck.run(); } }
             MenuItem { title: @tr("Lock for the Set"); checkable: true; checked: PerformLock.locked; activated => { PerformLock.toggle(); } }
             MenuItem { title: @tr("Booth View"); activated => { root.menu-action("view.booth"); } }
@@ -686,6 +695,7 @@ export component AppWindow inherits Window {
             if Restore.visible: RestoreBar { }
             if GigCheck.visible: GigCheckBar { }
             if FirstStart.visible: FirstStartBar { }
+            if ControllerSetup.visible: ControllerSetupBar { }
             if root.stems-model-state != "": StemsModelBar {
                 state: root.stems-model-state;
                 text: root.stems-model-text;

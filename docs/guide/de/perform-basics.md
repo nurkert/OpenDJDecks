@@ -1,8 +1,8 @@
 ---
 title: Die Grundlagen von Perform
 description: Decks, Layouts, Sync, Keylock, Tempo, Loops und Beat Jump und jeder Pad-Modus am Deck.
-keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, tonarten passen, harmonisch mischen, passende tonart, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom]
-features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
+keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, tonarten passen, harmonisch mischen, passende tonart, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom, einfach, standard, voll, deck-layout, ausblenden, gruppen, gespeichertes layout]
+features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
 ---
 
 Perform ist der Live-Modus: Decks, Mixer und Browser in einer Ansicht.
@@ -26,6 +26,22 @@ Die schmale Wellenform in jedem Deck ist der ganze Track mit Hot Cues und Phrase
 Der Ansichts-Knopf oben in Perform öffnet ein Menü mit einem Bild jeder Ansicht: **2 Decks** oder **4 Decks**, jeweils **horizontal** oder **vertikal**, und **Browse**, das die Decks klein hält und dem Browser den Platz gibt. Kurzbefehle: `⌥⌘V` für vertikale Wellenformen und `⌥⌘B` für Browse. Ein Vierdeck-Controller schaltet automatisch auf vier Decks.
 
 Die obere Leiste hat drei Zonen. Links stehen die Arbeitsmodi, in der Mitte das, was der aktuelle Modus zeigt, rechts das, was gerade läuft: Master-Tempo, Aufnahme, Controller und Master-Ausgang. **FX**, **VORSCHAU**, **SAMPLER** und **MIXER** blenden Panels ein und aus, dazu **CLUB** und **LICHTLEISTE**. **AUFNAHME** startet eine Aufnahme und wird rot mit der laufenden Zeit; die kleine Taste daneben zeigt oder verbirgt den Aufnahmebereich. **UNDO** erscheint in Prepare, wo du bearbeitest. Ziehe die Trennbalken zwischen den Bereichen, um die Größe zu ändern; Doppelklick setzt zurück.
+
+## Deck-Layouts
+
+![Perform im Layout Einfach: große Pads, Loop, SYNC, CUE, PLAY und der Tempo-Fader](../img/deck-simple.png)
+
+Wie viel jedes Deck zeigt, bestimmst du. Wähle im Ansichtsmenü oben in Perform, unter **Ansicht › Deck-Layout** oder in der Checkliste beim ersten Start:
+
+- **Einfach** ist ein ruhiges Deck mit etwa 25 großen Bedienelementen: Hot-Cue-Pads A–H, der Loop (**½**, **2×**, **LOOP**) und Beat Jump, **SYNC**, **CUE** und **PLAY**, der Tempo-Fader, die Stems und **MASTER**. Setup-Tasten, Plattenteller, Phasenleiste und Effekte bleiben weg, und die Pads spielen immer Hot Cues. BPM und Zeit bleiben groß im Kopf des Decks.
+- **Standard** ist das Deck, wie es diese Seite beschreibt.
+- **Voll** zeigt alles, mit offenem Tempo-FX-Bereich.
+
+Unter **ZEIGEN** im selben Menü lassen sich ganze Gruppen aus- und wieder einblenden: **PADS**, **LOOPS**, **STEMS**, **FX** (der Tempo-FX-Bereich und seine Taste, die CH-FX-Regler), **MIXER** (die Mixerspalte, dasselbe wie **MIXER** in der oberen Leiste), **PHASE** (die Phasenleiste) und **SETUP-TASTEN** (SLIP, QUANTIZE, KEYLOCK, der Tempobereich, GRID, KEY SYNC, Key Shift und ½ / 2× an der BPM). Eine ausgeblendete Gruppe ist ganz weg, auch die Tastatur landet nicht mehr darauf. Der Pad-Modus bleibt bei den Pads.
+
+Um ein Layout zu behalten, tippe unter **GESPEICHERTE LAYOUTS** einen Namen ein und drücke **SPEICHERN**. Ein Druck auf den Namen holt es zurück, **×** löscht es. Ein gespeichertes Layout merkt sich das Deck-Layout, die ausgeblendeten Gruppen, die Mixerspalte und den Tempo-FX-Bereich und bleibt in deinen Einstellungen. Speichern unter einem vorhandenen Namen ersetzt es.
+
+Der Kiosk auf dem Raspberry Pi behält sein eigenes Deck und der Club-Modus seine Player-Ansichten, egal welches Layout gilt. Einfach und Voll wurden noch nicht auf einem Touchscreen ausprobiert.
 
 ## Tempo und Sync
 

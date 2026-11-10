@@ -1,0 +1,195 @@
+// The guided controller setup (roadmap [13]): a band under the top bar, like
+// the first-start guide. It asks for one control of the controller at a
+// time (the matching control on screen gets the guide outline), says what
+// arrived, and moves on by itself; at the end the learned controls are saved
+// as a mapping file. Never covers a control.
+
+import { Theme } from "tokens.slint";
+import { ProgressLine } from "lines.slint";
+import { Caps, PlateButton, Field, ControllerSetup } from "controls.slint";
+
+export component ControllerSetupBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: "app.controller-setup";
+    accessible-value: ControllerSetup.stage;
+    height: 64px;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    property <int> d: ControllerSetup.deck;
+    // What to do now, in words.
+    property <string> prompt: ControllerSetup.action == "deck.play_pause" ? @tr("Press PLAY on deck {}", root.d)
+        : ControllerSetup.action == "deck.cue" ? @tr("Press CUE on deck {}", root.d)
+        : ControllerSetup.action == "deck.sync" ? @tr("Press SYNC on deck {}", root.d)
+        : ControllerSetup.action == "deck.jog_touch" ? @tr("Touch the top of jog wheel {} without turning it", root.d)
+        : ControllerSetup.action == "deck.jog_turn" ? @tr("Turn jog wheel {} a little, both ways", root.d)
+        : ControllerSetup.action == "deck.tempo" ? @tr("Move the tempo fader of deck {} up and down", root.d)
+        : ControllerSetup.action == "deck.load" ? @tr("Press LOAD for deck {}", root.d)
+        : ControllerSetup.action == "deck.hot_cue" ? @tr("Press hot cue pad {} of deck {}", ControllerSetup.args, root.d)
+        : ControllerSetup.action == "mixer.fader" ? @tr("Move the channel fader {} up and down", root.d)
+        : ControllerSetup.action == "mixer.trim" ? @tr("Turn the TRIM knob of channel {}", root.d)
+        : ControllerSetup.action == "mixer.eq_high" ? @tr("Turn the HI knob of channel {}", root.d)
+        : ControllerSetup.action == "mixer.eq_mid" ? @tr("Turn the MID knob of channel {}", root.d)
+        : ControllerSetup.action == "mixer.eq_low" ? @tr("Turn the LOW knob of channel {}", root.d)
+        : ControllerSetup.action == "mixer.cue" ? @tr("Press the headphone CUE of channel {}", root.d)
+        : ControllerSetup.action == "crossfader" ? @tr("Move the crossfader from side to side")
+        : ControllerSetup.action == "browse.rotate" ? @tr("Turn the browse knob")
+        : ControllerSetup.action == "browse.press" ? @tr("Press the browse knob")
+        : ControllerSetup.action == "master_level" ? @tr("Turn the master level knob")
+        : ControllerSetup.action == "headphone_level" ? @tr("Turn the headphone level knob")
+        : ControllerSetup.action;
+
+    HorizontalLayout {
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        spacing: Theme.s4;
+        // Name of the band and where it stands.
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 0;
+            spacing: Theme.s1;
+            min-width: 150px;
+            Caps { text: @tr("CONTROLLER SETUP"); }
+            if ControllerSetup.stage == "learn": Text {
+                accessible-role: text; accessible-label: "app.controller-setup.step"; accessible-value: (ControllerSetup.index + 1) + "/" + ControllerSetup.total;
+                text: @tr("Control {} of {}", ControllerSetup.index + 1, ControllerSetup.total);
+                font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2;
+            }
+            if ControllerSetup.stage == "learn": ProgressLine {
+                accessible-role: progress-indicator; accessible-label: "app.controller-setup.progress";
+                accessible-value: ControllerSetup.learned;
+                width: 150px;
+                progress: ControllerSetup.total > 0 ? ControllerSetup.index / ControllerSetup.total : 0;
+                tone: Theme.attention;
+            }
+        }
+
+        // ── 1. Which kind of controller ──
+        if ControllerSetup.stage == "class": Text {
+            accessible-role: text; accessible-label: "app.controller-setup.prompt"; accessible-value: self.text;
+            horizontal-stretch: 1; min-width: 120px;
+            vertical-alignment: center; wrap: word-wrap; overflow: elide;
+            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            text: ControllerSetup.port == ""
+                ? @tr("Connect the controller by USB, then choose what it is closest to. Nothing it sends is used until you save.")
+                : @tr("Choose what {} is closest to. Nothing it sends is used until you save.", ControllerSetup.port);
+        }
+        if ControllerSetup.stage == "class": HorizontalLayout {
+            alignment: center;
+            spacing: Theme.key-gap;
+            for c[i] in ControllerSetup.classes: VerticalLayout {
+                alignment: center;
+                PlateButton {
+                    accessible-role: button; accessible-label: "app.controller-setup.class.slot\{i + 1}";
+                    accessible-checkable: true; accessible-checked: ControllerSetup.class-index == i;
+                    compact: true; label: c; selected: ControllerSetup.class-index == i;
+                    clicked => { ControllerSetup.choose(i); }
+                }
+            }
+        }
+        if ControllerSetup.stage == "class": VerticalLayout {
+            alignment: center;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.controller-setup.start";
+                compact: true; label: @tr("START"); tone: Theme.live; active: true;
+                tooltip: @tr("Ask for the controls one by one");
+                clicked => { ControllerSetup.start(); }
+            }
+        }
+
+        // ── 2. One control at a time ──
+        if ControllerSetup.stage == "learn": VerticalLayout {
+            horizontal-stretch: 1; min-width: 120px;
+            alignment: center;
+            spacing: Theme.key-gap;
+            Text {
+                accessible-role: text; accessible-label: "app.controller-setup.prompt"; accessible-value: self.text;
+                text: root.prompt;
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone;
+                overflow: elide;
+            }
+            Text {
+                accessible-role: text; accessible-label: "app.controller-setup.heard"; accessible-value: ControllerSetup.heard;
+                text: ControllerSetup.taken != "" ? @tr("That control is already used for control {}. Move another one, or SKIP.", ControllerSetup.taken)
+                    : ControllerSetup.heard != "" ? @tr("Heard: {}", ControllerSetup.heard)
+                    : ControllerSetup.expect == "button" ? @tr("Waiting for a press …")
+                    : ControllerSetup.expect == "wheel" ? @tr("Waiting for the wheel to turn …")
+                    : @tr("Waiting for the control to move …");
+                font-family: Theme.family; font-size: Theme.control;
+                color: ControllerSetup.taken != "" ? Theme.attention : ControllerSetup.heard != "" ? Theme.bone-2 : Theme.bone-3;
+                overflow: elide;
+            }
+        }
+        if ControllerSetup.stage == "learn": HorizontalLayout {
+            alignment: center;
+            spacing: Theme.key-gap;
+            VerticalLayout { alignment: center; PlateButton {
+                accessible-role: button; accessible-label: "app.controller-setup.back";
+                compact: true; label: @tr("BACK"); enabled: ControllerSetup.index > 0;
+                tooltip: @tr("Back one control, to learn it again");
+                clicked => { ControllerSetup.back(); }
+            } }
+            VerticalLayout { alignment: center; PlateButton {
+                accessible-role: button; accessible-label: "app.controller-setup.again";
+                compact: true; label: @tr("AGAIN");
+                tooltip: @tr("Forget what arrived for this control and listen again");
+                clicked => { ControllerSetup.retry(); }
+            } }
+            VerticalLayout { alignment: center; PlateButton {
+                accessible-role: button; accessible-label: "app.controller-setup.skip";
+                compact: true; label: @tr("SKIP");
+                tooltip: @tr("The controller has no such control: go on without it");
+                clicked => { ControllerSetup.skip(); }
+            } }
+        }
+
+        // ── 3. Save ──
+        if ControllerSetup.stage == "done" && ControllerSetup.saved-path == "": Text {
+            accessible-role: text; accessible-label: "app.controller-setup.prompt"; accessible-value: self.text;
+            horizontal-stretch: 1; min-width: 120px;
+            vertical-alignment: center; wrap: word-wrap; overflow: elide;
+            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            text: ControllerSetup.curve == "cut"
+                ? @tr("{} of {} controls learned. Name the controller and save; the crossfader curve becomes CUT.", ControllerSetup.learned, ControllerSetup.total)
+                : @tr("{} of {} controls learned. Name the controller and save the mapping.", ControllerSetup.learned, ControllerSetup.total);
+        }
+        if ControllerSetup.stage == "done" && ControllerSetup.saved-path == "": HorizontalLayout {
+            spacing: Theme.key-gap;
+            VerticalLayout {
+                alignment: center;
+                name := Field {
+                    accessible-role: text-input; accessible-label: "app.controller-setup.name";
+                    width: 200px;
+                    text: ControllerSetup.port;
+                    placeholder: @tr("CONTROLLER NAME");
+                    accepted(t) => { ControllerSetup.save(t); }
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                PlateButton {
+                    accessible-role: button; accessible-label: "app.controller-setup.save";
+                    compact: true; label: @tr("SAVE MAPPING"); tone: Theme.live; active: ControllerSetup.learned > 0;
+                    enabled: ControllerSetup.learned > 0;
+                    tooltip: @tr("Write the mapping file and use it from the next start");
+                    clicked => { ControllerSetup.save(name.text); }
+                }
+            }
+        }
+        if ControllerSetup.stage == "done" && ControllerSetup.saved-path != "": Text {
+            accessible-role: text; accessible-label: "app.controller-setup.saved"; accessible-value: ControllerSetup.saved-path;
+            horizontal-stretch: 1; min-width: 120px;
+            vertical-alignment: center; wrap: word-wrap; overflow: elide;
+            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            text: @tr("Saved as {}. It is used from the next start, and you can share the file. Nobody has confirmed it on other units yet.", ControllerSetup.saved-path);
+        }
+
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 0;
+            PlateButton {
+                accessible-role: button; accessible-label: "app.controller-setup.close";
+                compact: true; label: ControllerSetup.saved-path != "" ? @tr("DONE") : @tr("CLOSE");
+                tooltip: @tr("Close the setup; nothing is saved unless you saved it");
+                clicked => { ControllerSetup.close(); }
+            }
+        }
+    }
+}

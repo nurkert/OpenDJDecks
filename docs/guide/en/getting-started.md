@@ -13,7 +13,7 @@ OpenDJDecks has two work modes. **Prepare** is where you sort music and set cues
 
 ![The checklist under the top bar with the first step current](../img/first-start-guide.png)
 
-With an empty library, a checklist appears under the top bar: **Add music**, **Analysis**, **Two tracks** and **Play and sync**. Each step ticks itself when it is done, and the control to use next gets a pulsing outline. **SAMPLE TRACKS** writes two short tracks made by the app, so you can try a first mix without your own music. **TEST TONE** plays a quiet tone on the master output and the headphones. **HIDE** closes the guide; **View › First-Start Guide** brings it back.
+With an empty library, a checklist appears under the top bar: **Add music**, **Analysis**, **Two tracks** and **Play and sync**. Each step ticks itself when it is done, and the control to use next gets a pulsing outline. **SAMPLE TRACKS** writes two short tracks made by the app, so you can try a first mix without your own music. **TEST TONE** plays a quiet tone on the master output and the headphones. Once the decks come in, **DECKS** picks the deck layout: **SIMPLE** for a calm deck of about 25 large controls, **STANDARD** or **FULL** (on a narrow window one key steps through them; see [Deck layouts](perform-basics.md#deck-layouts)). **HIDE** closes the guide; **View › First-Start Guide** brings it back.
 
 ## 1. Install
 

@@ -709,9 +709,13 @@ pub(crate) fn midi_act(app: &Rc<App>, what: &str) {
                 Err(e) => app.status(od_i18n::trf("The control could not be added: {}", &[&e])),
             }
         }
+        "setup.open" => {
+            crate::controller_setup::open(app);
+        }
         _ => tracing::warn!(what, "unknown controller tool action"),
     }
     midi_stream(app);
+    crate::controller::refresh_unmapped(app);
     refresh(app);
 }
 
@@ -1741,6 +1745,7 @@ fn wire_window(app: &Rc<App>, w: &PreferencesWindow) {
         |a, k: SharedString| if k.starts_with("midi.")
             || k.starts_with("learn.")
             || k.starts_with("test.")
+            || k.starts_with("setup.")
         {
             midi_act(&a, k.as_str())
         } else {

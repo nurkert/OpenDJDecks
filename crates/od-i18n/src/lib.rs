@@ -1318,6 +1318,20 @@ const DE: &[(&str, &str)] = &[
     ("All effects off (panic)", "Alle Effekte aus (Panik)"),
     ("Separate the stems of every track in the list", "Die Stems aller Tracks der Liste trennen"),
     ("STEMS", "STEMS"),
+    // Deck layouts and the guided controller setup (roadmap [6], [13]).
+    ("Layout saved: {}", "Layout gespeichert: {}"),
+    ("2 DECKS · ENTRY LEVEL", "2 DECKS · EINSTEIGER"),
+    ("2 DECKS · BATTLE", "2 DECKS · BATTLE"),
+    ("4 DECKS", "4 DECKS"),
+    ("OTHER", "ANDERE"),
+    (
+        "Mapping saved to {} — used from the next start",
+        "Mapping gespeichert unter {} – wird ab dem nächsten Start benutzt",
+    ),
+    (
+        "The mapping could not be saved: {}",
+        "Das Mapping konnte nicht gespeichert werden: {}",
+    ),
 ];
 
 /// Whether `english` has a German translation (independent of the

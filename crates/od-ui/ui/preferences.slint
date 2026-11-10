@@ -544,6 +544,12 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Crossfader curve"); Choice { accessible-label: "prefs.controller.crossfader-curve"; options: [@tr("CONSTANT POWER"), @tr("LINEAR"), @tr("CUT")]; selected: root.crossfader-curve; picked(i) => { root.choose("mixer.crossfader-curve", i); } } }
                         Row { label: @tr("Auto gain"); Switch { accessible-label: "prefs.controller.auto-gain"; label: @tr("Level tracks by their analysed loudness"); on: root.auto-gain; toggled(v) => { root.flag("mixer.auto-gain", v); } } }
                         Note { text: @tr("Deck and mixer settings apply at once and every time audio starts."); }
+                        Heading { a11y: "prefs.controller.guided-setup"; text: @tr("Guided setup"); }
+                        HorizontalLayout {
+                            spacing: Theme.s3;
+                            Note { text: @tr("For a controller without a mapping: choose what kind it is, then move each control when asked. The result is a mapping file you can share."); horizontal-stretch: 1; }
+                            Button { a11y-label: "prefs.controller.setup-open"; label: @tr("SET UP A CONTROLLER"); tone: Theme.live; tooltip: @tr("Open the guided setup in the main window"); clicked => { root.act("setup.open"); } }
+                        }
                         Heading { a11y: "prefs.controller.midi-learn"; text: @tr("MIDI learn"); }
                         Row {
                             label: @tr("Action");
