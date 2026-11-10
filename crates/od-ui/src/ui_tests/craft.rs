@@ -381,3 +381,24 @@ fn waveform_view_keys_stand_in_one_column() {
         }
     }
 }
+
+/// [50] The playhead of the Perform lanes stands on the window's centre,
+/// the mixer column's axis, whatever the width of the keys at the left;
+/// the bar counter stays at the playhead.
+#[test]
+fn lane_playhead_sits_on_the_window_centre() {
+    for size in [(1440, 900), (1280, 800)] {
+        let ui = Ui::open(size);
+        perform(&ui);
+        load(&ui, 0, 0);
+        load(&ui, 1, 1);
+        assert!(ui.wait_until(10.0, |u| u.has("wave.playhead") && u.has("mixer.ch1.stem")));
+        let head = Rect::of(&ui.get("wave.playhead")).centre().x;
+        let centre = size.0 as f32 / 2.0;
+        let mixer = (Rect::of(&ui.get("mixer.ch1.stem")).x + Rect::of(&ui.get("mixer.ch2.cue")).right()) / 2.0;
+        assert!((head - centre).abs() <= 1.0, "{size:?}: playhead {head} vs window centre {centre}");
+        assert!((head - mixer).abs() <= 1.0, "{size:?}: playhead {head} vs mixer centre {mixer}");
+        let counter = Rect::of(&ui.get("wave.counter1"));
+        assert!((counter.x - head).abs() <= 8.0, "{size:?}: counter at the playhead");
+    }
+}
