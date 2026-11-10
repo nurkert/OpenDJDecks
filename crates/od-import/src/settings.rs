@@ -2152,7 +2152,7 @@ mod tests {
         .unwrap();
         std::fs::write(dir.path().join("DEVSETTING.DAT"), dat(&[0; 32])).unwrap();
         std::fs::write(dir.path().join("VideoSettings.xml"), "<PROPERTIES/>").unwrap();
-        let (s, r) = read(Some(dir.path())).unwrap();
+        let (s, r) = read(dir.path()).unwrap();
         assert_eq!(r.files.len(), 4);
         assert_eq!(s.keymap_name.as_deref(), Some("My Keys"));
         assert!(
@@ -2162,6 +2162,6 @@ mod tests {
         );
         assert!(r.unmapped_files.iter().any(|(n, _)| n == "DEVSETTING.DAT"));
         let empty = tempfile::tempdir().unwrap();
-        assert!(read(Some(empty.path())).is_err());
+        assert!(read(empty.path()).is_err());
     }
 }

@@ -163,10 +163,10 @@ enum Cmd {
 
 #[derive(clap::Args)]
 struct RekordboxSettingsArgs {
-    /// Folder with rekordbox3.settings (default: the rekordbox 6/7
-    /// preference folder on macOS; on Linux a copied folder).
+    /// Folder with rekordbox3.settings, chosen by you (nothing looks for
+    /// another application's settings on its own).
     #[arg(long)]
-    dir: Option<PathBuf>,
+    dir: PathBuf,
     /// Write the translated keyboard shortcuts as an OpenDJDecks keymap file.
     #[arg(long)]
     keymap_out: Option<PathBuf>,
@@ -763,7 +763,7 @@ fn stems_cmd(cmd: &StemsCmd) -> anyhow::Result<()> {
 /// preferences (read-only; values of unknown names are never printed).
 fn rekordbox_settings_cmd(a: &RekordboxSettingsArgs) -> anyhow::Result<()> {
     use od_import::settings::{self, MapStatus};
-    let (s, r) = settings::read(a.dir.as_deref()).context("reading the rekordbox preferences")?;
+    let (s, r) = settings::read(&a.dir).context("reading the rekordbox preferences")?;
     println!("Files read:");
     for f in &r.files {
         println!("  {}", f.display());
