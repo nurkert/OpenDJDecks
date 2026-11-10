@@ -267,6 +267,8 @@ pub struct EngineProcessor {
     /// EQ swap waiting for its beat: the request and the master-clock beat
     /// it happens on (set on the first block after the request).
     pending_swap: Option<(PendingSwap, Option<f64>)>,
+    /// Decks waiting to start on a master-clock beat.
+    pending_start: [Option<f64>; MAX_DECKS],
     crossfader: f32,
     xf_curve: CrossfaderCurve,
     master_level: f32,
@@ -345,6 +347,7 @@ impl EngineProcessor {
             master_bpm: 120.0,
             free_beat: 0.0,
             pending_swap: None,
+            pending_start: [None; MAX_DECKS],
             crossfader: 0.0,
             xf_curve: CrossfaderCurve::default(),
             master_level: 1.0,
@@ -462,6 +465,18 @@ impl EngineProcessor {
         };
         match cmd {
             Command::Deck(d, c) => {
+                if matches!(
+                    c,
+                    DeckCommand::Play
+                        | DeckCommand::Pause
+                        | DeckCommand::TogglePlay
+                        | DeckCommand::Cue(_)
+                        | DeckCommand::Load(_)
+                        | DeckCommand::Unload
+                ) && d < MAX_DECKS
+                {
+                    self.pending_start[d] = None;
+                }
                 if let Some(deck) = self.decks.get_mut(d) {
                     deck.apply(c, &mut ctx);
                 } else if let DeckCommand::Load(t) = c {
@@ -547,6 +562,11 @@ impl EngineProcessor {
                 self.explicit_master = m.filter(|&d| d < self.decks.len());
             }
             Command::SetRecordTap(on) => self.record_enabled = on,
+            Command::StartOnBeat { deck, beat } => {
+                if deck < self.decks.len() {
+                    self.pending_start[deck] = beat.filter(|b| b.is_finite());
+                }
+            }
             Command::Input(c) => {
                 let mut ctx = RtCtx {
                     quantize: self.quantize,
@@ -625,6 +645,31 @@ impl EngineProcessor {
         }
     }
 
+    /// Starts the decks whose beat falls into this block. Without a playing
+    /// master there is no beat to wait for: they start at once.
+    fn run_pending_starts(&mut self, clock: &BeatClock, n: usize, master_playing: bool) {
+        let end = clock.beat + clock.beats_per_frame * n as f64;
+        for d in 0..self.decks.len() {
+            let Some(t) = self.pending_start[d] else {
+                continue;
+            };
+            if self.decks[d].is_playing() {
+                self.pending_start[d] = None;
+                continue;
+            }
+            if !master_playing || self.master == Some(d) || t <= end {
+                self.pending_start[d] = None;
+                let mut ctx = RtCtx {
+                    quantize: self.quantize,
+                    events: &mut self.events,
+                    garbage: &mut self.garbage,
+                    leaked: &mut self.leaked,
+                };
+                self.decks[d].apply(DeckCommand::Play, &mut ctx);
+            }
+        }
+    }
+
     fn render_block(&mut self, n: usize) {
         self.select_master();
         let sr = self.sr;
@@ -649,6 +694,7 @@ impl EngineProcessor {
         };
         self.free_beat = clock.beat + bpf * n as f64;
         self.run_pending_swap(&clock, n, matches!(master_info, Some((_, true))));
+        self.run_pending_starts(&clock, n, matches!(master_info, Some((_, true))));
         let master_key = self.master.and_then(|m| self.decks[m].key_pitch());
         let target = master_info.map(|(beat, playing)| SyncTarget {
             bpm: self.master_bpm,
@@ -870,6 +916,7 @@ impl EngineProcessor {
         s.frames = self.frames_total;
         for (i, d) in self.decks.iter().enumerate() {
             s.decks[i] = d.state(self.master == Some(i));
+            s.decks[i].start_on_beat = self.pending_start[i];
         }
         let mut audible = AudibleState::default();
         let master_lin = level_gain(self.master_level);

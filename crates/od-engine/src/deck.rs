@@ -2161,6 +2161,8 @@ impl Deck {
             at_end: self.at_end,
             stems_available: self.track.as_ref().is_some_and(|t| t.stems.is_some()),
             stem_levels: self.stem_target,
+            // Filled in by the engine (it holds the waiting starts).
+            start_on_beat: None,
         }
     }
 }
