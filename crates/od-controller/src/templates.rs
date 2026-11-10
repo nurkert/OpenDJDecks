@@ -191,6 +191,8 @@ pub const ACTION_NAMES: &[&str] = &[
     "deck.select",
     "deck.stem_level",
     "deck.stem_mute",
+    "deck.stem_solo",
+    "deck.stem_keep",
     "mixer.trim",
     "mixer.eq_high",
     "mixer.eq_mid",
@@ -218,6 +220,8 @@ pub const ACTION_NAMES: &[&str] = &[
     "tempo_fx.select_prev",
     "tempo_fx.select",
     "tempo_fx.assign",
+    "tempo_fx.build_up",
+    "fx_panic",
     "channel_fx.select",
     "channel_fx.next",
     "channel_fx.toggle",
@@ -470,6 +474,15 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
             let stem = stem_arg(&a)?;
             (Button, deck_press(DeckAction::StemMuteToggle { stem }))
         }
+        // Solo while held; the other parts return on release.
+        "deck.stem_solo" => {
+            let stem = stem_arg(&a)?;
+            (Button, deck_with(move |v| Some(DeckAction::StemSolo { stem, on: v.pressed() })))
+        }
+        "deck.stem_keep" => {
+            let stem = stem_arg(&a)?;
+            (Button, deck_press(DeckAction::StemKeepOnly { stem }))
+        }
 
         "mixer.trim" => (Absolute, mixer_abs(MixerAction::Trim)),
         "mixer.eq_high" => (Absolute, mixer_abs(MixerAction::EqHigh)),
@@ -530,6 +543,7 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
             Box::new(|_, v| Some(ControlAction::HeadphoneLevel(v.unit()))),
         ),
         "master_cue" => (Button, on_press(|_| ControlAction::MasterCue)),
+        "fx_panic" => (Button, on_press(|_| ControlAction::FxPanic)),
         "eq_swap" => {
             let band = band_arg(&a)?;
             (Button, on_press(move |_| ControlAction::EqSwap(band)))
@@ -566,6 +580,13 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
                 "tempo_fx.assign" => {
                     let ch = a.u8("channel")?;
                     (Button, on_press(move |_| fx(TempoFxAction::Assign(ch))))
+                }
+                "tempo_fx.build_up" => {
+                    let bars = a.u8_or("bars", 16)?;
+                    if ![8, 16, 32].contains(&bars) {
+                        return Err(a.err(format!("bars must be 8, 16 or 32, not {bars}")));
+                    }
+                    (Button, on_press(move |_| fx(TempoFxAction::BuildUp(bars))))
                 }
                 _ => return Err(MappingError::UnknownAction(name.to_string())),
             }
@@ -850,6 +871,50 @@ mod tests {
                 action: DeckAction::PadMode(PadMode::LoopRoll)
             })
         );
+    }
+
+    /// [60] [61] Stem solo (held) and keep-only, FX panic and the bar-locked
+    /// build-up.
+    #[test]
+    fn stem_and_fx_actions_map() {
+        let press = InputValue::Button {
+            pressed: true,
+            velocity: 127,
+        };
+        let release = InputValue::Button {
+            pressed: false,
+            velocity: 0,
+        };
+        let mut vocals = Table::new();
+        vocals.insert("stem".into(), Value::String("vocals".into()));
+        let solo = parse_action("deck.stem_solo", &vocals).unwrap();
+        assert!(solo.needs_deck);
+        assert_eq!(
+            solo.produce(Some(1), press),
+            Some(ControlAction::Deck { deck: 1, action: DeckAction::StemSolo { stem: StemPart::Vocals, on: true } })
+        );
+        assert_eq!(
+            solo.produce(Some(1), release),
+            Some(ControlAction::Deck { deck: 1, action: DeckAction::StemSolo { stem: StemPart::Vocals, on: false } })
+        );
+        let keep = parse_action("deck.stem_keep", &vocals).unwrap();
+        assert_eq!(
+            keep.produce(Some(0), press),
+            Some(ControlAction::Deck { deck: 0, action: DeckAction::StemKeepOnly { stem: StemPart::Vocals } })
+        );
+        assert!(parse_action("deck.stem_solo", &Table::new()).is_err());
+        let panic = parse_action("fx_panic", &Table::new()).unwrap();
+        assert_eq!(panic.produce(None, press), Some(ControlAction::FxPanic));
+        let mut bars = Table::new();
+        bars.insert("bars".into(), Value::Integer(32));
+        bars.insert("unit".into(), Value::Integer(2));
+        let up = parse_action("tempo_fx.build_up", &bars).unwrap();
+        assert_eq!(
+            up.produce(None, press),
+            Some(ControlAction::TempoFx { unit: 2, action: TempoFxAction::BuildUp(32) })
+        );
+        bars.insert("bars".into(), Value::Integer(12));
+        assert!(parse_action("tempo_fx.build_up", &bars).is_err());
     }
 
     #[test]
