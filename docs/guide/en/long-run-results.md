@@ -27,8 +27,6 @@ Not covered: the audio driver's own work, the interface's converters, the window
 
 Machine: MacBookPro18,2 (Apple M1 Max), 32 GB, macOS 27.0.1. Build: optimised (`--profile soak`).
 
-**No run of four hours or more has finished yet.** Only what is listed below was measured so far.
-
 ### Short smoke run: 4 decks, not a long run (2 min)
 
 | Measure | Value |
@@ -47,7 +45,70 @@ Machine: MacBookPro18,2 (Apple M1 Max), 32 GB, macOS 27.0.1. Build: optimised (`
 | Recorded to WAV | 2 min |
 | Deck reloads during the run | 1 |
 | Log | `docs/soak/smoke-4-decks-2min.jsonl` |
+
+### 2 decks, 4 hours
+
+| Measure | Value |
+|---|---|
+| Started | 2026-11-10 06:35 UTC |
+| Minutes measured | 240 |
+| Buffer, rate, latency | 256 frames · 48000 Hz · 5.33 ms |
+| Engine callbacks | 2700026 |
+| Deadline misses (dropouts) | **7** in 5 of the minutes |
+| Render time longer than the buffer | 6 |
+| Render time, median of the minute medians | 2.56 ms (48 %) |
+| Render time p99, typical minute / worst minute | 2.96 ms (55 %) / 3.57 ms (67 %) |
+| Longest single callback | 5.82 ms (109 %) |
+| Memory (RSS) first / last / highest minute | 1025 / 936 / 1025 MB |
+| Machine load average (1 min), median / highest | 11.4 / 115.3 |
+| Recorded to WAV | 240 min |
+| Deck reloads during the run | 70 |
+| Log | `docs/soak/soak-2-decks-4h.jsonl` |
+
+Hour by hour:
+
+| Hour | Misses | Render p99, worst minute | Longest callback | RSS at the end | Load average (median) |
+|---|---|---|---|---|---|
+| 1 | 2 | 3.44 ms | 5.82 ms | 936 MB | 12.4 |
+| 2 | 0 | 3.46 ms | 5.22 ms | 620 MB | 11.4 |
+| 3 | 4 | 3.57 ms | 5.56 ms | 322 MB | 10.3 |
+| 4 | 1 | 3.42 ms | 5.47 ms | 936 MB | 11.8 |
+
+### 4 decks, 4 hours
+
+| Measure | Value |
+|---|---|
+| Started | 2026-11-10 10:35 UTC |
+| Minutes measured | 240 |
+| Buffer, rate, latency | 256 frames · 48000 Hz · 5.33 ms |
+| Engine callbacks | 2700003 |
+| Deadline misses (dropouts) | **1007** in 105 of the minutes |
+| Render time longer than the buffer | 947 |
+| Render time, median of the minute medians | 1.97 ms (37 %) |
+| Render time p99, typical minute / worst minute | 3.27 ms (61 %) / 5.38 ms (101 %) |
+| Longest single callback | 7.37 ms (138 %) |
+| Memory (RSS) first / last / highest minute | 1219 / 970 / 1339 MB |
+| Machine load average (1 min), median / highest | 8.2 / 111.2 |
+| Recorded to WAV | 240 min |
+| Deck reloads during the run | 70 |
+| Log | `docs/soak/soak-4-decks-4h.jsonl` |
+
+Hour by hour:
+
+| Hour | Misses | Render p99, worst minute | Longest callback | RSS at the end | Load average (median) |
+|---|---|---|---|---|---|
+| 1 | 83 | 4.60 ms | 6.95 ms | 592 MB | 13.3 |
+| 2 | 158 | 4.76 ms | 5.99 ms | 686 MB | 11.7 |
+| 3 | 379 | 5.29 ms | 6.49 ms | 916 MB | 4.4 |
+| 4 | 387 | 5.38 ms | 7.37 ms | 970 MB | 3.9 |
 <!-- soak-results:end -->
+
+### What the numbers show
+
+- **Two decks:** 7 late buffers in four hours, across 2.7 million buffers. No hour had more than 4. Memory went up and down with the deck reloads and did not grow over the run.
+- **Four decks:** 1007 late buffers, and they did not come evenly. In 135 of the 240 minutes there were none at all. The rest came in bursts, for example minutes 165 to 181 and 231 to 238. During those minutes the same computer was compiling OpenDJDecks, running its test suite and taking screenshots of the app. The engine's median time per buffer stayed between 1.7 and 2.6 ms for the whole four hours. The engine did not get slower over time; it lost the processor to other work.
+- **What this means for you:** with four decks, stems and effects at a 5.3 ms buffer, close everything else on the computer, or pick a larger buffer. Two decks were stable even next to heavy work.
+- **Still to do:** these runs were made on a computer in daily use. A run on a quiet computer and runs of eight hours have not been made yet. They will be added here, measured the same way.
 
 ## Repeat it on your computer
 
