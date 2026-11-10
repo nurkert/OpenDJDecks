@@ -400,6 +400,8 @@ impl Mapping {
     }
 
     /// Loads every `*.toml` below `dir` (recursively). Errors are returned per file.
+    /// The `templates` folder holds guided-setup templates, not mappings, and
+    /// is skipped.
     pub fn load_dir(dir: &Path) -> Vec<(PathBuf, Result<Mapping, MappingError>)> {
         let mut out = Vec::new();
         let mut stack = vec![dir.to_path_buf()];
@@ -411,6 +413,9 @@ impl Mapping {
             entries.sort();
             for p in entries {
                 if p.is_dir() {
+                    if p.file_name().is_some_and(|n| n == "templates") {
+                        continue;
+                    }
                     stack.push(p);
                 } else if p.extension().is_some_and(|e| e == "toml") {
                     let r = Mapping::load(&p);

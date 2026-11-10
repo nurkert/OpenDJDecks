@@ -1,0 +1,511 @@
+# OpenDJDecks controller template: Four decks.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+# A generic list of the core controls of this class of controller, in
+# the order the guided setup (Preferences > Controller) asks for them.
+# It names no model and holds no MIDI numbers: the setup fills them in
+# from the owner's own unit and writes a mapping file from them.
+# Four decks: on units that switch decks with a layer key, select the deck
+# on the unit before moving its controls.
+
+template = 1
+id = "four-deck"
+name = "Four decks"
+decks = 4
+module = "jog-controller"
+
+[[step]]
+action = "deck.play_pause"
+deck = 1
+expect = "button"
+name = "Play/Pause (deck 1)"
+screen = "deck1.play"
+
+[[step]]
+action = "deck.cue"
+deck = 1
+expect = "button"
+name = "Cue (deck 1)"
+screen = "deck1.cue"
+
+[[step]]
+action = "deck.sync"
+deck = 1
+expect = "button"
+name = "Sync (deck 1)"
+screen = "deck1.beat-sync"
+
+[[step]]
+action = "deck.jog_touch"
+deck = 1
+expect = "button"
+name = "Jog touch (deck 1)"
+
+[[step]]
+action = "deck.jog_turn"
+deck = 1
+args = { mode = "scratch" }
+expect = "wheel"
+name = "Jog wheel (deck 1)"
+
+[[step]]
+action = "deck.tempo"
+deck = 1
+expect = "fader"
+name = "Tempo fader (deck 1)"
+screen = "deck1.pitch"
+
+[[step]]
+action = "deck.load"
+deck = 1
+expect = "button"
+name = "Load (deck 1)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 0 }
+expect = "button"
+name = "Hot cue A (deck 1)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 1 }
+expect = "button"
+name = "Hot cue B (deck 1)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 2 }
+expect = "button"
+name = "Hot cue C (deck 1)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 3 }
+expect = "button"
+name = "Hot cue D (deck 1)"
+
+[[step]]
+action = "deck.play_pause"
+deck = 2
+expect = "button"
+name = "Play/Pause (deck 2)"
+screen = "deck2.play"
+
+[[step]]
+action = "deck.cue"
+deck = 2
+expect = "button"
+name = "Cue (deck 2)"
+screen = "deck2.cue"
+
+[[step]]
+action = "deck.sync"
+deck = 2
+expect = "button"
+name = "Sync (deck 2)"
+screen = "deck2.beat-sync"
+
+[[step]]
+action = "deck.jog_touch"
+deck = 2
+expect = "button"
+name = "Jog touch (deck 2)"
+
+[[step]]
+action = "deck.jog_turn"
+deck = 2
+args = { mode = "scratch" }
+expect = "wheel"
+name = "Jog wheel (deck 2)"
+
+[[step]]
+action = "deck.tempo"
+deck = 2
+expect = "fader"
+name = "Tempo fader (deck 2)"
+screen = "deck2.pitch"
+
+[[step]]
+action = "deck.load"
+deck = 2
+expect = "button"
+name = "Load (deck 2)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 0 }
+expect = "button"
+name = "Hot cue A (deck 2)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 1 }
+expect = "button"
+name = "Hot cue B (deck 2)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 2 }
+expect = "button"
+name = "Hot cue C (deck 2)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 3 }
+expect = "button"
+name = "Hot cue D (deck 2)"
+
+[[step]]
+action = "deck.play_pause"
+deck = 3
+expect = "button"
+name = "Play/Pause (deck 3)"
+screen = "deck3.play"
+
+[[step]]
+action = "deck.cue"
+deck = 3
+expect = "button"
+name = "Cue (deck 3)"
+screen = "deck3.cue"
+
+[[step]]
+action = "deck.sync"
+deck = 3
+expect = "button"
+name = "Sync (deck 3)"
+screen = "deck3.beat-sync"
+
+[[step]]
+action = "deck.jog_touch"
+deck = 3
+expect = "button"
+name = "Jog touch (deck 3)"
+
+[[step]]
+action = "deck.jog_turn"
+deck = 3
+args = { mode = "scratch" }
+expect = "wheel"
+name = "Jog wheel (deck 3)"
+
+[[step]]
+action = "deck.tempo"
+deck = 3
+expect = "fader"
+name = "Tempo fader (deck 3)"
+screen = "deck3.pitch"
+
+[[step]]
+action = "deck.load"
+deck = 3
+expect = "button"
+name = "Load (deck 3)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 3
+args = { slot = 0 }
+expect = "button"
+name = "Hot cue A (deck 3)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 3
+args = { slot = 1 }
+expect = "button"
+name = "Hot cue B (deck 3)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 3
+args = { slot = 2 }
+expect = "button"
+name = "Hot cue C (deck 3)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 3
+args = { slot = 3 }
+expect = "button"
+name = "Hot cue D (deck 3)"
+
+[[step]]
+action = "deck.play_pause"
+deck = 4
+expect = "button"
+name = "Play/Pause (deck 4)"
+screen = "deck4.play"
+
+[[step]]
+action = "deck.cue"
+deck = 4
+expect = "button"
+name = "Cue (deck 4)"
+screen = "deck4.cue"
+
+[[step]]
+action = "deck.sync"
+deck = 4
+expect = "button"
+name = "Sync (deck 4)"
+screen = "deck4.beat-sync"
+
+[[step]]
+action = "deck.jog_touch"
+deck = 4
+expect = "button"
+name = "Jog touch (deck 4)"
+
+[[step]]
+action = "deck.jog_turn"
+deck = 4
+args = { mode = "scratch" }
+expect = "wheel"
+name = "Jog wheel (deck 4)"
+
+[[step]]
+action = "deck.tempo"
+deck = 4
+expect = "fader"
+name = "Tempo fader (deck 4)"
+screen = "deck4.pitch"
+
+[[step]]
+action = "deck.load"
+deck = 4
+expect = "button"
+name = "Load (deck 4)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 4
+args = { slot = 0 }
+expect = "button"
+name = "Hot cue A (deck 4)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 4
+args = { slot = 1 }
+expect = "button"
+name = "Hot cue B (deck 4)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 4
+args = { slot = 2 }
+expect = "button"
+name = "Hot cue C (deck 4)"
+
+[[step]]
+action = "deck.hot_cue"
+deck = 4
+args = { slot = 3 }
+expect = "button"
+name = "Hot cue D (deck 4)"
+
+[[step]]
+action = "mixer.fader"
+deck = 1
+expect = "fader"
+name = "Channel fader (channel 1)"
+screen = "mixer.ch1.fader"
+
+[[step]]
+action = "mixer.trim"
+deck = 1
+expect = "fader"
+name = "Trim (channel 1)"
+screen = "mixer.ch1.trim"
+
+[[step]]
+action = "mixer.eq_high"
+deck = 1
+expect = "fader"
+name = "EQ high (channel 1)"
+screen = "mixer.ch1.eq-high"
+
+[[step]]
+action = "mixer.eq_mid"
+deck = 1
+expect = "fader"
+name = "EQ mid (channel 1)"
+screen = "mixer.ch1.eq-mid"
+
+[[step]]
+action = "mixer.eq_low"
+deck = 1
+expect = "fader"
+name = "EQ low (channel 1)"
+screen = "mixer.ch1.eq-low"
+
+[[step]]
+action = "mixer.cue"
+deck = 1
+expect = "button"
+name = "Headphone cue (channel 1)"
+screen = "mixer.ch1.cue"
+
+[[step]]
+action = "mixer.fader"
+deck = 2
+expect = "fader"
+name = "Channel fader (channel 2)"
+screen = "mixer.ch2.fader"
+
+[[step]]
+action = "mixer.trim"
+deck = 2
+expect = "fader"
+name = "Trim (channel 2)"
+screen = "mixer.ch2.trim"
+
+[[step]]
+action = "mixer.eq_high"
+deck = 2
+expect = "fader"
+name = "EQ high (channel 2)"
+screen = "mixer.ch2.eq-high"
+
+[[step]]
+action = "mixer.eq_mid"
+deck = 2
+expect = "fader"
+name = "EQ mid (channel 2)"
+screen = "mixer.ch2.eq-mid"
+
+[[step]]
+action = "mixer.eq_low"
+deck = 2
+expect = "fader"
+name = "EQ low (channel 2)"
+screen = "mixer.ch2.eq-low"
+
+[[step]]
+action = "mixer.cue"
+deck = 2
+expect = "button"
+name = "Headphone cue (channel 2)"
+screen = "mixer.ch2.cue"
+
+[[step]]
+action = "mixer.fader"
+deck = 3
+expect = "fader"
+name = "Channel fader (channel 3)"
+screen = "mixer.ch3.fader"
+
+[[step]]
+action = "mixer.trim"
+deck = 3
+expect = "fader"
+name = "Trim (channel 3)"
+screen = "mixer.ch3.trim"
+
+[[step]]
+action = "mixer.eq_high"
+deck = 3
+expect = "fader"
+name = "EQ high (channel 3)"
+screen = "mixer.ch3.eq-high"
+
+[[step]]
+action = "mixer.eq_mid"
+deck = 3
+expect = "fader"
+name = "EQ mid (channel 3)"
+screen = "mixer.ch3.eq-mid"
+
+[[step]]
+action = "mixer.eq_low"
+deck = 3
+expect = "fader"
+name = "EQ low (channel 3)"
+screen = "mixer.ch3.eq-low"
+
+[[step]]
+action = "mixer.cue"
+deck = 3
+expect = "button"
+name = "Headphone cue (channel 3)"
+screen = "mixer.ch3.cue"
+
+[[step]]
+action = "mixer.fader"
+deck = 4
+expect = "fader"
+name = "Channel fader (channel 4)"
+screen = "mixer.ch4.fader"
+
+[[step]]
+action = "mixer.trim"
+deck = 4
+expect = "fader"
+name = "Trim (channel 4)"
+screen = "mixer.ch4.trim"
+
+[[step]]
+action = "mixer.eq_high"
+deck = 4
+expect = "fader"
+name = "EQ high (channel 4)"
+screen = "mixer.ch4.eq-high"
+
+[[step]]
+action = "mixer.eq_mid"
+deck = 4
+expect = "fader"
+name = "EQ mid (channel 4)"
+screen = "mixer.ch4.eq-mid"
+
+[[step]]
+action = "mixer.eq_low"
+deck = 4
+expect = "fader"
+name = "EQ low (channel 4)"
+screen = "mixer.ch4.eq-low"
+
+[[step]]
+action = "mixer.cue"
+deck = 4
+expect = "button"
+name = "Headphone cue (channel 4)"
+screen = "mixer.ch4.cue"
+
+[[step]]
+action = "crossfader"
+expect = "fader"
+name = "Crossfader"
+screen = "global.xfader"
+
+[[step]]
+action = "browse.rotate"
+expect = "wheel"
+name = "Browse"
+
+[[step]]
+action = "browse.press"
+expect = "button"
+name = "Browse press"
+
+[[step]]
+action = "master_level"
+expect = "fader"
+name = "Master level"
+screen = "topbar.master-volume"
+
+[[step]]
+action = "headphone_level"
+expect = "fader"
+name = "Headphone level"
+screen = "global.phones.level"

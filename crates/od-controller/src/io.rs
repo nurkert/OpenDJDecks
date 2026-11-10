@@ -105,6 +105,10 @@ pub struct ControllerManager {
     monitor: MidiMonitor,
     learn: Arc<Mutex<Option<LearnSession>>>,
     stop: Arc<AtomicBool>,
+    /// Open ports without a mapping too (MIDI learn, the guided setup);
+    /// switched at run time, the next scan follows at once.
+    unmapped: Arc<AtomicBool>,
+    rescan_now: Arc<AtomicBool>,
     thread: Option<JoinHandle<()>>,
 }
 
@@ -116,14 +120,17 @@ impl ControllerManager {
         let monitor = MidiMonitor::default();
         let learn = Arc::new(Mutex::new(None));
         let stop = Arc::new(AtomicBool::new(false));
+        let unmapped = Arc::new(AtomicBool::new(config.monitor_unmapped_ports));
+        let rescan_now = Arc::new(AtomicBool::new(false));
         let thread = {
             let monitor = monitor.clone();
             let learn = learn.clone();
             let stop = stop.clone();
+            let flags = (unmapped.clone(), rescan_now.clone());
             std::thread::Builder::new()
                 .name("od-controller".into())
                 .spawn(move || {
-                    run(mappings, config, ev_tx, fb_rx, lights_rx, monitor, learn, stop)
+                    run(mappings, config, ev_tx, fb_rx, lights_rx, monitor, learn, stop, flags)
                 })
                 .expect("spawn controller thread")
         };
@@ -134,7 +141,19 @@ impl ControllerManager {
             monitor,
             learn,
             stop,
+            unmapped,
+            rescan_now,
             thread: Some(thread),
+        }
+    }
+
+    /// Opens (or closes again) the MIDI inputs that no mapping knows, so
+    /// MIDI learn and the guided setup hear a controller without a mapping.
+    /// Closed by default: on some systems an open port is not available to
+    /// other programs.
+    pub fn set_open_unmapped(&self, on: bool) {
+        if self.unmapped.swap(on, Ordering::Relaxed) != on {
+            self.rescan_now.store(true, Ordering::Relaxed);
         }
     }
 
@@ -188,6 +207,7 @@ fn run(
     monitor: MidiMonitor,
     learn: Arc<Mutex<Option<LearnSession>>>,
     stop: Arc<AtomicBool>,
+    (unmapped, rescan_now): (Arc<AtomicBool>, Arc<AtomicBool>),
 ) {
     let (raw_tx, raw_rx) = crossbeam_channel::unbounded::<RawIn>();
     let mut conns: HashMap<String, Connected> = HashMap::new();
@@ -195,9 +215,15 @@ fn run(
 
     while !stop.load(Ordering::Relaxed) {
         let now = Instant::now();
-        if last_scan.is_none_or(|t| now.duration_since(t) >= config.rescan_interval) {
+        if rescan_now.swap(false, Ordering::Relaxed)
+            || last_scan.is_none_or(|t| now.duration_since(t) >= config.rescan_interval)
+        {
             last_scan = Some(now);
-            rescan(&mappings, &config, &mut conns, &raw_tx, &events, &monitor);
+            let open_unmapped = unmapped.load(Ordering::Relaxed);
+            if !open_unmapped {
+                conns.retain(|_, c| c.session.is_some());
+            }
+            rescan(&mappings, open_unmapped, &mut conns, &raw_tx, &events, &monitor);
         }
 
         // Input.
@@ -276,7 +302,7 @@ fn run(
 
 fn rescan(
     mappings: &[Arc<Mapping>],
-    config: &ManagerConfig,
+    open_unmapped: bool,
     conns: &mut HashMap<String, Connected>,
     raw_tx: &Sender<RawIn>,
     events: &Sender<ControllerEvent>,
@@ -315,7 +341,7 @@ fn rescan(
             continue;
         }
         let mapping = mappings.iter().find(|m| m.matches_port(name)).cloned();
-        if mapping.is_none() && !config.monitor_unmapped_ports {
+        if mapping.is_none() && !open_unmapped {
             continue;
         }
         let input = match connect_input(name, raw_tx.clone()) {

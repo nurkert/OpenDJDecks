@@ -825,7 +825,7 @@ fn flx10_part_isolator_drives_stem_levels() {
 /// `cargo run -p od-controller --example hardware_status -- --write`.
 #[test]
 fn the_published_hardware_status_matches_the_mapping_files() {
-    use od_controller::hardware::{replace_section, status_markdown};
+    use od_controller::hardware::{controller_list_markdown, replace_list, replace_section, status_markdown};
     let dir = od_controller::bundled_mappings_dir().join("controllers");
     let mut loaded = Mapping::load_dir(&dir);
     loaded.sort_by(|a, b| a.0.cmp(&b.0));
@@ -837,6 +837,9 @@ fn the_published_hardware_status_matches_the_mapping_files() {
     for (lang, de) in [("en", false), ("de", true)] {
         let doc = std::fs::read_to_string(guide.join(lang).join("controllers.md")).unwrap();
         let fresh = replace_section(&doc, &status_markdown(&mappings, de)).expect("markers");
+        let templates = od_controller::guided::Template::all();
+        let fresh = replace_list(&fresh, &controller_list_markdown(&mappings, &templates, de))
+            .expect("controller-list markers");
         assert!(
             fresh == doc,
             "docs/guide/{lang}/controllers.md is out of date: run \

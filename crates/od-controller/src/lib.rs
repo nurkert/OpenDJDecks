@@ -8,11 +8,14 @@
 //!   soft takeover, device module hooks, feedback rendering).
 //! - [`output`]: diffed, rate-limited LED/meter output.
 //! - [`monitor`] and [`learn`]: MIDI monitor and MIDI learn.
+//! - [`guided`]: guided setup for controllers without a mapping, from the
+//!   class templates in `mappings/templates/`.
 //! - `io` (feature `midi-io`): midir port discovery, hot-plug, threads.
 
 pub mod action;
 pub mod device_module;
 pub mod feedback;
+pub mod guided;
 pub mod hardware;
 #[cfg(feature = "midi-io")]
 pub mod io;
