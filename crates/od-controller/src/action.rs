@@ -32,6 +32,9 @@ pub enum ControlAction {
     HeadphoneLevel(f32),
     /// Press of the master cue button.
     MasterCue,
+    /// One-tap EQ swap of a band between the two decks being mixed, at the
+    /// swap timing set in the app (now, next beat or next bar).
+    EqSwap(EqBand),
     TempoFx {
         unit: u8,
         action: TempoFxAction,
@@ -271,6 +274,37 @@ pub enum MixerAction {
     Fader(f32),
     CueToggle,
     CrossfaderAssign(CrossfaderSide),
+    /// Kill of an EQ band on this channel, on / off per press.
+    EqKill(EqBand),
+}
+
+/// An EQ band of a mixer channel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EqBand {
+    Low,
+    Mid,
+    High,
+}
+
+impl EqBand {
+    /// The engine's band index (0 = low, 1 = mid, 2 = high).
+    pub fn index(self) -> usize {
+        match self {
+            EqBand::Low => 0,
+            EqBand::Mid => 1,
+            EqBand::High => 2,
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "low" => Some(EqBand::Low),
+            "mid" => Some(EqBand::Mid),
+            "high" | "hi" => Some(EqBand::High),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

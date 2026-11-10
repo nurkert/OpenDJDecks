@@ -114,6 +114,8 @@ pub struct ChannelState {
     pub trim_db: f32,
     pub auto_gain: bool,
     pub eq: [f32; 3],
+    /// Kill per EQ band (0 = low, 1 = mid, 2 = high).
+    pub eq_kill: [bool; 3],
     pub channel_fx: ChannelFxKind,
     pub channel_fx_amount: f32,
     pub xf_assign: XfAssign,
@@ -231,6 +233,8 @@ pub struct EngineState {
     pub master_deck: Option<usize>,
     /// Tempo of the sync master (or the last known), BPM.
     pub master_bpm: f64,
+    /// An EQ swap waiting for its beat or bar.
+    pub pending_swap: Option<crate::command::PendingSwap>,
     pub tempo_fx: [TempoFxState; TEMPO_FX_UNITS],
     /// Slots 1 and 2 of each unit (multi mode).
     pub tempo_fx_slots: [[TempoFxState; TEMPO_FX_SLOTS - 1]; TEMPO_FX_UNITS],
@@ -270,6 +274,7 @@ impl Default for EngineState {
             quantize: true,
             master_deck: None,
             master_bpm: 120.0,
+            pending_swap: None,
             tempo_fx: [TempoFxState::default(); TEMPO_FX_UNITS],
             tempo_fx_slots: [[TempoFxState::default(); TEMPO_FX_SLOTS - 1]; TEMPO_FX_UNITS],
             tempo_fx_multi: [false; TEMPO_FX_UNITS],

@@ -173,7 +173,7 @@ fn trim_db(v: f32) -> f32 {
     crate::mixer::knob_to_trim(v * 2.0 - 1.0)
 }
 
-fn handle_action(app: &App, action: ControlAction) {
+pub(crate) fn handle_action(app: &App, action: ControlAction) {
     match action {
         ControlAction::Deck { deck, action } => deck_action(
             app,
@@ -197,6 +197,10 @@ fn handle_action(app: &App, action: ControlAction) {
                     value: v * 2.0 - 1.0,
                 },
                 MixerAction::ChannelFx(v) => ChannelCommand::SetChannelFxAmount(v),
+                MixerAction::EqKill(band) => {
+                    crate::mixer::toggle_kill(app, c, band.index());
+                    return;
+                }
                 MixerAction::Fader(v) => ChannelCommand::SetFader(v),
                 MixerAction::CueToggle => {
                     let on = engine::snapshot(app)
@@ -233,6 +237,7 @@ fn handle_action(app: &App, action: ControlAction) {
         ControlAction::BoothLevel(v) => {
             engine::send(app, Command::Mixer(MixerCommand::SetBoothLevel(v)))
         }
+        ControlAction::EqSwap(band) => crate::mixer::swap(app, band.index()),
         ControlAction::MasterCue => {
             let on = engine::snapshot(app).map(|s| s.master_cue).unwrap_or(false);
             engine::send(app, Command::Mixer(MixerCommand::SetMasterCue(!on)));

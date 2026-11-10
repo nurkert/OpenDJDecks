@@ -181,9 +181,11 @@ release.
 | `mixer.trim`, `mixer.eq_high`, `mixer.eq_mid`, `mixer.eq_low`, `mixer.fader` | absolute | | `MixerAction::*` |
 | `mixer.channel_fx` | absolute | | `ChannelFx(-1..1)` |
 | `mixer.cue` | press | | `CueToggle` (headphone cue) |
+| `mixer.eq_kill` | press | `band` = `low` / `mid` / `high` | `EqKill(band)`: kill of that band on this channel, on / off per press |
 | `mixer.crossfader_assign` | press | `side` = `a` / `thru` / `b` | |
 | `crossfader`, `master_level`, `booth_level`, `headphone_mix`, `headphone_level` | absolute | | |
 | `master_cue` | press | | |
+| `eq_swap` | press | `band` = `low` / `mid` / `high` | `EqSwap(band)`: swaps that band (knob and kill) between the two decks being mixed, at the swap timing set on the mixer (now, next beat, next bar); a second press while it waits cancels it |
 | `tempo_fx.toggle`, `tempo_fx.beat_down`, `tempo_fx.beat_up`, `tempo_fx.auto_beat`, `tempo_fx.tap`, `tempo_fx.select_next`, `tempo_fx.select_prev` | press | `unit` (default 1) | |
 | `tempo_fx.release` | momentary | `unit` | |
 | `tempo_fx.level` | absolute | `unit` | |
