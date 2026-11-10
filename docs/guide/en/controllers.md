@@ -1,8 +1,8 @@
 ---
 title: Controllers and MIDI learn
-description: Plug in a compatible controller and play. For anything else, map controls with MIDI learn and see what your controller sends in the MIDI monitor.
-keywords: [controller, controllers, midi, midi learn, mapping, ddj, ddj-flx10, ddj-flx4, flx10, flx4, pioneer, led, soft takeover, browse, encoder, midi monitor, hardware]
-features: [ctrl-self-test, ctrl-hardware-status, ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
+description: Plug in a compatible controller and play. Set up any other controller with the guided setup, map single controls with MIDI learn and see what your controller sends in the MIDI monitor.
+keywords: [controller, controllers, midi, midi learn, mapping, ddj, ddj-flx10, ddj-flx4, flx10, flx4, pioneer, led, soft takeover, browse, encoder, midi monitor, hardware, controller list, guided setup, setup, template, battle, entry level, unlisted controller, new controller]
+features: [ctrl-controller-list, ctrl-guided-setup, ctrl-class-templates, ctrl-self-test, ctrl-hardware-status, ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
 ---
 
 OpenDJDecks ships with mappings compatible with the Pioneer DJ DDJ-FLX10 and DDJ-FLX4, with LED feedback for play, cue, sync, master, key lock, slip, loop and the pads, and the VU meters. The mappings are not yet fully confirmed on real devices, so individual controls or LEDs may not work: try them before a gig. Connect a controller by USB; it is picked up within a few seconds, and its audio interface is used automatically (**Preferences › Audio › Output device**).
@@ -10,6 +10,36 @@ OpenDJDecks ships with mappings compatible with the Pioneer DJ DDJ-FLX10 and DDJ
 When you move a knob after a preset jumped, soft takeover makes sure the value only changes once the physical control has reached it.
 
 ![The controller page in Preferences](../img/controllers.png)
+
+## Controller list
+
+Which controllers OpenDJDecks knows and how far each is confirmed. A model counts as **verified** only when every one of its controls has been confirmed on a real unit with OpenDJDecks. None has been yet, so every row says **not confirmed**. Vendor and model names only say which hardware a mapping is meant to be compatible with.
+
+<!-- controller-list:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->
+
+| Controller | Decks | Mapping | Recognised by | Status |
+|---|---|---|---|---|
+| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | not confirmed: 0 verified, 125 partial, 135 untested |
+| compatible with DDJ-FLX4 | 2 | built in | MIDI port name `DDJ-FLX4` | not confirmed: 0 verified, 126 partial, 47 untested |
+| Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (39 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
+| Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (34 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
+| Any four-deck controller | 4 | guided setup, template `four-deck` (73 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
+<!-- controller-list:end -->
+
+Any other controller can be set up with the guided setup below, from one of three generic templates. More model mappings, for entry-level and battle-style controllers too, come from owners who capture their own unit with the guided setup and share the file. None of those is confirmed for other units yet. OpenDJDecks does not derive mappings from manufacturer manuals, MIDI charts, vendor software or other projects' mapping files.
+
+## Guided setup for other controllers
+
+![The controller setup under the top bar, asking for the tempo fader of deck 1](../img/controller-setup.png)
+
+For a controller without a mapping, press **SET UP A CONTROLLER** in **Preferences › Controller** (or **View › Controller Setup**). A band opens under the top bar:
+
+1. Connect the controller by USB and choose what it is closest to: **2 DECKS · ENTRY LEVEL**, **2 DECKS · BATTLE** or **4 DECKS**. Press **START**.
+2. The band asks for one control at a time: PLAY, CUE and SYNC, the jog wheel (touch, then turn), the tempo fader and LOAD of each deck, then the hot cue pads, the channel faders, TRIM and the EQ knobs, headphone CUE, the crossfader, the browse knob and the master and headphone levels. The matching control on screen gets the guide outline.
+3. Move the control. **Heard** says what arrived; once the control rests for a moment the step is taken and the next one comes. A control that an earlier step already uses is refused with the number of that step. **SKIP** leaves out what your controller does not have, **BACK** goes one step back to learn it again, **AGAIN** forgets what arrived.
+4. At the end, give the controller a name and press **SAVE MAPPING**. The file is written next to your library in `mappings/`, becomes your own mapping file and is used from the next start. The battle-style template also sets the crossfader curve to **CUT**.
+
+The file is an ordinary mapping file you can share. Every entry in it is marked as not confirmed (`verify = true`), because only your unit has been heard. While the setup, MIDI learn or the monitor runs, OpenDJDecks also opens MIDI inputs that no mapping knows; on some systems another program cannot use such a port at the same time. The guided setup has been tested with simulated MIDI messages, not yet with a real controller.
 
 ## Browse from the controller
 

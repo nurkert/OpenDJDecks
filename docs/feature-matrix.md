@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 258 features; 252 in scope: 252 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 264 features; 258 in scope: 258 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -187,6 +187,9 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | The incoming track drawn over the playing waveform | DONE | `crates/od-ui/src/decks.rs::project_overlay`, `crates/od-ui/src/render.rs::outline_tile`, `ui/wave.slint::WaveLane`; Roadmap [56]. On the playing master's lane, the other deck's waveform as an outline in its deck colour, on the same time scale: where it plays now, or, while cued, from its cue placed on the master's next phrase (a numbered mark). Preferences > View > Incoming track switches it off | 3 | P2 |
 | One-press half and double BPM on the deck | DONE | `crates/od-ui/src/decks.rs::bpm_scale`, `ui/perform.slint::MiniKey`; Roadmap [57]. ÷2 and ×2 beside BPM on the full deck's readout (and `deck.bpm_half` / `deck.bpm_double`): the track's grid at half or double the tempo, one undo step, stored with the track; locked grids refuse. Narrower decks keep it in the GRID panel | 2 | P2 |
 | Key relation on the deck against the other playing decks | DONE | `crates/od-ui/src/key_mix.rs::relation`, `MusicalKey::relation`, `ui/perform.slint::Readout`; Roadmap [62]. The deck's KEY is underlined against the other playing decks with the key you hear (key shift, and the tempo without keylock): solid green fits (same, a fifth, relative), dashed sodium an energy change (a whole tone, a semitone, the diagonal), struck deep red a clash; the worst against all playing decks, in words on hover and for screen readers. Our own colour language from DESIGN.md, no product key colours | 4 | P2 |
+| Simple, Standard and Full deck layouts (a Simple deck has about 25 large controls) | DONE | `crates/od-ui/src/deck_layout.rs`, `ui/perform.slint::SimpleControls`, `ui/topbar.slint::ViewMenu`, `ui/first_start.slint`; Chosen in the top bar's view menu, View › Deck Layout and the first-start guide. Simple: pads A–H as hot cues, LOOP with ½ / 2× and beat jump, SYNC / CUE / PLAY, the tempo fader, stems and MASTER (23 controls on deck 1); setup keys, the platter, the phase strip and the effects are not built. Standard is the deck as before (compared at 1440 × 900). Full shows every group with the Tempo FX panel open. Not tried on a touch screen.; (Roadmap [6]) | 3 | P2 |
+| Whole groups hidden: pads, loops, stems, effects, mixer column, phase strip, setup keys | DONE | `crates/od-ui/src/deck_layout.rs::toggle_group`, `ui/perform.slint::DeckLayout`; A hidden group is not built at all, so it can neither be seen nor reached with the keyboard. The mixer group is the top bar's MIXER switch; hiding the effects also removes the FX toggle, the CH FX knobs and their selector.; (Roadmap [6]) | 3 | P2 |
+| Saved deck layouts: named, switched and deleted, kept in the settings | DONE | `crates/od-ui/src/settings.rs::SavedLayout`, `crates/od-ui/src/deck_layout.rs::save`; A saved layout keeps the layout, the hidden groups, the mixer column and the Tempo FX panel; saving under a known name replaces it.; (Roadmap [6]) | 3 | P2 |
 
 ## 5. Mixer
 
@@ -311,6 +314,9 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Four-deck controller mapping (LEDs) | DONE | `mappings/controllers/ddj-flx10.toml`; (SPEC §9.1) | 3 |  |
 | Two-deck controller mapping (LEDs) | DONE | (SPEC §9.1) | 2 |  |
 | Browser font size and line spacing | DONE | `crates/od-ui/src/shell.rs::apply_browser_style`; Preferences > View > Browser: text size 12–18 px and line spacing compact / normal / roomy (22 / 28 / 34 px rows), live; (UX §1.8, §4 P5.17) | 2 |  |
+| Published controller list: status per model and per controller class | DONE | `crates/od-controller/src/hardware.rs::controller_list_markdown`, `docs/guide/en/controllers.md`; Generated from the mapping files and the guided-setup templates. A model is verified only when every control of it is confirmed on a unit; today none is, so every row says not confirmed.; (Roadmap [13]) | 2 | P2 |
+| Guided setup for controllers without a mapping: move each core control when asked, save a shareable mapping | DONE | `crates/od-controller/src/guided.rs`, `crates/od-ui/src/controller_setup.rs`, `ui/controller_setup.slint`; Preferences › Controller › SET UP A CONTROLLER or View › Controller Setup. Built on MIDI learn; the matching on-screen control gets the guide outline. Ports without a mapping are opened only while the setup, MIDI learn or the monitor runs. Every captured entry is written with verify = true. Tested with simulated MIDI only; not run with a real unit.; (Roadmap [13]) | 4 | P2 |
+| Generic controller templates by class: two decks entry level, two decks battle style (CUT curve), four decks | DONE | `mappings/templates/two-deck-entry.toml`, `mappings/templates/two-deck-battle.toml`, `mappings/templates/four-deck.toml`; Templates name no model and hold no MIDI numbers; the guided setup fills them from the owner's unit. No new model mapping was derived from manuals, vendor software or other projects' files.; (Roadmap [13]) | 2 | P2 |
 
 ## 12. Shell, layouts and panels
 
@@ -367,13 +373,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 252 |
+| DONE | 258 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **258** |
+| **Total** | **264** |
 
 ## P1 gaps and implementation notes
 

@@ -1,8 +1,8 @@
 ---
 title: The basics of Perform
 description: Decks, layouts, sync, keylock, tempo, loops and beat jump, and every pad mode on the deck.
-keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, key clash, harmonic mixing, compatible key, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom]
-features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
+keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, key clash, harmonic mixing, compatible key, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom, simple, standard, full, deck layout, hide, groups, saved layout]
+features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
 ---
 
 Perform is the live mode: the decks, the mixer and the browser in one view.
@@ -26,6 +26,22 @@ Above the decks, the wide zone shows one scrolling waveform per deck. Turn the w
 The view button at the top of Perform opens a menu with a picture of each view: **2 Decks** or **4 Decks**, each **horizontal** or **vertical**, and **Browse**, which keeps the decks small and gives the browser the room. Shortcuts: `⌥⌘V` for vertical waveforms and `⌥⌘B` for Browse. A four-deck controller switches to four decks automatically.
 
 The top bar has three zones. On the left are the work modes, in the middle what the current mode shows, and on the right what is live: the master tempo, recording, the controller and the master out. **FX**, **PREVIEW**, **SAMPLER** and **MIXER** show or hide panels, plus **CLUB** and **LIGHT STRIP**. **RECORD** starts a recording and turns red with the running time; the small key next to it shows or hides the recording section. **UNDO** appears in Prepare, where you edit. Drag the separator bars between the areas to resize them, double-click to reset.
+
+## Deck layouts
+
+![Perform with the Simple layout: large pads, loop, SYNC, CUE, PLAY and the tempo fader](../img/deck-simple.png)
+
+How much each deck shows is up to you. Choose in the view menu at the top of Perform, under **View › Deck Layout**, or in the first-start guide:
+
+- **Simple** is a calm deck of about 25 large controls: hot cue pads A–H, the loop (**½**, **2×**, **LOOP**) and beat jump, **SYNC**, **CUE** and **PLAY**, the tempo fader, the stems and **MASTER**. The setup keys, the platter, the phase strip and the effects are left out, and the pads always play hot cues. BPM and time stay large in the header.
+- **Standard** is the deck as described on this page.
+- **Full** shows everything, with the Tempo FX panel open.
+
+Under **SHOW** in the same menu, whole groups can be hidden or shown again: **PADS**, **LOOPS**, **STEMS**, **FX** (the Tempo FX panel and its key, the CH FX knobs), **MIXER** (the mixer column, the same as the top bar's **MIXER**), **PHASE** (the phase strip) and **SETUP KEYS** (SLIP, QUANTIZE, KEYLOCK, the tempo range, GRID, KEY SYNC, key shift and ½ / 2× on the BPM). A hidden group is gone completely, so the keyboard cannot land on it either. The pad mode stays with the pads.
+
+To keep a layout, type a name under **SAVED LAYOUTS** and press **SAVE**. A press on the name brings it back, **×** deletes it. A saved layout remembers the deck layout, the hidden groups, the mixer column and the Tempo FX panel, and stays with your settings. Saving under a name that exists replaces it.
+
+The kiosk on the Raspberry Pi keeps its own deck, and Club mode its player screens, whatever the layout. Simple and Full have not been tried on a touch screen yet.
 
 ## Tempo and sync
 

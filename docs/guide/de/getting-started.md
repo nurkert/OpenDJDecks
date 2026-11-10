@@ -13,7 +13,7 @@ OpenDJDecks hat zwei Arbeitsmodi. In **Prepare** sortierst du Musik und setzt Cu
 
 ![Die Checkliste unter der oberen Leiste mit dem ersten Schritt](../img/first-start-guide.png)
 
-Bei einer leeren Bibliothek erscheint unter der oberen Leiste eine Checkliste: **Musik hinzufügen**, **Analyse**, **Zwei Tracks** und **Abspielen und Sync**. Jeder Schritt hakt sich von selbst ab, und das Bedienelement für den nächsten Schritt bekommt einen pulsierenden Rahmen. **BEISPIELTRACKS** schreibt zwei kurze Tracks, die die App selbst erzeugt, damit du einen ersten Mix ohne eigene Musik ausprobieren kannst. **TESTTON** spielt einen leisen Ton auf Master und Kopfhörer. **AUSBLENDEN** schließt die Checkliste; **Ansicht › Einstiegs-Checkliste** holt sie zurück.
+Bei einer leeren Bibliothek erscheint unter der oberen Leiste eine Checkliste: **Musik hinzufügen**, **Analyse**, **Zwei Tracks** und **Abspielen und Sync**. Jeder Schritt hakt sich von selbst ab, und das Bedienelement für den nächsten Schritt bekommt einen pulsierenden Rahmen. **BEISPIELTRACKS** schreibt zwei kurze Tracks, die die App selbst erzeugt, damit du einen ersten Mix ohne eigene Musik ausprobieren kannst. **TESTTON** spielt einen leisen Ton auf Master und Kopfhörer. Sobald die Decks dran sind, wählt **DECKS** das Deck-Layout: **EINFACH** für ein ruhiges Deck mit etwa 25 großen Bedienelementen, **STANDARD** oder **VOLL** (in einem schmalen Fenster schaltet eine Taste weiter; siehe [Deck-Layouts](perform-basics.md#deck-layouts)). **AUSBLENDEN** schließt die Checkliste; **Ansicht › Einstiegs-Checkliste** holt sie zurück.
 
 ## 1. Installieren
 

@@ -4,11 +4,17 @@ Controller mappings live in `mappings/controllers/<model>.toml` and are loaded b
 `od-controller` (`Mapping::load`, `Mapping::load_dir`). This document is the
 reference for the file format (schema version 1).
 
-Mapping files are authored independently for OpenDJDecks (SPEC §2).
-Vendor mapping files may be consulted for message facts, but their content,
-structure and comments are never copied. Every file lists where its message
-facts came from (header comment and `device.sources`), and marks entries
-not yet confirmed on real hardware with `verify = true`.
+Mapping files are authored independently for OpenDJDecks (SPEC §2). Every
+file lists where its message facts came from (header comment and
+`device.sources`), and marks entries not yet confirmed on real hardware with
+`verify = true`.
+
+The two bundled mappings took message facts from another project's working
+mappings when they were written. New model mappings are not derived from
+manufacturer manuals, MIDI implementation charts, vendor software or other
+projects' mapping files: they come from owners who capture their own unit
+with the guided setup (below) and share the file. Such a file names its
+template in `device.sources` and marks every entry `verify = true`.
 
 ## Conventions
 
@@ -285,6 +291,43 @@ every action the mapping produced (and may rewrite, drop or add actions).
 New modules implement `od_controller::device_module::DeviceModule` and are
 registered in `device_module::module_for`.
 
+## Guided-setup templates
+
+`mappings/templates/*.toml` are not mappings (`Mapping::load_dir` skips the
+`templates` folder). Each lists the core controls of one controller class in
+the order the guided setup (Preferences › Controller, `od_controller::guided`)
+asks for them; the setup fills in the MIDI messages from the owner's unit and
+writes a normal mapping file. Templates name no model and hold no MIDI
+numbers.
+
+```toml
+template = 1                 # required, must be 1
+id = "two-deck-battle"
+name = "Two decks, battle style"
+decks = 2
+module = "jog-controller"    # optional, copied into the mapping
+crossfader_curve = "cut"     # optional: set when the mapping is saved
+
+[[step]]
+action = "deck.play_pause"   # any action of the table above
+deck = 1                     # deck / mixer channel, if the action has one
+args = { }                   # copied into the mapping
+expect = "button"            # button | fader | wheel
+name = "Play/Pause (deck 1)" # name in the mapping and the MIDI monitor
+screen = "deck1.play"        # optional: on-screen control the setup points at
+```
+
+`expect` steers what is learned: a fader or wheel step ignores notes (touch
+notes of jogs and knobs), a button step takes a CC that sends 0 / 127 as a
+button, a wheel step is always relative. A control that an earlier step
+already uses is refused. `two-deck-entry`, `two-deck-battle` and `four-deck`
+ship today; `cargo test -p od-controller` checks that each covers play, cue,
+sync, jog, tempo and load for every deck, the channel faders, the low EQ and
+the crossfader.
+
+While the guided setup, MIDI learn or the monitor runs, the app opens MIDI
+inputs that no mapping matches too (`ControllerManager::set_open_unmapped`).
+
 ## Authoring workflow
 
 1. Start the monitor: `cargo run -p od-controller --example midi_monitor`.
@@ -302,8 +345,11 @@ registered in `device_module::module_for`.
 
 ## Hardware status
 
-The controllers guide (`docs/guide/{en,de}/controllers.md`) lists every
-mapped control with one of three states, generated from the mapping files:
+The controllers guide (`docs/guide/{en,de}/controllers.md`) has a
+controller list (one row per bundled mapping and per guided-setup class, with
+the model's status: verified only when every control is confirmed) and lists
+every mapped control with one of three states, both generated from the
+mapping files:
 
 | State | Meaning in the file |
 |---|---|

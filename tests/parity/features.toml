@@ -3912,3 +3912,98 @@ tests = [
 ]
 evidence = ["od_core::AnalysisConfidence", "key.rs::ranked_key", "tempo.rs::grid_confidence"]
 note = "Roadmap [62]. The key detection reports its lead over the runner-up, the grid its share of beats on a hit (lower when half / double was close). Prepare's INFO tab shows both in percent beside BPM and KEY, an unsure one with a half-height sodium line and USE for the likely key or tempo (your key, or the grid at half / double; one undo step) and ANALYSE AGAIN; an unsure key shows its percent under the deck's KEY. Analyses from before this version show none until analysed again"
+
+[[feature]]
+id = "deck-layouts"
+area = "deck"
+name = "Simple, Standard and Full deck layouts (a Simple deck has about 25 large controls)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::layouts::simple_deck_has_about_25_controls_and_hidden_groups_are_gone",
+  "od-ui::ui_tests::layouts::first_start_offers_the_deck_layout",
+  "od-ui::deck_layout::tests::presets_hide_the_right_groups",
+]
+evidence = ["crates/od-ui/src/deck_layout.rs", "ui/perform.slint::SimpleControls", "ui/topbar.slint::ViewMenu", "ui/first_start.slint"]
+spec = "Roadmap [6]"
+note = "Chosen in the top bar's view menu, View › Deck Layout and the first-start guide. Simple: pads A–H as hot cues, LOOP with ½ / 2× and beat jump, SYNC / CUE / PLAY, the tempo fader, stems and MASTER (23 controls on deck 1); setup keys, the platter, the phase strip and the effects are not built. Standard is the deck as before (compared at 1440 × 900). Full shows every group with the Tempo FX panel open. Not tried on a touch screen."
+
+[[feature]]
+id = "deck-layout-groups"
+area = "deck"
+name = "Whole groups hidden: pads, loops, stems, effects, mixer column, phase strip, setup keys"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::layouts::groups_hide_and_layouts_are_saved_switched_and_deleted",
+  "od-ui::ui_tests::layouts::simple_deck_has_about_25_controls_and_hidden_groups_are_gone",
+  "od-ui::deck_layout::tests::groups_toggle_and_unknown_ones_are_ignored",
+]
+evidence = ["crates/od-ui/src/deck_layout.rs::toggle_group", "ui/perform.slint::DeckLayout"]
+spec = "Roadmap [6]"
+note = "A hidden group is not built at all, so it can neither be seen nor reached with the keyboard. The mixer group is the top bar's MIXER switch; hiding the effects also removes the FX toggle, the CH FX knobs and their selector."
+
+[[feature]]
+id = "deck-layout-saved"
+area = "deck"
+name = "Saved deck layouts: named, switched and deleted, kept in the settings"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::layouts::groups_hide_and_layouts_are_saved_switched_and_deleted",
+  "od-ui::deck_layout::tests::saving_under_a_known_name_replaces_it",
+  "od-ui::deck_layout::tests::layouts_survive_the_settings_round_trip_and_bad_values_fall_back",
+]
+evidence = ["crates/od-ui/src/settings.rs::SavedLayout", "crates/od-ui/src/deck_layout.rs::save"]
+spec = "Roadmap [6]"
+note = "A saved layout keeps the layout, the hidden groups, the mixer column and the Tempo FX panel; saving under a known name replaces it."
+
+[[feature]]
+id = "ctrl-controller-list"
+area = "preferences"
+name = "Published controller list: status per model and per controller class"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-controller::hardware::tests::the_controller_list_never_claims_more_than_the_mappings",
+  "od-controller::mappings::the_published_hardware_status_matches_the_mapping_files",
+]
+evidence = ["crates/od-controller/src/hardware.rs::controller_list_markdown", "docs/guide/en/controllers.md"]
+spec = "Roadmap [13]"
+note = "Generated from the mapping files and the guided-setup templates. A model is verified only when every control of it is confirmed on a unit; today none is, so every row says not confirmed."
+
+[[feature]]
+id = "ctrl-guided-setup"
+area = "preferences"
+name = "Guided setup for controllers without a mapping: move each core control when asked, save a shareable mapping"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::layouts::guided_controller_setup_learns_controls_and_saves_a_mapping",
+  "od-ui::controller_setup::tests::a_resting_control_is_taken_and_a_used_one_refused",
+  "od-ui::controller_setup::tests::mapping_files_never_overwrite_one_another",
+  "od-controller::guided::tests::learns_steps_in_order_and_writes_a_loadable_mapping",
+]
+evidence = ["crates/od-controller/src/guided.rs", "crates/od-ui/src/controller_setup.rs", "ui/controller_setup.slint"]
+spec = "Roadmap [13]"
+note = "Preferences › Controller › SET UP A CONTROLLER or View › Controller Setup. Built on MIDI learn; the matching on-screen control gets the guide outline. Ports without a mapping are opened only while the setup, MIDI learn or the monitor runs. Every captured entry is written with verify = true. Tested with simulated MIDI only; not run with a real unit."
+
+[[feature]]
+id = "ctrl-class-templates"
+area = "preferences"
+name = "Generic controller templates by class: two decks entry level, two decks battle style (CUT curve), four decks"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-controller::guided::tests::every_template_parses_and_covers_the_core_controls",
+  "od-controller::guided::tests::a_cc_key_counts_as_a_button_and_a_knob_as_a_fader",
+]
+evidence = ["mappings/templates/two-deck-entry.toml", "mappings/templates/two-deck-battle.toml", "mappings/templates/four-deck.toml"]
+spec = "Roadmap [13]"
+note = "Templates name no model and hold no MIDI numbers; the guided setup fills them from the owner's unit. No new model mapping was derived from manuals, vendor software or other projects' files."
