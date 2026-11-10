@@ -77,7 +77,8 @@ CREATE TABLE analysis (
     phrase_mood   TEXT,
     loudness      REAL,
     peak          REAL,
-    energy        BLOB
+    energy        BLOB,
+    confidence    TEXT  -- key / grid confidence, JSON (schema 4)
 );
 
 CREATE TABLE cue (

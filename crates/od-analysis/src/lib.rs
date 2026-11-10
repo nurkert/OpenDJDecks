@@ -94,11 +94,11 @@ pub fn analyze(audio: &DecodedAudio, opts: &AnalysisOptions) -> TrackAnalysis {
                             let x = dsp::decimate(&mono, factor);
                             let fs = sr as f64 / factor as f64;
                             let (grid, key) = rayon::join(
-                                || tempo::detect_beatgrid_at(&x, fs, duration, opts),
-                                || key::detect_key_at(&x, fs, opts.lite),
+                                || tempo::detect_ranked_at(&x, fs, duration, opts),
+                                || key::ranked_key_at(&x, fs, opts.lite),
                             );
-                            let phrases = if opts.detect_phrases && !grid.is_empty() {
-                                phrase::detect_phrases(&x, fs.round() as u32, &grid)
+                            let phrases = if opts.detect_phrases && !grid.grid.is_empty() {
+                                phrase::detect_phrases(&x, fs.round() as u32, &grid.grid)
                             } else {
                                 (Vec::new(), Default::default())
                             };
@@ -113,8 +113,14 @@ pub fn analyze(audio: &DecodedAudio, opts: &AnalysisOptions) -> TrackAnalysis {
     result.loudness_lufs = loudness;
     result.waveform = wave;
     result.energy = energy;
-    result.beatgrid = grid;
-    result.key = key;
+    result.confidence = (!grid.grid.is_empty() || key.is_some()).then(|| od_core::AnalysisConfidence {
+        key: key.map_or(0.0, |k| k.confidence),
+        key_alt: key.and_then(|k| k.alt),
+        grid: grid.confidence,
+        bpm_alt: grid.bpm_alt,
+    });
+    result.beatgrid = grid.grid;
+    result.key = key.map(|k| k.key);
     result.phrases = phrases;
     result.phrase_mood = mood;
     result

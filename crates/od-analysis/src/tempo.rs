@@ -59,30 +59,63 @@ pub(crate) fn detect_beatgrid_at(
     duration: f64,
     opts: &AnalysisOptions,
 ) -> Beatgrid {
+    detect_ranked_at(x, fs, duration, opts).grid
+}
+
+/// A detected grid with how sure the detection is.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct RankedGrid {
+    pub grid: Beatgrid,
+    /// 0 (a guess) ..= 1: the share of beats on a hit, lowered when the
+    /// tempo octave (half or double) was a close call.
+    pub confidence: f32,
+    /// The other tempo octave when it was close.
+    pub bpm_alt: Option<f64>,
+}
+
+/// [`detect_beatgrid`] with a confidence and the other likely tempo.
+pub fn detect_beatgrid_ranked(samples: &[f32], sample_rate: u32, opts: &AnalysisOptions) -> RankedGrid {
+    if sample_rate == 0 {
+        return RankedGrid::default();
+    }
+    let factor = decimation_factor(sample_rate, analysis_rate_target(opts));
+    let x = decimate(samples, factor);
+    let duration = samples.len() as f64 / sample_rate as f64;
+    detect_ranked_at(&x, sample_rate as f64 / factor as f64, duration, opts)
+}
+
+/// Grid detection with confidence, at the analysis rate.
+pub(crate) fn detect_ranked_at(
+    x: &[f32],
+    fs: f64,
+    duration: f64,
+    opts: &AnalysisOptions,
+) -> RankedGrid {
     let (min_bpm, max_bpm) = sanitize_range(opts);
     let peak = peak_abs(x);
     if x.len() < (fs * 2.0) as usize || peak < 1e-4 {
-        return Beatgrid::default();
+        return RankedGrid::default();
     }
     let onsets = onset_envelopes(x, fs, peak, opts.lite);
     let o = &onsets.odf;
     let fr = onsets.frame_rate;
     if o.iter().all(|&v| v <= 0.0) {
-        return Beatgrid::default();
+        return RankedGrid::default();
     }
 
     // 2. Coarse tempo.
     let Some(coarse) = coarse_tempo(o, fr, min_bpm, max_bpm) else {
-        return Beatgrid::default();
+        return RankedGrid::default();
     };
     // 3. Fine tempo.
     let mut bpm = refine_tempo(o, fr, coarse, opts.lite);
     // 4. Octave decision.
-    bpm = octave_decision(o, fr, bpm, min_bpm, max_bpm, opts.lite);
+    let (decided, ratio) = octave_decision(o, fr, bpm, min_bpm, max_bpm, opts.lite);
+    bpm = decided;
     // Rhythmic content check: enough beats must coincide with onsets.
-    if !is_rhythmic(o, fr, bpm) {
-        return Beatgrid::default();
-    }
+    let Some(share) = beat_hit_share(o, fr, bpm) else {
+        return RankedGrid::default();
+    };
     // 5. Snapping.
     bpm = snap_bpm(bpm, duration);
     let period = 60.0 / bpm;
@@ -91,7 +124,25 @@ pub(crate) fn detect_beatgrid_at(
     let phase = refine_phase(x, fs, period, coarse_phase);
     // 7. Downbeat.
     let first_bar_pos = downbeat_position(x, fs, &onsets, period, phase, duration);
-    Beatgrid::constant(bpm, phase, first_bar_pos, duration)
+    let (confidence, bpm_alt) = grid_confidence(share, ratio, bpm);
+    RankedGrid {
+        grid: Beatgrid::constant(bpm, phase, first_bar_pos, duration),
+        confidence,
+        bpm_alt,
+    }
+}
+
+/// Confidence from the share of beats on a hit (0.2 → 0, 0.9 and more → 1)
+/// and how close the octave call was (`ratio` 0.5 is a tie); the other
+/// octave is offered when the call was close.
+fn grid_confidence(share: f64, ratio: Option<f64>, bpm: f64) -> (f32, Option<f64>) {
+    let hits = ((share - 0.2) / 0.7).clamp(0.0, 1.0);
+    let margin = ratio.map_or(1.0, |r| ((r - 0.5).abs() / 0.3).clamp(0.0, 1.0));
+    let alt = ratio.filter(|_| margin < 0.5).map(|r| {
+        let a = if r > 0.5 { bpm / 2.0 } else { bpm * 2.0 };
+        (a * 1e4).round() / 1e4
+    });
+    ((hits * (0.4 + 0.6 * margin)) as f32, alt)
 }
 
 fn sanitize_range(opts: &AnalysisOptions) -> (f64, f64) {
@@ -338,15 +389,17 @@ fn argmax(h: &[f64]) -> (usize, f64) {
         .fold((0, f64::MIN), |a, (i, &v)| if v > a.1 { (i, v) } else { a })
 }
 
-/// Chooses between `bpm` and its octave relative when both fit the range.
-fn octave_decision(o: &[f32], fr: f64, bpm: f64, min_bpm: f64, max_bpm: f64, lite: bool) -> f64 {
+/// Chooses between `bpm` and its octave relative when both fit the range;
+/// also returns the off-beat / on-beat ratio that decided it (above 0.5:
+/// the faster tempo), `None` when only one octave fits.
+fn octave_decision(o: &[f32], fr: f64, bpm: f64, min_bpm: f64, max_bpm: f64, lite: bool) -> (f64, Option<f64>) {
     let tol = 0.5;
     let slower = if bpm * 2.0 <= max_bpm + tol {
         bpm
     } else if bpm / 2.0 >= min_bpm - tol {
         bpm / 2.0
     } else {
-        return bpm;
+        return (bpm, None);
     };
     // Refine the slower tempo so folding over the whole track stays sharp.
     let slower = refine_tempo(o, fr, slower, lite);
@@ -361,11 +414,12 @@ fn octave_decision(o: &[f32], fr: f64, bpm: f64, min_bpm: f64, max_bpm: f64, lit
     sorted.sort_by(f64::total_cmp);
     let base = sorted[bins / 2];
     let ratio = (off_v - base) / (on_v - base).max(1e-12);
-    if ratio > 0.5 { slower * 2.0 } else { slower }
+    (if ratio > 0.5 { slower * 2.0 } else { slower }, Some(ratio))
 }
 
-/// True when a reasonable share of beats coincides with an onset.
-fn is_rhythmic(o: &[f32], fr: f64, bpm: f64) -> bool {
+/// The share of beats that coincide with an onset, when the material is
+/// rhythmic at all (`None`: no grid).
+fn beat_hit_share(o: &[f32], fr: f64, bpm: f64) -> Option<f64> {
     let period = 60.0 / bpm;
     let phase = folded_peak(o, fr, period);
     let mut strengths = Vec::new();
@@ -381,7 +435,7 @@ fn is_rhythmic(o: &[f32], fr: f64, bpm: f64) -> bool {
         t += period;
     }
     if strengths.len() < 4 {
-        return false;
+        return None;
     }
     let mut sorted = strengths.clone();
     sorted.sort_by(f32::total_cmp);
@@ -389,10 +443,10 @@ fn is_rhythmic(o: &[f32], fr: f64, bpm: f64) -> bool {
     // Onset flux is level-normalised (log spectra relative to the peak), so
     // an absolute floor separates real transients from numerical ripple.
     if ref_v < 0.5 {
-        return false;
+        return None;
     }
     let hits = strengths.iter().filter(|&&s| s >= 0.25 * ref_v).count();
-    hits >= 4 && hits * 5 >= strengths.len()
+    (hits >= 4 && hits * 5 >= strengths.len()).then(|| hits as f64 / strengths.len() as f64)
 }
 
 /// Snaps the BPM to a "round" value if that keeps the drift across the whole
@@ -558,6 +612,40 @@ mod tests {
                 d * 1000.0
             );
         }
+    }
+
+    /// [62] A steady kick reads as sure; beats left out lower the value.
+    #[test]
+    fn grid_confidence_follows_the_beats_on_hits() {
+        let (x, _) = kick_track(44_100, 128.0, 0.1, 40.0, true);
+        let steady = detect_beatgrid_ranked(&x, 44_100, &opts());
+        assert!((steady.grid.first_bpm().unwrap() - 128.0).abs() < 0.05);
+        // Every beat but one in three dropped, at random-ish places.
+        let fs = 44_100;
+        let period = 60.0 / 128.0;
+        let mut sparse = vec![0f32; fs as usize * 40];
+        let k = kick(fs, 0.8);
+        let mut rng = Noise::new(7);
+        let mut i = 0;
+        while (0.1 + i as f64 * period) < 39.0 {
+            if i % 8 == 0 || rng.next() < -0.4 {
+                add(&mut sparse, ((0.1 + i as f64 * period) * fs as f64) as usize, &k);
+            }
+            i += 1;
+        }
+        let thin = detect_beatgrid_ranked(&sparse, fs, &opts());
+        eprintln!("steady {} thin {} ({:?})", steady.confidence, thin.confidence, thin.grid.first_bpm());
+        assert!(steady.confidence > 0.6, "steady kick: {}", steady.confidence);
+        assert!(
+            thin.grid.is_empty() || thin.confidence < steady.confidence,
+            "sparse beats {} vs steady {}",
+            thin.confidence,
+            steady.confidence
+        );
+        assert_eq!(grid_confidence(0.9, Some(0.55), 120.0).1, Some(60.0), "a close call offers the other octave");
+        assert_eq!(grid_confidence(0.9, Some(0.45), 120.0).1, Some(240.0));
+        assert_eq!(grid_confidence(0.9, Some(0.95), 120.0).1, None);
+        assert!(grid_confidence(0.9, Some(0.5), 120.0).0 < grid_confidence(0.9, None, 120.0).0);
     }
 
     #[test]

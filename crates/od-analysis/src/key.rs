@@ -52,10 +52,22 @@ pub fn detect_key(samples: &[f32], sample_rate: u32) -> Option<MusicalKey> {
     detect_key_at(&x, sample_rate as f64 / factor as f64, false)
 }
 
+/// [`detect_key`] with a confidence and the runner-up.
+pub fn detect_key_ranked(samples: &[f32], sample_rate: u32) -> Option<RankedKey> {
+    let factor = decimation_factor(sample_rate, 11_025);
+    let x = decimate(samples, factor);
+    ranked_key_at(&x, sample_rate as f64 / factor as f64, false)
+}
+
 /// Key detection on a signal already at the analysis rate (≈ 8–16 kHz).
 pub(crate) fn detect_key_at(x: &[f32], fs: f64, lite: bool) -> Option<MusicalKey> {
+    ranked_key_at(x, fs, lite).map(|r| r.key)
+}
+
+/// Key detection with confidence and runner-up, at the analysis rate.
+pub(crate) fn ranked_key_at(x: &[f32], fs: f64, lite: bool) -> Option<RankedKey> {
     let chroma = chromagram_sum(x, fs, lite)?;
-    best_key(&chroma)
+    ranked_key(&chroma)
 }
 
 /// Summed, frame-normalised chroma vector (index 0 = C).
@@ -169,19 +181,48 @@ fn pearson(a: &[f64; 12], b: &[f64; 12]) -> f64 {
 /// Picks the key whose rotated template correlates best with `chroma`.
 /// Returns `None` if the profile is flat (no tonal centre).
 pub fn best_key(chroma: &[f64; 12]) -> Option<MusicalKey> {
+    ranked_key(chroma).map(|r| r.key)
+}
+
+/// A detected key with how sure the detection is and the runner-up.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RankedKey {
+    pub key: MusicalKey,
+    /// 0 (a guess) ..= 1 (clear): the lead over the runner-up and how well
+    /// the best template fits at all.
+    pub confidence: f32,
+    /// The second best key.
+    pub alt: Option<MusicalKey>,
+}
+
+/// Correlation lead over the runner-up that counts as fully clear.
+const CLEAR_LEAD: f64 = 0.12;
+
+/// Like [`best_key`], with a confidence and the runner-up.
+pub fn ranked_key(chroma: &[f64; 12]) -> Option<RankedKey> {
     let major = blend(&KK_MAJOR, &TEMPERLEY_MAJOR);
     let minor = blend(&KK_MINOR, &TEMPERLEY_MINOR);
-    let mut best: Option<(f64, MusicalKey)> = None;
+    let mut scores: Vec<(f64, MusicalKey)> = Vec::with_capacity(24);
     for tonic in 0..12u8 {
         for (mode, prof) in [(Mode::Major, &major), (Mode::Minor, &minor)] {
             let rotated: [f64; 12] = std::array::from_fn(|i| prof[(i + 12 - tonic as usize) % 12]);
-            let r = pearson(chroma, &rotated);
-            if best.is_none_or(|(b, _)| r > b) {
-                best = Some((r, MusicalKey::new(tonic, mode)));
-            }
+            scores.push((pearson(chroma, &rotated), MusicalKey::new(tonic, mode)));
         }
     }
-    best.filter(|(r, _)| *r > 0.2).map(|(_, k)| k)
+    // Stable: equal scores keep the template order.
+    scores.sort_by(|a, b| b.0.total_cmp(&a.0));
+    let (r1, key) = *scores.first()?;
+    if r1 <= 0.2 {
+        return None;
+    }
+    let (r2, alt) = scores.get(1).copied().unwrap_or((0.0, key));
+    let lead = ((r1 - r2) / CLEAR_LEAD).clamp(0.0, 1.0);
+    let fit = ((r1 - 0.2) / 0.5).clamp(0.0, 1.0);
+    Some(RankedKey {
+        key,
+        confidence: (0.7 * lead + 0.3 * fit) as f32,
+        alt: (alt != key).then_some(alt),
+    })
 }
 
 #[cfg(test)]
@@ -285,5 +326,28 @@ mod tests {
     fn silence_has_no_key() {
         assert_eq!(detect_key(&vec![0.0; 44_100], 44_100), None);
         assert_eq!(detect_key(&[], 44_100), None);
+    }
+
+    #[test]
+    fn confidence_is_high_for_a_clear_progression_and_low_for_a_bare_fifth() {
+        let am: &[i32] = &[45, 57, 60, 64];
+        let dm: &[i32] = &[50, 57, 62, 65];
+        let e: &[i32] = &[40, 56, 59, 64];
+        let x = render(&[am, dm, e, am], 1.5, 3);
+        let clear = detect_key_ranked(&x, FS).unwrap();
+        assert_eq!(clear.key, key("Am"));
+        assert!(clear.alt.is_some_and(|a| a != clear.key));
+        // A bare fifth (A and E) leaves major and minor open.
+        let fifth: &[i32] = &[45, 52, 57, 64];
+        let y = render(&[fifth], 1.5, 6);
+        let open = detect_key_ranked(&y, FS).unwrap();
+        assert!(
+            open.confidence < clear.confidence,
+            "bare fifth {} vs progression {}",
+            open.confidence,
+            clear.confidence
+        );
+        assert!(open.confidence < 0.5, "a bare fifth is unsure: {}", open.confidence);
+        assert!((0.0..=1.0).contains(&clear.confidence));
     }
 }

@@ -40,7 +40,7 @@ use std::cell::Cell;
 use std::path::{Path, PathBuf};
 
 /// Version 2 adds the `my_tag` table.
-pub const SCHEMA_VERSION: i64 = 3;
+pub const SCHEMA_VERSION: i64 = 4;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LibraryError {
@@ -196,6 +196,15 @@ impl Library {
         )?;
         if has_active == 0 {
             tx.execute_batch("ALTER TABLE cue ADD COLUMN active INTEGER NOT NULL DEFAULT 0;")?;
+        }
+        // Version 4: how sure key and grid analysis were.
+        let has_confidence: i64 = tx.query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('analysis') WHERE name = 'confidence'",
+            [],
+            |r| r.get(0),
+        )?;
+        if has_confidence == 0 {
+            tx.execute_batch("ALTER TABLE analysis ADD COLUMN confidence TEXT;")?;
         }
         tx.execute(
             "UPDATE meta SET value = ?1 WHERE key = 'schema_version'",
@@ -381,7 +390,7 @@ mod tests {
             .unwrap();
         }
         let mut lib = Library::open(&p).unwrap();
-        assert_eq!(lib.schema_version().unwrap(), 3);
+        assert_eq!(lib.schema_version().unwrap(), SCHEMA_VERSION);
         let t = crate::test_util::track(&mut lib, "Looped", Some(120.0), None);
         let looped = od_core::Cue {
             loop_end: Some(12.0),
