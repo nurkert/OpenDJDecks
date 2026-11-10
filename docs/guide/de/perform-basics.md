@@ -2,7 +2,7 @@
 title: Die Grundlagen von Perform
 description: Decks, Layouts, Sync, Keylock, Tempo, Loops und Beat Jump und jeder Pad-Modus am Deck.
 keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, tonarten passen, harmonisch mischen, passende tonart, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom, einfach, standard, voll, deck-layout, ausblenden, gruppen, gespeichertes layout]
-features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
+features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag]
 ---
 
 Perform ist der Live-Modus: Decks, Mixer und Browser in einer Ansicht.
@@ -19,7 +19,28 @@ Der Deck-Kopf zeigt Nummer, Cover, Titel und Artist, **BPM**, Rest- oder verstri
 
 Die schmale Wellenform in jedem Deck ist der ganze Track mit Hot Cues und Phrasen. Ein Klick springt dorthin (Needle Search); am Controller tut das der Touch Strip.
 
-Über den Decks zeigt der breite Bereich eine scrollende Wellenform pro Deck. Das Mausrad über einer Spur zoomt dieses Deck, Doppelklick setzt zurück, und die Zoom-Tasten links gelten für alle Decks.
+Über den Decks zeigt der breite Bereich eine scrollende Wellenform pro Deck. Das Mausrad über einer Spur zoomt dieses Deck, Doppelklick setzt zurück, und die Tasten links gelten für alle Decks: eine Spalte mit Hineinzoomen, Herauszoomen, Zoom zurücksetzen, dann ein kleinerer und ein größerer Wellenform-Bereich. Sind die Spuren zu niedrig für alle fünf, wandern die letzten Tasten hinter **⋯**. Die Abspielmarke steht in der Fenstermitte, auf einer Linie mit dem Mixer darunter; die vergangene Seite einer Spur ist daher etwas schmaler als die kommende.
+
+### Eine Wellenform ziehen
+
+Ziehe eine Spur mit der Maus (über einer Spur mit Track wird der Zeiger zur Hand):
+
+- **Deck in Pause:** Die Wellenform folgt dem Zeiger eins zu eins im aktuellen Zoom, und der Track bleibt, wo du ihn hinlegst. Nach links ziehen geht weiter in den Track.
+- **Laufendes Deck:** Nichts springt. Die Geschwindigkeit deines Ziehens verbiegt das Tempo kurz, wie eine Hand auf dem Plattenteller, so schiebst du die Beats übereinander; eine ruhige Hand lässt das Deck laufen, und beim Loslassen spielt es wieder in seinem Tempo. Mit **SLIP** springt es beim Loslassen dorthin, wo der Track ohne dich wäre.
+
+Beim Ziehen zeigt eine kleine Anzeige an der Abspielmarke den Versatz in Sekunden (Pause) oder die Tempobiegung in Prozent (laufend). Ein Klick ohne Bewegung tut, was er vorher tat, und die Performance-Sperre blockiert beides nicht.
+
+### Ruhige Wellenform
+
+**Einstellungen › Ansicht › Ruhige Wellenform** zeichnet die großen Wellenformen ruhiger: eine scharfe, dünne Abspielmarke zwischen zwei dunklen Kanten, zarte Beatlinien (einfache Beats nur als kurze Striche an den Rändern) und sanftere Bandfarben. In der Voreinstellung ist sie aus.
+
+## Die Mitte des Decks
+
+Der Plattenteller steht mittig in den Reihen des Decks, mit **SLIP**, **QUANTIZE**, **KEYLOCK** und dem Tempobereich als ein Block an seiner inneren Seite. Ihre inneren Kanten folgen dem Ring mit einem Tastenabstand, und **SYNC**, **CUE** und **PLAY** stehen auf derselben Achse. In einem größeren Fenster wächst der Plattenteller bis zu einer Grenze und die Tasten mit ihm; übriger Platz geht nach oben und unten, nie zwischen die Tasten. Auf den Player-Screens im Club-Modus umschließen die Tasten ◀◀ / ◀ CALL und ▶▶ / CALL ▶ das Jogwheel auf dieselbe Weise.
+
+## Regler, Fader und Pegel
+
+Ein Drehregler zeigt seinen Wert als Bogen auf seinem Ring. Regler, die von einer Mitte in beide Richtungen drehen (Trim, EQ, Filter, der FX-Parameter), haben oben eine kleine Marke und zeichnen den Bogen von dort. Während du einen Regler ziehst, steht sein Wert darüber; beim Tempofader steht das Tempo neben der Kappe, zum Deck hin. Der Tempofader hat bei 0 eine Mittenrast-Marke, und jede Faderkappe hat eine Mittellinie zum Ablesen. Zu den Pegeln siehe [Der Mixer](mixer.md#regler-fader-und-pegel).
 
 ## Layout und Ansichten
 
@@ -87,7 +108,7 @@ Die Booth-Ansicht ist ein Fenster der Desktop-App; der Raspberry-Pi-Kiosk hat ke
 
 ## Jogwheels
 
-Am Controller scratcht, bendet oder sucht das Jogwheel. Der Vinyl-Modus wird pro Deck und unter **Einstellungen › Controller › Decks › Jogwheel** geschaltet. Der Platter auf dem Bildschirm zeigt, wo du bist. Auf den Player-Screens suchen ◀◀ und ▶▶, solange gedrückt.
+Am Controller scratcht, bendet oder sucht das Jogwheel. Der Vinyl-Modus wird pro Deck und unter **Einstellungen › Controller › Decks › Jogwheel** geschaltet. Der Platter auf dem Bildschirm zeigt, wo du bist. Auf den Player-Screens suchen ◀◀ und ▶▶, solange gedrückt; sie und die CALL-Tasten umschließen das Jogwheel ([Die Mitte des Decks](#die-mitte-des-decks)).
 
 ## Slip und Censor
 

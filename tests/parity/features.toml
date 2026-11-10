@@ -4078,3 +4078,116 @@ tests = [
 evidence = ["mappings/templates/two-deck-entry.toml", "mappings/templates/two-deck-battle.toml", "mappings/templates/four-deck.toml"]
 spec = "Roadmap [13]"
 note = "Templates name no model and hold no MIDI numbers; the guided setup fills them from the owner's unit. No new model mapping was derived from manuals, vendor software or other projects' files."
+
+[[feature]]
+id = "shell-motion-language"
+area = "shell"
+name = "Motion language: four named timings and one curve, reduced motion, audio-linked visuals unsmoothed"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::design::motion_uses_the_named_timings_and_one_curve",
+  "od-ui::ui_tests::craft::reduced_motion_stops_every_named_timing",
+]
+evidence = ["crates/od-ui/ui/tokens.slint::Theme", "DESIGN.md"]
+spec = "Roadmap [45]"
+note = "Press 90 ms, toggle 140 ms, panel 180 ms, mode change 240 ms on one curve; all 0 ms with Reduce motion, which starts off because Slint does not report the system setting. Meters, waveforms, playheads and the phase meter never animate."
+
+[[feature]]
+id = "mixer-control-anatomy"
+area = "mixer"
+name = "Knobs, faders and meters that feel physical: value arcs, centre marks, drag readouts, fader caps and detent, peak hold"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::craft::knobs_show_arc_centre_mark_and_a_readout_while_dragged",
+  "od-ui::ui_tests::craft::faders_have_caps_a_tempo_detent_and_a_readout",
+  "od-ui::ui_tests::craft::meters_hold_their_peak",
+  "od-ui::ui_tests::craft::control_anatomy_keeps_the_perform_sizes",
+  "od-ui::ui_tests::design::table_and_controls_follow_their_anatomy",
+]
+evidence = ["crates/od-ui/ui/controls.slint::Knob", "crates/od-ui/ui/controls.slint::Fader", "crates/od-ui/src/mixer.rs::channel_view"]
+spec = "Roadmap [46]"
+note = "Sizes unchanged at 1440 x 900 and 1280 x 800. Tried with the mouse only, not on a touch screen."
+
+[[feature]]
+id = "deck-centre-group"
+area = "deck"
+name = "Deck centre: platter centred with a concave block of setup keys, transport on the same axis; Club keys wrap the jog"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::craft::deck_centre_groups_round_the_platter",
+  "od-ui::ui_tests::craft::club_keys_wrap_the_jog",
+]
+evidence = ["crates/od-ui/ui/controls.slint::ConcaveKey", "crates/od-ui/ui/perform.slint::PlatterGroup"]
+spec = "Roadmap [46]"
+note = "Keys take the pointer only where they are drawn, never over the ring. Not tried on a touch screen."
+
+[[feature]]
+id = "deck-waveform-calm"
+area = "deck"
+name = "Calm waveform option: crisp playhead, faint beat lines, softer colours"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::craft::calm_waveform_option_draws_a_crisp_playhead",
+  "od-ui::render::tests::calm_waveform_has_faint_beats_and_softer_colours",
+]
+evidence = ["crates/od-ui/src/render.rs::beat_mark", "crates/od-ui/ui/wave.slint::WaveLane"]
+spec = "Roadmap [50]"
+note = "Preferences > View > Calm waveform, off by default."
+
+[[feature]]
+id = "deck-waveform-anchor"
+area = "deck"
+name = "Waveform zone: view keys in one column, the playhead on the window's centre (the mixer's axis)"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::craft::waveform_view_keys_stand_in_one_column",
+  "od-ui::ui_tests::craft::lane_playhead_sits_on_the_window_centre",
+]
+evidence = ["crates/od-ui/ui/perform.slint::WaveZoneColumn", "crates/od-ui/ui/wave.slint::WaveLane"]
+spec = "Roadmap [50]"
+note = "Short zones move the height keys behind a ⋯ key. Vertical lanes, Club and the booth keep their own centre."
+
+[[feature]]
+id = "deck-waveform-drag"
+area = "deck"
+name = "Drag a waveform lane: scrub a paused deck, nudge a playing one"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::craft::dragging_a_paused_lane_scrubs",
+  "od-ui::ui_tests::craft::dragging_a_playing_lane_nudges",
+  "od-ui::lane_drag::tests::drag_speed_becomes_a_bounded_bend",
+  "od-ui::lane_drag::tests::slip_returns_to_where_the_track_would_be",
+  "od-ui::lane_drag::tests::readout_shows_seconds_or_percent",
+]
+evidence = ["crates/od-ui/src/lane_drag.rs"]
+spec = "Roadmap [50]"
+note = "Scrubbing is silent. The nudge uses the engine's pitch bend; SLIP return is computed from the tempo at the start of the drag. Tried with a mouse only."
+
+[[feature]]
+id = "browser-calm-table"
+area = "browser"
+name = "Calmer track table: titles lead, figures right-aligned in tabular digits, a selection fill, the loaded mark in the deck colour"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::craft::library_rows_carry_their_deck_mark",
+  "od-ui::browser::columns::tests::figure_columns_are_right_aligned_and_fixed",
+  "od-ui::ui_tests::design::table_and_controls_follow_their_anatomy",
+  "od-ui::ui_tests::craft::browser_splitters_never_let_content_spill",
+]
+evidence = ["crates/od-ui/ui/table.slint::TrackLine", "crates/od-ui/ui/sidebar.slint::Sidebar"]
+spec = "Roadmap [49]"
+note = "The lists column stops at its content width and clips, so it never draws over the table."

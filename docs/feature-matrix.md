@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 268 features; 262 in scope: 262 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 275 features; 269 in scope: 269 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -91,6 +91,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Played tick in the list (on air this session) | DONE | `recorder.rs::mark_played`, `ui/table.slint`; A track that was audible on the master for 30 s in all gets a tick in the list and the Explorer; a short listen in the headphones does not count | 2 | P3 |
 | Preview a track at another tempo or key (TEMPO / KEY tab in the Prepare player) | DONE | `player.rs::apply_shift`, `player.rs::shift_readout`, `ui/player.slint::PreparePlayer`; Steps of whole percents (with key lock, so the key stays) and semitones on the hidden preview deck. Nothing is stored with the track or its analysis; the shift ends when another track is previewed and is not remembered as a deck switch | 2 | P2 |
 | KEY column sorts by circle of fifths or alphabetically (stored choice) | DONE | `browser/tracks.rs::KeyOrder`, `browser/tracks.rs::compare_keys`, `ui/table.slint::TrackTable`; Two checkable items in the column menu; circle of fifths (Camelot order) is the default. Alphabetical sorts by the key text in the chosen notation. The key sort is always done in the app, not by SQL | 2 | P2 |
+| Calmer track table: titles lead, figures right-aligned in tabular digits, a selection fill, the loaded mark in the deck colour | DONE | `crates/od-ui/ui/table.slint::TrackLine`, `crates/od-ui/ui/sidebar.slint::Sidebar`; The lists column stops at its content width and clips, so it never draws over the table.; (Roadmap [49]) | 4 | P3 |
 
 ## 2. Analysis
 
@@ -190,6 +191,10 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Simple, Standard and Full deck layouts (a Simple deck has about 25 large controls) | DONE | `crates/od-ui/src/deck_layout.rs`, `ui/perform.slint::SimpleControls`, `ui/topbar.slint::ViewMenu`, `ui/first_start.slint`; Chosen in the top bar's view menu, View › Deck Layout and the first-start guide. Simple: pads A–H as hot cues, LOOP with ½ / 2× and beat jump, SYNC / CUE / PLAY, the tempo fader, stems and MASTER (23 controls on deck 1); setup keys, the platter, the phase strip and the effects are not built. Standard is the deck as before (compared at 1440 × 900). Full shows every group with the Tempo FX panel open. Not tried on a touch screen.; (Roadmap [6]) | 3 | P2 |
 | Whole groups hidden: pads, loops, stems, effects, mixer column, phase strip, setup keys | DONE | `crates/od-ui/src/deck_layout.rs::toggle_group`, `ui/perform.slint::DeckLayout`; A hidden group is not built at all, so it can neither be seen nor reached with the keyboard. The mixer group is the top bar's MIXER switch; hiding the effects also removes the FX toggle, the CH FX knobs and their selector.; (Roadmap [6]) | 3 | P2 |
 | Saved deck layouts: named, switched and deleted, kept in the settings | DONE | `crates/od-ui/src/settings.rs::SavedLayout`, `crates/od-ui/src/deck_layout.rs::save`; A saved layout keeps the layout, the hidden groups, the mixer column and the Tempo FX panel; saving under a known name replaces it.; (Roadmap [6]) | 3 | P2 |
+| Deck centre: platter centred with a concave block of setup keys, transport on the same axis; Club keys wrap the jog | DONE | `crates/od-ui/ui/controls.slint::ConcaveKey`, `crates/od-ui/ui/perform.slint::PlatterGroup`; Keys take the pointer only where they are drawn, never over the ring. Not tried on a touch screen.; (Roadmap [46]) | 2 | P3 |
+| Calm waveform option: crisp playhead, faint beat lines, softer colours | DONE | `crates/od-ui/src/render.rs::beat_mark`, `crates/od-ui/ui/wave.slint::WaveLane`; Preferences > View > Calm waveform, off by default.; (Roadmap [50]) | 2 | P3 |
+| Waveform zone: view keys in one column, the playhead on the window's centre (the mixer's axis) | DONE | `crates/od-ui/ui/perform.slint::WaveZoneColumn`, `crates/od-ui/ui/wave.slint::WaveLane`; Short zones move the height keys behind a ⋯ key. Vertical lanes, Club and the booth keep their own centre.; (Roadmap [50]) | 2 | P3 |
+| Drag a waveform lane: scrub a paused deck, nudge a playing one | DONE | `crates/od-ui/src/lane_drag.rs`; Scrubbing is silent. The nudge uses the engine's pitch bend; SLIP return is computed from the tempo at the start of the drag. Tried with a mouse only.; (Roadmap [50]) | 5 | P2 |
 
 ## 5. Mixer
 
@@ -216,6 +221,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Mic / aux input | DONE | MIC in the global bar: on, level, input meter, talkover with ducking indicator, input device; engine input channel mixed before Tempo FX / booth / recording | 5 | P3 |
 | Auto gain toggle | DONE | `ChannelCommand::SetAutoGain`; Preferences > Controller > Mixer: auto gain on / off for every channel | 2 |  |
 | STEM button per mixer channel | DONE | STEM per mixer channel switches its HI / MID / LOW knobs to part isolation (vocals / inst / drums), centre = full level; the channel EQ stays as it was; (UX §1.3, §2.4) | 1 | P2 |
+| Knobs, faders and meters that feel physical: value arcs, centre marks, drag readouts, fader caps and detent, peak hold | DONE | `crates/od-ui/ui/controls.slint::Knob`, `crates/od-ui/ui/controls.slint::Fader`, `crates/od-ui/src/mixer.rs::channel_view`; Sizes unchanged at 1440 x 900 and 1280 x 800. Tried with the mouse only, not on a touch screen.; (Roadmap [46]) | 5 | P2 |
 
 ## 6. Effects
 
@@ -342,6 +348,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Raspberry Pi kiosk (linuxkms, Perform, controller browsing) | DONE (beyond the usual) | Built and driven headless on CI (`packaging/ci/headless-e2e.sh`); the kiosk configuration (Perform, browse screen, 44 px touch rows and keys) is driven by a UI test; (SPEC §3.3) | 1 |  |
 | Keyboard shortcuts for layouts and a View menu | DONE | `crates/od-ui/ui/app.slint::MenuBar`; View menu (modes, Prepare layout, info / similar / Tags / filter panels, sections) and keys ⌥⌘4 / ⌥⌘5 (layouts), ⌥⌘I / ⌥⌘E / ⌥⌘G (panels); the menu bar is native on macOS, elsewhere its actions are reached by the keys; (UX §1.9, §4 P3.7) | 3 |  |
 | Perform view menu (2 / 4 decks, horizontal / vertical, Browse) | DONE | `ui/topbar.slint::ViewMenu`, `decks.rs::set_perform_view`; One menu in the top bar with a picture per view; the deck count is kept across starts | 1 | P2 |
+| Motion language: four named timings and one curve, reduced motion, audio-linked visuals unsmoothed | DONE | `crates/od-ui/ui/tokens.slint::Theme`, `DESIGN.md`; Press 90 ms, toggle 140 ms, panel 180 ms, mode change 240 ms on one curve; all 0 ms with Reduce motion, which starts off because Slint does not report the system setting. Meters, waveforms, playheads and the phase meter never animate.; (Roadmap [45]) | 2 | P2 |
 
 ## 13. DMX lighting
 
@@ -377,13 +384,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 262 |
+| DONE | 269 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **268** |
+| **Total** | **275** |
 
 ## P1 gaps and implementation notes
 

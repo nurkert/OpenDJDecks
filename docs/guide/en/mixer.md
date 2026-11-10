@@ -2,7 +2,7 @@
 title: The mixer
 description: Trim, EQ, channel FX, faders, crossfader, headphones and master, and the options for each.
 keywords: [mixer, eq, kill, bass swap, swap, clip, trim, gain, fader, crossfader, headphones, phones, cue, master, level, limiter, meter, vu, booth, mic, microphone, talkover, auto fader, stem button, auto gain]
-features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-eq-values, mixer-clip-indicator]
+features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
 ---
 
 The mixer stands between the decks. Press **MIXER** in the top bar (`⌥⌘M`) to hide it when your controller does the job; the decks then meet in the middle.
@@ -18,6 +18,12 @@ Under each knob its name turns into its value as soon as you turn it: TRIM and t
 - **CH FX** drives the selected Channel FX; see [Effects](effects.md#channel-fx).
 - **STEM** turns the channel's HI, MID and LOW knobs into controls for the vocals, the instruments and the drums of that track. The middle position is full level; the normal EQ stays as you left it. See [Stems](stems.md).
 - **CLIP** lights red once the channel has gone over full scale before the fader (after trim and EQ), and stays lit so you see it even if you looked away. Turn the trim down, then click the lamp to clear it; the click clears every clip indicator, the master's too.
+
+## Knobs, faders and meters
+
+Each knob draws its value as an arc on its ring: from the small mark at the top for **TRIM**, the EQ knobs and **CH FX**, which turn both ways from the middle, and from the start for **MIX** and **LEVEL**. While you drag a knob its value stands above it, the same words as the legend below (`−6.0`, `KILL`, `LP 35`). The fader caps have a centre line to read them by.
+
+The channel meters and the **MASTER** meter in the top bar hold their peak: a short tick stays at the highest recent level for about a second and a half, then falls back. It turns amber near the top and red at clip. The meters are never smoothed: they show the sound as it is.
 
 ## Bass swaps
 

@@ -2,7 +2,7 @@
 title: Der Mixer
 description: Trim, EQ, Channel FX, Fader, Crossfader, Kopfhörer und Master und ihre Optionen.
 keywords: [mixer, eq, kill, bass swap, basswechsel, tauschen, clip, übersteuerung, trim, gain, fader, kanalfader, crossfader, kopfhörer, phones, cue, master, pegel, limiter, anzeige, vu, booth, mikrofon, mic, talkover, auto fader, stem taste, auto gain]
-features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-eq-values, mixer-clip-indicator]
+features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
 ---
 
 Der Mixer steht zwischen den Decks. Drücke **MIXER** in der oberen Leiste (`⌥⌘M`), um ihn auszublenden, wenn dein Controller das übernimmt; die Decks treffen sich dann in der Mitte.
@@ -18,6 +18,12 @@ Unter jedem Regler wird sein Name zu seinem Wert, sobald du ihn drehst: TRIM und
 - **CH FX** steuert den gewählten Channel FX; siehe [Effekte](effects.md#channel-fx).
 - **STEM** macht aus HI, MID und LOW des Kanals Regler für die Vocals, die Instrumente und die Drums dieses Tracks. Die Mitte ist voller Pegel; der normale EQ bleibt, wie du ihn gelassen hast. Siehe [Stems](stems.md).
 - **CLIP** leuchtet rot, sobald der Kanal vor dem Fader (nach Trim und EQ) über Vollaussteuerung gegangen ist, und bleibt an, damit du es auch siehst, wenn du gerade woanders hingeschaut hast. Dreh den Trim herunter und klick auf die Lampe, um sie zu löschen; der Klick löscht alle Übersteuerungsanzeigen, auch die des Masters.
+
+## Regler, Fader und Pegel
+
+Jeder Drehregler zeichnet seinen Wert als Bogen auf seinem Ring: von der kleinen Marke oben bei **TRIM**, den EQ-Reglern und **CH FX**, die von der Mitte aus in beide Richtungen drehen, und vom Anfang bei **MIX** und **LEVEL**. Während du einen Regler ziehst, steht sein Wert darüber, mit denselben Worten wie die Beschriftung darunter (`−6.0`, `KILL`, `LP 35`). Die Faderkappen haben eine Mittellinie zum Ablesen.
+
+Die Kanalpegel und der **MASTER**-Pegel in der oberen Leiste halten ihre Spitze: Ein kurzer Strich bleibt etwa anderthalb Sekunden am höchsten Pegel der letzten Zeit und fällt dann zurück. Nahe oben wird er gelb, beim Übersteuern rot. Die Pegel werden nie geglättet: Sie zeigen den Klang so, wie er ist.
 
 ## Basswechsel
 

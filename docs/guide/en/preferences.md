@@ -2,7 +2,7 @@
 title: Preferences and keyboard shortcuts
 description: Audio devices, language and appearance, waveforms, deck defaults, every keyboard shortcut and how to rebind it.
 keywords: [preferences, settings, options, audio, output device, buffer, sample rate, language, german, english, theme, appearance, dark, light, colour blind, contrast, scale, zoom, waveform colour, shortcut, shortcuts, keyboard, key binding, keybindings, keys, tasten, belegen, rebind]
-features: [analysis-bpm-ranges, prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends]
+features: [analysis-bpm-ranges, prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends, shell-motion-language]
 ---
 
 Open **Preferences** with the gear in the top bar, or `⌘,` on the Mac and `Ctrl+,` on Windows and Linux. `Esc` closes the window. **FIND A SETTING** at the top searches all pages.
@@ -22,7 +22,8 @@ On Windows audio goes through WASAPI, on macOS through CoreAudio, and on Linux t
 Language, key notation (**Camelot**, **Open Key** or **musical**), the appearance (dark, light or following the system), **UI scale** from 75 to 200 % (applies at once), and the **Waveform colour**: 3-band, one colour or RGB. With **OWN COLOURS** you can pick your own colours for the lows, mids and highs; **STANDARD COLOURS** brings back the default ones.
 
 - **Colour-blind-safe palette** and **High contrast (bright light)** apply at once.
-- **Reduce motion** calms the interface.
+- **Reduce motion** stops every animation: keys, switches, panels and the mode tabs change at once, and the pulse of an armed key, the loading sweep and the strobe preview stand still. It starts off, because the system's own setting cannot be read. Meters, waveforms and playheads never animate either way: they always show the sound as it is.
+- **Calm waveform** (off by default) draws a crisp, thin playhead, faint beat lines and softer band colours on the large waveforms, for long sets or bright rooms. See [Perform](perform-basics.md#calm-waveform).
 - **Waveform zoom** sets how many seconds a waveform shows when a track opens; the wheel still zooms.
 - Under **Browser** set the **Text size** and **Line spacing** of the list.
 
