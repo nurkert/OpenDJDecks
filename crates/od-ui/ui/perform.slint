@@ -18,7 +18,6 @@ import { MicControls } from "mic.slint";
 import { RecStrip } from "rec.slint";
 import { PerformLock } from "safety.slint";
 import { PhaseMeter, PhaseStrip } from "phase.slint";
-import { LightingStrip, Lighting } from "lighting.slint";
 import { ClubPlayer, ClubSteps, Club } from "club.slint";
 
 // Deck layout (roadmap [6]): how much of each deck and the mixer shows.
@@ -2419,7 +2418,6 @@ export component PerformView inherits Rectangle {
                 zoom-reset => { root.zoom-reset(d.deck); }
             }
         }
-        if Lighting.panel: LightingStrip { }
         // Decks (odd left, even right) with the mixer between them; the gaps
         // between the panels are the structure.
         HorizontalLayout {

@@ -27,7 +27,10 @@ use std::rc::Rc;
 
 use crate::app::{App, handler};
 use crate::models::Rows;
-use crate::{LightCapRow, LightFixtureView, LightGroupView, LightOutputRow, LightPatchRow};
+use crate::{
+    LightAutoRow, LightCapRow, LightFixtureView, LightGroupView, LightLookGroupRow,
+    LightMasterRow, LightOutputRow, LightPadView, LightPatchRow,
+};
 
 /// Frames per second sent to the outputs (DMX refreshes at most ~44 Hz).
 pub const FPS: u32 = 40;
@@ -98,6 +101,9 @@ pub struct Snapshot {
     pub outputs: Vec<od_lighting::OutputStatus>,
     /// The show failed and only the failsafe scene is sent.
     pub faulted: bool,
+    /// AUTO's pick for the deck you hear most, and the one HOLD keeps.
+    pub pick: Option<od_lighting::AutoPick>,
+    pub held: Option<od_lighting::AutoPick>,
 }
 
 enum Msg {
@@ -114,6 +120,8 @@ enum Msg {
     Arming(Arming),
     Failsafe(Failsafe),
     Identify(Option<usize>),
+    Pads(od_lighting::PadState),
+    Test(Option<od_lighting::TestPattern>),
     Opener(od_lighting::Opener),
     Stop,
 }
@@ -189,6 +197,16 @@ impl Runner {
         let _ = self.tx.send(Msg::Identify(fixture));
     }
 
+    /// Pads latched and held, and HOLD.
+    pub fn pads(&self, pads: od_lighting::PadState) {
+        let _ = self.tx.send(Msg::Pads(pads));
+    }
+
+    /// Starts or stops a test pattern.
+    pub fn test(&self, pattern: Option<od_lighting::TestPattern>) {
+        let _ = self.tx.send(Msg::Test(pattern));
+    }
+
     /// Test outputs: links are opened by `opener` from now on.
     pub fn set_opener(&self, opener: od_lighting::Opener) {
         let _ = self.tx.send(Msg::Opener(opener));
@@ -231,6 +249,8 @@ fn run(rx: Receiver<Msg>, mut rig: Lighting, snapshot: Arc<Mutex<Snapshot>>) {
             Ok(Msg::Arming(a)) => rig.arming = a,
             Ok(Msg::Failsafe(f)) => rig.failsafe = f,
             Ok(Msg::Identify(i)) => rig.identify = i,
+            Ok(Msg::Pads(p)) => rig.show.pads = p,
+            Ok(Msg::Test(t)) => rig.set_test(t),
             Ok(Msg::Opener(o)) => rig.set_opener(o),
             // Quitting: the failsafe choice decides the last frame.
             Ok(Msg::Stop) | Err(mpsc::RecvTimeoutError::Disconnected) => {
@@ -256,6 +276,8 @@ fn run(rx: Receiver<Msg>, mut rig: Lighting, snapshot: Arc<Mutex<Snapshot>>) {
             s.cue = rig.show.active_cue();
             s.outputs = rig.status();
             s.faulted = rig.faulted;
+            s.pick = rig.show.current_pick();
+            s.held = rig.show.held_pick();
         }
     }
 }
@@ -272,7 +294,7 @@ pub const SWATCHES: [[f32; 3]; 8] = [
     [1.0, 1.0, 1.0],
 ];
 
-fn program_label(p: Program) -> &'static str {
+pub(crate) fn program_label(p: Program) -> &'static str {
     match p {
         Program::Static => "STATIC",
         Program::Pulse => "PULSE",
@@ -358,7 +380,7 @@ pub fn stage_positions(patch: &Patch) -> Vec<(f32, f32)> {
         .collect()
 }
 
-fn rgb(c: [f32; 3]) -> Color {
+pub(crate) fn rgb(c: [f32; 3]) -> Color {
     let b = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
     Color::from_rgb_u8(b(c[0]), b(c[1]), b(c[2]))
 }
@@ -418,8 +440,14 @@ pub fn fixture_views(patch: &Patch, looks: &[Look]) -> Vec<LightFixtureView> {
         .collect()
 }
 
-/// "DECK 1 · CHORUS → SWEEP": what the show follows now (pure).
-pub fn status_text(mode: Mode, decks: &[DeckMusic]) -> String {
+/// "DECK 1 · CHORUS → SWEEP": what the show follows now (pure); a pad in
+/// AUTO's phrase table is named as "PAD 1.3 NAME".
+pub fn status_text(
+    mode: Mode,
+    decks: &[DeckMusic],
+    auto: &od_lighting::AutoSettings,
+    pads: &[od_lighting::PadLook],
+) -> String {
     let dominant = decks
         .iter()
         .enumerate()
@@ -440,7 +468,7 @@ pub fn status_text(mode: Mode, decks: &[DeckMusic]) -> String {
             format!(
                 "DECK {} · {phrase} → {}{}",
                 i + 1,
-                program_label(Program::for_phrase(d.phrase)),
+                crate::lighting_pads::pick_label(auto.table.pick(d.phrase), pads),
                 if mixing { " · MIX BLEND" } else { "" }
             )
         }
@@ -455,8 +483,8 @@ pub struct LightingRuntime {
     taps: crate::fx::TapTempo,
     tap_bpm: Option<f64>,
     path: PathBuf,
-    runner: Runner,
-    momentary: Momentary,
+    pub(crate) runner: Runner,
+    pub(crate) momentary: Momentary,
     /// Track sent to the runner per deck.
     sent: [Option<od_core::TrackId>; MAX_DECKS],
     tracks: Vec<Option<TrackLight>>,
@@ -482,6 +510,37 @@ pub struct LightingRuntime {
     patch_rows: Rows<LightPatchRow>,
     /// Last link summary sent to the UI.
     link: (String, String),
+    /// Own pads: latched and held, HOLD (never saved).
+    pub pads: od_lighting::PadState,
+    /// Page of pads shown (0..4).
+    pub page: usize,
+    /// PADS: clicks open pads in the editor instead of playing them.
+    pub editing: bool,
+    pub edit_pad: Option<u16>,
+    /// Clicks on pads add steps to the chase being edited.
+    pub adding_steps: bool,
+    pub(crate) pad_rows: Rows<LightPadView>,
+    pub(crate) master_rows: Rows<LightMasterRow>,
+    pub(crate) auto_rows: Rows<LightAutoRow>,
+    pub(crate) edit_rows: Rows<LightLookGroupRow>,
+    /// Who is in control (key, text) and the phrase heard now.
+    pub(crate) layer: (String, String),
+    pub(crate) now_slot: Option<od_lighting::PhraseSlot>,
+    /// The pick HOLD keeps (from the show thread).
+    pub(crate) held: Option<od_lighting::AutoPick>,
+    /// Serial ports for USB-DMX; fixed by the documentation hook.
+    pub ports: Vec<String>,
+    pub(crate) ports_fixed: bool,
+    /// Art-Net nodes found, the search running, and its result line.
+    pub nodes: Vec<od_lighting::ArtNode>,
+    pub(crate) finder: Option<Receiver<std::io::Result<Vec<od_lighting::ArtNode>>>>,
+    pub(crate) find_text: String,
+    /// Where ArtPoll goes (empty = the broadcast address; tests use a fake
+    /// node on the loopback address).
+    pub poll_targets: Vec<std::net::SocketAddr>,
+    /// Test pattern running.
+    pub test: Option<od_lighting::TestPattern>,
+    pub guide: crate::lighting_pads::Guide,
 }
 
 impl LightingRuntime {
@@ -514,6 +573,26 @@ impl LightingRuntime {
             outputs: Rows::default(),
             patch_rows: Rows::default(),
             link: Default::default(),
+            pads: Default::default(),
+            page: 0,
+            editing: false,
+            edit_pad: None,
+            adding_steps: false,
+            pad_rows: Rows::default(),
+            master_rows: Rows::default(),
+            auto_rows: Rows::default(),
+            edit_rows: Rows::default(),
+            layer: Default::default(),
+            now_slot: None,
+            held: None,
+            ports: Vec::new(),
+            ports_fixed: false,
+            nodes: Vec::new(),
+            finder: None,
+            find_text: String::new(),
+            poll_targets: Vec::new(),
+            test: None,
+            guide: Default::default(),
         };
         rt.push();
         rt.apply_outputs();
@@ -570,7 +649,14 @@ impl LightingRuntime {
     }
 }
 
-fn refresh(app: &App) {
+/// Every Lighting property and model, in the main window and the detached
+/// one.
+pub(crate) fn refresh(app: &App) {
+    refresh_main(app);
+    crate::lighting_pads::sync(app);
+}
+
+fn refresh_main(app: &App) {
     let rt = app.lighting.borrow();
     let s = &rt.config.settings;
     let groups: Vec<LightGroupView> = rt
@@ -860,7 +946,7 @@ fn timeline_rows(rt: &LightingRuntime) -> (SharedString, Vec<SharedString>) {
 
 /// Runs `f` on the Lighting state of the main window and, when it is open,
 /// the detached LIGHTING window.
-fn each(app: &App, f: impl Fn(&crate::Lighting<'_>)) {
+pub(crate) fn each(app: &App, f: impl Fn(&crate::Lighting<'_>)) {
     f(&app.ui.global::<crate::Lighting>());
     if let Some(w) = app.lighting_window.borrow().as_ref() {
         f(&w.global::<crate::Lighting>());
@@ -886,7 +972,7 @@ pub(crate) fn detach(app: &Rc<App>) {
     refresh(app);
 }
 
-fn edit(app: &App, f: impl FnOnce(&mut LightingRuntime)) {
+pub(crate) fn edit(app: &App, f: impl FnOnce(&mut LightingRuntime)) {
     {
         let mut rt = app.lighting.borrow_mut();
         f(&mut rt);
@@ -904,8 +990,12 @@ pub(crate) fn wire(app: &Rc<App>) {
 /// Documentation screenshots, in memory only (nothing is saved):
 /// `OPENDJDECKS_DEMO_PROOF` parts `light-patch` (patch table with a
 /// collision), `light-lost` (a second universe on a USB-DMX link that is
-/// missing), `light-safety`, `light-channels` and `light-strip` (the strip
-/// in Perform).
+/// missing), `light-safety`, `light-channels`, `light-strip` (the panel
+/// in Perform), `light-pads` (own looks and a chase on page 1, one latched,
+/// group masters), `light-edit` (PADS with a look open in the editor),
+/// `light-auto` (a palette, a pad in the phrase table, HOLD), `light-connect`
+/// (ports, a fake Art-Net node at 192.0.2.10 found on the loopback address,
+/// the test pattern) and `light-guide` (the guided setup at its second step).
 fn demo(app: &Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -960,10 +1050,95 @@ fn demo(app: &Rc<App>) {
         if has("light-strip") {
             g.set_panel(true);
         }
+        if has("light-pads") || has("light-edit") || has("light-auto") {
+            demo_looks(&mut rt);
+        }
+        if has("light-edit") {
+            rt.editing = true;
+            rt.edit_pad = Some(0);
+            g.set_centre("pads".into());
+        }
+        if has("light-auto") {
+            let a = &mut rt.config.settings.auto;
+            a.palette = od_lighting::Palette::Cool;
+            a.table.set(od_lighting::PhraseSlot::Drop, od_lighting::AutoPick::Pad(4));
+            rt.pads.latched = None;
+            rt.pads.hold = true;
+            rt.config.settings.mode = Mode::Auto;
+        }
+        if has("light-connect") || has("light-guide") {
+            rt.ports = vec!["/dev/cu.usbmodem2101".into(), "/dev/cu.usbserial-DMX1".into()];
+            rt.ports_fixed = true;
+            // A stand-in node on the loopback address, for the picture only.
+            if let Ok(node) = od_lighting::FakeNode::start(
+                std::net::Ipv4Addr::new(192, 0, 2, 10),
+                "Stage left",
+                "Two-port DMX node",
+                &[0, 1],
+            ) {
+                rt.poll_targets = vec![node.addr];
+                Box::leak(Box::new(node));
+            }
+            g.set_setup_tab("output".into());
+        }
+        if has("light-connect") {
+            rt.test = Some(od_lighting::TestPattern::Each);
+            rt.runner.test(rt.test);
+        }
+        if has("light-guide") {
+            rt.guide = crate::lighting_pads::Guide {
+                step: 2,
+                kind: "artnet".into(),
+                ..Default::default()
+            };
+        }
+        rt.runner.pads(rt.pads.clone());
         rt.push();
         rt.apply_outputs();
     }
     refresh(app);
+    if has("light-connect") || has("light-guide") {
+        crate::lighting_pads::find_nodes(app);
+    }
+}
+
+/// Example looks for the documentation pictures: three looks, a flash hit
+/// and a chase on page 1, the first latched, the movers at 70 %.
+fn demo_looks(rt: &mut LightingRuntime) {
+    use od_lighting::{GroupSettings as G, PadAction, PadLook};
+    let set = |l: &mut PadLook, group: &str, program: Program, color: [f32; 3], level: Option<f32>| {
+        l.groups.insert(
+            group.into(),
+            G {
+                program: Some(program),
+                color: Some(color),
+                intensity: level,
+                ..Default::default()
+            },
+        );
+    };
+    let mut red = PadLook::new(0, "Red wash");
+    set(&mut red, "Wash", Program::Static, SWATCHES[0], Some(0.9));
+    set(&mut red, "Bars", Program::Breathe, SWATCHES[1], None);
+    let mut blue = PadLook::new(1, "Blue sweep");
+    set(&mut blue, "Movers", Program::Sweep, SWATCHES[5], None);
+    set(&mut blue, "Wash", Program::Static, SWATCHES[4], Some(0.6));
+    let mut warm = PadLook::new(2, "Warm room");
+    for g in ["Wash", "Bars"] {
+        set(&mut warm, g, Program::Breathe, SWATCHES[2], Some(0.7));
+    }
+    set(&mut warm, "Movers", Program::Blackout, SWATCHES[2], Some(0.0));
+    let mut hit = PadLook::new(3, "White hit");
+    hit.action = PadAction::Flash;
+    for g in ["Wash", "Bars", "Movers"] {
+        set(&mut hit, g, Program::Static, SWATCHES[7], Some(1.0));
+    }
+    let mut chase = PadLook::new(4, "Colour run");
+    chase.steps = vec![0, 1, 2];
+    chase.step_beats = 2.0;
+    rt.config.settings.pads = vec![red, blue, warm, hit, chase];
+    rt.config.settings.group_levels.insert("Movers".into(), 0.7);
+    rt.pads.latched = Some(0);
 }
 
 /// Binds models and callbacks of one window's Lighting state.
@@ -979,6 +1154,7 @@ fn wire_global(app: &Rc<App>, g: &crate::Lighting<'_>) {
         g.set_link_text(rt.link.1.as_str().into());
     }
     wire_setup(app, g);
+    crate::lighting_pads::wire(app, g);
     g.set_programs(ModelRc::new(VecModel::from(
         Program::ALL
             .iter()
@@ -1062,26 +1238,21 @@ fn wire_global(app: &Rc<App>, g: &crate::Lighting<'_>) {
     g.on_set_output(handler!(
         app,
         |a, kind: SharedString, target: SharedString, universe: SharedString| {
-            if a.lighting.borrow().locked() {
-                return;
-            }
             let u = match parse_universe(&universe) {
                 Ok(u) => u.unwrap_or(0),
                 Err(e) => return a.status(e),
             };
             match parse_output(kind.as_str(), target.as_str()) {
-                Ok(k) => {
-                    {
-                        let mut rt = a.lighting.borrow_mut();
-                        rt.config.outputs.retain(|(x, _)| *x != u);
-                        rt.config.outputs.push((u, k));
-                        rt.config.outputs.sort_by_key(|(x, _)| *x);
-                        rt.config.enabled = true;
-                        rt.apply_outputs();
-                        rt.save();
-                    }
-                    refresh(&a);
+                // Several universes to one node or network: each universe
+                // goes to its own Art-Net Port-Address or sACN universe
+                // unless one is given.
+                Ok(OutputKind::ArtNet { target: t, .. }) => {
+                    set_output(&a, u, OutputKind::ArtNet { target: t, universe: u })
                 }
+                Ok(OutputKind::Sacn { .. }) if target.trim().is_empty() => {
+                    set_output(&a, u, OutputKind::Sacn { universe: u + 1 })
+                }
+                Ok(k) => set_output(&a, u, k),
                 Err(e) => a.status(format!("Lighting: {e}")),
             }
         }
@@ -1185,6 +1356,24 @@ fn wire_global(app: &Rc<App>, g: &crate::Lighting<'_>) {
             rt.config.settings.cues.remove(i as usize);
         }
     })));
+}
+
+/// Sends universe `u` (0-based) through `kind` and turns DMX OUT on (not
+/// while the PIN locks the setup).
+pub(crate) fn set_output(app: &App, u: u16, kind: OutputKind) {
+    if app.lighting.borrow().locked() {
+        return;
+    }
+    {
+        let mut rt = app.lighting.borrow_mut();
+        rt.config.outputs.retain(|(x, _)| *x != u);
+        rt.config.outputs.push((u, kind));
+        rt.config.outputs.sort_by_key(|(x, _)| *x);
+        rt.config.enabled = true;
+        rt.apply_outputs();
+        rt.save();
+    }
+    refresh(app);
 }
 
 /// An edit of the setup (patch, outputs, safety): ignored while the PIN
@@ -1460,6 +1649,10 @@ thread_local! {
 /// A Lighting pad (controller or screen): A–F pick the easy look, G / H
 /// strobe and flash while held.
 pub(crate) fn pad(app: &App, index: usize, pressed: bool) {
+    // Own looks of the current page come first.
+    if crate::lighting_pads::deck_pad(app, index, pressed) {
+        return;
+    }
     match index {
         0..=5 if pressed => edit(app, |rt| {
             rt.config.settings.mode = Mode::Easy;
@@ -1497,14 +1690,21 @@ pub(crate) fn controller(app: &App, a: od_controller::action::LightingAction) {
                 _ => Mode::Auto,
             }
         }),
+        other => crate::lighting_pads::controller(app, &other),
     }
 }
 
-/// Lit state of the Lighting pads.
+/// Lit state of the Lighting pads (own looks of the current page, else
+/// the built-in looks, strobe and flash).
 pub(crate) fn light_pads(app: &App, rows: &mut [crate::PadView]) {
+    crate::lighting_pads::deck_pad_views(app, rows);
     let rt = app.lighting.borrow();
+    let page = rt.page * od_lighting::PAGE_PADS;
     for r in rows.iter_mut() {
         let i = r.index as usize;
+        if od_lighting::looks::find(&rt.config.settings.pads, (page + i) as u16).is_some() {
+            continue;
+        }
         r.lit = match i {
             0..=5 => {
                 rt.config.settings.mode == Mode::Easy
@@ -1633,6 +1833,7 @@ fn tap(app: &App) {
 /// Per engine frame: feeds the show and, in LIGHTING mode, the preview.
 pub(crate) fn frame(app: &App, state: Option<&EngineState>) {
     refresh_link(app);
+    crate::lighting_pads::poll(app);
     let Some(state) = state else {
         if app.ui.get_mode() == "lighting" {
             refresh_stage(app, &[]);
@@ -1725,14 +1926,19 @@ fn refresh_stage(app: &App, decks: &[DeckMusic]) {
                 && a.name == b.name
                 && a.role != "bar"
         });
-    let status: SharedString = status_text(rt.config.settings.mode, decks).into();
+    let s = &rt.config.settings;
+    let status: SharedString = status_text(s.mode, decks, &s.auto, &s.pads).into();
     let cue = rt.runner.active_cue();
+    let held = rt.runner.snapshot.lock().ok().and_then(|s| s.held);
+    drop(rt);
+    app.lighting.borrow_mut().held = held;
     each(app, |g| {
         g.set_status(status.clone());
         if let Some(c) = cue {
             g.set_active_cue(c as i32);
         }
     });
+    crate::lighting_pads::sync_live(app, decks);
 }
 
 #[cfg(test)]
@@ -1845,9 +2051,10 @@ mod tests {
             phrase: Some(od_core::PhraseKind::Chorus),
             ..Default::default()
         };
-        assert!(status_text(Mode::Auto, &[deck]).ends_with("→ SWEEP"));
-        assert!(status_text(Mode::Auto, &[deck, deck]).contains("MIX BLEND"));
-        assert_eq!(status_text(Mode::Auto, &[]), "NO MUSIC · IDLE WASH");
+        let (auto, pads) = (od_lighting::AutoSettings::default(), Vec::new());
+        assert!(status_text(Mode::Auto, &[deck], &auto, &pads).ends_with("→ SWEEP"));
+        assert!(status_text(Mode::Auto, &[deck, deck], &auto, &pads).contains("MIX BLEND"));
+        assert_eq!(status_text(Mode::Auto, &[], &auto, &pads), "NO MUSIC · IDLE WASH");
     }
 
     #[test]

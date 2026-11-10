@@ -42,6 +42,7 @@ mod keep_awake;
 mod key_mix;
 mod keymap;
 mod lighting;
+mod lighting_pads;
 mod mic;
 mod midi_tools;
 mod mixer;
