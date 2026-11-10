@@ -232,8 +232,19 @@ mod tests {
         assert!(guard.held(), "{}", guard.note());
         assert!(listed(), "pmset lists the assertion");
         drop(guard);
-        let others = LIVE.load(std::sync::atomic::Ordering::SeqCst) > 0;
-        assert!(others || !listed(), "released again");
+        // The system list follows a moment later; other guards may come
+        // and go meanwhile.
+        let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        let released = loop {
+            if LIVE.load(std::sync::atomic::Ordering::SeqCst) > 0 || !listed() {
+                break true;
+            }
+            if std::time::Instant::now() > end {
+                break false;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        };
+        assert!(released, "released again");
     }
 
     /// Wherever it runs, acquiring and dropping never panics, and a guard
