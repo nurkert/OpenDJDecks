@@ -91,8 +91,16 @@ fn deck_grid_panel_edits_grid_and_gain() {
     assert!(!ui.has("deck1.pad.A"), "in place of the pads");
     ui.click("deck1.grid.beat-later");
     assert!(ui.wait_until(2.0, |u| (first(u) - before).abs() > 0.1), "grid moved a beat");
-    for k in ["deck1.grid.lock", "deck1.grid.gain-down", "deck1.grid.gain", "deck1.grid.gain-up"] {
-        assert!(Rect::of(&ui.get(k)).w >= 18.0, "{k} keeps a usable width");
+    // At the desktop deck width every part of the row stays readable.
+    for (k, min) in [
+        ("deck1.grid.edit", 28.0),
+        ("deck1.grid.lock", 30.0),
+        ("deck1.grid.gain-down", 16.0),
+        ("deck1.grid.gain", 32.0),
+        ("deck1.grid.gain-up", 16.0),
+    ] {
+        let w = Rect::of(&ui.get(k)).w;
+        assert!(w >= min - 0.5, "{k} is {w} px");
     }
     ui.click("deck1.grid.gain-up");
     assert!(ui.wait_until(2.0, |u| u.value("deck1.grid.gain") == "+0.5 dB"));

@@ -9,9 +9,9 @@ Der Mixer steht zwischen den Decks. Drücke **MIXER** in der oberen Leiste (`⌥
 
 ## Ein Kanal
 
-Von oben nach unten: die Kanalnummer mit ihrer **CLIP**-Lampe, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (der Channel-FX-Regler) und der Kanalfader mit seiner Anzeige, daneben **STEM** und **CUE**. Zieh einen Regler nach oben oder unten, um ihn zu drehen; Doppelklick (oder doppeltes Tippen) setzt ihn auf die Mitte zurück.
+Von oben nach unten: die Kanalnummer mit ihrer **CLIP**-Lampe, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (der Channel-FX-Regler), **STEM** und **CUE** nebeneinander und der Kanalfader mit seiner Anzeige. Zieh einen Regler nach oben oder unten, um ihn zu drehen; Doppelklick (oder doppeltes Tippen) setzt ihn auf die Mitte zurück.
 
-Jeder Regler zeigt seinen Wert daneben: TRIM und EQ in dB (**AUS**, wenn ein Isolator-Band ganz heruntergedreht ist), CH FX als Seite und Stärke des Filters (**LP40** ist ein Tiefpass bei 40 %, **HP25** ein Hochpass bei 25 %), andere Channel FX als Prozent mit Vorzeichen.
+Unter jedem Regler wird sein Name zu seinem Wert, sobald du ihn drehst: TRIM und EQ in dB (**AUS**, wenn ein Isolator-Band ganz heruntergedreht ist), CH FX als Seite und Stärke des Filters (**LP40** ist ein Tiefpass bei 40 %, **HP25** ein Hochpass bei 25 %), andere Channel FX als Prozent mit Vorzeichen.
 
 - **TRIM** stellt den Kanalpegel ein. **Auto Gain** unter **Einstellungen › Controller › Mixer** gleicht Tracks vorher nach ihrer analysierten Lautheit an. Jeder Track lässt sich in 0,5-dB-Schritten im [GRID-Panel](beatgrid.md#ein-grid-korrigieren-waehrend-der-track-laeuft) korrigieren.
 - Die **EQ**-Regler sind standardmäßig ein Isolator. **Einstellungen › Controller › Mixer › EQ** wechselt zwischen **ISOLATOR** und **KLASSISCHER EQ**.
@@ -23,7 +23,7 @@ Jeder Regler zeigt seinen Wert daneben: TRIM und EQ in dB (**AUS**, wenn ein Iso
 
 ![Der Mixer mit gekilltem LOW auf einem Deck und einem LOW-Tausch, der auf den nächsten Takt wartet](../img/mixer-bass-swap.png)
 
-**KILL** neben HI, MID und LOW nimmt dieses Band heraus, solange es leuchtet. Der Regler bleibt, wo er ist; lässt du den Kill los, kommt das Band mit dem Wert des Reglers zurück. Mit dem Isolator-EQ ist ein gekilltes Band stumm, mit dem klassischen EQ steht es auf der tiefsten Stellung des Reglers (−26 dB). Der Wert neben dem Regler zeigt **KILL**, solange er an ist.
+Die Taste **K** (Kill) neben HI, MID und LOW nimmt dieses Band heraus, solange sie leuchtet. Der Regler bleibt, wo er ist; lässt du den Kill los, kommt das Band mit dem Wert des Reglers zurück. Mit dem Isolator-EQ ist ein gekilltes Band stumm, mit dem klassischen EQ steht es auf der tiefsten Stellung des Reglers (−26 dB). Die Beschriftung unter dem Regler zeigt **KILL**, solange er an ist.
 
 Die Tauschreihe unter den Kanälen (mit zwei gegenläufigen Pfeilen markiert) tauscht mit einem Tippen ein Band zwischen den zwei Decks im Mix:
 

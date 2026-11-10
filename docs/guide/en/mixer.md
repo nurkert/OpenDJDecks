@@ -9,9 +9,9 @@ The mixer stands between the decks. Press **MIXER** in the top bar (`⌥⌘M`) t
 
 ## A channel
 
-From top to bottom: the channel number with its **CLIP** lamp, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (the Channel FX knob), and the channel fader with its meter, with **STEM** and **CUE** beside it. Drag a knob up or down to turn it; double-click (or double-tap) it to reset it to the centre.
+From top to bottom: the channel number with its **CLIP** lamp, **TRIM**, **HI**, **MID**, **LOW**, **CH FX** (the Channel FX knob), **STEM** and **CUE** side by side, and the channel fader with its meter. Drag a knob up or down to turn it; double-click (or double-tap) it to reset it to the centre.
 
-Each knob shows its value beside it: TRIM and the EQ in dB (**OFF** when an isolator band is turned fully down), CH FX as the filter side and depth (**LP40** is a low-pass at 40 %, **HP25** a high-pass at 25 %), other Channel FX as a signed percent.
+Under each knob its name turns into its value as soon as you turn it: TRIM and the EQ in dB (**OFF** when an isolator band is turned fully down), CH FX as the filter side and depth (**LP40** is a low-pass at 40 %, **HP25** a high-pass at 25 %), other Channel FX as a signed percent.
 
 - **TRIM** sets the level of the channel. **Auto gain** in **Preferences › Controller › Mixer** levels tracks by their analysed loudness first. Each track can be corrected by ±0.5 dB steps in the [GRID panel](beatgrid.md#fix-a-grid-while-the-track-plays).
 - The **EQ** knobs default to an isolator. **Preferences › Controller › Mixer › EQ** switches between **ISOLATOR** and **CLASSIC EQ**.
@@ -23,7 +23,7 @@ Each knob shows its value beside it: TRIM and the EQ in dB (**OFF** when an isol
 
 ![The mixer with one deck's LOW killed and a LOW swap waiting for the next bar](../img/mixer-bass-swap.png)
 
-**KILL** beside HI, MID and LOW takes that band out while it is lit. The knob stays where it is; when you release the kill, the band comes back at the knob's value. With the isolator EQ a killed band is silent; with the classic EQ it is at the knob's lowest setting (−26 dB). The value beside the knob reads **KILL** while it is on.
+The **K** key (kill) beside HI, MID and LOW takes that band out while it is lit. The knob stays where it is; when you release the kill, the band comes back at the knob's value. With the isolator EQ a killed band is silent; with the classic EQ it is at the knob's lowest setting (−26 dB). The legend under the knob reads **KILL** while it is on.
 
 The swap row under the channels (marked with two opposed arrows) exchanges one band between the two decks in the mix with one tap:
 

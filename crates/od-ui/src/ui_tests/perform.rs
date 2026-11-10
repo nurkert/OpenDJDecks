@@ -443,8 +443,8 @@ fn mixer_and_phones_knobs_are_centred() {
         assert!(ui.wait_until(5.0, |u| u.has("mixer.ch1.cue")
             && u.has("global.phones.mix")));
         for ch in 1..=2 {
+            let stem = Rect::of(&ui.get(&format!("mixer.ch{ch}.stem")));
             let cue = Rect::of(&ui.get(&format!("mixer.ch{ch}.cue")));
-            let fader = Rect::of(&ui.get(&format!("mixer.ch{ch}.fader")));
             let high = Rect::of(&ui.get(&format!("mixer.ch{ch}.eq-high")));
             for knob in ["trim", "eq-high", "eq-mid", "eq-low"] {
                 let k = Rect::of(&ui.get(&format!("mixer.ch{ch}.{knob}")));
@@ -455,7 +455,7 @@ fn mixer_and_phones_knobs_are_centred() {
                     high.x
                 );
                 assert!(
-                    k.x >= cue.x - 1.0 && k.right() <= fader.right() + 1.0,
+                    k.x >= stem.x - 1.0 && k.right() <= cue.right() + 1.0,
                     "{size:?} ch{ch} {knob}: knob outside the strip"
                 );
             }

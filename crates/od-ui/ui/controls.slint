@@ -340,6 +340,10 @@ export component Knob inherits Rectangle {
     // Room under the ring for the legend (smaller on compact strips); a
     // knob without a legend is just its ring, so it centres on its row.
     in property <length> label-h: 16px;
+    // The legend's colour, and an accessible label for it when the legend
+    // shows the knob's value (mixer).
+    in property <color> legend-color: Theme.bone-3;
+    in property <string> legend-id;
     callback changed(float);
     width: max(root.size + 8px, lbl.preferred-width + 4px);
     height: root.size + (root.label == "" ? 0px : root.label-h);
@@ -365,9 +369,10 @@ export component Knob inherits Rectangle {
     }
     lbl := Text {
         y: root.size + (root.label-h >= 16px ? 3px : 1px); width: parent.width;
+        accessible-role: text; accessible-label: root.legend-id; accessible-value: self.text;
         text: root.label;
         font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: root.label-h >= 16px ? 1.2px : 0.8px;
-        color: Theme.bone-3;
+        color: root.legend-color;
         horizontal-alignment: center;
     }
     property <float> start;
@@ -445,6 +450,8 @@ export component Toggle inherits Rectangle {
     in property <length> size: 26px;
     // Legend size (Control rank; a tier-one key is one rank up).
     in property <length> label-size: Theme.control;
+    // Letter spacing of the legend (tighter on the narrow mixer keys).
+    in property <length> tracking: 1.2px;
     // Smallest width (44 px touch keys).
     in property <length> min-w: 0px;
     // First-start guide: the id it can be pointed at by.
@@ -463,7 +470,7 @@ export component Toggle inherits Rectangle {
     t := Text {
         y: (parent.height - self.height) / 2 + (touch.pressed && root.enabled ? 1px : 0);
         text: root.label;
-        font-family: Theme.family; font-size: root.label-size; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+        font-family: Theme.family; font-size: root.label-size; font-weight: Theme.weight-semi; letter-spacing: root.tracking;
         color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
         horizontal-alignment: center; vertical-alignment: center;
     }

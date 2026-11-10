@@ -1814,7 +1814,7 @@ tests = [
   "od-ui::ui_tests::mix::mixer_kills_swaps_values_and_clip",
 ]
 evidence = ["ChannelCommand::SetEqKill", "crates/od-ui/src/mixer.rs::toggle_kill"]
-note = "Roadmap [55]. KILL beside HI, MID and LOW on each channel (and `mixer.eq_kill` in mappings): the band goes silent (isolator) or to −26 dB (classic EQ) while lit; the knob keeps its place and the release returns to it"
+note = "Roadmap [55]. K (kill) beside HI, MID and LOW on each channel (and `mixer.eq_kill` in mappings): the band goes silent (isolator) or to −26 dB (classic EQ) while lit; the knob keeps its place and the release returns to it"
 
 [[feature]]
 id = "mixer-eq-swap"
@@ -1851,7 +1851,7 @@ tests = [
   "od-ui::ui_tests::mix::mixer_rows_line_up",
 ]
 evidence = ["ui/perform.slint::BandRow", "crates/od-ui/src/mixer.rs::eq_text"]
-note = "Roadmap [55]. EQ and CH FX knobs 26 px (18 px compact, before 22 / 16) with the value beside them: dB for TRIM and EQ, OFF at the isolator's full cut, KILL while killed, LP / HP and percent for the filter; double-click (double-tap) resets"
+note = "Roadmap [55]. EQ and CH FX knobs 24 px at desktop size (before 22; the compact tier keeps 16), strips still 50 px; the legend under each knob turns into its value once turned: dB for TRIM and EQ, OFF at the isolator's full cut, KILL while killed, LP / HP and percent for the filter; double-click (double-tap) resets"
 
 [[feature]]
 id = "mixer-clip-indicator"

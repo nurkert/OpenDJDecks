@@ -56,9 +56,10 @@ fn mixer_kills_swaps_values_and_clip() {
     assert!(ui.wait_until(10.0, |u| snapshot(u).decks[0].playing));
     assert!(ui.wait_until(5.0, |u| u.has("mixer.ch2.eq-low.kill")));
     for ch in 1..=2 {
-        for band in ["eq-high", "eq-mid", "eq-low"] {
+        for (band, name) in [("eq-high", "HI"), ("eq-mid", "MID"), ("eq-low", "LOW")] {
             assert!(ui.has(&format!("mixer.ch{ch}.{band}.kill")), "ch{ch} {band} kill");
-            assert_eq!(ui.value(&format!("mixer.ch{ch}.{band}.value")), "0");
+            // At the centre the legend names the band; turned, it shows the value.
+            assert_eq!(ui.value(&format!("mixer.ch{ch}.{band}.value")), name);
         }
         assert!(ui.has(&format!("fx.channel-fx.ch{ch}.value")));
         assert!(ui.has(&format!("mixer.ch{ch}.clip")));
@@ -75,7 +76,7 @@ fn mixer_kills_swaps_values_and_clip() {
     assert!(ui.wait_until(5.0, |u| u.value("mixer.ch1.eq-high.value") == "\u{2212}18"));
     ui.double_click("mixer.ch1.eq-high");
     assert!(ui.wait_until(5.0, |u| snapshot(u).channels[0].eq[2] == 0.0));
-    assert!(ui.wait_until(2.0, |u| u.value("mixer.ch1.eq-high.value") == "0"));
+    assert!(ui.wait_until(2.0, |u| u.value("mixer.ch1.eq-high.value") == "HI"));
     ui.app.ui.invoke_mixer_channel_fx(2, -0.4);
     assert!(ui.wait_until(5.0, |u| u.value("fx.channel-fx.ch2.value") == "LP40"));
     ui.double_click("fx.channel-fx.ch2");
@@ -134,7 +135,8 @@ fn mixer_kills_swaps_values_and_clip() {
 }
 
 /// [55] The larger knobs line up in one column per strip, with the kill
-/// beside each EQ knob, at desktop and laptop size and with four decks.
+/// beside each EQ knob; the strips keep their 50 px and the swap row fits
+/// over them, so the decks keep their width (desktop, laptop, four decks).
 #[test]
 fn mixer_rows_line_up() {
     for size in [(1440, 900), (1280, 800)] {
@@ -151,12 +153,31 @@ fn mixer_rows_line_up() {
                 assert!(kill.x >= k.right() - 1.0, "{size:?} ch{ch} {band}: kill right of knob");
             }
             let high = Rect::of(&ui.get(&format!("mixer.ch{ch}.eq-high")));
-            // Larger than before (22 px, 16 px compact): 26 px, 18 px compact.
-            let min = if size.0 >= 1440 { 34.0 } else { 26.0 };
+            // Larger than before at desktop size (22 px): 24 px; the compact tier keeps 16 px.
+            let min = if size.0 >= 1440 { 32.0 } else { 24.0 };
             assert!(high.w >= min, "{size:?}: EQ knob {}px", high.w);
         }
+        let r = |l: &str| Rect::of(&ui.get(l));
+        let (left, right) = (r("mixer.ch1.stem").x, r("mixer.ch2.cue").right());
+        // The column is as wide as on main (two 50 px strips, 124 px with its
+        // padding), so the decks keep their width: the CH FX selector spans
+        // the column minus 4 px each side.
+        let column = r("fx.channel-fx.type").w + 8.0;
+        assert!(column <= 125.0, "{size:?}: mixer column {column} px");
+        for ch in 1..=2 {
+            let w = r(&format!("mixer.ch{ch}.cue")).right() - r(&format!("mixer.ch{ch}.stem")).x;
+            assert!((w - 50.0).abs() <= 1.0, "{size:?}: strip {ch} is {w} px");
+            let row = r(&format!("mixer.ch{ch}.eq-low.kill")).right() - r(&format!("mixer.ch{ch}.eq-low")).x;
+            assert!(row <= 51.0, "{size:?}: band row {row} px");
+        }
         for key in ["mixer.swap.low", "mixer.swap.mid", "mixer.swap.high", "mixer.swap.at"] {
-            assert!(ui.has(key), "{size:?}: {key}");
+            let k = r(key);
+            assert!(
+                k.x >= left - 5.0 && k.right() <= right + 5.0,
+                "{size:?}: {key} outside the strips ({} .. {})",
+                k.x,
+                k.right()
+            );
         }
     }
     let ui = Ui::open((1440, 900));
