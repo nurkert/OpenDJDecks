@@ -102,10 +102,13 @@ pub enum PadMode {
     TimedCensor,
     /// Pattern recall: pads store and recall sampler sequences.
     PatternRecall,
+    /// Loop roll: each pad rolls a loop of 1/32 … 4 beats while held; the
+    /// track carries on underneath and resumes on release.
+    LoopRoll,
 }
 
 impl PadMode {
-    pub const ALL: [PadMode; 14] = [
+    pub const ALL: [PadMode; 15] = [
         PadMode::HotCue,
         PadMode::BeatLoop,
         PadMode::BeatJump,
@@ -120,6 +123,7 @@ impl PadMode {
         PadMode::Lighting,
         PadMode::TimedCensor,
         PadMode::PatternRecall,
+        PadMode::LoopRoll,
     ];
 
     pub fn name(self) -> &'static str {
@@ -138,6 +142,7 @@ impl PadMode {
             PadMode::Lighting => "lighting",
             PadMode::TimedCensor => "timed_censor",
             PadMode::PatternRecall => "pattern_recall",
+            PadMode::LoopRoll => "loop_roll",
         }
     }
 
@@ -195,6 +200,12 @@ pub enum DeckAction {
     LoopHalve,
     LoopDouble,
     ReloopExit,
+    /// Saves the current (or last) loop as a hot loop on the first free pad.
+    LoopCapture,
+    /// Arms (or cancels) a start on the master deck's next phrase.
+    PhraseStart,
+    /// Halves (`0.5`) or doubles (`2.0`) the track's beatgrid tempo.
+    BpmScale(f32),
     BeatJump {
         beats: f32,
     },

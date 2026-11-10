@@ -173,6 +173,10 @@ pub const ACTION_NAMES: &[&str] = &[
     "deck.loop_halve",
     "deck.loop_double",
     "deck.reloop_exit",
+    "deck.loop_capture",
+    "deck.phrase_start",
+    "deck.bpm_half",
+    "deck.bpm_double",
     "deck.beat_jump",
     "deck.search",
     "deck.slip",
@@ -379,6 +383,10 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
         "deck.loop_halve" => (Button, deck_press(DeckAction::LoopHalve)),
         "deck.loop_double" => (Button, deck_press(DeckAction::LoopDouble)),
         "deck.reloop_exit" => (Button, deck_press(DeckAction::ReloopExit)),
+        "deck.loop_capture" => (Button, deck_press(DeckAction::LoopCapture)),
+        "deck.phrase_start" => (Button, deck_press(DeckAction::PhraseStart)),
+        "deck.bpm_half" => (Button, deck_press(DeckAction::BpmScale(0.5))),
+        "deck.bpm_double" => (Button, deck_press(DeckAction::BpmScale(2.0))),
         "deck.beat_jump" => {
             let beats = a.f32("beats")?;
             (Button, deck_press(DeckAction::BeatJump { beats }))
@@ -808,6 +816,40 @@ mod tests {
         bass.insert("band".into(), Value::String("bass".into()));
         assert!(parse_action("eq_swap", &bass).is_err());
         assert!(parse_action("mixer.eq_kill", &Table::new()).is_err());
+    }
+
+    /// [56] [57] [59] Phrase start, half / double BPM, loop capture and the
+    /// loop roll pad mode.
+    #[test]
+    fn mix_actions_map() {
+        let press = InputValue::Button {
+            pressed: true,
+            velocity: 127,
+        };
+        for (name, action) in [
+            ("deck.loop_capture", DeckAction::LoopCapture),
+            ("deck.phrase_start", DeckAction::PhraseStart),
+            ("deck.bpm_half", DeckAction::BpmScale(0.5)),
+            ("deck.bpm_double", DeckAction::BpmScale(2.0)),
+        ] {
+            let t = parse_action(name, &Table::new()).unwrap();
+            assert!(t.needs_deck, "{name}");
+            assert_eq!(
+                t.produce(Some(1), press),
+                Some(ControlAction::Deck { deck: 1, action }),
+                "{name}"
+            );
+        }
+        let mut mode = Table::new();
+        mode.insert("mode".into(), Value::String("loop_roll".into()));
+        let t = parse_action("deck.pad_mode", &mode).unwrap();
+        assert_eq!(
+            t.produce(Some(0), press),
+            Some(ControlAction::Deck {
+                deck: 0,
+                action: DeckAction::PadMode(PadMode::LoopRoll)
+            })
+        );
     }
 
     #[test]
