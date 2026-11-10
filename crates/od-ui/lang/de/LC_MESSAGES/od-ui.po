@@ -5981,3 +5981,38 @@ msgstr "Hoher Kontrast, die Palette für Farbenblinde und eine größere Oberfl�
 msgctxt "TopBar"
 msgid "UNDO"
 msgstr "RÜCKGÄNGIG"
+
+#: ui/topbar.slint:94 ui/topbar.slint:98
+msgctxt "RecordKey"
+msgid "REC {}"
+msgstr "REC {}"
+
+#: ui/topbar.slint:95 ui/topbar.slint:98
+msgctxt "RecordKey"
+msgid "RECORD"
+msgstr "AUFNAHME"
+
+#: ui/topbar.slint:103
+msgctxt "RecordKey"
+msgid "Stop recording"
+msgstr "Aufnahme beenden"
+
+#: ui/topbar.slint:103
+msgctxt "RecordKey"
+msgid "Record the master output"
+msgstr "Master-Ausgang aufnehmen"
+
+#: ui/topbar.slint:119
+msgctxt "RecordKey"
+msgid "Hide the recording section"
+msgstr "Aufnahmebereich ausblenden"
+
+#: ui/topbar.slint:119
+msgctxt "RecordKey"
+msgid "Show the recording section: level, meter and the record button"
+msgstr "Aufnahmebereich einblenden: Pegel, Meter und Aufnahmetaste"
+
+#: ui/topbar.slint:476
+msgctxt "TopBar"
+msgid "MASTER {} BPM"
+msgstr "MASTER {} BPM"

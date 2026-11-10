@@ -631,7 +631,6 @@ export component AppWindow inherits Window {
                 cycle-layout => { root.cycle-layout(); }
                 deck-count: root.decks.length;
                 set-perform-view(v) => { root.set-perform-view(v); }
-                show-record: root.mode != "perform";
                 show-panels: root.mode == "perform";
                 fx-panel: root.fx-panel;
                 sampler-panel: root.sampler-panel;

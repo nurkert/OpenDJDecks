@@ -316,7 +316,7 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 ### Navigation (sidebar and top bar)
 - **Sidebar sections:** caps headings (COLLECTION, PLAYLISTS, DEVICES, RECORDINGS) with a hairline plus glyph for creation where it applies.
 - **Tree:** 26px rows indented 14px per level; kind marker lines left of the name (sticks solid green 2px, sets solid sodium 1px, smart lists dashed indigo 1px); a 1px strong-rule length bar under each list proportional to its playing time; counts right-aligned in bone-3. Selection is an 8px sodium tick at the left edge, never a fill.
-- **Top bar:** three zones with more space between them than inside them: modes as a segmented control with a filled current mode, panel toggles as one group, status at the right. Live values have fixed widths and are never cut off.
+- **Top bar:** three zones with more space between them than inside them: modes as a segmented control with a filled current mode; panel toggles as one group of slimmer keys; status at the right. Live values have fixed widths and are never cut off. RECORD is an action, not a panel: an ash plate with a bone-3 dot at rest, filled deep red with a running timer while recording, with the section's panel switch joined to it. Editing actions (undo) appear only in Prepare. Under 1360px the brand drops to its rail mark so live values keep their room.
 
 ### Track Table
 - No boxes, no zebra fills. Caps header with a bone sort label and hairline arrow, 1px rule beneath.

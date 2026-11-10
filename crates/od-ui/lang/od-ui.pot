@@ -2241,3 +2241,38 @@ msgstr ""
 msgctxt "UpdatePrompt"
 msgid "UPDATE NOW"
 msgstr ""
+
+#: ui/topbar.slint:94 ui/topbar.slint:98
+msgctxt "RecordKey"
+msgid "REC {}"
+msgstr ""
+
+#: ui/topbar.slint:95 ui/topbar.slint:98
+msgctxt "RecordKey"
+msgid "RECORD"
+msgstr ""
+
+#: ui/topbar.slint:103
+msgctxt "RecordKey"
+msgid "Stop recording"
+msgstr ""
+
+#: ui/topbar.slint:103
+msgctxt "RecordKey"
+msgid "Record the master output"
+msgstr ""
+
+#: ui/topbar.slint:119
+msgctxt "RecordKey"
+msgid "Hide the recording section"
+msgstr ""
+
+#: ui/topbar.slint:119
+msgctxt "RecordKey"
+msgid "Show the recording section: level, meter and the record button"
+msgstr ""
+
+#: ui/topbar.slint:476
+msgctxt "TopBar"
+msgid "MASTER {} BPM"
+msgstr ""
