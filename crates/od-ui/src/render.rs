@@ -1070,11 +1070,7 @@ mod tests {
             columns: vec![WaveformColumn::default(); 1500],
         };
         let g = Beatgrid::constant(120.0, 0.0, 1, 10.0);
-        let phrases = [Phrase {
-            start_beat: 0,
-            end_beat: 16,
-            kind: PhraseKind::Chorus,
-        }];
+        let phrases = [Phrase::new(0, 16, PhraseKind::Chorus)];
         let img = detail(&w, &g, &phrases, 4.0, 8.0, 200, 90);
         let buf = img.to_rgba8().unwrap();
         let p = buf.as_slice()[(89 * 200 + 150) as usize];

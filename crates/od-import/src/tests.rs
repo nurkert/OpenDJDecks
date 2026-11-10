@@ -62,16 +62,8 @@ fn write_anlz(dat: &Path, device_path: &str, g: &Beatgrid, cues: &[Cue]) {
         ],
     };
     let phrases = [
-        Phrase {
-            start_beat: 0,
-            end_beat: 2,
-            kind: PhraseKind::Intro,
-        },
-        Phrase {
-            start_beat: 2,
-            end_beat: 4,
-            kind: PhraseKind::Outro,
-        },
+        Phrase::new(0, 2, PhraseKind::Intro),
+        Phrase::new(2, 4, PhraseKind::Outro),
     ];
     let set = build_anlz(&AnlzInput {
         device_path,

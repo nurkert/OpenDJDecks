@@ -114,6 +114,9 @@ export global PhraseEdit {
     in property <[string]> kinds;
     // The phrase at the cursor (its label; "" = none).
     in property <string> current;
+    // How sure the analysis was of it when unsure ("41 %"; "" = sure,
+    // checked by you, or none).
+    in property <string> current-sure;
     // Counts up when the type picker of phrase `picker-index` should open
     // (the key: the phrase at the cursor).
     in-out property <int> picker-request;
@@ -168,12 +171,19 @@ component PhraseStrip inherits Rectangle {
         accessible-role: button;
         accessible-label: "player1.phrase.block\{i}";
         accessible-value: p.label;
+        accessible-description: p.unsure ? "unsure" : "sure";
         x: parent.width * p.pos;
         width: max(1px, parent.width * (p.end - p.pos) - 1px);
         background: p.tone.with-alpha(block.has-hover && root.can-edit ? 0.5 : 0.32);
         Rectangle { y: 0; height: 2px; background: p.tone; }
+        // [62] Unsure: a half-height sodium line at its start, as for an
+        // unsure key; picking its type (or moving an edge) confirms it.
+        if p.unsure: VLine {
+            accessible-role: text; accessible-label: "player1.phrase.unsure\{i}"; accessible-value: p.sure;
+            x: 2px; y: 4px; height: parent.height - 6px; weight: 2px; tone: Theme.attention; form: "half";
+        }
         Text {
-            x: 4px; width: parent.width - 6px; height: parent.height;
+            x: p.unsure ? 8px : 4px; width: parent.width - (p.unsure ? 10px : 6px); height: parent.height;
             text: parent.width > 30px ? p.label : "";
             font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
             color: Theme.bone; vertical-alignment: center; overflow: clip;
@@ -181,7 +191,9 @@ component PhraseStrip inherits Rectangle {
         block := TipArea {
             enabled: root.can-edit;
             mouse-cursor: pointer;
-            tooltip: @tr("Click: phrase type · drag an edge to move it (snaps to bars) · Shift+X split at the cursor · Shift+J merge");
+            tooltip: p.unsure
+                ? @tr("The analysis is unsure of this phrase ({}): click to confirm its type or pick another · drag an edge to move it", p.sure)
+                : @tr("Click: phrase type · drag an edge to move it (snaps to bars) · Shift+X split at the cursor · Shift+J merge");
             clicked => { root.open(i); }
         }
     }
@@ -1009,10 +1021,20 @@ export component PreparePlayer inherits Rectangle {
                             Toggle { size: 30px; accessible-role: button; accessible-label: "player1.phrase.cut"; label: @tr("CUT"); command: "player.phrase.cut"; tooltip: @tr("Split the phrase at the cursor (on the nearest bar)"); enabled: parent.can-edit; clicked => { PhraseEdit.cut(); } }
                             Toggle { size: 30px; accessible-role: button; accessible-label: "player1.phrase.merge"; label: @tr("MERGE"); command: "player.phrase.merge"; tooltip: @tr("Join the phrase at the cursor with the next one"); enabled: parent.can-edit; clicked => { PhraseEdit.merge(); } }
                             Toggle { size: 30px; accessible-role: button; accessible-label: "player1.phrase.boundary"; label: @tr("BOUNDARY TO CURSOR"); command: "player.phrase.boundary"; tooltip: @tr("Move the nearest phrase boundary to the cursor (on the nearest bar)"); enabled: parent.can-edit; clicked => { PhraseEdit.boundary(); } }
+                            // [62] An unsure phrase at the cursor says so, in
+                            // the unsure-key language: half sodium line, sodium text.
+                            if PhraseEdit.current-sure != "": VerticalLayout {
+                                alignment: center;
+                                VLine { height: 14px; weight: 2px; tone: Theme.attention; form: "half"; }
+                            }
                             Caps {
                                 accessible-role: text; accessible-label: "player1.phrase.hint"; accessible-value: self.text;
+                                accessible-description: PhraseEdit.current-sure != "" ? "unsure" : "";
                                 horizontal-stretch: 1; min-width: 0;
-                                text: @tr("OR ON THE STRIP: CLICK A PHRASE FOR ITS TYPE, DRAG AN EDGE");
+                                text: PhraseEdit.current-sure != ""
+                                    ? @tr("UNSURE {}: PICK ITS TYPE TO CONFIRM", PhraseEdit.current-sure)
+                                    : @tr("OR ON THE STRIP: CLICK A PHRASE FOR ITS TYPE, DRAG AN EDGE");
+                                color: PhraseEdit.current-sure != "" ? Theme.attention : Theme.bone-3;
                                 font-size: Theme.control; vertical-alignment: center; horizontal-alignment: center; overflow: elide;
                             }
                             Toggle { size: 30px; accessible-role: button; accessible-label: "player1.phrase.clear"; label: @tr("CLEAR"); command: "player.phrase.clear"; tone: Theme.fault; tooltip: @tr("Remove all phrases of this track"); enabled: parent.can-edit; clicked => { PhraseEdit.clear(); } }

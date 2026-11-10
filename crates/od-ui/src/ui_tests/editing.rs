@@ -29,11 +29,7 @@ fn analysed_track(
         beatgrid: Beatgrid::constant(120.0, 0.0, 1, secs as f64),
         phrases: phrases
             .iter()
-            .map(|&(s, e, kind)| Phrase {
-                start_beat: s * 4,
-                end_beat: e * 4,
-                kind,
-            })
+            .map(|&(s, e, kind)| Phrase::new(s * 4, e * 4, kind))
             .collect(),
         ..Default::default()
     };
@@ -233,6 +229,66 @@ fn phrase_editing_in_the_prepare_player() {
     // Without phrases a kind fills the whole grid.
     ui.click("player1.phrase.kind4");
     assert_eq!(phrases(&ui, id), [(0, 20, Up)]);
+}
+
+/// [62] A phrase the analysis was unsure of carries the unsure mark on the
+/// strip (a half-height sodium line, its percent) and in the PHRASE tab;
+/// picking its type confirms it and the mark goes (one undo step).
+#[test]
+fn unsure_phrases_are_marked_and_confirmed() {
+    use PhraseKind::*;
+    let fx = Fixture::new();
+    let id = analysed_track(&fx, "Unsure Phrase", 40.0, &[(0, 8, Intro), (8, 20, Chorus)]);
+    {
+        let mut lib = fx.lib();
+        let mut a = lib.analysis(id).unwrap();
+        a.phrases[0].confidence = Some(0.9);
+        a.phrases[1].confidence = Some(0.41);
+        lib.store_analysis(id, &a, DataSource::Analysis).unwrap();
+    }
+    let ui = Ui::start(fx, (1440, 900), false);
+    show(&ui, id);
+    let marks = |u: &Ui| -> Vec<(bool, String)> {
+        u.app
+            .ui
+            .get_track_phrases()
+            .iter()
+            .map(|m| (m.unsure, m.sure.to_string()))
+            .collect()
+    };
+    assert_eq!(
+        marks(&ui),
+        [(false, String::new()), (true, "41 %".to_string())],
+        "only the unsure phrase is marked, with how sure"
+    );
+    assert!(ui.has("player1.phrase.unsure1") && !ui.has("player1.phrase.unsure0"));
+    assert_eq!(ui.value("player1.phrase.unsure1"), "41 %");
+    ui.click("player1.tab.phrase");
+    // Bar 10 (20 s at 120 BPM) lies in the unsure chorus.
+    seek(&ui, id, 20.0);
+    let hint = ui.value("player1.phrase.hint");
+    assert!(hint.contains("41 %"), "the tab says so: {hint}");
+    seek(&ui, id, 4.0);
+    assert!(
+        !ui.value("player1.phrase.hint").contains('%'),
+        "not over a sure phrase"
+    );
+    // Picking the type it has confirms it.
+    seek(&ui, id, 20.0);
+    ui.click("player1.phrase.kind2");
+    let stored = ui.fx.lib().analysis(id).unwrap().phrases;
+    assert_eq!(
+        stored.iter().map(|p| (p.start_beat / 4, p.end_beat / 4, p.kind)).collect::<Vec<_>>(),
+        [(0, 8, Intro), (8, 20, Chorus)],
+        "nothing else changes"
+    );
+    assert_eq!((stored[0].confidence, stored[1].confidence), (Some(0.9), None));
+    assert_eq!(marks(&ui)[1], (false, String::new()), "the mark goes");
+    assert!(!ui.has("player1.phrase.unsure1"));
+    assert!(!ui.value("player1.phrase.hint").contains('%'));
+    ui.app.undo();
+    ui.pump(50);
+    assert_eq!(marks(&ui)[1].0, true, "undo brings the mark back");
 }
 
 /// EDIT tab: IN / OUT at the cursor and TRIM render a new WAV with only the

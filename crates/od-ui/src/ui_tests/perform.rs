@@ -207,11 +207,7 @@ fn platter_readout_counts_bars() {
         ui.wait_until(10.0, |u| super::flows::deck_views(u)[0].beat_pos != first),
         "counter runs"
     );
-    let phrases = [od_core::Phrase {
-        start_beat: 0,
-        end_beat: 64,
-        kind: od_core::PhraseKind::Chorus,
-    }];
+    let phrases = [od_core::Phrase::new(0, 64, od_core::PhraseKind::Chorus)];
     assert_eq!(crate::decks::phrase_now(&phrases, 32.0), "CHORUS -7.4");
     assert_eq!(crate::decks::phrase_now(&phrases, 70.0), "");
 }

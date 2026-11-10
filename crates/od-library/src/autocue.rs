@@ -446,11 +446,7 @@ mod tests {
     fn phrases(sections: &[(u32, u32, PhraseKind)]) -> Vec<Phrase> {
         sections
             .iter()
-            .map(|(s, e, k)| Phrase {
-                start_beat: 2 + s * 4,
-                end_beat: 2 + e * 4,
-                kind: *k,
-            })
+            .map(|(s, e, k)| Phrase::new(2 + s * 4, 2 + e * 4, *k))
             .collect()
     }
 

@@ -58,7 +58,11 @@ pub(crate) fn phrase_at(phrases: &[Phrase], beat: u32) -> Option<usize> {
 pub(crate) fn set_kind(phrases: &[Phrase], beat: u32, kind: PhraseKind, total: u32) -> Vec<Phrase> {
     let mut v = sorted(phrases);
     match phrase_at(&v, beat) {
-        Some(i) => v[i].kind = kind,
+        // Picking a type confirms the phrase, even the type it had.
+        Some(i) => {
+            v[i].kind = kind;
+            v[i].confidence = None;
+        }
         None => {
             let start = v
                 .iter()
@@ -73,11 +77,7 @@ pub(crate) fn set_kind(phrases: &[Phrase], beat: u32, kind: PhraseKind, total: u
                 .min()
                 .unwrap_or(total);
             if end > start {
-                v.push(Phrase {
-                    start_beat: start,
-                    end_beat: end,
-                    kind,
-                });
+                v.push(Phrase::new(start, end, kind));
                 v.sort_by_key(|p| p.start_beat);
             }
         }
@@ -107,12 +107,9 @@ pub(crate) fn cut(phrases: &[Phrase], beat: u32) -> Option<Vec<Phrase>> {
         .map(|d| KINDS[(at + d) % KINDS.len()])
         .find(|k| Some(*k) != following)
         .unwrap_or(kind);
-    let tail = Phrase {
-        start_beat: beat,
-        end_beat: v[i].end_beat,
-        kind: next,
-    };
+    let tail = Phrase::new(beat, v[i].end_beat, next);
     v[i].end_beat = beat;
+    v[i].confidence = None;
     v.insert(i + 1, tail);
     Some(v)
 }
@@ -131,15 +128,7 @@ pub(crate) fn move_boundary(phrases: &[Phrase], beat: u32) -> Option<Vec<Phrase>
     }
     let out: Vec<Phrase> = v
         .iter()
-        .map(|p| Phrase {
-            start_beat: if p.start_beat == b {
-                beat
-            } else {
-                p.start_beat
-            },
-            end_beat: if p.end_beat == b { beat } else { p.end_beat },
-            kind: p.kind,
-        })
+        .map(|p| moved(p, b, beat))
         .collect();
     // Every phrase keeps its length and order.
     let ordered = out.iter().all(|p| p.end_beat > p.start_beat)
@@ -161,15 +150,24 @@ pub(crate) fn move_edge(phrases: &[Phrase], from: u32, to: u32) -> Option<Vec<Ph
     }
     let out: Vec<Phrase> = v
         .iter()
-        .map(|p| Phrase {
-            start_beat: if p.start_beat == b { to } else { p.start_beat },
-            end_beat: if p.end_beat == b { to } else { p.end_beat },
-            kind: p.kind,
-        })
+        .map(|p| moved(p, b, to))
         .collect();
     let ordered = out.iter().all(|p| p.end_beat > p.start_beat)
         && out.windows(2).all(|w| w[0].end_beat <= w[1].start_beat);
     ordered.then_some(out)
+}
+
+/// `p` with its edge at beat `b` moved to `to`; a phrase whose edge you
+/// moved counts as checked (no confidence value any more).
+fn moved(p: &Phrase, b: u32, to: u32) -> Phrase {
+    if p.start_beat != b && p.end_beat != b {
+        return *p;
+    }
+    Phrase::new(
+        if p.start_beat == b { to } else { p.start_beat },
+        if p.end_beat == b { to } else { p.end_beat },
+        p.kind,
+    )
 }
 
 /// The phrase at `beat` and the one right after it become one phrase of
@@ -179,6 +177,7 @@ pub(crate) fn merge(phrases: &[Phrase], beat: u32) -> Option<Vec<Phrase>> {
     let i = phrase_at(&v, beat)?;
     let next = v.get(i + 1).filter(|n| n.start_beat == v[i].end_beat)?.end_beat;
     v[i].end_beat = next;
+    v[i].confidence = None;
     v.remove(i + 1);
     Some(v)
 }
@@ -343,6 +342,16 @@ pub(crate) fn current_label(phrases: &[Phrase], grid: &Beatgrid, cursor: f64) ->
         .unwrap_or("")
 }
 
+/// How sure the analysis was of the phrase at the cursor when it was
+/// unsure ("41 %"), else "".
+pub(crate) fn current_unsure(phrases: &[Phrase], grid: &Beatgrid, cursor: f64) -> String {
+    grid.beat_position(cursor)
+        .map(|b| b.floor().max(0.0) as u32)
+        .and_then(|b| phrase_at(phrases, b))
+        .map(|i| crate::key_mix::unsure_text(phrases[i].confidence))
+        .unwrap_or_default()
+}
+
 pub(crate) fn wire(app: &Rc<App>) {
     let pe = app.ui.global::<crate::PhraseEdit>();
     pe.set_kinds(crate::models::model(
@@ -401,11 +410,7 @@ mod tests {
     use PhraseKind::*;
 
     fn p(s: u32, e: u32, kind: PhraseKind) -> Phrase {
-        Phrase {
-            start_beat: s * 4,
-            end_beat: e * 4,
-            kind,
-        }
+        Phrase::new(s * 4, e * 4, kind)
     }
 
     #[test]
@@ -418,20 +423,36 @@ mod tests {
         // After the last one: up to the end of the grid; without phrases: all of it.
         assert_eq!(
             set_kind(&v, 70 * 4, Outro, 400)[2],
-            Phrase {
-                start_beat: 64 * 4,
-                end_beat: 400,
-                kind: Outro
-            }
+            Phrase::new(64 * 4, 400, Outro)
         );
         assert_eq!(
             set_kind(&[], 10, Up, 128),
-            vec![Phrase {
-                start_beat: 0,
-                end_beat: 128,
-                kind: Up
-            }]
+            vec![Phrase::new(0, 128, Up)]
         );
+    }
+
+    /// A phrase you touched counts as checked: its unsure mark goes; the
+    /// others keep theirs.
+    #[test]
+    fn edits_confirm_the_phrases_they_touch() {
+        let unsure = |s, e, k| Phrase {
+            confidence: Some(0.3),
+            ..p(s, e, k)
+        };
+        let v = [unsure(0, 16, Intro), unsure(16, 48, Chorus), unsure(48, 64, Outro)];
+        // Picking the type it already has confirms it.
+        let k = set_kind(&v, 20 * 4, Chorus, 256);
+        assert_eq!(k[1].confidence, None);
+        assert_eq!((k[0].confidence, k[2].confidence), (Some(0.3), Some(0.3)));
+        // A moved edge confirms both phrases on it.
+        let m = move_boundary(&v, 20 * 4).unwrap();
+        assert_eq!((m[0].confidence, m[1].confidence), (None, None));
+        assert_eq!(m[2].confidence, Some(0.3));
+        let c = cut(&v, 32 * 4).unwrap();
+        assert_eq!((c[1].confidence, c[2].confidence), (None, None));
+        let j = merge(&v, 0).unwrap();
+        assert_eq!(j[0].confidence, None);
+        assert_eq!(j[1].confidence, Some(0.3));
     }
 
     #[test]

@@ -924,11 +924,7 @@ mod tests {
         use od_core::PhraseKind::*;
         let mut lib = Library::open_in_memory().unwrap();
         let a = track(&mut lib, "Phrased", Some(120.0), None);
-        let p = |s: u32, e: u32, kind| Phrase {
-            start_beat: s * 4,
-            end_beat: e * 4,
-            kind,
-        };
+        let p = |s: u32, e: u32, kind| Phrase::new(s * 4, e * 4, kind);
         let analysed = TrackAnalysis {
             phrases: vec![p(0, 16, Intro), p(16, 48, Chorus)],
             ..Default::default()

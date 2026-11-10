@@ -29,6 +29,10 @@ pub mod transients;
 pub mod waveform;
 
 #[cfg(test)]
+mod phrase_eval;
+#[cfg(test)]
+mod phrase_v1;
+#[cfg(test)]
 mod testsig;
 
 use od_core::TrackAnalysis;

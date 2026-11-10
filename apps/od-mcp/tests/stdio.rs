@@ -175,21 +175,9 @@ fn seed() -> Seed {
             beatgrid: Beatgrid::constant(bpm, 0.1, 1, 300.0),
             key: MusicalKey::parse(key),
             phrases: vec![
-                Phrase {
-                    start_beat: 0,
-                    end_beat: 64,
-                    kind: PhraseKind::Intro,
-                },
-                Phrase {
-                    start_beat: 64,
-                    end_beat: 320,
-                    kind: PhraseKind::Chorus,
-                },
-                Phrase {
-                    start_beat: 320,
-                    end_beat: 384,
-                    kind: PhraseKind::Outro,
-                },
+                Phrase::new(0, 64, PhraseKind::Intro),
+                Phrase::new(64, 320, PhraseKind::Chorus),
+                Phrase::new(320, 384, PhraseKind::Outro),
             ],
             loudness_lufs: Some(-8.5),
             peak: 0.98,

@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 275 features; 269 in scope: 269 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 276 features; 270 in scope: 270 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -103,7 +103,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Grid editor: tap tempo, type BPM | DONE | `crates/od-ui/src/player.rs::tap`, `crates/od-ui/src/player.rs::type_bpm`, `crates/od-ui/src/grid_edit.rs::tap`; EDIT GRID: the BPM field (Return) and TAP (from the fourth tap; T in the editor, B in Prepare) set the tempo about the cursor; while the preview plays the taps, snapped to the kicks, also set the phase; a locked grid is not changed | 4 |  |
 | BPM analysis range setting | DONE | Preferences ▸ Analysis BPM range (`preferences.rs` `bpm_range`) feeds the tempo analysis fold range | 1 | P3 |
 | Key detection, notation Camelot/Open Key/musical | DONE | `od-analysis/src/key.rs`; `--keys` flag, `KeyNotation` | 7 |  |
-| Phrase analysis | DONE | `anlz/build.rs`; Analysed (`od-analysis/src/phrase.rs`) and stored. Display: see `deck-phrase-display` | 2 |  |
+| Phrase analysis | DONE | `od-analysis/src/phrase_eval.rs`, `anlz/build.rs`; Analysed (`od-analysis/src/phrase.rs`) and stored: bar features from a spectrum, a self-similarity novelty curve, boundaries by dynamic programming with an 8/16/32-bar prior, labels by musical role (a track without breakdown or build gets no drop). Measured on 31 generated arrangements and a held-out variant (other seeds, saturation, noise, detected grid) against the earlier detector: boundaries within one bar 79 % to 99 %, labels 73 % to 99 %, fake drops 21 to 0; generated tracks, not records. Display: see `deck-phrase-display` | 5 |  |
 | Waveform: own 3-band colour | DONE | `od-analysis/src/waveform.rs`, `render.rs` (+ colour-blind palette) | 4 |  |
 | Waveform style options (RGB / blue / 3-band) | DONE | `PWAV/PWV2–PWV7`; Preferences ▸ View ▸ Waveform colour: 3-band (low / mid / high stacked), blue, or RGB (one envelope, hue from the band balance) | 2 | P3 |
 | Vocal position | DONE | Derived from the separated vocal part when a track has parts: spans where the vocals sing are drawn as a band along the top of the deck overview | 2 | P3 |
@@ -113,6 +113,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | BPM range presets for tempo detection (70–180, 58–115, 98–195, 118–236, 150–300) | DONE | `settings.rs::BPM_RANGES`, `preferences.rs::bpm_choices`, `workers.rs::AnalysisControl`, `tempo.rs::sanitize_range`; Preferences > Analysis offers five BPM ranges (70–180 is the default), used for new analyses and for analysing a track again. A range stored by an older version stays selected and in use until another is chosen | 2 | P2 |
 | Tempos up to 300 BPM without halving, with the active range shown | DONE | `tempo.rs::refine_tempo`, `settings.rs::BPM_RANGES`, `shell.rs::bpm_range_text`; Roadmap [57]. BPM range 150–300 in Preferences > Analysis; generated click, kick, kick-and-snare and house loops at 170, 200, 220, 250 and 280 BPM read as played in every range that holds them. The active range shows in the Prepare player's INFO tab and beside the analysis progress. Not yet checked on a set of real hardcore or speedcore records | 2 | P2 |
 | Confidence for key and grid analysis with a one-button fix | DONE | `od_core::AnalysisConfidence`, `key.rs::ranked_key`, `tempo.rs::grid_confidence`; Roadmap [62]. The key detection reports its lead over the runner-up, the grid its share of beats on a hit (lower when half / double was close). Prepare's INFO tab shows both in percent beside BPM and KEY, an unsure one with a half-height sodium line and USE for the likely key or tempo (your key, or the grid at half / double; one undo step) and ANALYSE AGAIN; an unsure key shows its percent under the deck's KEY. Analyses from before this version show none until analysed again | 5 | P2 |
+| Confidence per phrase, unsure phrases marked in Prepare | DONE | `od_core::Phrase::confidence`, `phrase.rs::label`, `ui/player.slint::PhraseStrip`; Roadmap [62] for phrases. Each analysed phrase says how sure the analysis is: the weaker of how clear its boundaries are and how clearly its type tests pass. Below 50 % the Prepare phrase strip marks it with a half-height sodium line (as an unsure key) and its percent on hover, and the PHRASE tab says UNSURE with the percent while the cursor is in it; picking its type, cutting, merging or moving an edge confirms it (one undo step). Phrases set by hand, imported or from older analyses carry no value and count as sure | 6 | P3 |
 
 ## 3. Cues and loops
 
@@ -384,13 +385,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 269 |
+| DONE | 270 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **275** |
+| **Total** | **276** |
 
 ## P1 gaps and implementation notes
 

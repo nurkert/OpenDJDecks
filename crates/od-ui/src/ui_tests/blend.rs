@@ -30,7 +30,7 @@ fn analysed(fx: &Fixture, title: &str, secs: f32, pitch: f32, phrases: &[(u32, u
         beatgrid: Beatgrid::constant(120.0, 0.0, 1, secs as f64),
         phrases: phrases
             .iter()
-            .map(|&(s, e, kind)| Phrase { start_beat: s * 4, end_beat: e * 4, kind })
+            .map(|&(s, e, kind)| Phrase::new(s * 4, e * 4, kind))
             .collect(),
         ..Default::default()
     };
