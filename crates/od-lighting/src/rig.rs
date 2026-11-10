@@ -8,7 +8,7 @@
 //! so the app never reads half a command. The app takes them in order and
 //! deletes them.
 
-use crate::{FixtureDef, FixtureRole, OutputKind, Patch, Patched};
+use crate::{FixtureDef, FixtureRole, OutputKind, Patch};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -100,14 +100,25 @@ pub fn add_fixture(
     name: &str,
     group: &str,
 ) -> Result<usize, crate::Error> {
+    add_fixtures(patch, type_index, 1, None, None, name, group).map(|r| r.start)
+}
+
+/// Patches `count` fixtures of a built-in type one after another from
+/// `start` on `universe` (each `None` = the first free run). The group
+/// defaults to the type's role, names to "Model n".
+pub fn add_fixtures(
+    patch: &mut Patch,
+    type_index: usize,
+    count: u16,
+    universe: Option<u16>,
+    start: Option<u16>,
+    name: &str,
+    group: &str,
+) -> Result<std::ops::Range<usize>, crate::Error> {
     let kind = FixtureDef::BUILTIN
         .get(type_index)
         .ok_or_else(|| crate::Error::Fixture("unknown type".into()))?;
     let def = FixtureDef::builtin(kind).expect("built-in");
-    let len = def.channels.len() as u16;
-    let (universe, address) = (0..16u16)
-        .find_map(|u| patch.next_free(u, len).map(|a| (u, a)))
-        .ok_or_else(|| crate::Error::Patch("no free DMX address".into()))?;
     let group = if group.trim().is_empty() {
         match def.role() {
             FixtureRole::Mover => "Movers",
@@ -119,28 +130,7 @@ pub fn add_fixture(
     } else {
         group.trim().to_string()
     };
-    let name = if name.trim().is_empty() {
-        format!(
-            "{} {}",
-            def.model,
-            patch
-                .fixtures
-                .iter()
-                .filter(|f| f.def.model == def.model)
-                .count()
-                + 1
-        )
-    } else {
-        name.trim().to_string()
-    };
-    patch.add(Patched {
-        name,
-        def,
-        universe,
-        address,
-        group,
-        invert_pan: false,
-    })
+    patch.add_many(&def, count, universe, start, name, &group)
 }
 
 /// Output from the view's kind and target text (pure).

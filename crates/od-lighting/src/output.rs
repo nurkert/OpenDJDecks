@@ -165,6 +165,111 @@ impl Output {
     }
 }
 
+/// Anything a universe can be sent through: a real [`Output`] or, in tests
+/// and for the fault hook, a stand-in.
+pub trait Link: Send {
+    fn send(&mut self, data: &Universe) -> std::io::Result<()>;
+}
+
+impl Link for Output {
+    fn send(&mut self, data: &Universe) -> std::io::Result<()> {
+        Output::send(self, data)
+    }
+}
+
+/// Opens the link for an output kind (injectable for tests).
+pub type Opener = Box<dyn FnMut(&OutputKind) -> std::io::Result<Box<dyn Link>> + Send>;
+
+/// Opens real outputs. When `OPENDJDECKS_DMX_FAULT` names a file, every
+/// link fails (on open and on send) while that file exists: a fault hook
+/// to show and test a lost interface without pulling a cable.
+pub fn default_opener() -> Opener {
+    let fault = od_core::env::var_os("DMX_FAULT").map(std::path::PathBuf::from);
+    Box::new(move |kind: &OutputKind| -> std::io::Result<Box<dyn Link>> {
+        let out = Box::new(Output::open(kind.clone())?);
+        match &fault {
+            Some(path) => {
+                if path.exists() {
+                    return Err(fault_error());
+                }
+                Ok(Box::new(FaultHook {
+                    inner: out,
+                    path: path.clone(),
+                }))
+            }
+            None => Ok(out),
+        }
+    })
+}
+
+fn fault_error() -> std::io::Error {
+    std::io::Error::new(
+        std::io::ErrorKind::NotConnected,
+        "interface unplugged (fault hook)",
+    )
+}
+
+struct FaultHook {
+    inner: Box<dyn Link>,
+    path: std::path::PathBuf,
+}
+
+impl Link for FaultHook {
+    fn send(&mut self, data: &Universe) -> std::io::Result<()> {
+        if self.path.exists() {
+            return Err(fault_error());
+        }
+        self.inner.send(data)
+    }
+}
+
+/// A link for tests: records frames, and fails while `unplugged` is set
+/// (opening fails too, like a missing USB device).
+#[derive(Clone, Default)]
+pub struct TestLink {
+    pub unplugged: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    pub frames: std::sync::Arc<std::sync::Mutex<Vec<Universe>>>,
+}
+
+impl TestLink {
+    pub fn set_unplugged(&self, on: bool) {
+        self.unplugged
+            .store(on, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// Last frame received.
+    pub fn last(&self) -> Option<Universe> {
+        self.frames.lock().ok().and_then(|f| f.last().copied())
+    }
+
+    pub fn count(&self) -> usize {
+        self.frames.lock().map(|f| f.len()).unwrap_or(0)
+    }
+
+    /// An opener that hands out this link.
+    pub fn opener(&self) -> Opener {
+        let link = self.clone();
+        Box::new(move |_: &OutputKind| -> std::io::Result<Box<dyn Link>> {
+            if link.unplugged.load(std::sync::atomic::Ordering::SeqCst) {
+                return Err(fault_error());
+            }
+            Ok(Box::new(link.clone()))
+        })
+    }
+}
+
+impl Link for TestLink {
+    fn send(&mut self, data: &Universe) -> std::io::Result<()> {
+        if self.unplugged.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(fault_error());
+        }
+        if let Ok(mut f) = self.frames.lock() {
+            f.push(*data);
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
