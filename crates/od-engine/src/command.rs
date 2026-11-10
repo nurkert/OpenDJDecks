@@ -30,6 +30,10 @@ pub enum Command {
     },
     /// Multi mode of a Tempo FX unit: three effects in a chain.
     SetTempoFxMulti(usize, bool),
+    /// Every effect off at once: both Tempo FX units with their slots and
+    /// tails, exit FX, Hold FX and the channel FX knobs (a 5 ms fade, then
+    /// silence in every effect path).
+    FxPanic,
     /// Hold FX of mixer channel `0..decks` (an FX unit of its own per
     /// channel, independent of the two Tempo FX units).
     HoldFx(usize, HoldFxCommand),
@@ -607,6 +611,26 @@ pub enum ExitFxKind {
     EchoOut,
 }
 
+/// What rings out after a Tempo FX switches off (kinds with their own
+/// tail, such as echo and reverb, ring out anyway).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum FxTail {
+    #[default]
+    Off,
+    /// The effect's sound at release repeats every beat and fades.
+    Echo,
+    /// The effect's sound at release blooms into a reverb and fades.
+    Reverb,
+}
+
+impl FxTail {
+    pub const ALL: [FxTail; 3] = [FxTail::Off, FxTail::Echo, FxTail::Reverb];
+
+    pub const fn index(self) -> usize {
+        self as usize
+    }
+}
+
 /// Where a Tempo FX unit is inserted.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum FxTarget {
@@ -641,6 +665,13 @@ pub enum TempoFxCommand {
         beats: f32,
         on: bool,
     },
+    /// What rings out after the effect switches off.
+    SetTail(FxTail),
+    /// A build-up locked to the grid: switches to [`TempoFxKind::BuildUp`]
+    /// and on, and rises until the next line of `bars` bars (8, 16 or 32;
+    /// with less than a bar to go, the one after), where it switches off
+    /// for the drop. `bars` 0 cancels.
+    BuildUp { bars: u8 },
 }
 
 /// What a Hold FX pad does.
