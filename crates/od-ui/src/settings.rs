@@ -147,6 +147,14 @@ pub struct AudioSettings {
     pub headphones: String,
 }
 
+/// What the gig preset replaced, restored when it is switched off.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GigRestore {
+    pub high_contrast: bool,
+    pub colorblind_safe: bool,
+    pub scale: f32,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ViewSettings {
@@ -158,6 +166,9 @@ pub struct ViewSettings {
     pub scale: f32,
     pub colorblind_safe: bool,
     pub high_contrast: bool,
+    /// The gig preset is on: high contrast, colour-blind palette and a larger
+    /// interface; holds the values to go back to when it is switched off.
+    pub gig_restore: Option<GigRestore>,
     pub reduced_motion: bool,
     /// "dark", "light" or "system" (follow the OS appearance).
     pub appearance: String,
@@ -401,6 +412,7 @@ impl Default for ViewSettings {
             scale: 1.0,
             colorblind_safe: false,
             high_contrast: false,
+            gig_restore: None,
             reduced_motion: false,
             appearance: "dark".into(),
             waveform: "3band".into(),

@@ -16,46 +16,136 @@ component ModeTab inherits Rectangle {
     in property <string> command;
     callback clicked();
     min-width: t.preferred-width + (root.narrow ? 18px : 32px);
-    background: root.current ? Theme.plate : touch.has-hover ? Theme.ground-band : transparent;
+    // One segmented control: the current mode is the filled segment.
     Rectangle {
-        y: parent.height - 2px; height: 2px;
-        background: root.current ? Theme.attention : transparent;
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: root.current ? Theme.bone : touch.pressed || touch.has-hover ? Theme.plate-raised : Theme.plate;
     }
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: 13px; font-weight: 600; letter-spacing: root.narrow ? 1.2px : 2.4px;
-        color: root.current ? Theme.bone : Theme.bone-3;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: root.narrow ? 1.2px : 2.4px;
+        color: root.current ? Theme.ground : touch.has-hover ? Theme.bone : Theme.bone-2;
+        vertical-alignment: center;
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
-// Panel switch in the bar (FX, SAMPLER): an outlined label whose line
-// lights while the panel is open.
+// Panel switch in the bar: an ash plate, filled while the panel is open, in
+// red while recording. The legend stays.
 component PanelToggle inherits Rectangle {
     in property <bool> narrow;
     in property <string> label;
     in property <bool> on;
+    in property <bool> running;
     in property <string> tooltip;
     in property <string> command;
     // Smallest width (44 px touch keys in the kiosk) and availability.
     in property <length> min-w: 0px;
     in property <bool> enabled: true;
     callback clicked();
-    width: max(root.min-w, t.preferred-width + (root.narrow ? 14px : 22px));
+    width: max(root.min-w, t.preferred-width + (root.narrow ? 12px : 22px));
     Rectangle {
-        y: 9px; height: parent.height - 18px;
-        border-width: 1px;
-        border-color: root.on ? Theme.attention.with-alpha(0.8) : Theme.rule-strong;
-        background: root.on ? Theme.attention.with-alpha(0.14) : touch.has-hover ? Theme.plate : transparent;
-        Rectangle { y: 0; height: 2px; background: root.on ? Theme.attention : transparent; }
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: Theme.face(root.enabled, touch.pressed, touch.has-hover, false, root.on || root.running, root.running ? Theme.fault : Theme.setup-on);
+        animate background { duration: Theme.motion ? 90ms : 0ms; }
     }
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.6px;
-        color: !root.enabled ? Theme.bone-3.with-alpha(0.55) : root.on ? Theme.bone : touch.has-hover ? Theme.bone : Theme.bone-2;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: root.narrow ? 0.6px : 1.6px;
+        color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, false, root.on || root.running);
         horizontal-alignment: center; vertical-alignment: center;
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
+}
+
+// The gig preset: high contrast, colour-blind palette and interface scale in
+// one step (set from Rust).
+export global Gig {
+    in property <bool> active;
+    in property <bool> contrast;
+    in property <bool> colorblind;
+    // Index into 100, 125, 150 %; -1 = another stored scale.
+    in property <int> scale: 0;
+    callback act(string);
+}
+
+// GIG in the bar: a click switches the preset, the arrow opens its parts.
+component GigKey inherits Rectangle {
+    in property <bool> narrow;
+    width: l.preferred-width + 32px;
+    Rectangle {
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: Theme.face(true, tog.pressed, tog.has-hover || open.has-hover, false, Gig.active, Theme.setup-on);
+    }
+    l := Text {
+        x: 10px; height: parent.height;
+        text: @tr("GIG");
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: Theme.ink(true, tog.pressed, tog.has-hover, false, Gig.active);
+        vertical-alignment: center;
+    }
+    Text {
+        x: parent.width - 16px; height: parent.height; text: "▾"; font-size: Theme.label; vertical-alignment: center;
+        color: Theme.ink(true, open.pressed, open.has-hover, false, Gig.active);
+    }
+    tog := TipArea {
+        accessible-role: button; accessible-label: "topbar.gig"; accessible-checkable: true; accessible-checked: Gig.active;
+        width: parent.width - 18px; x: 0;
+        tooltip: Gig.active ? @tr("Gig preset on: click to go back to your settings") : @tr("Gig preset: high contrast, colour-blind palette and a larger interface in one click");
+        mouse-cursor: pointer;
+        clicked => { Gig.act("toggle"); }
+    }
+    open := TipArea {
+        accessible-role: button; accessible-label: "topbar.gig.menu";
+        x: parent.width - 18px; width: 18px;
+        tooltip: @tr("Gig preset: contrast, palette and interface scale");
+        mouse-cursor: pointer;
+        clicked => { pop.show(); }
+    }
+    pop := PopupWindow {
+        x: PopupPlace.x(root.absolute-position.x, 0, 240px);
+        y: PopupPlace.y(root.absolute-position.y, root.height + 2px, -pop-body.preferred-height - 2px, pop-body.preferred-height);
+        width: 240px; height: pop-body.preferred-height;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Theme.plate; border-radius: Theme.r-overlay;
+            pop-body := VerticalLayout {
+                padding: Theme.s3; spacing: Theme.s2;
+                Text {
+                    text: @tr("Gig preset");
+                    font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone;
+                }
+                Text {
+                    text: @tr("High contrast, the colour-blind palette and a larger interface, in one step.");
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; wrap: word-wrap;
+                }
+                PlateButton {
+                    accessible-role: button; accessible-label: "topbar.gig.toggle"; accessible-checkable: true; accessible-checked: Gig.active;
+                    label: Gig.active ? @tr("TURN GIG PRESET OFF") : @tr("TURN GIG PRESET ON");
+                    selected: Gig.active;
+                    clicked => { Gig.act("toggle"); }
+                }
+                HorizontalLayout {
+                    spacing: Theme.key-gap;
+                    PlateButton { accessible-role: checkbox; accessible-label: "topbar.gig.contrast"; accessible-checkable: true; accessible-checked: Gig.contrast; horizontal-stretch: 1; compact: true; label: @tr("HIGH CONTRAST"); selected: Gig.contrast; clicked => { Gig.act("contrast"); } }
+                    PlateButton { accessible-role: checkbox; accessible-label: "topbar.gig.colorblind"; accessible-checkable: true; accessible-checked: Gig.colorblind; horizontal-stretch: 1; compact: true; label: @tr("COLOUR-BLIND"); selected: Gig.colorblind; clicked => { Gig.act("colorblind"); } }
+                }
+                HorizontalLayout {
+                    spacing: Theme.key-gap;
+                    Caps { text: @tr("SCALE"); vertical-alignment: center; }
+                    Rectangle { width: Theme.s2; }
+                    for s[i] in ["100%", "125%", "150%"]: PlateButton {
+                        accessible-role: button; accessible-label: "topbar.gig.scale." + i; compact: true; horizontal-stretch: 1;
+                        label: s; selected: Gig.scale == i;
+                        clicked => { Gig.act("scale:" + i); }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Picture of a Perform view in the layout menu: deck lanes as bars
@@ -66,11 +156,11 @@ component ViewIcon inherits Rectangle {
     width: 22px; height: 16px;
     property <int> n: root.view == "4h" || root.view == "4v" ? 4 : 2;
     if root.view == "2h" || root.view == "4h": VerticalLayout {
-        alignment: center; spacing: root.n == 4 ? 2px : 4px;
+        alignment: center; spacing: root.n == 4 ? Theme.key-gap : Theme.s1;
         for i in root.n: Rectangle { height: 2px; background: root.tone; }
     }
     if root.view == "2v" || root.view == "4v": HorizontalLayout {
-        alignment: center; spacing: root.n == 4 ? 3px : 6px;
+        alignment: center; spacing: root.n == 4 ? Theme.key-gap : Theme.s2;
         for i in root.n: Rectangle { width: 2px; background: root.tone; }
     }
     if root.view == "browse": Rectangle {
@@ -89,13 +179,13 @@ component ViewMenu inherits Rectangle {
     property <string> current: root.layout == "browse" ? "browse" : (root.deck-count >= 4 ? "4" : "2") + (root.layout == "vertical" ? "v" : "h");
     width: max(root.narrow ? 52px : 64px, row.preferred-width + (root.narrow ? 14px : 22px));
     Rectangle {
-        y: 9px; height: parent.height - 18px;
-        border-width: 1px; border-color: touch.has-hover ? Theme.rule-strong : Theme.rule;
-        background: touch.has-hover ? Theme.plate : transparent;
+        y: Theme.s2; height: parent.height - 2 * Theme.s2;
+        border-radius: Theme.r-control;
+        background: touch.has-hover ? Theme.plate-raised : Theme.plate;
         row := HorizontalLayout {
-            alignment: center; spacing: 6px;
+            alignment: center; spacing: Theme.s2;
             VerticalLayout { alignment: center; ViewIcon { view: root.current; tone: Theme.bone; } }
-            Text { text: "▾"; font-size: 9px; color: Theme.bone-2; vertical-alignment: center; }
+            Text { text: "▾"; font-size: Theme.label; color: Theme.bone-2; vertical-alignment: center; }
         }
     }
     touch := TipArea {
@@ -109,9 +199,9 @@ component ViewMenu inherits Rectangle {
         y: PopupPlace.y(root.absolute-position.y, root.height - 6px, -5 * 36px - 2px, 5 * 36px + 2px);
         width: 220px; height: 5 * 36px + 2px;
         Rectangle {
-            background: Theme.plate; border-width: 1px; border-color: Theme.rule-strong;
+            background: Theme.plate; border-radius: Theme.r-control;
             VerticalLayout {
-                padding: 1px;
+                padding: Theme.key-gap;
                 for v in [
                     { id: "2h", label: @tr("2 Decks · horizontal") },
                     { id: "2v", label: @tr("2 Decks · vertical") },
@@ -124,11 +214,11 @@ component ViewMenu inherits Rectangle {
                     height: 36px;
                     background: vi.has-hover ? Theme.plate-raised : transparent;
                     HorizontalLayout {
-                        padding-left: 10px; padding-right: 12px; spacing: 10px;
-                        Text { width: 10px; text: root.current == v.id ? "✓" : ""; font-size: 12px; color: Theme.attention; vertical-alignment: center; }
+                        padding-left: Theme.s3; padding-right: Theme.s3; spacing: Theme.s3;
+                        Text { width: 10px; text: root.current == v.id ? "✓" : ""; font-size: Theme.control; color: Theme.attention; vertical-alignment: center; }
                         VerticalLayout { alignment: center; ViewIcon { view: v.id; tone: root.current == v.id ? Theme.attention : Theme.bone-2; } }
                         Text {
-                            text: v.label; font-family: Theme.family; font-size: 12px; font-weight: 600;
+                            text: v.label; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
                             color: root.current == v.id ? Theme.bone : Theme.bone-2; vertical-alignment: center;
                         }
                     }
@@ -188,7 +278,6 @@ export component TopBar inherits Rectangle {
     callback window-drag();
     callback window-zoom();
     height: 44px;
-    background: Theme.ground;
 
     // Under everything else: the bar's own background takes the window
     // drag (the keys on top keep their clicks).
@@ -209,18 +298,18 @@ export component TopBar inherits Rectangle {
         }
 
         HorizontalLayout {
-            padding-left: 16px + root.chrome-inset;
-            padding-right: 12px;
+            padding-left: Theme.s4 + root.chrome-inset;
+            padding-right: Theme.s3;
             spacing: 0px;
             // Brand on the rail.
             Rectangle {
-                width: root.narrow ? 124px : 196px;
+                width: root.narrow ? 132px : 196px;
                 VLine { x: 12px; y: 10px; height: parent.height - 20px; weight: 1px; tone: Theme.rule-strong; }
                 Rectangle { x: 9px; y: 6px; width: 7px; height: 7px; border-radius: 3.5px; border-width: 1px; border-color: Theme.bone-3; }
                 Text {
                     x: 28px; height: parent.height;
                     text: "OPENDJDECKS";
-                    font-family: Theme.family; font-size: root.narrow ? 12px : 16px; font-weight: 600; letter-spacing: root.narrow ? 0.8px : 2.2px;
+                    font-family: Theme.family; font-size: root.narrow ? Theme.control : Theme.body; font-weight: Theme.weight-semi; letter-spacing: root.narrow ? 0.4px : 2.2px;
                     color: Theme.bone; vertical-alignment: center;
                 }
             }
@@ -239,13 +328,13 @@ export component TopBar inherits Rectangle {
                 accessible-label: "topbar.mode.lighting"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
                 label: @tr("LIGHTING"); tooltip: @tr("Lighting: DMX rig and light show"); command: "mode.lighting"; current: root.mode == "lighting"; clicked => { root.set-mode("lighting"); } }
-            Rectangle { width: 24px; }
+            Rectangle { width: root.narrow ? Theme.s2 : Theme.s5; }
             if root.mode == "perform" && !root.kiosk: ViewMenu {
                 narrow: root.narrow;
                 deck-count: root.deck-count; layout: PerformLayout.layout;
                 chose(v) => { root.set-perform-view(v); }
             }
-            if root.mode == "perform" && !root.kiosk: Rectangle { width: 12px; }
+            if root.mode == "perform" && !root.kiosk: Rectangle { width: Theme.s3; }
             if root.mode == "prepare" && !root.kiosk: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.layout"; accessible-role: button;
@@ -255,7 +344,7 @@ export component TopBar inherits Rectangle {
                 tooltip: @tr("Next Prepare layout: player, 2 players, dual, simple, full browser");
                 clicked => { root.cycle-layout(); }
             }
-            if root.mode == "prepare" && !root.kiosk: Rectangle { width: 12px; }
+            if root.mode == "prepare" && !root.kiosk: Rectangle { width: Theme.s3; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.club"; accessible-role: button;
@@ -269,7 +358,7 @@ export component TopBar inherits Rectangle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.light"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: self.on;
-                label: "LIGHT"; on: Lighting.panel;
+                label: root.narrow ? @tr("STRIP") : @tr("LIGHT STRIP"); on: Lighting.panel;
                 tooltip: Lighting.panel ? @tr("Hide the lighting strip") : @tr("Show the lighting strip");
                 command: "perform.light.panel";
                 clicked => { Lighting.panel = !Lighting.panel; }
@@ -283,7 +372,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.fx.panel";
                 clicked => { root.toggle-fx-panel(); }
             }
-            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.mix-preview"; accessible-role: button;
@@ -293,7 +382,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.mix-preview.panel";
                 clicked => { root.toggle-mix-preview-panel(); }
             }
-            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.sampler"; accessible-role: button;
@@ -303,7 +392,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.sampler.panel";
                 clicked => { root.toggle-sampler-panel(); }
             }
-            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
                 accessible-label: "topbar.toggle.mixer"; accessible-role: button;
@@ -313,7 +402,7 @@ export component TopBar inherits Rectangle {
                 command: "perform.mixer.panel";
                 clicked => { root.toggle-mixer-panel(); }
             }
-            if root.show-panels: Rectangle { width: 6px; }
+            if root.show-panels: Rectangle { width: root.narrow ? Theme.key-gap : Theme.s2; }
             // Recording section (Perform) / recording bar (Prepare); while
             // recording it shows the elapsed time.
             if !root.kiosk: PanelToggle {
@@ -323,25 +412,28 @@ export component TopBar inherits Rectangle {
                 accessible-value: root.recording ? root.recording-time : "";
                 label: root.recording ? @tr("REC {}", root.recording-time) : "REC";
                 on: root.rec-panel;
+                running: root.recording;
                 tooltip: root.rec-panel ? @tr("Hide the recording section") : @tr("Show the recording section: level, meter and the record button");
                 command: "view.panel.rec";
                 clicked => { root.toggle-rec-panel(); }
             }
-            Rectangle { width: 10px; }
+            Rectangle { width: Theme.s3; }
             Caps { text: root.status; vertical-alignment: center; horizontal-stretch: 1; min-width: 0px; overflow: elide; }
             // Controller state: a dot that lights while a MIDI controller is connected.
             Rectangle {
                 accessible-label: "topbar.status.midi"; accessible-role: text;
                 accessible-value: root.midi-device == "" ? "none" : root.midi-device;
-                width: mt.preferred-width + 30px;
+                width: root.narrow ? 20px : 66px;
                 Rectangle {
                     x: 8px; y: (parent.height - 6px) / 2; width: 6px; height: 6px; border-radius: 3px;
                     background: root.midi-device != "" ? Theme.live : transparent;
                     border-width: 1px; border-color: root.midi-device != "" ? Theme.live : Theme.bone-3;
                 }
-                mt := Caps { x: 20px; height: parent.height; text: "MIDI"; vertical-alignment: center; color: root.midi-device != "" ? Theme.bone : Theme.bone-3; }
+                if !root.narrow: Caps { x: 20px; height: parent.height; text: "MIDI"; vertical-alignment: center; color: root.midi-device != "" ? Theme.bone : Theme.bone-3; }
                 TipArea { tooltip: root.midi-device != "" ? @tr("Controller connected: {}", root.midi-device) : @tr("No controller connected"); }
             }
+            GigKey { narrow: root.narrow; }
+            Rectangle { width: Theme.s2; }
             // Appearance: moon (dark), sun (light), half disc (follow system);
             // a click moves on to the next mode.
             Rectangle {
@@ -373,14 +465,14 @@ export component TopBar inherits Rectangle {
                 Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "gear"; tone: gt.has-hover ? Theme.bone : Theme.bone-2; }
                 gt := TipArea { tooltip: @tr("Preferences"); command: "prefs.open"; mouse-cursor: pointer; clicked => { root.open-preferences(); } }
             }
-            Rectangle { width: 4px; }
+            Rectangle { width: Theme.s1; }
             if root.undo-label != "": Rectangle {
                 accessible-label: "topbar.undo"; accessible-role: button; accessible-value: root.undo-label;
                 width: u.preferred-width + 24px;
-                u := Caps { text: @tr("UNDO  {}  ⌘Z", root.undo-label); vertical-alignment: center; height: parent.height; }
+                u := Caps { text: root.narrow ? @tr("UNDO") : @tr("UNDO  {}  ⌘Z", root.undo-label); vertical-alignment: center; height: parent.height; }
                 TipArea { tooltip: @tr("Undo the last change"); command: "library.undo"; mouse-cursor: pointer; clicked => { root.undo(); } }
             }
-            Rectangle { width: 8px; }
+            Rectangle { width: Theme.s2; }
             // Master out: level meter, volume and the time of day.
             if !root.kiosk: Rectangle {
                 accessible-label: "topbar.master-meter"; accessible-role: progress-indicator;
@@ -392,9 +484,9 @@ export component TopBar inherits Rectangle {
                     width: parent.width * clamp(root.master-meter, 0, 1);
                     background: root.master-clip ? Theme.fault : root.master-meter > 0.8 ? Theme.attention : Theme.live;
                 }
-                Caps { y: parent.height / 2 + 4px; text: @tr("MASTER"); font-size: 8px; }
+                Caps { y: parent.height / 2 + 4px; text: @tr("MASTER"); font-size: Theme.label; }
             }
-            if !root.kiosk: Rectangle { width: 6px; }
+            if !root.kiosk: Rectangle { width: Theme.s2; }
             if !root.kiosk: VerticalLayout {
                 alignment: center;
                 Knob {
@@ -406,14 +498,14 @@ export component TopBar inherits Rectangle {
                     changed(v) => { root.set-master-level(v); }
                 }
             }
-            if !root.kiosk: Rectangle { width: 10px; }
+            if !root.kiosk: Rectangle { width: Theme.s3; }
             Text {
                 accessible-label: "topbar.clock"; accessible-role: text; accessible-value: self.text;
                 text: root.clock;
-                font-family: Theme.family; font-size: 13px; font-weight: 600; letter-spacing: 1px;
+                font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
                 color: Theme.bone-2; vertical-alignment: center;
             }
-            Rectangle { width: 4px; }
+            Rectangle { width: Theme.s1; }
             // Recording: always one click away, as on the hardware.
             if root.kiosk && (root.show-record || root.recording): Rectangle {
                 accessible-label: "topbar.record"; accessible-role: button;
@@ -422,19 +514,18 @@ export component TopBar inherits Rectangle {
                 width: rec.preferred-width + 44px;
                 Rectangle {
                     y: 8px; height: parent.height - 16px;
-                    border-width: 1px;
-                    border-color: root.recording ? Theme.fault : Theme.rule-strong;
-                    background: root.recording ? Theme.fault.with-alpha(0.12) : rt.has-hover ? Theme.plate : transparent;
+                    border-radius: Theme.r-control;
+                    background: Theme.face(true, rt.pressed, rt.has-hover, false, root.recording, Theme.fault);
                 }
                 Rectangle {
                     x: 12px; y: (parent.height - 8px) / 2; width: 8px; height: 8px; border-radius: 4px;
-                    background: root.recording ? Theme.fault : Theme.bone-3;
+                    background: Theme.ink(true, rt.pressed, rt.has-hover, false, root.recording);
                 }
                 rec := Text {
                     x: 28px; height: parent.height;
                     text: root.recording ? @tr("REC {}", root.recording-time) : @tr("RECORD");
-                    font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 1.8px;
-                    color: root.recording ? Theme.bone : Theme.bone-2; vertical-alignment: center;
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.8px;
+                    color: Theme.ink(true, rt.pressed, rt.has-hover, false, root.recording); vertical-alignment: center;
                 }
                 rt := TipArea { tooltip: root.recording ? @tr("Stop recording") : @tr("Record the master output"); command: "record.toggle"; mouse-cursor: pointer; clicked => { root.toggle-recording(); } }
             }
@@ -442,28 +533,27 @@ export component TopBar inherits Rectangle {
     }
     // ── Kiosk (800 × 480, controller first): 44 px keys, the rest in ⋯ ──
     if root.kiosk: HorizontalLayout {
-        padding-left: 8px; padding-right: 6px;
-        spacing: 4px;
+        padding-left: Theme.s2; padding-right: Theme.s2;
+        spacing: Theme.s1;
         // Work mode: one key; the list opens below it.
         Rectangle {
             accessible-label: "topbar.mode"; accessible-role: combobox; accessible-value: root.mode;
             width: max(84px, mk.preferred-width + 20px);
-            background: kmode.has-hover ? Theme.plate : transparent;
-            Rectangle { y: parent.height - 2px; height: 2px; background: Theme.attention; }
-            mk := Text { text: root.mode == "prepare" ? @tr("PREPARE") : root.mode == "lighting" ? @tr("LIGHTING") : @tr("PERFORM"); font-family: Theme.family; font-size: 12px; font-weight: 600; letter-spacing: 1.2px; color: Theme.bone; }
+            background: Theme.bone;
+            mk := Text { text: root.mode == "prepare" ? @tr("PREPARE") : root.mode == "lighting" ? @tr("LIGHTING") : @tr("PERFORM"); font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px; color: Theme.ground; }
             kmode := TipArea { tooltip: @tr("Work mode"); mouse-cursor: pointer; clicked => { modes.show(); } }
             modes := PopupWindow {
                 x: PopupPlace.x(parent.absolute-position.x, 0, 140px);
                 y: PopupPlace.y(parent.absolute-position.y, parent.height, -3 * 44px, 3 * 44px);
                 width: 140px; height: 3 * 44px;
                 Rectangle {
-                    background: Theme.plate; border-width: 1px; border-color: Theme.rule-strong;
+                    background: Theme.plate; border-radius: Theme.r-control;
                     VerticalLayout {
                         width: 140px;
                         for m[i] in [{ id: "prepare", label: @tr("PREPARE") }, { id: "perform", label: @tr("PERFORM") }, { id: "lighting", label: @tr("LIGHTING") }]: Rectangle {
                             height: 44px;
                             background: mi.has-hover ? Theme.plate-raised : transparent;
-                            Text { x: 12px; text: m.label; font-family: Theme.family; font-size: 12px; font-weight: 600; color: root.mode == m.id ? Theme.bone : Theme.bone-2; vertical-alignment: center; height: parent.height; }
+                            Text { x: 12px; text: m.label; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: root.mode == m.id ? Theme.bone : Theme.bone-2; vertical-alignment: center; height: parent.height; }
                             mi := TouchArea { clicked => { root.set-mode(m.id); modes.close(); } }
                         }
                     }
@@ -514,6 +604,7 @@ export component TopBar inherits Rectangle {
             narrow: true; min-w: 44px;
             label: root.recording ? @tr("REC {}", root.recording-time) : "REC";
             on: root.rec-panel;
+            running: root.recording;
             tooltip: root.rec-panel ? @tr("Hide the recording section") : @tr("Show the recording section: level, meter and the record button");
             clicked => { root.toggle-rec-panel(); }
         }
@@ -550,7 +641,7 @@ export component TopBar inherits Rectangle {
         Text {
             accessible-label: "topbar.clock"; accessible-role: text; accessible-value: self.text;
             text: root.clock;
-            font-family: Theme.family; font-size: 13px; font-weight: 600;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
             color: Theme.bone-2; vertical-alignment: center;
         }
         // Everything else of the bar: Club mode, lighting strip,
@@ -560,6 +651,7 @@ export component TopBar inherits Rectangle {
             Menu {
                 MenuItem { title: Club.enabled ? @tr("Back to the full deck controls") : @tr("Club mode"); enabled: root.show-panels; activated => { Club.set-enabled(!Club.enabled); } }
                 MenuItem { title: Lighting.panel ? @tr("Hide the lighting strip") : @tr("Show the lighting strip"); enabled: root.show-panels; activated => { Lighting.panel = !Lighting.panel; } }
+                MenuItem { title: Gig.active ? @tr("Gig preset: off") : @tr("Gig preset: on"); activated => { Gig.act("toggle"); } }
                 MenuItem { title: @tr("Appearance: dark, light or system"); activated => { root.cycle-appearance(); } }
                 MenuItem { title: @tr("Undo the last change"); enabled: root.undo-label != ""; activated => { root.undo(); } }
                 MenuItem { title: root.recording ? @tr("Stop recording") : @tr("Record the master output"); activated => { root.toggle-recording(); } }
@@ -567,10 +659,9 @@ export component TopBar inherits Rectangle {
             Rectangle {
                 accessible-label: "topbar.more"; accessible-role: button;
                 background: km.has-hover ? Theme.plate : transparent;
-                Text { text: "⋯"; font-family: Theme.family; font-size: 18px; font-weight: 600; color: Theme.bone-2; }
+                Text { text: "⋯"; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone-2; }
                 km := TipArea { tooltip: @tr("More"); mouse-cursor: pointer; clicked => { more.show({ x: 0, y: self.height }); } }
             }
         }
     }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }

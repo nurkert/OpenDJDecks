@@ -784,12 +784,12 @@ const DE: &[(&str, &str)] = &[
         "Das Bedienelement konnte nicht hinzugefügt werden: {}",
     ),
     (
-        "Parts are separated on a desktop computer; the stick brings them along",
+        "Stems are separated on a desktop computer; the stick brings them along",
         "Stems werden am Desktop-Rechner getrennt; der Stick bringt sie mit",
     ),
-    ("Parts ready for {} tracks", "Stems für {} Tracks bereit"),
+    ("Stems ready for {} tracks", "Stems für {} Tracks bereit"),
     (
-        "Parts ready for {} tracks, {} failed: {}",
+        "Stems ready for {} tracks, {} failed: {}",
         "Stems für {} Tracks bereit, {} fehlgeschlagen: {}",
     ),
     (
@@ -797,16 +797,16 @@ const DE: &[(&str, &str)] = &[
         "Wähle zuerst die zu trennenden Tracks",
     ),
     (
-        "Separating parts: {} of {} tracks …",
+        "Separating stems: {} of {} tracks …",
         "Stems werden getrennt: {} von {} Tracks …",
     ),
     (
-        "This build separates no parts (feature separation)",
+        "This build separates no stems (feature separation)",
         "Diese Version trennt keine Stems (Feature separation)",
     ),
     ("Active loop changed", "Aktiver Loop geändert"),
     (
-        "Separate the parts of the selected tracks",
+        "Separate the stems of the selected tracks",
         "Stems der ausgewählten Tracks trennen",
     ),
     (

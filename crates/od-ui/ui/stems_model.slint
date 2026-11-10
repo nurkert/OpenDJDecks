@@ -25,16 +25,16 @@ export component StemsModelBar inherits Rectangle {
     if root.state == "downloading": ProgressLine { x: 0; y: parent.height - 2px; width: parent.width; height: 2px; progress: root.progress; tone: Theme.live; }
 
     HorizontalLayout {
-        padding-left: 16px;
-        padding-right: 12px;
-        padding-top: 4px;
-        padding-bottom: 4px;
-        spacing: 8px;
+        padding-left: Theme.s4;
+        padding-right: Theme.s3;
+        padding-top: Theme.s1;
+        padding-bottom: Theme.s1;
+        spacing: Theme.s2;
         VLine { weight: 2px; tone: root.tone; form: root.state == "offer" ? "double" : "solid"; }
         Text {
             horizontal-stretch: 1;
             text: root.text;
-            font-family: Theme.family; font-size: 13px; color: Theme.bone;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone;
             vertical-alignment: center;
             overflow: elide;
         }
@@ -70,22 +70,22 @@ export component StemsModelPrompt inherits Rectangle {
         border-width: 1px;
         border-color: Theme.rule-strong;
         card := VerticalLayout {
-            padding: 22px;
-            spacing: 14px;
+            padding: Theme.s5;
+            spacing: Theme.s4;
             Text {
                 text: root.title;
-                font-family: Theme.family; font-size: 22px; font-weight: 600; color: Theme.bone;
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone;
                 wrap: word-wrap;
             }
             Text {
                 accessible-label: "app.stems.prompt.text";
                 accessible-value: self.text;
                 text: @tr("To split tracks into vocals, instruments, drums and bass, OpenDJDecks needs a separation model of {} MB. It is downloaded once; after that stems work without internet. Your music stays on this computer.", root.size-mb);
-                font-family: Theme.family; font-size: 14px; color: Theme.bone-2;
+                font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                 wrap: word-wrap;
             }
             HorizontalLayout {
-                spacing: 8px;
+                spacing: Theme.s2;
                 alignment: end;
                 PlateButton { accessible-label: "app.stems.prompt.later"; accessible-role: button; compact: true; label: @tr("NOT NOW"); clicked => { root.act("later"); } }
                 PlateButton { accessible-label: "app.stems.prompt.download"; accessible-role: button; compact: true; active: true; tone: Theme.attention; label: @tr("DOWNLOAD NOW"); clicked => { root.act("download"); } }

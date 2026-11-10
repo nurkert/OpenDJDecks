@@ -1,6 +1,6 @@
 ---
 title: Tempo FX, Channel FX, remix and hold FX
-description: Two Tempo FX units with up to three chained effects, exit FX, Channel FX on the channels, remix effects and effects on single parts.
+description: Two Tempo FX units with up to three chained effects, exit FX, Channel FX on the channels, remix effects and effects on single stems.
 keywords: [effects, fx, tempo fx, channel fx, echo, delay, reverb, flanger, phaser, roll, filter, trans, vinyl brake, backspin, echo out, exit fx, build up, breakdown, reverse roll, hold fx, stem fx, tap, multi]
 features: [fx-tempo-fx, fx-tempo-fx-controls, fx-tempo-fx-catalogue, fx-channel-fx-select, fx-exit-fx, fx-hold-fx, fx-stem-fx, fx-panel, fx-channel-fx-extended, fx-remix, pad-mode-hold-fx]
 ---
@@ -48,4 +48,4 @@ The **HOLD FX** pad mode puts eight presets on the pads, beat effects and releas
 
 ## Stem FX
 
-Under a unit's channel assign, the part keys **ALL**, **VOC**, **DRUM**, **BASS** and **INST** limit it to one part of the channel: the unit works on that part only, and it rejoins the channel before the EQ and fader. This needs the track to have [separated parts](stems.md).
+Under a unit's channel assign, the stem keys **ALL**, **VOC**, **DRUM**, **BASS** and **INST** limit it to one stem of the channel: the unit works on that stem only, and it rejoins the channel before the EQ and fader. This needs the track to have [stems](stems.md).

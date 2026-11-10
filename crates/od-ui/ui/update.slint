@@ -26,16 +26,16 @@ export component UpdateBar inherits Rectangle {
     if root.state == "installing": ProgressLine { x: 0; y: parent.height - 2px; width: parent.width; height: 2px; progress: root.progress; tone: Theme.live; }
 
     HorizontalLayout {
-        padding-left: 16px;
-        padding-right: 12px;
-        padding-top: 4px;
-        padding-bottom: 4px;
-        spacing: 8px;
+        padding-left: Theme.s4;
+        padding-right: Theme.s3;
+        padding-top: Theme.s1;
+        padding-bottom: Theme.s1;
+        spacing: Theme.s2;
         VLine { weight: 2px; tone: root.tone; form: root.state == "available" ? "double" : "solid"; }
         Text {
             horizontal-stretch: 1;
             text: root.text;
-            font-family: Theme.family; font-size: 13px; color: Theme.bone;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone;
             vertical-alignment: center;
             overflow: elide;
         }
@@ -73,27 +73,27 @@ export component UpdatePrompt inherits Rectangle {
         border-width: 1px;
         border-color: Theme.rule-strong;
         card := VerticalLayout {
-            padding: 22px;
-            spacing: 14px;
+            padding: Theme.s5;
+            spacing: Theme.s4;
             Text {
                 text: root.title;
-                font-family: Theme.family; font-size: 22px; font-weight: 600; color: Theme.bone;
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone;
                 wrap: word-wrap;
             }
             Text {
                 text: @tr("Update now? OpenDJDecks downloads the new version, checks it and restarts. Your library and settings stay as they are.");
-                font-family: Theme.family; font-size: 14px; color: Theme.bone-2;
+                font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                 wrap: word-wrap;
             }
             if root.notes != "": Text {
                 text: root.notes;
-                font-family: Theme.family; font-size: 13px; color: Theme.bone-3;
+                font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
                 wrap: word-wrap;
                 max-height: 170px;
                 overflow: elide;
             }
             HorizontalLayout {
-                spacing: 8px;
+                spacing: Theme.s2;
                 alignment: end;
                 PlateButton { accessible-label: "app.update.prompt.skip"; accessible-role: button; compact: true; label: @tr("SKIP THIS VERSION"); clicked => { root.act("skip"); } }
                 PlateButton { accessible-label: "app.update.prompt.notes"; accessible-role: button; compact: true; label: @tr("RELEASE NOTES"); clicked => { root.act("notes"); } }

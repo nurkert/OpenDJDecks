@@ -622,7 +622,7 @@ fn stem_keys_fill_while_separating_then_lit_means_audible() {
     assert!(ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.stems_available && !d.stems_busy)));
     ui.pump(50);
     assert!(!ui.has("deck1.stem.vocal.progress"));
-    assert_eq!(ui.value("deck1.stem.caption"), "PARTS");
+    assert_eq!(ui.value("deck1.stem.caption"), "STEMS");
     for p in ["vocal", "inst", "drums", "bass"] {
         assert_eq!(ui.get(&format!("deck1.stem.{p}")).accessible_checked(), Some(true), "{p} lit = audible");
     }
@@ -743,7 +743,7 @@ fn deck_switches_survive_loads_and_restarts() {
     assert!(ui.wait_until(30.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].track == Some(a))));
     // MT on and the ±16 % range on deck 1 (the screen keys).
     let before = crate::engine::snapshot(&ui.app).unwrap().decks[0].tempo_range;
-    ui.click("deck1.master-tempo");
+    ui.click("deck1.keylock");
     ui.app.ui.invoke_deck_tempo_range(1);
     // Both reach the engine (a frame or two later).
     assert!(ui.wait_until(5.0, |u| crate::engine::snapshot(&u.app)
@@ -768,7 +768,7 @@ fn deck_switches_survive_loads_and_restarts() {
         ui.wait_until(10.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].keylock && s.decks[0].tempo_range == range && !s.decks[1].keylock)),
         "MT and range back after a restart"
     );
-    assert_eq!(ui.get("deck1.master-tempo").accessible_checked(), Some(true));
+    assert_eq!(ui.get("deck1.keylock").accessible_checked(), Some(true));
 }
 
 /// Cues on the zoomed lane: hot cue A at 1 s as a flag with its letter and

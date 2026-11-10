@@ -35,7 +35,7 @@ The small sync arrow next to **DEVICES** in the tree does the same with the same
 
 ## What is on the stick
 
-Under **CONTENT — LISTS ON THIS STICK** you choose the lists. The stick holds your music with its cues, beatgrids, phrases and, if you have them, the separated parts for stems. Sticks are read by OpenDJDecks, for example on another computer or the [Raspberry Pi unit](raspberry-pi.md). To also play a stick on club players, turn on the Club player USB format below.
+Under **CONTENT — LISTS ON THIS STICK** you choose the lists. The stick holds your music with its cues, beatgrids, phrases and, if you have them, the stems. Sticks are read by OpenDJDecks, for example on another computer or the [Raspberry Pi unit](raspberry-pi.md). To also play a stick on club players, turn on the Club player USB format below.
 
 ## Playing from a stick
 

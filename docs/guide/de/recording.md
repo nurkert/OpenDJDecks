@@ -15,7 +15,7 @@ Drücke **REC** in der oberen Leiste, um den Aufnahmebereich zu zeigen: Pegel, A
 
 ## Nach der Aufnahme
 
-Öffne **Aufnahmen** über die Leiste **REC**: Jeder Mix steht dort mit seiner Datei. Direkt dort:
+Öffne **Aufnahmen** über die Leiste **AUFNAHMEN**: Jeder Mix steht dort mit seiner Datei. Direkt dort:
 
 - **DATEI ZEIGEN** öffnet sie im Dateimanager.
 - **IN TRACKS TEILEN** schneidet sie in eine Datei pro gespieltem Track.

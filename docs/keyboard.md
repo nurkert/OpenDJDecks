@@ -140,7 +140,7 @@ Perform). Text fields keep the keys they type.
 | Add the selected tracks to the tag list | `browser.taglist.add` | both | `⌥⌘T` | `Alt+T` |
 | Show / hide the filter bar | `browser.filter` | both | `⌘J` | `Ctrl+J` |
 | Show duplicate tracks | `browser.duplicates` | both | `⌥⌘Y` | `Alt+Y` |
-| Separate the parts of the selected tracks | `browser.stems` | both | `⌥⇧⌘S` | `Alt+Shift+S` |
+| Separate the stems of the selected tracks | `browser.stems` | both | `⌥⇧⌘S` | `Alt+Shift+S` |
 | **Prepare player** | | | | |
 | Preview play / pause | `player.preview` | Prepare | `Space` | `Space` |
 | Back to the cue point | `player.cue` | Prepare | `C` | `C` |

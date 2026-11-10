@@ -304,7 +304,7 @@ pub(crate) fn ready(app: &App) -> bool {
 pub(crate) fn request(app: &App, tracks: &[TrackId]) -> bool {
     let lite = app.state.borrow().config.lite;
     if lite || !od_stems::separation_supported() {
-        app.status("Parts are separated on a desktop computer; the stick brings them along");
+        app.status("Stems are separated on a desktop computer; the stick brings them along");
         return false;
     }
     if ready(app) {
@@ -313,7 +313,7 @@ pub(crate) fn request(app: &App, tracks: &[TrackId]) -> bool {
     // Nothing the kiosk screen would have to answer: the separation stays
     // on the desktop, stems arrive on the stick.
     if app.state.borrow().config.kiosk {
-        app.status("Parts are separated on a desktop computer; the stick brings them along");
+        app.status("Stems are separated on a desktop computer; the stick brings them along");
         return false;
     }
     let phase = {

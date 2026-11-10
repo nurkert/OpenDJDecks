@@ -30,5 +30,5 @@ Am Deck legt der Pad-Modus **LIGHTING** dir die Looks A bis F, Strobe (G) und Fl
 
 ## Wo du es siehst
 
-- Der Knopf **LIGHT** (`⌥⌘K`) zeigt in Perform eine Lichtleiste.
+- Der Knopf **LICHTLEISTE** (`⌥⌘K`) zeigt in Perform eine Lichtleiste.
 - **FENSTER** öffnet die Lichtansicht in einem eigenen Fenster, für einen zweiten Bildschirm.

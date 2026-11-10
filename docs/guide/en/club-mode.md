@@ -13,7 +13,7 @@ If you learned on a controller and want to be ready for club players, **CLUB** i
 
 - Each deck shows a player screen: the waveform, an overview you can click to search, the jog display with the remaining time, bar counter and phrase, and a four-segment beat position below the waveform so you can line up two decks visually. **Preferences › View** can show the other deck's beat there too.
 - **BROWSE** opens a player-style browser: source, then playlists, then tracks, from your library or a stick.
-- Hot cues work with hold, memory cues are called with **CALL**, and **IN**, **OUT**, **RELOOP** / **EXIT**, **4 BEAT**, **JUMP**, the search keys ◀◀ and ▶▶, the tempo range and **MASTER TEMPO** are on screen.
+- Hot cues work with hold, memory cues are called with **CALL**, and **IN**, **OUT**, **RELOOP** / **EXIT**, **4 BEAT**, **JUMP**, the search keys ◀◀ and ▶▶, the tempo range and **KEYLOCK** are on screen.
 - **No on-screen sync.** Tempo up is slower, as on a player.
 
 ## The checklist

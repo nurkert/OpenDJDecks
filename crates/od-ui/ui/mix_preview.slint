@@ -33,13 +33,13 @@ component Readout inherits HorizontalLayout {
     in property <string> label;
     in property <string> value;
     in property <string> a11y;
-    spacing: 5px;
-    Caps { text: root.label; font-size: 9px; vertical-alignment: center; }
+    spacing: Theme.s1;
+    Caps { text: root.label; font-size: Theme.label; vertical-alignment: center; }
     Text {
         accessible-role: text; accessible-label: root.a11y; accessible-value: self.text;
         min-width: 58px;
         text: root.value == "" ? "—" : root.value;
-        font-family: Theme.family; font-size: 13px; font-weight: 600;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
         color: root.value == "" ? Theme.bone-3 : Theme.bone; vertical-alignment: center;
     }
 }
@@ -47,7 +47,7 @@ component Readout inherits HorizontalLayout {
 component DeckPoints inherits HorizontalLayout {
     in property <MixPreviewDeck> d;
     in property <bool> editing;
-    spacing: 12px;
+    spacing: Theme.s3;
     Rectangle {
         width: 3px;
         background: root.editing ? Theme.deck-color(root.d.deck) : Theme.rule-strong;
@@ -56,7 +56,7 @@ component DeckPoints inherits HorizontalLayout {
     Text {
         accessible-role: text; accessible-label: "mix-preview.deck\{root.d.deck}.points"; accessible-value: root.d.points;
         text: @tr("{} POINTS", root.d.points);
-        font-family: Theme.family; font-size: 11px; color: Theme.bone-2; vertical-alignment: center;
+        font-family: Theme.family; font-size: Theme.label; color: Theme.bone-2; vertical-alignment: center;
     }
     Readout { a11y: "mix-preview.deck\{root.d.deck}.mix-in-time"; label: @tr("IN"); value: root.d.mix-in; }
     Readout { a11y: "mix-preview.deck\{root.d.deck}.mix-out-time"; label: @tr("OUT"); value: root.d.mix-out; }
@@ -67,10 +67,10 @@ export component MixPreviewPanel inherits Rectangle {
     height: Theme.touch ? 84px : 40px;
     background: Theme.ground-band;
     VerticalLayout {
-    padding-left: 12px; padding-right: 12px; padding-top: Theme.touch ? 3px : 7px; padding-bottom: Theme.touch ? 3px : 7px;
-    spacing: 4px;
+    padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.touch ? Theme.key-gap : Theme.s2; padding-bottom: Theme.touch ? Theme.key-gap : Theme.s2;
+    spacing: Theme.s1;
     HorizontalLayout {
-        spacing: 6px;
+        spacing: Theme.s2;
         PlateButton {
             accessible-label: "mix-preview.mix-in"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
             label: @tr("MIX IN"); tone: Theme.live;
@@ -106,8 +106,8 @@ export component MixPreviewPanel inherits Rectangle {
             tooltip: MixPreview.link ? @tr("Stop linking the mix points") : @tr("Link: the other deck starts from its mix-in point when this one reaches its mix-out point");
             clicked => { MixPreview.act("link"); }
         }
-        Rectangle { width: 10px; }
-        if !Theme.touch: HorizontalLayout { spacing: 6px; for d in MixPreview.decks: DeckPoints { d: d; editing: d.deck == MixPreview.edit-deck; } }
+        Rectangle { width: Theme.s3; }
+        if !Theme.touch: HorizontalLayout { spacing: Theme.s2; for d in MixPreview.decks: DeckPoints { d: d; editing: d.deck == MixPreview.edit-deck; } }
         Rectangle { horizontal-stretch: 1; }
         // Playback reservation: queue the selected tracks; the next one
         // loads into the deck that has played out.
@@ -115,7 +115,7 @@ export component MixPreviewPanel inherits Rectangle {
             accessible-role: text; accessible-label: "mix-preview.reserved"; accessible-value: MixPreview.next;
             horizontal-stretch: 0; max-width: 260px; overflow: elide;
             text: MixPreview.waiting == 0 ? @tr("NOTHING RESERVED") : MixPreview.waiting == 1 ? @tr("NEXT  {}", MixPreview.next) : @tr("NEXT  {}  +{}", MixPreview.next, MixPreview.waiting - 1);
-            font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
             color: MixPreview.waiting == 0 ? Theme.bone-3 : Theme.bone; vertical-alignment: center;
         }
         PlateButton {
@@ -132,7 +132,7 @@ export component MixPreviewPanel inherits Rectangle {
         }
     }
     if Theme.touch: HorizontalLayout {
-        spacing: 16px;
+        spacing: Theme.s4;
         for d in MixPreview.decks: DeckPoints { d: d; editing: d.deck == MixPreview.edit-deck; }
         Rectangle { horizontal-stretch: 1; }
     }

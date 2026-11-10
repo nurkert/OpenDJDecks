@@ -180,7 +180,7 @@ UI text: they are never translated and never shown.
 | `app` | window-level: mode-change confirmation, dialogs | `app.confirm.yes` |
 | `topbar` | top bar | `topbar.mode`, `topbar.layout`, `topbar.toggle.fx`, `topbar.settings`, `topbar.clock` |
 | `wave` | enlarged waveform zone | `wave.lane1`, `wave.zoom-in`, `wave.zoom-reset`, `wave.collapse` |
-| `deck1`…`deck4` | Perform deck | `deck1.play`, `deck1.cue`, `deck1.pad.A`, `deck1.pad-mode`, `deck1.loop.halve`, `deck1.stem.vocal`, `deck1.key-sync`, `deck1.master-tempo` |
+| `deck1`…`deck4` | Perform deck | `deck1.play`, `deck1.cue`, `deck1.pad.A`, `deck1.pad-mode`, `deck1.loop.halve`, `deck1.stem.vocal`, `deck1.key-sync`, `deck1.keylock` |
 | `player1`, `player2` | Prepare player | `player1.hot-cue.A`, `player1.memory.set`, `player1.grid.tap`, `player1.cue-list.rows` |
 | `mixer` | mixer channels and master | `mixer.ch1.trim`, `mixer.ch1.eq-high`, `mixer.ch3.fader`, `mixer.ch2.stem` |
 | `global` | global bar | `global.phones.mix`, `global.xfader`, `global.xf-a.deck1` |

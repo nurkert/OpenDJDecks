@@ -25,7 +25,7 @@ Die schmale Wellenform in jedem Deck ist der ganze Track mit Hot Cues und Phrase
 
 Der Ansichts-Knopf oben in Perform öffnet ein Menü mit einem Bild jeder Ansicht: **2 Decks** oder **4 Decks**, jeweils **horizontal** oder **vertikal**, und **Browse**, das die Decks klein hält und dem Browser den Platz gibt. Kurzbefehle: `⌥⌘V` für vertikale Wellenformen und `⌥⌘B` für Browse. Ein Vierdeck-Controller schaltet automatisch auf vier Decks.
 
-Die obere Leiste zeigt oder verbirgt außerdem die Panels: **FX**, **VORSCHAU**, **SAMPLER**, **MIXER** und **REC**, dazu **CLUB** und **LIGHT**. Ziehe die Trennbalken zwischen den Bereichen, um die Größe zu ändern; Doppelklick setzt zurück.
+Die obere Leiste zeigt oder verbirgt außerdem die Panels: **FX**, **VORSCHAU**, **SAMPLER**, **MIXER** und **REC**, dazu **CLUB** und **LICHTLEISTE**. Ziehe die Trennbalken zwischen den Bereichen, um die Größe zu ändern; Doppelklick setzt zurück.
 
 ## Tempo und Sync
 
@@ -34,7 +34,7 @@ Die obere Leiste zeigt oder verbirgt außerdem die Panels: **FX**, **VORSCHAU**,
 - **Q** (Quantisieren) lässt Cues, Loops und Sprünge auf dem Beat landen.
 - **KEY SYNC** bringt das Deck in die Tonart des Master-Decks.
 - **‹ ±0 ›** im Deck-Kopf verschiebt die Tonart um je einen Halbton; Klick auf den Wert setzt zurück.
-- **MT** ist Master Tempo (Keylock): Die Tonart bleibt gleich, wenn sich das Tempo ändert.
+- **KEYLOCK** hält die Tonart, wenn sich das Tempo ändert (auch bekannt als Master Tempo).
 - Bend per Tastatur: `W` / `E` und `U` / `I`, solange gehalten.
 
 ## Jogwheels
@@ -67,7 +67,7 @@ Die sechzehn Pads links an jedem Deck ändern mit dem Modus ihre Bedeutung. Wäh
 | **KEYBOARD** | Den gewählten Hot Cue bei −3 bis +4 Halbtönen spielen |
 | **KEY SHIFT** | Die Tonartverschiebung von −3 bis +4 setzen |
 | **SLICER** | Einen von acht Slices spielen, solange gehalten; Bereich 4 bis 64 Beats |
-| **STEMS** | Die getrennten Parts stummschalten und formen, siehe [Stems](stems.md) |
+| **STEMS** | Die getrennten Stems stummschalten und formen, siehe [Stems](stems.md) |
 | **MEMORY CUE** | Die Memory Cues des Tracks anspringen |
 | **CENSOR** | ¼ bis 32 Beats zensieren, dann dort weiterlaufen, wo es wäre |
 | **PATTERN** | Sampler-Sequenzen speichern und abrufen |

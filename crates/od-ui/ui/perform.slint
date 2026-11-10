@@ -32,7 +32,7 @@ export component PhraseBar inherits Rectangle {
         Text {
             x: 3px; width: parent.width - 4px;
             text: Theme.phrase-names && parent.width > 30px ? p.label : "";
-            font-family: Theme.family; font-size: 9px; font-weight: 600; letter-spacing: 0.8px;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
             color: Theme.bone; vertical-alignment: center; overflow: clip;
         }
     }
@@ -48,23 +48,23 @@ export component Pad inherits Rectangle {
     callback pressed();
     property <color> tone: Theme.cue-tone(root.cue.slot, root.cue.tone);
     height: 30px;
-    background: root.cue.set
-        ? (touch.pressed ? root.tone.with-alpha(0.5) : root.tone.with-alpha(touch.has-hover ? 0.34 : 0.24))
-        : (touch.pressed ? Theme.plate-raised : touch.has-hover ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate);
-    border-width: 1px;
-    border-color: root.cue.set ? root.tone.with-alpha(0.85) : Theme.rule;
-    Rectangle { y: 0; height: 2px; background: root.cue.set ? root.tone : transparent; }
+    // A set cue is filled in its colour, an empty one is a hollow slot.
+    background: root.cue.set ? (touch.pressed ? root.tone.mix(Theme.bone, 0.8) : root.tone) : transparent;
+    border-width: root.cue.set ? 0px : 1px;
+    border-color: touch.has-hover ? Theme.bone : Theme.bone-3;
+    border-radius: Theme.r-control;
     Text {
         x: 8px; height: parent.height;
         text: root.cue.letter;
-        font-family: Theme.family; font-size: 13px; font-weight: 600;
-        color: root.cue.set ? Theme.bone : Theme.bone-3; vertical-alignment: center;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: root.cue.set ? Theme.ink-on : Theme.bone-3; vertical-alignment: center;
     }
     Text {
         x: 24px; width: parent.width - 28px; height: parent.height;
-        text: root.cue.label != "" ? root.cue.label : root.cue.time;
-        font-family: Theme.family; font-size: 11px;
-        color: Theme.bone-2; vertical-alignment: center; overflow: elide;
+        // The time only where it fits; a narrow pad shows just the letter.
+        text: parent.width < 96px ? "" : root.cue.label != "" ? root.cue.label : root.cue.time;
+        font-family: Theme.family; font-size: Theme.control;
+        color: root.cue.set ? Theme.ink-on : Theme.bone-3; vertical-alignment: center; overflow: elide;
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.pressed(); } }
 }
@@ -74,7 +74,7 @@ component Readout inherits VerticalLayout {
     in property <string> value;
     in property <string> sub;
     in property <color> tone: Theme.bone;
-    in property <length> size: 22px;
+    in property <length> size: Theme.heading;
     in property <TextHorizontalAlignment> align: right;
     // Widest value this readout shows (e.g. "-00:00.0"): the readout keeps
     // that width so changing digits never move their neighbours.
@@ -89,34 +89,34 @@ component Readout inherits VerticalLayout {
     in property <string> sub2-label;
     spacing: 0;
     alignment: center;
-    Caps { text: root.label; font-size: 10px; horizontal-alignment: root.align; }
+    Caps { text: root.label; font-size: Theme.label; horizontal-alignment: root.align; }
     Text {
         accessible-role: text;
         accessible-label: root.value-label;
         accessible-value: root.value;
         min-width: probe.preferred-width;
         text: root.value == "" ? "—" : root.value;
-        font-family: Theme.family; font-size: root.size; font-weight: 600;
+        font-family: Theme.family; font-size: root.size; font-weight: Theme.weight-semi;
         color: root.tone; horizontal-alignment: root.align;
-        probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.size; font-weight: 600; }
+        probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.size; font-weight: Theme.weight-semi; }
     }
     if root.sub != "" && root.sub2 == "": Text {
         accessible-role: text;
         accessible-label: root.sub-label;
         accessible-value: root.sub;
         text: root.sub;
-        font-family: Theme.family; font-size: 11px; font-weight: 500;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-medium;
         color: Theme.bone-2; horizontal-alignment: root.align;
     }
     if root.sub2 != "": HorizontalLayout {
         alignment: root.align == TextHorizontalAlignment.left ? LayoutAlignment.start : LayoutAlignment.end;
-        spacing: 6px;
+        spacing: Theme.s2;
         Text {
             accessible-role: text;
             accessible-label: root.sub2-label;
             accessible-value: root.sub2;
             text: root.sub2;
-            font-family: Theme.family; font-size: 11px; font-weight: 500;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-medium;
             color: Theme.bone-3;
         }
         Text {
@@ -124,7 +124,7 @@ component Readout inherits VerticalLayout {
             accessible-label: root.sub-label;
             accessible-value: root.sub;
             text: root.sub;
-            font-family: Theme.family; font-size: 11px; font-weight: 500;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-medium;
             color: Theme.bone-2;
         }
     }
@@ -143,7 +143,7 @@ component LoadingVeil inherits Rectangle {
     }
     Text {
         text: @tr("LOADING");
-        font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+        font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.5px;
         color: Theme.bone;
         horizontal-alignment: center; vertical-alignment: center;
     }
@@ -220,20 +220,10 @@ global PadModes {
         if (id == "pattern_recall") { return 12; }
         return 0;
     }
-    // Pad colour of a mode (hot cues use their cue colours).
+    // Hot cues keep their cue colours (with their letter); every other pad
+    // mode fills in sodium while a pad is engaged.
     public pure function tone(id: string) -> color {
-        if (id == "hold_fx1" || id == "hold_fx2") { return Theme.w405; }
-        if (id == "beat_jump") { return Theme.w436; }
-        if (id == "sampler") { return Theme.w546; }
-        if (id == "keyboard" || id == "key_shift") { return Theme.w589; }
-        if (id == "beat_loop") { return Theme.w615; }
-        if (id == "slicer") { return Theme.w486; }
-        if (id == "stems") { return Theme.w656; }
-        if (id == "memory_cue") { return Theme.bone; }
-        if (id == "lighting") { return Theme.w589; }
-        if (id == "timed_censor") { return Theme.w656; }
-        if (id == "pattern_recall") { return Theme.w546; }
-        return Theme.bone-2;
+        return Theme.attention;
     }
 }
 
@@ -248,25 +238,27 @@ export component DeckPad inherits Rectangle {
     callback alt();
     property <color> tone: root.p.cue-slot >= 0 ? Theme.cue-tone(root.p.cue-slot, root.p.tone) : PadModes.tone(root.mode);
     property <bool> down: touch.pressed;
+    // Hot cue pads keep their colour; other modes show sodium only while
+    // engaged, and are plain plates when they hold something.
+    property <bool> cue-pad: root.p.cue-slot >= 0;
+    property <bool> filled: root.p.lit || root.down || (root.p.set && root.cue-pad);
     preferred-height: 30px;
-    background: root.p.lit || root.down
-        ? root.tone.with-alpha(0.5)
-        : root.p.set ? root.tone.with-alpha(touch.has-hover ? 0.3 : 0.2)
-        : (touch.has-hover ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate);
-    border-width: 1px;
-    border-color: root.p.lit ? root.tone : root.p.set ? root.tone.with-alpha(0.8) : Theme.rule;
-    Rectangle { y: 0; height: 2px; background: root.p.set || root.p.lit ? root.tone : transparent; }
+    background: root.filled ? root.tone : root.p.set ? (touch.has-hover ? Theme.plate-raised : Theme.plate) : transparent;
+    border-width: root.p.set || root.filled ? 0px : 1px;
+    border-color: touch.has-hover ? Theme.bone : Theme.bone-3;
+    border-radius: Theme.r-control;
     cap := Text {
         x: 8px; height: parent.height;
         text: root.p.caption;
-        font-family: Theme.family; font-size: 13px; font-weight: 600;
-        color: root.p.set || root.p.lit ? Theme.bone : Theme.bone-3; vertical-alignment: center;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: root.filled ? Theme.ink-on : root.p.set ? Theme.bone : Theme.bone-3; vertical-alignment: center;
     }
     Text {
-        x: max(24px, cap.preferred-width + 14px); width: parent.width - self.x - 4px; height: parent.height;
-        text: root.p.sub;
-        font-family: Theme.family; font-size: 11px;
-        color: Theme.bone-2; vertical-alignment: center; overflow: elide;
+        x: max(20px, cap.preferred-width + 10px); width: parent.width - self.x - 4px; height: parent.height;
+        // Narrow pads (four-deck layouts) show just the letter.
+        text: parent.width < 56px ? "" : root.p.sub;
+        font-family: Theme.family; font-size: Theme.control;
+        color: root.filled ? Theme.ink-on : root.p.set ? Theme.bone-2 : Theme.bone-3; vertical-alignment: center; overflow: elide;
     }
     touch := TipArea {
         tooltip: root.mode == "hot_cue" ? (root.p.set ? @tr("Hot cue: jump (hold to preview while paused) — right click deletes") : @tr("Hot cue: store the current position"))
@@ -295,18 +287,18 @@ component GridKey inherits Rectangle {
     width: label.preferred-width + 30px; height: root.size;
     // Mark and caption centred when the key is wider than they are.
     property <length> ox: max(0px, (self.width - label.preferred-width - 30px) / 2);
-    background: root.on ? Theme.attention.with-alpha(0.2) : gk.has-hover ? Theme.plate-raised : Theme.plate;
-    border-width: 1px; border-color: root.on ? Theme.attention : Theme.rule-strong;
+    background: Theme.face(true, gk.pressed, gk.has-hover, false, root.on, Theme.attention);
+    border-radius: Theme.r-control;
     for i in 3: Rectangle {
         x: root.ox + 8px + i * 4px; width: 2px;
         y: i == 1 ? 5px : 8px; height: parent.height - (i == 1 ? 10px : 16px);
-        background: root.on ? Theme.attention : Theme.bone-2;
+        background: Theme.ink(true, gk.pressed, gk.has-hover, false, root.on);
     }
     label := Text {
         x: root.ox + 23px; height: parent.height;
         text: @tr("GRID");
-        font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 1px;
-        color: root.on ? Theme.bone : Theme.bone-2; vertical-alignment: center;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: Theme.ink(true, gk.pressed, gk.has-hover, false, root.on); vertical-alignment: center;
     }
     gk := TipArea {
         tooltip: root.on ? @tr("Back to the pads") : @tr("Beatgrid and gain: fix the grid at the playhead while the track plays");
@@ -330,15 +322,13 @@ component GridKeyCell inherits Rectangle {
     in property <bool> enabled: true;
     min-width: 0px;
     horizontal-stretch: 1;
-    background: root.lit ? root.tone.with-alpha(0.18) : t.pressed ? Theme.plate-raised : t.has-hover && root.enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate;
-    border-width: 1px;
-    border-color: root.lit ? root.tone.with-alpha(0.8) : Theme.rule;
-    Rectangle { y: 0; height: 2px; background: root.lit ? root.tone : transparent; }
+    background: Theme.face(root.enabled, t.pressed, t.has-hover, false, root.lit, root.tone);
+    border-radius: Theme.r-control;
     Text {
         x: 3px; width: parent.width - 6px;
         text: root.label;
-        font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 0.6px;
-        color: !root.enabled ? Theme.bone-3.with-alpha(0.55) : root.lit ? Theme.bone : Theme.bone-2;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 0.6px;
+        color: Theme.ink(root.enabled, t.pressed, t.has-hover, false, root.lit);
         horizontal-alignment: center; vertical-alignment: center; overflow: elide;
     }
     t := TipArea {
@@ -365,8 +355,8 @@ component GridMeter inherits Rectangle {
         background: abs(m) == 5 ? Theme.bone-3 : Theme.rule-strong;
     }
     Rectangle { x: root.mid - 1px; width: 2px; y: root.height / 2 - 7px; height: 15px; background: Theme.bone-2; }
-    Text { x: 0; y: 0; text: "−20"; font-family: Theme.family; font-size: 8px; color: Theme.bone-3; }
-    Text { x: root.width - self.width; y: 0; text: "+20"; font-family: Theme.family; font-size: 8px; color: Theme.bone-3; }
+    Text { x: 0; y: 0; text: "−20"; font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3; }
+    Text { x: root.width - self.width; y: 0; text: "+20"; font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3; }
     if root.v.has-err: Rectangle {
         x: root.mid + root.span * root.v.err / 20 - 1.5px; y: root.height / 2 - 8px;
         width: 3px; height: 17px;
@@ -381,13 +371,13 @@ component GridMeter inherits Rectangle {
 component GridPanel inherits VerticalLayout {
     in property <DeckView> deck;
     in property <length> row-h: 30px;
-    spacing: 4px;
+    spacing: Theme.s1;
     property <int> d: root.deck.deck;
     property <DeckGridView> v: DeckGrid.decks[root.d - 1];
     property <bool> can: !root.deck.grid-locked;
     // 1: meter · error · FIT · tempo · CLICK.
     HorizontalLayout {
-        spacing: 6px; height: root.row-h;
+        spacing: Theme.s2; height: root.row-h;
         GridMeter {
             accessible-role: text; accessible-label: "deck\{root.d}.grid.meter"; accessible-value: root.v.err-text;
             horizontal-stretch: 3; v: root.v;
@@ -397,13 +387,13 @@ component GridPanel inherits VerticalLayout {
             Text {
                 accessible-role: text; accessible-label: "deck\{root.d}.grid.error"; accessible-value: self.text;
                 text: root.v.err-text;
-                font-family: Theme.family; font-size: 12px; font-weight: 600; overflow: elide;
+                font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; overflow: elide;
                 color: !root.v.has-err ? Theme.bone-3 : root.v.err-tone == 0 ? Theme.bone : root.v.err-tone == 1 ? Theme.attention : Theme.fault;
             }
             Text {
                 accessible-role: text; accessible-label: "deck\{root.d}.grid.fit"; accessible-value: root.v.fit;
                 text: "FIT " + root.v.fit + "  " + root.v.bpm;
-                font-family: Theme.family; font-size: 9px; letter-spacing: 0.6px; color: Theme.bone-3; overflow: elide;
+                font-family: Theme.family; font-size: Theme.label; letter-spacing: 0.6px; color: Theme.bone-3; overflow: elide;
             }
         }
         GridKeyCell {
@@ -414,8 +404,8 @@ component GridPanel inherits VerticalLayout {
     }
     // 2: moves at the playhead.
     HorizontalLayout {
-        spacing: 3px; height: root.row-h;
-        GridKeyCell { deck: root.d; id: "set-one"; label: @tr("SET 1"); horizontal-stretch: 2; lit: true; enabled: root.can; tooltip: @tr("The kick you just heard (±60 ms) becomes the 1 and the grid sits on it"); accessible-label: "deck\{root.d}.grid.set-one"; accessible-role: button; }
+        spacing: Theme.key-gap; height: root.row-h;
+        GridKeyCell { deck: root.d; id: "set-one"; label: @tr("SET 1"); horizontal-stretch: 2; enabled: root.can; tooltip: @tr("The kick you just heard (±60 ms) becomes the 1 and the grid sits on it"); accessible-label: "deck\{root.d}.grid.set-one"; accessible-role: button; }
         GridKeyCell { deck: root.d; id: "shift"; arg: "-1"; label: "◀1"; enabled: root.can; tooltip: @tr("Move the grid 1 ms earlier"); accessible-label: "deck\{root.d}.grid.earlier-fine"; accessible-role: button; }
         GridKeyCell { deck: root.d; id: "shift"; arg: "1"; label: "1▶"; enabled: root.can; tooltip: @tr("Move the grid 1 ms later"); accessible-label: "deck\{root.d}.grid.later-fine"; accessible-role: button; }
         GridKeyCell { deck: root.d; id: "shift"; arg: "-10"; label: "◀10"; enabled: root.can; tooltip: @tr("Move the grid 10 ms earlier"); accessible-label: "deck\{root.d}.grid.earlier"; accessible-role: button; }
@@ -425,7 +415,7 @@ component GridPanel inherits VerticalLayout {
     }
     // 3: tempo about the playhead, pins, AUTO-FIX.
     HorizontalLayout {
-        spacing: 3px; height: root.row-h;
+        spacing: Theme.key-gap; height: root.row-h;
         GridKeyCell { deck: root.d; id: "step"; arg: "-0.01"; label: "−.01"; enabled: root.can; tooltip: @tr("Grid tempo 0.01 BPM slower about the playhead"); accessible-label: "deck\{root.d}.grid.slower"; accessible-role: button; }
         GridKeyCell { deck: root.d; id: "step"; arg: "0.01"; label: "+.01"; enabled: root.can; tooltip: @tr("Grid tempo 0.01 BPM faster about the playhead"); accessible-label: "deck\{root.d}.grid.faster"; accessible-role: button; }
         GridKeyCell { deck: root.d; id: "scale"; arg: "0.5"; label: "÷2"; enabled: root.can; tooltip: @tr("Half the tempo"); accessible-label: "deck\{root.d}.grid.half"; accessible-role: button; }
@@ -441,13 +431,13 @@ component GridPanel inherits VerticalLayout {
     }
     // 4: the full editor, LOCK, gain.
     HorizontalLayout {
-        spacing: 3px; height: root.row-h;
+        spacing: Theme.key-gap; height: root.row-h;
         Rectangle {
             accessible-role: button; accessible-label: "deck\{root.d}.grid.edit";
             horizontal-stretch: 2; min-width: 0px;
             background: et.has-hover ? Theme.plate-raised : Theme.plate;
-            border-width: 1px; border-color: Theme.rule;
-            Text { text: @tr("EDIT …"); font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; color: Theme.bone-2; overflow: elide; }
+            border-radius: Theme.r-control;
+            Text { text: @tr("EDIT …"); font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 0.6px; color: Theme.bone-2; overflow: elide; }
             et := TipArea { tooltip: @tr("Open the track in the grid editor (Prepare)"); mouse-cursor: pointer; clicked => { GridEdit.open-deck(root.d); } }
         }
         GridKeyCell {
@@ -456,13 +446,13 @@ component GridPanel inherits VerticalLayout {
             tooltip: @tr("Lock the grid against changes (analysis and edits)");
             accessible-label: "deck\{root.d}.grid.lock"; accessible-role: button; accessible-checkable: true; accessible-checked: root.deck.grid-locked;
         }
-        Caps { text: @tr("GAIN"); vertical-alignment: center; horizontal-alignment: center; font-size: 9px; min-width: 0px; horizontal-stretch: 1; overflow: elide; }
+        Caps { text: @tr("GAIN"); vertical-alignment: center; horizontal-alignment: center; font-size: Theme.label; min-width: 0px; horizontal-stretch: 1; overflow: elide; }
         GridKeyCell { deck: root.d; id: "gain"; arg: "-0.5"; label: "−"; tooltip: @tr("Track gain 0.5 dB lower (stored with the track)"); accessible-label: "deck\{root.d}.grid.gain-down"; accessible-role: button; }
         Rectangle {
             accessible-role: text; accessible-label: "deck\{root.d}.grid.gain"; accessible-value: root.deck.gain-adjust;
             horizontal-stretch: 2; min-width: 0px;
-            border-width: 1px; border-color: Theme.rule;
-            Text { text: root.deck.gain-adjust; font-family: Theme.family; font-size: 11px; font-weight: 600; color: Theme.bone; horizontal-alignment: center; vertical-alignment: center; overflow: elide; }
+            background: Theme.plate; border-radius: Theme.r-control;
+            Text { text: root.deck.gain-adjust; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: center; vertical-alignment: center; overflow: elide; }
             TouchArea { double-clicked => { DeckGrid.act(root.d, "gain-reset", ""); } }
         }
         GridKeyCell { deck: root.d; id: "gain"; arg: "0.5"; label: "+"; tooltip: @tr("Track gain 0.5 dB higher (stored with the track)"); accessible-label: "deck\{root.d}.grid.gain-up"; accessible-role: button; }
@@ -484,7 +474,7 @@ component PadModeBar inherits Rectangle {
     callback param(int);
     height: root.size;
     HorizontalLayout {
-        spacing: 4px;
+        spacing: Theme.s1;
         if root.with-grid-key: GridKey {
             accessible-role: button; accessible-label: "deck\{root.deck.deck}.grid-panel";
             accessible-checkable: true; accessible-checked: root.grid-open;
@@ -496,7 +486,7 @@ component PadModeBar inherits Rectangle {
             accessible-label: "deck\{root.deck.deck}.pad-mode";
             accessible-value: self.value;
             horizontal-stretch: 1;
-            size: root.size; font-size: 10px; arrow: 16px;
+            size: root.size; font-size: Theme.control; arrow: 16px;
             min-width: 2 * 16px + 40px;
             value: root.deck.pad-mode == "hold_fx2" ? @tr("HOLD FX 2") : PadModes.names[PadModes.index(root.deck.pad-mode)];
             template: "HOT CUE"; lit: true; tone: PadModes.tone(root.deck.pad-mode);
@@ -507,7 +497,7 @@ component PadModeBar inherits Rectangle {
         }
         if root.deck.pad-param != "": Stepper {
             horizontal-stretch: 1;
-            size: root.size; font-size: 10px; arrow: 16px;
+            size: root.size; font-size: Theme.control; arrow: 16px;
             min-width: 2 * 16px + 34px;
             value: root.deck.pad-param; template: "A–H";
             tooltip: root.deck.pad-mode == "hot_cue" ? @tr("Hot cue bank")
@@ -542,21 +532,21 @@ component PadColumns inherits VerticalLayout {
     callback mode-set(int);
     callback param(int);
     horizontal-stretch: 3;
-    spacing: 4px;
+    spacing: Theme.s1;
     property <bool> grid-open;
     // Pads take the height the deck row has (the mixer beside it sets it).
     // The panel takes the pads' width: the deck (and the mixer between the
     // decks) stays where it is when it opens.
     if root.grid-open: GridPanel { deck: root.deck; row-h: root.pad-h; vertical-stretch: 1; min-width: 0px; preferred-width: 0px; horizontal-stretch: 1; }
     if !root.grid-open: HorizontalLayout {
-        spacing: 4px;
+        spacing: Theme.s1;
         vertical-stretch: 1;
         VerticalLayout {
-            spacing: 4px;
+            spacing: Theme.s1;
             for c in root.deck.pads-left: DeckPad { accessible-role: button; accessible-label: "deck\{root.deck.deck}.pad." + PadLetters.of[c.index]; min-height: root.pad-h; max-height: root.pad-h * 2.2; vertical-stretch: 1; p: c; mode: root.deck.pad-mode; press(d) => { root.pad(c.index, d); } alt => { root.pad-alt(c.index); } }
         }
         VerticalLayout {
-            spacing: 4px;
+            spacing: Theme.s1;
             for c in root.deck.pads-right: DeckPad { accessible-role: button; accessible-label: "deck\{root.deck.deck}.pad." + PadLetters.of[c.index]; min-height: root.pad-h; max-height: root.pad-h * 2.2; vertical-stretch: 1; p: c; mode: root.deck.pad-mode; press(d) => { root.pad(c.index, d); } alt => { root.pad-alt(c.index); } }
         }
     }
@@ -578,8 +568,9 @@ component ManualLoop inherits Toggle {
     accessible-label: "deck\{root.deck.deck}.loop.manual";
     accessible-value: self.label;
     label: root.deck.looping ? @tr("EXIT") : root.deck.loop-in-set ? @tr("OUT") : @tr("IN");
-    on: root.deck.loop-in-set;
-    tone: Theme.w615;
+    // Armed: the in point is set, the next press closes the loop.
+    armed: root.deck.loop-in-set && !root.deck.looping;
+    tone: Theme.attention;
     tooltip: @tr("Manual loop: set the in point, then the out point; press again to leave the loop");
 }
 
@@ -603,37 +594,35 @@ component LoopColumn inherits VerticalLayout {
     callback beat-jump-step(bool);
     callback loop-manual();
     width: 104px;
-    spacing: 4px;
+    spacing: Theme.s1;
     alignment: center;
     Rectangle {
         height: root.ctl-h + 6px;
-        background: Theme.plate;
-        border-width: 1px;
-        border-color: root.deck.looping ? Theme.w615 : Theme.rule;
+        background: Theme.plate; border-radius: Theme.r-control;
         accessible-role: text;
         accessible-label: "deck\{root.deck.deck}.loop.size";
         accessible-value: root.deck.loop-size;
-        Text { text: root.deck.loop-size; font-family: Theme.family; font-size: 18px; font-weight: 600; color: Theme.bone; }
+        Text { text: root.deck.loop-size; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; }
     }
     HorizontalLayout {
-        spacing: 4px;
+        spacing: Theme.s1;
         Toggle { accessible-role: button; accessible-label: "deck\{root.deck.deck}.loop.halve"; size: root.ctl-h; horizontal-stretch: 1; label: "½"; clicked => { root.loop-scale(0.5); } }
         Toggle { accessible-role: button; accessible-label: "deck\{root.deck.deck}.loop.double"; size: root.ctl-h; horizontal-stretch: 1; label: "2×"; clicked => { root.loop-scale(2); } }
     }
     HorizontalLayout {
-        spacing: 4px;
+        spacing: Theme.s1;
         Toggle {
             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.looping;
             accessible-label: "deck\{root.deck.deck}.loop.auto";
             horizontal-stretch: 1;
-            size: root.ctl-h; label: "LOOP"; on: root.deck.looping; tone: Theme.w615;
+            size: root.ctl-h; label: "LOOP"; on: root.deck.looping; tone: Theme.attention;
             tooltip: @tr("Auto loop of the shown length; press again to leave it");
             clicked => { if (root.deck.looping) { root.loop-exit(); } else { root.loop(0); } }
         }
         ManualLoop { deck: root.deck; size: root.ctl-h; horizontal-stretch: 1; clicked => { root.loop-manual(); } }
     }
     HorizontalLayout {
-        spacing: 4px;
+        spacing: Theme.s1;
         Toggle { size: root.ctl-h; horizontal-stretch: 1; label: "−" + root.deck.jump-size; tooltip: @tr("Beat jump back (size: ‹ › in Beat Jump pad mode)"); command: "deck" + root.deck.deck + ".jump.back"; clicked => { root.beat-jump-step(false); } }
         Toggle { size: root.ctl-h; horizontal-stretch: 1; label: "+" + root.deck.jump-size; tooltip: @tr("Beat jump forward"); command: "deck" + root.deck.deck + ".jump.fwd"; clicked => { root.beat-jump-step(true); } }
     }
@@ -646,7 +635,7 @@ component TransportColumn inherits VerticalLayout {
     callback cue();
     callback toggle-play();
     callback tempo-range();
-    spacing: 12px;
+    spacing: Theme.s3;
     alignment: center;
     TempoRange { deck: root.deck; size: root.ctl-h; clicked => { root.tempo-range(); } }
     Transport { accessible-role: button; accessible-label: "deck\{root.deck.deck}.cue"; kind: "cue"; tone: Theme.attention; size: root.size; clicked => { root.cue(); } }
@@ -661,12 +650,12 @@ component StateColumn inherits VerticalLayout {
     callback quantize();
     callback keylock();
     width: 58px;
-    spacing: 6px;
+    spacing: Theme.s2;
     alignment: space-between;
-    Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: root.ctl-h; label: "SLIP"; on: root.deck.slip; tone: Theme.w405; clicked => { root.slip(); } }
-    Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: root.ctl-h; label: "Q"; on: root.deck.quantize; tone: Theme.attention; clicked => { root.quantize(); } }
+    Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: root.ctl-h; label: "SLIP"; on: root.deck.slip; tone: Theme.attention; clicked => { root.slip(); } }
+    Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: root.ctl-h; label: "Q"; on: root.deck.quantize; tone: Theme.setup-on; clicked => { root.quantize(); } }
     Rectangle { vertical-stretch: 1; }
-    Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.master-tempo"; size: root.ctl-h; label: "MT"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
+    Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; size: root.ctl-h; label: "LOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
 }
 
 // Slim tempo fader (for mouse use without a controller).
@@ -674,7 +663,7 @@ component TempoColumn inherits VerticalLayout {
     in property <DeckView> deck;
     callback tempo(float);
     width: 26px;
-    spacing: 2px;
+    spacing: Theme.key-gap;
     Fader {
         accessible-role: slider;
         accessible-label: "deck\{root.deck.deck}.pitch";
@@ -701,7 +690,6 @@ component StemKey inherits Rectangle {
     in property <string> label;
     in property <bool> muted;
     in property <float> level: 1;
-    in property <color> tone;
     in property <bool> enabled;
     // Separation running: this key's share of the progress bar, 0..1.
     in property <bool> busy;
@@ -722,8 +710,8 @@ component StemKey inherits Rectangle {
         accessible-role: checkbox; accessible-checkable: true; accessible-checked: !root.muted && root.enabled;
         accessible-label: "deck\{root.deck}.stem.\{root.stem}";
         accessible-description: root.busy ? @tr("separating") : root.muted ? @tr("muted") : @tr("audible");
-        size: root.size; width: root.key-width; label: root.label; on: root.enabled && !root.muted; tone: root.tone; enabled: root.enabled;
-        tooltip: @tr("Lit = audible · click: mute / unmute · wheel: level");
+        size: root.size; width: root.key-width; label: root.label; on: root.enabled && root.muted; tone: Theme.attention; enabled: root.enabled;
+        tooltip: @tr("Filled = muted · click: mute / unmute · wheel: level");
         clicked => { root.toggle(); }
     }
     // Not separated: a press asks for the parts (and, the first time, for
@@ -742,12 +730,12 @@ component StemKey inherits Rectangle {
         // no rim above it.
         x: 0; y: 0; height: parent.height;
         width: parent.width * clamp(root.fill, 0, 1);
-        background: root.tone.with-alpha(0.38);
+        background: Theme.attention.with-alpha(0.55);
     }
     if root.enabled && root.level > 0.01 && root.level < 0.99: Rectangle {
         accessible-role: slider; accessible-label: "deck\{root.deck}.stem.\{root.stem}.level"; accessible-value: Math.round(root.level * 100) + " %";
         x: 2px; y: parent.height - 3px; height: 2px; width: (parent.width - 4px) * root.level;
-        background: root.tone;
+        background: Theme.bone-2;
     }
 }
 
@@ -765,16 +753,16 @@ component StemStrip inherits HorizontalLayout {
     callback stem(string);
     callback stem-level(string, float);
     property <bool> busy: root.deck.stems-busy;
-    property <string> caption: root.busy ? Math.round(root.deck.split-progress * 100) + "%" : @tr("PARTS");
-    spacing: 4px;
-    if root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: 10px; vertical-alignment: center; color: Theme.bone-3; }
+    property <string> caption: root.busy ? Math.round(root.deck.split-progress * 100) + "%" : @tr("STEMS");
+    spacing: Theme.s1;
+    if root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: Theme.bone-3; }
     if !root.mirror && !root.compact: Rectangle { horizontal-stretch: 1; }
-    if !root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: 10px; vertical-alignment: center; color: Theme.bone-3; }
-    if root.compact && root.busy: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: 10px; vertical-alignment: center; color: Theme.bone-3; }
-    StemKey { deck: root.deck.deck; stem: "vocal"; label: "VOCAL"; muted: root.deck.mute-vocal; level: root.deck.level-vocal; tone: Theme.w589; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 0); toggle => { root.stem("vocal"); } set-level(v) => { root.stem-level("vocal", v); } }
-    StemKey { deck: root.deck.deck; stem: "drums"; label: "DRUMS"; muted: root.deck.mute-drums; level: root.deck.level-drums; tone: Theme.w615; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 2); toggle => { root.stem("drums"); } set-level(v) => { root.stem-level("drums", v); } }
-    StemKey { deck: root.deck.deck; stem: "bass"; label: "BASS"; muted: root.deck.mute-bass; level: root.deck.level-bass; tone: Theme.w405; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 3); toggle => { root.stem("bass"); } set-level(v) => { root.stem-level("bass", v); } }
-    StemKey { deck: root.deck.deck; stem: "inst"; label: "INST"; muted: root.deck.mute-inst; level: root.deck.level-inst; tone: Theme.w486; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 1); toggle => { root.stem("inst"); } set-level(v) => { root.stem-level("inst", v); } }
+    if !root.mirror && !root.compact: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: Theme.bone-3; }
+    if root.compact && root.busy: Caps { accessible-label: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: Theme.bone-3; }
+    StemKey { deck: root.deck.deck; stem: "vocal"; label: "VOCAL"; muted: root.deck.mute-vocal; level: root.deck.level-vocal; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 0); toggle => { root.stem("vocal"); } set-level(v) => { root.stem-level("vocal", v); } }
+    StemKey { deck: root.deck.deck; stem: "drums"; label: "DRUMS"; muted: root.deck.mute-drums; level: root.deck.level-drums; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 2); toggle => { root.stem("drums"); } set-level(v) => { root.stem-level("drums", v); } }
+    StemKey { deck: root.deck.deck; stem: "bass"; label: "BASS"; muted: root.deck.mute-bass; level: root.deck.level-bass; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 3); toggle => { root.stem("bass"); } set-level(v) => { root.stem-level("bass", v); } }
+    StemKey { deck: root.deck.deck; stem: "inst"; label: "INST"; muted: root.deck.mute-inst; level: root.deck.level-inst; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 1); toggle => { root.stem("inst"); } set-level(v) => { root.stem-level("inst", v); } }
     if root.mirror && !root.compact: Rectangle { horizontal-stretch: 1; }
 }
 
@@ -837,7 +825,7 @@ component PadRows inherits VerticalLayout {
     in property <bool> grid-open;
     horizontal-stretch: 3;
     min-width: 0px;
-    spacing: 4px;
+    spacing: Theme.s1;
     if root.grid-open: GridRow {
         base: root.base; span: 4;
         GridPanel { width: parent.width; height: parent.height; deck: root.deck; row-h: root.base; alignment: space-between; }
@@ -880,17 +868,15 @@ component LoopRows inherits VerticalLayout {
     callback loop-scale(float);
     callback beat-jump-step(bool);
     callback loop-manual();
-    width: 104px;
-    spacing: 4px;
+    width: 92px;
+    spacing: Theme.s1;
     GridRow {
         base: root.base;
-        background: Theme.plate;
-        border-width: 1px;
-        border-color: root.deck.looping ? Theme.w615 : Theme.rule;
+        background: Theme.plate; border-radius: Theme.r-control;
         accessible-role: text;
         accessible-label: "deck\{root.deck.deck}.loop.size";
         accessible-value: root.deck.loop-size;
-        Text { text: root.deck.loop-size; font-family: Theme.family; font-size: 18px; font-weight: 600; color: Theme.bone; }
+        Text { text: root.deck.loop-size; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; }
     }
     GridRow { base: root.base; RowPair {
         width: parent.width; height: parent.height;
@@ -903,7 +889,7 @@ component LoopRows inherits VerticalLayout {
             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.looping;
             accessible-label: "deck\{root.deck.deck}.loop.auto";
             x: 0; width: parent.half; size: parent.height;
-            label: "LOOP"; on: root.deck.looping; tone: Theme.w615;
+            label: "LOOP"; on: root.deck.looping; tone: Theme.attention;
             tooltip: @tr("Auto loop of the shown length; press again to leave it");
             clicked => { if (root.deck.looping) { root.loop-exit(); } else { root.loop(0); } }
         }
@@ -935,7 +921,7 @@ component TransportRows inherits VerticalLayout {
     callback cue();
     callback toggle-play();
     callback tempo-range();
-    spacing: 4px;
+    spacing: Theme.s1;
     // At least as wide as a round key two base rows tall; it takes a little
     // of the deck's spare width so the keys can grow with the rows.
     min-width: 2 * root.base + 4px;
@@ -987,13 +973,13 @@ component StateRows inherits VerticalLayout {
     callback slip();
     callback quantize();
     callback keylock();
-    width: 58px;
-    spacing: 4px;
-    GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; width: parent.width; size: parent.height; label: "SLIP"; on: root.deck.slip; tone: Theme.w405; clicked => { root.slip(); } } }
+    width: 72px;
+    spacing: Theme.s1;
+    GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; width: parent.width; size: parent.height; label: "SLIP"; on: root.deck.slip; tone: Theme.attention; clicked => { root.slip(); } } }
     GridRow { base: root.base; }
-    GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; width: parent.width; size: parent.height; label: "Q"; on: root.deck.quantize; tone: Theme.attention; clicked => { root.quantize(); } } }
+    GridRow { base: root.base; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; width: parent.width; size: parent.height; label: "QUANTIZE"; on: root.deck.quantize; tone: Theme.setup-on; clicked => { root.quantize(); } } }
     GridRow { base: root.base; }
-    GridRow { base: root.base; grows: 0; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.master-tempo"; width: parent.width; size: parent.height; label: "MT"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } } }
+    GridRow { base: root.base; grows: 0; Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; width: parent.width; size: parent.height; label: "KEYLOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } } }
 }
 
 // Full deck controls on one five-row grid: pads (four rows and the pad
@@ -1023,7 +1009,7 @@ component DeckControls inherits HorizontalLayout {
     callback quantize();
     callback keylock();
     callback tempo(float);
-    spacing: 12px;
+    spacing: Theme.s3;
     // The GRID panel replaces the pads (its key is in the loop column).
     property <bool> grid-open;
 
@@ -1068,18 +1054,18 @@ component KioskDeck inherits Rectangle {
     callback stem-level(string, float);
     callback load();
     property <color> tone: Theme.deck-color(root.deck.deck);
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     VerticalLayout {
-        padding-left: 8px; padding-right: 6px; padding-top: 1px; padding-bottom: 1px;
-        spacing: 2px;
+        padding-left: Theme.s2; padding-right: Theme.s2; padding-top: 0px; padding-bottom: 0px;
+        spacing: Theme.key-gap;
         // Number, cover, title / artist, BPM / remaining / elapsed, KEY,
         // key shift, SYNC, MASTER.
         HorizontalLayout {
             height: 44px;
-            spacing: 4px;
+            spacing: Theme.s1;
             Text {
                 accessible-role: text; accessible-label: "deck\{root.deck.deck}.number"; accessible-value: root.deck.deck;
-                text: root.deck.deck; font-family: Theme.family; font-size: 18px; font-weight: 600; color: root.tone; vertical-alignment: center;
+                text: root.deck.deck; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: root.tone; vertical-alignment: center;
             }
             VerticalLayout { alignment: center; Rectangle {
                 accessible-role: image; accessible-label: "deck\{root.deck.deck}.artwork";
@@ -1093,18 +1079,18 @@ component KioskDeck inherits Rectangle {
                 Text {
                     accessible-role: text; accessible-label: "deck\{root.deck.deck}.title"; accessible-value: self.text;
                     text: root.deck.loaded || root.deck.loading ? root.deck.title : @tr("Not loaded");
-                    font-family: Theme.family; font-size: 13px; font-weight: 600; color: root.deck.loaded || root.deck.loading ? Theme.bone : Theme.bone-3; overflow: elide;
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: root.deck.loaded || root.deck.loading ? Theme.bone : Theme.bone-3; overflow: elide;
                 }
                 Text {
                     accessible-role: text; accessible-label: "deck\{root.deck.deck}.artist"; accessible-value: root.deck.artist;
-                    text: root.deck.artist; font-family: Theme.family; font-size: 11px; color: Theme.bone-2; overflow: elide;
+                    text: root.deck.artist; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; overflow: elide;
                 }
             }
             VerticalLayout {
                 alignment: center; spacing: 0px;
-                Text { accessible-role: text; accessible-label: "deck\{root.deck.deck}.bpm"; accessible-value: root.deck.bpm; text: root.deck.bpm == "" ? "—" : root.deck.bpm; font-family: Theme.family; font-size: 14px; font-weight: 600; color: root.deck.master ? Theme.attention : Theme.bone; horizontal-alignment: right; }
-                Text { accessible-role: text; accessible-label: "deck\{root.deck.deck}.time-remaining"; accessible-value: DeckTime.main(root.deck); text: DeckTime.main(root.deck) == "" ? "—" : DeckTime.main(root.deck); font-family: Theme.family; font-size: 12px; font-weight: 600; color: Theme.bone; horizontal-alignment: right; }
-                Text { accessible-role: text; accessible-label: "deck\{root.deck.deck}.time-elapsed"; accessible-value: root.deck.elapsed; text: root.deck.elapsed; font-family: Theme.family; font-size: 10px; color: Theme.bone-2; horizontal-alignment: right; }
+                Text { accessible-role: text; accessible-label: "deck\{root.deck.deck}.bpm"; accessible-value: root.deck.bpm; text: root.deck.bpm == "" ? "—" : root.deck.bpm; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: right; }
+                Text { accessible-role: text; accessible-label: "deck\{root.deck.deck}.time-remaining"; accessible-value: DeckTime.main(root.deck); text: DeckTime.main(root.deck) == "" ? "—" : DeckTime.main(root.deck); font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: right; }
+                Text { accessible-role: text; accessible-label: "deck\{root.deck.deck}.time-elapsed"; accessible-value: root.deck.elapsed; text: root.deck.elapsed; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: right; }
             }
             Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.key-sync;
@@ -1115,19 +1101,19 @@ component KioskDeck inherits Rectangle {
             }
             Stepper {
                 accessible-role: spinbox; accessible-label: "deck\{root.deck.deck}.key-shift"; accessible-value: root.deck.key-shift;
-                size: 44px; arrow: 16px; font-size: 11px; template: "+12";
+                size: 44px; arrow: 16px; font-size: Theme.control; template: "+12";
                 value: root.deck.key-shift; lit: root.deck.key-shift != "±0"; tone: Theme.w436;
                 tooltip: @tr("Key shift: down / up a semitone — click the value to reset");
                 step(d) => { root.key-shift(d); }
                 value-clicked => { root.key-shift(0); }
             }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: 44px; width: 48px; label: "SYNC"; on: root.deck.sync; tone: Theme.w486; clicked => { root.sync(); } }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 44px; width: 48px; label: "MSTR"; on: root.deck.master; tone: Theme.attention; tooltip: @tr("Master deck: the others sync to it"); clicked => { root.master(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: 44px; width: 48px; label: "SYNC"; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 44px; width: 48px; label: "MSTR"; on: root.deck.master; tone: root.tone; tooltip: @tr("Master deck: the others sync to it"); clicked => { root.master(); } }
         }
         // Overview (needle search) and the part mutes.
         HorizontalLayout {
             height: 44px;
-            spacing: 4px;
+            spacing: Theme.s1;
             Rectangle {
                 accessible-role: slider; accessible-label: "deck\{root.deck.deck}.overview"; accessible-value: root.deck.progress;
                 horizontal-stretch: 1;
@@ -1145,11 +1131,11 @@ component KioskDeck inherits Rectangle {
                     HorizontalLayout { alignment: center; VerticalLayout { alignment: center; PlateButton { tall: true; label: @tr("LOAD SELECTED"); tone: root.tone; clicked => { root.load(); } } } }
                 }
             }
-            for st[i] in [{ id: "vocal", label: "VOC", tone: Theme.w589 }, { id: "drums", label: "DRM", tone: Theme.w615 }, { id: "bass", label: "BASS", tone: Theme.w405 }, { id: "inst", label: "INST", tone: Theme.w486 }]: StemKey {
-                deck: root.deck.deck; stem: st.id; label: st.label; tone: st.tone;
+            for st[i] in [{ id: "vocal", label: "VOCAL" }, { id: "drums", label: "DRUMS" }, { id: "bass", label: "BASS" }, { id: "inst", label: "INST" }]: StemKey {
+                deck: root.deck.deck; stem: st.id; label: st.label;
                 muted: st.id == "vocal" ? root.deck.mute-vocal : st.id == "inst" ? root.deck.mute-inst : st.id == "drums" ? root.deck.mute-drums : root.deck.mute-bass;
                 level: st.id == "vocal" ? root.deck.level-vocal : st.id == "inst" ? root.deck.level-inst : st.id == "drums" ? root.deck.level-drums : root.deck.level-bass;
-                size: 44px; key-width: 46px; enabled: root.deck.stems-available;
+                size: 44px; key-width: 56px; enabled: root.deck.stems-available;
                 busy: root.deck.stems-busy; fill: StemFill.of(root.deck.split-progress, i);
                 toggle => { root.stem(st.id); }
                 set-level(v) => { root.stem-level(st.id, v); }
@@ -1158,34 +1144,33 @@ component KioskDeck inherits Rectangle {
         // CUE, PLAY, SLIP, Q, MT, the channel's STEM and the platter read-out.
         if !root.browse: HorizontalLayout {
             height: 44px;
-            spacing: 4px;
+            spacing: Theme.s1;
             Transport { accessible-role: button; accessible-label: "deck\{root.deck.deck}.cue"; kind: "cue"; tone: Theme.attention; size: 44px; clicked => { root.cue(); } }
             Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; size: 44px; clicked => { root.toggle-play(); } }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: 44px; width: 48px; label: "SLIP"; on: root.deck.slip; tone: Theme.w405; clicked => { root.slip(); } }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: 44px; width: 44px; label: "Q"; on: root.deck.quantize; tone: Theme.attention; clicked => { root.quantize(); } }
-            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.master-tempo"; size: 44px; width: 44px; label: "MT"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: 44px; width: 48px; label: "SLIP"; on: root.deck.slip; tone: Theme.attention; clicked => { root.slip(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: 44px; width: 44px; label: "Q"; on: root.deck.quantize; tone: Theme.setup-on; clicked => { root.quantize(); } }
+            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; size: 44px; width: 72px; label: "KEYLOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
             Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.parts;
                 accessible-label: "mixer.ch\{root.deck.deck}.stem";
-                size: 44px; width: 52px; label: "STEM"; on: root.parts; tone: Theme.w656;
-                tooltip: @tr("The channel's EQ knobs control the parts: HI vocals, MID inst, LOW drums");
+                size: 44px; width: 52px; label: "STEM"; on: root.parts; tone: Theme.setup-on;
+                tooltip: @tr("The channel's EQ knobs control the stems: HI vocals, MID inst, LOW drums");
                 clicked => { MixerParts.toggle(root.deck.deck); }
             }
             Rectangle {
                 accessible-role: text; accessible-label: "deck\{root.deck.deck}.platter"; accessible-value: root.deck.loaded ? root.deck.bpm : "—";
                 horizontal-stretch: 1;
-                border-width: 1px; border-color: root.deck.playing ? root.tone : Theme.rule;
+                background: Theme.plate; border-radius: Theme.r-control;
                 Text {
                     width: parent.width - 8px;
                     text: root.deck.tempo + "  " + root.deck.tempo-range + (root.deck.phrase != "" ? "  " + root.deck.phrase : "");
-                    font-family: Theme.family; font-size: 11px; font-weight: 600; color: Theme.bone-2; overflow: elide; horizontal-alignment: center;
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2; overflow: elide; horizontal-alignment: center;
                 }
             }
         }
     }
     VLine { x: 0; y: 0; height: parent.height; weight: 3px; tone: root.tone; form: root.deck.master ? "double" : "solid"; }
     DropZone { width: parent.width; height: parent.height; id: root.deck.deck; tone: root.tone; }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }
 
 export component DeckPanel inherits Rectangle {
@@ -1196,6 +1181,8 @@ export component DeckPanel inherits Rectangle {
     in property <bool> mirror;
     // Room for KEY SYNC / key shift in the header (wide enough windows).
     in property <bool> key-column: true;
+    // Four decks: the readouts give up a rank so the waveforms keep their lanes.
+    in property <bool> four;
     callback toggle-play();
     callback cue();
     callback sync();
@@ -1231,17 +1218,17 @@ export component DeckPanel inherits Rectangle {
     // rows go down to 22 px (and the overview a little flatter) before the
     // deck turns compact.
     in property <bool> dense;
-    property <length> pad-h: root.touch-size ? (root.compact ? 34px : 40px) : root.dense && !root.compact ? 22px : 30px;
+    property <length> pad-h: root.touch-size ? (root.compact ? 34px : 40px) : root.dense && !root.compact ? 24px : 30px;
     property <length> ctl-h: root.touch-size ? 34px : 26px;
     property <length> jog: root.touch-size ? 176px : 164px;
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     min-height: body.min-height;
     preferred-height: body.preferred-height;
 
     body := VerticalLayout {
-        padding-left: 14px; padding-right: 12px;
-        padding-top: root.compact ? 2px : 8px; padding-bottom: root.compact ? 3px : 6px;
-        spacing: root.compact ? 3px : 6px;
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        padding-top: root.compact ? Theme.key-gap : root.dense ? Theme.s1 : Theme.s2; padding-bottom: root.compact ? Theme.key-gap : root.dense ? Theme.s1 : Theme.s2;
+        spacing: root.compact ? Theme.key-gap : root.dense ? Theme.s1 : Theme.s2;
         // The full deck row takes the spare height (the mixer column beside
         // the decks sets the row height); header, overview and parts don't.
         alignment: root.compact || root.browse ? LayoutAlignment.start : LayoutAlignment.stretch;
@@ -1249,13 +1236,13 @@ export component DeckPanel inherits Rectangle {
         // Header: numeral, title / artist, BPM, remaining / elapsed, key, SYNC / MASTER.
         HorizontalLayout {
             vertical-stretch: 0;
-            spacing: 14px;
+            spacing: Theme.s3;
             Text {
                 accessible-role: text;
                 accessible-label: "deck\{root.deck.deck}.number";
                 accessible-value: root.deck.deck;
                 text: root.deck.deck;
-                font-family: Theme.family; font-size: root.compact ? 22px : 28px; font-weight: 600;
+                font-family: Theme.family; font-size: root.compact ? Theme.heading : Theme.hero; font-weight: Theme.weight-semi;
                 color: root.tone; vertical-alignment: center;
             }
             // Cover art; an outlined square with a disc mark when the track has none.
@@ -1280,7 +1267,7 @@ export component DeckPanel inherits Rectangle {
                     accessible-label: "deck\{root.deck.deck}.title";
                     accessible-value: self.text;
                     text: root.deck.loaded || root.deck.loading ? root.deck.title : @tr("Not loaded");
-                    font-family: Theme.family; font-size: root.compact ? 14px : 17px; font-weight: 600;
+                    font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
                     color: root.deck.loaded || root.deck.loading ? Theme.bone : Theme.bone-3;
                     overflow: elide;
                 }
@@ -1289,23 +1276,23 @@ export component DeckPanel inherits Rectangle {
                     accessible-label: "deck\{root.deck.deck}.artist";
                     accessible-value: root.deck.artist;
                     text: root.deck.artist;
-                    font-family: Theme.family; font-size: 12px; color: Theme.bone-2;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
                     overflow: elide;
                 }
             }
-            Readout { value-label: "deck\{root.deck.deck}.bpm"; label: "BPM"; template: "000.00"; value: root.deck.bpm; size: root.compact ? 18px : 22px; tone: root.deck.master ? Theme.attention : Theme.bone; }
-            Readout { value-label: "deck\{root.deck.deck}.time-remaining"; sub-label: "deck\{root.deck.deck}.time-elapsed"; sub2-label: "deck\{root.deck.deck}.time-track"; label: DeckTime.label(); template: "-00:00.0"; value: DeckTime.main(root.deck); sub: root.deck.elapsed; sub2: DeckTime.track(root.deck); size: root.compact ? 18px : 22px; }
-            Readout { value-label: "deck\{root.deck.deck}.key"; label: @tr("KEY"); template: "12A"; value: root.deck.key; size: root.compact ? 18px : 22px; }
+            Readout { value-label: "deck\{root.deck.deck}.bpm"; label: "BPM"; template: "000.00"; value: root.deck.bpm; size: !root.compact ? Theme.hero : root.four ? Theme.body : Theme.heading; }
+            Readout { value-label: "deck\{root.deck.deck}.time-remaining"; sub-label: "deck\{root.deck.deck}.time-elapsed"; sub2-label: "deck\{root.deck.deck}.time-track"; label: DeckTime.label(); template: "-00:00.0"; value: DeckTime.main(root.deck); sub: root.deck.elapsed; sub2: DeckTime.track(root.deck); size: !root.compact ? Theme.hero : root.four ? Theme.body : Theme.heading; }
+            Readout { value-label: "deck\{root.deck.deck}.key"; label: @tr("KEY"); template: "12A"; value: root.deck.key; size: !root.compact ? Theme.heading : root.four ? Theme.control : Theme.body; }
             // Key sync and key shift (semitones; the value resets). Narrow
             // decks leave them to the Key Shift pad mode and the keyboard.
             if root.key-column: VerticalLayout {
-                spacing: root.compact ? 1px : 3px;
+                spacing: root.compact ? Theme.key-gap : Theme.key-gap;
                 alignment: center;
-                width: 78px;
+                width: root.four ? 74px : 78px;
                 Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.key-sync;
                     accessible-label: "deck\{root.deck.deck}.key-sync";
-                    size: 24px; label: "KEY SYNC"; on: root.deck.key-sync; tone: Theme.w436;
+                    size: 24px; label: root.four ? "KEY" : "KEY SYNC"; on: root.deck.key-sync; tone: Theme.w436;
                     tooltip: @tr("Key sync: match the key of the master deck");
                     command: "deck" + root.deck.deck + ".keysync";
                     clicked => { root.key-sync(); }
@@ -1314,7 +1301,7 @@ export component DeckPanel inherits Rectangle {
                     accessible-role: spinbox;
                     accessible-label: "deck\{root.deck.deck}.key-shift";
                     accessible-value: root.deck.key-shift;
-                    size: 24px; font-size: 11px;
+                    size: 24px; font-size: Theme.control; arrow: root.four ? 16px : 24px;
                     value: root.deck.key-shift; template: "+12"; lit: root.deck.key-shift != "±0"; tone: Theme.w436;
                     tooltip: @tr("Key shift: down / up a semitone — click the value to reset");
                     command: "deck" + root.deck.deck + ".keyshift.up";
@@ -1323,18 +1310,18 @@ export component DeckPanel inherits Rectangle {
                 }
             }
             VerticalLayout {
-                spacing: root.compact ? 1px : 3px;
+                spacing: root.compact ? Theme.key-gap : Theme.key-gap;
                 alignment: center;
-                width: 70px;
-                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: 24px; label: "SYNC"; on: root.deck.sync; tone: Theme.w486; clicked => { root.sync(); } }
-                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 24px; label: "MASTER"; on: root.deck.master; tone: Theme.attention; clicked => { root.master(); } }
+                width: root.four ? 58px : 70px;
+                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-label: "deck\{root.deck.deck}.beat-sync"; size: 24px; label: "SYNC"; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
+                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-label: "deck\{root.deck.deck}.master"; size: 24px; label: root.four ? "MSTR" : "MASTER"; on: root.deck.master; tone: root.tone; clicked => { root.master(); } }
             }
         }
 
         // Overview; on compact decks the stem strip sits beside it.
         HorizontalLayout {
             vertical-stretch: 0;
-            spacing: 8px;
+            spacing: Theme.s2;
             Overview {
                 horizontal-stretch: 1;
                 a11y-label: "deck\{root.deck.deck}.overview";
@@ -1371,9 +1358,9 @@ export component DeckPanel inherits Rectangle {
         // mode on the first line; loop, state, platter and tempo on the second ──
         if !root.browse && root.compact: VerticalLayout {
             vertical-stretch: 0;
-            spacing: 4px;
+            spacing: Theme.s1;
             HorizontalLayout {
-                spacing: 4px;
+                spacing: Theme.key-gap;
                 TempoRange { deck: root.deck; size: root.touch-size ? 44px : 30px; clicked => { root.tempo-range(); } }
                 Transport { accessible-role: button; accessible-label: "deck\{root.deck.deck}.cue"; kind: "cue"; tone: Theme.attention; size: root.touch-size ? 44px : 30px; clicked => { root.cue(); } }
                 Transport { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.playing; accessible-label: "deck\{root.deck.deck}.play"; kind: "play"; on: root.deck.playing; tone: Theme.live; size: root.touch-size ? 44px : 30px; clicked => { root.toggle-play(); } }
@@ -1392,25 +1379,24 @@ export component DeckPanel inherits Rectangle {
                 } }
             }
             HorizontalLayout {
-                spacing: 4px;
+                spacing: Theme.key-gap;
                 Rectangle {
                     accessible-role: text;
                     accessible-label: "deck\{root.deck.deck}.loop.size";
                     accessible-value: root.deck.loop-size;
                     width: 40px; height: root.ctl-h;
-                    background: Theme.plate;
-                    border-width: 1px; border-color: root.deck.looping ? Theme.w615 : Theme.rule;
-                    Text { text: root.deck.loop-size; font-family: Theme.family; font-size: 13px; font-weight: 600; color: Theme.bone; }
+                    background: Theme.plate; border-radius: Theme.r-control;
+                    Text { text: root.deck.loop-size; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; }
                 }
                 Toggle { accessible-role: button; accessible-label: "deck\{root.deck.deck}.loop.halve"; size: root.ctl-h; label: "½"; tooltip: @tr("Halve the loop"); clicked => { root.loop-scale(0.5); } }
                 Toggle { accessible-role: button; accessible-label: "deck\{root.deck.deck}.loop.double"; size: root.ctl-h; label: "2×"; tooltip: @tr("Double the loop"); clicked => { root.loop-scale(2); } }
-                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.looping; accessible-label: "deck\{root.deck.deck}.loop.auto"; accessible-value: root.deck.loop-size; size: root.ctl-h; label: "LOOP"; on: root.deck.looping; tone: Theme.w615; clicked => { if (root.deck.looping) { root.loop-exit(); } else { root.loop(0); } } }
+                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.looping; accessible-label: "deck\{root.deck.deck}.loop.auto"; accessible-value: root.deck.loop-size; size: root.ctl-h; label: "LOOP"; on: root.deck.looping; tone: Theme.attention; clicked => { if (root.deck.looping) { root.loop-exit(); } else { root.loop(0); } } }
                 ManualLoop { deck: root.deck; size: root.ctl-h; clicked => { root.loop-manual(); } }
-                Rectangle { width: 4px; }
-                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: root.ctl-h; label: "SLIP"; on: root.deck.slip; tone: Theme.w405; clicked => { root.slip(); } }
-                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: root.ctl-h; label: "Q"; on: root.deck.quantize; tone: Theme.attention; clicked => { root.quantize(); } }
-                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.master-tempo"; size: root.ctl-h; label: "MT"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
-                Rectangle { width: 4px; }
+                Rectangle { width: Theme.key-gap; }
+                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-label: "deck\{root.deck.deck}.slip"; size: root.ctl-h; label: "SLIP"; on: root.deck.slip; tone: Theme.attention; clicked => { root.slip(); } }
+                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-label: "deck\{root.deck.deck}.quantize"; size: root.ctl-h; label: "Q"; on: root.deck.quantize; tone: Theme.setup-on; clicked => { root.quantize(); } }
+                Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-label: "deck\{root.deck.deck}.keylock"; size: root.ctl-h; label: "LOCK"; on: root.deck.keylock; tone: Theme.w436; clicked => { root.keylock(); } }
+                Rectangle { width: Theme.key-gap; }
                 // Platter readout: tempo of the deck and its pitch with the range.
                 Rectangle {
                     accessible-role: text;
@@ -1419,18 +1405,18 @@ export component DeckPanel inherits Rectangle {
                     // As wide as the longest readout, so loading a track or
                     // moving the pitch never shifts the row.
                     height: root.ctl-h; min-width: max(pl.preferred-width, pl-template.preferred-width) + 12px;
-                    border-width: 1px; border-color: root.deck.playing ? root.tone : Theme.rule;
-                    pl-template := Text { visible: false; text: "000.00  +00.0%"; font-family: Theme.family; font-size: 11px; font-weight: 600; }
+                    background: Theme.plate; border-radius: Theme.r-control;
+                    pl-template := Text { visible: false; text: "000.00  +00.0%"; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; }
                     pl := Text {
                         text: (root.deck.loaded ? root.deck.bpm : "—") + "  " + root.deck.tempo;
-                        font-family: Theme.family; font-size: 11px; font-weight: 600; color: Theme.bone-2;
+                        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2;
                     }
                 }
                 Crossfader {
                     accessible-role: slider;
                     accessible-label: "deck\{root.deck.deck}.pitch";
                     accessible-value: root.deck.tempo;
-                    horizontal-stretch: 1; min-width: 48px;
+                    horizontal-stretch: 1; min-width: 36px;
                     height: root.ctl-h;
                     value: (root.deck.tempo-value + 1) / 2;
                     changed(v) => { root.tempo(v * 2 - 1); }
@@ -1445,7 +1431,6 @@ export component DeckPanel inherits Rectangle {
     // Deck line along the outer edge.
     VLine { x: root.mirror ? parent.width - 3px : 0; y: 0; height: parent.height; weight: 3px; tone: root.tone; form: root.deck.master ? "double" : "solid"; }
     DropZone { width: parent.width; height: parent.height; id: root.deck.deck; tone: root.tone; }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }
 
 // Perform layout: "standard", "vertical" (waveforms upright above the
@@ -1468,7 +1453,7 @@ component ZoneKey inherits Rectangle {
     accessible-enabled: root.live;
     width: Theme.target; height: Theme.target;
     background: zt.has-hover && root.live ? Theme.plate-raised : Theme.plate;
-    border-width: 1px; border-color: Theme.ground;
+    border-radius: Theme.r-control;
     // Collapse / expand: a bar with a minus / plus; zoom: plus / minus;
     // reset: a centred dot.
     if root.id == "collapse" || root.id == "expand": Rectangle { x: 5px; y: root.id == "collapse" ? 4px : parent.height - 6px; width: parent.width - 10px; height: 2px; background: root.live ? Theme.bone-3 : Theme.rule; }
@@ -1534,25 +1519,25 @@ component ChannelStrip inherits Rectangle {
     property <color> tone: Theme.deck-color(root.ch.channel);
     width: 50px;
     VerticalLayout {
-        spacing: 2px;
-        Text { text: root.ch.channel; font-family: Theme.family; font-size: 14px; font-weight: 600; color: root.tone; horizontal-alignment: center; }
+        spacing: Theme.key-gap;
+        Text { text: root.ch.channel; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: root.tone; horizontal-alignment: center; }
         HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.trim"; accessible-value: root.ch.trim; label: "TRIM"; value: root.ch.trim; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; changed(v) => { root.trim(v); } } }
-        HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-high"; accessible-value: root.ch.high; label: root.ch.parts ? "VOC" : "HI"; value: root.ch.high; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w486; changed(v) => { root.eq(2, v); } } }
+        HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-high"; accessible-value: root.ch.high; label: root.ch.parts ? "VOCAL" : "HI"; value: root.ch.high; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w486; changed(v) => { root.eq(2, v); } } }
         HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-mid"; accessible-value: root.ch.mid; label: root.ch.parts ? "INST" : "MID"; value: root.ch.mid; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w546; changed(v) => { root.eq(1, v); } } }
-        HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-low"; accessible-value: root.ch.low; label: root.ch.parts ? "DRUM" : "LOW"; value: root.ch.low; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w656; changed(v) => { root.eq(0, v); } } }
+        HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "mixer.ch\{root.ch.channel}.eq-low"; accessible-value: root.ch.low; label: root.ch.parts ? "DRUMS" : "LOW"; value: root.ch.low; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w656; changed(v) => { root.eq(0, v); } } }
         HorizontalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "fx.channel-fx.ch\{root.ch.channel}"; accessible-value: root.ch.channel-fx; label: "CH FX"; value: root.ch.channel-fx; size: root.compact ? 16px : 22px; label-h: root.compact ? 11px : 16px; tone: Theme.w405; changed(v) => { root.channel-fx-amount(v); } } }
         Toggle {
             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.parts;
             accessible-label: "mixer.ch\{root.ch.channel}.stem";
-            size: 24px; label: "STEM"; on: root.ch.parts; tone: Theme.w656;
-            tooltip: @tr("EQ knobs control the parts: HI vocals, MID inst, LOW drums");
+            size: 24px; label: "STEM"; on: root.ch.parts; tone: Theme.setup-on;
+            tooltip: @tr("EQ knobs control the stems: HI vocals, MID inst, LOW drums");
             clicked => { MixerParts.toggle(root.ch.channel); }
         }
         Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.ch.cue; accessible-label: "mixer.ch\{root.ch.channel}.cue"; size: 24px; label: "CUE"; on: root.ch.cue; tone: Theme.attention; clicked => { root.cue(); } }
         HorizontalLayout {
             vertical-stretch: 1;
-            min-height: root.compact ? 30px : 64px;
-            spacing: 3px;
+            min-height: root.compact ? 30px : 56px;
+            spacing: Theme.key-gap;
             alignment: center;
             // Level meter: amber near the top, red at clip.
             Rectangle {
@@ -1582,7 +1567,7 @@ export component MixerPanel inherits Rectangle {
     in property <int> channel-fx;
     callback channel-fx-select(int);
     callback channel-fx-step(int);
-    background: Theme.ground-band;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     // Hidden (mixer off, browse layout, kiosk): takes no height either.
     in property <bool> shown: true;
     min-width: lay.min-width;
@@ -1590,10 +1575,10 @@ export component MixerPanel inherits Rectangle {
     min-height: root.shown ? lay.min-height : 0px;
     preferred-height: root.shown ? lay.preferred-height : 0px;
     lay := VerticalLayout {
-        padding-left: 8px; padding-right: 8px; padding-top: 8px; padding-bottom: 10px;
-        spacing: 6px;
+        padding-left: Theme.s2; padding-right: Theme.s2; padding-top: root.compact ? Theme.s1 : Theme.s2; padding-bottom: root.compact ? Theme.s1 : Theme.s2;
+        spacing: root.compact ? Theme.s1 : Theme.s2;
         HorizontalLayout {
-            spacing: 6px;
+            spacing: Theme.s2;
             alignment: center;
             for c in root.channels: ChannelStrip {
                 ch: c;
@@ -1613,7 +1598,6 @@ export component MixerPanel inherits Rectangle {
             step(d) => { root.channel-fx-step(d); }
         }
     }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }
 
 // Crossfader assignment of the four decks to one side: a 2 × 2 grid
@@ -1624,7 +1608,7 @@ component XfAssignGrid inherits GridLayout {
     in property <[string]> assign;
     in property <int> decks: 2;
     callback set(int, string);
-    spacing: 2px;
+    spacing: Theme.key-gap;
     for d[i] in 4: Toggle {
         accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.on;
         accessible-label: "global.xf-" + (root.side == "A" ? "a" : "b") + ".deck\{i + 1}";
@@ -1660,12 +1644,12 @@ component GlobalBar inherits Rectangle {
     callback set-headphone-level(float);
     callback toggle-recording();
     height: root.touch-size ? 44px : 50px;
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     // Kiosk: headphones, crossfader and its assign are on the controller;
     // the recording section stays, on 44 px keys.
     if root.touch-size && root.show-rec: HorizontalLayout {
         alignment: center;
-        spacing: 12px;
+        spacing: Theme.s3;
         RecStrip { tall: true; }
         Rectangle {
             width: 44px;
@@ -1682,27 +1666,29 @@ component GlobalBar inherits Rectangle {
         Text {
             accessible-role: text; accessible-label: "rec.time"; accessible-value: self.text;
             text: root.recording ? root.recording-time : "00:00:00";
-            font-family: Theme.family; font-size: 13px; font-weight: 600;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
             color: root.recording ? Theme.bone : Theme.bone-3; vertical-alignment: center;
         }
     }
     if !root.touch-size: HorizontalLayout {
-        padding-left: 14px; padding-right: 14px;
+        padding-left: Theme.s4; padding-right: Theme.s4;
         spacing: 0;
         HorizontalLayout {
             width: (root.width - 28px - max(220px, root.centre-width)) / 2;
             alignment: end;
-            spacing: 14px;
-            padding-right: 18px;
-            MicControls { }
-            Rectangle { width: 10px; }
+            spacing: Theme.s4;
+            padding-right: Theme.s4;
+            // Too narrow for both: the headphones keep their place, the
+            // microphone gives way.
+            if root.width >= 1000px: MicControls { }
+            if root.width >= 1000px: Rectangle { width: Theme.s3; }
             Caps { text: @tr("PHONES"); vertical-alignment: center; }
             VerticalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "global.phones.mix"; accessible-value: root.headphone-mix; label: "MIX"; size: 20px; minimum: 0; maximum: 1; default-value: 0.5; value: root.headphone-mix; changed(v) => { root.set-headphone-mix(v); } } }
             VerticalLayout { alignment: center; Knob { accessible-role: slider; accessible-label: "global.phones.level"; accessible-value: root.headphone-level; label: @tr("LEVEL"); size: 20px; minimum: 0; maximum: 1; default-value: 0.8; value: root.headphone-level; changed(v) => { root.set-headphone-level(v); } } }
         }
         HorizontalLayout {
             width: max(220px, root.centre-width);
-            spacing: 6px;
+            spacing: Theme.s2;
             VerticalLayout { alignment: center; XfAssignGrid { side: "A"; assign: root.xf-assign; decks: root.deck-count; set(d, x) => { root.xf-assign-set(d, x); } } }
             VerticalLayout {
                 horizontal-stretch: 1;
@@ -1714,7 +1700,7 @@ component GlobalBar inherits Rectangle {
                 Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: MixerParts.auto-fader;
                     accessible-label: "global.auto-fader";
-                    size: 22px; width: 52px; label: "AUTO"; on: MixerParts.auto-fader; tone: Theme.w486;
+                    size: 22px; width: 52px; label: "AUTO"; on: MixerParts.auto-fader; tone: Theme.setup-on;
                     tooltip: @tr("Auto Fader: the crossfader also swaps the basses and keeps the decks in sync");
                     clicked => { MixerParts.toggle-auto-fader(); }
                 }
@@ -1724,9 +1710,9 @@ component GlobalBar inherits Rectangle {
         HorizontalLayout {
             width: (root.width - 28px - max(220px, root.centre-width)) / 2;
             alignment: end;
-            spacing: 12px;
-            padding-left: 18px;
-            if root.show-rec: RecStrip { tall: root.touch-size; }
+            spacing: Theme.s3;
+            padding-left: Theme.s4;
+            if root.show-rec: RecStrip { tall: root.touch-size; compact: root.width < 1000px; }
             // Recording, one click away.
             if root.show-rec: Rectangle {
                 width: 30px;
@@ -1747,12 +1733,11 @@ component GlobalBar inherits Rectangle {
                 accessible-label: "rec.time";
                 accessible-value: self.text;
                 text: root.recording ? root.recording-time : "00:00:00";
-                font-family: Theme.family; font-size: 13px; font-weight: 600;
+                font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
                 color: root.recording ? Theme.bone : Theme.bone-3; vertical-alignment: center;
             }
         }
     }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }
 
 export component PerformView inherits Rectangle {
@@ -1865,7 +1850,7 @@ export component PerformView inherits Rectangle {
     background: Theme.ground;
 
     VerticalLayout {
-        spacing: 0;
+        spacing: root.touch-size || root.crowd >= 1 ? 0px : Theme.s1;
         if root.show-fx: FxPanel {
             units: root.fx-units;
             channels: root.decks.length;
@@ -1918,8 +1903,8 @@ export component PerformView inherits Rectangle {
                         accessible-role: button; accessible-label: "wave." + z.id;
                         width: 44px; height: 44px;
                         background: kzt.has-hover ? Theme.plate-raised : Theme.plate;
-                        border-width: 1px; border-color: Theme.ground;
-                        Text { text: z.label; font-family: Theme.family; font-size: 12px; color: Theme.bone-2; }
+                        border-radius: Theme.r-control;
+                        Text { text: z.label; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; }
                         kzt := TouchArea {
                             clicked => {
                                 if (z.d == 0) {
@@ -1943,15 +1928,16 @@ export component PerformView inherits Rectangle {
             }
         }
         if Lighting.panel: LightingStrip { }
-        // Decks (odd left, even right) edge to edge with the mixer.
+        // Decks (odd left, even right) with the mixer between them; the gaps
+        // between the panels are the structure.
         HorizontalLayout {
-            spacing: 0;
+            spacing: Theme.gutter;
             vertical-stretch: 0;
             VerticalLayout {
                 // Both deck columns share the space equally, whatever they show.
                 horizontal-stretch: 1;
                 preferred-width: 0px;
-                spacing: 0;
+                spacing: root.crowd >= 1 ? 0px : Theme.s1;
                 for d in root.decks-left: VerticalLayout {
                     if Club.enabled: ClubPlayer {
                         short: root.short || root.tight || root.crowd >= 1; narrow: root.narrow;
@@ -1975,6 +1961,7 @@ export component PerformView inherits Rectangle {
                     dense: root.crowd >= 1;
                     touch-size: root.touch-size;
                     key-column: root.width >= 1000px;
+                    four: root.decks.length > 2;
                     toggle-play => { root.toggle-play(d.deck); }
                     cue => { root.cue(d.deck); }
                     sync => { root.sync(d.deck); }
@@ -2004,7 +1991,6 @@ export component PerformView inherits Rectangle {
                 }
                 }
             }
-            VLine { weight: 1px; tone: Theme.rule; }
             VerticalLayout {
             horizontal-stretch: 0;
             spacing: 0;
@@ -2013,12 +1999,13 @@ export component PerformView inherits Rectangle {
                 height: root.touch-size ? 140px : root.tight || root.short ? 120px : 200px;
                 spacing: 0;
                 VerticalLayout {
-                    width: Theme.target; spacing: 2px; alignment: start;
+                    width: Theme.target; spacing: Theme.key-gap; alignment: start;
                     for z[k] in [{ id: "zoom-in", label: "+", d: 120 }, { id: "zoom-reset", label: "RST", d: 0 }, { id: "zoom-out", label: "−", d: -120 }]: Rectangle {
                         accessible-role: button; accessible-label: "wave." + z.id;
                         height: Theme.target;
                         background: zt.has-hover ? Theme.plate-raised : Theme.plate;
-                        Text { text: z.label; font-family: Theme.family; font-size: 10px; color: Theme.bone-2; horizontal-alignment: center; vertical-alignment: center; }
+                        border-radius: Theme.r-control;
+                        Text { text: z.label; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: center; vertical-alignment: center; }
                         zt := TouchArea {
                             clicked => {
                                 if (z.d == 0) {
@@ -2059,12 +2046,11 @@ export component PerformView inherits Rectangle {
                 channel-fx-step(d) => { root.channel-fx-step(d); }
             }
             }
-            if root.show-mixer: VLine { weight: 1px; tone: Theme.rule; }
             VerticalLayout {
                 // Both deck columns share the space equally, whatever they show.
                 horizontal-stretch: 1;
                 preferred-width: 0px;
-                spacing: 0;
+                spacing: root.crowd >= 1 ? 0px : Theme.s1;
                 for d in root.decks-right: VerticalLayout {
                     if Club.enabled: ClubPlayer {
                         short: root.short || root.tight || root.crowd >= 1; narrow: root.narrow;
@@ -2090,6 +2076,7 @@ export component PerformView inherits Rectangle {
                     dense: root.crowd >= 1;
                     touch-size: root.touch-size;
                     key-column: root.width >= 1000px;
+                    four: root.decks.length > 2;
                     toggle-play => { root.toggle-play(d.deck); }
                     cue => { root.cue(d.deck); }
                     sync => { root.sync(d.deck); }

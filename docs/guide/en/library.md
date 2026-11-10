@@ -11,7 +11,7 @@ The browser is the same in Prepare and Perform. On the left are your sources and
 
 ## The sources on the left
 
-The narrow rail switches what the tree shows: **ALL** (the whole collection), **LISTS** (playlists, sets and smart lists), **REL** (similar tracks), **SMPL** (the sampler panel in Perform), **FILES** (the explorer), **USB** (your sticks), **HIST** (histories), **REC** (recordings) and **TAG** (the tag list).
+The narrow rail switches what the tree shows: **ALL** (the whole collection), **LISTS** (playlists, sets and smart lists), **SIMILAR** (similar tracks), **SAMPLER** (the sampler panel in Perform), **FILES** (the explorer), **USB** (your sticks), **HISTORY** (histories), **RECORDINGS** (recordings) and **TAG LIST** (the tag list).
 
 ## Sorting by key (from version 0.6)
 
@@ -85,11 +85,11 @@ Rows also show where a track is loaded (a deck number), a tick when it has been 
 
 ## Row menu
 
-Right-click a row for everything else: **Load to deck**, **Analyse**, **Lock / unlock analysis**, **Separate parts**, the lists you used recently, **Add to playlist**, **Add to tag list**, **Reload tags from file**, **Export file…**, **Reset play count**, **Memory cues to hot cues**, **Sort hot cues by time**, **Set cues like my others**, **Show similar tracks**, **Colour**, **Rating**, **Remove from this list**, **Show info** and **Show in file manager**.
+Right-click a row for everything else: **Load to deck**, **Analyse**, **Lock / unlock analysis**, **Separate stems**, the lists you used recently, **Add to playlist**, **Add to tag list**, **Reload tags from file**, **Export file…**, **Reset play count**, **Memory cues to hot cues**, **Sort hot cues by time**, **Set cues like my others**, **Show similar tracks**, **Colour**, **Rating**, **Remove from this list**, **Show info** and **Show in file manager**.
 
 ## Loading tracks
 
-- Double-click a row: into a free deck in Perform, into the player in Prepare. **LOAD → FREE** above the list decides where a double-click goes; click it to choose a fixed deck.
+- Double-click a row: into a free deck in Perform, into the player in Prepare. **LOAD TO: FREE DECK** above the list says where a double-click loads; click it to choose a fixed deck. **ROWS: NORMAL** beside it sets the row height of the list.
 - Drag a row onto a deck or a Prepare player, from the list, the explorer, or from the Finder or file manager.
 - `⇧←` / `⇧→` load the selection into decks 1 and 2, `⌥⇧←` / `⌥⇧→` into decks 3 and 4, and `Return` into a free deck.
 

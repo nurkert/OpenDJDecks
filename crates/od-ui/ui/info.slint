@@ -42,8 +42,8 @@ component InfoField inherits VerticalLayout {
     // Accessible label of the value (`info.<field>`).
     in property <string> field;
     callback save(string);
-    spacing: 2px;
-    Caps { text: root.label; font-size: 10px; }
+    spacing: Theme.key-gap;
+    Caps { text: root.label; font-size: Theme.label; }
     if root.editable: Field {
         accessible-label: root.field; accessible-role: text-input; accessible-value: self.text;
         height: 28px; text: root.value; accepted(t) => { root.save(t); }
@@ -51,7 +51,7 @@ component InfoField inherits VerticalLayout {
     if !root.editable: Text {
         accessible-label: root.field; accessible-role: text; accessible-value: root.value;
         text: root.value == "" ? "—" : root.value;
-        font-family: Theme.family; font-size: 13px; color: Theme.bone-2;
+        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
         wrap: root.path ? TextWrap.char-wrap : TextWrap.word-wrap;
         // Never wider than the panel, however long the value.
         min-width: 0px;
@@ -72,7 +72,7 @@ component InfoTab inherits Rectangle {
     Rectangle { y: parent.height - 2px; height: 2px; background: root.current ? Theme.w486 : transparent; }
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.4px;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1.4px;
         color: root.current ? Theme.bone : Theme.bone-3;
     }
     tt := TipArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
@@ -84,14 +84,13 @@ export component InfoPanel inherits Rectangle {
     in-out property <string> tab: "summary";
     // field ("title", "artist", …), new value
     callback edit(string, string);
-    background: Theme.ground;
-    width: 272px;
-    VLine { x: 0; height: parent.height; weight: 1px; tone: Theme.rule; }
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    width: 260px;
     VerticalLayout {
         x: 1px; width: parent.width - 1px;
         HorizontalLayout {
-            padding-left: 8px; padding-right: 8px; padding-top: 8px;
-            spacing: 2px;
+            padding-left: Theme.s2; padding-right: Theme.s2; padding-top: Theme.s2;
+            spacing: Theme.key-gap;
             InfoTab { accessible-label: "info.tab.summary"; label: @tr("SUMMARY"); current: root.tab == "summary"; clicked => { root.tab = "summary"; } }
             InfoTab { accessible-label: "info.tab.info"; label: "INFO"; current: root.tab == "info"; clicked => { root.tab = "info"; } }
             InfoTab { accessible-label: "info.tab.artwork"; label: @tr("ARTWORK"); current: root.tab == "artwork"; clicked => { root.tab = "artwork"; } }
@@ -100,7 +99,7 @@ export component InfoPanel inherits Rectangle {
         if !root.info.has-track: Text {
             vertical-stretch: 1;
             text: @tr("Select a track to see and edit its tags.");
-            font-family: Theme.family; font-size: 13px; color: Theme.bone-3; wrap: word-wrap;
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
         }
         if root.info.has-track && root.tab == "summary": summary-pane := Flickable {
             vertical-stretch: 1;
@@ -108,8 +107,8 @@ export component InfoPanel inherits Rectangle {
             // widen the pane past the window).
             VerticalLayout {
                 width: summary-pane.width;
-                padding: 14px;
-                spacing: 10px;
+                padding: Theme.s3;
+                spacing: Theme.s2;
                 InfoField { field: "info.title"; label: @tr("TITLE"); value: root.info.title; editable: !root.info.read-only; save(v) => { root.edit("title", v); } }
                 InfoField { field: "info.artist"; label: @tr("ARTIST"); value: root.info.artist; editable: !root.info.read-only; save(v) => { root.edit("artist", v); } }
                 InfoField { field: "info.album"; label: @tr("ALBUM"); value: root.info.album; editable: !root.info.read-only; save(v) => { root.edit("album", v); } }
@@ -120,7 +119,7 @@ export component InfoPanel inherits Rectangle {
                 InfoField { field: "info.year"; label: @tr("YEAR"); value: root.info.year; editable: !root.info.read-only; save(v) => { root.edit("year", v); } }
                 InfoField { field: "info.comment"; label: @tr("COMMENT"); value: root.info.comment; editable: !root.info.read-only; save(v) => { root.edit("comment", v); } }
                 HorizontalLayout {
-                    spacing: 12px;
+                    spacing: Theme.s3;
                     InfoField { field: "info.bpm"; label: "BPM"; value: root.info.bpm; editable: false; }
                     InfoField { field: "info.key"; label: @tr("KEY"); value: root.info.key; editable: false; }
                 }
@@ -132,8 +131,8 @@ export component InfoPanel inherits Rectangle {
             // widen the pane past the window).
             VerticalLayout {
                 width: info-pane.width;
-                padding: 14px;
-                spacing: 10px;
+                padding: Theme.s3;
+                spacing: Theme.s2;
                 InfoField { field: "info.time"; label: @tr("TIME"); value: root.info.time; editable: false; }
                 InfoField { field: "info.file-type"; label: @tr("FILE TYPE"); value: root.info.file-type; editable: false; }
                 InfoField { field: "info.size"; label: @tr("SIZE"); value: root.info.size; editable: false; }
@@ -146,7 +145,7 @@ export component InfoPanel inherits Rectangle {
         }
         if root.info.has-track && root.tab == "artwork": VerticalLayout {
             vertical-stretch: 1;
-            padding: 14px;
+            padding: Theme.s4;
             alignment: start;
             if root.info.has-artwork: Image {
                 accessible-role: image; accessible-label: "info.artwork";
@@ -155,7 +154,7 @@ export component InfoPanel inherits Rectangle {
             }
             if !root.info.has-artwork: Text {
                 text: @tr("This track has no cover art.");
-                font-family: Theme.family; font-size: 13px; color: Theme.bone-3; wrap: word-wrap;
+                font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
             }
         }
     }

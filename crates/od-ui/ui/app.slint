@@ -10,7 +10,8 @@ import { InfoPanel, TrackInfo } from "info.slint";
 import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace } from "controls.slint";
 import { TooltipLayer } from "tooltip.slint";
 import { Sidebar, RailItem } from "sidebar.slint";
-import { TopBar } from "topbar.slint";
+import { TopBar, Gig } from "topbar.slint";
+export { Gig }
 import { PreparePlayer } from "player.slint";
 import { TrackTable, TableStyle } from "table.slint";
 export { TableStyle }
@@ -73,10 +74,10 @@ export struct RecordingRow {
 component SectionTitle inherits HorizontalLayout {
     in property <string> title;
     in property <string> sub;
-    spacing: 14px;
+    spacing: Theme.s4;
     Text {
         text: root.title;
-        font-family: Theme.family; font-size: Theme.rank-b; font-weight: 600;
+        font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
         color: Theme.bone; vertical-alignment: center;
         overflow: elide;
     }
@@ -98,8 +99,11 @@ export component AppWindow inherits Window {
     min-height: root.kiosk ? 320px : 640px;
     background: Theme.ground;
     default-font-family: Theme.family;
+    default-font-weight: Theme.weight-medium;
     default-font-size: Theme.body;
 
+    // The list header's keys shorten when a panel takes the room (small window).
+    property <bool> list-tight: root.width < 1000px || (root.width < 1500px && (root.info-open || root.user-tag-open || root.similar-open));
     in-out property <string> mode: "prepare";
     in-out property <string> section: "library";
     in property <bool> kiosk;
@@ -143,7 +147,7 @@ export component AppWindow inherits Window {
     in property <[HotCueSlot]> hot-cues-bottom;
     in property <[PhraseMark]> track-phrases;
     // Pane sizes, set by the splitters and restored from the library.
-    in-out property <length> sidebar-width: 260px;
+    in-out property <length> sidebar-width: 294px;
     in-out property <length> upper-height: 0px;
     in property <[HotCueSlot]> hot-cues;
     in property <image> track-detail;
@@ -610,6 +614,10 @@ export component AppWindow inherits Window {
         }
 
         main := VerticalLayout {
+            padding-left: root.kiosk ? 0px : Theme.gutter;
+            padding-right: root.kiosk ? 0px : Theme.gutter;
+            // Tight on height the bands share what is left, gaps go first.
+            spacing: root.kiosk || root.perform-crowd >= 1 ? 0px : Theme.key-gap;
             TopBar {
                 chrome-inset: root.chrome-inset;
                 window-drag => { root.window-drag(); }
@@ -670,12 +678,12 @@ export component AppWindow inherits Window {
             // where the browser below gets the room.
             vertical-stretch: root.kiosk && !(root.mode == "perform" && PerformLayout.layout == "browse") ? 1 : 0;
             preferred-height: root.mode == "prepare" && root.prepare-layout == "browser" ? 0px : root.upper-height > 0 ? root.upper-height
-                : (root.mode == "prepare" ? (root.prepare-layout == "two" ? 400px : root.prepare-layout == "dual" ? 150px : root.prepare-layout == "simple" ? 60px : 280px) : PerformLayout.layout == "browse" ? (root.kiosk ? 0px : 220px) : 560px + (PerformLayout.layout == "standard" ? (PerformLayout.wave-size == 2 ? 140px : PerformLayout.wave-size == 0 ? -40px : 0px) : 0px));
+                : (root.mode == "prepare" ? (root.prepare-layout == "two" ? 400px : root.prepare-layout == "dual" ? 150px : root.prepare-layout == "simple" ? 60px : 280px) : PerformLayout.layout == "browse" ? (root.kiosk ? 0px : 220px) : 620px + (PerformLayout.layout == "standard" ? (PerformLayout.wave-size == 2 ? 140px : PerformLayout.wave-size == 0 ? -40px : 0px) : 0px));
             if root.mode == "prepare" && (root.prepare-layout == "player" || root.prepare-layout == "two"): PreparePlayer {
                 phrases: root.show-phrases-overview ? root.track-phrases : [];
                 info-width: root.sidebar-width;
                 info-dragged(d) => { root.sidebar-width = clamp(root.sidebar-width + d, 180px, 480px); }
-                info-reset => { root.sidebar-width = 260px; }
+                info-reset => { root.sidebar-width = 294px; }
                 has-track: root.has-track;
                 title: root.track-title;
                 artist: root.track-artist;
@@ -854,12 +862,15 @@ export component AppWindow inherits Window {
             }
 
             // ── Lower half: the browser ──
-            if !root.kiosk || root.browser-open || (root.mode == "perform" && PerformLayout.layout == "browse"): HorizontalLayout {
+            if !root.kiosk || root.browser-open || (root.mode == "perform" && PerformLayout.layout == "browse"): Rectangle {
                 vertical-stretch: 1;
                 // The source rail needs its nine sources at the 24 px minimum.
                 min-height: root.kiosk ? 180px : 218px;
+                background: Theme.ground-band; border-radius: Theme.r-panel;
+                HorizontalLayout {
                 Sidebar {
-                    width: root.kiosk ? 190px : root.sidebar-width;
+                    width: root.kiosk ? 190px : root.list-tight ? min(root.sidebar-width, 240px) : root.sidebar-width;
+                    tight: root.list-tight;
                     tree: root.tree;
                     selected-node: root.selected-node;
                     section: root.section;
@@ -907,18 +918,18 @@ export component AppWindow inherits Window {
                     horizontal: false;
                     tooltip: @tr("Drag to resize, double-click to reset");
                     dragged(d) => { root.sidebar-width = clamp(root.sidebar-width + d, 180px, 480px); }
-                    reset => { root.sidebar-width = 260px; }
+                    reset => { root.sidebar-width = 294px; }
                 }
                 VerticalLayout {
                     horizontal-stretch: 1;
-                    padding-left: 4px;
-                    padding-right: 12px;
-                    padding-top: 8px;
-                    spacing: 8px;
+                    padding-left: Theme.s1;
+                    padding-right: Theme.s2;
+                    padding-top: Theme.s2;
+                    spacing: Theme.s2;
 
                     // List header: title, count, search and list actions.
                     if root.section == "library": HorizontalLayout {
-                        spacing: root.kiosk ? 6px : 10px;
+                        spacing: root.kiosk ? Theme.s2 : Theme.s3;
                         height: root.kiosk ? 44px : 32px;
                         title := TextInput {
                             accessible-label: "browser.list-title"; accessible-role: text-input;
@@ -930,7 +941,7 @@ export component AppWindow inherits Window {
                             horizontal-stretch: 0;
                             text: root.node-title;
                             read-only: root.node-kind == "all" || root.node-kind == "explorer" || root.node-kind == "similar" || root.node-kind == "history" || root.node-kind == "taglist" || root.node-kind == "auto" || root.read-only;
-                            font-family: Theme.family; font-size: 18px; font-weight: 600;
+                            font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
                             color: Theme.bone;
                             vertical-alignment: center;
                             single-line: true;
@@ -953,7 +964,7 @@ export component AppWindow inherits Window {
                             }
                         }
                         if root.node-kind == "similar" && !root.kiosk: HorizontalLayout {
-                            spacing: 4px;
+                            spacing: Theme.s1;
                             // Each key centred on the 32 px header row.
                             for d[i] in ["master", "1", "2", "3", "4"]: VerticalLayout {
                                 alignment: center;
@@ -962,7 +973,7 @@ export component AppWindow inherits Window {
                                     accessible-checkable: true; accessible-checked: root.similar-source == d;
                                     horizontal-stretch: 0; compact: true;
                                     label: i == 0 ? @tr("MASTER") : d;
-                                    active: root.similar-source == d; tone: Theme.w546;
+                                    selected: root.similar-source == d;
                                     tooltip: i == 0 ? @tr("Tracks that fit after the master deck") : @tr("Tracks that fit after deck {}", d);
                                     clicked => { root.similar-source-set(d); }
                                 }
@@ -980,7 +991,7 @@ export component AppWindow inherits Window {
                             accessible-value: root.load-target == 0 ? "auto" : root.load-target;
                             horizontal-stretch: 0; compact: !root.kiosk; tall: root.kiosk;
                             enabled: root.mode == "perform";
-                            label: root.load-target == 0 ? @tr("LOAD → FREE") : @tr("LOAD → {}", root.load-target);
+                            label: root.list-tight ? (root.load-target == 0 ? @tr("LOAD: FREE") : @tr("LOAD: {}", root.load-target)) : root.load-target == 0 ? @tr("LOAD TO: FREE DECK") : @tr("LOAD TO: DECK {}", root.load-target);
                             active: root.load-target > 0; tone: Theme.deck-color(root.load-target);
                             tooltip: root.mode == "perform" ? @tr("Where a double-click loads: the free deck or a fixed deck — click for the next") : @tr("In Prepare a double-click opens the track in the player");
                             clicked => { root.load-target = Math.mod(root.load-target + 1, max(2, root.decks.length) + 1); }
@@ -992,7 +1003,7 @@ export component AppWindow inherits Window {
                             horizontal-stretch: 0; compact: !root.kiosk; tall: root.kiosk;
                             // The touch screen keeps its 44 px rows.
                             enabled: !root.kiosk;
-                            label: root.density == "compact" ? @tr("COMPACT") : root.density == "roomy" ? @tr("ROOMY") : @tr("NORMAL");
+                            label: root.list-tight ? @tr("ROWS") : root.density == "compact" ? @tr("ROWS: COMPACT") : root.density == "roomy" ? @tr("ROWS: ROOMY") : @tr("ROWS: NORMAL");
                             tooltip: @tr("Row spacing of the list: compact, normal, roomy — click for the next");
                             clicked => { root.cycle-density(); }
                         } }
@@ -1011,7 +1022,7 @@ export component AppWindow inherits Window {
                     }
                     // Kiosk: the deck the similar list follows, on its own line.
                     if root.section == "library" && root.node-kind == "similar" && root.kiosk: HorizontalLayout {
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         height: 44px;
                         alignment: start;
                         for d[i] in ["master", "1", "2", "3", "4"]: PlateButton {
@@ -1019,13 +1030,13 @@ export component AppWindow inherits Window {
                             accessible-checkable: true; accessible-checked: root.similar-source == d;
                             horizontal-stretch: 0; tall: true;
                             label: i == 0 ? @tr("MASTER") : d;
-                            active: root.similar-source == d; tone: Theme.w546;
+                            selected: root.similar-source == d;
                             tooltip: i == 0 ? @tr("Tracks that fit after the master deck") : @tr("Tracks that fit after deck {}", d);
                             clicked => { root.similar-source-set(d); }
                         }
                     }
                     if root.section == "library" && root.node-kind == "smart": VerticalLayout {
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         Field {
                             accessible-label: "browser.smart-rule"; accessible-role: text-input; accessible-value: self.text;
                             placeholder: @tr("RULES, E.G.  bpm 120-126, key 8A~, genre house, rating >= 3, added < 30d");
@@ -1036,7 +1047,7 @@ export component AppWindow inherits Window {
                         if root.smart-rule-error != "": Text {
                             accessible-label: "browser.smart-rule-error"; accessible-role: text; accessible-value: self.text;
                             text: root.smart-rule-error;
-                            font-family: Theme.family; font-size: 12px; color: Theme.fault;
+                            font-family: Theme.family; font-size: Theme.control; color: Theme.fault;
                         }
                     }
                     if root.section == "library" && root.node-kind == "set" && root.mode == "prepare": SetFlow {
@@ -1046,7 +1057,7 @@ export component AppWindow inherits Window {
                         select(i) => { root.flow-select(i); }
                     }
                     if root.section == "library" && root.node-kind == "set" && root.mode == "prepare" && !root.read-only: HorizontalLayout {
-                        spacing: 8px;
+                        spacing: Theme.s2;
                         height: 32px;
                         Field {
                             accessible-label: "browser.set.planned-start"; accessible-role: text-input; accessible-value: self.text;
@@ -1137,25 +1148,26 @@ export component AppWindow inherits Window {
                     }
                     if root.section == "library" && root.node-kind == "all" && root.tracks.length == 0: HorizontalLayout {
                         alignment: center;
-                        spacing: 10px;
+                        spacing: Theme.s3;
                         PlateButton { accessible-label: "browser.empty.add-music"; accessible-role: button; label: @tr("ADD MUSIC FOLDER"); tone: Theme.live; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } }
                         PlateButton { accessible-label: "browser.empty.import-library"; accessible-role: button; label: @tr("IMPORT LIBRARY"); tone: Theme.w486; tooltip: @tr("Import a library XML file (rekordbox-compatible)"); command: "library.import.xml"; clicked => { root.menu-action("library.import.xml"); } }
+                        PlateButton { accessible-label: "browser.empty.gig-preset"; accessible-role: button; accessible-checkable: true; accessible-checked: Gig.active; label: @tr("GIG PRESET"); selected: Gig.active; tooltip: @tr("High contrast, the colour-blind palette and a larger interface in one click (also GIG in the top bar)"); clicked => { Gig.act("toggle"); } }
                     }
 
                     // ── Devices section ──
                     if root.section == "devices": SectionTitle { title: @tr("USB STICKS"); sub: @tr("{} REGISTERED", root.devices.length); }
                     if root.section == "devices": Text {
                         text: @tr("Registered sticks are kept in sync automatically while they are plugged in. Every change to a playlist, cue or beatgrid reaches the stick within seconds.");
-                        wrap: word-wrap; font-family: Theme.family; font-size: 14px; color: Theme.bone-2;
+                        wrap: word-wrap; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                     }
                     if root.section == "devices": HorizontalLayout {
                         vertical-stretch: 1;
-                        spacing: 32px;
+                        spacing: Theme.s6;
                         VerticalLayout {
                             width: 360px;
-                            spacing: 6px;
+                            spacing: Theme.s2;
                             if root.devices.length > 0: HorizontalLayout {
-                                spacing: 14px;
+                                spacing: Theme.s4;
                                 height: 30px;
                                 PlateButton { accessible-role: button; accessible-label: "devices.sync-all"; compact: true; label: @tr("SYNC ALL STICKS"); tone: Theme.live; tooltip: @tr("Sync every plugged-in stick at the same time"); clicked => { root.sync-all-devices(); } }
                                 LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-label: "devices.eject-when-done"; label: @tr("Eject when done"); tooltip: @tr("Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"); checked: root.eject-when-done; toggled(v) => { root.set-eject-when-done(v); } }
@@ -1173,7 +1185,7 @@ export component AppWindow inherits Window {
                         }
                         if root.device-selected >= 0: VerticalLayout {
                             horizontal-stretch: 1;
-                            spacing: 10px;
+                            spacing: Theme.s3;
                             Field {
                                 text: root.device-name;
                                 placeholder: @tr("STICK NAME");
@@ -1181,7 +1193,7 @@ export component AppWindow inherits Window {
                             }
                             Caps { text: @tr("FORMATS"); }
                             HorizontalLayout {
-                                spacing: 18px;
+                                spacing: Theme.s4;
                                 LineToggle { label: @tr("Club player USB (export.pdb)"); tooltip: @tr("Also write the database Club players read (compatible with Pioneer DJ players)"); checked: root.device-club-usb; toggled(v) => { root.set-device-formats(v, root.device-opendjdecks, root.device-club-compat); } }
                                 LineToggle { label: @tr("OpenDJDecks"); tooltip: @tr("Write the OpenDJDecks library for other OpenDJDecks setups"); checked: root.device-opendjdecks; toggled(v) => { root.set-device-formats(root.device-club-usb, v, root.device-club-compat); } }
                             }
@@ -1203,19 +1215,19 @@ export component AppWindow inherits Window {
                             }
                             if root.proposals.length > 0: Caps { text: @tr("CHANGES MADE ON PLAYERS — REVIEW"); color: Theme.attention; }
                             for p in root.proposals: HorizontalLayout {
-                                spacing: 10px;
+                                spacing: Theme.s3;
                                 height: 44px;
                                 VLine { weight: 2px; form: "double"; tone: Theme.attention; }
                                 VerticalLayout {
                                     horizontal-stretch: 1;
-                                    Text { text: p.title; font-family: Theme.family; font-size: 14px; font-weight: 600; color: Theme.bone; overflow: elide; }
-                                    Text { text: p.detail; font-family: Theme.family; font-size: 12px; color: Theme.bone-3; overflow: elide; }
+                                    Text { text: p.title; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone; overflow: elide; }
+                                    Text { text: p.detail; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; overflow: elide; }
                                 }
                                 PlateButton { compact: true; label: p.kind == "history" ? @tr("IMPORT") : @tr("TAKE STICK CUES"); tone: Theme.live; tooltip: p.kind == "history" ? @tr("Import the play history from the stick") : @tr("Replace the library cues with the ones edited on the players"); clicked => { root.accept-proposal(p.index); } }
                                 PlateButton { compact: true; label: p.kind == "history" ? @tr("DISMISS") : @tr("KEEP LIBRARY"); tooltip: p.kind == "history" ? @tr("Ignore this history") : @tr("Keep the library cues; the stick gets them at the next sync"); clicked => { root.reject-proposal(p.index); } }
                             }
                             HorizontalLayout {
-                                spacing: 8px;
+                                spacing: Theme.s2;
                                 PlateButton { compact: true; label: @tr("SYNC NOW"); tone: Theme.live; tooltip: @tr("Sync this stick now"); command: "devices.sync"; clicked => { root.sync-device(root.device-selected); } }
                                 PlateButton { compact: true; label: @tr("REBUILD STICK"); tone: Theme.attention; tooltip: @tr("Write the whole stick again from the library"); clicked => { root.rebuild-device(root.device-selected); } }
                                 PlateButton { compact: true; label: @tr("FORGET"); tone: Theme.fault; tooltip: @tr("Stop keeping this stick in sync"); clicked => { root.forget-device(root.device-selected); } }
@@ -1228,20 +1240,20 @@ export component AppWindow inherits Window {
                     if root.section == "recordings": RecPanel { }
                     if root.section == "recordings": VerticalLayout {
                         vertical-stretch: 1;
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         if root.recordings.length == 0: Text {
                             text: @tr("No recordings yet. Press RECORD in Perform, or the record button on your controller.");
-                            wrap: word-wrap; font-family: Theme.family; font-size: 14px; color: Theme.bone-3;
+                            wrap: word-wrap; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-3;
                         }
                         for r in root.recordings: Rectangle {
                             height: 48px;
                             VLine { x: 0; y: 8px; height: parent.height - 16px; tone: Theme.w656; }
-                            Text { x: 16px; y: 6px; text: r.name; font-family: Theme.family; font-size: 15px; font-weight: 600; color: Theme.bone; }
+                            Text { x: 16px; y: 6px; text: r.name; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone; }
                             Caps { x: 16px; y: 28px; text: r.detail; }
                             TouchArea { width: parent.width - 260px; clicked => { root.reveal-recording(r.id); } }
                             HorizontalLayout {
                                 x: parent.width - 250px; y: 8px; width: 250px; height: 26px;
-                                spacing: 6px; alignment: end;
+                                spacing: Theme.s2; alignment: end;
                                 PlateButton { compact: true; label: @tr("SHOW FILE"); tooltip: @tr("Show the recording in the file manager"); clicked => { root.reveal-recording(r.id); } }
                                 PlateButton { compact: true; label: @tr("SPLIT INTO TRACKS"); tone: Theme.w656; tooltip: @tr("Cut the recording into one file per played track"); clicked => { root.split-recording(r.id); } }
                             }
@@ -1271,8 +1283,8 @@ export component AppWindow inherits Window {
                 HorizontalLayout {
                     VLine { weight: 1px; tone: Theme.rule; }
                     VerticalLayout {
-                        width: root.kiosk ? 44px : 38px;
-                        padding-top: root.kiosk ? 0px : 8px;
+                        width: root.kiosk || root.list-tight ? 44px : Theme.rail;
+                        padding-top: root.kiosk ? 0px : Theme.s2;
                         spacing: 0px;
                         // Kiosk browse screen: back to the decks.
                         if root.kiosk && root.browser-open && PerformLayout.layout != "browse": RailItem {
@@ -1287,13 +1299,13 @@ export component AppWindow inherits Window {
                             clicked => { root.user-tag-open = !root.user-tag-open; root.panels-changed(); }
                         }
                         RailItem {
-                            accessible-label: "browser.panel.similar"; label: @tr("SIM"); tone: Theme.w546;
+                            accessible-label: "browser.panel.similar"; label: root.kiosk || root.list-tight ? @tr("SIM") : @tr("SIMILAR"); tone: Theme.w546;
                             current: root.similar-open;
                             tooltip: @tr("Similar: tracks that fit after the selected one");
                             clicked => { root.similar-open = !root.similar-open; root.panels-changed(); }
                         }
                         RailItem {
-                            accessible-label: "browser.panel.sampler"; label: @tr("SMPL"); tone: Theme.w656;
+                            accessible-label: "browser.panel.sampler"; label: root.kiosk || root.list-tight ? @tr("SMPL") : @tr("SAMPLER"); tone: Theme.w656;
                             current: root.sampler-panel && root.mode == "perform";
                             enabled: root.mode == "perform";
                             tooltip: root.mode == "perform" ? @tr("Show or hide the sampler panel") : @tr("The sampler panel is part of Perform");
@@ -1306,7 +1318,7 @@ export component AppWindow inherits Window {
                             clicked => { root.info-open = !root.info-open; }
                         }
                         RailItem {
-                            accessible-label: "browser.panel.sub-browser"; label: @tr("SUB"); tone: Theme.attention;
+                            accessible-label: "browser.panel.sub-browser"; label: root.kiosk || root.list-tight ? @tr("SUB") : @tr("SUB BROWSER"); tone: Theme.attention;
                             current: root.sub-browser-open;
                             tooltip: @tr("Sub browser: a second tree and list under this one, to drag tracks between lists");
                             command: "view.panel.sub-browser";
@@ -1315,16 +1327,16 @@ export component AppWindow inherits Window {
                         Rectangle { vertical-stretch: 1; min-height: 0px; }
                     }
                 }
+                }
             }
 
             // Status band.
             Rectangle {
                 height: 26px;
-                HLine { y: 0; width: parent.width; tone: Theme.rule; }
                 HorizontalLayout {
-                    padding-left: 14px;
-                    padding-right: 14px;
-                    spacing: 16px;
+                    padding-left: Theme.s4;
+                    padding-right: Theme.s4;
+                    spacing: Theme.s4;
                     if root.analysis-progress > 0 && root.analysis-progress < 1: ProgressLine {
                         accessible-label: "status.progress"; accessible-role: progress-indicator;
                         accessible-value: round(root.analysis-progress * 100) + "%";
@@ -1340,7 +1352,7 @@ export component AppWindow inherits Window {
                         accessible-label: "status.message"; accessible-role: text; accessible-value: root.status-text;
                         horizontal-stretch: 1;
                         text: root.status-text;
-                        font-family: Theme.family; font-size: 12px; color: Theme.bone-2;
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
                         vertical-alignment: center; overflow: elide;
                     }
                     Caps {
@@ -1395,7 +1407,7 @@ export component AppWindow inherits Window {
             y: parent.height - 76px;
             width: t.preferred-width + 32px; height: 36px;
             background: Theme.plate-raised; border-width: 1px; border-color: Theme.live;
-            t := Text { text: drop-hint.hint; font-family: Theme.family; font-size: 14px; font-weight: 600; color: Theme.bone; }
+            t := Text { text: drop-hint.hint; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone; }
         }
     }
     // The dragged track follows the pointer.
@@ -1414,11 +1426,11 @@ export component AppWindow inherits Window {
             border-width: 1px;
             border-color: Theme.rule;
             encrypted-layout := VerticalLayout {
-                padding: 20px;
-                spacing: 10px;
+                padding: Theme.s5;
+                spacing: Theme.s3;
                 Caps { text: @tr("IMPORT AN ENCRYPTED LIBRARY DATABASE"); }
                 HorizontalLayout {
-                    spacing: 10px;
+                    spacing: Theme.s3;
                     Text {
                         accessible-role: text;
                         accessible-label: "import.encrypted.file";
@@ -1426,7 +1438,7 @@ export component AppWindow inherits Window {
                         horizontal-stretch: 1;
                         vertical-alignment: center;
                         text: root.encrypted-import-file == "" ? @tr("No file chosen") : root.encrypted-import-file;
-                        font-family: Theme.family; font-size: 13px; color: Theme.bone-3;
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
                         overflow: elide;
                     }
                     PlateButton { accessible-label: "import.encrypted.choose"; accessible-role: button; compact: true; label: @tr("CHOOSE FILE"); tooltip: @tr("Pick the library database file. Nothing is searched for on this computer."); clicked => { root.pick-encrypted-import-file(); } }
@@ -1444,7 +1456,7 @@ export component AppWindow inherits Window {
                 }
                 Text {
                     text: @tr("You need the key for your own library. OpenDJDecks neither contains nor fetches it, and the key is used for this import only: it is not stored or logged. The database itself is only read.");
-                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
                     wrap: word-wrap;
                 }
                 if root.encrypted-import-error != "": Text {
@@ -1452,11 +1464,11 @@ export component AppWindow inherits Window {
                     accessible-label: "import.encrypted.error";
                     accessible-value: self.text;
                     text: root.encrypted-import-error;
-                    font-family: Theme.family; font-size: 13px; color: Theme.fault;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.fault;
                     wrap: word-wrap;
                 }
                 HorizontalLayout {
-                    spacing: 8px;
+                    spacing: Theme.s2;
                     alignment: end;
                     PlateButton { accessible-label: "import.encrypted.cancel"; accessible-role: button; compact: true; label: @tr("CANCEL"); clicked => { root.cancel-encrypted-import(); } }
                     PlateButton { accessible-label: "import.encrypted.run"; accessible-role: button; compact: true; enabled: !root.encrypted-import-busy; label: @tr("IMPORT"); tone: Theme.live; clicked => { root.run-encrypted-import(); } }

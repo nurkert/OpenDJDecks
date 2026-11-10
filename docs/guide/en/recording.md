@@ -15,7 +15,7 @@ Press **REC** in the top bar to show the recording section: the level, a meter, 
 
 ## After recording
 
-Open **Recordings** from the **REC** rail: every mix is listed with its file. Right there:
+Open **Recordings** from the **RECORDINGS** rail: every mix is listed with its file. Right there:
 
 - **SHOW FILE** opens it in your file manager.
 - **SPLIT INTO TRACKS** cuts it into one file per played track.

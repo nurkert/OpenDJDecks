@@ -21,7 +21,7 @@ component Heading inherits Rectangle {
     height: Theme.touch ? 44px : 30px;
     Caps {
         accessible-label: root.heading-label;
-        x: 12px; y: 3px; height: Theme.target; vertical-alignment: center; text: root.label; color: Theme.bone-2; font-weight: 600;
+        x: 12px; y: 3px; height: Theme.target; vertical-alignment: center; text: root.label; color: Theme.bone-2; font-weight: Theme.weight-semi;
     }
     if root.action != "": Rectangle {
         accessible-label: root.action-label; accessible-role: button;
@@ -72,13 +72,13 @@ component DeviceItem inherits Rectangle {
     Text {
         x: 40px; y: 6px; width: parent.width - 100px;
         text: root.device.name;
-        font-family: Theme.family; font-size: 14px; font-weight: 600;
+        font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
         color: root.device.connected ? Theme.bone : Theme.bone-3; overflow: elide;
     }
     Text {
         x: 40px; y: 25px; width: parent.width - 100px;
         text: root.device.detail;
-        font-family: Theme.family; font-size: 11px;
+        font-family: Theme.family; font-size: Theme.label;
         color: root.device.state == "error" ? Theme.fault : Theme.bone-3; overflow: elide;
     }
     touch := TouchArea { clicked => { root.open(); } }
@@ -150,7 +150,7 @@ component ExplorerItem inherits Rectangle {
         text: root.item.name;
         overflow: elide;
         font-family: Theme.family;
-        font-size: 14px;
+        font-size: Theme.body;
         font-weight: root.item.root ? 600 : 400;
         color: root.selected ? Theme.bone : Theme.bone-2;
         vertical-alignment: center;
@@ -176,15 +176,13 @@ component NewListKey inherits Rectangle {
     callback clicked();
     accessible-role: button;
     min-width: 44px; height: 44px;
-    background: touch.pressed ? Theme.plate-raised : Theme.plate;
-    border-width: 1px;
-    border-color: Theme.rule;
-    Rectangle { y: 0; height: 2px; background: root.tone; }
+    background: touch.pressed || touch.has-hover ? Theme.plate-raised : Theme.plate;
+    border-radius: Theme.r-control;
     Glyph { x: (parent.width - 10px) / 2; y: 10px; width: 10px; height: 10px; kind: "plus"; tone: root.tone; }
     Text {
         y: 25px; width: parent.width; height: 12px;
         text: root.label;
-        font-family: Theme.family; font-size: 8px; font-weight: 600; letter-spacing: 0.6px;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 0.6px;
         color: Theme.bone-2;
         horizontal-alignment: center; vertical-alignment: center;
     }
@@ -206,16 +204,17 @@ export component RailItem inherits Rectangle {
     // 44 px keys on the touch screen.
     min-height: Theme.target; preferred-height: Theme.touch ? 44px : 32px; max-height: Theme.touch ? 44px : 32px;
     min-width: Theme.touch ? 44px : 0px;
-    background: touch.has-hover ? Theme.plate : transparent;
     Rectangle {
-        x: 0; y: 4px; width: root.current ? 3px : 1px; height: parent.height - 8px;
-        background: root.current ? root.tone : Theme.rule-strong;
+        y: 2px; height: parent.height - 4px;
+        border-radius: Theme.r-control;
+        background: root.current ? Theme.bone : touch.pressed || touch.has-hover ? Theme.plate-raised : transparent;
     }
     Text {
-        x: 5px; width: parent.width - 7px;
+        x: 4px; width: parent.width - 6px;
         text: root.label;
-        font-family: Theme.family; font-size: 9px; font-weight: 600; letter-spacing: 0.6px;
-        color: !root.enabled ? Theme.bone-3.with-alpha(0.5) : root.current ? Theme.bone : Theme.bone-3;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 0.2px;
+        wrap: word-wrap;
+        color: !root.enabled ? Theme.bone-3 : root.current ? Theme.ground : Theme.bone-3;
         horizontal-alignment: center; vertical-alignment: center;
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
@@ -268,18 +267,20 @@ export component Sidebar inherits Rectangle {
     callback open-sampler();
     // A controller's browse encoder moves through the tree.
     in property <bool> browse-focus;
-    background: Theme.ground;
+    // Narrow window (or a panel open): the rail shortens to its short forms.
+    in property <bool> tight;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
 
-    property <[{ a11y: string, label: string, tone: color, tip: string }]> rail-items: [
-        { a11y: "browser.rail.collection", label: @tr("ALL"), tone: Theme.w486, tip: @tr("Collection: every track") },
-        { a11y: "browser.rail.playlists", label: @tr("LISTS"), tone: Theme.attention, tip: @tr("Playlists, sets and smart lists") },
-        { a11y: "browser.rail.similar", label: @tr("SIM"), tone: Theme.w546, tip: @tr("Similar tracks: what fits after the master deck") },
-        { a11y: "browser.rail.sampler", label: @tr("SMPL"), tone: Theme.w656, tip: @tr("Sampler: open the sampler panel in Perform") },
-        { a11y: "browser.rail.explorer", label: @tr("FILES"), tone: Theme.bone-2, tip: @tr("Explorer: folders on disk") },
-        { a11y: "browser.rail.devices", label: "USB", tone: Theme.live, tip: @tr("Devices: USB sticks") },
-        { a11y: "browser.rail.histories", label: @tr("HIST"), tone: Theme.bone-2, tip: @tr("Histories: every session you played") },
-        { a11y: "browser.rail.recordings", label: "REC", tone: Theme.w656, tip: @tr("Recordings: your mixes") },
-        { a11y: "browser.rail.tag-list", label: @tr("TAG"), tone: Theme.attention, tip: @tr("Tag list: tracks collected for later") },
+    property <[{ a11y: string, label: string, short: string, tone: color, tip: string }]> rail-items: [
+        { a11y: "browser.rail.collection", label: @tr("ALL"), short: @tr("ALL"), tone: Theme.w486, tip: @tr("Collection: every track") },
+        { a11y: "browser.rail.playlists", label: @tr("LISTS"), short: @tr("LISTS"), tone: Theme.attention, tip: @tr("Playlists, sets and smart lists") },
+        { a11y: "browser.rail.similar", label: @tr("SIMILAR"), short: @tr("SIM"), tone: Theme.w546, tip: @tr("Similar tracks: what fits after the master deck") },
+        { a11y: "browser.rail.sampler", label: @tr("SAMPLER"), short: @tr("SMPL"), tone: Theme.w656, tip: @tr("Sampler: open the sampler panel in Perform") },
+        { a11y: "browser.rail.explorer", label: @tr("FILES"), short: @tr("FILES"), tone: Theme.bone-2, tip: @tr("Explorer: folders on disk") },
+        { a11y: "browser.rail.devices", label: "USB", short: "USB", tone: Theme.live, tip: @tr("Devices: USB sticks") },
+        { a11y: "browser.rail.histories", label: @tr("HISTORY"), short: @tr("HIST"), tone: Theme.bone-2, tip: @tr("Histories: every session you played") },
+        { a11y: "browser.rail.recordings", label: @tr("RECORDINGS"), short: "REC", tone: Theme.w656, tip: @tr("Recordings: your mixes") },
+        { a11y: "browser.rail.tag-list", label: @tr("TAG LIST"), short: @tr("TAG"), tone: Theme.attention, tip: @tr("Tag list: tracks collected for later") },
     ];
     // The open source of the rail.
     function rail-current(i: int) -> bool {
@@ -331,7 +332,7 @@ export component Sidebar inherits Rectangle {
         spacing: 0px;
         for it[i] in root.rail-items: RailItem {
             row: Math.floor(i / 4); col: Math.mod(i, 4);
-            accessible-label: it.a11y; label: it.label; tone: it.tone; tooltip: it.tip;
+            accessible-label: it.a11y; label: it.short; tone: it.tone; tooltip: it.tip;
             current: root.rail-current(i);
             clicked => { root.rail-click(i); }
         }
@@ -343,23 +344,22 @@ export component Sidebar inherits Rectangle {
     HorizontalLayout {
       // Source rail (UX §1.6 order, without the streaming and cloud sources).
       if !Theme.touch: VerticalLayout {
-        width: 38px;
+        width: root.tight ? 44px : Theme.rail;
         padding-top: 0px;
         spacing: 0px;
         for it[i] in root.rail-items: RailItem {
-            accessible-label: it.a11y; label: it.label; tone: it.tone; tooltip: it.tip;
+            accessible-label: it.a11y; label: root.tight ? it.short : it.label; tone: it.tone; tooltip: it.tip;
             command: i == 7 ? "section.recordings" : "";
             current: root.rail-current(i);
             clicked => { root.rail-click(i); }
         }
         Rectangle { vertical-stretch: 1; min-height: 0px; }
       }
-      if !Theme.touch: VLine { weight: 1px; tone: Theme.rule; }
       VerticalLayout {
         if root.browse-focus: Rectangle { height: 2px; background: Theme.attention; }
         // Filter the lists by name (folders that hold a match stay open).
         HorizontalLayout {
-            padding: 6px; padding-bottom: 2px;
+            padding: Theme.s2; padding-bottom: Theme.key-gap;
             Field {
                 accessible-label: "browser.tree.filter"; accessible-role: text-input;
                 accessible-value: self.text; accessible-placeholder-text: self.placeholder;
@@ -408,7 +408,7 @@ export component Sidebar inherits Rectangle {
                 if root.explorer.length == 0: Text {
                     x: 12px; width: root.width - 24px;
                     text: @tr("Add a folder with + to browse its files here.");
-                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
                 }
                 for f[i] in root.explorer: ExplorerItem {
                     index: i;
@@ -434,7 +434,7 @@ export component Sidebar inherits Rectangle {
                     accessible-label: "browser.tree.rules"; accessible-role: text; accessible-value: self.text;
                     x: 38px; height: 18px;
                     text: @tr("TEMPO ±6 % · COMPATIBLE KEY");
-                    font-size: 9px; color: Theme.bone-3; vertical-alignment: top;
+                    font-size: Theme.label; color: Theme.bone-3; vertical-alignment: top;
                 }
                 dev-h := Heading {
                     heading-label: "browser.tree.devices";
@@ -447,7 +447,7 @@ export component Sidebar inherits Rectangle {
                 if root.devices.length == 0 && root.volumes.length == 0: Text {
                     x: 12px; width: root.width - 24px;
                     text: @tr("Plug in a USB stick to register it.");
-                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
                 }
                 for d[i] in root.devices: DeviceItem {
                     index: i;
@@ -473,7 +473,7 @@ export component Sidebar inherits Rectangle {
                     Text {
                         x: 24px; y: 4px; width: root.width - 36px;
                         text: @tr("New stick: {}", v.name);
-                        font-family: Theme.family; font-size: 13px; font-weight: 600; color: Theme.bone; overflow: elide;
+                        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; overflow: elide;
                     }
                     PlateButton {
                         accessible-label: "browser.tree.volume\{i}.register"; accessible-role: button;
@@ -489,16 +489,16 @@ export component Sidebar inherits Rectangle {
                 if root.histories.length == 0: Text {
                     x: 12px; width: root.width - 24px;
                     text: @tr("Every session you play is listed here.");
-                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
                 }
                 // Year, then the sessions played in it (newest first).
                 HorizontalLayout {
-                    padding-left: 12px; padding-right: 12px;
+                    padding-left: Theme.s3; padding-right: Theme.s3;
                     Stepper {
                         accessible-role: spinbox;
                         accessible-label: "browser.tree.years";
                         accessible-value: root.history-year;
-                        size: Theme.target; font-size: 11px; template: "0000";
+                        size: Theme.target; font-size: Theme.control; template: "0000";
                         value: root.history-year == "" ? "—" : root.history-year;
                         enabled: root.history-year-count > 1;
                         tooltip: @tr("Year of the sessions shown: earlier / later");
@@ -529,12 +529,12 @@ export component Sidebar inherits Rectangle {
                     Text {
                         x: 36px; height: parent.height;
                         text: @tr("Recordings");
-                        font-family: Theme.family; font-size: 14px; color: root.section == "recordings" ? Theme.bone : Theme.bone-2;
+                        font-family: Theme.family; font-size: Theme.body; color: root.section == "recordings" ? Theme.bone : Theme.bone-2;
                         vertical-alignment: center;
                     }
                     Text {
                         x: parent.width - 40px; width: 32px; height: parent.height; horizontal-alignment: right;
-                        text: root.recordings-count; font-family: Theme.family; font-size: 12px; color: Theme.bone-3; vertical-alignment: center;
+                        text: root.recordings-count; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; vertical-alignment: center;
                     }
                     rt := TipArea { tooltip: @tr("Show recordings"); command: "section.recordings"; mouse-cursor: pointer; clicked => { root.select-section("recordings"); } }
                 }
@@ -551,7 +551,7 @@ export component Sidebar inherits Rectangle {
                 if root.auto-sort.length == 0: Text {
                     x: 12px; width: root.width - 24px;
                     text: @tr("Analysed tracks are sorted here by tempo, energy, mood, character and genre.");
-                    font-family: Theme.family; font-size: 12px; color: Theme.bone-3; wrap: word-wrap;
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
                 }
                 VerticalLayout {
                     accessible-role: list;
@@ -570,8 +570,8 @@ export component Sidebar inherits Rectangle {
         }
         if !Theme.touch: HLine { tone: Theme.rule; }
         if !Theme.touch: HorizontalLayout {
-            padding: 8px;
-            spacing: 4px;
+            padding: Theme.s2;
+            spacing: Theme.s1;
             // New list buttons share the width (the sidebar is resizable).
             Toggle { accessible-label: "browser.tree.new-set"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
             Toggle { accessible-label: "browser.tree.new-smart"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SMART"); tooltip: @tr("New smart list"); command: "browser.new.smart"; tone: Theme.w436; clicked => { root.create-node("smart"); } }

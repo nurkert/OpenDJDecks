@@ -23,11 +23,11 @@ export component FilterBar inherits Rectangle {
         }
     }
     HorizontalLayout {
-        padding-left: 16px;
-        padding-right: 12px;
-        padding-top: 6px;
-        padding-bottom: 6px;
-        spacing: 10px;
+        padding-left: Theme.s4;
+        padding-right: Theme.s3;
+        padding-top: Theme.s2;
+        padding-bottom: Theme.s2;
+        spacing: Theme.s3;
         Caps { text: "BPM"; vertical-alignment: center; }
         min := Field {
             accessible-label: "browser.filter.bpm-min"; accessible-role: text-input; accessible-value: self.text;
@@ -69,8 +69,8 @@ export component FilterBar inherits Rectangle {
         VLine { width: 1px; tone: Theme.rule; }
         Caps { text: @tr("RATING"); vertical-alignment: center; }
         HorizontalLayout {
-            spacing: 4px;
-            padding-top: 6px; padding-bottom: 6px;
+            spacing: Theme.s1;
+            padding-top: Theme.s2; padding-bottom: Theme.s2;
             for i in 5: VerticalLayout {
                 alignment: center;
                 Star {

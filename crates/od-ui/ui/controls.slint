@@ -1,5 +1,5 @@
-// Controls: outlined plates led by a short emission line. Active state is a
-// dashed outline; disabled is struck.
+// Controls: surfaces, not outlines (DESIGN.md, Components). A control is an
+// ash plate; a border appears only for hollow slots and the focus ring.
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
@@ -64,25 +64,38 @@ export component Glyph inherits Path {
 
 export component Caps inherits Text {
     font-family: Theme.family;
-    font-size: Theme.index;
+    font-size: Theme.label;
     letter-spacing: Theme.tracking-index;
     color: Theme.bone-3;
-    font-weight: 500;
+    font-weight: Theme.weight-medium;
 }
 
-component Outline inherits Rectangle {
-    in property <bool> dashed: false;
-    in property <color> tone: Theme.rule-strong;
-    if !root.dashed: Rectangle {
-        border-width: Theme.hair;
-        border-color: root.tone;
+// The focus ring: 2px bone at a 2px offset (DESIGN.md), the same on every
+// control. Sits over the control and takes no input.
+export component FocusRing inherits Rectangle {
+    in property <bool> show;
+    in property <length> radius: Theme.r-control;
+    Rectangle {
+        x: -Theme.focus-offset - Theme.focus-width;
+        y: -Theme.focus-offset - Theme.focus-width;
+        width: parent.width + 2 * (Theme.focus-offset + Theme.focus-width);
+        height: parent.height + 2 * (Theme.focus-offset + Theme.focus-width);
+        border-width: Theme.focus-width;
+        border-color: root.show ? Theme.focus : transparent;
+        border-radius: root.radius + Theme.focus-offset + Theme.focus-width;
     }
-    if root.dashed: Rectangle {
-        HLine { x: 0; y: 0; width: parent.width; tone: root.tone; form: "dashed"; }
-        HLine { x: 0; y: parent.height - self.height; width: parent.width; tone: root.tone; form: "dashed"; }
-        VLine { x: 0; y: 0; height: parent.height; weight: Theme.hair; tone: root.tone; form: "dashed"; }
-        VLine { x: parent.width - self.width; y: 0; height: parent.height; weight: Theme.hair; tone: root.tone; form: "dashed"; }
-    }
+}
+
+// Armed (will act on the next event): a 2px outline in its tone over the
+// plate that pulses slowly; off with the motion switch.
+export component ArmedOutline inherits Rectangle {
+    in property <bool> show;
+    in property <color> tone: Theme.attention;
+    in property <length> radius: Theme.r-control;
+    property <float> pulse: root.show && Theme.motion ? 0.65 + 0.35 * Math.sin(animation-tick() / 900ms * 360deg) : 1;
+    border-width: 2px;
+    border-radius: root.radius;
+    border-color: root.show ? root.tone.with-alpha(root.pulse) : transparent;
 }
 
 export component PlateButton inherits Rectangle {
@@ -91,32 +104,39 @@ export component PlateButton inherits Rectangle {
     in property <string> command;
     in property <string> label;
     in property <string> glyph;
-    in property <color> tone: Theme.bone-3;
+    // Its colour when on, armed or a danger key on hover.
+    in property <color> tone: Theme.setup-on;
+    // On: a function is active (filled in its tone).
     in property <bool> active: false;
+    // Selected: one of several (bone fill).
+    in property <bool> selected: false;
+    // Armed: will act on the next event (2px outline in its tone, slow pulse).
+    in property <bool> armed: false;
     in property <bool> enabled: true;
     in property <bool> compact: false;
     callback clicked();
 
     in property <bool> tall: false;
-    min-width: max(root.tall ? 44px : 0px, lbl.preferred-width + (glyph != "" ? 22px : 0px) + 30px);
+    // Danger keys (DELETE, FORGET …) fill in red on hover; red at rest would
+    // mean recording.
+    property <bool> danger: root.tone == Theme.fault;
+    property <bool> over: touch.has-hover && root.enabled;
+    property <bool> filled: root.active || (root.danger && root.over);
+    min-width: max(root.tall ? 44px : 0px, lbl.preferred-width + (glyph != "" ? 22px : 0px) + 28px);
     height: tall ? 44px : compact ? 26px : 32px;
-    background: touch.pressed && enabled ? Theme.plate-raised : touch.has-hover && enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate;
+    background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.danger && !root.active && root.over ? Theme.fault : root.tone);
+    border-radius: Theme.r-control;
     animate background { duration: Theme.motion ? 90ms : 0ms; }
 
-    Outline { width: parent.width; height: parent.height; dashed: root.active; tone: root.active ? root.tone : Theme.rule-strong; }
-    VLine {
-        x: 10px; y: 6px; height: parent.height - 12px;
-        tone: root.enabled ? root.tone : Theme.bone-3;
-        form: root.enabled ? "solid" : "struck";
-    }
     lbl := Text {
-        x: 22px;
+        x: 14px;
+        y: touch.pressed && root.enabled ? 1px : 0;
         text: root.label;
         font-family: Theme.family;
-        font-size: root.compact ? 11px : 12px;
-        font-weight: 500;
+        font-size: Theme.control;
+        font-weight: Theme.weight-medium;
         letter-spacing: root.compact ? 1.4px : 1.8px;
-        color: root.enabled ? Theme.bone : Theme.bone-3;
+        color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
         vertical-alignment: center;
         height: parent.height;
     }
@@ -124,13 +144,23 @@ export component PlateButton inherits Rectangle {
         x: parent.width - 20px;
         y: (parent.height - self.height) / 2;
         kind: root.glyph;
-        tone: Theme.bone-2;
+        tone: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
     }
+    if root.armed: ArmedOutline { width: parent.width; height: parent.height; show: true; tone: root.tone; }
     touch := TipArea { tooltip: root.tooltip; command: root.command;
         enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;
         clicked => { root.clicked(); }
     }
+    // Keyboard focus without taking the pointer's focus (the shortcuts stay
+    // with the window while keys are clicked); Return and Space press the key.
+    focus := FocusScope { focus-on-click: false; enabled: root.enabled; x: 0; width: 0; height: 0;
+        key-pressed(e) => {
+            if (e.text == Key.Return || e.text == " ") { root.clicked(); return accept; }
+            reject
+        }
+    }
+    FocusRing { show: focus.has-focus; }
 }
 
 // Disclosure arrow of a tree row: › when closed, turning down to ⌄ when
@@ -179,7 +209,7 @@ export component Star inherits Rectangle {
     @children
 }
 
-// Text field on an ash plate; focus draws a dashed outline.
+// Text field on an ash plate; focus draws the ring.
 export component Field inherits Rectangle {
     in property <string> placeholder;
     in-out property <string> text <=> input.text;
@@ -193,18 +223,17 @@ export component Field inherits Rectangle {
     height: 32px;
     background: Theme.plate;
 
-    Outline { width: parent.width; height: parent.height; dashed: input.has-focus; tone: input.has-focus ? root.tone : Theme.rule; }
-    VLine { x: 10px; y: 8px; height: parent.height - 16px; tone: input.has-focus ? root.tone : Theme.bone-3; weight: Theme.hair; }
+    border-radius: Theme.r-control;
     if input.text == "": Text {
-        x: 22px; height: parent.height;
+        x: 10px; height: parent.height;
         text: root.placeholder;
-        font-family: Theme.family; font-size: 12px; letter-spacing: 1.4px;
+        font-family: Theme.family; font-size: Theme.control; letter-spacing: 1.4px;
         color: Theme.bone-3;
         vertical-alignment: center;
     }
     input := TextInput {
-        x: 22px; width: parent.width - 30px; height: parent.height;
-        font-family: Theme.family; font-size: 14px;
+        x: 10px; width: parent.width - 20px; height: parent.height;
+        font-family: Theme.family; font-size: Theme.body;
         color: Theme.bone;
         selection-background-color: Theme.w486.with-alpha(0.35);
         selection-foreground-color: Theme.bone;
@@ -218,6 +247,8 @@ export component Field inherits Rectangle {
             reject
         }
     }
+
+    FocusRing { show: input.has-focus; }
 
     public function focus-field() { input.focus(); }
     public function select-all() { input.select-all(); }
@@ -239,7 +270,7 @@ export component LineToggle inherits Rectangle {
     t := Text {
         x: 16px; height: parent.height;
         text: root.label;
-        font-family: Theme.family; font-size: 13px;
+        font-family: Theme.family; font-size: Theme.control;
         color: root.checked ? Theme.bone : Theme.bone-2;
         vertical-alignment: center;
     }
@@ -292,7 +323,7 @@ export component Knob inherits Rectangle {
     lbl := Text {
         y: root.size + (root.label-h >= 16px ? 3px : 1px); width: parent.width;
         text: root.label;
-        font-family: Theme.family; font-size: root.label-h >= 16px ? 9px : 8px; font-weight: 600; letter-spacing: root.label-h >= 16px ? 1.2px : 0.8px;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: root.label-h >= 16px ? 1.2px : 0.8px;
         color: Theme.bone-3;
         horizontal-alignment: center;
     }
@@ -332,7 +363,7 @@ export component Fader inherits Rectangle {
         x: 1px; width: parent.width - 2px; height: 12px;
         y: 4px + (parent.height - 8px - 12px) * (1 - root.value);
         background: Theme.plate-raised;
-        border-width: 1px; border-color: touch.has-hover ? Theme.bone-2 : Theme.bone-3;
+        border-radius: 2px; border-width: 1px; border-color: touch.has-hover ? Theme.bone-2 : Theme.bone-3;
         Rectangle { y: 5px; height: 2px; x: 3px; width: parent.width - 6px; background: Theme.bone; }
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command;
@@ -352,34 +383,46 @@ export component Fader inherits Rectangle {
     }
 }
 
-// Small state button: outlined plate, the line lights in `tone` when on.
+// Small state button (DESIGN.md, State Language): filled in its tone when
+// on, bone when selected; the label stays.
 export component Toggle inherits Rectangle {
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
     in property <string> command;
     in property <string> label;
     in property <bool> on;
-    in property <color> tone: Theme.attention;
+    in property <bool> selected;
+    in property <bool> armed;
+    // Running (recording, syncing): filled in its tone with a moving value.
+    in property <bool> running;
+    in property <color> tone: Theme.setup-on;
     in property <bool> enabled: true;
     in property <length> size: 26px;
     // Smallest width (44 px touch keys).
     in property <length> min-w: 0px;
     callback clicked();
-    min-width: max(root.min-w, t.preferred-width + 20px);
+    property <bool> filled: root.on || root.running;
+    min-width: max(root.min-w, t.preferred-width + 16px);
     height: root.size;
-    background: root.on ? root.tone.with-alpha(0.2) : touch.pressed ? Theme.plate-raised : touch.has-hover && root.enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate;
-    border-width: 1px;
-    border-color: root.on ? root.tone.with-alpha(0.8) : Theme.rule;
+    background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.tone);
+    border-radius: Theme.r-control;
     animate background { duration: Theme.motion ? 90ms : 0ms; }
-    // Lit state: a line along the top edge in the toggle's tone.
-    Rectangle { y: 0; height: 2px; background: root.on ? root.tone : transparent; }
     t := Text {
+        y: (parent.height - self.height) / 2 + (touch.pressed && root.enabled ? 1px : 0);
         text: root.label;
-        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
-        color: !root.enabled ? Theme.bone-3.with-alpha(0.55) : root.on ? Theme.bone : Theme.bone-2;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+        color: Theme.ink(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled);
         horizontal-alignment: center; vertical-alignment: center;
     }
+    if root.armed: ArmedOutline { width: parent.width; height: parent.height; show: true; tone: root.tone; }
     touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
+    focus := FocusScope { focus-on-click: false; enabled: root.enabled; x: 0; width: 0; height: 0;
+        key-pressed(e) => {
+            if (e.text == Key.Return || e.text == " ") { root.clicked(); return accept; }
+            reject
+        }
+    }
+    FocusRing { show: focus.has-focus; }
 }
 
 // Draggable divider between two panes. `horizontal` = a horizontal bar that
@@ -447,6 +490,8 @@ export component Jog inherits Rectangle {
     // The BPM in the centre can be typed (target tempo) and the tempo range
     // under it clicked through.
     in property <bool> editable;
+    // Below this platter size the centre value steps down a rank.
+    in property <length> hero-from: 150px;
     // Accessible label prefix of the BPM field and the range key ("deck1").
     in property <string> a11y-prefix;
     callback touched();
@@ -488,9 +533,9 @@ export component Jog inherits Rectangle {
         x: 24px; width: root.size - 48px;
         alignment: center;
         spacing: 0;
-        Text { text: root.top-text; font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; color: Theme.bone-3; horizontal-alignment: center; }
-        Text { text: root.main-text; font-family: Theme.family; font-size: root.size > 120px ? 24px : 18px; font-weight: 600; color: Theme.bone; horizontal-alignment: center; }
-        Text { text: root.sub-text; font-family: Theme.family; font-size: 11px; color: Theme.bone-2; horizontal-alignment: center; }
+        Text { text: root.top-text; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px; color: Theme.bone-3; horizontal-alignment: center; }
+        Text { text: root.main-text; font-family: Theme.family; font-size: root.size >= root.hero-from ? Theme.hero : Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: center; }
+        Text { text: root.sub-text; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: center; }
     }
     TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.touched(); } }
     // Click the BPM: type the tempo you want. The field opens on the current
@@ -542,19 +587,18 @@ export component Transport inherits Rectangle {
     callback clicked();
     width: root.size; height: root.size;
     border-radius: root.size / 2;
-    border-width: 2px;
-    border-color: root.on ? root.tone : touch.has-hover ? Theme.bone-3 : Theme.rule-strong;
-    background: root.on ? root.tone.with-alpha(0.12) : Theme.plate;
+    background: Theme.face(true, touch.pressed, touch.has-hover, false, root.on, root.tone);
     if root.kind == "cue": Text {
+        y: (parent.height - self.height) / 2 + (touch.pressed ? 1px : 0);
         text: "CUE";
-        font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1px;
-        color: root.on ? root.tone : Theme.bone-2;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: Theme.ink(true, touch.pressed, touch.has-hover, false, root.on);
     }
     if root.kind != "cue": Glyph {
         x: (parent.width - 12px) / 2 + 1px; y: (parent.height - 12px) / 2;
         width: 12px; height: 12px;
         kind: root.on ? "pause" : "play";
-        tone: root.on ? root.tone : Theme.bone-2;
+        tone: Theme.ink(true, touch.pressed, touch.has-hover, false, root.on);
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
@@ -573,7 +617,7 @@ export component Stepper inherits Rectangle {
     in property <color> tone: Theme.bone-3;
     in property <bool> lit;
     in property <bool> enabled: true;
-    in property <length> font-size: 12px;
+    in property <length> font-size: Theme.control;
     // Accessible labels of the ‹ area, the value and the › area (test
     // hooks for steppers whose parts are separate controls).
     in property <string> a11y-prev;
@@ -583,40 +627,39 @@ export component Stepper inherits Rectangle {
     callback value-clicked();
     height: root.size;
     min-width: probe.preferred-width + 2 * root.arrow + 12px;
-    background: Theme.plate;
-    border-width: 1px;
-    border-color: root.lit ? root.tone.with-alpha(0.8) : Theme.rule;
-    probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: 600; letter-spacing: 1px; }
+    background: root.enabled ? Theme.plate : Theme.ground-band;
+    border-radius: Theme.r-control;
+    probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px; }
     Rectangle {
         x: 0; width: root.arrow;
         accessible-role: button;
         accessible-label: root.a11y-prev;
-        background: prev.pressed ? Theme.plate-raised : prev.has-hover && root.enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : transparent;
+        background: root.enabled && (prev.pressed || prev.has-hover) ? Theme.plate-raised : transparent;
+        border-radius: Theme.r-control;
         Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "prev"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
         prev := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.step(-1); } }
     }
-    VLine { x: root.arrow; height: parent.height; weight: 1px; tone: Theme.rule; }
     Rectangle {
         x: root.arrow + 1px; width: parent.width - 2 * root.arrow - 2px;
         accessible-role: text;
         accessible-label: root.a11y-value;
         accessible-value: root.value;
-        background: mid.has-hover && root.enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : transparent;
+        background: mid.has-hover && root.enabled ? Theme.plate-raised : transparent;
         Text {
             text: root.value;
-            font-family: Theme.family; font-size: root.font-size; font-weight: 600; letter-spacing: 1px;
+            font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px;
             color: !root.enabled ? Theme.bone-3 : root.lit ? Theme.bone : Theme.bone-2;
             horizontal-alignment: center; vertical-alignment: center;
             overflow: elide;
         }
         mid := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.value-clicked(); } }
     }
-    VLine { x: parent.width - root.arrow - 1px; height: parent.height; weight: 1px; tone: Theme.rule; }
     Rectangle {
         x: parent.width - root.arrow; width: root.arrow;
         accessible-role: button;
         accessible-label: root.a11y-next;
-        background: next.pressed ? Theme.plate-raised : next.has-hover && root.enabled ? Theme.plate-raised.mix(Theme.plate, 0.5) : transparent;
+        background: root.enabled && (next.pressed || next.has-hover) ? Theme.plate-raised : transparent;
+        border-radius: Theme.r-control;
         Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "next"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
         next := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.step(1); } }
     }
@@ -636,14 +679,12 @@ export component HoldButton inherits Rectangle {
     property <bool> lit: root.on || touch.pressed;
     min-width: t.preferred-width + 16px;
     height: root.size;
-    background: root.lit ? root.tone.with-alpha(0.22) : touch.has-hover ? Theme.plate-raised.mix(Theme.plate, 0.5) : Theme.plate;
-    border-width: 1px;
-    border-color: root.lit ? root.tone.with-alpha(0.8) : Theme.rule;
-    Rectangle { y: 0; height: 2px; background: root.lit ? root.tone : transparent; }
+    background: Theme.face(true, touch.pressed, touch.has-hover, false, root.lit, root.tone);
+    border-radius: Theme.r-control;
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: 10px; font-weight: 600; letter-spacing: 1.1px;
-        color: root.lit ? Theme.bone : Theme.bone-2;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.1px;
+        color: Theme.ink(true, touch.pressed, touch.has-hover, false, root.lit);
         horizontal-alignment: center; vertical-alignment: center;
     }
     touch := TipArea {

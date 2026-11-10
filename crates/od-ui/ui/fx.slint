@@ -41,19 +41,17 @@ export component ChoiceList inherits Rectangle {
     callback chosen(int);
     width: root.columns * root.cell-w + 2px;
     height: Math.ceil(root.items.length / root.columns) * root.cell-h + 2px;
-    background: Theme.plate;
-    border-width: 1px;
-    border-color: Theme.rule-strong;
+    background: Theme.plate; border-radius: Theme.r-overlay;
     for name[i] in root.items: Rectangle {
         x: 1px + Math.mod(i, root.columns) * root.cell-w;
         y: 1px + Math.floor(i / root.columns) * root.cell-h;
         width: root.cell-w; height: root.cell-h;
-        background: i == root.current ? Theme.attention.with-alpha(0.16) : ta.has-hover ? Theme.plate-raised : transparent;
-        Rectangle { x: 0; width: 2px; background: i == root.current ? Theme.attention : transparent; }
+        border-radius: Theme.r-control;
+        background: i == root.current ? Theme.bone : ta.has-hover ? Theme.plate-raised : transparent;
         Text {
             x: 10px; text: name;
-            font-family: Theme.family; font-size: 11px; font-weight: 600; letter-spacing: 1px;
-            color: i == root.current ? Theme.bone : Theme.bone-2; vertical-alignment: center;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+            color: i == root.current ? Theme.ground : Theme.bone-2; vertical-alignment: center;
         }
         ta := TouchArea { mouse-cursor: pointer; clicked => { root.chosen(i); } }
     }
@@ -79,7 +77,7 @@ component FxUnit inherits Rectangle {
     callback tap();
     callback release(int, bool);
     property <color> tone: Theme.attention;
-    background: Theme.ground;
+    background: Theme.ground-band;
 
     kinds := PopupWindow {
         x: PopupPlace.x(root.absolute-position.x, 72px, kinds-list.width);
@@ -98,17 +96,17 @@ component FxUnit inherits Rectangle {
     // parameter, the unit readout, AUTO, TAP and ON. PART and the release
     // effects sit on a second line.
     VerticalLayout {
-        padding-left: 14px; padding-right: 14px; padding-top: Theme.touch ? 2px : 6px; padding-bottom: Theme.touch ? 2px : 6px;
-        spacing: 4px;
+        padding-left: Theme.s4; padding-right: Theme.s4; padding-top: Theme.touch ? Theme.key-gap : Theme.s2; padding-bottom: Theme.touch ? Theme.key-gap : Theme.s2;
+        spacing: Theme.s1;
         HorizontalLayout {
-            spacing: 8px;
+            spacing: Theme.s2;
             alignment: start;
             // Assign: 1 2 S 3 4 M (channels that are not shown stay, dimmed);
             // the kiosk leaves it to the controller's channel select.
             if !Theme.touch: VerticalLayout {
                 alignment: center;
                 HorizontalLayout {
-                    spacing: 2px;
+                    spacing: Theme.key-gap;
                     for t[k] in [{ id: "ch1", label: "1", target: 1 }, { id: "ch2", label: "2", target: 2 }, { id: "sampler", label: "S", target: -1 }, { id: "ch3", label: "3", target: 3 }, { id: "ch4", label: "4", target: 4 }, { id: "master", label: "M", target: 0 }]: Toggle {
                         accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.target == t.target;
                         accessible-label: "fx.unit\{root.u.unit}.assign." + t.id;
@@ -134,12 +132,12 @@ component FxUnit inherits Rectangle {
             }
             // Slot 1: the unit's own effect, level and beat length.
             VerticalLayout {
-                spacing: 4px; alignment: center;
+                spacing: Theme.s1; alignment: center;
                 Stepper {
                     accessible-role: combobox;
                     accessible-label: "fx.unit\{root.u.unit}.slot1.type";
                     accessible-value: self.value;
-                    size: Theme.target; arrow: 18px; font-size: 10px;
+                    size: Theme.target; arrow: 18px; font-size: Theme.control;
                     value: FxNames.beat[root.u.kind]; template: "VINYL BRAKE"; lit: root.u.on; tone: root.tone;
                     tooltip: @tr("Tempo FX: previous / next effect — click the name for the list");
                     command: "fx" + root.u.unit + ".next";
@@ -150,10 +148,10 @@ component FxUnit inherits Rectangle {
                 // length shows.
                 if Theme.touch: Text {
                     accessible-role: text; accessible-label: "fx.unit\{root.u.unit}.slot1.beats"; accessible-value: root.u.beats;
-                    text: @tr("{} BEATS", root.u.beats); font-family: Theme.family; font-size: 10px; font-weight: 600; color: Theme.bone-2; horizontal-alignment: center;
+                    text: @tr("{} BEATS", root.u.beats); font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2; horizontal-alignment: center;
                 }
                 if !Theme.touch: HorizontalLayout {
-                    spacing: 4px;
+                    spacing: Theme.s1;
                     Knob {
                         accessible-role: slider;
                         accessible-label: "fx.unit\{root.u.unit}.slot1.depth";
@@ -167,7 +165,7 @@ component FxUnit inherits Rectangle {
                         a11y-prev: "fx.unit\{root.u.unit}.slot1.beats-down";
                         a11y-value: "fx.unit\{root.u.unit}.slot1.beats";
                         a11y-next: "fx.unit\{root.u.unit}.slot1.beats-up";
-                        horizontal-stretch: 1; size: 24px; font-size: 10px;
+                        horizontal-stretch: 1; size: 24px; font-size: Theme.control;
                         value: root.u.beats; template: "1/16";
                         tooltip: @tr("Beat length: shorter / longer");
                         command: "fx" + root.u.unit + ".beat.up";
@@ -176,16 +174,16 @@ component FxUnit inherits Rectangle {
                 }
             }
             if root.u.multi: HorizontalLayout {
-                spacing: 8px;
+                spacing: Theme.s2;
                 for sl in root.u.slots: VerticalLayout {
-                    spacing: 4px; alignment: center;
+                    spacing: Theme.s1; alignment: center;
                     HorizontalLayout {
-                        spacing: 2px;
+                        spacing: Theme.key-gap;
                         Stepper {
                             accessible-role: combobox;
                             accessible-label: "fx.unit\{root.u.unit}.slot\{sl.slot}.type";
                             accessible-value: self.value;
-                            horizontal-stretch: 1; size: Theme.target; arrow: 18px; font-size: 10px;
+                            horizontal-stretch: 1; size: Theme.target; arrow: 18px; font-size: Theme.control;
                             value: FxNames.beat[sl.kind]; template: "PING PONG"; lit: sl.on; tone: root.tone;
                             tooltip: @tr("Effect of this slot");
                             step(d) => { FxSlots.kind-step(root.u.unit, sl.slot, d); }
@@ -199,10 +197,10 @@ component FxUnit inherits Rectangle {
                     }
                     if Theme.touch: Text {
                         accessible-role: text; accessible-label: "fx.unit\{root.u.unit}.slot\{sl.slot}.beats"; accessible-value: sl.beats;
-                        text: @tr("{} BEATS", sl.beats); font-family: Theme.family; font-size: 10px; font-weight: 600; color: Theme.bone-2; horizontal-alignment: center;
+                        text: @tr("{} BEATS", sl.beats); font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2; horizontal-alignment: center;
                     }
                     if !Theme.touch: HorizontalLayout {
-                        spacing: 4px;
+                        spacing: Theme.s1;
                         Knob {
                             accessible-role: slider;
                             accessible-label: "fx.unit\{root.u.unit}.slot\{sl.slot}.depth";
@@ -215,7 +213,7 @@ component FxUnit inherits Rectangle {
                             a11y-prev: "fx.unit\{root.u.unit}.slot\{sl.slot}.beats-down";
                             a11y-value: "fx.unit\{root.u.unit}.slot\{sl.slot}.beats";
                             a11y-next: "fx.unit\{root.u.unit}.slot\{sl.slot}.beats-up";
-                            horizontal-stretch: 1; size: 24px; font-size: 10px;
+                            horizontal-stretch: 1; size: 24px; font-size: Theme.control;
                             value: sl.beats; template: "1/16";
                             step(d) => { FxSlots.beats-step(root.u.unit, sl.slot, d); }
                         }
@@ -238,21 +236,21 @@ component FxUnit inherits Rectangle {
                 Text {
                     accessible-role: text; accessible-label: "fx.unit\{root.u.unit}.tempo-fx"; accessible-value: FxNames.beat[root.u.kind];
                     text: "FX" + root.u.unit;
-                    font-family: Theme.family; font-size: 17px; font-weight: 600; letter-spacing: 1px;
+                    font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; letter-spacing: 1px;
                     color: root.u.on ? root.tone : root.u.ringing ? Theme.bone-2 : Theme.bone-3;
                 }
                 Text {
                     min-width: bp.preferred-width;
                     text: (root.u.bpm == "" ? "—" : root.u.bpm) + (root.u.tapped ? " TAP" : "");
-                    font-family: Theme.family; font-size: 11px; font-weight: 600;
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
                     color: root.u.tapped ? Theme.attention : Theme.bone-2;
-                    bp := Text { visible: false; text: "000.0 TAP"; font-family: Theme.family; font-size: 11px; font-weight: 600; }
+                    bp := Text { visible: false; text: "000.0 TAP"; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; }
                 }
             }
             VerticalLayout {
                 alignment: center;
                 HorizontalLayout {
-                    spacing: 4px;
+                    spacing: Theme.s1;
                     Toggle {
                         accessible-role: button;
                         accessible-label: "fx.unit\{root.u.unit}.auto";
@@ -263,7 +261,7 @@ component FxUnit inherits Rectangle {
                     Toggle {
                         accessible-role: button;
                         accessible-label: "fx.unit\{root.u.unit}.tap";
-                        size: Theme.target; min-w: Theme.target; label: "TAP"; on: root.u.tapped; tone: Theme.w486;
+                        size: Theme.target; min-w: Theme.target; label: "TAP"; on: root.u.tapped; tone: Theme.attention;
                         tooltip: @tr("Tap the tempo of the effect; AUTO returns to the deck tempo");
                         command: "fx" + root.u.unit + ".tap";
                         clicked => { root.tap(); }
@@ -280,21 +278,21 @@ component FxUnit inherits Rectangle {
             }
         }
         if !root.tiny: HorizontalLayout {
-            spacing: 3px;
+            spacing: Theme.key-gap;
             alignment: start;
-            if root.u.target > 0: Caps { text: "PART"; font-size: 9px; vertical-alignment: center; width: 30px; }
+            if root.u.target > 0: Caps { text: "PART"; font-size: Theme.label; vertical-alignment: center; width: 30px; }
             if root.u.target > 0: HorizontalLayout {
-                spacing: 3px;
+                spacing: Theme.key-gap;
                 for p[k] in [{ id: "all", label: "ALL", i: -1 }, { id: "vocal", label: "VOC", i: 0 }, { id: "drums", label: "DRUM", i: 1 }, { id: "bass", label: "BASS", i: 2 }, { id: "inst", label: "INST", i: 3 }]: Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.part == p.i;
                     accessible-label: "fx.unit\{root.u.unit}.part." + p.id;
                     size: 24px; width: 40px; label: p.label; on: root.u.part == p.i; tone: Theme.w656;
-                    tooltip: p.i < 0 ? @tr("The effect takes the whole channel") : @tr("Stem FX: the effect takes only this part of the channel");
+                    tooltip: p.i < 0 ? @tr("The effect takes the whole channel") : @tr("Stem FX: the effect takes only this stem of the channel");
                     clicked => { FxSlots.part(root.u.unit, p.i); }
                 }
             }
-            if root.u.target > 0: Rectangle { width: 12px; }
-            Caps { text: "REL"; font-size: 9px; vertical-alignment: center; width: 24px; }
+            if root.u.target > 0: Rectangle { width: Theme.s3; }
+            Caps { text: "REL"; font-size: Theme.label; vertical-alignment: center; width: 24px; }
             for name[k] in FxNames.release: HoldButton {
                 label: name; on: root.u.release == k; tone: Theme.w656;
                 tooltip: k == 0 ? @tr("Exit FX: slow the target to a stop while held")
@@ -321,7 +319,7 @@ export component FxPanel inherits Rectangle {
     callback on(int);
     callback tap(int);
     callback release(int, int, bool);
-    background: Theme.ground;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
     // Side by side while both units show one effect; one unit per line
     // once a unit chains three.
     property <bool> stack: root.units.length > 1 && (root.units[0].multi || root.units[1].multi);
@@ -331,7 +329,6 @@ export component FxPanel inherits Rectangle {
             for u[i] in root.units: HorizontalLayout {
                 horizontal-stretch: 1;
                 spacing: 0;
-                if i > 0: VLine { weight: 1px; tone: Theme.rule; }
                 FxUnit {
                     horizontal-stretch: 1;
                     u: u;
@@ -373,7 +370,6 @@ export component FxPanel inherits Rectangle {
             }
         }
     }
-    HLine { y: parent.height - 1px; width: parent.width; tone: Theme.rule; }
 }
 
 // Channel FX of the CH FX knobs (one selection for all channels, as on the
@@ -388,7 +384,7 @@ export component ChannelFxSelector inherits Rectangle {
         spacing: 0px;
         Stepper {
             horizontal-stretch: 1;
-            size: 24px; arrow: 18px; font-size: 10px;
+            size: 24px; arrow: 18px; font-size: Theme.control;
             value: FxNames.color[root.current]; template: "DUB ECHO"; lit: root.current != 0; tone: Theme.w405;
             tooltip: @tr("Channel FX of the CH FX knobs: previous / next — click the name for the list");
             command: "channelfx.next";

@@ -87,12 +87,6 @@ impl App {
                 tracing::warn!(error = %e, "start-up backup failed");
             }
         }
-        // UI scale (Preferences > View); read by Slint when the window is created.
-        let scale = state.settings.view.scale;
-        if std::env::var_os("SLINT_SCALE_FACTOR").is_none() && (scale - 1.0).abs() > 0.01 {
-            // SAFETY: no other thread has been started yet.
-            unsafe { std::env::set_var("SLINT_SCALE_FACTOR", scale.to_string()) };
-        }
         let ui = AppWindow::new()?;
         shell::setup_window(&ui, &state.config, &state.settings);
         let (wtx, wrx) = unbounded();
@@ -150,6 +144,7 @@ impl App {
         sampler::wire(&app);
         preferences::wire(&app);
         crate::appearance::wire(&app);
+        crate::gig::wire(&app);
         update::wire(&app);
         stems_model::wire(&app);
         crate::lighting::wire(&app);
@@ -241,6 +236,7 @@ impl App {
             }
         }
         crate::appearance::tick(self);
+        crate::gig::tick(self);
         shell::tick_chrome(self);
         browser::tick(self);
         if !self.state.borrow().config.headless {

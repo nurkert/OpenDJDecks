@@ -35,16 +35,16 @@ export global Theme {
     // Continuum: charcoal in dark, paper in light.
     out property <color> ground: light ? (high-contrast ? #FAF9F5 : #F3F0E8) : (high-contrast ? #0B0B0B : #151514);
     out property <color> ground-band: light ? (high-contrast ? #F2F0E9 : #E9E5DA) : (high-contrast ? #121212 : #1A1A19);
-    out property <color> plate: light ? (high-contrast ? #ECE9E0 : #E4E0D4) : (high-contrast ? #1C1C1B : #21211F);
-    out property <color> plate-raised: light ? (high-contrast ? #E0DCD0 : #D8D3C5) : #2A2A27;
+    out property <color> plate: light ? (high-contrast ? #ECE9E0 : #E4E0D4) : (high-contrast ? #1C1C1B : #262624);
+    out property <color> plate-raised: light ? (high-contrast ? #E0DCD0 : #D8D3C5) : #32322F;
     out property <color> rule: light ? (high-contrast ? #8A857A : #CAC5B8) : (high-contrast ? #4B4A46 : #33322F);
     out property <color> rule-strong: light ? (high-contrast ? #6A665E : #A39E91) : #4B4A46;
 
     // Legends: bone on charcoal, ink on paper (all ≥ 4.5:1 on ground and
     // ground-band; see tests/theme_contrast.rs).
     out property <color> bone: light ? (high-contrast ? #000000 : #1D1C1A) : (high-contrast ? #FFFFFF : #E6E0D2);
-    out property <color> bone-2: light ? (high-contrast ? #26241F : #4A4740) : (high-contrast ? #E6E0D2 : #B7B1A4);
-    out property <color> bone-3: light ? (high-contrast ? #45423C : #5E5A53) : (high-contrast ? #B7B1A4 : #8B867B);
+    out property <color> bone-2: light ? (high-contrast ? #26241F : #4A4740) : (high-contrast ? #E6E0D2 : #BDB7AA);
+    out property <color> bone-3: light ? (high-contrast ? #45423C : #5E5A53) : (high-contrast ? #B7B1A4 : #A29C90);
 
     // Emission lines (nm); darkened on paper to ≥ 3:1 against ground,
     // ground-band and plate.
@@ -56,10 +56,21 @@ export global Theme {
     out property <color> w615: light ? (colorblind-safe ? #935D00 : #A54E0E) : (colorblind-safe ? #E69F00 : #F39047);
     out property <color> w656: light ? (colorblind-safe ? #B34E00 : #C23434) : (colorblind-safe ? #D55E00 : #EF5A5A);
 
-    // Semantic lines.
+    // Semantic lines: one job per colour (DESIGN.md, State Language).
+    // Sodium: now and attention. Green: playing and in sync. Red: recording,
+    // clash, danger. Cyan, orange, green and violet also name decks 1-4.
     out property <color> live: w546;
     out property <color> attention: w589;
     out property <color> fault: w656;
+    // Neutral fill of a setup control that is on (quantize, stem isolation):
+    // filled like any on state, but without a colour of its own.
+    out property <color> setup-on: bone-2;
+    // Ink on anything filled in a tone.
+    out property <color> ink-on: ground;
+    // The focus ring: bone, 2px, 2px offset, used for nothing else.
+    out property <color> focus: bone;
+    out property <length> focus-width: 2px;
+    out property <length> focus-offset: 2px;
 
     // State changes slide with one damped overshoot.
     out property <easing> spring: cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -68,23 +79,46 @@ export global Theme {
     out property <length> hair: high-contrast ? 2px : 1px;
     out property <length> line: 2px;
 
-    // Type ranks: one family, ranked by size, tracking and ink.
+    // Type (DESIGN.md, Typography): one family, five sizes, two weights; the
+    // bundled figures are all one width, so changing numbers never shift.
+    // `text-scale` is the text size preference (Preferences > View, the
+    // list and the deck); nothing falls below its floor, 12 px for what is
+    // read live or touched and in the kiosk, 11 px for legends.
     out property <string> family: "Barlow Semi Condensed";
-    out property <length> rank-a: 40px;
-    out property <length> rank-b: 24px;
-    out property <length> rank-c: 17px;
-    out property <length> body: 14px;
-    out property <length> index: 11px;
+    in-out property <float> text-scale: 1;
+    out property <length> hero: 32px * root.text-scale;
+    out property <length> heading: 22px * root.text-scale;
+    out property <length> body: max(12px, 15px * root.text-scale);
+    out property <length> control: max(12px, 13px * root.text-scale);
+    out property <length> label: max(root.touch ? 12px : 11px, 11px * root.text-scale);
+    out property <int> weight-medium: 500;
+    out property <int> weight-semi: 600;
     out property <length> tracking-index: 1.6px;
     out property <length> tracking-c: 2.2px;
 
-    // Spacing (4px grid).
+    // Surfaces carry the structure (DESIGN.md, Elevation): the window is
+    // `ground`, a panel is `ground-band`, a control is `plate`, and hover and
+    // press move to `plate-raised`. Panels sit in the window with
+    // `gutter` between them; a border is the exception, not the structure.
+    out property <length> r-control: 4px;
+    out property <length> r-panel: 8px;
+    out property <length> r-overlay: 10px;
+    // The space between panels: tighter on the touch screen.
+    out property <length> gutter: root.touch ? 0px : 8px;
+
+    // Spacing (4px grid). Layout spacing and padding use only these values;
+    // keys inside a group touch at `key-gap`.
+    out property <length> key-gap: 2px;
     out property <length> s1: 4px;
     out property <length> s2: 8px;
     out property <length> s3: 12px;
     out property <length> s4: 16px;
     out property <length> s5: 24px;
     out property <length> s6: 32px;
+
+    // Width of the browser's side rails: sources on the left, panels on
+    // the right (full words).
+    out property <length> rail: 78px;
 
     // The off-centre rail.
     out property <length> rail-x: 28px;
@@ -118,6 +152,27 @@ export global Theme {
         if (slot == 4) { return w589; }
         if (slot == 5) { return w436; }
         if (slot == 6) { return w656; }
+        return bone-2;
+    }
+
+    // ── State language (DESIGN.md, State Language) ──
+    // Off, hover and pressed, selected, on, running, disabled, as one table.
+
+    // Surface of a control.
+    public pure function face(enabled: bool, pressed: bool, hover: bool, selected: bool, on: bool, tone: color) -> color {
+        if (selected) { return bone; }
+        if (on) { return tone; }
+        if (!enabled) { return ground-band; }
+        if (pressed || hover) { return plate-raised; }
+        return plate;
+    }
+
+    // Ink of a control's legend.
+    public pure function ink(enabled: bool, pressed: bool, hover: bool, selected: bool, on: bool) -> color {
+        if (selected) { return ground; }
+        if (on) { return ink-on; }
+        if (!enabled) { return bone-3; }
+        if (pressed || hover) { return bone; }
         return bone-2;
     }
 }

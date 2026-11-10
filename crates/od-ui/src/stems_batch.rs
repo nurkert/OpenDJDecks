@@ -24,14 +24,14 @@ impl BatchCount {
     pub fn message(&self, last_error: &str) -> String {
         if !self.finished() {
             od_i18n::trf(
-                "Separating parts: {} of {} tracks …",
+                "Separating stems: {} of {} tracks …",
                 &[&(self.done + self.failed + 1).min(self.total), &self.total],
             )
         } else if self.failed == 0 {
-            od_i18n::trf("Parts ready for {} tracks", &[&self.done])
+            od_i18n::trf("Stems ready for {} tracks", &[&self.done])
         } else {
             od_i18n::trf(
-                "Parts ready for {} tracks, {} failed: {}",
+                "Stems ready for {} tracks, {} failed: {}",
                 &[&self.done, &self.failed, &last_error],
             )
         }
@@ -75,7 +75,7 @@ pub(crate) fn separate_selected(app: &App) {
 
 #[cfg(not(feature = "separation"))]
 pub(crate) fn separate(app: &App, _ids: &[TrackId]) {
-    app.status("This build separates no parts (feature separation)");
+    app.status("This build separates no stems (feature separation)");
 }
 
 /// Stops the running and queued batch (the model is about to go).
@@ -96,7 +96,7 @@ pub(crate) fn separate(app: &App, ids: &[TrackId]) {
         return;
     }
     if app.state.borrow().config.lite {
-        app.status("Parts are separated on a desktop computer; the stick brings them along");
+        app.status("Stems are separated on a desktop computer; the stick brings them along");
         return;
     }
     // The model comes first; the tracks wait for it (nothing downloads

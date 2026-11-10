@@ -992,7 +992,7 @@ fn build() -> Vec<Action> {
     );
     b.add_split(
         "browser.stems",
-        "Separate the parts of the selected tracks",
+        "Separate the stems of the selected tracks",
         None,
         g,
         Global,

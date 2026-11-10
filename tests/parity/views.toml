@@ -279,7 +279,7 @@ order = "column"
 elements = [
   "deck1.slip",
   "deck1.quantize",
-  "deck1.master-tempo",
+  "deck1.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -430,7 +430,7 @@ order = "column"
 elements = [
   "deck2.slip",
   "deck2.quantize",
-  "deck2.master-tempo",
+  "deck2.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -894,7 +894,7 @@ order = "column"
 elements = [
   "deck1.slip",
   "deck1.quantize",
-  "deck1.master-tempo",
+  "deck1.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -1013,7 +1013,7 @@ order = "column"
 elements = [
   "deck3.slip",
   "deck3.quantize",
-  "deck3.master-tempo",
+  "deck3.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -1196,7 +1196,7 @@ order = "column"
 elements = [
   "deck2.slip",
   "deck2.quantize",
-  "deck2.master-tempo",
+  "deck2.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -1315,7 +1315,7 @@ order = "column"
 elements = [
   "deck4.slip",
   "deck4.quantize",
-  "deck4.master-tempo",
+  "deck4.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -1800,7 +1800,7 @@ order = "column"
 elements = [
   "deck1.slip",
   "deck1.quantize",
-  "deck1.master-tempo",
+  "deck1.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -1951,7 +1951,7 @@ order = "column"
 elements = [
   "deck2.slip",
   "deck2.quantize",
-  "deck2.master-tempo",
+  "deck2.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -2393,7 +2393,7 @@ order = "column"
 elements = [
   "deck1.slip",
   "deck1.quantize",
-  "deck1.master-tempo",
+  "deck1.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -2512,7 +2512,7 @@ order = "column"
 elements = [
   "deck3.slip",
   "deck3.quantize",
-  "deck3.master-tempo",
+  "deck3.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -2695,7 +2695,7 @@ order = "column"
 elements = [
   "deck2.slip",
   "deck2.quantize",
-  "deck2.master-tempo",
+  "deck2.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -2814,7 +2814,7 @@ order = "column"
 elements = [
   "deck4.slip",
   "deck4.quantize",
-  "deck4.master-tempo",
+  "deck4.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -3539,7 +3539,7 @@ order = "column"
 elements = [
   "deck1.slip",
   "deck1.quantize",
-  "deck1.master-tempo",
+  "deck1.keylock",
 ]
 note = "SLIP / Q / MT"
 
@@ -3658,7 +3658,7 @@ order = "column"
 elements = [
   "deck2.slip",
   "deck2.quantize",
-  "deck2.master-tempo",
+  "deck2.keylock",
 ]
 note = "SLIP / Q / MT"
 
