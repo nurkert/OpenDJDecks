@@ -728,7 +728,7 @@ fn bpm_range_preference_reaches_the_analysis() {
         "the BPM range choice is on the page"
     );
     let options: Vec<String> = prefs.get_bpm_options().iter().map(|s| s.to_string()).collect();
-    assert_eq!(options, ["70–180", "58–115", "98–195", "118–236"]);
+    assert_eq!(options, ["70–180", "58–115", "98–195", "118–236", "150–300"]);
     assert_eq!(prefs.get_bpm_range(), 0, "70–180 by default");
 
     prefs.invoke_choose("analysis.bpm".into(), 3);

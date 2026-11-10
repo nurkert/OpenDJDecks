@@ -331,7 +331,22 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
         DeckAction::CuePress => Some(DeckCommand::Cue(true)),
         DeckAction::CueRelease => Some(DeckCommand::Cue(false)),
         DeckAction::JumpToStart => Some(DeckCommand::Seek { seconds: 0.0 }),
-        DeckAction::Sync => Some(DeckCommand::SetSync(!s.sync)),
+        DeckAction::Sync => {
+            decks::toggle_sync(app, d);
+            None
+        }
+        DeckAction::PhraseStart => {
+            decks::phrase_start(app, d);
+            None
+        }
+        DeckAction::LoopCapture => {
+            decks::capture_loop(app, d);
+            None
+        }
+        DeckAction::BpmScale(f) => {
+            decks::bpm_scale(app, d, f as f64);
+            None
+        }
         DeckAction::SyncOff => Some(DeckCommand::SetSync(false)),
         DeckAction::SetMaster => {
             engine::send(app, Command::SetMasterDeck(Some(d)));

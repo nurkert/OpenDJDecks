@@ -16,7 +16,7 @@ use od_engine::{
 
 /// Pad modes offered on screen, in selector order (Hold FX page 2 is
 /// reached with the ‹ › of the Hold FX mode).
-pub(crate) const UI_MODES: [PadMode; 13] = [
+pub(crate) const UI_MODES: [PadMode; 14] = [
     PadMode::HotCue,
     PadMode::HoldFx1,
     PadMode::BeatJump,
@@ -30,6 +30,7 @@ pub(crate) const UI_MODES: [PadMode; 13] = [
     PadMode::Lighting,
     PadMode::TimedCensor,
     PadMode::PatternRecall,
+    PadMode::LoopRoll,
 ];
 
 /// Looks of the Lighting pads A–F (G strobe, H flash).
@@ -59,6 +60,9 @@ pub(crate) const SLICER_BEATS: [f64; 5] = [4.0, 8.0, 16.0, 32.0, 64.0];
 
 /// Beat jump sizes of the ‹ › in Beat Jump mode and the deck's −/+ buttons.
 pub(crate) const JUMP_SIZES: [f64; 10] = [0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0];
+
+/// Beat lengths of the Loop Roll pads: 1/32 … 4 beats, A–H.
+pub(crate) const ROLL_BEATS: [f64; 8] = [1.0 / 32.0, 1.0 / 16.0, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0];
 
 /// Beat lengths of the Beat Loop pads.
 pub(crate) fn pad_beats(index: usize) -> f64 {
@@ -182,6 +186,8 @@ pub(crate) fn param_label(s: &DeckState, ctx: &PadCtx) -> String {
         PadMode::Lighting => "LIGHTS".into(),
         PadMode::TimedCensor => "CENSOR".into(),
         PadMode::PatternRecall => "SEQUENCES".into(),
+        // The CAPTURE key takes this place.
+        PadMode::LoopRoll => String::new(),
     }
 }
 
@@ -326,6 +332,13 @@ pub(crate) fn pad_views(
             PadMode::TimedCensor => {
                 pad(i, beats_label(pad_beats(i)), "CENSOR", true, s.censor, -1)
             }
+            PadMode::LoopRoll => {
+                let b = ROLL_BEATS[i];
+                let lit = s.loop_state.roll
+                    && s.loop_state.beats.is_some_and(|x| (x - b).abs() < 1e-9);
+                // The mode bar says ROLL; the legend keeps its room.
+                pad(i, beats_label(b), "", true, lit, -1)
+            }
             // Stored sequences are filled in by the sampler (see `sampler::seq_pads`).
             PadMode::PatternRecall => pad(i, format!("S{}", i + 1), "", false, false, -1),
             PadMode::Lighting => match i {
@@ -422,6 +435,11 @@ pub(crate) fn press_commands(
                     .collect()
             }
         }
+        // Held: the roll plays; released: back where the track went on.
+        PadMode::LoopRoll => vec![deck(DeckCommand::LoopRoll {
+            beats: ROLL_BEATS[i],
+            on: pressed,
+        })],
         PadMode::TimedCensor if pressed => vec![deck(DeckCommand::CensorFor {
             beats: pad_beats(i),
         })],
@@ -476,6 +494,16 @@ pub(crate) fn mode_change_commands(
     }
     if matches!(old, PadMode::HoldFx1 | PadMode::HoldFx2) {
         v.push(Command::HoldFx(deck, HoldFxCommand::Release));
+    }
+    // A held roll ends with its mode.
+    if old == PadMode::LoopRoll {
+        v.push(Command::Deck(
+            deck,
+            DeckCommand::LoopRoll {
+                beats: ROLL_BEATS[0],
+                on: false,
+            },
+        ));
     }
     if new == PadMode::Slicer {
         v.push(Command::Deck(
@@ -532,12 +560,51 @@ mod tests {
     #[test]
     fn modes_cycle_on_screen() {
         assert_eq!(step_mode(PadMode::HotCue, 1), PadMode::HoldFx1);
-        assert_eq!(step_mode(PadMode::HotCue, -1), PadMode::PatternRecall);
+        assert_eq!(step_mode(PadMode::HotCue, -1), PadMode::LoopRoll);
         assert_eq!(step_mode(PadMode::HoldFx2, 1), PadMode::BeatJump);
         assert_eq!(step_mode(PadMode::Slicer, 1), PadMode::Stems);
         assert_eq!(step_mode(PadMode::MemoryCue, 1), PadMode::Lighting);
         assert_eq!(step_mode(PadMode::Lighting, 1), PadMode::TimedCensor);
-        assert_eq!(step_mode(PadMode::PatternRecall, 1), PadMode::HotCue);
+        assert_eq!(step_mode(PadMode::PatternRecall, 1), PadMode::LoopRoll);
+        assert_eq!(step_mode(PadMode::LoopRoll, 1), PadMode::HotCue);
+    }
+
+    /// [59] Loop roll pads: 1/32 … 4 beats, lit while their roll is held;
+    /// press rolls, release lets go; leaving the mode ends a held roll.
+    #[test]
+    fn loop_roll_pads_roll_while_held() {
+        let none: Vec<Option<SlotInfo>> = Vec::new();
+        let c = ctx(PadMode::LoopRoll, &[], &none);
+        let mut s = DeckState::default();
+        let views = pad_views(&s, &Default::default(), &[], &c);
+        let captions: Vec<String> = views.iter().map(|p| p.caption.to_string()).collect();
+        assert_eq!(captions, ["1/32", "1/16", "1/8", "1/4", "1/2", "1", "2", "4"]);
+        assert!(views.iter().all(|p| p.set && !p.lit && p.sub.is_empty()));
+        assert_eq!(param_label(&s, &c), "", "the CAPTURE key takes the place");
+        s.loop_state = LoopState {
+            active: true,
+            start: Some(1.0),
+            end: Some(1.0625),
+            beats: Some(0.125),
+            roll: true,
+        };
+        let lit: Vec<bool> = pad_views(&s, &Default::default(), &[], &c)
+            .iter()
+            .map(|p| p.lit)
+            .collect();
+        assert_eq!(lit, [false, false, true, false, false, false, false, false]);
+        assert!(matches!(
+            press_commands(&s, &c, 0, true)[..],
+            [Command::Deck(1, DeckCommand::LoopRoll { beats, on: true })] if beats == 1.0 / 32.0
+        ));
+        assert!(matches!(
+            press_commands(&s, &c, 7, false)[..],
+            [Command::Deck(1, DeckCommand::LoopRoll { beats, on: false })] if beats == 4.0
+        ));
+        assert!(matches!(
+            mode_change_commands(1, PadMode::LoopRoll, PadMode::HotCue, 8.0)[..],
+            [Command::Deck(1, DeckCommand::LoopRoll { on: false, .. })]
+        ));
     }
 
     #[test]

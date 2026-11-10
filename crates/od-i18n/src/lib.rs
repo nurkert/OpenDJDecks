@@ -150,6 +150,33 @@ const DE: &[(&str, &str)] = &[
     ("Sample tracks could not be written", "Beispieltracks konnten nicht geschrieben werden"),
     ("{} closed: not enough room", "{} geschlossen: zu wenig Platz"),
     ("ANALYSING {}/{}", "ANALYSE {}/{}"),
+    ("ANALYSING {}/{} · {} BPM", "ANALYSE {}/{} · {} BPM"),
+    ("DROP {}", "DROP {}"),
+    ("BREAK {}", "BREAK {}"),
+    ("Synced to the phrase: {} beats", "Auf die Phrase gesynct: {} Beats"),
+    ("Phrase start cancelled", "Phrasenstart abgebrochen"),
+    (
+        "Phrase start: cue a track on a paused deck first",
+        "Phrasenstart: zuerst einen Track auf einem pausierten Deck cuen",
+    ),
+    (
+        "Phrase start: no other deck is playing to wait for",
+        "Phrasenstart: kein anderes Deck läuft, auf das gewartet werden kann",
+    ),
+    (
+        "Deck {} starts on deck {}'s next phrase ({} bars)",
+        "Deck {} startet auf der nächsten Phrase von Deck {} ({} Takte)",
+    ),
+    (
+        "Nothing to capture: roll or play a loop first",
+        "Nichts zu sichern: zuerst einen Roll oder Loop spielen",
+    ),
+    ("Loop captured on hot cue {}", "Loop auf Hot Cue {} gesichert"),
+    ("This loop is already stored", "Dieser Loop ist schon gespeichert"),
+    (
+        "Loop captured as a memory loop (the hot cues are full)",
+        "Loop als Memory Loop gesichert (die Hot Cues sind voll)",
+    ),
     (
         "{} synced: {} copied, {} updated, {} removed{}",
         "{} synchronisiert: {} kopiert, {} aktualisiert, {} entfernt{}",

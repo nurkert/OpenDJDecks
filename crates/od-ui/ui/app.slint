@@ -5,7 +5,7 @@ import { StemsModelBar, StemsModelPrompt } from "stems_model.slint";
 import { DragGhost, DragState } from "drag.slint";
 export { DragState }
 export { PopupPlace }
-export { DeckTime, GridEdit, DeckGrid, DeckGridView } from "structs.slint";
+export { DeckTime, GridEdit, DeckGrid, DeckGridView, DeckMix } from "structs.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
 import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark } from "controls.slint";
 import { FirstStartBar } from "first_start.slint";
@@ -150,6 +150,8 @@ export component AppWindow inherits Window {
     in property <string> track-key;
     in property <string> track-duration;
     in property <string> grid-source;
+    // Active BPM detection range ("70–180"), shown where the BPM is analysed.
+    in property <string> bpm-range-text;
     in property <bool> grid-locked;
     in property <bool> track-analysed;
     in property <image> track-overview;
@@ -710,6 +712,7 @@ export component AppWindow inherits Window {
                 duration: root.track-duration;
                 position: root.track-position;
                 grid-source: root.grid-source;
+                bpm-range: root.bpm-range-text;
                 grid-locked: root.grid-locked;
                 analysed: root.track-analysed;
                 read-only: root.read-only;
