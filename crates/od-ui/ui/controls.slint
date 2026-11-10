@@ -457,6 +457,12 @@ export component Toggle inherits Rectangle {
     // First-start guide: the id it can be pointed at by.
     in property <string> guide;
     callback clicked();
+    // Right click, and a click with ⇧ held (when something listens to it:
+    // `shift-aware`), for keys with a second action.
+    callback alt-clicked();
+    callback shift-clicked();
+    in property <bool> shift-aware;
+    property <bool> shift-down;
     property <bool> filled: root.on || root.running;
     min-width: max(root.min-w, t.preferred-width + 16px);
     height: root.size;
@@ -476,7 +482,16 @@ export component Toggle inherits Rectangle {
     }
     if root.armed: ArmedOutline { width: parent.width; height: parent.height; show: true; tone: root.tone; }
     if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; }
-    touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
+    touch := TipArea {
+        tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default;
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.right) { root.alt-clicked(); }
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) { root.shift-down = ev.modifiers.shift; }
+        }
+        clicked => {
+            if (root.shift-aware && root.shift-down) { root.shift-clicked(); } else { root.clicked(); }
+        }
+    }
     focus := FocusScope { focus-on-click: false; enabled: root.enabled; x: 0; width: 0; height: 0;
         key-pressed(e) => {
             if (e.text == Key.Return || e.text == " ") { root.clicked(); return accept; }

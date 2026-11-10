@@ -1,8 +1,8 @@
 ---
 title: The basics of Perform
 description: Decks, layouts, sync, keylock, tempo, loops and beat jump, and every pad mode on the deck.
-keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom]
-features: [deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
+keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, key clash, harmonic mixing, compatible key, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom]
+features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view]
 ---
 
 Perform is the live mode: the decks, the mixer and the browser in one view.
@@ -36,6 +36,18 @@ The top bar has three zones. On the left are the work modes, in the middle what 
 - **‹ ±0 ›** in the deck header shifts the key a semitone at a time; click the value to reset.
 - **KEYLOCK** keeps the key the same when the tempo changes (also known as master tempo).
 - Keyboard bend: `W` / `E` and `U` / `I` while held.
+
+### Key against the other decks
+
+From version 0.8 the **KEY** in each deck header is underlined while another deck plays, so you see at a glance whether the two keys go together:
+
+- a solid green line: the keys **fit** (the same key, one step on the circle of fifths, or the relative major or minor);
+- a dashed yellow line: an **energy change** (a whole tone or a semitone up or down, or one step with major and minor swapped), a move that lifts or drops the mood on purpose;
+- a red line struck through with two ticks: the keys **clash**.
+
+![Two decks whose keys clash after a key shift of +1 on deck 2](../img/key-relation.png)
+
+It compares the key you hear: key shift counts, and without **KEYLOCK** so does the tempo (to the nearest semitone). With more decks playing it shows the worst match. Hover over the line to read it in words, such as "Clashes with deck 1 (11B)". If the analysis was unsure of a key, its percentage stands under it in yellow; see [How sure the analysis is](beatgrid.md#how-sure-the-analysis-is). The colours are our own and follow the rest of the app: green fits, yellow needs a thought, red warns.
 
 ## Phase and tempo between decks
 

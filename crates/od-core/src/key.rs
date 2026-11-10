@@ -158,6 +158,41 @@ impl MusicalKey {
     }
 }
 
+/// How two keys sound together, in three steps a DJ acts on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyRelation {
+    /// Same key, a fifth apart (one step on the wheel) or relative
+    /// major / minor: mixes cleanly.
+    Fits,
+    /// A deliberate move that changes the energy: a whole tone (two steps),
+    /// a semitone (seven steps) or a fifth with the mode switched (diagonal).
+    Energy,
+    /// Anything else: the harmonies rub.
+    Clash,
+}
+
+impl MusicalKey {
+    /// The key `semitones` higher (negative: lower), mode kept.
+    pub fn transpose(self, semitones: i32) -> Self {
+        Self::new((self.tonic as i32 + semitones).rem_euclid(12) as u8, self.mode)
+    }
+
+    /// How this key sounds against `other` ([`KeyRelation`]).
+    pub fn relation(self, other: MusicalKey) -> KeyRelation {
+        let a = self.camelot_number() as i32;
+        let b = other.camelot_number() as i32;
+        let d = (a - b).rem_euclid(12);
+        let wheel = d.min(12 - d);
+        let same_mode = self.mode == other.mode;
+        match (same_mode, wheel) {
+            (true, 0 | 1) | (false, 0) => KeyRelation::Fits,
+            (true, 2 | 5) | (false, 1) => KeyRelation::Energy,
+            _ => KeyRelation::Clash,
+        }
+    }
+}
+
 impl fmt::Display for MusicalKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.format(KeyNotation::Camelot))
@@ -167,6 +202,35 @@ impl fmt::Display for MusicalKey {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn relations_fit_energy_and_clash() {
+        let k = |s: &str| MusicalKey::parse(s).unwrap();
+        use KeyRelation::*;
+        assert_eq!(k("8A").relation(k("8A")), Fits);
+        assert_eq!(k("8A").relation(k("9A")), Fits);
+        assert_eq!(k("8A").relation(k("7A")), Fits);
+        assert_eq!(k("8A").relation(k("8B")), Fits, "relative major");
+        assert_eq!(k("12A").relation(k("1A")), Fits, "the wheel wraps");
+        assert_eq!(k("8A").relation(k("10A")), Energy, "a whole tone up");
+        assert_eq!(k("8A").relation(k("3A")), Energy, "a semitone up (seven steps)");
+        assert_eq!(k("8A").relation(k("9B")), Energy, "diagonal");
+        assert_eq!(k("8A").relation(k("11A")), Clash);
+        assert_eq!(k("8A").relation(k("2B")), Clash);
+        // Am up a semitone is Bbm.
+        assert_eq!(k("Am").transpose(1), k("Bbm"));
+        assert_eq!(k("C").transpose(-1), k("B"));
+        // Symmetric.
+        for a in 1..=12u8 {
+            for b in 1..=12u8 {
+                for (ma, mb) in [(true, true), (true, false), (false, false)] {
+                    let x = MusicalKey::from_camelot(a, ma).unwrap();
+                    let y = MusicalKey::from_camelot(b, mb).unwrap();
+                    assert_eq!(x.relation(y), y.relation(x));
+                }
+            }
+        }
+    }
 
     #[test]
     fn camelot_reference_points() {

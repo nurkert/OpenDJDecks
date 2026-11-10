@@ -54,6 +54,7 @@ pub(crate) const COLUMNS: &[Column] = &[
     col("bpm", "BPM", 58.0, 0.0, true, "bpm"),
     col("key", "KEY", 46.0, 0.0, true, "key"),
     col("match", "MATCH", 44.0, 0.0, true, "match"),
+    col("stems", "STEMS", 74.0, 0.0, false, ""),
     col("time", "TIME", 52.0, 0.0, true, "duration"),
     col("year", "YEAR", 44.0, 0.0, true, "year"),
     col("date-added", "ADDED", 86.0, 0.0, true, "date_added"),

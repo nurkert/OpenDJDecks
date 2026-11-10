@@ -130,4 +130,29 @@ pub struct TrackAnalysis {
     pub peak: f32,
     /// Normalised 0..=1 energy over the track in 1-second steps.
     pub energy: Vec<f32>,
+    /// How sure key and grid detection were, with the likely alternatives
+    /// (`None` for analyses older than the confidence values, or imports).
+    #[serde(default)]
+    pub confidence: Option<AnalysisConfidence>,
+}
+
+/// How sure the analysis is of its key and grid, and the next likely
+/// answer of each (for a one-button fix).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct AnalysisConfidence {
+    /// Key: 0 (a guess) ..= 1 (clear).
+    pub key: f32,
+    /// The next likely key.
+    #[serde(default)]
+    pub key_alt: Option<MusicalKey>,
+    /// Grid: 0 (a guess) ..= 1 (every beat on a hit, tempo octave clear).
+    pub grid: f32,
+    /// The other likely tempo (half or double) when the octave was close.
+    #[serde(default)]
+    pub bpm_alt: Option<f64>,
+}
+
+impl AnalysisConfidence {
+    /// Below this a value counts as unsure (shown with its fix).
+    pub const UNSURE: f32 = 0.5;
 }

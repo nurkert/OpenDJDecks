@@ -152,6 +152,7 @@ impl App {
         shell::wire_window_chrome(&app);
         mixer::wire(&app);
         fx::wire(&app);
+        crate::key_mix::wire(&app);
         sampler::wire(&app);
         preferences::wire(&app);
         crate::appearance::wire(&app);

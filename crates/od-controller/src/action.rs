@@ -45,6 +45,9 @@ pub enum ControlAction {
     RecordingToggle,
     /// Light show controls (MIDI-mappable, SPEC §10.5).
     Lighting(LightingAction),
+    /// Every effect off at once: Tempo FX units, their tails, exit and
+    /// hold effects, and the channel FX knobs.
+    FxPanic,
     /// A physical control the mapping knows but deliberately ignores.
     Ignored,
 }
@@ -240,6 +243,15 @@ pub enum DeckAction {
     StemMuteToggle {
         stem: StemPart,
     },
+    /// Solo a part while held (`on`); the other parts come back on release.
+    StemSolo {
+        stem: StemPart,
+        on: bool,
+    },
+    /// Keep only this part: the others are muted and stay muted.
+    StemKeepOnly {
+        stem: StemPart,
+    },
 }
 
 /// A separated part of a track (see `od_engine::Stem`).
@@ -335,6 +347,9 @@ pub enum TempoFxAction {
     Select(String),
     /// Route the unit to a mixer channel (1-based) or `0` for master.
     Assign(u8),
+    /// A build-up that reaches its top on the next 8, 16 or 32 bar line
+    /// (press again: off).
+    BuildUp(u8),
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

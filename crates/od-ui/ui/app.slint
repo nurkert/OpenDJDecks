@@ -5,7 +5,7 @@ import { StemsModelBar, StemsModelPrompt } from "stems_model.slint";
 import { DragGhost, DragState } from "drag.slint";
 export { DragState }
 export { PopupPlace }
-export { DeckTime, GridEdit, DeckGrid, DeckGridView, DeckMix } from "structs.slint";
+export { DeckTime, GridEdit, DeckGrid, DeckGridView, DeckMix, AnalysisSure } from "structs.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
 import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark } from "controls.slint";
 import { FirstStartBar } from "first_start.slint";
@@ -575,6 +575,7 @@ export component AppWindow inherits Window {
             MenuItem { title: @tr("Restore Library Archive…"); activated => { root.menu-action("library.restore.archive"); } }
             MenuItem { title: @tr("Consolidate Library…"); activated => { root.menu-action("library.consolidate"); } }
             MenuItem { title: @tr("Find Duplicate Tracks"); activated => { root.menu-action("browser.duplicates"); } }
+            MenuItem { title: @tr("Separate Stems for This List"); activated => { root.menu-action("browser.stems-list"); } }
         }
         Menu {
             title: @tr("View");

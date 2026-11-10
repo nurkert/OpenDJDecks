@@ -3,7 +3,7 @@
 Every user action of OpenDJDecks is a command in one registry
 (`crates/od-ui/src/keymap.rs`) with an id, a default binding per platform
 and optional user bindings (SPEC §12.2). The registry currently holds
-**282 actions**; every one has a default binding, and no two defaults
+**284 actions**; every one has a default binding, and no two defaults
 collide where they apply (checked by tests, together with this table).
 
 ## Changing bindings
@@ -144,6 +144,7 @@ Perform). Text fields keep the keys they type.
 | Show / hide the filter bar | `browser.filter` | both | `⌘J` | `Ctrl+J` |
 | Show duplicate tracks | `browser.duplicates` | both | `⌥⌘Y` | `Alt+Y` |
 | Separate the stems of the selected tracks | `browser.stems` | both | `⌥⇧⌘S` | `Alt+Shift+S` |
+| Separate the stems of every track in the list | `browser.stems-list` | both | `⌥⇧⌘P` | `Alt+Shift+P` |
 | **Prepare player** | | | | |
 | Preview play / pause | `player.preview` | Prepare | `Space` | `Space` |
 | Back to the cue point | `player.cue` | Prepare | `C` | `C` |
@@ -358,6 +359,7 @@ Perform). Text fields keep the keys they type.
 | FX 2: echo out (hold) | `fx2.release.echo` | Perform | `⇧⌘H` | `Ctrl+Shift+H` |
 | Channel FX: next | `channelfx.next` | Perform | `⇧J` | `Shift+J` |
 | Channel FX: previous | `channelfx.prev` | Perform | `⇧S` | `Shift+S` |
+| All effects off (panic) | `fx.panic` | Perform | `⇧Esc` | `Shift+Esc` |
 | **Sampler** | | | | |
 | Show / hide the sampler panel | `perform.sampler.panel` | Perform | `⌥⌘S` | `Alt+S` |
 | Sampler slot 1 | `sampler.slot1` | Perform | `X` | `X` |

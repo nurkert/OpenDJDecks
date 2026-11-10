@@ -11,7 +11,7 @@ use crate::settings::CHANNEL_FX;
 use crate::{FxSlotView, FxUnitView, decks, engine};
 use od_engine::{
     TEMPO_FX_SLOTS, TEMPO_FX_UNITS, TempoFxCommand, TempoFxKind, TempoFxState, ChannelCommand,
-    ChannelFxKind, Command, EngineState, FxTarget, HoldFxEffect, HoldFxPreset, ExitFxKind,
+    ChannelFxKind, Command, EngineState, FxTail, FxTarget, HoldFxEffect, HoldFxPreset, ExitFxKind,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -34,6 +34,10 @@ pub(crate) struct FxRuntime {
     /// Slots 2 and 3 per unit; bound once so rows keep their identity.
     slots: [Rows<FxSlotView>; TEMPO_FX_UNITS],
     taps: RefCell<[TapTempo; TEMPO_FX_UNITS]>,
+    /// The XY pad switched the unit on: its release switches it off again.
+    xy_owned: std::cell::Cell<[bool; TEMPO_FX_UNITS]>,
+    /// The unit shows its XY surface.
+    xy_mode: std::cell::Cell<[bool; TEMPO_FX_UNITS]>,
 }
 
 /// Tap tempo: the average of the last taps; a pause of two seconds starts
@@ -237,7 +241,28 @@ pub(crate) fn unit_view(unit: usize, s: &TempoFxState) -> FxUnitView {
             .and_then(|r| EXIT_FX.iter().position(|k| *k == r))
             .map(|i| i as i32)
             .unwrap_or(-1),
+        xy: false,
+        level_text: crate::key_mix::percent(s.level).into(),
+        tail: s.tail.index() as i32,
+        build_bars: s.build_bars as i32,
+        build_progress: s.build_progress,
+        build_left: if s.build_bars > 0 && s.build_bars_left >= 0.0 {
+            format!("-{}", s.build_bars_left.ceil() as i32)
+        } else {
+            String::new()
+        }
+        .into(),
     }
+}
+
+/// The tail after `t` (off → echo → reverb → off).
+pub(crate) fn next_tail(t: FxTail) -> FxTail {
+    FxTail::ALL[(t.index() + 1) % FxTail::ALL.len()]
+}
+
+/// XY pad position → (parameter −1..=1, level 0..=1).
+pub(crate) fn xy_values(x: f32, y: f32) -> (f32, f32) {
+    (x.clamp(0.0, 1.0) * 2.0 - 1.0, y.clamp(0.0, 1.0))
 }
 
 /// Hold FX presets of the Hold FX pad modes (page 1 and 2), pads A–H.
@@ -334,6 +359,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
             .map(|u| FxUnitView {
                 multi: state.tempo_fx_multi[u],
                 slots: app.fx.slots[u].handle(),
+                xy: app.fx.xy_mode.get()[u],
                 ..unit_view(u, &state.tempo_fx[u])
             })
             .collect(),
@@ -441,6 +467,67 @@ pub(crate) fn release(app: &App, u: usize, kind: ExitFxKind, on: bool) {
     send(app, u, TempoFxCommand::Release { kind, beats, on });
 }
 
+/// Panic: every effect off at once (Tempo FX with slots and tails, exit
+/// and Hold FX, the channel FX knobs).
+pub(crate) fn panic(app: &App) {
+    engine::ensure_engine(app);
+    engine::send(app, Command::FxPanic);
+    app.fx.xy_owned.set([false; TEMPO_FX_UNITS]);
+    app.status(od_i18n::tr("All effects off"));
+}
+
+/// A build-up of `bars` (8, 16, 32) on unit `u`; the same length again
+/// stops it.
+pub(crate) fn build_up(app: &App, u: usize, bars: u8) {
+    let running = unit_state(app, u).map_or(0, |s| s.build_bars);
+    let bars = if running == bars { 0 } else { bars };
+    send(app, u, TempoFxCommand::BuildUp { bars });
+}
+
+/// TAIL: the next of off, echo and reverb.
+pub(crate) fn step_tail(app: &App, u: usize) {
+    let t = unit_state(app, u).map(|s| s.tail).unwrap_or_default();
+    send(app, u, TempoFxCommand::SetTail(next_tail(t)));
+}
+
+/// XY pad of unit `u`: across the parameter, up the level; `phase` 0 press
+/// (switches an idle unit on), 1 move, 2 release (switches off what the
+/// press switched on).
+pub(crate) fn xy(app: &App, u: usize, x: f32, y: f32, phase: i32) {
+    let u = u.min(TEMPO_FX_UNITS - 1);
+    let (param, level) = xy_values(x, y);
+    send(app, u, TempoFxCommand::SetParam(param));
+    send(app, u, TempoFxCommand::SetLevel(level));
+    let mut owned = app.fx.xy_owned.get();
+    match phase {
+        0 if !unit_state(app, u).is_some_and(|s| s.on) => {
+            owned[u] = true;
+            send(app, u, TempoFxCommand::SetOn(true));
+        }
+        2 if owned[u] => {
+            owned[u] = false;
+            send(app, u, TempoFxCommand::SetOn(false));
+        }
+        _ => {}
+    }
+    app.fx.xy_owned.set(owned);
+}
+
+/// Shows unit `u`'s XY surface instead of its controls (or back).
+pub(crate) fn set_xy_mode(app: &App, u: usize, on: bool) {
+    let mut m = app.fx.xy_mode.get();
+    m[u.min(TEMPO_FX_UNITS - 1)] = on;
+    app.fx.xy_mode.set(m);
+    // Before audio runs nothing projects: show it now.
+    if engine::snapshot(app).is_none() {
+        app.fx.units.sync_eq(
+            (0..TEMPO_FX_UNITS)
+                .map(|k| FxUnitView { xy: m[k], ..unit_view(k, &idle_unit()) })
+                .collect(),
+        );
+    }
+}
+
 /// Selects the Channel FX of the CH FX knobs (index into [`CHANNEL_FX`]).
 pub(crate) fn select_channel_fx(app: &App, index: usize) {
     let name = CHANNEL_FX[index.min(CHANNEL_FX.len() - 1)];
@@ -469,7 +556,43 @@ thread_local! {
     static TAP_EPOCH: Instant = Instant::now();
 }
 
+/// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF=fx-drop`): the FX
+/// panel open (not saved); FX1 on the master runs a 16-bar build-up with a
+/// reverb tail (started again whenever it reaches its drop), FX2 on
+/// channel 2 shows its XY surface with an echo on.
+fn demo(app: &Rc<App>) {
+    let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
+    if !v.split(',').any(|p| p == "fx-drop") {
+        return;
+    }
+    let weak = Rc::downgrade(app);
+    slint::Timer::single_shot(std::time::Duration::from_secs(5), move || {
+        let Some(a) = weak.upgrade() else { return };
+        a.ui.set_fx_panel(true);
+        send(&a, 0, TempoFxCommand::SetTarget(FxTarget::Master));
+        send(&a, 0, TempoFxCommand::SetLevel(0.8));
+        send(&a, 0, TempoFxCommand::SetTail(FxTail::Reverb));
+        send(&a, 1, TempoFxCommand::SetTarget(FxTarget::Channel(1)));
+        send(&a, 1, TempoFxCommand::SetKind(TempoFxKind::Echo));
+        send(&a, 1, TempoFxCommand::SetParam(0.35));
+        send(&a, 1, TempoFxCommand::SetLevel(0.65));
+        send(&a, 1, TempoFxCommand::SetOn(true));
+        set_xy_mode(&a, 1, true);
+        let w = Rc::downgrade(&a);
+        let again = Rc::new(slint::Timer::default());
+        let keep = again.clone();
+        again.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(500), move || {
+            let _ = &keep;
+            let Some(a) = w.upgrade() else { return };
+            if unit_state(&a, 0).is_some_and(|s| s.build_bars == 0) {
+                send(&a, 0, TempoFxCommand::BuildUp { bars: 16 });
+            }
+        });
+    });
+}
+
 pub(crate) fn wire(app: &Rc<App>) {
+    demo(app);
     let ui = &app.ui;
     ui.set_fx_panel(app.state.borrow().settings.perform.fx_panel);
     ui.set_fx_units(app.fx.units.handle());
@@ -486,6 +609,11 @@ pub(crate) fn wire(app: &Rc<App>) {
     let slots = slint::ComponentHandle::global::<crate::FxSlots>(&app.ui);
     slots.on_multi(handler!(app, |a, n: i32| toggle_multi(&a, u(n))));
     slots.on_auto(handler!(app, |a, n: i32| auto_beat(&a, u(n))));
+    slots.on_build(handler!(app, |a, n: i32, bars: i32| build_up(&a, u(n), bars.clamp(0, 32) as u8)));
+    slots.on_tail(handler!(app, |a, n: i32| step_tail(&a, u(n))));
+    slots.on_xy(handler!(app, |a, n: i32, x: f32, y: f32, phase: i32| xy(&a, u(n), x, y, phase)));
+    slots.on_panic(handler!(app, |a| panic(&a)));
+    slots.on_xy_mode(handler!(app, |a, n: i32, on: bool| set_xy_mode(&a, u(n), on)));
     slots.on_part(handler!(app, |a, n: i32, p: i32| {
         let current = unit_state(&a, u(n)).map(|s| s.target).unwrap_or_default();
         send(&a, u(n), TempoFxCommand::SetTarget(part_target(current, p)));
@@ -615,9 +743,18 @@ mod tests {
             bpm: 128.0,
             release: Some(ExitFxKind::Backspin),
             ringing: false,
+            tail: FxTail::Reverb,
+            build_bars: 16,
+            build_progress: 0.5,
+            build_bars_left: 5.2,
         };
         let v = unit_view(1, &s);
         assert_eq!((v.unit, v.kind, v.target, v.release), (2, 3, 2, 1));
+        assert_eq!((v.level_text.as_str(), v.tail, v.build_bars, v.build_left.as_str()), ("70 %", 2, 16, "-6"));
+        assert_eq!(next_tail(FxTail::Reverb), FxTail::Off);
+        assert_eq!(next_tail(FxTail::Off), FxTail::Echo);
+        assert_eq!(xy_values(0.5, 0.25), (0.0, 0.25));
+        assert_eq!(xy_values(-1.0, 2.0), (-1.0, 1.0));
         assert_eq!((v.beats.as_str(), v.bpm.as_str()), ("2", "128.0"));
         assert!(v.on && v.tapped);
         let idle = unit_view(0, &idle_unit());

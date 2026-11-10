@@ -7093,3 +7093,123 @@ msgstr "PHRASE: Ein laufendes Deck springt beim Sync zusätzlich um ganze Beats,
 msgctxt "PreparePlayer"
 msgid "BPM RANGE"
 msgstr "BPM-BEREICH"
+
+
+msgctxt "Reading"
+msgid "USE {}"
+msgstr "{} NEHMEN"
+
+
+
+msgctxt "PreparePlayer"
+msgid "Take the likely other key as your key (one undo step)"
+msgstr "Die wahrscheinliche andere Tonart als deine Tonart nehmen (ein Rückgängig-Schritt)"
+
+msgctxt "PreparePlayer"
+msgid "Set the grid to the likely other tempo (half or double)"
+msgstr "Das Raster auf das wahrscheinliche andere Tempo setzen (halb oder doppelt)"
+
+msgctxt "PreparePlayer"
+msgid "ANALYSE AGAIN"
+msgstr "NEU ANALYSIEREN"
+
+msgctxt "PreparePlayer"
+msgid "Analyse again to see how sure key and grid are"
+msgstr "Neu analysieren, um zu sehen, wie sicher Tonart und Raster sind"
+
+msgctxt "PreparePlayer"
+msgid "Analyse the track again (your own key and locked grid stay)"
+msgstr "Den Track neu analysieren (deine eigene Tonart und ein gesperrtes Raster bleiben)"
+
+msgctxt "FxNames"
+msgid "TAIL OFF"
+msgstr "TAIL AUS"
+
+msgctxt "FxNames"
+msgid "TAIL ECHO"
+msgstr "TAIL ECHO"
+
+msgctxt "FxNames"
+msgid "TAIL REVERB"
+msgstr "TAIL HALL"
+
+msgctxt "Intensity"
+msgid "{} BARS"
+msgstr "{} TAKTE"
+
+msgctxt "Intensity"
+msgid "Level of the effect: drag along it, or turn the wheel"
+msgstr "Stärke des Effekts: daran entlangziehen oder am Mausrad drehen"
+
+msgctxt "XyPad"
+msgid "PARAM"
+msgstr "PARAM"
+
+msgctxt "XyPad"
+msgid "LEVEL"
+msgstr "STÄRKE"
+
+msgctxt "PanicKey"
+msgid "ALL FX OFF"
+msgstr "ALLE FX AUS"
+
+msgctxt "PanicKey"
+msgid "Panic: every effect off at once, tails and channel FX included"
+msgstr "Panik: alle Effekte auf einmal aus, samt Nachhall und Channel FX"
+
+msgctxt "FxUnit"
+msgid "Back to the effect controls"
+msgstr "Zurück zu den Effektreglern"
+
+msgctxt "FxUnit"
+msgid "BUILD"
+msgstr "BUILD"
+
+msgctxt "FxUnit"
+msgid "Build-up that peaks on the next {}-bar line, then drops (again: stop)"
+msgstr "Build-up, der auf der nächsten {}-Takt-Linie seinen Gipfel erreicht und dann fällt (nochmal: stopp)"
+
+msgctxt "FxUnit"
+msgid "Tail: what rings out after you switch the effect off (off, echo, reverb)"
+msgstr "Tail: was ausklingt, nachdem du den Effekt ausschaltest (aus, Echo, Hall)"
+
+msgctxt "FxUnit"
+msgid "XY: the unit becomes one surface, across the parameter, up the level"
+msgstr "XY: die Einheit wird eine Fläche, quer der Parameter, nach oben die Stärke"
+
+msgctxt "StemKey"
+msgid "queued"
+msgstr "in der Warteschlange"
+
+msgctxt "StemKey"
+msgid "not separated"
+msgstr "nicht getrennt"
+
+msgctxt "StemKey"
+msgid "solo"
+msgstr "solo"
+
+msgctxt "StemKey"
+msgid "Filled = muted · click: mute / unmute · right click: solo · ⇧-click: keep only this · wheel: level"
+msgstr "Gefüllt = stumm · Klick: stumm / laut · Rechtsklick: solo · ⇧-Klick: nur diesen behalten · Mausrad: Pegel"
+
+msgctxt "StemStrip"
+msgid "QUEUED"
+msgstr "WARTET"
+
+msgctxt "StemStrip"
+msgid "NO STEMS"
+msgstr "KEINE STEMS"
+
+msgctxt "StemStrip"
+msgid "SOLO"
+msgstr "SOLO"
+
+
+msgctxt "TrackLine"
+msgid "Separate stems for the whole list"
+msgstr "Stems für die ganze Liste trennen"
+
+msgctxt "AppWindow"
+msgid "Separate Stems for This List"
+msgstr "Stems für diese Liste trennen"

@@ -8,7 +8,7 @@
 use std::f32::consts::{PI, TAU};
 
 use crate::command::{
-    TempoFxCommand, TempoFxKind, FxTarget, HoldFxCommand, HoldFxEffect, ExitFxKind,
+    TempoFxCommand, TempoFxKind, FxTail, FxTarget, HoldFxCommand, HoldFxEffect, ExitFxKind,
 };
 use crate::dsp::delay::DelayLine;
 use crate::dsp::pitchshift::PitchShifter;
@@ -173,6 +173,42 @@ pub struct FxUnit {
     ramp_step: f32,
     noise_svf: Svf,
     rng: u32,
+    /// What rings out after switching off, its echo line, reverb and
+    /// damping state; `tail_ringing` while it is audible.
+    tail: FxTail,
+    tail_delay: DelayLine,
+    tail_reverb: Reverb,
+    tail_fb: [f32; 2],
+    tail_ringing: bool,
+    tail_quiet: f32,
+    /// A grid-locked build-up ([`TempoFxCommand::BuildUp`]).
+    build: Option<BuildLock>,
+    /// Panic: the whole unit fades to dry (gain 1 → 0), then every buffer
+    /// is cleared.
+    kill: bool,
+    kill_gain: f32,
+}
+
+/// A build-up that rises until a bar line: its length in bars, and the
+/// beats it runs between (`NaN` until the first block has a clock).
+#[derive(Clone, Copy, Debug)]
+struct BuildLock {
+    bars: u8,
+    start: f64,
+    end: f64,
+}
+
+impl BuildLock {
+    /// From `beat` to the next line of `bars` bars on the grid, or the one
+    /// after when less than a bar is left.
+    fn span(bars: u8, beat: f64) -> (f64, f64) {
+        let len = bars.max(1) as f64 * 4.0;
+        let mut end = ((beat + 1e-6) / len).floor() * len + len;
+        if end - beat < 4.0 {
+            end += len;
+        }
+        (beat, end)
+    }
 }
 
 impl FxUnit {
@@ -220,7 +256,31 @@ impl FxUnit {
             ramp_step: 0.0,
             noise_svf: Svf::new(1000.0, 2.0, sr),
             rng: 0x9E37_79B9,
+            tail: FxTail::Off,
+            tail_delay: DelayLine::new((sr * 2.0) as usize),
+            tail_reverb: Reverb::new(sample_rate),
+            tail_fb: [0.0; 2],
+            tail_ringing: false,
+            tail_quiet: 0.0,
+            build: None,
+            kill: false,
+            kill_gain: 1.0,
         }
+    }
+
+    /// Panic: fades the unit to dry within 5 ms, then silences every
+    /// buffer (tails, exit FX, rolls) and switches it off.
+    pub fn panic(&mut self) {
+        self.kill = true;
+        self.on = false;
+        self.build = None;
+        self.pad.held = false;
+    }
+
+    /// The tail adds its own sound after switching off (kinds with a tail
+    /// of their own ring out anyway).
+    fn tail_active(&self) -> bool {
+        self.tail != FxTail::Off && !self.kind.has_tail()
     }
 
     pub fn target(&self) -> FxTarget {
@@ -277,7 +337,13 @@ impl FxUnit {
             self.on = true;
             self.engage();
         }
+        if !on {
+            self.build = None;
+        }
         self.on = on;
+        if on && self.tail_active() {
+            self.tail_ringing = true;
+        }
     }
 
     fn set_release(&mut self, kind: ExitFxKind, beats: f32, on: bool) {
@@ -312,6 +378,33 @@ impl FxUnit {
             TempoFxCommand::SetParam(p) => self.params[self.kind.index()] = p.clamp(-1.0, 1.0),
             TempoFxCommand::SetTapBpm(b) => self.tap_bpm = b.map(|b| b.clamp(40.0, 300.0)),
             TempoFxCommand::Release { kind, beats, on } => self.set_release(kind, beats, on),
+            TempoFxCommand::SetTail(t) => {
+                self.tail = t;
+                if t == FxTail::Off {
+                    self.tail_ringing = false;
+                    self.tail_delay.clear();
+                    self.tail_reverb.clear();
+                } else if self.on && self.tail_active() {
+                    self.tail_ringing = true;
+                }
+            }
+            TempoFxCommand::BuildUp { bars } => {
+                if bars == 0 {
+                    if self.build.is_some() {
+                        self.set_on(false);
+                    }
+                    self.build = None;
+                } else {
+                    self.set_kind(TempoFxKind::BuildUp);
+                    self.set_on(false);
+                    self.set_on(true);
+                    self.build = Some(BuildLock {
+                        bars,
+                        start: f64::NAN,
+                        end: f64::NAN,
+                    });
+                }
+            }
         }
     }
 
@@ -364,7 +457,14 @@ impl FxUnit {
             tap_bpm: self.tap_bpm,
             bpm: self.last_bpm,
             release: self.release,
-            ringing: !self.on && (self.ringing || self.release.is_some()),
+            ringing: !self.on && (self.ringing || self.tail_ringing || self.release.is_some()),
+            tail: self.tail,
+            build_bars: self.build.map_or(0, |b| b.bars),
+            build_progress: if self.build.is_some() { self.ramp } else { 0.0 },
+            build_bars_left: self
+                .build
+                .filter(|b| b.end.is_finite())
+                .map_or(-1.0, |b| ((b.end - self.tap_beat).max(0.0) / 4.0) as f32),
         }
     }
 
@@ -373,6 +473,8 @@ impl FxUnit {
             && self.mix.is_settled()
             && self.mix.current() == 0.0
             && !self.ringing
+            && !self.tail_ringing
+            && !self.kill
             && self.release.is_none()
             && self.tape_start.is_none()
     }
@@ -437,6 +539,19 @@ impl FxUnit {
             }
         }
         self.ramp_step = 1.0 / (self.beats * beat_frames).max(1.0);
+        // A grid-locked build-up: the ramp follows the beat to its bar line.
+        if let Some(b) = self.build.as_mut() {
+            if !b.start.is_finite() {
+                (b.start, b.end) = BuildLock::span(b.bars, clock.beat);
+            }
+            let span = (b.end - b.start).max(1.0);
+            self.ramp = ((clock.beat - b.start) / span).clamp(0.0, 1.0) as f32;
+            self.ramp_step = (clock.beats_per_frame / span) as f32;
+        }
+        let tail_on = self.tail_active();
+        let tail_len = (self.beats.clamp(0.25, 1.0) * beat_frames).clamp(16.0, self.tail_delay.capacity() as f32 - 2.0);
+        let kill_step = 1.0 / (self.sr * 0.005);
+        let level = self.level.max(1e-3);
         let param_a = 1.0 - (-1.0 / (self.sr * 0.02)).exp();
         let param_t = self.param();
         let mut wet_energy = 0.0f32;
@@ -465,8 +580,62 @@ impl FxUnit {
                 let r = self.rel_mix.next();
                 out = [out[0] + (t[0] - out[0]) * r, out[1] + (t[1] - out[1]) * r];
             }
+            // Tail: fed with the effect's sound while it is engaged, heard
+            // once it lets go (`g` falls with the on / off ramp).
+            if tail_on && self.tail_ringing {
+                let g = (m / level).clamp(0.0, 1.0);
+                let send = [out[0] * g, out[1] * g];
+                let w = match self.tail {
+                    FxTail::Echo => {
+                        let wet = self.tail_delay.read(tail_len);
+                        for ch in 0..2 {
+                            self.tail_fb[ch] += (wet[ch] - self.tail_fb[ch]) * 0.5;
+                        }
+                        self.tail_delay.push([
+                            send[0] + self.tail_fb[0] * 0.55,
+                            send[1] + self.tail_fb[1] * 0.55,
+                        ]);
+                        self.tail_fb
+                    }
+                    _ => {
+                        self.tail_reverb.room = 0.9;
+                        self.tail_reverb.damp = 0.35;
+                        let r = self.tail_reverb.process(send);
+                        [r[0] * 2.5, r[1] * 2.5]
+                    }
+                };
+                let heard = 1.0 - g;
+                out = [out[0] + w[0] * heard, out[1] + w[1] * heard];
+                wet_energy += (w[0] * w[0] + w[1] * w[1]) * heard;
+            }
+            if self.kill {
+                out = [x[0] + (out[0] - x[0]) * self.kill_gain, x[1] + (out[1] - x[1]) * self.kill_gain];
+                self.kill_gain = (self.kill_gain - kill_step).max(0.0);
+            }
             f[0] = out[0];
             f[1] = out[1];
+        }
+        // Panic finished fading: silence everything that could still sound.
+        if self.kill && self.kill_gain <= 0.0 {
+            self.silence();
+        }
+        // The build-up reached its bar line: off for the drop.
+        if self.build.is_some_and(|b| clock.beat + clock.beats_per_frame * frames as f64 >= b.end) {
+            self.set_on(false);
+        }
+        // The tail went quiet.
+        if self.tail_ringing && !self.on {
+            if !tail_on {
+                self.tail_ringing = false;
+            } else if self.mix.current() == 0.0 && wet_energy / frames.max(1) as f32 <= QUIET {
+                self.tail_quiet += frames as f32;
+                if self.tail_quiet > tail_len + 4096.0 {
+                    self.tail_ringing = false;
+                    self.tail_quiet = 0.0;
+                }
+            } else {
+                self.tail_quiet = 0.0;
+            }
         }
         // Release finished fading back to dry.
         if self.release.is_some() && self.rel_mix.is_settled() && self.rel_mix.current() == 0.0 {
@@ -494,6 +663,32 @@ impl FxUnit {
         } else {
             self.quiet_frames = 0.0;
         }
+    }
+
+    /// After a panic: every buffer empty, the unit off and dry.
+    fn silence(&mut self) {
+        self.kill = false;
+        self.kill_gain = 1.0;
+        self.on = false;
+        self.mix.reset(0.0);
+        self.rel_mix.reset(0.0);
+        self.release = None;
+        self.tape.mode = None;
+        self.tape_start = None;
+        self.delay.clear();
+        self.reverb.clear();
+        self.tail_delay.clear();
+        self.tail_reverb.clear();
+        self.tail_fb = [0.0; 2];
+        self.fb_filter = [0.0; 2];
+        self.ringing = false;
+        self.tail_ringing = false;
+        self.quiet_frames = 0.0;
+        self.tail_quiet = 0.0;
+        self.roll_filled = 0;
+        self.roll_len = 0;
+        self.roll_pos = 0;
+        self.ramp = 0.0;
     }
 
     /// One frame of the Tempo FX kind: `(output, wet part for tail tracking)`.

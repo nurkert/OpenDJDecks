@@ -238,6 +238,7 @@ pub(crate) fn handle_action(app: &App, action: ControlAction) {
             engine::send(app, Command::Mixer(MixerCommand::SetBoothLevel(v)))
         }
         ControlAction::EqSwap(band) => crate::mixer::swap(app, band.index()),
+        ControlAction::FxPanic => fx::panic(app),
         ControlAction::MasterCue => {
             let on = engine::snapshot(app).map(|s| s.master_cue).unwrap_or(false);
             engine::send(app, Command::Mixer(MixerCommand::SetMasterCue(!on)));
@@ -287,6 +288,7 @@ fn tempo_fx_action(app: &App, u: usize, action: TempoFxAction) {
             u,
             TempoFxCommand::SetTarget(fx::target_from_number(ch as i32)),
         ),
+        TempoFxAction::BuildUp(bars) => fx::build_up(app, u, bars),
     }
 }
 
@@ -373,6 +375,14 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
         }),
         DeckAction::StemMuteToggle { .. } if !s.stems_available => {
             crate::stems_model::part_pressed(app, d);
+            None
+        }
+        DeckAction::StemSolo { stem, on } => {
+            crate::stem_mix::set_solo(app, d, stem_of(stem), on);
+            None
+        }
+        DeckAction::StemKeepOnly { stem } => {
+            crate::stem_mix::keep_only(app, d, stem_of(stem));
             None
         }
         DeckAction::StemMuteToggle { stem } => {

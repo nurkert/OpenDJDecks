@@ -3749,3 +3749,166 @@ tests = [
 ]
 evidence = ["crates/od-ui/src/decks.rs::bpm_scale", "ui/perform.slint::MiniKey"]
 note = "Roadmap [57]. ÷2 and ×2 beside BPM on the full deck's readout (and `deck.bpm_half` / `deck.bpm_double`): the track's grid at half or double the tempo, one undo step, stored with the track; locked grids refuse. Narrower decks keep it in the GRID panel"
+
+[[feature]]
+id = "stems-list-prepare"
+area = "stems"
+name = "Stems ready before the gig: separate a whole list (playlist or set) in the background"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::mix_tools::stems_ahead_for_the_list_and_the_stems_column",
+  "od-ui::stems_batch::tests::column_states",
+]
+evidence = ["crates/od-ui/src/stems_batch.rs::separate_list", "ui/table.slint::TrackLine"]
+note = "Roadmap [60]. Row menu Separate stems for the whole list, File > Separate Stems for This List and ⌥⇧⌘P queue every track of the list on the background worker; tracks whose stems are already in the cache are skipped. The queue waits while decks play (performance lock). A deck holding a track the batch finishes takes its stems without a gap"
+
+[[feature]]
+id = "stems-library-column"
+area = "stems"
+name = "STEMS column: stem state per track in the library"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::mix_tools::stems_ahead_for_the_list_and_the_stems_column",
+  "od-ui::stems_batch::tests::column_states",
+]
+evidence = ["crates/od-ui/src/stems_batch.rs::track_state", "browser/columns.rs::COLUMNS", "ui/table.slint::TrackLine"]
+note = "Roadmap [60]. An optional column (column menu): READY with a solid green line when the stems are in the cache, QUEUED and the percent with a dashed sodium line while the batch works, FAILED struck; empty when not separated. One file check per track, remembered"
+
+[[feature]]
+id = "stems-key-state"
+area = "stems"
+name = "Stem state on each stem key and a warning when stems are missing where expected"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::mix_tools::loading_without_stems_where_they_were_in_use_warns",
+  "od-ui::ui_tests::mix_tools::stems_ahead_for_the_list_and_the_stems_column",
+  "od-ui::stem_mix::tests::key_states",
+]
+evidence = ["crates/od-ui/src/stem_mix.rs::key_state", "crates/od-ui/src/decks.rs::stems_warning", "ui/perform.slint::StemKey"]
+note = "Roadmap [60]. The stem keys show the batch's QUEUED (dashed sodium line along each key), the separation as a progress fill, and NO STEMS with a sodium line when a track without stems comes in where stems were in use (the track it replaced had them, or another deck plays with them); the status line says so and how to fix it"
+
+[[feature]]
+id = "stems-solo"
+area = "stems"
+name = "Solo a stem and keep only this stem"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::mix_tools::stem_solo_and_keep_only_this",
+  "od-ui::stem_mix::tests::solo_silences_the_others_and_comes_back",
+  "od-controller::templates::tests::stem_and_fx_actions_map",
+]
+evidence = ["crates/od-ui/src/stem_mix.rs::set_solo", "crates/od-ui/src/stem_mix.rs::keep_only", "DeckAction::StemSolo"]
+note = "Roadmap [60]. Right click on a stem key solos it (the other parts quiet, SOLO on the strip) and a second right click brings the levels back as they were; ⇧-click keeps only this part for good. Mappings: `deck.stem_solo` (held) and `deck.stem_keep`"
+
+[[feature]]
+id = "fx-level-large"
+area = "effects"
+name = "Large effect level with visible intensity"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::mix_tools::build_up_tail_and_level_in_the_fx_panel",
+  "od-ui::fx::tests::unit_projection",
+]
+evidence = ["ui/fx.slint::Intensity"]
+note = "Roadmap [61]. Each unit shows its level as a Heading percent over a bar that fills in the unit's tone while the effect is on; drag along it or turn the wheel. Replaces the small depth knob of slot 1"
+
+[[feature]]
+id = "fx-panic"
+area = "effects"
+name = "FX panic: every effect off at once"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::fx::panic_stops_every_effect_at_once",
+  "od-ui::ui_tests::mix_tools::panic_key_stops_every_effect",
+  "od-controller::templates::tests::stem_and_fx_actions_map",
+]
+evidence = ["Command::FxPanic", "ui/fx.slint::PanicKey"]
+note = "Roadmap [61]. ALL FX OFF in the FX panel, ⇧Esc and the mapping `fx_panic`: both Tempo FX units with their slots, tails, exit and Hold FX, and the channel FX knobs fade to dry within 5 ms and their buffers are cleared"
+
+[[feature]]
+id = "fx-xy"
+area = "effects"
+name = "XY control for an effect unit"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::mix_tools::xy_surface_plays_the_effect_while_held",
+  "od-ui::fx::tests::unit_projection",
+]
+evidence = ["ui/fx.slint::XyPad", "crates/od-ui/src/fx.rs::xy"]
+note = "Roadmap [61]. XY turns the unit into one surface: across sets the effect's parameter, up its level. A press plays an idle effect while held (its tail rings out on release); an effect that was on stays on"
+
+[[feature]]
+id = "fx-build-up-bars"
+area = "effects"
+name = "Build-ups locked to 8, 16 or 32 bars that ramp to the drop"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::fx::build_up_locks_to_the_bar_line_and_drops",
+  "od-ui::ui_tests::mix_tools::build_up_tail_and_level_in_the_fx_panel",
+  "od-controller::templates::tests::stem_and_fx_actions_map",
+]
+evidence = ["TempoFxCommand::BuildUp", "ui/fx.slint::FxUnit"]
+note = "Roadmap [61]. BUILD 8 / 16 / 32 starts the build-up riser so it peaks on the next line of that many bars on the grid (the one after when less than a bar is left) and switches off there for the drop; the unit counts the bars left and the key fills with the progress. Mapping `tempo_fx.build_up` with `bars`"
+
+[[feature]]
+id = "fx-tails"
+area = "effects"
+name = "Tails after release (echo or reverb ringing out)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::fx::tails_ring_out_after_release",
+  "od-ui::ui_tests::mix_tools::build_up_tail_and_level_in_the_fx_panel",
+]
+evidence = ["TempoFxCommand::SetTail", "FxTail"]
+note = "Roadmap [61]. TAIL OFF / ECHO / REVERB per unit: an effect without a tail of its own (roll, flanger, filter, build-up …) rings out after you switch it off as an echo or reverb of its sound at release; echo, delay and reverb kinds ring out anyway"
+
+[[feature]]
+id = "deck-key-relation"
+area = "deck"
+name = "Key relation on the deck against the other playing decks"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::mix_tools::key_relation_against_the_playing_deck",
+  "od-ui::key_mix::tests::worst_relation_against_the_playing_decks",
+  "od-ui::key_mix::tests::the_heard_key_follows_pitch",
+  "od-core::key::tests::relations_fit_energy_and_clash",
+]
+evidence = ["crates/od-ui/src/key_mix.rs::relation", "MusicalKey::relation", "ui/perform.slint::Readout"]
+note = "Roadmap [62]. The deck's KEY is underlined against the other playing decks with the key you hear (key shift, and the tempo without keylock): solid green fits (same, a fifth, relative), dashed sodium an energy change (a whole tone, a semitone, the diagonal), struck deep red a clash; the worst against all playing decks, in words on hover and for screen readers. Our own colour language from DESIGN.md, no product key colours"
+
+[[feature]]
+id = "analysis-confidence"
+area = "analysis"
+name = "Confidence for key and grid analysis with a one-button fix"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::mix_tools::confidence_and_the_one_button_fix",
+  "od-analysis::key::tests::confidence_is_high_for_a_clear_progression_and_low_for_a_bare_fifth",
+  "od-analysis::tempo::tests::grid_confidence_follows_the_beats_on_hits",
+  "od-library::tracks::tests::confidence_is_stored_and_a_set_key_is_sure",
+  "od-ui::key_mix::tests::confidence_texts",
+]
+evidence = ["od_core::AnalysisConfidence", "key.rs::ranked_key", "tempo.rs::grid_confidence"]
+note = "Roadmap [62]. The key detection reports its lead over the runner-up, the grid its share of beats on a hit (lower when half / double was close). Prepare's INFO tab shows both in percent beside BPM and KEY, an unsure one with a half-height sodium line and USE for the likely key or tempo (your key, or the grid at half / double; one undo step) and ANALYSE AGAIN; an unsure key shows its percent under the deck's KEY. Analyses from before this version show none until analysed again"

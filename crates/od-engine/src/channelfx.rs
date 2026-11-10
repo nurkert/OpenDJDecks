@@ -37,9 +37,20 @@ pub struct ChannelFx {
     ringing: bool,
     quiet_frames: f32,
     counter: usize,
+    /// Panic: fade to dry over 5 ms (gain 1 → 0), then clear the tails.
+    kill: bool,
+    kill_gain: f32,
 }
 
 impl ChannelFx {
+    /// Panic: the knob to the centre and its tail silenced (5 ms fade).
+    pub fn panic(&mut self) {
+        self.amount.set(0.0);
+        if !self.bypassed() {
+            self.kill = true;
+        }
+    }
+
     pub fn new(sample_rate: u32, seed: u32) -> Self {
         let sr = sample_rate as f32;
         Self {
@@ -59,6 +70,8 @@ impl ChannelFx {
             ringing: false,
             quiet_frames: 0.0,
             counter: 0,
+            kill: false,
+            kill_gain: 1.0,
         }
     }
 
@@ -301,8 +314,26 @@ impl ChannelFx {
                     }
                 }
             };
+            let y = if self.kill {
+                let k = self.kill_gain;
+                self.kill_gain = (k - 1.0 / (self.sr * 0.005)).max(0.0);
+                [x[0] + (y[0] - x[0]) * k, x[1] + (y[1] - x[1]) * k]
+            } else {
+                y
+            };
             f[0] = y[0];
             f[1] = y[1];
+        }
+        if self.kill && self.kill_gain <= 0.0 {
+            self.kill = false;
+            self.kill_gain = 1.0;
+            self.amount.reset(0.0);
+            self.reverb.clear();
+            self.delay.clear();
+            self.fb_hold = 0.0;
+            self.ringing = false;
+            self.quiet_frames = 0.0;
+            return;
         }
         // Tails: keep processing until the wet path is silent.
         if Self::has_tail(self.kind) {

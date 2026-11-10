@@ -404,6 +404,7 @@ pub(crate) fn snap_to_beat(grid: &Beatgrid, t: f64) -> f64 {
 /// layout (they are hollow, as for a track without cues).
 fn clear_detail(app: &App) {
     app.ui.set_has_track(false);
+    crate::key_mix::show(app, None);
     let slots = hot_cue_slots(&[]);
     app.ui.set_hot_cues_top(model(slots[..4].to_vec()));
     app.ui.set_hot_cues_bottom(model(slots[4..].to_vec()));
@@ -447,6 +448,7 @@ pub(crate) fn refresh_detail(app: &App) {
         .into(),
     );
     ui.set_grid_locked(grid.as_ref().is_some_and(|(g, _)| g.locked));
+    let confidence = analysis.confidence;
     let scale = ui.window().scale_factor();
     ui.set_track_overview(render::overview(
         &analysis.waveform,
@@ -490,6 +492,7 @@ pub(crate) fn refresh_detail(app: &App) {
         })
     });
     drop(st);
+    crate::key_mix::show(app, confidence.as_ref());
     render_detail(app);
     refresh_minis(app);
     crate::track_edit::refresh(app);

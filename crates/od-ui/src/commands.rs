@@ -139,6 +139,7 @@ pub(crate) fn run(app: &Rc<App>, id: &str) {
             }
         }
         "channelfx.next" => crate::fx::step_channel_fx(app, 1),
+        "fx.panic" => crate::fx::panic(app),
         "channelfx.prev" => crate::fx::step_channel_fx(app, -1),
         "sampler.bank.prev" => crate::sampler::step_bank_by(app, -1),
         "sampler.bank.next" => crate::sampler::step_bank_by(app, 1),
@@ -268,6 +269,7 @@ pub(crate) fn run(app: &Rc<App>, id: &str) {
         "view.panel.sub-browser" => browser::sub::toggle(app),
         "browser.duplicates" => browser::open_duplicates(app),
         "browser.stems" => crate::stems_batch::separate_selected(app),
+        "browser.stems-list" => crate::stems_batch::separate_list(app),
         "library.export.xml"
         | "library.import.xml"
         | "library.export.archive"

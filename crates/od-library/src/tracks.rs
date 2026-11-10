@@ -634,7 +634,8 @@ impl Library {
             }
             tx.execute(
                 "UPDATE analysis SET version = ?2, waveform = ?3, waveform_rate = ?4, phrases = ?5,
-                    phrase_mood = ?6, loudness = ?7, peak = ?8, energy = ?9 WHERE track_id = ?1",
+                    phrase_mood = ?6, loudness = ?7, peak = ?8, energy = ?9, confidence = ?10
+                    WHERE track_id = ?1",
                 params![
                     id.0,
                     a.analysis_version,
@@ -644,7 +645,8 @@ impl Library {
                     serde_json::to_string(&a.phrase_mood)?,
                     a.loudness_lufs,
                     a.peak,
-                    blob::encode_f32s(&a.energy)
+                    blob::encode_f32s(&a.energy),
+                    a.confidence.map(|c| serde_json::to_string(&c)).transpose()?
                 ],
             )?;
             tx.execute(
@@ -684,7 +686,8 @@ impl Library {
         let row = self
             .conn
             .query_row(
-                "SELECT version, waveform, waveform_rate, phrases, phrase_mood, loudness, peak, energy
+                "SELECT version, waveform, waveform_rate, phrases, phrase_mood, loudness, peak, energy,
+                    confidence
                  FROM analysis WHERE track_id = ?1",
                 [id.0],
                 |r| {
@@ -697,12 +700,15 @@ impl Library {
                         r.get::<_, Option<f32>>(5)?,
                         r.get::<_, Option<f32>>(6)?,
                         r.get::<_, Option<Vec<u8>>>(7)?,
+                        r.get::<_, Option<String>>(8)?,
                     ))
                 },
             )
             .optional()?;
         let mut a = TrackAnalysis::default();
-        if let Some((version, wf, rate, phrases, mood, loudness, peak, energy)) = row {
+        if let Some((version, wf, rate, phrases, mood, loudness, peak, energy, confidence)) = row {
+            // Unreadable confidence is only a missing hint, never an error.
+            a.confidence = confidence.and_then(|c| serde_json::from_str(&c).ok());
             a.analysis_version = version;
             if let Some(wf) = wf {
                 a.waveform =
@@ -721,7 +727,20 @@ impl Library {
             a.energy = energy.map(|e| blob::decode_f32s(&e)).unwrap_or_default();
         }
         a.beatgrid = self.beatgrid(id)?.unwrap_or_default();
-        a.key = read_key(&self.conn, id)?.map(|k| k.0);
+        let key = read_key(&self.conn, id)?;
+        a.key = key.map(|k| k.0);
+        // A key or grid you set (or locked, or imported) is not a guess.
+        if let Some(c) = a.confidence.as_mut() {
+            if key.is_some_and(|(_, s)| s != DataSource::Analysis) {
+                c.key = 1.0;
+                c.key_alt = None;
+            }
+            let grid = read_grid(&self.conn, id)?;
+            if grid.is_some_and(|(g, s)| g.locked || s != DataSource::Analysis) {
+                c.grid = 1.0;
+                c.bpm_alt = None;
+            }
+        }
         Ok(a)
     }
 
@@ -865,6 +884,40 @@ impl TrackRecord {
 mod tests {
     use super::*;
     use crate::test_util::track;
+
+    /// [62] Key and grid confidence are kept with the analysis; a key you
+    /// set yourself (the one-button fix) counts as sure.
+    #[test]
+    fn confidence_is_stored_and_a_set_key_is_sure() {
+        let mut lib = Library::open_in_memory().unwrap();
+        let a = track(&mut lib, "Unsure", Some(120.0), None);
+        let am = MusicalKey::parse("Am").unwrap();
+        let c = MusicalKey::parse("C").unwrap();
+        let analysed = TrackAnalysis {
+            key: Some(am),
+            beatgrid: od_core::Beatgrid::constant(120.0, 0.0, 1, 60.0),
+            confidence: Some(od_core::AnalysisConfidence {
+                key: 0.3,
+                key_alt: Some(c),
+                grid: 0.4,
+                bpm_alt: Some(60.0),
+            }),
+            ..Default::default()
+        };
+        lib.store_analysis(a, &analysed, DataSource::Analysis).unwrap();
+        let back = lib.analysis(a).unwrap().confidence.unwrap();
+        assert_eq!((back.key, back.key_alt, back.grid, back.bpm_alt), (0.3, Some(c), 0.4, Some(60.0)));
+        lib.set_key(a, Some(c)).unwrap();
+        let back = lib.analysis(a).unwrap();
+        assert_eq!(back.key, Some(c));
+        let conf = back.confidence.unwrap();
+        assert_eq!((conf.key, conf.key_alt), (1.0, None), "your key is sure");
+        assert_eq!(conf.grid, 0.4, "the grid stays a guess");
+        // An analysis without confidence (older, or imported) has none.
+        let b = track(&mut lib, "Older", Some(120.0), None);
+        lib.store_analysis(b, &TrackAnalysis::default(), DataSource::Analysis).unwrap();
+        assert_eq!(lib.analysis(b).unwrap().confidence, None);
+    }
 
     #[test]
     fn phrase_edits_are_normalized_journaled_and_undoable() {

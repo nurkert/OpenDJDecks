@@ -146,6 +146,13 @@ pub struct TempoFxState {
     pub release: Option<ExitFxKind>,
     /// Still producing sound after being switched off (tail / release).
     pub ringing: bool,
+    /// What rings out after switching off.
+    pub tail: crate::command::FxTail,
+    /// A grid-locked build-up runs: its length in bars (0 = none), progress
+    /// 0..1 and the bars left to the drop.
+    pub build_bars: u8,
+    pub build_progress: f32,
+    pub build_bars_left: f32,
 }
 
 /// Hold FX state of one channel.

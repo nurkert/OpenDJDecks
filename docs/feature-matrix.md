@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 247 features; 241 in scope: 241 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 258 features; 252 in scope: 252 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -111,6 +111,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Phrase editing (GRID EDIT \| PHRASE EDIT, cut / clear) | DONE | `crates/od-ui/src/phrase_edit.rs`, `crates/od-library/src/tracks.rs::set_phrases`; PHRASE tab next to GRID in the Prepare player: kind of the phrase at the cursor (a gap gets a new phrase), CUT at the nearest bar (at least 4 bars each side), BOUNDARY TO CURSOR, CLEAR; keyboard commands. Stored with Library::set_phrases (normalized with od_core::normalize_phrases, one undo step, change log → sticks resync). A new analysis of the track replaces edited phrases; (UX §2.5) | 6 | P3 |
 | BPM range presets for tempo detection (70–180, 58–115, 98–195, 118–236, 150–300) | DONE | `settings.rs::BPM_RANGES`, `preferences.rs::bpm_choices`, `workers.rs::AnalysisControl`, `tempo.rs::sanitize_range`; Preferences > Analysis offers five BPM ranges (70–180 is the default), used for new analyses and for analysing a track again. A range stored by an older version stays selected and in use until another is chosen | 2 | P2 |
 | Tempos up to 300 BPM without halving, with the active range shown | DONE | `tempo.rs::refine_tempo`, `settings.rs::BPM_RANGES`, `shell.rs::bpm_range_text`; Roadmap [57]. BPM range 150–300 in Preferences > Analysis; generated click, kick, kick-and-snare and house loops at 170, 200, 220, 250 and 280 BPM read as played in every range that holds them. The active range shows in the Prepare player's INFO tab and beside the analysis progress. Not yet checked on a set of real hardcore or speedcore records | 2 | P2 |
+| Confidence for key and grid analysis with a one-button fix | DONE | `od_core::AnalysisConfidence`, `key.rs::ranked_key`, `tempo.rs::grid_confidence`; Roadmap [62]. The key detection reports its lead over the runner-up, the grid its share of beats on a hit (lower when half / double was close). Prepare's INFO tab shows both in percent beside BPM and KEY, an unsure one with a half-height sodium line and USE for the likely key or tempo (your key, or the grid at half / double; one undo step) and ANALYSE AGAIN; an unsure key shows its percent under the deck's KEY. Analyses from before this version show none until analysed again | 5 | P2 |
 
 ## 3. Cues and loops
 
@@ -185,6 +186,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Phrase-snapped sync | DONE | `crates/od-ui/src/phrase_mix.rs::sync_jump`, `crates/od-ui/src/decks.rs::toggle_sync`; Roadmap [56]. Preferences > Controller > Decks > Sync: PHRASE. SYNC on a playing deck also jumps it whole beats (the smallest jump) so it stands as far before one of its phrase boundaries as the master before its next one; beat sync keeps the phase | 2 | P2 |
 | The incoming track drawn over the playing waveform | DONE | `crates/od-ui/src/decks.rs::project_overlay`, `crates/od-ui/src/render.rs::outline_tile`, `ui/wave.slint::WaveLane`; Roadmap [56]. On the playing master's lane, the other deck's waveform as an outline in its deck colour, on the same time scale: where it plays now, or, while cued, from its cue placed on the master's next phrase (a numbered mark). Preferences > View > Incoming track switches it off | 3 | P2 |
 | One-press half and double BPM on the deck | DONE | `crates/od-ui/src/decks.rs::bpm_scale`, `ui/perform.slint::MiniKey`; Roadmap [57]. ÷2 and ×2 beside BPM on the full deck's readout (and `deck.bpm_half` / `deck.bpm_double`): the track's grid at half or double the tempo, one undo step, stored with the track; locked grids refuse. Narrower decks keep it in the GRID panel | 2 | P2 |
+| Key relation on the deck against the other playing decks | DONE | `crates/od-ui/src/key_mix.rs::relation`, `MusicalKey::relation`, `ui/perform.slint::Readout`; Roadmap [62]. The deck's KEY is underlined against the other playing decks with the key you hear (key shift, and the tempo without keylock): solid green fits (same, a fifth, relative), dashed sodium an energy change (a whole tone, a semitone, the diagonal), struck deep red a clash; the worst against all playing decks, in words on hover and for screen readers. Our own colour language from DESIGN.md, no product key colours | 4 | P2 |
 
 ## 5. Mixer
 
@@ -226,6 +228,11 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | FX panel (FX1 \| FX2 with three slots, beat value, depth, assign, AUTO, TAP; CH FX row) | DONE | `crates/od-ui/ui/fx.slint`; FX1 \| FX2: effect, beat, assign (channels, sampler, master), level, parameter, ON, AUTO, TAP, Exit FX, and ×3 multi mode with three chained slots (effect, beat, depth, ON each); (SPEC §10.2; UX §1.5) | 4 | **P1** |
 | Channel FX: pitch, dub echo, sweep | DONE | `settings.rs::CHANNEL_FX`; Pitch, dub echo and sweep selectable like the others; (SPEC §10.2) | 2 | P3 |
 | Remix-type effects (build-up riser, breakdown, reverse roll) | DONE | `tempofx.rs::kind_frame`, `command.rs::TempoFxKind::BuildUp`; In the Tempo FX list: BUILD UP cuts the lows ever higher over its length while a noise sweep climbs (parameter sets the noise), BREAKDOWN closes the highs and dips the level, REVERSE ROLL repeats the captured beats backwards; all beat-synced, on pads and controllers by name | 3 | P3 |
+| Large effect level with visible intensity | DONE | `ui/fx.slint::Intensity`; Roadmap [61]. Each unit shows its level as a Heading percent over a bar that fills in the unit's tone while the effect is on; drag along it or turn the wheel. Replaces the small depth knob of slot 1 | 2 | P2 |
+| FX panic: every effect off at once | DONE | `Command::FxPanic`, `ui/fx.slint::PanicKey`; Roadmap [61]. ALL FX OFF in the FX panel, ⇧Esc and the mapping `fx_panic`: both Tempo FX units with their slots, tails, exit and Hold FX, and the channel FX knobs fade to dry within 5 ms and their buffers are cleared | 3 | P2 |
+| XY control for an effect unit | DONE | `ui/fx.slint::XyPad`, `crates/od-ui/src/fx.rs::xy`; Roadmap [61]. XY turns the unit into one surface: across sets the effect's parameter, up its level. A press plays an idle effect while held (its tail rings out on release); an effect that was on stays on | 2 | P2 |
+| Build-ups locked to 8, 16 or 32 bars that ramp to the drop | DONE | `TempoFxCommand::BuildUp`, `ui/fx.slint::FxUnit`; Roadmap [61]. BUILD 8 / 16 / 32 starts the build-up riser so it peaks on the next line of that many bars on the grid (the one after when less than a bar is left) and switches off there for the drop; the unit counts the bars left and the key fills with the progress. Mapping `tempo_fx.build_up` with `bars` | 3 | P2 |
+| Tails after release (echo or reverb ringing out) | DONE | `TempoFxCommand::SetTail`, `FxTail`; Roadmap [61]. TAIL OFF / ECHO / REVERB per unit: an effect without a tail of its own (roll, flanger, filter, build-up …) rings out after you switch it off as an echo or reverb of its sound at release; echo, delay and reverb kinds ring out anyway | 2 | P2 |
 
 ## 7. Stems / track separation
 
@@ -240,6 +247,10 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Stem model workflow: asked before downloading, progress, resume, plain errors with HELP, Preferences repair | DONE | `crates/od-stems/src/model.rs`, `crates/od-ui/src/stems_model.rs`, `crates/od-ui/ui/stems_model.slint`; No implicit download: a part key, the STEM switch or batch separation asks (dialog when quiet, notice while music plays or records, dialog after it stops); NOT NOW holds for the session. Resumable download with percent and size, cancellable, SHA-256 verified, free space checked first. Plain failures with RETRY and HELP. Preferences › Analysis › Stems: status, size, DOWNLOAD, DELETE AND DOWNLOAD AGAIN, REMOVE MODEL. Kiosk and builds without separation never ask; (SPEC §10.3) | 18 | P2 |
 | Deck shows separation progress; stem controls visible (dimmed) while separating | DONE | Separation is queued on load; the stem strip shows SPLIT and the progress in percent; the part keys stay in place, disabled until parts exist (flow test); (SPEC §10.3; UX §2.4) | 2 | P2 |
 | Raspberry Pi plays parts separated on the desktop | DONE | The native sync copies cached parts to /OPENDJDECKS/stems on the stick (and prunes stale ones); tracks loaded from a stick read their parts from there, so the Pi plays parts separated on the desktop; (SPEC §10.3) | 2 | P2 |
+| Stems ready before the gig: separate a whole list (playlist or set) in the background | DONE | `crates/od-ui/src/stems_batch.rs::separate_list`, `ui/table.slint::TrackLine`; Roadmap [60]. Row menu Separate stems for the whole list, File > Separate Stems for This List and ⌥⇧⌘P queue every track of the list on the background worker; tracks whose stems are already in the cache are skipped. The queue waits while decks play (performance lock). A deck holding a track the batch finishes takes its stems without a gap | 2 | P2 |
+| STEMS column: stem state per track in the library | DONE | `crates/od-ui/src/stems_batch.rs::track_state`, `browser/columns.rs::COLUMNS`, `ui/table.slint::TrackLine`; Roadmap [60]. An optional column (column menu): READY with a solid green line when the stems are in the cache, QUEUED and the percent with a dashed sodium line while the batch works, FAILED struck; empty when not separated. One file check per track, remembered | 2 | P2 |
+| Stem state on each stem key and a warning when stems are missing where expected | DONE | `crates/od-ui/src/stem_mix.rs::key_state`, `crates/od-ui/src/decks.rs::stems_warning`, `ui/perform.slint::StemKey`; Roadmap [60]. The stem keys show the batch's QUEUED (dashed sodium line along each key), the separation as a progress fill, and NO STEMS with a sodium line when a track without stems comes in where stems were in use (the track it replaced had them, or another deck plays with them); the status line says so and how to fix it | 3 | P2 |
+| Solo a stem and keep only this stem | DONE | `crates/od-ui/src/stem_mix.rs::set_solo`, `crates/od-ui/src/stem_mix.rs::keep_only`, `DeckAction::StemSolo`; Roadmap [60]. Right click on a stem key solos it (the other parts quiet, SOLO on the strip) and a second right click brings the levels back as they were; ⇧-click keeps only this part for good. Mappings: `deck.stem_solo` (held) and `deck.stem_keep` | 3 | P2 |
 
 ## 8. Sampler
 
@@ -356,13 +367,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 241 |
+| DONE | 252 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **247** |
+| **Total** | **258** |
 
 ## P1 gaps and implementation notes
 

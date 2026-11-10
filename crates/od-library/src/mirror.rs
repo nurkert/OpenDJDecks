@@ -88,7 +88,7 @@ impl Library {
             tx.execute("DELETE FROM analysis WHERE track_id = ?1", [r.id.0])?;
             tx.execute(
                 "INSERT INTO analysis (track_id, version, waveform, waveform_rate, phrases, phrase_mood,
-                    loudness, peak, energy) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                    loudness, peak, energy, confidence) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
                 params![
                     r.id.0,
                     a.analysis_version,
@@ -98,7 +98,8 @@ impl Library {
                     serde_json::to_string(&a.phrase_mood)?,
                     a.loudness_lufs,
                     a.peak,
-                    blob::encode_f32s(&a.energy)
+                    blob::encode_f32s(&a.energy),
+                    a.confidence.map(|c| serde_json::to_string(&c)).transpose()?
                 ],
             )?;
             let grid = (!a.beatgrid.is_empty()).then(|| (a.beatgrid.clone(), t.grid_source));

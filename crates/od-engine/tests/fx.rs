@@ -633,3 +633,109 @@ fn reverse_roll_plays_the_capture_backwards() {
     let b = out[(BEAT + 3 * BEAT / 4) * 2];
     assert!(a > b + 0.05, "falling in the repeat: {a} → {b}");
 }
+
+/// [61] A build-up locked to 8 bars rises to the next 8-bar line of the
+/// grid and switches off there for the drop; bars 0 cancels it.
+#[test]
+fn build_up_locks_to_the_bar_line_and_drops() {
+    let mut rig = sine_rig(80.0);
+    // The rig played 4 beats: the next 8-bar line is beat 32.
+    fx(&mut rig, 0, TempoFxCommand::SetLevel(1.0));
+    fx(&mut rig, 0, TempoFxCommand::BuildUp { bars: 8 });
+    rig.render(2);
+    let st = rig.state().tempo_fx[0];
+    assert!(st.on && st.kind == TempoFxKind::BuildUp);
+    assert_eq!(st.build_bars, 8);
+    assert!((st.build_bars_left - 7.0).abs() < 0.1, "bars left {}", st.build_bars_left);
+    // Just before the line: still rising, nearly at the top.
+    render_frames(&mut rig, 27 * BEAT);
+    let st = rig.state().tempo_fx[0];
+    assert!(st.on && st.build_progress > 0.95, "progress {}", st.build_progress);
+    assert!(st.build_bars_left < 0.3);
+    // Past the line: off, the drop plays dry.
+    render_frames(&mut rig, BEAT);
+    let st = rig.state().tempo_fx[0];
+    assert!(!st.on, "switched off on the bar line");
+    assert_eq!(st.build_bars, 0);
+
+    // Less than a bar before a line: the one after.
+    let mut rig = sine_rig(80.0);
+    render_frames(&mut rig, 27 * BEAT + BEAT / 2);
+    fx(&mut rig, 0, TempoFxCommand::BuildUp { bars: 8 });
+    rig.render(2);
+    assert!(rig.state().tempo_fx[0].build_bars_left > 8.0);
+    fx(&mut rig, 0, TempoFxCommand::BuildUp { bars: 0 });
+    rig.render(2);
+    let st = rig.state().tempo_fx[0];
+    assert!(!st.on && st.build_bars == 0, "cancelled");
+}
+
+/// [61] A tail rings out after an effect without its own tail lets go;
+/// without one it is dry right away.
+#[test]
+fn tails_ring_out_after_release() {
+    for tail in [FxTail::Off, FxTail::Echo, FxTail::Reverb] {
+        let mut dry = rich_rig();
+        let mut wet = rich_rig();
+        fx(&mut wet, 0, TempoFxCommand::SetKind(TempoFxKind::Flanger));
+        fx(&mut wet, 0, TempoFxCommand::SetLevel(1.0));
+        fx(&mut wet, 0, TempoFxCommand::SetTail(tail));
+        fx(&mut wet, 0, TempoFxCommand::SetOn(true));
+        dry.render(400);
+        wet.render(400);
+        fx(&mut wet, 0, TempoFxCommand::SetOn(false));
+        // 20 ms for the off ramp, then a quarter of a second.
+        dry.render(8);
+        wet.render(8);
+        let a = dry.render(90);
+        let b = wet.render(90);
+        let diff = max_abs_diff(&a, &b);
+        if tail == FxTail::Off {
+            assert!(diff < 1e-6, "{tail:?}: dry at once ({diff})");
+            assert!(!wet.state().tempo_fx[0].ringing);
+        } else {
+            assert!(diff > 0.01, "{tail:?}: rings out ({diff})");
+            assert!(wet.state().tempo_fx[0].ringing, "{tail:?} shows ringing");
+            assert_eq!(wet.state().tempo_fx[0].tail, tail);
+            // And ends.
+            let mut waited = 0;
+            while wet.state().tempo_fx[0].ringing {
+                dry.render(100);
+                wet.render(100);
+                waited += 100;
+                assert!(waited < 60 * 375, "{tail:?} tail never ends");
+            }
+        }
+    }
+}
+
+/// [61] Panic: echoes, tails, hold FX and the channel FX knob are silent
+/// within a few milliseconds, and the units are off.
+#[test]
+fn panic_stops_every_effect_at_once() {
+    let mut rig = Rig::new(2);
+    rig.deck(0, DeckCommand::Load(burst_track(1, 10.0, 2 * BEAT)));
+    rig.deck(0, DeckCommand::Play);
+    fx(&mut rig, 0, TempoFxCommand::SetKind(TempoFxKind::Echo));
+    fx(&mut rig, 0, TempoFxCommand::SetBeats(0.5));
+    fx(&mut rig, 0, TempoFxCommand::SetLevel(1.0));
+    fx(&mut rig, 0, TempoFxCommand::SetOn(true));
+    fx(&mut rig, 1, TempoFxCommand::SetKind(TempoFxKind::Flanger));
+    fx(&mut rig, 1, TempoFxCommand::SetTail(FxTail::Reverb));
+    fx(&mut rig, 1, TempoFxCommand::SetOn(true));
+    color(&mut rig, 0, ChannelCommand::SetChannelFx(ChannelFxKind::DubEcho));
+    color(&mut rig, 0, ChannelCommand::SetChannelFxAmount(0.8));
+    // The burst plays and starts echoing.
+    render_frames(&mut rig, 2 * BEAT + BEAT / 4);
+    fx(&mut rig, 0, TempoFxCommand::SetOn(false));
+    let ringing = render_frames(&mut rig, BEAT / 2);
+    assert!(rms(&ringing, 0, BEAT / 4, 2400) > 0.01, "echoes ring before the panic");
+    rig.send(Command::FxPanic);
+    // 5 ms fade, then silence (the track itself is silent after the burst).
+    render_frames(&mut rig, 480);
+    let after = render_frames(&mut rig, BEAT);
+    assert!(after.iter().all(|v| v.abs() < 1e-6), "silent after the panic");
+    let st = rig.state();
+    assert!(st.tempo_fx.iter().all(|u| !u.on && !u.ringing), "units off");
+    assert_eq!(st.channels[0].channel_fx_amount, 0.0, "channel FX knob centred");
+}

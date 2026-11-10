@@ -556,6 +556,11 @@ impl EngineProcessor {
                     unit.apply_pad(c);
                 }
             }
+            Command::FxPanic => {
+                self.tempo_fx.iter_mut().for_each(FxUnit::panic);
+                self.hold_fx.iter_mut().for_each(FxUnit::panic);
+                self.channels.iter_mut().for_each(|c| c.color.panic());
+            }
             Command::Sampler(c) => self.sampler.apply(c, &mut ctx),
             Command::SetQuantize(q) => self.quantize = q,
             Command::SetMasterDeck(m) => {
