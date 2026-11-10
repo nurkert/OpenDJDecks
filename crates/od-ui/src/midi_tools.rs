@@ -27,6 +27,9 @@ pub(crate) struct MidiTools {
     pub action: usize,
     /// Deck / channel of the learned entry (1-based; 0 = none).
     pub deck: u8,
+    /// Number for actions that take one (pad, page, group, look; 1-based;
+    /// 0 = none, which those actions read as 1).
+    pub number: u8,
     pub suggestion: Option<LearnedInput>,
     /// Self-test: the mappings to choose from, the chosen one, and whether
     /// it listens.
@@ -141,7 +144,11 @@ impl MidiTools {
     pub fn entry(&self) -> Option<String> {
         self.suggestion
             .as_ref()
-            .map(|l| input_block(l, self.action_name(), (self.deck > 0).then_some(self.deck)))
+            .map(|l| {
+                let block =
+                    input_block(l, self.action_name(), (self.deck > 0).then_some(self.deck));
+                with_number(&block, self.action_name(), self.number)
+            })
     }
 }
 
@@ -180,6 +187,22 @@ pub(crate) fn input_block(l: &LearnedInput, action: &str, deck: Option<u8>) -> S
         );
     }
     s
+}
+
+/// Adds the number argument of a numbered action (`lighting.pad`, …) to
+/// a learned entry; other actions are left as they are.
+pub(crate) fn with_number(block: &str, action: &str, number: u8) -> String {
+    let Some((_, arg, zero_based)) = od_controller::templates::NUMBERED_ACTIONS
+        .iter()
+        .find(|(a, _, _)| *a == action)
+    else {
+        return block.to_string();
+    };
+    let n = number.max(1) - u8::from(*zero_based);
+    block.replace(
+        &format!("action = {action:?}"),
+        &format!("{arg} = {n}\naction = {action:?}"),
+    )
 }
 
 /// A new mapping file for learned controls of the device on `port`.
@@ -282,6 +305,16 @@ mod tests {
                 && e.contains("action = \"mixer.fader\""),
             "{e}"
         );
+        // A lighting pad takes its number from the Number choice.
+        t.action = od_controller::templates::ACTION_NAMES
+            .iter()
+            .position(|a| *a == "lighting.pad")
+            .unwrap();
+        t.deck = 0;
+        t.number = 5;
+        let e = t.entry().unwrap();
+        assert!(e.contains("pad = 5\naction = \"lighting.pad\""), "{e}");
+        assert!(!e.contains("deck ="), "{e}");
         t.stop_learn();
         t.set_monitoring(false);
         m.record("CTRL-TEST", Direction::In, &[0x90, 0x0C, 0x7F], Vec::new());

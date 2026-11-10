@@ -246,6 +246,23 @@ pub const ACTION_NAMES: &[&str] = &[
     "lighting.cue_go",
     "lighting.cue_back",
     "lighting.mode",
+    "lighting.pad",
+    "lighting.page",
+    "lighting.page_next",
+    "lighting.page_prev",
+    "lighting.group_master",
+    "lighting.release",
+    "lighting.hold",
+];
+
+/// Actions whose number argument MIDI learn fills in from its "Number"
+/// choice (1-based there), with the argument name and whether the
+/// mapping file counts it from 0.
+pub const NUMBERED_ACTIONS: [(&str, &str, bool); 4] = [
+    ("lighting.look", "look", true),
+    ("lighting.pad", "pad", false),
+    ("lighting.page", "page", false),
+    ("lighting.group_master", "group", false),
 ];
 
 fn on_press(f: impl Fn(Option<u8>) -> ControlAction + Send + Sync + 'static) -> Producer {
@@ -722,6 +739,62 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
                 on_press(move |_| ControlAction::Lighting(LightingAction::Mode(m.clone()))),
             )
         }
+        "lighting.pad" => {
+            let pad = a.u8("pad")?;
+            if !(1..=8).contains(&pad) {
+                return Err(a.err(format!("pad must be 1 to 8, not {pad}")));
+            }
+            (
+                Button,
+                Box::new(move |_, v| {
+                    Some(ControlAction::Lighting(LightingAction::Pad {
+                        pad: pad - 1,
+                        pressed: v.pressed(),
+                    }))
+                }),
+            )
+        }
+        "lighting.page" => {
+            let page = a.u8("page")?;
+            if !(1..=4).contains(&page) {
+                return Err(a.err(format!("page must be 1 to 4, not {page}")));
+            }
+            (
+                Button,
+                on_press(move |_| ControlAction::Lighting(LightingAction::Page(page - 1))),
+            )
+        }
+        "lighting.page_next" => (
+            Button,
+            on_press(|_| ControlAction::Lighting(LightingAction::PageNext)),
+        ),
+        "lighting.page_prev" => (
+            Button,
+            on_press(|_| ControlAction::Lighting(LightingAction::PagePrev)),
+        ),
+        "lighting.group_master" => {
+            let group = a.u8("group")?;
+            if group == 0 {
+                return Err(a.err("group counts from 1"));
+            }
+            (
+                Absolute,
+                Box::new(move |_, v| {
+                    Some(ControlAction::Lighting(LightingAction::GroupMaster {
+                        group: group - 1,
+                        level: v.unit(),
+                    }))
+                }),
+            )
+        }
+        "lighting.release" => (
+            Button,
+            on_press(|_| ControlAction::Lighting(LightingAction::Release)),
+        ),
+        "lighting.hold" => (
+            Button,
+            on_press(|_| ControlAction::Lighting(LightingAction::Hold)),
+        ),
         _ => return Err(MappingError::UnknownAction(name.to_string())),
     };
     if name == "ignore" {
@@ -761,6 +834,9 @@ mod tests {
                 args.insert("mode".into(), Value::String("pro".into()));
             }
             args.insert("look".into(), Value::Integer(2));
+            args.insert("pad".into(), Value::Integer(3));
+            args.insert("page".into(), Value::Integer(2));
+            args.insert("group".into(), Value::Integer(1));
             parse_action(n, &args).unwrap_or_else(|e| panic!("{n}: {e}"));
         }
     }
@@ -946,5 +1022,44 @@ mod tests {
         let mut bad = Table::new();
         bad.insert("mode".into(), Value::String("disco".into()));
         assert!(parse_action("lighting.mode", &bad).is_err());
+        // Own pads: held, 1-based in the file, 0-based in the action.
+        let mut pad = Table::new();
+        pad.insert("pad".into(), Value::Integer(3));
+        let t = parse_action("lighting.pad", &pad).unwrap();
+        let press = |pressed| InputValue::Button {
+            pressed,
+            velocity: if pressed { 127 } else { 0 },
+        };
+        assert_eq!(
+            t.produce(None, press(false)),
+            Some(ControlAction::Lighting(LightingAction::Pad {
+                pad: 2,
+                pressed: false
+            }))
+        );
+        pad.insert("pad".into(), Value::Integer(9));
+        assert!(parse_action("lighting.pad", &pad).is_err());
+        let mut group = Table::new();
+        group.insert("group".into(), Value::Integer(2));
+        let t = parse_action("lighting.group_master", &group).unwrap();
+        assert_eq!(
+            t.produce(None, InputValue::Absolute(0.5)),
+            Some(ControlAction::Lighting(LightingAction::GroupMaster {
+                group: 1,
+                level: 0.5
+            }))
+        );
+        let t = parse_action("lighting.release", &Table::new()).unwrap();
+        assert_eq!(
+            t.produce(None, press(true)),
+            Some(ControlAction::Lighting(LightingAction::Release))
+        );
+        assert_eq!(t.produce(None, press(false)), None);
+        for (name, arg, _) in NUMBERED_ACTIONS {
+            assert!(ACTION_NAMES.contains(&name), "{name}");
+            let mut t = Table::new();
+            t.insert(arg.into(), Value::Integer(1));
+            parse_action(name, &t).unwrap_or_else(|e| panic!("{name}: {e}"));
+        }
     }
 }

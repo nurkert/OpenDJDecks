@@ -286,6 +286,7 @@ export component PreferencesWindow inherits Window {
     in property <[string]> learn-actions;
     in property <int> learn-action;
     in property <int> learn-deck;
+    in property <int> learn-number;
     in property <string> learn-result;
     in property <string> learn-entry;
     in property <string> learn-file;
@@ -556,6 +557,7 @@ export component PreferencesWindow inherits Window {
                             ComboBox { accessible-label: "prefs.controller.learn-action"; horizontal-stretch: 1; model: root.learn-actions; current-index: root.learn-action; selected => { root.choose("learn.action", self.current-index); } }
                         }
                         Row { label: @tr("Deck / channel"); Choice { accessible-label: "prefs.controller.learn-deck"; options: [@tr("NONE"), "1", "2", "3", "4"]; selected: root.learn-deck; picked(i) => { root.choose("learn.deck", i); } } }
+                        Row { label: @tr("Pad, page or group"); Choice { accessible-label: "prefs.controller.learn-number"; options: [@tr("NONE"), "1", "2", "3", "4", "5", "6", "7", "8"]; selected: root.learn-number; picked(i) => { root.choose("learn.number", i); } } }
                         Row {
                             label: @tr("Control");
                             Text {
