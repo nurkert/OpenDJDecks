@@ -101,6 +101,37 @@ export component FocusRing inherits Rectangle {
     }
 }
 
+// Keyboard focus for a control that has none of its own (DESIGN.md, the
+// focused state): a Tab stop that draws the focus ring over its parent
+// and presses it with Return or Space. Sliders (`arrows`) also take the
+// arrow keys: up and right raise, down and left lower. It takes no
+// pointer input and fills its parent unless placed otherwise.
+export component KeyFocus inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <length> radius: Theme.r-control;
+    in property <bool> arrows;
+    callback activate();
+    // Return or Space let go (hold keys).
+    callback release();
+    callback step(int);
+    out property <bool> focused: fs.has-focus;
+    fs := FocusScope { focus-on-click: false; enabled: root.enabled; x: 0; y: 0; width: 0; height: 0;
+        key-released(e) => {
+            if (e.text == Key.Return || e.text == " ") { root.release(); return accept; }
+            reject
+        }
+        key-pressed(e) => {
+            if (e.modifiers.control || e.modifiers.meta || e.modifiers.alt) { return reject; }
+            if (e.text == Key.Return || e.text == " ") { root.activate(); return accept; }
+            if (root.arrows && (e.text == Key.UpArrow || e.text == Key.RightArrow)) { root.step(1); return accept; }
+            if (root.arrows && (e.text == Key.DownArrow || e.text == Key.LeftArrow)) { root.step(-1); return accept; }
+            reject
+        }
+    }
+    FocusRing { show: fs.has-focus; radius: root.radius; }
+    public function focus-it() { fs.focus(); }
+}
+
 // Armed (will act on the next event): a 2px outline in its tone over the
 // plate that pulses slowly; off with the motion switch.
 export component ArmedOutline inherits Rectangle {
@@ -180,7 +211,7 @@ export component GuideMark inherits Rectangle {
     property <bool> show: root.id != "" && ((FirstStart.visible && FirstStart.target == root.id) || (ControllerSetup.visible && ControllerSetup.target == root.id));
     if root.show: ArmedOutline {
         accessible-role: text;
-        accessible-label: "guide.highlight";
+        accessible-id: "guide.highlight";
         accessible-value: root.id;
         width: parent.width; height: parent.height;
         show: true; radius: root.radius;
@@ -188,6 +219,11 @@ export component GuideMark inherits Rectangle {
 }
 
 export component PlateButton inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: button;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-enabled: root.enabled;
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
     in property <string> command;
@@ -214,8 +250,8 @@ export component PlateButton inherits Rectangle {
     property <bool> over: touch.has-hover && root.enabled;
     property <bool> filled: root.active || (root.danger && root.over);
     // A glyph without a legend (a narrow window) is a square key.
-    min-width: max(root.tall ? 44px : 0px, root.label == "" && root.glyph != "" ? 32px : lbl.preferred-width + (glyph != "" ? 22px : 0px) + 28px);
-    height: tall ? 44px : compact ? 26px : 32px;
+    min-width: max(root.tall ? 44px : Theme.touch-min, root.label == "" && root.glyph != "" ? 32px : lbl.preferred-width + (glyph != "" ? 22px : 0px) + 28px);
+    height: tall || Theme.touch-mode ? 44px : compact ? 26px : 32px;
     background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.danger && !root.active && root.over ? Theme.fault : root.tone);
     border-radius: Theme.r-control;
     border-width: root.enabled || root.selected || root.filled ? 0px : Theme.hair;
@@ -306,6 +342,11 @@ export component Star inherits Rectangle {
 
 // Text field on an ash plate; focus draws the ring.
 export component Field inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: text-input;
+    accessible-label: TooltipState.name-for(self.accessible-id, "", root.placeholder);
+    accessible-enabled: root.enabled;
+    accessible-description: root.placeholder;
     in property <string> placeholder;
     in-out property <string> text <=> input.text;
     in property <color> tone: Theme.w486;
@@ -321,7 +362,7 @@ export component Field inherits Rectangle {
     // moves the list's selection with them).
     in property <bool> nav-keys;
     callback nav(string);
-    height: 32px;
+    height: Theme.touch-mode ? 44px : 32px;
     background: root.enabled ? Theme.plate : Theme.ground-band;
     border-width: root.enabled ? 0px : Theme.hair;
     border-color: Theme.rule;
@@ -335,6 +376,7 @@ export component Field inherits Rectangle {
         vertical-alignment: center;
     }
     input := TextInput {
+        accessible-label: TooltipState.name-for(root.accessible-id, "", root.placeholder);
         x: 10px; width: parent.width - 20px; height: parent.height;
         font-family: Theme.family; font-size: Theme.body;
         color: Theme.bone;
@@ -364,6 +406,10 @@ export component Field inherits Rectangle {
 
 // Two-state switch drawn as a line that is either solid or struck.
 export component LineToggle inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: checkbox;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
     in property <string> command;
@@ -371,7 +417,7 @@ export component LineToggle inherits Rectangle {
     in-out property <bool> checked;
     in property <color> tone: Theme.live;
     callback toggled(bool);
-    height: 26px;
+    height: max(26px, Theme.touch-min);
     min-width: t.preferred-width + 24px;
 
     VLine { x: 2px; y: 5px; height: parent.height - 10px; tone: root.checked ? root.tone : Theme.rule-strong; form: root.checked ? "solid" : "half"; }
@@ -386,6 +432,7 @@ export component LineToggle inherits Rectangle {
         mouse-cursor: pointer;
         clicked => { root.checked = !root.checked; root.toggled(root.checked); }
     }
+    KeyFocus { activate => { root.checked = !root.checked; root.toggled(root.checked); } }
 }
 
 // A key beside a round element (DESIGN.md, Shapes: round elements get
@@ -400,6 +447,11 @@ export component LineToggle inherits Rectangle {
 // the state language; the legend sits toward the outer edge, clear of the
 // curve. The whole box takes the pointer.
 export component ConcaveKey inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: button;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-enabled: root.enabled;
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     in property <string> label;
     in property <string> tooltip;
     in property <string> command;
@@ -494,6 +546,7 @@ export component ConcaveKey inherits Rectangle {
             if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.up) { root.down = false; root.held(false); }
         }
     }
+    KeyFocus { enabled: root.enabled; activate => { root.held(true); root.clicked(); } release => { root.held(false); } }
 }
 
 // Drag readout (DESIGN.md, Control anatomy): the value of a knob or fader
@@ -502,7 +555,7 @@ export component ConcaveKey inherits Rectangle {
 component DragReadout inherits Rectangle {
     in property <string> shown;
     accessible-role: text;
-    accessible-label: "control.readout";
+    accessible-id: "control.readout";
     accessible-value: root.shown;
     width: rt.preferred-width + 10px;
     height: 16px;
@@ -523,6 +576,10 @@ component DragReadout inherits Rectangle {
 // drag changes the value with its readout shown above the ring;
 // double-click resets it.
 export component Knob inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: slider;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
     in property <string> command;
@@ -533,6 +590,8 @@ export component Knob inherits Rectangle {
     in property <string> label;
     in property <color> tone: Theme.bone-2;
     in property <length> size: 30px;
+    // The ring: 44 px on touch.
+    property <length> ks: max(root.size, Theme.touch-min);
     // Room under the ring for the legend (smaller on compact strips); a
     // knob without a legend is just its ring, so it centres on its row.
     in property <length> label-h: 16px;
@@ -547,8 +606,8 @@ export component Knob inherits Rectangle {
     callback changed(float);
     // Held by the pointer (a legend elsewhere can show the value meanwhile).
     out property <bool> held: touch.pressed;
-    width: max(root.size + 8px, lbl.preferred-width + 4px);
-    height: root.size + (root.label == "" ? 0px : root.label-h);
+    width: max(root.ks + 8px, lbl.preferred-width + 4px);
+    height: root.ks + (root.label == "" ? 0px : root.label-h);
 
     out property <bool> bipolar: root.minimum < 0 && root.maximum > 0;
     property <float> norm: (root.value - root.minimum) / (root.maximum - root.minimum);
@@ -558,16 +617,16 @@ export component Knob inherits Rectangle {
     property <bool> moved: Math.abs(root.value - root.default-value) > 0.01;
 
     Rectangle {
-        x: (parent.width - root.size) / 2; y: 0;
-        width: root.size; height: root.size;
-        border-radius: root.size / 2;
+        x: (parent.width - root.ks) / 2; y: 0;
+        width: root.ks; height: root.ks;
+        border-radius: root.ks / 2;
         border-width: 1px;
         border-color: touch.has-hover || touch.pressed ? Theme.bone-3 : Theme.rule-strong;
         background: Theme.plate;
         // The value arc on the ring.
         if Math.abs(root.a - root.a0) > 1deg: Path {
-            accessible-role: image; accessible-label: "knob.arc";
-            width: root.size; height: root.size;
+            accessible-role: image; accessible-id: "knob.arc";
+            width: root.ks; height: root.ks;
             viewbox-width: 100; viewbox-height: 100;
             stroke: root.tone;
             stroke-width: 2px;
@@ -582,13 +641,13 @@ export component Knob inherits Rectangle {
         }
         // Centre mark of a bipolar knob: a notch through the ring at the top.
         if root.bipolar: Rectangle {
-            accessible-role: image; accessible-label: "knob.centre";
+            accessible-role: image; accessible-id: "knob.centre";
             x: (parent.width - 2px) / 2; y: 0;
-            width: 2px; height: max(2px, root.size * 0.14);
+            width: 2px; height: max(2px, root.ks * 0.14);
             background: root.moved ? Theme.bone-3 : Theme.bone-2;
         }
         Path {
-            width: root.size; height: root.size;
+            width: root.ks; height: root.ks;
             viewbox-width: 100; viewbox-height: 100;
             stroke: root.moved ? root.tone : Theme.bone;
             stroke-width: 2px;
@@ -597,8 +656,8 @@ export component Knob inherits Rectangle {
         }
     }
     lbl := Text {
-        y: root.size + (root.label-h >= 16px ? 3px : 1px); width: parent.width;
-        accessible-role: text; accessible-label: root.legend-id; accessible-value: self.text;
+        y: root.ks + (root.label-h >= 16px ? 3px : 1px); width: parent.width;
+        accessible-role: text; accessible-id: root.legend-id; accessible-value: self.text;
         text: root.label;
         font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: root.label-h >= 16px ? 1.2px : 0.8px;
         color: root.legend-color;
@@ -618,7 +677,12 @@ export component Knob inherits Rectangle {
         }
         double-clicked => { root.value = root.default-value; root.changed(root.value); }
     }
-    if root.guide != "": GuideMark { x: (parent.width - root.size) / 2 - 2px; y: -2px; width: root.size + 4px; height: root.size + 4px; id: root.guide; radius: root.size / 2 + 2px; }
+    if root.guide != "": GuideMark { x: (parent.width - root.ks) / 2 - 2px; y: -2px; width: root.ks + 4px; height: root.ks + 4px; id: root.guide; radius: root.ks / 2 + 2px; }
+    // Keyboard: the arrows turn it in twentieths, Return resets it.
+    KeyFocus { x: (parent.width - root.ks) / 2; y: 0; width: root.ks; height: root.ks; radius: root.ks / 2; arrows: true;
+        activate => { root.value = root.default-value; root.changed(root.value); }
+        step(d) => { root.value = clamp(root.value + d * (root.maximum - root.minimum) / 20, root.minimum, root.maximum); root.changed(root.value); }
+    }
     if touch.pressed: DragReadout {
         x: (parent.width - self.width) / 2; y: -self.height - 2px;
         shown: root.readout != "" ? root.readout
@@ -632,6 +696,10 @@ export component Knob inherits Rectangle {
 // the value is read at. A bipolar fader (tempo) has a centre detent mark
 // beside the track. The value shows beside the cap while it is held.
 export component Fader inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: slider;
+    accessible-label: TooltipState.name-for(self.accessible-id, "", root.tooltip);
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
     in property <string> command;
@@ -648,7 +716,7 @@ export component Fader inherits Rectangle {
     // Guide id (first-start guide, controller setup).
     in property <string> guide;
     callback changed(float);
-    width: 26px;
+    width: Theme.touch-mode ? 44px : 26px;
     property <length> travel: root.height - 8px - root.handle;
     Rectangle { x: parent.width / 2 - 1px; y: 4px; width: 2px; height: parent.height - 8px; background: Theme.rule-strong; }
     Rectangle {
@@ -659,13 +727,13 @@ export component Fader inherits Rectangle {
     }
     // Centre detent: two short ticks either side of the track.
     if root.bipolar: Rectangle {
-        accessible-role: image; accessible-label: "fader.detent";
+        accessible-role: image; accessible-id: "fader.detent";
         y: 4px + root.handle / 2 + root.travel / 2 - 0.5px; height: 1px;
         Rectangle { x: 1px; width: parent.width / 2 - 4px; background: Theme.bone-3; }
         Rectangle { x: parent.width / 2 + 3px; width: parent.width / 2 - 4px; background: Theme.bone-3; }
     }
     cap := Rectangle {
-        accessible-role: image; accessible-label: "fader.cap";
+        accessible-role: image; accessible-id: "fader.cap";
         x: 1px; width: parent.width - 2px; height: root.handle;
         y: 4px + root.travel * (1 - root.value);
         background: Theme.plate-raised;
@@ -691,6 +759,10 @@ export component Fader inherits Rectangle {
         }
     }
     if root.guide != "": GuideMark { width: parent.width; height: parent.height; id: root.guide; }
+    // Keyboard: the arrows move it in twentieths.
+    KeyFocus { arrows: true;
+        step(d) => { root.value = clamp(root.value + d * 0.05, 0, 1); root.changed(root.value); }
+    }
     if touch.pressed: DragReadout {
         x: root.readout-left ? -self.width - 2px : parent.width + 2px;
         y: cap.y + (cap.height - self.height) / 2;
@@ -701,6 +773,11 @@ export component Fader inherits Rectangle {
 // Small state button (DESIGN.md, State Language): filled in its tone when
 // on, bone when selected; the label stays.
 export component Toggle inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: button;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-enabled: root.enabled;
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
     in property <string> command;
@@ -729,8 +806,8 @@ export component Toggle inherits Rectangle {
     in property <bool> shift-aware;
     property <bool> shift-down;
     property <bool> filled: root.on || root.running;
-    min-width: max(root.min-w, t.preferred-width + 16px);
-    height: root.size;
+    min-width: max(root.min-w, Theme.touch-min, t.preferred-width + 16px);
+    height: max(root.size, Theme.touch-min);
     background: Theme.face(root.enabled, touch.pressed, touch.has-hover, root.selected, root.filled, root.tone);
     border-radius: Theme.r-control;
     // Disabled: band charcoal with a hairline edge, so the key keeps its
@@ -811,11 +888,20 @@ export component Splitter inherits Rectangle {
         }
         double-clicked => { root.reset(); }
     }
+    // Keyboard: the arrows move it 16 px, Return resets it.
+    KeyFocus { arrows: true;
+        activate => { root.reset(); }
+        step(d) => { root.dragged(d * (root.horizontal ? -16px : 16px)); }
+    }
 }
 
 // Jog display: a platter ring with a rotating position mark, the track's
 // progress as tick marks around the ring and readouts in the centre.
 export component Jog inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: slider;
+    accessible-label: TooltipState.name-for(self.accessible-id, "", root.tooltip);
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
     in property <string> command;
@@ -883,7 +969,7 @@ export component Jog inherits Rectangle {
     }
     if root.foot-text != "": Text {
         accessible-role: text;
-        accessible-label: root.foot-label;
+        accessible-id: root.foot-label;
         accessible-value: self.text;
         x: 26px; width: root.size - 52px; y: root.r + 33px;
         text: root.foot-text;
@@ -896,7 +982,9 @@ export component Jog inherits Rectangle {
     // turns it back into the readout.
     if root.editable && root.loaded: TipArea {
         accessible-role: button;
-        accessible-label: root.a11y-prefix + ".bpm-set";
+        accessible-id: root.a11y-prefix + ".bpm-set";
+        accessible-label: TooltipState.name-for(self.accessible-id, @tr("TYPE A BPM"), self.tooltip);
+        KeyFocus { activate => { bpm-pop.show(); } }
         x: 24px; y: root.r - 16px; width: root.size - 48px; height: 30px;
         tooltip: @tr("Click to type a BPM: the tempo fader goes there (the range widens if needed)");
         mouse-cursor: text;
@@ -905,7 +993,9 @@ export component Jog inherits Rectangle {
     // Click the tempo / range line: the next range (±6, ±10, ±16 %, WIDE).
     if root.editable: TipArea {
         accessible-role: button;
-        accessible-label: root.a11y-prefix + ".range-set";
+        accessible-id: root.a11y-prefix + ".range-set";
+        accessible-label: TooltipState.name-for(self.accessible-id, @tr("TEMPO RANGE"), self.tooltip);
+        KeyFocus { activate => { root.range(); } }
         x: 24px; y: root.r + 14px; width: root.size - 48px; height: 20px;
         tooltip: @tr("Click for the next tempo range: ±6 %, ±10 %, ±16 %, WIDE");
         mouse-cursor: pointer;
@@ -916,7 +1006,7 @@ export component Jog inherits Rectangle {
         close-policy: close-on-click-outside;
         Field {
             accessible-role: text-input;
-            accessible-label: root.a11y-prefix + ".bpm-input";
+            accessible-id: root.a11y-prefix + ".bpm-input";
             accessible-value: self.text;
             width: parent.width; height: parent.height;
             text: root.main-text;
@@ -930,6 +1020,10 @@ export component Jog inherits Rectangle {
 
 // Round transport button (CUE / PLAY) drawn as a ring with a mark.
 export component Transport inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: button;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.kind == "play" ? @tr("PLAY") : @tr("CUE"), root.tooltip);
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     // Hover help (SPEC §12.3): the text and the keymap action whose binding it shows.
     in property <string> tooltip;
     in property <string> command;
@@ -944,8 +1038,8 @@ export component Transport inherits Rectangle {
     callback clicked();
     // Right click (the play key: start on the master's next phrase).
     callback alt-clicked();
-    width: root.size; height: root.size;
-    border-radius: root.size / 2;
+    width: max(root.size, Theme.touch-min); height: self.width;
+    border-radius: self.width / 2;
     background: Theme.face(true, touch.pressed, touch.has-hover, false, root.on, root.tone);
     // The mark and the legend grow with the key.
     property <length> mark: max(12px, root.size * 0.32);
@@ -970,12 +1064,18 @@ export component Transport inherits Rectangle {
             if (ev.button == PointerEventButton.right && ev.kind == PointerEventKind.down) { root.alt-clicked(); }
         }
     }
+    KeyFocus { radius: root.size / 2; activate => { root.clicked(); } }
 }
 
 // A value with ‹ › on either side (effect, beat length, bank). The value
 // keeps the width of `template`, so stepping never moves its neighbours;
 // clicking the value can open a list (`value-clicked`).
 export component Stepper inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: spinbox;
+    accessible-label: TooltipState.name-for(self.accessible-id, "", root.tooltip);
+    accessible-enabled: root.enabled;
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     in property <string> tooltip;
     in property <string> command;
     in property <string> value;
@@ -993,27 +1093,30 @@ export component Stepper inherits Rectangle {
     in property <string> a11y-value;
     in property <string> a11y-next;
     callback step(int);
+    // The ‹ › areas: 44 px on touch.
+    property <length> aw: max(root.arrow, Theme.touch-min);
     callback value-clicked();
-    height: root.size;
-    min-width: probe.preferred-width + 2 * root.arrow + 12px;
+    height: max(root.size, Theme.touch-min);
+    min-width: probe.preferred-width + 2 * root.aw + 12px;
     background: root.enabled ? Theme.plate : Theme.ground-band;
     border-radius: Theme.r-control;
     border-width: root.enabled ? 0px : Theme.hair;
     border-color: Theme.rule;
     probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px; }
     Rectangle {
-        x: 0; width: root.arrow;
+        x: 0; width: root.aw;
         accessible-role: button;
-        accessible-label: root.a11y-prev;
+        accessible-id: root.a11y-prev;
+        accessible-label: TooltipState.name-for(root.a11y-prev, @tr("Previous"), "") + (root.value != "" ? " (" + root.value + ")" : "");
         background: root.enabled && (prev.pressed || prev.has-hover) ? Theme.plate-raised : transparent;
         border-radius: Theme.r-control;
         Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "prev"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
         prev := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.step(-1); } }
     }
     Rectangle {
-        x: root.arrow + 1px; width: parent.width - 2 * root.arrow - 2px;
+        x: root.aw + 1px; width: parent.width - 2 * root.aw - 2px;
         accessible-role: text;
-        accessible-label: root.a11y-value;
+        accessible-id: root.a11y-value;
         accessible-value: root.value;
         background: mid.has-hover && root.enabled ? Theme.plate-raised : transparent;
         Text {
@@ -1026,19 +1129,29 @@ export component Stepper inherits Rectangle {
         mid := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.value-clicked(); } }
     }
     Rectangle {
-        x: parent.width - root.arrow; width: root.arrow;
+        x: parent.width - root.aw; width: root.aw;
         accessible-role: button;
-        accessible-label: root.a11y-next;
+        accessible-id: root.a11y-next;
+        accessible-label: TooltipState.name-for(root.a11y-next, @tr("Next"), "") + (root.value != "" ? " (" + root.value + ")" : "");
         background: root.enabled && (next.pressed || next.has-hover) ? Theme.plate-raised : transparent;
         border-radius: Theme.r-control;
         Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "next"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
         next := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.step(1); } }
+    }
+    // Keyboard: the arrows step, Return opens the list.
+    KeyFocus { enabled: root.enabled; arrows: true;
+        activate => { root.value-clicked(); }
+        step(d) => { root.step(d); }
     }
 }
 
 // A momentary button: reports press and release (Exit FX, gate pads).
 // Lit while held or while `on`.
 export component HoldButton inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: button;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     in property <string> tooltip;
     in property <string> command;
     in property <string> label;
@@ -1048,8 +1161,8 @@ export component HoldButton inherits Rectangle {
     callback pressed();
     callback released();
     property <bool> lit: root.on || touch.pressed;
-    min-width: t.preferred-width + 16px;
-    height: root.size;
+    min-width: max(Theme.touch-min, t.preferred-width + 16px);
+    height: max(root.size, Theme.touch-min);
     background: Theme.face(true, touch.pressed, touch.has-hover, false, root.lit, root.tone);
     border-radius: Theme.r-control;
     t := Text {
@@ -1065,4 +1178,6 @@ export component HoldButton inherits Rectangle {
             if (ev.button == PointerEventButton.left && ev.kind == PointerEventKind.up) { root.released(); }
         }
     }
+    // Keyboard: held while Return or Space is held.
+    KeyFocus { activate => { root.pressed(); } release => { root.released(); } }
 }

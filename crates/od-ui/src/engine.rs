@@ -298,7 +298,7 @@ fn perform_crowd(app: &App) {
     let lighting = ui.global::<crate::Lighting>().get_panel();
     let layout = ui.global::<crate::PerformLayout>();
     let key = format!(
-        "{}x{} {} s{} f{} m{} x{} l{} c{} {}:{} d{} u{}",
+        "{}x{} {} s{} f{} m{} x{} l{} c{} {}:{} d{} u{} t{}",
         size.width,
         size.height,
         ui.get_mode(),
@@ -323,6 +323,7 @@ fn perform_crowd(app: &App) {
             ui.global::<crate::DeckLayout>().get_fx(),
             ui.global::<crate::DeckLayout>().get_phase(),
         ),
+        ui.global::<crate::Theme>().get_touch_mode(),
     );
     let changed = CROWD_KEY.with(|k| {
         let mut k = k.borrow_mut();
@@ -435,10 +436,17 @@ fn frame(app: &App) {
         app.ui.set_narrow_screen(narrow);
     }
     // Touch layout: the kiosk, or a window as short as the kiosk screen.
-    let touch =
-        app.state.borrow().config.kiosk || (app.ui.window().size().height as f32 / scale) <= 480.0;
+    let touch = app.state.borrow().config.kiosk
+        || app.state.borrow().settings.view.touch_layout
+        || (app.ui.window().size().height as f32 / scale) <= 480.0;
     if app.ui.global::<crate::Theme>().get_touch() != touch {
         app.ui.global::<crate::Theme>().set_touch(touch);
+    }
+    // The touch layout's 44 px keys cover Perform and Lighting; the Prepare
+    // player keeps its desktop keys (its browser keeps the touch rows).
+    let touch_mode = app.state.borrow().settings.view.touch_layout && app.ui.get_mode() != "prepare";
+    if app.ui.global::<crate::Theme>().get_touch_mode() != touch_mode {
+        app.ui.global::<crate::Theme>().set_touch_mode(touch_mode);
     }
     let short = (app.ui.window().size().height as f32 / scale) < 860.0;
     if app.ui.get_short_screen() != short {

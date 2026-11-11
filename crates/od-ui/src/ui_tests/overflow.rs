@@ -238,8 +238,12 @@ impl Walk {
         if !clip.is_inf() && (seen.w <= 0.0 || seen.h <= 0.0) && (rect.w > 0.0 || rect.h > 0.0) {
             return;
         }
+        use i_slint_core::accessibility::AccessibleStringProperty as A;
+        // The test id (`accessible-id`), else the accessible name.
         let own_label = rc
-            .accessible_string_property(i_slint_core::accessibility::AccessibleStringProperty::Label)
+            .accessible_string_property(A::Id)
+            .filter(|s| !s.is_empty())
+            .or_else(|| rc.accessible_string_property(A::Label))
             .map(|s| s.to_string())
             .unwrap_or_default();
         let label = if own_label.is_empty() { label.to_string() } else { own_label };
@@ -852,6 +856,38 @@ fn main_states() -> Vec<State> {
             },
             teardown: Some(|u| u.app.ui.global::<crate::Club>().invoke_set_enabled(false)),
         },
+        State {
+            id: "touch.perform (touch layout)",
+            setup: |u| {
+                perform(u, 2, "standard");
+                super::touch::touch_on(u, true);
+            },
+            teardown: Some(|u| super::touch::touch_on(u, false)),
+        },
+        State {
+            id: "touch.perform with FX (touch layout)",
+            setup: |u| {
+                perform(u, 2, "full");
+                super::touch::touch_on(u, true);
+            },
+            teardown: Some(|u| super::touch::touch_on(u, false)),
+        },
+        State {
+            id: "touch.prepare (touch layout)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                super::touch::touch_on(u, true);
+            },
+            teardown: Some(|u| super::touch::touch_on(u, false)),
+        },
+        State {
+            id: "touch.lighting (touch layout)",
+            setup: |u| {
+                lighting(u, "stage", "rig");
+                super::touch::touch_on(u, true);
+            },
+            teardown: Some(|u| super::touch::touch_on(u, false)),
+        },
         State { id: "lighting.stage+rig", setup: |u| lighting(u, "stage", "rig"), teardown: None },
         State { id: "lighting.pads+output", setup: |u| lighting(u, "pads", "output"), teardown: None },
         State { id: "lighting.patch+safety", setup: |u| lighting(u, "patch", "safety"), teardown: None },
@@ -871,6 +907,25 @@ fn lighting(ui: &Ui, centre: &str, tab: &str) {
 fn popup_states() -> Vec<State> {
     let close: Option<fn(&Ui)> = Some(|u| escape(u));
     vec![
+        State {
+            id: "help.perform",
+            setup: |u| {
+                perform(u, 2, "standard");
+                crate::help::toggle(&u.app);
+                u.pump(200);
+            },
+            teardown: Some(|u| crate::help::close(&u.app)),
+        },
+        State {
+            id: "help.prepare (a control explained)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                crate::help::toggle(&u.app);
+                u.app.ui.global::<crate::Help>().set_selected(3);
+                u.pump(200);
+            },
+            teardown: Some(|u| crate::help::close(&u.app)),
+        },
         State { id: "popup.gig", setup: |u| { perform(u, 2, "standard"); click(u, "topbar.gig.menu"); }, teardown: close },
         State { id: "popup.view-menu", setup: |u| { perform(u, 2, "standard"); click(u, "topbar.layout"); }, teardown: close },
         State {

@@ -1,0 +1,40 @@
+// The touch layout offer (roadmap [24]): when the first touch arrives on a
+// screen while the touch layout is off, a band under the top bar offers
+// it once. Never covers a control.
+
+import { Theme } from "tokens.slint";
+import { PlateButton } from "controls.slint";
+import { VLine, HLine } from "lines.slint";
+
+export global TouchLayout {
+    in property <bool> offer;
+    // "use" | "not-now"
+    callback answer(string);
+}
+
+export component TouchOfferBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-id: "app.touch-offer";
+    accessible-label: @tr("Touch layout");
+    height: Theme.touch ? 52px : 40px;
+    background: Theme.ground-band;
+    border-radius: Theme.r-panel;
+    HorizontalLayout {
+        padding-left: Theme.s4;
+        padding-right: Theme.s3;
+        padding-top: Theme.s1;
+        padding-bottom: Theme.s1;
+        spacing: Theme.s2;
+        // It needs you: the doubled sodium line.
+        VLine { weight: 2px; tone: Theme.attention; form: "double"; }
+        Text {
+            horizontal-stretch: 1;
+            text: @tr("This screen takes touch. The touch layout makes every control at least 44 px.");
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        PlateButton { accessible-id: "app.touch-offer.use"; compact: true; label: @tr("TOUCH LAYOUT"); tone: Theme.live; active: true; clicked => { TouchLayout.answer("use"); } }
+        PlateButton { accessible-id: "app.touch-offer.later"; compact: true; label: @tr("NOT NOW"); clicked => { TouchLayout.answer("not-now"); } }
+    }
+}

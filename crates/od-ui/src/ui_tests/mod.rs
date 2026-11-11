@@ -6,7 +6,7 @@
 //! (`init_no_event_loop`), a temporary library with generated audio files
 //! ([`Fixture`]) and an app whose engine renders into nothing
 //! (`AppConfig::null_audio`), so decks load, play and record without an
-//! audio device. Elements are found by their `accessible-label`
+//! audio device. Elements are found by their `accessible-id`
 //! (docs/parity.md); input is synthesised at the element's centre (clicks,
 //! double-clicks, right-clicks, drags, wheel, keys) and the resulting
 //! library / engine state is asserted.
@@ -19,6 +19,9 @@
 //!   browsing, source rail, layouts, panel toggles, batch separation)
 //! - [`editing`]: phrase display and editing, edit mode, sub-browser
 
+mod access;
+mod help_overlay;
+mod touch;
 mod alignment;
 mod craft;
 mod browser;

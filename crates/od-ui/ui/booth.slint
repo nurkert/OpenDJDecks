@@ -6,7 +6,7 @@
 // scaled up, so 1080p gives hero figures of about 96 px.
 
 import { Theme } from "tokens.slint";
-import { Caps } from "controls.slint";
+import { Caps, KeyFocus, TooltipState } from "controls.slint";
 import { VLine } from "lines.slint";
 import { DeckView, LaneMotion } from "structs.slint";
 import { WaveLane } from "wave.slint";
@@ -38,7 +38,7 @@ component BoothDeck inherits Rectangle {
     in property <float> zoom;
     property <color> tone: Theme.deck-color(root.deck.deck);
     accessible-role: groupbox;
-    accessible-label: "booth.deck\{root.deck.deck}";
+    accessible-id: "booth.deck\{root.deck.deck}";
     accessible-value: root.deck.loaded ? root.deck.title : "";
     background: Theme.ground-band; border-radius: Theme.r-panel;
     // The deck's line, doubled while it is the master.
@@ -76,11 +76,11 @@ component BoothDeck inherits Rectangle {
                 }
             }
             Reading {
-                accessible-role: text; accessible-label: "booth.deck\{root.deck.deck}.bpm"; accessible-value: root.deck.bpm;
+                accessible-role: text; accessible-id: "booth.deck\{root.deck.deck}.bpm"; accessible-value: root.deck.bpm;
                 zoom: root.zoom; caption: "BPM"; value: root.deck.bpm; size: Theme.hero * root.zoom;
             }
             Reading {
-                accessible-role: text; accessible-label: "booth.deck\{root.deck.deck}.key"; accessible-value: root.deck.key;
+                accessible-role: text; accessible-id: "booth.deck\{root.deck.deck}.key"; accessible-value: root.deck.key;
                 zoom: root.zoom; caption: @tr("KEY"); value: root.deck.key; size: Theme.heading * root.zoom;
             }
         }
@@ -97,13 +97,13 @@ component BoothDeck inherits Rectangle {
                 vertical-stretch: 0;
                 spacing: Theme.s5 * root.zoom;
                 Reading {
-                    accessible-role: text; accessible-label: "booth.deck\{root.deck.deck}.remaining"; accessible-value: root.deck.remaining-real;
+                    accessible-role: text; accessible-id: "booth.deck\{root.deck.deck}.remaining"; accessible-value: root.deck.remaining-real;
                     zoom: root.zoom; caption: @tr("REMAINING"); value: root.deck.remaining-real; size: Theme.hero * root.zoom;
                     // The last tenth of the track needs you: sodium.
                     tone: root.deck.loaded && root.deck.playing && root.deck.progress > 0.9 ? Theme.attention : Theme.bone;
                 }
                 Reading {
-                    accessible-role: text; accessible-label: "booth.deck\{root.deck.deck}.phrase"; accessible-value: root.deck.phrase;
+                    accessible-role: text; accessible-id: "booth.deck\{root.deck.deck}.phrase"; accessible-value: root.deck.phrase;
                     horizontal-stretch: 1;
                     zoom: root.zoom; caption: @tr("PHRASE · TO THE NEXT"); value: root.deck.phrase; size: Theme.heading * root.zoom;
                     align: right;
@@ -124,7 +124,7 @@ export component BoothView inherits Rectangle {
     property <float> zoom: max(root.decks.length > 2 ? 0.5 : 1, min(self.width / root.cols / 640px, self.height / root.rows / 180px));
     background: Theme.ground;
     accessible-role: groupbox;
-    accessible-label: "booth.view";
+    accessible-id: "booth.view";
     TouchArea { double-clicked => { Booth.toggle-full-screen(); } }
     if root.cols == 1: VerticalLayout {
         padding: Theme.s2 * root.zoom;

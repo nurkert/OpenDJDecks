@@ -4,13 +4,18 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Glyph, TipArea, Knob, PopupPlace, GuideMark, Field } from "controls.slint";
+import { Help } from "help.slint";
+import { Caps, PlateButton, Glyph, TipArea, TooltipState, Knob, PopupPlace, GuideMark, Field, KeyFocus } from "controls.slint";
 import { Club } from "club.slint";
 import { Lighting, LinkStatus } from "lighting.slint";
 import { PerformLayout, DeckLayout } from "perform.slint";
 import { GigCheck, LockKey, PerformLock } from "safety.slint";
 
 component ModeTab inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: tab;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     in property <bool> narrow;
     in property <string> label;
     in property <bool> current;
@@ -35,11 +40,17 @@ component ModeTab inherits Rectangle {
     }
     GuideMark { y: Theme.s2; width: parent.width; height: parent.height - 2 * Theme.s2; id: root.guide; }
     touch := TipArea { tooltip: root.tooltip; command: root.command; mouse-cursor: pointer; clicked => { root.clicked(); } }
+    KeyFocus { activate => { root.clicked(); } }
 }
 
 // Panel switch in the bar: an ash plate, filled while the panel is open, in
 // red while recording. The legend stays.
 component PanelToggle inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: button;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-enabled: root.enabled;
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     in property <bool> narrow;
     in property <string> label;
     in property <bool> on;
@@ -50,7 +61,7 @@ component PanelToggle inherits Rectangle {
     in property <length> min-w: 0px;
     in property <bool> enabled: true;
     callback clicked();
-    width: max(root.min-w, t.preferred-width + (root.narrow ? 12px : 22px));
+    width: max(root.min-w, Theme.touch-min, t.preferred-width + (root.narrow ? 12px : 22px));
     // A step below the modes: panels are not a place to be.
     Rectangle {
         y: 9px; height: parent.height - 18px;
@@ -65,6 +76,7 @@ component PanelToggle inherits Rectangle {
         horizontal-alignment: center; vertical-alignment: center;
     }
     touch := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
+    KeyFocus { enabled: root.enabled; activate => { root.clicked(); } }
 }
 
 // Recording in the status zone: the action (a red fill and the running time
@@ -80,7 +92,9 @@ component RecordKey inherits HorizontalLayout {
     spacing: Theme.key-gap;
     // Wide enough for the longest time: the zone stays put when it starts.
     action := Rectangle {
-        accessible-label: "topbar.record"; accessible-role: button;
+        accessible-id: "topbar.record"; accessible-role: button;
+        accessible-label: TooltipState.name-for(self.accessible-id, @tr("RECORD"), rk.tooltip);
+        KeyFocus { activate => { root.toggle-recording(); } }
         accessible-checkable: true; accessible-checked: root.recording;
         accessible-value: root.recording ? root.recording-time : "";
         width: max(probe-time.preferred-width, probe-rest.preferred-width) + 34px;
@@ -106,10 +120,12 @@ component RecordKey inherits HorizontalLayout {
         rk := TipArea { tooltip: root.recording ? @tr("Stop recording") : @tr("Record the master output"); command: "record.toggle"; mouse-cursor: pointer; clicked => { root.toggle-recording(); } }
     }
     Rectangle {
-        accessible-label: "topbar.toggle.rec"; accessible-role: button;
+        accessible-id: "topbar.toggle.rec"; accessible-role: button;
+        accessible-label: TooltipState.name-for(self.accessible-id, "", pt.tooltip);
+        KeyFocus { activate => { root.toggle-panel(); } }
         accessible-checkable: true; accessible-checked: root.panel-open;
         accessible-value: root.recording ? root.recording-time : "";
-        width: 24px;
+        width: max(24px, Theme.touch-min);
         Rectangle {
             y: 9px; height: parent.height - 18px;
             border-radius: Theme.r-control;
@@ -139,7 +155,9 @@ export global Gig {
 // GIG in the bar: a click switches the preset, the arrow opens its parts.
 component GigKey inherits Rectangle {
     in property <bool> narrow;
-    width: l.preferred-width + (root.narrow ? 26px : 32px);
+    // Touch: the arrow is a 44 px key of its own.
+    property <length> arrow-w: Theme.touch-mode ? 44px : 18px;
+    width: Theme.touch-mode ? max(44px, l.preferred-width + 24px) + 44px : l.preferred-width + (root.narrow ? 26px : 32px);
     Rectangle {
         y: Theme.s2; height: parent.height - 2 * Theme.s2;
         border-radius: Theme.r-control;
@@ -153,19 +171,23 @@ component GigKey inherits Rectangle {
         vertical-alignment: center;
     }
     Text {
-        x: parent.width - 16px; height: parent.height; text: "▾"; font-size: Theme.label; vertical-alignment: center;
+        x: parent.width - root.arrow-w / 2 - 4px; height: parent.height; text: "▾"; font-size: Theme.label; vertical-alignment: center;
         color: Theme.ink(true, open.pressed, open.has-hover, false, Gig.active);
     }
     tog := TipArea {
-        accessible-role: button; accessible-label: "topbar.gig"; accessible-checkable: true; accessible-checked: Gig.active;
-        width: parent.width - 18px; x: 0;
+        accessible-role: button; accessible-id: "topbar.gig"; accessible-checkable: true; accessible-checked: Gig.active;
+        accessible-label: TooltipState.name-for(self.accessible-id, @tr("GIG"), self.tooltip);
+        KeyFocus { activate => { Gig.act("toggle"); } }
+        width: parent.width - root.arrow-w; x: 0;
         tooltip: Gig.active ? @tr("Gig preset on: click to go back to your settings") : @tr("Gig preset: high contrast, colour-blind palette and a larger interface in one click");
         mouse-cursor: pointer;
         clicked => { Gig.act("toggle"); }
     }
     open := TipArea {
-        accessible-role: button; accessible-label: "topbar.gig.menu";
-        x: parent.width - 18px; width: 18px;
+        accessible-role: button; accessible-id: "topbar.gig.menu";
+        accessible-label: TooltipState.name-for(self.accessible-id, "", self.tooltip);
+        KeyFocus { activate => { pop.show(); } }
+        x: parent.width - root.arrow-w; width: root.arrow-w;
         tooltip: @tr("Gig preset: contrast, palette and interface scale");
         mouse-cursor: pointer;
         clicked => { pop.show(); }
@@ -192,22 +214,22 @@ component GigKey inherits Rectangle {
                     font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; wrap: word-wrap;
                 }
                 PlateButton {
-                    accessible-role: button; accessible-label: "topbar.gig.toggle"; accessible-checkable: true; accessible-checked: Gig.active;
+                    accessible-role: button; accessible-id: "topbar.gig.toggle"; accessible-checkable: true; accessible-checked: Gig.active;
                     label: Gig.active ? @tr("TURN GIG PRESET OFF") : @tr("TURN GIG PRESET ON");
                     selected: Gig.active;
                     clicked => { Gig.act("toggle"); }
                 }
                 HorizontalLayout {
                     spacing: Theme.key-gap;
-                    PlateButton { accessible-role: checkbox; accessible-label: "topbar.gig.contrast"; accessible-checkable: true; accessible-checked: Gig.contrast; horizontal-stretch: 1; compact: true; label: @tr("HIGH CONTRAST"); selected: Gig.contrast; clicked => { Gig.act("contrast"); } }
-                    PlateButton { accessible-role: checkbox; accessible-label: "topbar.gig.colorblind"; accessible-checkable: true; accessible-checked: Gig.colorblind; horizontal-stretch: 1; compact: true; label: @tr("COLOUR-BLIND"); selected: Gig.colorblind; clicked => { Gig.act("colorblind"); } }
+                    PlateButton { accessible-role: checkbox; accessible-id: "topbar.gig.contrast"; accessible-checkable: true; accessible-checked: Gig.contrast; horizontal-stretch: 1; compact: true; label: @tr("HIGH CONTRAST"); selected: Gig.contrast; clicked => { Gig.act("contrast"); } }
+                    PlateButton { accessible-role: checkbox; accessible-id: "topbar.gig.colorblind"; accessible-checkable: true; accessible-checked: Gig.colorblind; horizontal-stretch: 1; compact: true; label: @tr("COLOUR-BLIND"); selected: Gig.colorblind; clicked => { Gig.act("colorblind"); } }
                 }
                 HorizontalLayout {
                     spacing: Theme.key-gap;
                     Caps { text: @tr("SCALE"); vertical-alignment: center; }
                     Rectangle { width: Theme.s2; }
                     for s[i] in ["100%", "125%", "150%"]: PlateButton {
-                        accessible-role: button; accessible-label: "topbar.gig.scale." + i; compact: true; horizontal-stretch: 1;
+                        accessible-role: button; accessible-id: "topbar.gig.scale." + i; compact: true; horizontal-stretch: 1;
                         label: s; selected: Gig.scale == i;
                         clicked => { Gig.act("scale:" + i); }
                     }
@@ -218,7 +240,7 @@ component GigKey inherits Rectangle {
                     font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; wrap: word-wrap;
                 }
                 PlateButton {
-                    accessible-role: button; accessible-label: "topbar.gig.check";
+                    accessible-role: button; accessible-id: "topbar.gig.check";
                     label: @tr("RUN GIG CHECK"); command: "gig.check";
                     clicked => { pop.close(); GigCheck.run(); }
                 }
@@ -270,7 +292,9 @@ component ViewMenu inherits Rectangle {
         }
     }
     touch := TipArea {
-        accessible-role: combobox; accessible-label: "topbar.layout"; accessible-value: root.current;
+        accessible-role: combobox; accessible-id: "topbar.layout"; accessible-value: root.current;
+        accessible-label: TooltipState.name-for(self.accessible-id, "", self.tooltip);
+        KeyFocus { activate => { pop.show(); } }
         tooltip: @tr("Perform view: 2 or 4 decks, horizontal or vertical waveforms, Browse");
         mouse-cursor: pointer;
         clicked => { pop.show(); }
@@ -299,7 +323,7 @@ component ViewMenu inherits Rectangle {
                     { id: "4v", label: @tr("4 Decks · vertical") },
                     { id: "browse", label: @tr("Browse") },
                 ]: Rectangle {
-                    accessible-role: button; accessible-label: "topbar.layout.\{v.id}";
+                    accessible-role: button; accessible-id: "topbar.layout.\{v.id}";
                     accessible-checked: root.current == v.id;
                     height: 36px;
                     background: vi.has-hover ? Theme.plate-raised : transparent;
@@ -326,7 +350,7 @@ component ViewMenu inherits Rectangle {
                     padding-left: Theme.s2; padding-right: Theme.s2;
                     spacing: Theme.key-gap;
                     for l in [{ id: "simple", label: @tr("SIMPLE") }, { id: "standard", label: @tr("STANDARD") }, { id: "full", label: @tr("FULL") }]: PlateButton {
-                        accessible-role: button; accessible-label: "topbar.layout.level.\{l.id}";
+                        accessible-role: button; accessible-id: "topbar.layout.level.\{l.id}";
                         accessible-checkable: true; accessible-checked: DeckLayout.level == l.id;
                         compact: true; horizontal-stretch: 1;
                         label: l.label; selected: DeckLayout.level == l.id;
@@ -347,7 +371,7 @@ component ViewMenu inherits Rectangle {
                     padding-left: Theme.s2; padding-right: Theme.s2; padding-bottom: Theme.key-gap;
                     spacing: Theme.key-gap;
                     for g in group-row: PlateButton {
-                        accessible-role: checkbox; accessible-label: "topbar.layout.group.\{g.id}";
+                        accessible-role: checkbox; accessible-id: "topbar.layout.group.\{g.id}";
                         accessible-checkable: true; accessible-checked: g.on;
                         compact: true; horizontal-stretch: 1;
                         label: g.label; active: g.on;
@@ -366,7 +390,7 @@ component ViewMenu inherits Rectangle {
                     padding-left: Theme.s2; padding-right: Theme.s2;
                     spacing: Theme.key-gap;
                     Rectangle {
-                        accessible-role: button; accessible-label: "topbar.layout.saved.slot\{i + 1}";
+                        accessible-role: button; accessible-id: "topbar.layout.saved.slot\{i + 1}";
                         accessible-value: name; accessible-checked: DeckLayout.current == name;
                         horizontal-stretch: 1;
                         background: si.has-hover ? Theme.plate-raised : transparent;
@@ -379,7 +403,7 @@ component ViewMenu inherits Rectangle {
                         si := TipArea { tooltip: @tr("Use this layout"); mouse-cursor: pointer; clicked => { DeckLayout.apply(name); } }
                     }
                     Rectangle {
-                        accessible-role: button; accessible-label: "topbar.layout.saved.slot\{i + 1}.delete";
+                        accessible-role: button; accessible-id: "topbar.layout.saved.slot\{i + 1}.delete";
                         width: 26px;
                         background: sd.has-hover ? Theme.fault : transparent;
                         border-radius: Theme.r-control;
@@ -391,13 +415,13 @@ component ViewMenu inherits Rectangle {
                     padding-left: Theme.s2; padding-right: Theme.s2; padding-top: Theme.key-gap;
                     spacing: Theme.key-gap;
                     name-field := Field {
-                        accessible-role: text-input; accessible-label: "topbar.layout.save-name";
+                        accessible-role: text-input; accessible-id: "topbar.layout.save-name";
                         horizontal-stretch: 1;
                         placeholder: @tr("NAME");
                         accepted(t) => { if (t != "") { DeckLayout.save(t); self.text = ""; } }
                     }
                     PlateButton {
-                        accessible-role: button; accessible-label: "topbar.layout.save";
+                        accessible-role: button; accessible-id: "topbar.layout.save";
                         label: @tr("SAVE"); tone: Theme.live;
                         enabled: name-field.text != "";
                         tooltip: @tr("Save the deck layout and the groups shown under this name");
@@ -477,7 +501,7 @@ export component TopBar inherits Rectangle {
         // Test / accessibility hook: the work-mode tab group (no visuals, no
         // input; it only spans the tabs).
         Rectangle {
-            accessible-label: "topbar.mode"; accessible-role: tab-list;
+            accessible-id: "topbar.mode"; accessible-role: tab-list;
             accessible-value: root.mode;
             x: prep.x; y: prep.y;
             width: light.x + light.width - prep.x; height: prep.height;
@@ -505,17 +529,17 @@ export component TopBar inherits Rectangle {
             }
             prep := ModeTab {
                 narrow: root.narrow;
-                accessible-label: "topbar.mode.prepare"; accessible-role: tab;
+                accessible-id: "topbar.mode.prepare"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
                 label: @tr("PREPARE"); guide: "topbar.mode.prepare"; tooltip: @tr("Prepare: library, beatgrids, cues and sticks"); command: "mode.prepare"; current: root.mode == "prepare"; clicked => { root.set-mode("prepare"); } }
             perf := ModeTab {
                 narrow: root.narrow;
-                accessible-label: "topbar.mode.perform"; accessible-role: tab;
+                accessible-id: "topbar.mode.perform"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
                 label: @tr("PERFORM"); guide: "topbar.mode.perform"; tooltip: @tr("Perform: decks and mixer"); command: "mode.perform"; current: root.mode == "perform"; clicked => { root.set-mode("perform"); } }
             light := ModeTab {
                 narrow: root.narrow;
-                accessible-label: "topbar.mode.lighting"; accessible-role: tab;
+                accessible-id: "topbar.mode.lighting"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
                 label: @tr("LIGHTING"); tooltip: @tr("Lighting: DMX rig and light show"); command: "mode.lighting"; current: root.mode == "lighting"; clicked => { root.set-mode("lighting"); } }
             // ── Second zone: what this mode shows ──
@@ -528,7 +552,7 @@ export component TopBar inherits Rectangle {
             if root.mode == "perform" && !root.kiosk: Rectangle { width: Theme.s2; }
             if root.mode == "prepare" && !root.kiosk: PanelToggle {
                 narrow: root.narrow;
-                accessible-label: "topbar.layout"; accessible-role: button;
+                accessible-id: "topbar.layout"; accessible-role: button;
                 accessible-value: root.prepare-layout;
                 label: root.prepare-layout == "browser" ? @tr("FULL BROWSER") : root.prepare-layout == "two" ? @tr("2 PLAYERS") : root.prepare-layout == "dual" ? @tr("DUAL") : root.prepare-layout == "simple" ? @tr("SIMPLE") : @tr("PLAYER");
                 on: root.prepare-layout != "player";
@@ -537,7 +561,7 @@ export component TopBar inherits Rectangle {
             }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
-                accessible-label: "topbar.club"; accessible-role: button;
+                accessible-id: "topbar.club"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: self.on;
                 label: "CLUB"; on: Club.enabled;
                 tooltip: Club.enabled ? @tr("Back to the full deck controls") : @tr("Club mode: player screens and the club workflow");
@@ -547,7 +571,7 @@ export component TopBar inherits Rectangle {
             if root.show-panels: Rectangle { width: Theme.key-gap; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
-                accessible-label: "topbar.toggle.light"; accessible-role: button;
+                accessible-id: "topbar.toggle.light"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: self.on;
                 label: root.narrow ? @tr("STRIP") : @tr("LIGHT STRIP"); on: Lighting.panel;
                 tooltip: Lighting.panel ? @tr("Hide the lighting strip") : @tr("Show the lighting strip");
@@ -562,7 +586,7 @@ export component TopBar inherits Rectangle {
             if root.show-panels: Rectangle { width: Theme.key-gap; }
             if root.show-panels && DeckLayout.fx: PanelToggle {
                 narrow: root.narrow;
-                accessible-label: "topbar.toggle.fx"; accessible-role: button;
+                accessible-id: "topbar.toggle.fx"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: self.on;
                 label: "FX"; on: root.fx-panel;
                 tooltip: root.fx-panel ? @tr("Hide the Tempo FX panel") : @tr("Show the Tempo FX panel");
@@ -572,7 +596,7 @@ export component TopBar inherits Rectangle {
             if root.show-panels && DeckLayout.fx: Rectangle { width: Theme.key-gap; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
-                accessible-label: "topbar.toggle.mix-preview"; accessible-role: button;
+                accessible-id: "topbar.toggle.mix-preview"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: self.on;
                 label: @tr("PREVIEW"); on: root.mix-preview-panel;
                 tooltip: root.mix-preview-panel ? @tr("Hide Mix Preview") : @tr("Mix Preview: set where the next track comes in and the current one goes out");
@@ -582,7 +606,7 @@ export component TopBar inherits Rectangle {
             if root.show-panels: Rectangle { width: Theme.key-gap; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
-                accessible-label: "topbar.toggle.sampler"; accessible-role: button;
+                accessible-id: "topbar.toggle.sampler"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: self.on;
                 label: @tr("SAMPLER"); on: root.sampler-panel;
                 tooltip: root.sampler-panel ? @tr("Hide the sampler panel") : @tr("Show the sampler panel");
@@ -592,7 +616,7 @@ export component TopBar inherits Rectangle {
             if root.show-panels: Rectangle { width: Theme.key-gap; }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;
-                accessible-label: "topbar.toggle.mixer"; accessible-role: button;
+                accessible-id: "topbar.toggle.mixer"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: self.on;
                 label: @tr("MIXER"); on: root.mixer-panel;
                 tooltip: root.mixer-panel ? @tr("Hide the mixer: the decks meet in the centre") : @tr("Show the mixer between the decks");
@@ -619,7 +643,7 @@ export component TopBar inherits Rectangle {
                 min-width: root.mode == "perform" ? status-probe.preferred-width : 0px;
                 status-probe := Caps { visible: false; text: @tr("MASTER {} BPM", "000.0"); }
                 status-text := Caps {
-                    accessible-label: "topbar.status"; accessible-role: text; accessible-value: root.status;
+                    accessible-id: "topbar.status"; accessible-role: text; accessible-value: root.status;
                     width: parent.width; height: parent.height;
                     text: root.status; vertical-alignment: center; overflow: elide;
                 }
@@ -636,7 +660,7 @@ export component TopBar inherits Rectangle {
             }
             // Controller state: a dot that lights while a MIDI controller is connected.
             Rectangle {
-                accessible-label: "topbar.status.midi"; accessible-role: text;
+                accessible-id: "topbar.status.midi"; accessible-role: text;
                 accessible-value: root.midi-device == "" ? "none" : root.midi-device;
                 width: root.narrow ? 20px : 66px;
                 Rectangle {
@@ -655,8 +679,10 @@ export component TopBar inherits Rectangle {
             // Appearance: moon (dark), sun (light), half disc (follow system);
             // a click moves on to the next mode.
             Rectangle {
-                accessible-label: "topbar.appearance"; accessible-role: button;
-                width: root.narrow ? 28px : 36px;
+                accessible-id: "topbar.appearance"; accessible-role: button;
+                accessible-label: TooltipState.name-for(self.accessible-id, "", at.tooltip);
+                KeyFocus { activate => { root.cycle-appearance(); } }
+                width: max(Theme.touch-min, root.narrow ? 28px : 36px);
                 Rectangle {
                     y: 8px; height: parent.height - 16px;
                     background: at.has-hover ? Theme.plate : transparent;
@@ -674,8 +700,10 @@ export component TopBar inherits Rectangle {
             }
             // Preferences (⌘, / Ctrl+,).
             Rectangle {
-                accessible-label: "topbar.settings"; accessible-role: button;
-                width: root.narrow ? 28px : 36px;
+                accessible-id: "topbar.settings"; accessible-role: button;
+                accessible-label: TooltipState.name-for(self.accessible-id, "", gt.tooltip);
+                KeyFocus { activate => { root.open-preferences(); } }
+                width: max(Theme.touch-min, root.narrow ? 28px : 36px);
                 Rectangle {
                     y: 8px; height: parent.height - 16px;
                     background: gt.has-hover ? Theme.plate : transparent;
@@ -683,10 +711,31 @@ export component TopBar inherits Rectangle {
                 Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "gear"; tone: gt.has-hover ? Theme.bone : Theme.bone-2; }
                 gt := TipArea { tooltip: @tr("Preferences"); command: "prefs.open"; mouse-cursor: pointer; clicked => { root.open-preferences(); } }
             }
+            // Help: names every control on screen (F12 or ?).
+            Rectangle {
+                accessible-id: "topbar.help"; accessible-role: button;
+                accessible-label: TooltipState.name-for(self.accessible-id, "", ht.tooltip);
+                accessible-checkable: true; accessible-checked: Help.on;
+                KeyFocus { activate => { Help.toggle(); } }
+                width: max(Theme.touch-min, root.narrow ? 28px : 36px);
+                Rectangle {
+                    y: 8px; height: parent.height - 16px;
+                    background: Help.on ? Theme.bone : ht.has-hover ? Theme.plate : transparent;
+                    border-radius: Theme.r-control;
+                }
+                Text {
+                    text: "?"; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+                    color: Help.on ? Theme.ground : ht.has-hover ? Theme.bone : Theme.bone-2;
+                    horizontal-alignment: center; vertical-alignment: center;
+                }
+                ht := TipArea { tooltip: @tr("Help: name every control on screen"); command: "help.overlay"; mouse-cursor: pointer; clicked => { Help.toggle(); } }
+            }
             Rectangle { width: Theme.s1; }
             // Editing happens in Prepare: nothing to undo elsewhere.
             if root.undo-label != "" && root.mode == "prepare": Rectangle {
-                accessible-label: "topbar.undo"; accessible-role: button; accessible-value: root.undo-label;
+                accessible-id: "topbar.undo"; accessible-role: button; accessible-value: root.undo-label;
+                accessible-label: TooltipState.name-for(self.accessible-id, @tr("UNDO"), @tr("Undo the last change"));
+                KeyFocus { activate => { root.undo(); } }
                 width: u.preferred-width + 24px;
                 u := Caps { text: root.narrow ? @tr("UNDO") : @tr("UNDO  {}  ⌘Z", root.undo-label); vertical-alignment: center; height: parent.height; }
                 TipArea { tooltip: @tr("Undo the last change"); command: "library.undo"; mouse-cursor: pointer; clicked => { root.undo(); } }
@@ -694,7 +743,7 @@ export component TopBar inherits Rectangle {
             Rectangle { width: Theme.s2; }
             // Master out: level meter, volume and the time of day.
             if !root.kiosk: Rectangle {
-                accessible-label: "topbar.master-meter"; accessible-role: progress-indicator;
+                accessible-id: "topbar.master-meter"; accessible-role: progress-indicator;
                 accessible-value: Math.round(clamp(root.master-meter, 0, 1) * 100) + "%";
                 width: 46px;
                 Rectangle { x: 0; y: (parent.height - 4px) / 2; width: parent.width; height: 4px; background: Theme.plate; }
@@ -705,7 +754,7 @@ export component TopBar inherits Rectangle {
                 }
                 // Peak hold: a 2px tick at the highest recent peak.
                 if root.master-hold > 0.01: Rectangle {
-                    accessible-role: image; accessible-label: "topbar.master-hold"; accessible-value: Math.round(clamp(root.master-hold, 0, 1) * 100);
+                    accessible-role: image; accessible-id: "topbar.master-hold"; accessible-value: Math.round(clamp(root.master-hold, 0, 1) * 100);
                     x: (parent.width - 2px) * clamp(root.master-hold, 0, 1); y: (parent.height - 8px) / 2; width: 2px; height: 8px;
                     background: root.master-clip || root.master-hold > 0.99 ? Theme.fault : root.master-hold > 0.8 ? Theme.attention : Theme.bone;
                 }
@@ -715,7 +764,7 @@ export component TopBar inherits Rectangle {
             if !root.kiosk: VerticalLayout {
                 alignment: center;
                 Knob {
-                    accessible-label: "topbar.master-volume"; accessible-role: slider;
+                    accessible-id: "topbar.master-volume"; accessible-role: slider;
                     accessible-value: Math.round(root.master-level * 100) + "%";
                     label: ""; size: 24px; minimum: 0; maximum: 1; default-value: 1;
                     value: root.master-level; tone: Theme.attention;
@@ -725,7 +774,7 @@ export component TopBar inherits Rectangle {
             }
             if !root.kiosk: Rectangle { width: Theme.s3; }
             Text {
-                accessible-label: "topbar.clock"; accessible-role: text; accessible-value: self.text;
+                accessible-id: "topbar.clock"; accessible-role: text; accessible-value: self.text;
                 text: root.clock;
                 font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
                 color: Theme.bone-2; vertical-alignment: center;
@@ -739,7 +788,7 @@ export component TopBar inherits Rectangle {
         spacing: Theme.s1;
         // Work mode: one key; the list opens below it.
         Rectangle {
-            accessible-label: "topbar.mode"; accessible-role: combobox; accessible-value: root.mode;
+            accessible-id: "topbar.mode"; accessible-role: combobox; accessible-value: root.mode;
             width: max(84px, mk.preferred-width + 20px);
             background: Theme.bone;
             mk := Text { text: root.mode == "prepare" ? @tr("PREPARE") : root.mode == "lighting" ? @tr("LIGHTING") : @tr("PERFORM"); font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px; color: Theme.ground; }
@@ -768,7 +817,7 @@ export component TopBar inherits Rectangle {
             chose(v) => { root.set-perform-view(v); }
         }
         if root.show-panels: PanelToggle {
-            accessible-label: "topbar.toggle.fx"; accessible-role: button;
+            accessible-id: "topbar.toggle.fx"; accessible-role: button;
             accessible-checkable: true; accessible-checked: self.on;
             narrow: true; min-w: 44px;
             label: "FX"; on: root.fx-panel;
@@ -776,7 +825,7 @@ export component TopBar inherits Rectangle {
             clicked => { root.toggle-fx-panel(); }
         }
         if root.show-panels: PanelToggle {
-            accessible-label: "topbar.toggle.mix-preview"; accessible-role: button;
+            accessible-id: "topbar.toggle.mix-preview"; accessible-role: button;
             accessible-checkable: true; accessible-checked: self.on;
             narrow: true; min-w: 44px;
             label: "PREV"; on: root.mix-preview-panel;
@@ -784,7 +833,7 @@ export component TopBar inherits Rectangle {
             clicked => { root.toggle-mix-preview-panel(); }
         }
         if root.show-panels: PanelToggle {
-            accessible-label: "topbar.toggle.sampler"; accessible-role: button;
+            accessible-id: "topbar.toggle.sampler"; accessible-role: button;
             accessible-checkable: true; accessible-checked: self.on;
             narrow: true; min-w: 44px;
             label: "SMPL"; on: root.sampler-panel;
@@ -793,14 +842,14 @@ export component TopBar inherits Rectangle {
         }
         // The mixer is on the controller: the switch stays, dimmed.
         if root.show-panels: PanelToggle {
-            accessible-label: "topbar.toggle.mixer"; accessible-role: button;
+            accessible-id: "topbar.toggle.mixer"; accessible-role: button;
             accessible-checkable: true; accessible-checked: self.on;
             narrow: true; min-w: 44px;
             label: "MIX"; on: false; enabled: false;
             tooltip: @tr("The mixer is on the controller");
         }
         PanelToggle {
-            accessible-label: "topbar.toggle.rec"; accessible-role: button;
+            accessible-id: "topbar.toggle.rec"; accessible-role: button;
             accessible-checkable: true; accessible-checked: self.on;
             accessible-value: root.recording ? root.recording-time : "";
             narrow: true; min-w: 44px;
@@ -811,7 +860,7 @@ export component TopBar inherits Rectangle {
             clicked => { root.toggle-rec-panel(); }
         }
         Rectangle {
-            accessible-label: "topbar.status.midi"; accessible-role: text;
+            accessible-id: "topbar.status.midi"; accessible-role: text;
             accessible-value: root.midi-device == "" ? "none" : root.midi-device;
             width: kmt.preferred-width + 22px;
             Rectangle {
@@ -823,14 +872,30 @@ export component TopBar inherits Rectangle {
         }
         Caps { text: root.status; vertical-alignment: center; horizontal-stretch: 1; min-width: 0px; overflow: elide; }
         Rectangle {
-            accessible-label: "topbar.settings"; accessible-role: button;
+            accessible-id: "topbar.settings"; accessible-role: button;
+            accessible-label: TooltipState.name-for(self.accessible-id, "", kg.tooltip);
+            KeyFocus { activate => { root.open-preferences(); } }
             width: 44px;
             background: kg.has-hover ? Theme.plate : transparent;
             Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "gear"; tone: kg.has-hover ? Theme.bone : Theme.bone-2; }
             kg := TipArea { tooltip: @tr("Preferences"); mouse-cursor: pointer; clicked => { root.open-preferences(); } }
         }
         Rectangle {
-            accessible-label: "topbar.master-meter"; accessible-role: progress-indicator;
+            accessible-id: "topbar.help"; accessible-role: button;
+            accessible-label: TooltipState.name-for(self.accessible-id, "", kh.tooltip);
+            accessible-checkable: true; accessible-checked: Help.on;
+            KeyFocus { activate => { Help.toggle(); } }
+            width: 44px;
+            background: Help.on ? Theme.bone : kh.has-hover ? Theme.plate : transparent;
+            Text {
+                text: "?"; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+                color: Help.on ? Theme.ground : kh.has-hover ? Theme.bone : Theme.bone-2;
+                horizontal-alignment: center; vertical-alignment: center;
+            }
+            kh := TipArea { tooltip: @tr("Help: name every control on screen"); mouse-cursor: pointer; clicked => { Help.toggle(); } }
+        }
+        Rectangle {
+            accessible-id: "topbar.master-meter"; accessible-role: progress-indicator;
             accessible-value: Math.round(clamp(root.master-meter, 0, 1) * 100) + "%";
             width: 40px;
             Rectangle { x: 0; y: (parent.height - 4px) / 2; width: parent.width; height: 4px; background: Theme.plate; }
@@ -841,13 +906,13 @@ export component TopBar inherits Rectangle {
             }
             // Peak hold: a 2px tick at the highest recent peak.
             if root.master-hold > 0.01: Rectangle {
-                accessible-role: image; accessible-label: "topbar.master-hold"; accessible-value: Math.round(clamp(root.master-hold, 0, 1) * 100);
+                accessible-role: image; accessible-id: "topbar.master-hold"; accessible-value: Math.round(clamp(root.master-hold, 0, 1) * 100);
                 x: (parent.width - 2px) * clamp(root.master-hold, 0, 1); y: (parent.height - 8px) / 2; width: 2px; height: 8px;
                 background: root.master-clip || root.master-hold > 0.99 ? Theme.fault : root.master-hold > 0.8 ? Theme.attention : Theme.bone;
             }
         }
         Text {
-            accessible-label: "topbar.clock"; accessible-role: text; accessible-value: self.text;
+            accessible-id: "topbar.clock"; accessible-role: text; accessible-value: self.text;
             text: root.clock;
             font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
             color: Theme.bone-2; vertical-alignment: center;
@@ -866,7 +931,7 @@ export component TopBar inherits Rectangle {
                 MenuItem { title: root.recording ? @tr("Stop recording") : @tr("Record the master output"); activated => { root.toggle-recording(); } }
             }
             Rectangle {
-                accessible-label: "topbar.more"; accessible-role: button;
+                accessible-id: "topbar.more"; accessible-role: button;
                 background: km.has-hover ? Theme.plate : transparent;
                 Text { text: "⋯"; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone-2; }
                 km := TipArea { tooltip: @tr("More"); mouse-cursor: pointer; clicked => { more.show({ x: 0, y: self.height }); } }

@@ -2,7 +2,7 @@
 title: Einstellungen und Tastenkürzel
 description: Audiogeräte, Sprache und Darstellung, Wellenformen, Deck-Standards, alle Tastenkürzel und wie du sie änderst.
 keywords: [einstellungen, optionen, audio, ausgabegerät, puffer, abtastrate, sprache, deutsch, englisch, theme, darstellung, dunkel, hell, farbenblind, kontrast, skalierung, zoom, wellenform, tastenkürzel, kürzel, tastatur, tasten, belegen, belegung, shortcut]
-features: [analysis-bpm-ranges, prefs-window, prefs-live-preview, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends, shell-motion-language]
+features: [analysis-bpm-ranges, prefs-window, prefs-live-preview, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends, shell-motion-language, shell-keyboard-focus, shell-screen-reader-names, shell-no-hue-alone]
 ---
 
 Öffne die **Einstellungen** mit dem Zahnrad oben, oder `⌘,` auf dem Mac und `Strg+,` auf Windows und Linux. `Esc` schließt das Fenster. **EINSTELLUNG FINDEN** oben durchsucht alle Seiten.
@@ -28,6 +28,7 @@ Die Seiten sehen aus wie der Rest der App: Jeder Abschnitt beginnt auf einem eig
 - **Palette für Farbenblinde** und **Hoher Kontrast (helles Licht)** gelten sofort.
 - **Bewegung reduzieren** schaltet jede Animation ab: Tasten, Schalter, Bereiche und die Modus-Reiter wechseln sofort, und das Pulsieren einer scharfen Taste, der Ladestreifen und die Stroboskop-Vorschau stehen still. Die Einstellung ist zunächst aus, weil sich die Systemeinstellung nicht auslesen lässt. Pegel, Wellenformen und Abspielmarken animieren nie: Sie zeigen den Klang immer so, wie er ist.
 - **Ruhige Wellenform** (aus in der Voreinstellung) zeichnet auf den großen Wellenformen eine scharfe, dünne Abspielmarke, zarte Beatlinien und sanftere Bandfarben, für lange Sets oder helle Räume. Siehe [Perform](perform-basics.md#ruhige-wellenform).
+- **Touch** schaltet das Touch-Layout ein: jedes Bedienelement der Decks, des Mixers, der Pads, der Effekte, des Browsers und des Lichts mindestens 44 px. Siehe [Perform](perform-basics.md#touch-layout).
 - **Waveform-Zoom** legt fest, wie viele Sekunden eine Wellenform beim Öffnen eines Tracks zeigt; das Mausrad zoomt weiterhin.
 - Unter **Browser** stellst du **Schriftgröße** und **Zeilenabstand** der Liste ein.
 
@@ -64,3 +65,13 @@ Die vollständige Tabelle, pro Deck und Modus, steht auf der Seite [Keyboard sho
 ## Erweitert
 
 Backups, der Speicherort der Bibliothek, Zusammenführen und Neu zuordnen, und die Update-Prüfung. Updates lesen nur die öffentliche Release-Liste auf GitHub; es wird nichts über dich gesendet, geprüft wird nicht, während in Perform ein Deck spielt, und ein Update unterbricht nie eine Performance.
+
+## Barrierefreiheit
+
+- **Tastatur:** `Tab` und `⇧Tab` erreichen jedes Bedienelement in der Reihenfolge des Bildschirms, das fokussierte trägt einen hellen Ring. Return oder Leertaste drücken eine Taste; die Pfeiltasten drehen einen Regler oder bewegen einen Fader in Schritten von fünf Prozent, Return setzt einen Regler auf seinen Standardwert. `Esc` gibt die Tasten an das Fenster zurück.
+- **Screenreader:** Jedes Bedienelement hat einen lesbaren Namen: den Namen der Aktion aus der Tastenbelegung, wo es eine gibt („Deck 1: Play / Pause“), sonst seine Beschriftung oder den Anfang seines Tooltips, mit dem Deck, Kanal oder der Effekt-Einheit, zu der es gehört. Seine Beschreibung ist der Tooltip mit dem Kurzbefehl. Die Namen folgen der Sprache der App.
+- **Hilfe:** `F12` oder die Taste **?** benennt jedes Bedienelement auf dem Bildschirm ([Perform](perform-basics.md#hilfe-zu-jedem-bedienelement)).
+- **Farbe steht nie allein:** Ein Zustand, der in Farbe gezeigt wird, hat auch eine Form oder ein Wort: Linienformen (durchgezogen, gestrichelt, halb, durchgestrichen) für Tonart-Beziehungen, Sticks, Übergänge und die Audiolinie, Wörter wie **CLIP**, **KILL**, IN SYNC und **GESPERRT**, die Decknummer neben jeder Deckfarbe und der Buchstabe neben jeder Cue-Farbe, und der Anfangsbuchstabe jeder Phrase, wo ihr Name nicht passt.
+- **Touch** und **Hoher Kontrast (helles Licht)** stehen auf der Seite **Ansicht**.
+
+Diese Teile wurden nur mit den eigenen Tests der App geprüft; mit einem echten Screenreader oder einem echten Touchscreen wurden sie noch nicht ausprobiert.

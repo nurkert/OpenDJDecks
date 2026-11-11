@@ -2,7 +2,7 @@
 // talkover, a level line and the input device. State in the `Mic` global.
 
 import { Theme } from "tokens.slint";
-import { Caps, Knob, TipArea } from "controls.slint";
+import { Caps, Knob, TipArea, TooltipState, KeyFocus } from "controls.slint";
 
 export global Mic {
     in property <bool> on;
@@ -20,6 +20,10 @@ export global Mic {
 }
 
 component Chip inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: button;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-description: root.tooltip;
     in property <string> label;
     in property <string> tooltip;
     in property <bool> on;
@@ -36,6 +40,7 @@ component Chip inherits Rectangle {
         horizontal-alignment: center; vertical-alignment: center;
     }
     ta := TipArea { tooltip: root.tooltip; mouse-cursor: pointer; clicked => { root.clicked(); } }
+    KeyFocus { activate => { root.clicked(); } }
 }
 
 export component MicControls inherits HorizontalLayout {
@@ -44,7 +49,7 @@ export component MicControls inherits HorizontalLayout {
     VerticalLayout {
         alignment: center;
         Chip {
-            accessible-label: "global.mic.on"; accessible-role: checkbox; accessible-checkable: true; accessible-checked: Mic.on;
+            accessible-id: "global.mic.on"; accessible-role: checkbox; accessible-checkable: true; accessible-checked: Mic.on;
             label: "MIC"; on: Mic.on;
             tooltip: Mic.error != "" ? Mic.error : Mic.device != "" ? @tr("Microphone / aux input: {}", Mic.device) : @tr("Microphone / aux input (system default)");
             clicked => { Mic.toggle(); }
@@ -53,7 +58,7 @@ export component MicControls inherits HorizontalLayout {
     VerticalLayout {
         alignment: center;
         Knob {
-            accessible-role: slider; accessible-label: "global.mic.level"; accessible-value: Mic.level;
+            accessible-role: slider; accessible-id: "global.mic.level"; accessible-value: Mic.level;
             label: ""; size: 20px; minimum: 0; maximum: 1.5; default-value: 0.8; value: Mic.level;
             changed(v) => { Mic.set-level(v); }
         }
@@ -73,7 +78,7 @@ export component MicControls inherits HorizontalLayout {
     VerticalLayout {
         alignment: center;
         Chip {
-            accessible-label: "global.mic.talkover"; accessible-role: checkbox; accessible-checkable: true; accessible-checked: Mic.talkover;
+            accessible-id: "global.mic.talkover"; accessible-role: checkbox; accessible-checkable: true; accessible-checked: Mic.talkover;
             label: Mic.ducking ? @tr("TALK ▼") : @tr("TALK"); on: Mic.talkover; tone: Theme.attention;
             tooltip: @tr("Talkover: the music ducks while you speak");
             clicked => { Mic.toggle-talkover(); }
@@ -82,7 +87,7 @@ export component MicControls inherits HorizontalLayout {
     VerticalLayout {
         alignment: center;
         Chip {
-            accessible-label: "global.mic.device"; accessible-role: button;
+            accessible-id: "global.mic.device"; accessible-role: button;
             label: @tr("INPUT"); tooltip: @tr("Next input device");
             clicked => { Mic.next-device(); }
         }

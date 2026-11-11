@@ -218,7 +218,7 @@ pub(crate) fn refresh(app: &App) {
         KIOSK_COLUMNS.iter().map(|s| s.to_string()).collect()
     } else {
         ids.into_iter()
-            .filter(|c| !(st.config.kiosk && c == "artwork"))
+            .filter(|c| !((st.config.kiosk || st.settings.view.touch_layout) && c == "artwork"))
             .collect()
     };
     app.ui.set_key_sort(st.settings.browser.key_sort.clone().into());

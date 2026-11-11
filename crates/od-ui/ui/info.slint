@@ -3,7 +3,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, Field, TipArea } from "controls.slint";
+import { Caps, Field, TipArea, TooltipState, KeyFocus } from "controls.slint";
 
 export struct TrackInfo {
     has-track: bool,
@@ -45,11 +45,11 @@ component InfoField inherits VerticalLayout {
     spacing: Theme.key-gap;
     Caps { text: root.label; font-size: Theme.label; }
     if root.editable: Field {
-        accessible-label: root.field; accessible-role: text-input; accessible-value: self.text;
+        accessible-id: root.field; accessible-role: text-input; accessible-value: self.text;
         height: 28px; text: root.value; accepted(t) => { root.save(t); }
     }
     if !root.editable: Text {
-        accessible-label: root.field; accessible-role: text; accessible-value: root.value;
+        accessible-id: root.field; accessible-role: text; accessible-value: root.value;
         text: root.value == "" ? "—" : root.value;
         font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
         wrap: root.path ? TextWrap.char-wrap : TextWrap.word-wrap;
@@ -60,6 +60,8 @@ component InfoField inherits VerticalLayout {
 
 // A tab of the info panel: its legend, lit while open.
 component InfoTab inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, "");
     in property <string> label;
     in property <bool> current;
     callback clicked();
@@ -91,9 +93,9 @@ export component InfoPanel inherits Rectangle {
         HorizontalLayout {
             padding-left: Theme.s2; padding-right: Theme.s2; padding-top: Theme.s2;
             spacing: Theme.key-gap;
-            InfoTab { accessible-label: "info.tab.summary"; label: @tr("SUMMARY"); current: root.tab == "summary"; clicked => { root.tab = "summary"; } }
-            InfoTab { accessible-label: "info.tab.info"; label: "INFO"; current: root.tab == "info"; clicked => { root.tab = "info"; } }
-            InfoTab { accessible-label: "info.tab.artwork"; label: @tr("ARTWORK"); current: root.tab == "artwork"; clicked => { root.tab = "artwork"; } }
+            InfoTab { accessible-id: "info.tab.summary"; label: @tr("SUMMARY"); current: root.tab == "summary"; clicked => { root.tab = "summary"; } }
+            InfoTab { accessible-id: "info.tab.info"; label: "INFO"; current: root.tab == "info"; clicked => { root.tab = "info"; } }
+            InfoTab { accessible-id: "info.tab.artwork"; label: @tr("ARTWORK"); current: root.tab == "artwork"; clicked => { root.tab = "artwork"; } }
         }
         HLine { tone: Theme.rule; }
         if !root.info.has-track: Text {
@@ -148,7 +150,7 @@ export component InfoPanel inherits Rectangle {
             padding: Theme.s4;
             alignment: start;
             if root.info.has-artwork: Image {
-                accessible-role: image; accessible-label: "info.artwork";
+                accessible-role: image; accessible-id: "info.artwork";
                 width: 240px; height: 240px;
                 source: root.info.artwork; image-fit: cover;
             }

@@ -2,7 +2,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine, ProgressLine } from "lines.slint";
-import { Caps, PlateButton } from "controls.slint";
+import { Caps, PlateButton, KeyFocus, TooltipState } from "controls.slint";
 import { DeviceRow, VolumeRow } from "structs.slint";
 
 // A format the stick carries, as a labelled badge ([28], [48]).
@@ -32,7 +32,7 @@ export component DeviceLine inherits Rectangle {
     callback open();
     callback check();
     accessible-role: list-item;
-    accessible-label: "devices.stick\{root.device.id}";
+    accessible-id: "devices.stick\{root.device.id}";
     accessible-value: root.device.name + " · " + root.state-text;
     accessible-item-selectable: true;
     accessible-item-selected: root.selected;
@@ -93,7 +93,7 @@ export component DeviceLine inherits Rectangle {
         x: root.text-x; y: 33px; width: root.width - root.text-x - Theme.s2; height: 18px;
         spacing: Theme.s2;
         Text {
-            accessible-role: text; accessible-label: "devices.state\{root.device.id}"; accessible-value: self.text;
+            accessible-role: text; accessible-id: "devices.state\{root.device.id}"; accessible-value: self.text;
             horizontal-stretch: 0;
             text: root.state-text;
             font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1.6px;
@@ -112,9 +112,9 @@ export component DeviceLine inherits Rectangle {
     HorizontalLayout {
         x: root.text-x; y: 56px; width: root.width - root.text-x - Theme.s2; height: 18px;
         spacing: Theme.s1;
-        if root.device.club: FormatBadge { accessible-role: text; accessible-label: "devices.badge.club\{root.device.id}"; accessible-value: self.text; text: @tr("CLUB USB"); }
+        if root.device.club: FormatBadge { accessible-role: text; accessible-id: "devices.badge.club\{root.device.id}"; accessible-value: self.text; text: @tr("CLUB USB"); }
         if root.device.club && root.device.compat: FormatBadge { text: "WAV"; }
-        if root.device.native: FormatBadge { accessible-role: text; accessible-label: "devices.badge.native\{root.device.id}"; accessible-value: self.text; text: "OPENDJDECKS"; }
+        if root.device.native: FormatBadge { accessible-role: text; accessible-id: "devices.badge.native\{root.device.id}"; accessible-value: self.text; text: "OPENDJDECKS"; }
         Rectangle { width: Theme.s1; }
         Caps { min-width: 0px; horizontal-stretch: 1; text: root.device.space; overflow: elide; vertical-alignment: center; }
     }
@@ -128,17 +128,17 @@ export component DeviceLine inherits Rectangle {
         width: self.preferred-width;
         spacing: Theme.key-gap;
         if root.device.connected && root.device.state != "syncing": PlateButton {
-            accessible-role: button; accessible-label: "devices.sync\{root.device.id}";
+            accessible-role: button; accessible-id: "devices.sync\{root.device.id}";
             compact: true; label: @tr("SYNC"); tone: Theme.live; tooltip: @tr("Sync this stick now"); command: "devices.sync";
             clicked => { root.sync(); }
         }
         if root.device.connected && root.device.state != "syncing": PlateButton {
-            accessible-role: button; accessible-label: "devices.check\{root.device.id}";
+            accessible-role: button; accessible-id: "devices.check\{root.device.id}";
             compact: true; label: @tr("CHECK"); tone: Theme.attention; tooltip: @tr("Read the stick back and compare every track, cue, grid and playlist with the library");
             clicked => { root.check(); }
         }
         if root.device.connected: PlateButton {
-            accessible-role: button; accessible-label: "devices.eject\{root.device.id}";
+            accessible-role: button; accessible-id: "devices.eject\{root.device.id}";
             compact: true; label: @tr("EJECT"); tone: Theme.bone-3; tooltip: @tr("Eject this stick"); command: "devices.eject";
             clicked => { root.eject(); }
         }
@@ -239,7 +239,7 @@ component CheckMark inherits HorizontalLayout {
 
 export component StickCheckPanel inherits VerticalLayout {
     accessible-role: groupbox;
-    accessible-label: "devices.check-panel";
+    accessible-id: "devices.check-panel";
     accessible-value: StickCheck.running ? "running" : StickCheck.ready ? "ready" : "not ready";
     spacing: Theme.s2;
     HorizontalLayout {
@@ -256,7 +256,7 @@ export component StickCheckPanel inherits VerticalLayout {
         VerticalLayout {
             horizontal-stretch: 1; alignment: center; spacing: Theme.key-gap;
             Text {
-                accessible-role: text; accessible-label: "devices.check-verdict"; accessible-value: self.text;
+                accessible-role: text; accessible-id: "devices.check-verdict"; accessible-value: self.text;
                 text: StickCheck.running ? @tr("Checking the stick…") : StickCheck.ready ? @tr("Ready") : @tr("Not ready");
                 font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
                 color: !StickCheck.running && !StickCheck.ready ? Theme.fault : Theme.bone;
@@ -268,11 +268,11 @@ export component StickCheckPanel inherits VerticalLayout {
         }
         VerticalLayout {
             alignment: center; horizontal-stretch: 0;
-            PlateButton { accessible-role: button; accessible-label: "devices.check-close"; compact: true; label: @tr("CLOSE"); clicked => { StickCheck.close(); } }
+            PlateButton { accessible-role: button; accessible-id: "devices.check-close"; compact: true; label: @tr("CLOSE"); clicked => { StickCheck.close(); } }
         }
     }
     if StickCheck.problems != "": Text {
-        accessible-role: text; accessible-label: "devices.check-problems"; accessible-value: self.text;
+        accessible-role: text; accessible-id: "devices.check-problems"; accessible-value: self.text;
         text: StickCheck.problems; wrap: word-wrap;
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.fault;
     }
@@ -284,7 +284,7 @@ export component StickCheckPanel inherits VerticalLayout {
                 alignment: start;
                 for r in StickCheck.rows: HorizontalLayout {
                     accessible-role: text;
-                    accessible-label: "devices.check-row";
+                    accessible-id: "devices.check-row";
                     accessible-value: r.title + " file " + r.file + " cues " + r.cues + " grid " + r.grid;
                     height: 40px; spacing: Theme.s3;
                     VerticalLayout {

@@ -539,12 +539,12 @@ fn lighting_detaches_into_its_own_window() {
         "pro"
     );
     assert!(
-        i_slint_backend_testing::ElementHandle::find_by_accessible_label(&w, "lighting.stage")
+        super::harness::find_all(&w, "lighting.stage")
             .next()
             .is_some()
     );
     assert!(
-        i_slint_backend_testing::ElementHandle::find_by_accessible_label(&w, "lighting.detach")
+        super::harness::find_all(&w, "lighting.detach")
             .next()
             .is_none(),
         "no WINDOW key in the window itself"

@@ -3,8 +3,13 @@
 Every user action of OpenDJDecks is a command in one registry
 (`crates/od-ui/src/keymap.rs`) with an id, a default binding per platform
 and optional user bindings (SPEC §12.2). The registry currently holds
-**284 actions**; every one has a default binding, and no two defaults
+**285 actions**; every one has a default binding, and no two defaults
 collide where they apply (checked by tests, together with this table).
+
+`F12` (and `?` wherever no shortcut takes it) shows the help overlay, which
+names every control on screen with its shortcut. `Tab` and `⇧Tab` move the
+keyboard focus through the controls; Return or Space presses the focused
+one, the arrow keys turn a focused knob or move a focused fader.
 
 ## Changing bindings
 
@@ -83,6 +88,7 @@ Perform). Text fields keep the keys they type.
 |---|---|---|---|---|
 | **General** | | | | |
 | Open preferences | `prefs.open` | both | `⌘,` | `Ctrl+,` |
+| Help: name every control on screen | `help.overlay` | both | `F12` | `F12` |
 | Check before the gig: outputs, controller, disk, files | `gig.check` | both | `⌥⇧⌘C` | `Ctrl+Alt+Shift+C` |
 | Lock for the set: no loading onto a playing deck, no deleting, no grid edits | `perform.lock` | both | `⌥⇧⌘K` | `Ctrl+Alt+Shift+K` |
 | Booth view: the decks large in their own window | `view.booth` | both | `⌥⇧⌘B` | `Ctrl+Alt+Shift+B` |

@@ -421,6 +421,7 @@ pub(crate) fn refresh(app: &App) {
         w.set_club_other_beat(s.view.club_other_beat);
         w.set_incoming_overlay(s.view.incoming_overlay);
         w.set_calm_waveform(s.view.calm_waveform);
+        w.set_touch_layout(s.view.touch_layout);
         w.set_phrases_overview(s.view.phrases_overview);
         w.set_phrase_types(index_of(
             &crate::settings::PHRASE_TYPES,
@@ -1237,7 +1238,7 @@ fn apply_live(app: &App) {
         .global::<crate::DeckTime>()
         .set_mode(settings.view.deck_time.clone().into());
     crate::player::refresh_detail(app);
-    shell::apply_browser_style(&app.ui, &settings, app.state.borrow().config.kiosk);
+    shell::apply_browser_style(&app.ui, &settings, app.state.borrow().config.kiosk || settings.view.touch_layout);
     crate::gig::apply(app);
     crate::recorder::apply_gain(app);
     {
@@ -1504,6 +1505,13 @@ fn flag(app: &App, key: &str, v: bool) {
         "view.club-other-beat" => change(app, |s| s.view.club_other_beat = v),
         "view.incoming-overlay" => change(app, |s| s.view.incoming_overlay = v),
         "view.calm-waveform" => change(app, |s| s.view.calm_waveform = v),
+        "view.touch" => {
+            change(app, |s| {
+                s.view.touch_layout = v;
+                s.view.touch_offered = true;
+            });
+            crate::touch::applied(app);
+        }
         "view.contrast" => change(app, |s| s.view.high_contrast = v),
         "view.motion" => change(app, |s| s.view.reduced_motion = v),
         "analysis.key" => change(app, |s| s.analysis.detect_key = v),

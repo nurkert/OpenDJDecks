@@ -4,7 +4,6 @@
 
 use super::harness::{Fixture, Ui};
 use crate::stems_model::Phase;
-use i_slint_backend_testing::ElementHandle;
 use od_stems::{FetchFailure, ModelInfo, ModelStatus, ModelStore};
 use od_update::http::Response;
 use sha2::{Digest, Sha256};
@@ -141,7 +140,7 @@ fn a_part_key_opens_the_dialog_and_not_now_is_respected() {
     press_part_key(&ui);
     assert!(ui.has("app.stems.prompt"), "the dialog asks");
     assert!(ui.has("app.stems.prompt.download") && ui.has("app.stems.prompt.later"));
-    let text = ElementHandle::find_by_accessible_label(&ui.app.ui, "app.stems.prompt.text")
+    let text = super::harness::find_all(&ui.app.ui, "app.stems.prompt.text")
         .next()
         .and_then(|e| e.accessible_value())
         .unwrap_or_default();
@@ -265,7 +264,7 @@ fn preferences_show_and_repair_the_model() {
     w.set_page("analysis".into());
     crate::stems_model::refresh(&ui.app);
     ui.pump(100);
-    let el = |label: &str| ElementHandle::find_by_accessible_label(&w, label).next();
+    let el = |label: &str| super::harness::find_all(&w, label).next();
     let click = |label: &str| {
         el(label)
             .unwrap_or_else(|| panic!("no `{label}`"))

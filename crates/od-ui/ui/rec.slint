@@ -6,7 +6,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton } from "controls.slint";
+import { Caps, PlateButton, KeyFocus, TooltipState } from "controls.slint";
 
 export struct RecTrack {
     // 1-based position in the recording.
@@ -57,6 +57,7 @@ component Meter inherits Rectangle {
 // The recording level: click the left half for one step down, the right half
 // for one step up; the wheel steps too.
 component Level inherits Rectangle {
+    accessible-label: TooltipState.name-for(self.accessible-id, @tr("INPUT LEVEL"), "");
     in property <bool> tall;
     accessible-role: spinbox;
     accessible-value: Rec.gain >= 0 && Rec.gain < Rec.gain-options.length ? Rec.gain-options[Rec.gain] : "";
@@ -82,6 +83,7 @@ component Level inherits Rectangle {
             accept
         }
     }
+    KeyFocus { arrows: true; step(d) => { Rec.step-gain(d); } }
 }
 
 // Compact recording row for the global bar: source, level, meter. The REC
@@ -93,17 +95,17 @@ export component RecStrip inherits HorizontalLayout {
     spacing: Theme.s2;
     alignment: end;
     Caps {
-        accessible-role: text; accessible-label: "rec.source"; accessible-value: self.text;
+        accessible-role: text; accessible-id: "rec.source"; accessible-value: self.text;
         text: @tr("MASTER"); vertical-alignment: center;
     }
     VerticalLayout {
         alignment: center;
-        Level { accessible-label: "rec.level"; tall: root.tall; }
+        Level { accessible-id: "rec.level"; tall: root.tall; }
     }
     // Small windows: the elapsed time stays, the meter gives way.
     if !root.compact: VerticalLayout {
         alignment: center;
-        Meter { accessible-role: progress-indicator; accessible-label: "rec.meter"; accessible-value: round(Rec.level * 100) + "%"; width: 72px; level: Rec.level; clipping: Rec.clip; }
+        Meter { accessible-role: progress-indicator; accessible-id: "rec.meter"; accessible-value: round(Rec.level * 100) + "%"; width: 72px; level: Rec.level; clipping: Rec.clip; }
     }
 }
 
@@ -117,7 +119,7 @@ export component RecPanel inherits VerticalLayout {
         VerticalLayout {
             horizontal-stretch: 0; alignment: center;
             PlateButton {
-                accessible-role: button; accessible-label: "rec.panel.toggle";
+                accessible-role: button; accessible-id: "rec.panel.toggle";
                 accessible-checkable: true; accessible-checked: Rec.recording;
                 horizontal-stretch: 0; compact: true;
                 label: Rec.recording ? @tr("STOP") : @tr("RECORD");
@@ -127,15 +129,15 @@ export component RecPanel inherits VerticalLayout {
                 clicked => { Rec.toggle(); }
             }
         }
-        Caps { accessible-role: text; accessible-label: "rec.panel.source"; accessible-value: self.text; text: @tr("MASTER"); vertical-alignment: center; }
-        VerticalLayout { alignment: center; Level { accessible-label: "rec.panel.level"; } }
+        Caps { accessible-role: text; accessible-id: "rec.panel.source"; accessible-value: self.text; text: @tr("MASTER"); vertical-alignment: center; }
+        VerticalLayout { alignment: center; Level { accessible-id: "rec.panel.level"; } }
         VerticalLayout {
             alignment: center;
             horizontal-stretch: 1;
-            Meter { accessible-role: progress-indicator; accessible-label: "rec.panel.meter"; accessible-value: round(Rec.level * 100) + "%"; min-width: Theme.touch ? 96px : 120px; level: Rec.level; clipping: Rec.clip; }
+            Meter { accessible-role: progress-indicator; accessible-id: "rec.panel.meter"; accessible-value: round(Rec.level * 100) + "%"; min-width: Theme.touch ? 96px : 120px; level: Rec.level; clipping: Rec.clip; }
         }
         Text {
-            accessible-role: text; accessible-label: "rec.panel.time"; accessible-value: Rec.elapsed;
+            accessible-role: text; accessible-id: "rec.panel.time"; accessible-value: Rec.elapsed;
             min-width: 70px;
             text: Rec.recording ? Rec.elapsed : "--:--:--";
             font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
@@ -143,7 +145,7 @@ export component RecPanel inherits VerticalLayout {
             vertical-alignment: center; horizontal-alignment: right;
         }
         Text {
-            accessible-role: text; accessible-label: "rec.size"; accessible-value: Rec.size;
+            accessible-role: text; accessible-id: "rec.size"; accessible-value: Rec.size;
             min-width: 64px;
             text: Rec.recording ? Rec.size : "";
             font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
@@ -154,21 +156,21 @@ export component RecPanel inherits VerticalLayout {
         spacing: Theme.s3;
         VLine { weight: 2px; tone: Theme.fault; form: Rec.recording ? "solid" : "dashed"; }
         Text {
-            accessible-role: text; accessible-label: "rec.file"; accessible-value: self.text;
+            accessible-role: text; accessible-id: "rec.file"; accessible-value: self.text;
             horizontal-stretch: 1;
             text: Rec.recording ? Rec.file : @tr("Armed: recording starts when the master carries sound");
             font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; overflow: elide;
         }
     }
     if Rec.recording: VerticalLayout {
-        accessible-role: list; accessible-label: "rec.tracklist";
+        accessible-role: list; accessible-id: "rec.tracklist";
         spacing: Theme.key-gap;
         if Rec.tracks.length == 0: Text {
             text: @tr("The tracklist grows here as tracks become audible.");
             font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
         }
         for t in Rec.tracks: HorizontalLayout {
-            accessible-role: list-item; accessible-label: "rec.tracklist.row\{t.index}"; accessible-value: t.title;
+            accessible-role: list-item; accessible-id: "rec.tracklist.row\{t.index}"; accessible-value: t.title;
             spacing: Theme.s3;
             height: 22px;
             Text { width: 22px; text: t.index; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; horizontal-alignment: right; vertical-alignment: center; }
@@ -189,7 +191,9 @@ export component RecBar inherits Rectangle {
         spacing: Theme.s3;
         RecStrip { }
         Rectangle {
-            accessible-role: checkbox; accessible-label: "rec.toggle";
+            accessible-role: checkbox; accessible-id: "rec.toggle";
+            accessible-label: TooltipState.name-for(self.accessible-id, @tr("RECORD"), "");
+            KeyFocus { radius: 12px; activate => { Rec.toggle(); } }
             accessible-checkable: true; accessible-checked: Rec.recording;
             width: 30px;
             Rectangle {
@@ -201,7 +205,7 @@ export component RecBar inherits Rectangle {
             bt := TouchArea { mouse-cursor: pointer; clicked => { Rec.toggle(); } }
         }
         Text {
-            accessible-role: text; accessible-label: "rec.time"; accessible-value: self.text;
+            accessible-role: text; accessible-id: "rec.time"; accessible-value: self.text;
             text: Rec.recording ? Rec.elapsed : "00:00:00";
             font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
             color: Rec.recording ? Theme.bone : Theme.bone-3; vertical-alignment: center;

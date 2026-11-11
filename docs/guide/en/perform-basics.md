@@ -2,7 +2,7 @@
 title: The basics of Perform
 description: Decks, layouts, sync, keylock, tempo, loops and beat jump, and every pad mode on the deck.
 keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, key clash, harmonic mixing, compatible key, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom, simple, standard, full, deck layout, hide, groups, saved layout]
-features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag]
+features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
 ---
 
 Perform is the live mode: the decks, the mixer and the browser in one view.
@@ -49,6 +49,26 @@ A knob shows its value as an arc on its ring. Knobs that turn both ways from a m
 The view button at the top of Perform opens a menu with a picture of each view: **2 Decks** or **4 Decks**, each **horizontal** or **vertical**, and **Browse**, which keeps the decks small and gives the browser the room. Shortcuts: `⌥⌘V` for vertical waveforms and `⌥⌘B` for Browse. A four-deck controller switches to four decks automatically.
 
 The top bar has three zones. On the left are the work modes, in the middle what the current mode shows, and on the right what is live: the master tempo, recording, the controller and the master out. **FX**, **PREVIEW**, **SAMPLER** and **MIXER** show or hide panels, plus **CLUB** and **LIGHT STRIP**. **RECORD** starts a recording and turns red with the running time; the small key next to it shows or hides the recording section. **UNDO** appears in Prepare, where you edit. Drag the separator bars between the areas to resize them, double-click to reset.
+
+## Help on every control
+
+Press `F12`, or `?` where no shortcut takes it, or the **?** key at the right of the top bar: the help names every control on screen. Each one gets a small number on its corner, and the list at the side gives each number its name and its shortcut. The numbers never cover each other; where a control is too small for its number on top, the number sits beside it with a short line to the control. Click (or tap) a control while the help is open and the panel says what it does, from the same text as its tooltip, instead of pressing it. The arrow keys move through the list, the arrow key at the top of the list moves it to the other side, and `F12`, `?`, `Esc` or **CLOSE** end the help. In Perform on an English keyboard `?` taps FX 2, so use `F12` there.
+
+![The help over Perform: numbered controls and the list with names and shortcuts](../img/help-overlay.png)
+
+## Touch layout
+
+**Preferences › View › Touch** makes every control of the decks, the mixer, the pads, the effects, the browser and the lighting at least 44 px, for a touch screen or a tablet beside the controller. The first touch on a screen offers it once in a band under the top bar (**TOUCH LAYOUT** or **NOT NOW**). The decks become touch decks: the read-outs, part keys and transport on top, the hot cue pads A–D over E–H, a row with beat jump, loop size and **LOOP**, and the deck's own waveform in the rest of the column. The mixer puts each knob beside its legend, which is also the kill key; the effect units stand one under the other; the browser has 44 px rows and leaves out the cover column; the panes keep their sizes (a thin grip is no target). On a window narrower than about 1060 px the touch decks leave the mixer to the controller, as the Raspberry Pi kiosk does. Prepare keeps its desktop keys.
+
+![Perform with the touch layout](../img/touch-layout.png)
+
+The touch layout has not been tried on a real touch screen yet.
+
+## Small windows
+
+In a small window (or at a large interface scale) the decks are compact: the read-outs on top, then key, sync and master, the part keys, the transport, the hot cue pads and the loop row, standing in the middle of the room the mixer leaves, so nothing stays empty under them.
+
+![Perform in a 960 × 640 window](../img/perform-compact.png)
 
 ## Deck layouts
 

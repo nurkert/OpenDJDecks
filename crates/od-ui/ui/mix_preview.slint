@@ -5,7 +5,7 @@
 
 import { Theme } from "tokens.slint";
 import { HLine, VLine } from "lines.slint";
-import { Caps, PlateButton, PopupPlace } from "controls.slint";
+import { Caps, PlateButton, PopupPlace, KeyFocus, TooltipState } from "controls.slint";
 
 export struct MixPreviewDeck {
     deck: int,
@@ -36,7 +36,7 @@ component Readout inherits HorizontalLayout {
     spacing: Theme.s1;
     Caps { text: root.label; font-size: Theme.label; vertical-alignment: center; }
     Text {
-        accessible-role: text; accessible-label: root.a11y; accessible-value: self.text;
+        accessible-role: text; accessible-id: root.a11y; accessible-value: self.text;
         min-width: 58px;
         text: root.value == "" ? "—" : root.value;
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
@@ -54,7 +54,7 @@ component DeckPoints inherits HorizontalLayout {
     }
     Caps { text: @tr("DECK {}", root.d.deck); vertical-alignment: center; color: root.editing ? Theme.bone : Theme.bone-3; }
     Text {
-        accessible-role: text; accessible-label: "mix-preview.deck\{root.d.deck}.points"; accessible-value: root.d.points;
+        accessible-role: text; accessible-id: "mix-preview.deck\{root.d.deck}.points"; accessible-value: root.d.points;
         text: @tr("{} POINTS", root.d.points);
         font-family: Theme.family; font-size: Theme.label; color: Theme.bone-2; vertical-alignment: center;
     }
@@ -74,35 +74,35 @@ export component MixPreviewPanel inherits Rectangle {
     HorizontalLayout {
         spacing: Theme.s2;
         PlateButton {
-            accessible-label: "mix-preview.mix-in"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
+            accessible-id: "mix-preview.mix-in"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
             label: @tr("MIX IN"); tone: Theme.live;
             tooltip: @tr("Set the mix-in point of the edited deck at its playhead");
             clicked => { MixPreview.act("mix-in"); }
         }
         PlateButton {
-            accessible-label: "mix-preview.mix-out"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
+            accessible-id: "mix-preview.mix-out"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
             label: @tr("MIX OUT"); tone: Theme.fault;
             tooltip: @tr("Set the mix-out point of the edited deck at its playhead");
             clicked => { MixPreview.act("mix-out"); }
         }
         PlateButton {
-            accessible-label: "mix-preview.prev"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch; glyph: "prev";
+            accessible-id: "mix-preview.prev"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch; glyph: "prev";
             tooltip: @tr("Edited deck: back to the previous point");
             clicked => { MixPreview.act("prev"); }
         }
         PlateButton {
-            accessible-label: "mix-preview.next"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch; glyph: "next";
+            accessible-id: "mix-preview.next"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch; glyph: "next";
             tooltip: @tr("Edited deck: on to the next point");
             clicked => { MixPreview.act("next"); }
         }
         PlateButton {
-            accessible-label: "mix-preview.edit"; accessible-role: button; accessible-value: MixPreview.edit-deck; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
+            accessible-id: "mix-preview.edit"; accessible-role: button; accessible-value: MixPreview.edit-deck; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
             label: @tr("EDIT DECK {}", MixPreview.edit-deck); tone: Theme.deck-color(MixPreview.edit-deck);
             tooltip: @tr("Switch the deck the points are set on");
             clicked => { MixPreview.act("edit"); }
         }
         PlateButton {
-            accessible-label: "mix-preview.link"; accessible-role: button; accessible-checkable: true; accessible-checked: MixPreview.link;
+            accessible-id: "mix-preview.link"; accessible-role: button; accessible-checkable: true; accessible-checked: MixPreview.link;
             horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
             label: "LINK"; active: MixPreview.link; tone: Theme.attention;
             tooltip: MixPreview.link ? @tr("Stop linking the mix points") : @tr("Link: the other deck starts from its mix-in point when this one reaches its mix-out point");
@@ -114,20 +114,20 @@ export component MixPreviewPanel inherits Rectangle {
         // Playback reservation: queue the selected tracks; the next one
         // loads into the deck that has played out.
         Text {
-            accessible-role: text; accessible-label: "mix-preview.reserved"; accessible-value: MixPreview.next;
+            accessible-role: text; accessible-id: "mix-preview.reserved"; accessible-value: MixPreview.next;
             horizontal-stretch: 0; max-width: 260px; overflow: elide;
             text: MixPreview.waiting == 0 ? @tr("NOTHING RESERVED") : MixPreview.waiting == 1 ? @tr("NEXT  {}", MixPreview.next) : @tr("NEXT  {}  +{}", MixPreview.next, MixPreview.waiting - 1);
             font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
             color: MixPreview.waiting == 0 ? Theme.bone-3 : Theme.bone; vertical-alignment: center;
         }
         PlateButton {
-            accessible-label: "mix-preview.reserve"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
+            accessible-id: "mix-preview.reserve"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
             label: @tr("RESERVE"); tone: Theme.live;
             tooltip: @tr("Reserve the tracks selected in the list: each loads into the deck that has played out, ready for the next link");
             clicked => { MixPreview.act("reserve"); }
         }
         if MixPreview.waiting > 0: PlateButton {
-            accessible-label: "mix-preview.clear-queue"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
+            accessible-id: "mix-preview.clear-queue"; accessible-role: button; horizontal-stretch: 0; compact: !Theme.touch; tall: Theme.touch;
             label: @tr("CLEAR");
             tooltip: @tr("Clear the reserved tracks");
             clicked => { MixPreview.act("clear-queue"); }

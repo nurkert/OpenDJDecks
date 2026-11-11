@@ -4660,11 +4660,11 @@ msgstr "Beim Darüberfahren zeigen, was ein Bedienelement tut, und sein Tastenk�
 
 msgctxt "PreferencesWindow"
 msgid "TO NEXT MEMORY CUE"
-msgstr "BIS ZUM NÄCHSTEN MEMORY CUE"
+msgstr "BIS MEMORY CUE"
 
 msgctxt "PreferencesWindow"
 msgid "TO PHRASE END"
-msgstr "BIS ZUM PHRASENENDE"
+msgstr "BIS PHRASENENDE"
 
 msgctxt "PreferencesWindow"
 msgid "Tooltips"
@@ -8415,3 +8415,271 @@ msgstr "Die Listen einklappen: mehr Platz für die Tracks"
 msgctxt "AppWindow"
 msgid "No track matches the search or the filter."
 msgstr "Kein Track passt zur Suche oder zum Filter."
+
+msgctxt "AppWindow"
+msgid "BROWSER HEIGHT"
+msgstr "HÖHE DES BROWSERS"
+
+msgctxt "AppWindow"
+msgid "LISTS WIDTH"
+msgstr "BREITE DER LISTEN"
+
+msgctxt "AppWindow"
+msgid "List name"
+msgstr "Name der Liste"
+
+msgctxt "Jog"
+msgid "TYPE A BPM"
+msgstr "BPM EINGEBEN"
+
+msgctxt "Jog"
+msgid "TEMPO RANGE"
+msgstr "TEMPOBEREICH"
+
+msgctxt "Transport"
+msgid "PLAY"
+msgstr "PLAY"
+
+msgctxt "Transport"
+msgid "CUE"
+msgstr "CUE"
+
+msgctxt "Stepper"
+msgid "Previous"
+msgstr "Zurück"
+
+msgctxt "Stepper"
+msgid "Next"
+msgstr "Weiter"
+
+msgctxt "Intensity"
+msgid "FX {} LEVEL"
+msgstr "FX {} PEGEL"
+
+msgctxt "HelpOverlay"
+msgid "Help"
+msgstr "Hilfe"
+
+msgctxt "HelpOverlay"
+msgid "Controls on screen"
+msgstr "Bedienelemente auf dem Bildschirm"
+
+msgctxt "HelpOverlay"
+msgid "{} CONTROLS"
+msgstr "{} ELEMENTE"
+
+msgctxt "HelpOverlay"
+msgid "Move the list to the other side"
+msgstr "Die Liste auf die andere Seite"
+
+msgctxt "HelpOverlay"
+msgid "CLOSE"
+msgstr "SCHLIESSEN"
+
+msgctxt "HelpOverlay"
+msgid "Close the help (F12, ? or Esc)"
+msgstr "Die Hilfe schließen (F12, ? oder Esc)"
+
+msgctxt "HelpOverlay"
+msgid "Tap a control to see what it does. The numbers match the list."
+msgstr "Tippe auf ein Bedienelement, um zu sehen, was es tut. Die Nummern passen zur Liste."
+
+msgctxt "HelpOverlay"
+msgid "Click a control to see what it does. The numbers match the list."
+msgstr "Klicke auf ein Bedienelement, um zu sehen, was es tut. Die Nummern passen zur Liste."
+
+msgctxt "HelpOverlay"
+msgid "KEY  {}"
+msgstr "TASTE  {}"
+
+msgctxt "Pad"
+msgid "HOT CUE {}"
+msgstr "HOT CUE {}"
+
+msgctxt "Overview"
+msgid "TRACK POSITION"
+msgstr "POSITION IM TRACK"
+
+msgctxt "Overview"
+msgid "Click to jump there"
+msgstr "Klicken, um dorthin zu springen"
+
+msgctxt "DeckPad"
+msgid "PAD {}"
+msgstr "PAD {}"
+
+msgctxt "StemKey"
+msgid "Separate the parts first"
+msgstr "Zuerst die Spuren trennen"
+
+msgctxt "StemKey"
+msgid "{} LEVEL"
+msgstr "{} PEGEL"
+
+msgctxt "Crossfader"
+msgid "CROSSFADER"
+msgstr "CROSSFADER"
+
+msgctxt "KioskDeck"
+msgid "TRACK POSITION"
+msgstr "POSITION IM TRACK"
+
+msgctxt "KioskDeck"
+msgid "Click to jump there"
+msgstr "Klicken, um dorthin zu springen"
+
+msgctxt "BandRow"
+msgid "KILL"
+msgstr "KILL"
+
+msgctxt "MixerPanel"
+msgid "CHANNEL FX"
+msgstr "KANAL-FX"
+
+msgctxt "GlobalBar"
+msgid "RECORD"
+msgstr "AUFNEHMEN"
+
+msgctxt "PreparePlayer"
+msgid "TRACK POSITION"
+msgstr "POSITION IM TRACK"
+
+msgctxt "PreparePlayer"
+msgid "Click to jump there"
+msgstr "Klicken, um dorthin zu springen"
+
+msgctxt "MiniPlayer"
+msgid "TRACK POSITION"
+msgstr "POSITION IM TRACK"
+
+msgctxt "MiniPlayer"
+msgid "Click to jump there"
+msgstr "Klicken, um dorthin zu springen"
+
+msgctxt "PreviewWave"
+msgid "CALM WAVEFORM"
+msgstr "RUHIGE WELLENFORM"
+
+msgctxt "PreviewWave"
+msgid "WAVEFORM"
+msgstr "WELLENFORM"
+
+msgctxt "PreviewColours"
+msgid "LIVE"
+msgstr "LIVE"
+
+msgctxt "PreviewColours"
+msgid "WAIT"
+msgstr "WARTET"
+
+msgctxt "PreviewColours"
+msgid "FAULT"
+msgstr "FEHLER"
+
+msgctxt "PreviewColours"
+msgid "COLOURS"
+msgstr "FARBEN"
+
+msgctxt "PreviewScale"
+msgid "SCALE {} %"
+msgstr "SKALIERUNG {} %"
+
+msgctxt "PreviewLayout"
+msgid "SIMPLE"
+msgstr "EINFACH"
+
+msgctxt "PreviewLayout"
+msgid "FULL"
+msgstr "VOLL"
+
+msgctxt "PreviewLayout"
+msgid "STANDARD"
+msgstr "STANDARD"
+
+msgctxt "TreeItem"
+msgid "FOLD {}"
+msgstr "{} EINKLAPPEN"
+
+msgctxt "TreeItem"
+msgid "UNFOLD {}"
+msgstr "{} AUFKLAPPEN"
+
+msgctxt "Level"
+msgid "INPUT LEVEL"
+msgstr "EINGANGSPEGEL"
+
+msgctxt "RecBar"
+msgid "RECORD"
+msgstr "AUFNEHMEN"
+
+msgctxt "ExplorerItem"
+msgid "FOLD {}"
+msgstr "{} EINKLAPPEN"
+
+msgctxt "ExplorerItem"
+msgid "UNFOLD {}"
+msgstr "{} AUFKLAPPEN"
+
+msgctxt "TrackLine"
+msgid "{} STARS"
+msgstr "{} STERNE"
+
+msgctxt "TopBar"
+msgid "Help: name every control on screen"
+msgstr "Hilfe: jedes Bedienelement auf dem Bildschirm benennen"
+
+msgctxt "KioskDeck"
+msgid "Load the selected track"
+msgstr "Den ausgewählten Track laden"
+
+msgctxt "KioskDeck"
+msgid "Beat jump back"
+msgstr "Beat Jump zurück"
+
+msgctxt "KioskDeck"
+msgid "Halve the loop"
+msgstr "Loop halbieren"
+
+msgctxt "KioskDeck"
+msgid "LOOP {}"
+msgstr "LOOP {}"
+
+msgctxt "KioskDeck"
+msgid "Auto loop of the shown length; press again to leave it"
+msgstr "Auto-Loop der angezeigten Länge; erneut drücken zum Verlassen"
+
+msgctxt "KioskDeck"
+msgid "Double the loop"
+msgstr "Loop verdoppeln"
+
+msgctxt "KioskDeck"
+msgid "Beat jump forward"
+msgstr "Beat Jump vorwärts"
+
+msgctxt "ChannelStrip"
+msgid "VOLUME"
+msgstr "LAUTSTÄRKE"
+
+msgctxt "PreferencesWindow"
+msgid "Touch"
+msgstr "Touch"
+
+msgctxt "PreferencesWindow"
+msgid "Touch layout: every control at least 44 px"
+msgstr "Touch-Layout: jedes Bedienelement mindestens 44 px"
+
+msgctxt "TouchOfferBar"
+msgid "Touch layout"
+msgstr "Touch-Layout"
+
+msgctxt "TouchOfferBar"
+msgid "This screen takes touch. The touch layout makes every control at least 44 px."
+msgstr "Dieser Bildschirm nimmt Berührungen an. Das Touch-Layout macht jedes Bedienelement mindestens 44 px groß."
+
+msgctxt "TouchOfferBar"
+msgid "TOUCH LAYOUT"
+msgstr "TOUCH-LAYOUT"
+
+msgctxt "TouchOfferBar"
+msgid "NOT NOW"
+msgstr "JETZT NICHT"

@@ -2,7 +2,7 @@
 title: Die Grundlagen von Perform
 description: Decks, Layouts, Sync, Keylock, Tempo, Loops und Beat Jump und jeder Pad-Modus am Deck.
 keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, tonarten passen, harmonisch mischen, passende tonart, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom, einfach, standard, voll, deck-layout, ausblenden, gruppen, gespeichertes layout]
-features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag]
+features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
 ---
 
 Perform ist der Live-Modus: Decks, Mixer und Browser in einer Ansicht.
@@ -49,6 +49,26 @@ Ein Drehregler zeigt seinen Wert als Bogen auf seinem Ring. Regler, die von eine
 Der Ansichts-Knopf oben in Perform öffnet ein Menü mit einem Bild jeder Ansicht: **2 Decks** oder **4 Decks**, jeweils **horizontal** oder **vertikal**, und **Browse**, das die Decks klein hält und dem Browser den Platz gibt. Kurzbefehle: `⌥⌘V` für vertikale Wellenformen und `⌥⌘B` für Browse. Ein Vierdeck-Controller schaltet automatisch auf vier Decks.
 
 Die obere Leiste hat drei Zonen. Links stehen die Arbeitsmodi, in der Mitte das, was der aktuelle Modus zeigt, rechts das, was gerade läuft: Master-Tempo, Aufnahme, Controller und Master-Ausgang. **FX**, **VORSCHAU**, **SAMPLER** und **MIXER** blenden Panels ein und aus, dazu **CLUB** und **LICHTLEISTE**. **AUFNAHME** startet eine Aufnahme und wird rot mit der laufenden Zeit; die kleine Taste daneben zeigt oder verbirgt den Aufnahmebereich. **UNDO** erscheint in Prepare, wo du bearbeitest. Ziehe die Trennbalken zwischen den Bereichen, um die Größe zu ändern; Doppelklick setzt zurück.
+
+## Hilfe zu jedem Bedienelement
+
+Drücke `F12`, oder `?`, wo kein Kurzbefehl die Taste belegt, oder die Taste **?** rechts in der oberen Leiste: Die Hilfe benennt jedes Bedienelement auf dem Bildschirm. Jedes bekommt eine kleine Nummer an seiner Ecke, und die Liste an der Seite nennt zu jeder Nummer den Namen und den Kurzbefehl. Die Nummern verdecken sich nie gegenseitig; ist ein Element zu klein für seine Nummer, steht sie daneben, mit einer kurzen Linie zum Element. Klickst (oder tippst) du bei offener Hilfe auf ein Element, sagt das Feld, was es tut, mit demselben Text wie sein Tooltip, statt es auszulösen. Die Pfeiltasten gehen durch die Liste, die Pfeiltaste oben in der Liste setzt sie auf die andere Seite, und `F12`, `?`, `Esc` oder **SCHLIESSEN** beenden die Hilfe. In Perform tippt `?` auf einer englischen Tastatur das Tempo von FX 2; nimm dort `F12`.
+
+![Die Hilfe über Perform: nummerierte Bedienelemente und die Liste mit Namen und Kurzbefehlen](../img/help-overlay.png)
+
+## Touch-Layout
+
+**Einstellungen › Ansicht › Touch** macht jedes Bedienelement der Decks, des Mixers, der Pads, der Effekte, des Browsers und des Lichts mindestens 44 px groß, für einen Touchscreen oder ein Tablet neben dem Controller. Die erste Berührung auf einem Bildschirm bietet es einmal in einem Band unter der oberen Leiste an (**TOUCH-LAYOUT** oder **JETZT NICHT**). Die Decks werden zu Touch-Decks: Anzeigen, Spur-Tasten und Transport oben, die Hot-Cue-Pads A–D über E–H, eine Zeile mit Beat Jump, Loop-Länge und **LOOP**, und die eigene Wellenform des Decks im Rest der Spalte. Der Mixer setzt jeden Regler neben seine Beschriftung, die zugleich die Kill-Taste ist; die Effekt-Einheiten stehen untereinander; der Browser hat 44 px hohe Zeilen und lässt die Cover-Spalte weg; die Bereiche behalten ihre Größe (ein schmaler Griff ist kein Ziel). In einem Fenster schmaler als etwa 1060 px überlassen die Touch-Decks den Mixer dem Controller, wie der Kiosk auf dem Raspberry Pi. Prepare behält seine Desktop-Tasten.
+
+![Perform mit dem Touch-Layout](../img/touch-layout.png)
+
+Das Touch-Layout wurde noch nicht auf einem echten Touchscreen ausprobiert.
+
+## Kleine Fenster
+
+In einem kleinen Fenster (oder bei großer Skalierung) sind die Decks kompakt: oben die Anzeigen, dann Tonart, Sync und Master, die Spur-Tasten, der Transport, die Hot-Cue-Pads und die Loop-Zeile, mittig in dem Platz, den der Mixer lässt, sodass darunter nichts leer bleibt.
+
+![Perform in einem Fenster von 960 × 640](../img/perform-compact.png)
 
 ## Deck-Layouts
 

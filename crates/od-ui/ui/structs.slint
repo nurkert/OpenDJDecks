@@ -155,6 +155,9 @@ export struct PhraseMark {
     pos: float,
     end: float,
     label: string,
+    // Its initial (I, V, C, B, U, D, O): narrow blocks and the colours-only
+    // bar show it, so the kind never rests on hue alone.
+    short: string,
     tone: color,
     // [62] The analysis was unsure of this phrase; how sure ("41 %").
     unsure: bool,

@@ -619,7 +619,7 @@ fn controller_browses_tree_and_list() {
 }
 
 fn prefs_el(w: &crate::PreferencesWindow, label: &str) -> i_slint_backend_testing::ElementHandle {
-    i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, label)
+    super::harness::find_all(w, label)
         .next()
         .unwrap_or_else(|| panic!("no `{label}` in Preferences"))
 }
@@ -629,7 +629,6 @@ fn prefs_el(w: &crate::PreferencesWindow, label: &str) -> i_slint_backend_testin
 /// the own mapping file (which then loads).
 #[test]
 fn controller_page_monitor_and_learn() {
-    use i_slint_backend_testing::ElementHandle;
     use od_controller::monitor::{Direction, MidiMonitor};
     use slint::platform::PointerEventButton;
     let ui = Ui::open((1440, 900));
@@ -656,7 +655,7 @@ fn controller_page_monitor_and_learn() {
         "the monitor shows the message"
     );
     assert!(
-        ElementHandle::find_by_accessible_label(&w, "prefs.controller.midi-log")
+        super::harness::find_all(&w, "prefs.controller.midi-log")
             .next()
             .is_some()
     );

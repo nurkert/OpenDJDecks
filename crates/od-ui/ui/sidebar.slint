@@ -3,7 +3,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, Toggle, PlateButton, Glyph, TipArea, Stepper, Field, Disclosure } from "controls.slint";
+import { Caps, Toggle, PlateButton, Glyph, TipArea, TooltipState, Stepper, Field, Disclosure, KeyFocus } from "controls.slint";
 import { TreeItem } from "rail.slint";
 import { TreeRow, DeviceRow, VolumeRow, ExplorerRow } from "structs.slint";
 
@@ -20,11 +20,14 @@ component Heading inherits Rectangle {
     callback act();
     height: Theme.touch ? 44px : 30px;
     Caps {
-        accessible-label: root.heading-label;
+        accessible-id: root.heading-label;
         x: 12px; y: 3px; height: Theme.target; vertical-alignment: center; text: root.label; color: Theme.bone-2; font-weight: Theme.weight-semi;
     }
     if root.action != "": Rectangle {
-        accessible-label: root.action-label; accessible-role: button;
+        accessible-id: root.action-label; accessible-role: button;
+        accessible-label: TooltipState.name-for(self.accessible-id, "", root.tooltip);
+        accessible-enabled: root.action-enabled;
+        KeyFocus { enabled: root.action-enabled; activate => { root.act(); } }
         x: parent.width - Theme.target - 8px; y: 3px; width: Theme.target; height: Theme.target;
         background: t.has-hover && root.action-enabled ? Theme.plate : transparent;
         Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; width: 10px; height: 10px; kind: root.action; tone: root.action-enabled ? Theme.bone-2 : Theme.bone-3.with-alpha(0.5); }
@@ -38,7 +41,7 @@ component DeviceItem inherits Rectangle {
     in property <bool> selected;
     // Model index (accessible label `browser.tree.device<index>`).
     in property <int> index;
-    accessible-label: "browser.tree.device\{root.index}";
+    accessible-id: "browser.tree.device\{root.index}";
     accessible-role: list-item;
     accessible-value: root.device.name;
     accessible-item-selectable: true;
@@ -83,7 +86,7 @@ component DeviceItem inherits Rectangle {
     }
     touch := TouchArea { clicked => { root.open(); } }
     if root.device.connected: Rectangle {
-        accessible-label: "browser.tree.device\{root.index}.sync"; accessible-role: button;
+        accessible-id: "browser.tree.device\{root.index}.sync"; accessible-role: button;
         x: parent.width - 2 * Theme.target - 12px; y: (parent.height - self.height) / 2; width: Theme.target; height: Theme.target;
         background: s.has-hover ? Theme.plate : transparent;
         border-width: 1px; border-color: s.has-hover ? Theme.live : transparent;
@@ -91,7 +94,7 @@ component DeviceItem inherits Rectangle {
         s := TipArea { tooltip: @tr("Sync this stick now"); command: "devices.sync"; mouse-cursor: pointer; clicked => { root.sync(); } }
     }
     if root.device.connected: Rectangle {
-        accessible-label: "browser.tree.device\{root.index}.eject"; accessible-role: button;
+        accessible-id: "browser.tree.device\{root.index}.eject"; accessible-role: button;
         x: parent.width - Theme.target - 8px; y: (parent.height - self.height) / 2; width: Theme.target; height: Theme.target;
         background: e.has-hover ? Theme.plate : transparent;
         border-width: 1px; border-color: e.has-hover ? Theme.bone-3 : transparent;
@@ -109,7 +112,7 @@ component ExplorerItem inherits Rectangle {
     // `browser.tree.home`, the others `browser.tree.folder<index>`.
     in property <int> index;
     property <string> a11y: root.index == 0 ? "browser.tree.home" : "browser.tree.folder\{root.index}";
-    accessible-label: root.a11y;
+    accessible-id: root.a11y;
     accessible-role: list-item;
     accessible-value: root.item.name;
     accessible-item-selectable: true;
@@ -137,7 +140,8 @@ component ExplorerItem inherits Rectangle {
         touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
     }
     if root.item.has-children: Rectangle {
-        accessible-label: root.a11y + ".expand"; accessible-role: button;
+        accessible-id: root.a11y + ".expand"; accessible-role: button;
+        accessible-label: TooltipState.name-for(self.accessible-id, root.item.expanded ? @tr("FOLD {}", root.item.name) : @tr("UNFOLD {}", root.item.name), "");
         accessible-checkable: true; accessible-checked: root.item.expanded;
         x: root.indent - 16px; y: (parent.height - 12px) / 2; width: 12px; height: 12px;
         Disclosure { open: root.item.expanded; }
@@ -156,7 +160,7 @@ component ExplorerItem inherits Rectangle {
         vertical-alignment: center;
     }
     if root.item.root && touch.has-hover: Rectangle {
-        accessible-label: root.a11y + ".remove"; accessible-role: button;
+        accessible-id: root.a11y + ".remove"; accessible-role: button;
         x: parent.width - 30px; y: 3px; width: 22px; height: parent.height - 6px;
         background: rm.has-hover ? Theme.plate-raised : transparent;
         Glyph { x: 6px; y: (parent.height - 10px) / 2; width: 10px; height: 10px; kind: "close"; tone: Theme.bone-3; }
@@ -169,6 +173,9 @@ component ExplorerItem inherits Rectangle {
 // New-list key of the touch screen: a 44 px plate with a plus over a short
 // caption (the kiosk sidebar is too narrow for the worded keys).
 component NewListKey inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-description: TooltipState.describe(root.tooltip, root.command);
     in property <string> label;
     in property <string> tooltip;
     in property <string> command;
@@ -190,6 +197,9 @@ component NewListKey inherits Rectangle {
 }
 
 export component RailItem inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-enabled: root.enabled;
     in property <string> label;
     in property <string> tooltip;
     in property <string> command;
@@ -233,6 +243,7 @@ export component RailItem inherits Rectangle {
         horizontal-alignment: center; vertical-alignment: center;
     }
     touch := TipArea { tooltip: root.show-icon ? root.label + " — " + root.tooltip : root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.clicked(); } }
+    KeyFocus { enabled: root.enabled; activate => { root.clicked(); } }
 }
 
 export component Sidebar inherits Rectangle {
@@ -364,13 +375,13 @@ export component Sidebar inherits Rectangle {
         spacing: 0px;
         for it[i] in root.rail-items: RailItem {
             row: Math.floor(i / 4); col: Math.mod(i, 4);
-            accessible-label: it.a11y; label: it.label; icon: it.icon; iconic: true; tone: it.tone; tooltip: it.tip;
+            accessible-id: it.a11y; label: it.label; icon: it.icon; iconic: true; tone: it.tone; tooltip: it.tip;
             current: root.rail-current(i);
             clicked => { root.rail-click(i); }
         }
-        NewListKey { row: 2; col: 1; accessible-label: "browser.tree.new-set"; label: @tr("SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
-        NewListKey { row: 2; col: 2; accessible-label: "browser.tree.new-smart"; label: @tr("SMART"); tooltip: @tr("New smart list"); command: "browser.new.smart"; tone: Theme.w436; clicked => { root.create-node("smart"); } }
-        NewListKey { row: 2; col: 3; accessible-label: "browser.tree.new-folder"; label: @tr("FOLDER"); tooltip: @tr("New folder"); command: "browser.new.folder"; clicked => { root.create-node("folder"); } }
+        NewListKey { row: 2; col: 1; accessible-id: "browser.tree.new-set"; label: @tr("SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
+        NewListKey { row: 2; col: 2; accessible-id: "browser.tree.new-smart"; label: @tr("SMART"); tooltip: @tr("New smart list"); command: "browser.new.smart"; tone: Theme.w436; clicked => { root.create-node("smart"); } }
+        NewListKey { row: 2; col: 3; accessible-id: "browser.tree.new-folder"; label: @tr("FOLDER"); tooltip: @tr("New folder"); command: "browser.new.folder"; clicked => { root.create-node("folder"); } }
     }
     if Theme.touch: HLine { tone: Theme.rule; }
     HorizontalLayout {
@@ -380,7 +391,7 @@ export component Sidebar inherits Rectangle {
         padding-top: 0px;
         spacing: 0px;
         for it[i] in root.rail-items: RailItem {
-            accessible-label: it.a11y; label: it.label; icon: it.icon; iconic: root.tight; tone: it.tone; tooltip: it.tip;
+            accessible-id: it.a11y; label: it.label; icon: it.icon; iconic: root.tight; tone: it.tone; tooltip: it.tip;
             command: i == 7 ? "section.recordings" : "";
             current: root.rail-current(i);
             clicked => { root.rail-click(i); }
@@ -389,7 +400,7 @@ export component Sidebar inherits Rectangle {
         // Folded: the key that brings the lists back, at the rail's foot
         // (it takes only room the sources leave).
         if root.collapsed: RailItem {
-            accessible-label: "browser.lists.toggle";
+            accessible-id: "browser.lists.toggle";
             accessible-checked: false;
             min-height: 0px;
             label: @tr("SHOW LISTS");
@@ -407,7 +418,7 @@ export component Sidebar inherits Rectangle {
             padding: Theme.s2; padding-bottom: Theme.key-gap;
             spacing: Theme.key-gap;
             Field {
-                accessible-label: "browser.tree.filter"; accessible-role: text-input;
+                accessible-id: "browser.tree.filter"; accessible-role: text-input;
                 accessible-value: self.text; accessible-placeholder-text: self.placeholder;
                 height: Theme.touch ? 44px : 26px;
                 placeholder: @tr("FILTER LISTS");
@@ -416,7 +427,7 @@ export component Sidebar inherits Rectangle {
             }
             // Folds the lists away to the rail.
             if !root.collapsed && !Theme.touch: RailItem {
-                accessible-label: "browser.lists.toggle";
+                accessible-id: "browser.lists.toggle";
                 accessible-checked: true;
                 width: 26px;
                 min-height: 26px; preferred-height: 26px; max-height: 26px;
@@ -427,7 +438,7 @@ export component Sidebar inherits Rectangle {
             }
         }
         tree := Flickable {
-            accessible-label: "browser.tree"; accessible-role: AccessibleRole.tree;
+            accessible-id: "browser.tree"; accessible-role: AccessibleRole.tree;
             accessible-value: root.browse-focus ? "controller" : "";
             vertical-stretch: 1;
             // Mouse drags move tree nodes; the wheel scrolls.
@@ -490,7 +501,7 @@ export component Sidebar inherits Rectangle {
                 Rectangle {
                     height: 18px;
                     Caps {
-                        accessible-label: "browser.tree.rules"; accessible-role: text; accessible-value: self.text;
+                        accessible-id: "browser.tree.rules"; accessible-role: text; accessible-value: self.text;
                         x: 38px; y: 0; height: 18px; width: max(0px, parent.width - 46px); overflow: elide;
                         text: @tr("TEMPO ±6 % · COMPATIBLE KEY");
                         font-size: Theme.label; color: Theme.bone-3; vertical-alignment: top;
@@ -540,7 +551,7 @@ export component Sidebar inherits Rectangle {
                         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; overflow: elide;
                     }
                     PlateButton {
-                        accessible-label: "browser.tree.volume\{i}.register"; accessible-role: button;
+                        accessible-id: "browser.tree.volume\{i}.register"; accessible-role: button;
                         x: 24px; y: 24px; compact: true;
                         enabled: root.register-target != "";
                         label: root.register-target == "" ? @tr("SELECT A PLAYLIST FIRST") : @tr("REGISTER WITH {}", root.register-target);
@@ -564,7 +575,7 @@ export component Sidebar inherits Rectangle {
                     padding-left: Theme.s3; padding-right: Theme.s3;
                     Stepper {
                         accessible-role: spinbox;
-                        accessible-label: "browser.tree.years";
+                        accessible-id: "browser.tree.years";
                         accessible-value: root.history-year;
                         size: Theme.target; font-size: Theme.control; template: "0000";
                         value: root.history-year == "" ? "—" : root.history-year;
@@ -576,7 +587,7 @@ export component Sidebar inherits Rectangle {
                 }
                 VerticalLayout {
                     accessible-role: list;
-                    accessible-label: "browser.tree.sessions";
+                    accessible-id: "browser.tree.sessions";
                     accessible-item-count: root.histories.length;
                     for h[i] in root.histories: TreeItem {
                         label: "browser.tree.history\{i}";
@@ -587,7 +598,7 @@ export component Sidebar inherits Rectangle {
                 }
                 rec-h := Heading { label: @tr("RECORDINGS"); }
                 Rectangle {
-                    accessible-label: "browser.tree.recordings"; accessible-role: list-item;
+                    accessible-id: "browser.tree.recordings"; accessible-role: list-item;
                     accessible-value: root.recordings-count;
                     accessible-item-selectable: true; accessible-item-selected: root.section == "recordings";
                     height: root.tree-row;
@@ -623,7 +634,7 @@ export component Sidebar inherits Rectangle {
                 }
                 VerticalLayout {
                     accessible-role: list;
-                    accessible-label: "browser.tree.auto";
+                    accessible-id: "browser.tree.auto";
                     accessible-item-count: root.auto-sort.length;
                     for r[i] in root.auto-sort: TreeItem {
                         label: "browser.tree.auto\{i}";
@@ -644,9 +655,9 @@ export component Sidebar inherits Rectangle {
             init => { root.footer-min = self.min-width; }
             changed min-width => { root.footer-min = self.min-width; }
             // New list buttons share the width (the sidebar is resizable).
-            Toggle { accessible-label: "browser.tree.new-set"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
-            Toggle { accessible-label: "browser.tree.new-smart"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SMART"); tooltip: @tr("New smart list"); command: "browser.new.smart"; tone: Theme.w436; clicked => { root.create-node("smart"); } }
-            Toggle { accessible-label: "browser.tree.new-folder"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ FOLDER"); tooltip: @tr("New folder"); command: "browser.new.folder"; clicked => { root.create-node("folder"); } }
+            Toggle { accessible-id: "browser.tree.new-set"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
+            Toggle { accessible-id: "browser.tree.new-smart"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ SMART"); tooltip: @tr("New smart list"); command: "browser.new.smart"; tone: Theme.w436; clicked => { root.create-node("smart"); } }
+            Toggle { accessible-id: "browser.tree.new-folder"; accessible-role: button; horizontal-stretch: 1; label: @tr("+ FOLDER"); tooltip: @tr("New folder"); command: "browser.new.folder"; clicked => { root.create-node("folder"); } }
         }
       }
     }

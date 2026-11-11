@@ -6,7 +6,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Toggle, Transport, Splitter, Field, Stepper, Glyph, TipArea, PopupPlace } from "controls.slint";
+import { Caps, PlateButton, Toggle, Transport, Splitter, Field, Stepper, Glyph, TipArea, TooltipState, PopupPlace, KeyFocus } from "controls.slint";
 import { Pad } from "perform.slint";
 import { CueMarker } from "wave.slint";
 import { ChoiceList } from "fx.slint";
@@ -14,6 +14,8 @@ import { DropZone } from "drag.slint";
 import { CueMark, HotCueSlot, PhraseMark, GridEdit, AnalysisSure } from "structs.slint";
 
 component Tab inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, "");
     in property <string> label;
     in property <bool> current;
     // Room beside the legend.
@@ -32,6 +34,7 @@ component Tab inherits Rectangle {
         color: root.current ? Theme.ground : touch.has-hover ? Theme.bone : Theme.bone-2;
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    KeyFocus { activate => { root.clicked(); } }
 }
 
 component Reading inherits HorizontalLayout {
@@ -62,7 +65,7 @@ component Reading inherits HorizontalLayout {
         spacing: Theme.s1;
         if root.unsure: VerticalLayout { alignment: center; VLine { height: 14px; weight: 2px; tone: Theme.attention; form: "half"; } }
         Text {
-            accessible-role: text; accessible-label: root.sure-a11y; accessible-value: self.text;
+            accessible-role: text; accessible-id: root.sure-a11y; accessible-value: self.text;
             accessible-description: root.unsure ? "unsure" : "sure";
             text: root.sure; font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.6px;
             color: root.unsure ? Theme.attention : Theme.bone-3; vertical-alignment: center;
@@ -71,7 +74,7 @@ component Reading inherits HorizontalLayout {
     if root.unsure && root.alt != "": VerticalLayout {
         alignment: center;
         PlateButton {
-            accessible-role: button; accessible-label: root.sure-a11y + ".use";
+            accessible-role: button; accessible-id: root.sure-a11y + ".use";
             compact: true; label: @tr("USE {}", root.alt); tone: Theme.attention;
             tooltip: root.alt-tip;
             clicked => { root.use-alt(); }
@@ -80,14 +83,14 @@ component Reading inherits HorizontalLayout {
     if root.action != "": VerticalLayout {
         alignment: center;
         PlateButton {
-            accessible-role: button; accessible-label: root.action-a11y;
+            accessible-role: button; accessible-id: root.action-a11y;
             compact: true; label: root.action; tooltip: root.action-tip;
             clicked => { root.act(); }
         }
     }
     Text {
         accessible-role: text;
-        accessible-label: root.a11y-label;
+        accessible-id: root.a11y-label;
         accessible-value: self.text;
         min-width: probe.preferred-width;
         horizontal-alignment: right;
@@ -159,7 +162,7 @@ component PhraseStrip inherits Rectangle {
         picker.show();
     }
     accessible-role: list;
-    accessible-label: "player1.phrases";
+    accessible-id: "player1.phrases";
     height: 22px;
     background: Theme.ground;
     if root.phrases.length == 0: Text {
@@ -169,7 +172,7 @@ component PhraseStrip inherits Rectangle {
     }
     for p[i] in root.phrases: Rectangle {
         accessible-role: button;
-        accessible-label: "player1.phrase.block\{i}";
+        accessible-id: "player1.phrase.block\{i}";
         accessible-value: p.label;
         accessible-description: p.unsure ? "unsure" : "sure";
         x: parent.width * p.pos;
@@ -179,12 +182,12 @@ component PhraseStrip inherits Rectangle {
         // [62] Unsure: a half-height sodium line at its start, as for an
         // unsure key; picking its type (or moving an edge) confirms it.
         if p.unsure: VLine {
-            accessible-role: text; accessible-label: "player1.phrase.unsure\{i}"; accessible-value: p.sure;
+            accessible-role: text; accessible-id: "player1.phrase.unsure\{i}"; accessible-value: p.sure;
             x: 2px; y: 4px; height: parent.height - 6px; weight: 2px; tone: Theme.attention; form: "half";
         }
         Text {
             x: p.unsure ? 8px : 4px; width: parent.width - (p.unsure ? 10px : 6px); height: parent.height;
-            text: parent.width > 30px ? p.label : "";
+            text: parent.width > 30px ? p.label : parent.width > 9px ? p.short : "";
             font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
             color: Theme.bone; vertical-alignment: center; overflow: clip;
         }
@@ -201,7 +204,7 @@ component PhraseStrip inherits Rectangle {
     for p[i] in root.phrases: Rectangle {
         visible: i + 1 < root.phrases.length && root.can-edit;
         accessible-role: slider;
-        accessible-label: "player1.phrase.edge\{i}";
+        accessible-id: "player1.phrase.edge\{i}";
         accessible-value: Math.round(p.end * 1000) / 10 + " %";
         x: parent.width * p.end - 5px; width: 10px;
         Rectangle {
@@ -227,7 +230,7 @@ component PhraseStrip inherits Rectangle {
     }
     // Where the dragged edge lands.
     if root.dragging >= 0: Rectangle {
-        accessible-role: text; accessible-label: "player1.phrase.guide"; accessible-value: Math.round(root.guide * 1000) / 10 + " %";
+        accessible-role: text; accessible-id: "player1.phrase.guide"; accessible-value: Math.round(root.guide * 1000) / 10 + " %";
         x: parent.width * root.guide - 1px; width: 2px;
         background: Theme.attention;
     }
@@ -239,13 +242,13 @@ component PhraseStrip inherits Rectangle {
         width: self.w; height: self.h;
         VerticalLayout {
             kinds-list := ChoiceList {
-                accessible-role: list; accessible-label: "player1.phrase.picker";
+                accessible-role: list; accessible-id: "player1.phrase.picker";
                 items: PhraseEdit.kinds; columns: 2; cell-w: 92px;
                 current: -1;
                 chosen(k) => { PhraseEdit.kind-at(root.picked-pos, k); picker.close(); }
             }
             PlateButton {
-                accessible-role: button; accessible-label: "player1.phrase.merge-next";
+                accessible-role: button; accessible-id: "player1.phrase.merge-next";
                 compact: true; height: 30px; label: @tr("MERGE WITH NEXT"); glyph: "plus";
                 enabled: root.picked >= 0 && root.picked + 1 < root.phrases.length;
                 clicked => { PhraseEdit.merge-at(root.picked-pos); picker.close(); }
@@ -288,14 +291,14 @@ global GridTone {
 component GridHeader inherits Rectangle {
     height: 34px;
     background: Theme.ground-band;
-    accessible-role: text; accessible-label: "player1.grid.edit-hint"; accessible-value: GridEdit.title;
+    accessible-role: text; accessible-id: "player1.grid.edit-hint"; accessible-value: GridEdit.title;
     // A sodium line mark on the left edge: the session is on.
     Rectangle { x: 0; width: 3px; background: Theme.attention; }
     HorizontalLayout {
         padding-left: Theme.s4; padding-right: Theme.s2; spacing: Theme.s4;
         Caps { text: @tr("EDIT GRID"); color: Theme.attention; font-weight: Theme.weight-semi; vertical-alignment: center; }
         Text {
-            accessible-role: text; accessible-label: "player1.grid.title"; accessible-value: self.text;
+            accessible-role: text; accessible-id: "player1.grid.title"; accessible-value: self.text;
             horizontal-stretch: 1;
             text: GridEdit.title;
             font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; overflow: elide;
@@ -304,15 +307,15 @@ component GridHeader inherits Rectangle {
             spacing: Theme.s2; horizontal-stretch: 0;
             Caps { text: "FIT"; font-size: Theme.label; vertical-alignment: center; }
             Text {
-                accessible-role: text; accessible-label: "player1.grid.fit"; accessible-value: self.text;
+                accessible-role: text; accessible-id: "player1.grid.fit"; accessible-value: self.text;
                 min-width: 52px;
                 text: GridEdit.fit;
                 font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; vertical-alignment: center;
                 color: GridTone.of(GridEdit.fit-tone);
             }
         }
-        VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-role: button; accessible-label: "player1.grid.cancel"; compact: true; label: @tr("CANCEL"); tone: Theme.fault; tooltip: @tr("Back to the grid before editing (nothing is stored)"); command: "player.grid.cancel"; clicked => { GridEdit.cancel(); } } }
-        VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-role: button; accessible-label: "player1.grid.done"; compact: true; label: @tr("DONE"); tone: Theme.live; tooltip: @tr("Keep the grid (one undo step)"); command: "player.grid.done"; clicked => { GridEdit.done(); } } }
+        VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-role: button; accessible-id: "player1.grid.cancel"; compact: true; label: @tr("CANCEL"); tone: Theme.fault; tooltip: @tr("Back to the grid before editing (nothing is stored)"); command: "player.grid.cancel"; clicked => { GridEdit.cancel(); } } }
+        VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-role: button; accessible-id: "player1.grid.done"; compact: true; label: @tr("DONE"); tone: Theme.live; tooltip: @tr("Keep the grid (one undo step)"); command: "player.grid.done"; clicked => { GridEdit.done(); } } }
     }
 }
 
@@ -325,7 +328,7 @@ component DriftStrip inherits Rectangle {
         padding-left: Theme.s3; padding-right: Theme.s2; spacing: Theme.s3;
         Caps { text: @tr("DRIFT"); font-size: Theme.label; vertical-alignment: center; width: 44px; }
         Rectangle {
-            accessible-role: image; accessible-label: "player1.grid.drift";
+            accessible-role: image; accessible-id: "player1.grid.drift";
             horizontal-stretch: 1;
             y: 5px; height: parent.height - 10px;
             background: Theme.ground-band;
@@ -338,7 +341,7 @@ component DriftStrip inherits Rectangle {
             }
         }
         Rectangle {
-            accessible-role: button; accessible-label: "player1.grid.worst"; accessible-value: GridEdit.worst;
+            accessible-role: button; accessible-id: "player1.grid.worst"; accessible-value: GridEdit.worst;
             horizontal-stretch: 0;
             min-width: worst.preferred-width + 16px;
             worst := Text {
@@ -363,7 +366,7 @@ component GridReadout inherits VerticalLayout {
     alignment: start;
     GridLabel { text: GridEdit.tempos > 1 ? @tr("BPM AT CURSOR · {} TEMPOS", GridEdit.tempos) : @tr("BPM"); }
     Field {
-        accessible-role: text-input; accessible-label: "player1.grid.bpm"; accessible-value: self.text;
+        accessible-role: text-input; accessible-id: "player1.grid.bpm"; accessible-value: self.text;
         height: 32px;
         text: GridEdit.bpm; placeholder: "BPM";
         // Follows the grid (also after typing).
@@ -374,7 +377,7 @@ component GridReadout inherits VerticalLayout {
     Rectangle { height: Theme.s2; }
     GridLabel { text: @tr("AT CURSOR"); }
     Text {
-        accessible-role: text; accessible-label: "player1.grid.at-cursor"; accessible-value: self.text;
+        accessible-role: text; accessible-id: "player1.grid.at-cursor"; accessible-value: self.text;
         text: GridEdit.at-cursor;
         font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
         color: GridTone.of(GridEdit.at-cursor-tone);
@@ -382,14 +385,14 @@ component GridReadout inherits VerticalLayout {
     Rectangle { height: Theme.s2; }
     GridLabel { text: @tr("SOURCE"); }
     Text {
-        accessible-role: text; accessible-label: "player1.grid.source"; accessible-value: self.text;
+        accessible-role: text; accessible-id: "player1.grid.source"; accessible-value: self.text;
         text: GridEdit.source == "" ? "—" : GridEdit.source;
         font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
     }
     Rectangle { height: Theme.s2; }
     GridLabel { text: @tr("PINS"); }
     for p[i] in GridEdit.pins: HorizontalLayout {
-        accessible-role: list-item; accessible-label: "player1.grid.pin" + i; accessible-value: p;
+        accessible-role: list-item; accessible-id: "player1.grid.pin" + i; accessible-value: p;
         spacing: Theme.s2; alignment: start;
         Text { text: "◆"; font-size: Theme.label; color: Theme.attention; vertical-alignment: center; }
         Text { text: p; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; }
@@ -424,22 +427,22 @@ component GridSessionKeys inherits VerticalLayout {
     HorizontalLayout {
         height: 30px; spacing: Theme.s1;
         KeyRowLabel { text: @tr("MOVE"); }
-        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.shift-left"; label: "◀ 10"; tooltip: @tr("Grid 10 ms earlier"); command: "player.grid.move-earlier-coarse"; enabled: root.enabled; clicked => { GridEdit.act("shift", "-10"); } }
-        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.nudge-left"; label: "◀ 1"; tooltip: @tr("Grid 1 ms earlier"); command: "player.grid.move-earlier"; enabled: root.enabled; clicked => { GridEdit.act("shift", "-1"); } }
-        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.nudge-right"; label: "1 ▶"; tooltip: @tr("Grid 1 ms later"); command: "player.grid.move-later"; enabled: root.enabled; clicked => { GridEdit.act("shift", "1"); } }
-        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.shift-right"; label: "10 ▶"; tooltip: @tr("Grid 10 ms later"); command: "player.grid.move-later-coarse"; enabled: root.enabled; clicked => { GridEdit.act("shift", "10"); } }
+        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.shift-left"; label: "◀ 10"; tooltip: @tr("Grid 10 ms earlier"); command: "player.grid.move-earlier-coarse"; enabled: root.enabled; clicked => { GridEdit.act("shift", "-10"); } }
+        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.nudge-left"; label: "◀ 1"; tooltip: @tr("Grid 1 ms earlier"); command: "player.grid.move-earlier"; enabled: root.enabled; clicked => { GridEdit.act("shift", "-1"); } }
+        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.nudge-right"; label: "1 ▶"; tooltip: @tr("Grid 1 ms later"); command: "player.grid.move-later"; enabled: root.enabled; clicked => { GridEdit.act("shift", "1"); } }
+        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.shift-right"; label: "10 ▶"; tooltip: @tr("Grid 10 ms later"); command: "player.grid.move-later-coarse"; enabled: root.enabled; clicked => { GridEdit.act("shift", "10"); } }
         Rectangle { width: Theme.s2; }
-        Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.beat-earlier"; label: @tr("◀ BEAT"); tooltip: @tr("Grid one beat earlier"); command: "player.grid.beat-earlier"; enabled: root.enabled; clicked => { GridEdit.act("beat", "-1"); } }
-        Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.beat-later"; label: @tr("BEAT ▶"); tooltip: @tr("Grid one beat later"); command: "player.grid.beat-later"; enabled: root.enabled; clicked => { GridEdit.act("beat", "1"); } }
+        Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.beat-earlier"; label: @tr("◀ BEAT"); tooltip: @tr("Grid one beat earlier"); command: "player.grid.beat-earlier"; enabled: root.enabled; clicked => { GridEdit.act("beat", "-1"); } }
+        Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.beat-later"; label: @tr("BEAT ▶"); tooltip: @tr("Grid one beat later"); command: "player.grid.beat-later"; enabled: root.enabled; clicked => { GridEdit.act("beat", "1"); } }
         Rectangle { width: Theme.s2; }
-        Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.set-one"; label: @tr("SET 1 HERE"); tone: Theme.attention; tooltip: @tr("The beat at the cursor becomes the 1 and sits on its kick (±60 ms)"); command: "player.grid.set-one"; enabled: root.enabled; clicked => { GridEdit.act("set-one", ""); } }
+        Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.set-one"; label: @tr("SET 1 HERE"); tone: Theme.attention; tooltip: @tr("The beat at the cursor becomes the 1 and sits on its kick (±60 ms)"); command: "player.grid.set-one"; enabled: root.enabled; clicked => { GridEdit.act("set-one", ""); } }
         if !root.narrow: Rectangle { width: Theme.s4; }
         if !root.narrow: KeyRowLabel { text: @tr("TEMPO"); }
-        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.slower"; label: "−.01"; tooltip: @tr("Tempo 0.01 BPM slower about the cursor"); command: "player.grid.slower"; enabled: root.enabled; clicked => { GridEdit.act("step", "-0.01"); } }
-        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.faster"; label: "+.01"; tooltip: @tr("Tempo 0.01 BPM faster about the cursor"); command: "player.grid.faster"; enabled: root.enabled; clicked => { GridEdit.act("step", "0.01"); } }
-        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.halve"; label: "÷2"; tooltip: @tr("Half the tempo"); command: "player.grid.half"; enabled: root.enabled; clicked => { GridEdit.act("scale", "0.5"); } }
-        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.double"; label: "×2"; tooltip: @tr("Double the tempo"); command: "player.grid.double"; enabled: root.enabled; clicked => { GridEdit.act("scale", "2"); } }
-        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.tap"; label: @tr("TAP"); tooltip: @tr("Tap along: from the fourth tap the tempo follows; while it plays the taps also set the phase"); command: "player.grid.tap-along"; enabled: root.enabled; clicked => { GridEdit.act("tap", ""); } }
+        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.slower"; label: "−.01"; tooltip: @tr("Tempo 0.01 BPM slower about the cursor"); command: "player.grid.slower"; enabled: root.enabled; clicked => { GridEdit.act("step", "-0.01"); } }
+        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.faster"; label: "+.01"; tooltip: @tr("Tempo 0.01 BPM faster about the cursor"); command: "player.grid.faster"; enabled: root.enabled; clicked => { GridEdit.act("step", "0.01"); } }
+        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.halve"; label: "÷2"; tooltip: @tr("Half the tempo"); command: "player.grid.half"; enabled: root.enabled; clicked => { GridEdit.act("scale", "0.5"); } }
+        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.double"; label: "×2"; tooltip: @tr("Double the tempo"); command: "player.grid.double"; enabled: root.enabled; clicked => { GridEdit.act("scale", "2"); } }
+        if !root.narrow: Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.tap"; label: @tr("TAP"); tooltip: @tr("Tap along: from the fourth tap the tempo follows; while it plays the taps also set the phase"); command: "player.grid.tap-along"; enabled: root.enabled; clicked => { GridEdit.act("tap", ""); } }
         if !root.narrow: Rectangle { width: Theme.s2; }
         if !root.narrow: Caps { text: @tr("PIVOT ▸ CURSOR"); font-size: Theme.label; vertical-alignment: center; color: Theme.bone-3; }
         Rectangle { horizontal-stretch: 1; }
@@ -447,11 +450,11 @@ component GridSessionKeys inherits VerticalLayout {
     if root.narrow: HorizontalLayout {
         height: 30px; spacing: Theme.s1;
         KeyRowLabel { text: @tr("TEMPO"); }
-        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.slower"; label: "−.01"; tooltip: @tr("Tempo 0.01 BPM slower about the cursor"); command: "player.grid.slower"; enabled: root.enabled; clicked => { GridEdit.act("step", "-0.01"); } }
-        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.faster"; label: "+.01"; tooltip: @tr("Tempo 0.01 BPM faster about the cursor"); command: "player.grid.faster"; enabled: root.enabled; clicked => { GridEdit.act("step", "0.01"); } }
-        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.halve"; label: "÷2"; tooltip: @tr("Half the tempo"); command: "player.grid.half"; enabled: root.enabled; clicked => { GridEdit.act("scale", "0.5"); } }
-        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.double"; label: "×2"; tooltip: @tr("Double the tempo"); command: "player.grid.double"; enabled: root.enabled; clicked => { GridEdit.act("scale", "2"); } }
-        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.tap"; label: @tr("TAP"); tooltip: @tr("Tap along: from the fourth tap the tempo follows; while it plays the taps also set the phase"); command: "player.grid.tap-along"; enabled: root.enabled; clicked => { GridEdit.act("tap", ""); } }
+        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.slower"; label: "−.01"; tooltip: @tr("Tempo 0.01 BPM slower about the cursor"); command: "player.grid.slower"; enabled: root.enabled; clicked => { GridEdit.act("step", "-0.01"); } }
+        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.faster"; label: "+.01"; tooltip: @tr("Tempo 0.01 BPM faster about the cursor"); command: "player.grid.faster"; enabled: root.enabled; clicked => { GridEdit.act("step", "0.01"); } }
+        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.halve"; label: "÷2"; tooltip: @tr("Half the tempo"); command: "player.grid.half"; enabled: root.enabled; clicked => { GridEdit.act("scale", "0.5"); } }
+        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.double"; label: "×2"; tooltip: @tr("Double the tempo"); command: "player.grid.double"; enabled: root.enabled; clicked => { GridEdit.act("scale", "2"); } }
+        Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.tap"; label: @tr("TAP"); tooltip: @tr("Tap along: from the fourth tap the tempo follows; while it plays the taps also set the phase"); command: "player.grid.tap-along"; enabled: root.enabled; clicked => { GridEdit.act("tap", ""); } }
         Rectangle { width: Theme.s2; }
         Caps { text: @tr("PIVOT ▸ CURSOR"); font-size: Theme.label; vertical-alignment: center; color: Theme.bone-3; }
         Rectangle { horizontal-stretch: 1; }
@@ -459,27 +462,27 @@ component GridSessionKeys inherits VerticalLayout {
     HorizontalLayout {
         height: 30px; spacing: Theme.s1;
         KeyRowLabel { text: @tr("SOLVE"); }
-        Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.pin"; label: GridEdit.pins.length > 0 ? @tr("PIN HERE ◆{}", GridEdit.pins.length) : @tr("PIN HERE"); tone: Theme.attention; on: GridEdit.pins.length > 0; tooltip: @tr("This beat sits exactly here (snapped to its kick): one pin moves the grid, two pins solve the tempo"); command: "player.grid.pin"; enabled: root.enabled; clicked => { GridEdit.act("pin", ""); } }
-        Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.auto-fix"; label: @tr("AUTO-FIX"); tooltip: @tr("Correct slip and tempo from the kicks of the tempo section at the cursor"); command: "player.grid.auto-fix"; enabled: root.enabled; clicked => { GridEdit.act("auto-fix", ""); } }
-        Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.tempo-change"; label: @tr("TEMPO CHANGE HERE"); tooltip: @tr("A new tempo from the beat at the cursor on, measured from the kicks after it"); enabled: root.enabled; clicked => { GridEdit.act("tempo-change", ""); } }
-        Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.clear-pins"; label: @tr("CLEAR PINS"); tooltip: @tr("Remove the pins (the grid stays)"); enabled: root.enabled && GridEdit.pins.length > 0; clicked => { GridEdit.act("clear-pins", ""); } }
+        Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.pin"; label: GridEdit.pins.length > 0 ? @tr("PIN HERE ◆{}", GridEdit.pins.length) : @tr("PIN HERE"); tone: Theme.attention; on: GridEdit.pins.length > 0; tooltip: @tr("This beat sits exactly here (snapped to its kick): one pin moves the grid, two pins solve the tempo"); command: "player.grid.pin"; enabled: root.enabled; clicked => { GridEdit.act("pin", ""); } }
+        Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.auto-fix"; label: @tr("AUTO-FIX"); tooltip: @tr("Correct slip and tempo from the kicks of the tempo section at the cursor"); command: "player.grid.auto-fix"; enabled: root.enabled; clicked => { GridEdit.act("auto-fix", ""); } }
+        Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.tempo-change"; label: @tr("TEMPO CHANGE HERE"); tooltip: @tr("A new tempo from the beat at the cursor on, measured from the kicks after it"); enabled: root.enabled; clicked => { GridEdit.act("tempo-change", ""); } }
+        Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.clear-pins"; label: @tr("CLEAR PINS"); tooltip: @tr("Remove the pins (the grid stays)"); enabled: root.enabled && GridEdit.pins.length > 0; clicked => { GridEdit.act("clear-pins", ""); } }
         if !root.narrow: Rectangle { width: Theme.s4; }
         if !root.narrow: KeyRowLabel { text: @tr("HEAR"); }
-        if !root.narrow: Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.click; accessible-label: "player1.grid.click"; label: GridEdit.click ? @tr("CLICK ●") : @tr("CLICK ○"); on: GridEdit.click; tone: Theme.live; tooltip: @tr("Metronome on the grid while the preview plays (higher on the 1)"); command: "player.grid.click"; clicked => { GridEdit.act("click", ""); } }
-        if !root.narrow: Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.snap; accessible-label: "player1.grid.snap"; label: GridEdit.snap ? @tr("SNAP ●") : @tr("SNAP ○"); on: GridEdit.snap; tone: Theme.live; tooltip: @tr("Snap SET 1, PIN and drags to the kicks (hold Alt while dragging: no snap)"); command: "player.grid.snap"; clicked => { GridEdit.act("snap", ""); } }
-        if !root.narrow: Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.undo"; label: @tr("UNDO"); tooltip: @tr("Undo the last grid change of this session"); command: "player.grid.undo"; enabled: GridEdit.can-undo; clicked => { GridEdit.act("undo", ""); } }
-        if !root.narrow: Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.redo"; label: @tr("REDO"); tooltip: @tr("Redo"); command: "player.grid.redo"; enabled: GridEdit.can-redo; clicked => { GridEdit.act("redo", ""); } }
-        if !root.narrow: Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.locked; accessible-label: "player1.grid.lock"; label: GridEdit.locked ? @tr("GRID LOCKED") : @tr("LOCK GRID"); on: GridEdit.locked; tone: Theme.attention; tooltip: @tr("Lock the grid against changes (analysis and edits)"); clicked => { GridEdit.act("lock", ""); } }
+        if !root.narrow: Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.click; accessible-id: "player1.grid.click"; label: GridEdit.click ? @tr("CLICK ●") : @tr("CLICK ○"); on: GridEdit.click; tone: Theme.live; tooltip: @tr("Metronome on the grid while the preview plays (higher on the 1)"); command: "player.grid.click"; clicked => { GridEdit.act("click", ""); } }
+        if !root.narrow: Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.snap; accessible-id: "player1.grid.snap"; label: GridEdit.snap ? @tr("SNAP ●") : @tr("SNAP ○"); on: GridEdit.snap; tone: Theme.live; tooltip: @tr("Snap SET 1, PIN and drags to the kicks (hold Alt while dragging: no snap)"); command: "player.grid.snap"; clicked => { GridEdit.act("snap", ""); } }
+        if !root.narrow: Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.undo"; label: @tr("UNDO"); tooltip: @tr("Undo the last grid change of this session"); command: "player.grid.undo"; enabled: GridEdit.can-undo; clicked => { GridEdit.act("undo", ""); } }
+        if !root.narrow: Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.redo"; label: @tr("REDO"); tooltip: @tr("Redo"); command: "player.grid.redo"; enabled: GridEdit.can-redo; clicked => { GridEdit.act("redo", ""); } }
+        if !root.narrow: Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.locked; accessible-id: "player1.grid.lock"; label: GridEdit.locked ? @tr("GRID LOCKED") : @tr("LOCK GRID"); on: GridEdit.locked; tone: Theme.attention; tooltip: @tr("Lock the grid against changes (analysis and edits)"); clicked => { GridEdit.act("lock", ""); } }
         Rectangle { horizontal-stretch: 1; }
     }
     if root.narrow: HorizontalLayout {
         height: 30px; spacing: Theme.s1;
         KeyRowLabel { text: @tr("HEAR"); }
-        Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.click; accessible-label: "player1.grid.click"; label: GridEdit.click ? @tr("CLICK ●") : @tr("CLICK ○"); on: GridEdit.click; tone: Theme.live; tooltip: @tr("Metronome on the grid while the preview plays (higher on the 1)"); command: "player.grid.click"; clicked => { GridEdit.act("click", ""); } }
-        Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.snap; accessible-label: "player1.grid.snap"; label: GridEdit.snap ? @tr("SNAP ●") : @tr("SNAP ○"); on: GridEdit.snap; tone: Theme.live; tooltip: @tr("Snap SET 1, PIN and drags to the kicks (hold Alt while dragging: no snap)"); command: "player.grid.snap"; clicked => { GridEdit.act("snap", ""); } }
-        Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.undo"; label: @tr("UNDO"); tooltip: @tr("Undo the last grid change of this session"); command: "player.grid.undo"; enabled: GridEdit.can-undo; clicked => { GridEdit.act("undo", ""); } }
-        Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.redo"; label: @tr("REDO"); tooltip: @tr("Redo"); command: "player.grid.redo"; enabled: GridEdit.can-redo; clicked => { GridEdit.act("redo", ""); } }
-        Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.locked; accessible-label: "player1.grid.lock"; label: GridEdit.locked ? @tr("GRID LOCKED") : @tr("LOCK GRID"); on: GridEdit.locked; tone: Theme.attention; tooltip: @tr("Lock the grid against changes (analysis and edits)"); clicked => { GridEdit.act("lock", ""); } }
+        Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.click; accessible-id: "player1.grid.click"; label: GridEdit.click ? @tr("CLICK ●") : @tr("CLICK ○"); on: GridEdit.click; tone: Theme.live; tooltip: @tr("Metronome on the grid while the preview plays (higher on the 1)"); command: "player.grid.click"; clicked => { GridEdit.act("click", ""); } }
+        Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.snap; accessible-id: "player1.grid.snap"; label: GridEdit.snap ? @tr("SNAP ●") : @tr("SNAP ○"); on: GridEdit.snap; tone: Theme.live; tooltip: @tr("Snap SET 1, PIN and drags to the kicks (hold Alt while dragging: no snap)"); command: "player.grid.snap"; clicked => { GridEdit.act("snap", ""); } }
+        Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.undo"; label: @tr("UNDO"); tooltip: @tr("Undo the last grid change of this session"); command: "player.grid.undo"; enabled: GridEdit.can-undo; clicked => { GridEdit.act("undo", ""); } }
+        Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.redo"; label: @tr("REDO"); tooltip: @tr("Redo"); command: "player.grid.redo"; enabled: GridEdit.can-redo; clicked => { GridEdit.act("redo", ""); } }
+        Toggle { size: 30px; accessible-role: checkbox; accessible-checkable: true; accessible-checked: GridEdit.locked; accessible-id: "player1.grid.lock"; label: GridEdit.locked ? @tr("GRID LOCKED") : @tr("LOCK GRID"); on: GridEdit.locked; tone: Theme.attention; tooltip: @tr("Lock the grid against changes (analysis and edits)"); clicked => { GridEdit.act("lock", ""); } }
         Rectangle { horizontal-stretch: 1; }
     }
 }
@@ -581,7 +584,7 @@ export component PreparePlayer inherits Rectangle {
                     spacing: 0;
                     Flickable {
                         accessible-role: list;
-                        accessible-label: "player1.cue-list.rows";
+                        accessible-id: "player1.cue-list.rows";
                         vertical-stretch: 1;
                         VerticalLayout {
                             width: root.side-w;
@@ -590,7 +593,7 @@ export component PreparePlayer inherits Rectangle {
                             alignment: start;
                             for c[i] in root.cues: Rectangle {
                                 accessible-role: list-item;
-                                accessible-label: "player1.cue-list.row\{i}";
+                                accessible-id: "player1.cue-list.row\{i}";
                                 accessible-value: c.label;
                                 property <bool> shown: root.list-tab == "all" ? true : root.list-tab == "memory" ? c.slot < 0 : root.list-tab == "hot" ? c.slot >= 0 : false;
                                 visible: self.shown;
@@ -648,7 +651,7 @@ export component PreparePlayer inherits Rectangle {
                                 Reading { label: @tr("TIME"); value: root.duration; }
                                 // The tempo range the analysis folds into (Preferences › Analysis).
                                 Reading { a11y-label: "player1.bpm-range"; label: @tr("BPM RANGE"); value: root.bpm-range; }
-                                if !root.analysed && root.has-track: PlateButton { accessible-role: button; accessible-label: "player1.analyse"; label: @tr("ANALYSE"); tone: Theme.attention; enabled: !root.read-only; clicked => { root.analyse(); } }
+                                if !root.analysed && root.has-track: PlateButton { accessible-role: button; accessible-id: "player1.analyse"; label: @tr("ANALYSE"); tone: Theme.attention; enabled: !root.read-only; clicked => { root.analyse(); } }
                             }
                         }
                     }
@@ -658,14 +661,14 @@ export component PreparePlayer inherits Rectangle {
                         height: self.visible ? self.preferred-height : 0px;
                         padding: Theme.s2; spacing: Theme.s1;
                         name := Field {
-                            accessible-label: "player1.cue-list.name"; accessible-role: text-input;
+                            accessible-id: "player1.cue-list.name"; accessible-role: text-input;
                             placeholder: @tr("Cue name");
                             accepted(t) => { CueEdit.label(root.selected-cue, t); }
                         }
                         HorizontalLayout {
                             spacing: Theme.key-gap; height: 20px;
                             for c[ci] in CueEdit.palette: Rectangle {
-                                accessible-label: "player1.cue-list.color" + ci; accessible-role: button;
+                                accessible-id: "player1.cue-list.color" + ci; accessible-role: button;
                                 background: c; border-width: 1px; border-color: Theme.rule;
                                 TouchArea { mouse-cursor: pointer; clicked => { CueEdit.color(root.selected-cue, ci); } }
                             }
@@ -673,19 +676,19 @@ export component PreparePlayer inherits Rectangle {
                         HorizontalLayout {
                             spacing: Theme.s1;
                             PlateButton {
-                                accessible-label: "player1.cue-list.move"; accessible-role: button;
+                                accessible-id: "player1.cue-list.move"; accessible-role: button;
                                 compact: true; label: @tr("TO CURSOR"); horizontal-stretch: 1;
                                 tooltip: @tr("Move the cue to the cursor (snapped to the beat)");
                                 clicked => { CueEdit.move-to-cursor(root.selected-cue); }
                             }
                             if root.selected-cue >= 0 && root.selected-cue < root.cues.length && root.cues[root.selected-cue].slot < 0: PlateButton {
-                                accessible-label: "player1.cue-list.to-hot"; accessible-role: button;
+                                accessible-id: "player1.cue-list.to-hot"; accessible-role: button;
                                 compact: true; label: @tr("→ HOT"); horizontal-stretch: 1;
                                 tooltip: @tr("Make this memory cue a hot cue on the first free pad");
                                 clicked => { CueEdit.to-hot(root.selected-cue); }
                             }
                             if root.selected-cue >= 0 && root.selected-cue < root.cues.length && root.cues[root.selected-cue].is-loop: PlateButton {
-                                accessible-label: "player1.cue-list.active"; accessible-role: button;
+                                accessible-id: "player1.cue-list.active"; accessible-role: button;
                                 accessible-checkable: true; accessible-checked: root.cues[root.selected-cue].active;
                                 compact: true; label: @tr("ACTIVE"); horizontal-stretch: 1;
                                 active: root.cues[root.selected-cue].active; tone: Theme.attention;
@@ -693,7 +696,7 @@ export component PreparePlayer inherits Rectangle {
                                 clicked => { CueEdit.active(root.selected-cue); }
                             }
                             PlateButton {
-                                accessible-label: "player1.cue-list.delete"; accessible-role: button;
+                                accessible-id: "player1.cue-list.delete"; accessible-role: button;
                                 compact: true; glyph: "close"; width: 30px; tone: Theme.fault;
                                 tooltip: @tr("Delete this cue");
                                 clicked => { CueEdit.delete(root.selected-cue); root.selected-cue = -1; }
@@ -706,10 +709,10 @@ export component PreparePlayer inherits Rectangle {
                         padding: Theme.s2;
                         spacing: Theme.key-gap;
                         alignment: stretch;
-                        Tab { accessible-label: "player1.cue-list.tab.all"; horizontal-stretch: 1; pad: 12px; label: @tr("ALL"); current: root.list-tab == "all"; clicked => { root.list-tab = "all"; } }
-                        Tab { accessible-label: "player1.cue-list.tab.memory"; horizontal-stretch: 1; pad: 12px; label: "MEMORY"; current: root.list-tab == "memory"; clicked => { root.list-tab = "memory"; } }
-                        Tab { accessible-label: "player1.cue-list.tab.hot-cue"; horizontal-stretch: 1; pad: 12px; label: "HOT CUE"; current: root.list-tab == "hot"; clicked => { root.list-tab = "hot"; } }
-                        Tab { accessible-label: "player1.cue-list.tab.info"; horizontal-stretch: 1; pad: 12px; label: "INFO"; current: root.list-tab == "info"; clicked => { root.list-tab = "info"; } }
+                        Tab { accessible-id: "player1.cue-list.tab.all"; horizontal-stretch: 1; pad: 12px; label: @tr("ALL"); current: root.list-tab == "all"; clicked => { root.list-tab = "all"; } }
+                        Tab { accessible-id: "player1.cue-list.tab.memory"; horizontal-stretch: 1; pad: 12px; label: "MEMORY"; current: root.list-tab == "memory"; clicked => { root.list-tab = "memory"; } }
+                        Tab { accessible-id: "player1.cue-list.tab.hot-cue"; horizontal-stretch: 1; pad: 12px; label: "HOT CUE"; current: root.list-tab == "hot"; clicked => { root.list-tab = "hot"; } }
+                        Tab { accessible-id: "player1.cue-list.tab.info"; horizontal-stretch: 1; pad: 12px; label: "INFO"; current: root.list-tab == "info"; clicked => { root.list-tab = "info"; } }
                     }
                 }
             }
@@ -727,7 +730,7 @@ export component PreparePlayer inherits Rectangle {
                     spacing: root.narrow ? Theme.s2 : Theme.s4;
                     // Cover art, an outlined square when the track has none.
                     VerticalLayout { alignment: center; Rectangle {
-                        accessible-role: image; accessible-label: "player1.artwork";
+                        accessible-role: image; accessible-id: "player1.artwork";
                         accessible-value: root.has-artwork && root.has-track ? "cover" : "none";
                         width: 26px; height: 26px;
                         background: Theme.plate;
@@ -736,14 +739,14 @@ export component PreparePlayer inherits Rectangle {
                     } }
                     Text {
                         accessible-role: text;
-                        accessible-label: "player1.title";
+                        accessible-id: "player1.title";
                         accessible-value: self.text;
                         horizontal-stretch: 2;
                         text: root.has-track ? root.title : @tr("No track selected");
                         font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; vertical-alignment: center;
                         color: root.has-track ? Theme.bone : Theme.bone-3; overflow: elide;
                     }
-                    Text { accessible-role: text; accessible-label: "player1.artist"; accessible-value: self.text; horizontal-stretch: 1; text: root.artist; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
+                    Text { accessible-role: text; accessible-id: "player1.artist"; accessible-value: self.text; horizontal-stretch: 1; text: root.artist; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
                     Reading { a11y-label: "player1.time-remaining"; label: @tr("REMAIN"); template: "-00:00"; value: root.has-track ? root.remaining : ""; }
                     if !root.narrow: Reading { a11y-label: "player1.time-elapsed"; label: @tr("POS"); template: "00:00.000"; value: root.position; }
                     if !root.narrow: Reading { a11y-label: "player1.duration"; label: @tr("TIME"); template: "00:00"; value: root.duration; }
@@ -755,7 +758,9 @@ export component PreparePlayer inherits Rectangle {
                     height: 24px;
                     spacing: 0px;
                     for z in [{ id: "zoom-in", glyph: "plus", tip: @tr("Zoom in") }, { id: "zoom-reset", glyph: "", tip: @tr("Reset the zoom (Preferences > View > Waveform zoom)") }, { id: "zoom-out", glyph: "minus", tip: @tr("Zoom out") }]: Rectangle {
-                        accessible-role: button; accessible-label: "player1." + z.id;
+                        accessible-role: button; accessible-id: "player1." + z.id;
+                        accessible-label: TooltipState.name-for(self.accessible-id, "", z.tip);
+                        KeyFocus { activate => { root.act(z.id); } }
                         width: 28px;
                         background: zt.has-hover ? Theme.plate-raised : Theme.plate;
                         border-width: 1px; border-color: Theme.ground;
@@ -770,7 +775,7 @@ export component PreparePlayer inherits Rectangle {
                 }
                 Rectangle {
                     accessible-role: image;
-                    accessible-label: "player1.enlarged";
+                    accessible-id: "player1.enlarged";
                     vertical-stretch: 1;
                     min-height: 60px;
                     background: Theme.ground-band;
@@ -780,7 +785,7 @@ export component PreparePlayer inherits Rectangle {
                         property <length> px: parent.width / 2 + (c.pos - root.cursor) / max(root.detail-span, 0.00001) * parent.width;
                         property <length> lw: c.is-loop ? (c.end - c.pos) / max(root.detail-span, 0.00001) * parent.width : 0px;
                         accessible-role: image;
-                        accessible-label: c.slot >= 0 ? "player1.wave.cue." + c.letter : "player1.wave.memory." + i;
+                        accessible-id: c.slot >= 0 ? "player1.wave.cue." + c.letter : "player1.wave.memory." + i;
                         accessible-value: c.time;
                         visible: root.has-track && root.detail-span > 0 && self.px + self.lw >= 0 && self.px <= parent.width;
                         x: self.px; y: 0; height: parent.height;
@@ -842,7 +847,9 @@ export component PreparePlayer inherits Rectangle {
                 HLine { tone: Theme.rule; }
                 Rectangle {
                     accessible-role: slider;
-                    accessible-label: "player1.overview";
+                    accessible-id: "player1.overview";
+                    accessible-label: TooltipState.name-for(self.accessible-id, @tr("TRACK POSITION"), @tr("Click to jump there")); accessible-enabled: root.has-track;
+                    KeyFocus { radius: 0; enabled: root.has-track; arrows: true; step(d) => { root.seek(clamp(root.cursor + d * 0.02, 0, 1)); } }
                     height: 40px;
                     background: Theme.ground-band;
                     Image { width: parent.width; height: parent.height; source: root.overview; image-fit: fill; }
@@ -858,7 +865,7 @@ export component PreparePlayer inherits Rectangle {
                     }
                     // Edit region: a sodium bar along the top between dashed IN / OUT lines.
                     if root.has-track && TrackEdit.start >= 0 && TrackEdit.end >= 0: Rectangle {
-                        accessible-role: text; accessible-label: "player1.edit.span"; accessible-value: TrackEdit.region;
+                        accessible-role: text; accessible-id: "player1.edit.span"; accessible-value: TrackEdit.region;
                         x: parent.width * min(TrackEdit.start, TrackEdit.end);
                         width: max(1px, parent.width * abs(TrackEdit.end - TrackEdit.start));
                         y: 0; height: 3px;
@@ -907,25 +914,25 @@ export component PreparePlayer inherits Rectangle {
                 if !(GridEdit.active && root.has-track): HorizontalLayout {
                     height: 30px;
                     spacing: Theme.key-gap;
-                    Tab { accessible-label: "player1.tab.cue-loop"; height: 30px; label: "CUE / LOOP"; current: root.tool-tab == "cue"; clicked => { root.tool-tab = "cue"; } }
-                    Tab { accessible-label: "player1.tab.grid"; height: 30px; label: @tr("GRID"); current: root.tool-tab == "grid"; clicked => { root.tool-tab = "grid"; } }
-                    Tab { accessible-label: "player1.tab.phrase"; height: 30px; label: @tr("PHRASE"); current: root.tool-tab == "phrase"; clicked => { root.tool-tab = "phrase"; } }
-                    Tab { accessible-label: "player1.tab.edit"; height: 30px; label: @tr("EDIT"); current: root.tool-tab == "edit"; clicked => { root.tool-tab = "edit"; } }
-                    Tab { accessible-label: "player1.tab.shift"; height: 30px; label: @tr("TEMPO / KEY"); current: root.tool-tab == "shift"; clicked => { root.tool-tab = "shift"; } }
+                    Tab { accessible-id: "player1.tab.cue-loop"; height: 30px; label: "CUE / LOOP"; current: root.tool-tab == "cue"; clicked => { root.tool-tab = "cue"; } }
+                    Tab { accessible-id: "player1.tab.grid"; height: 30px; label: @tr("GRID"); current: root.tool-tab == "grid"; clicked => { root.tool-tab = "grid"; } }
+                    Tab { accessible-id: "player1.tab.phrase"; height: 30px; label: @tr("PHRASE"); current: root.tool-tab == "phrase"; clicked => { root.tool-tab = "phrase"; } }
+                    Tab { accessible-id: "player1.tab.edit"; height: 30px; label: @tr("EDIT"); current: root.tool-tab == "edit"; clicked => { root.tool-tab = "edit"; } }
+                    Tab { accessible-id: "player1.tab.shift"; height: 30px; label: @tr("TEMPO / KEY"); current: root.tool-tab == "shift"; clicked => { root.tool-tab = "shift"; } }
                     Rectangle { horizontal-stretch: 1; min-width: 16px; }
                     // Narrow: the loop is set with the CUE / LOOP keys below.
                     if !root.narrow: HorizontalLayout {
                         spacing: Theme.s1;
-                        Toggle { accessible-label: "player1.loop-in"; accessible-role: button; size: 30px; min-w: 44px; label: "IN"; on: root.loop-in-set; tone: Theme.attention; tooltip: @tr("Loop in point at the playhead (while the track plays)"); enabled: root.has-track; clicked => { root.act("loop-in"); } }
-                        Toggle { accessible-label: "player1.loop-out"; accessible-role: button; size: 30px; min-w: 44px; label: "OUT"; on: root.looping; tone: Theme.attention; tooltip: @tr("Loop out point: the loop starts"); enabled: root.has-track; clicked => { root.act("loop-out"); } }
+                        Toggle { accessible-id: "player1.loop-in"; accessible-role: button; size: 30px; min-w: 44px; label: "IN"; on: root.loop-in-set; tone: Theme.attention; tooltip: @tr("Loop in point at the playhead (while the track plays)"); enabled: root.has-track; clicked => { root.act("loop-in"); } }
+                        Toggle { accessible-id: "player1.loop-out"; accessible-role: button; size: 30px; min-w: 44px; label: "OUT"; on: root.looping; tone: Theme.attention; tooltip: @tr("Loop out point: the loop starts"); enabled: root.has-track; clicked => { root.act("loop-out"); } }
                     }
                     if !root.narrow: Rectangle { width: Theme.s3; }
                     HorizontalLayout {
                         spacing: Theme.s1;
-                        Toggle { accessible-label: "player1.jump-back"; accessible-role: button; size: 30px; min-w: 30px; label: "−"; tooltip: @tr("Jump back by the jump size"); clicked => { root.act("jump-back"); } }
-                        Toggle { accessible-label: "player1.jump-forward"; accessible-role: button; size: 30px; min-w: 30px; label: "+"; tooltip: @tr("Jump forward by the jump size"); clicked => { root.act("jump-forward"); } }
+                        Toggle { accessible-id: "player1.jump-back"; accessible-role: button; size: 30px; min-w: 30px; label: "−"; tooltip: @tr("Jump back by the jump size"); clicked => { root.act("jump-back"); } }
+                        Toggle { accessible-id: "player1.jump-forward"; accessible-role: button; size: 30px; min-w: 30px; label: "+"; tooltip: @tr("Jump forward by the jump size"); clicked => { root.act("jump-forward"); } }
                         Stepper {
-                            accessible-role: spinbox; accessible-label: "player1.jump-size"; accessible-value: root.jump-size;
+                            accessible-role: spinbox; accessible-id: "player1.jump-size"; accessible-value: root.jump-size;
                             size: 30px; arrow: 22px; font-size: Theme.control; template: "16 S";
                             value: root.jump-size;
                             tooltip: @tr("Jump size of − / +: shorter / longer");
@@ -944,26 +951,26 @@ export component PreparePlayer inherits Rectangle {
                             spacing: Theme.s1;
                             for c in root.hot-cues: Pad {
                                 accessible-role: button;
-                                accessible-label: "player1.hot-cue." + c.letter;
+                                accessible-id: "player1.hot-cue." + c.letter;
                                 accessible-value: c.set ? (c.label != "" ? c.label : c.time) : "";
                                 horizontal-stretch: 3; cue: c; pressed => { root.hot-cue(c.slot); } }
                             Rectangle { width: Theme.s2; }
-                            PlateButton { accessible-role: button; accessible-label: "player1.memory.set"; horizontal-stretch: 0; compact: true; height: 30px; label: root.narrow ? "" : @tr("MEMORY"); tooltip: @tr("Add a memory cue at the cursor"); glyph: "plus"; enabled: root.has-track && !root.read-only; clicked => { root.add-memory-cue(); } }
-                            Toggle { accessible-role: button; accessible-label: "player1.memory.prev"; size: 30px; width: 26px; label: "‹"; tooltip: @tr("Previous cue"); enabled: root.has-track; clicked => { root.act("memory-prev"); } }
-                            Toggle { accessible-role: button; accessible-label: "player1.memory.next"; size: 30px; width: 26px; label: "›"; tooltip: @tr("Next cue"); enabled: root.has-track; clicked => { root.act("memory-next"); } }
-                            Toggle { accessible-role: button; accessible-label: "player1.memory.delete"; size: 30px; label: @tr("DEL"); tone: Theme.fault; tooltip: @tr("Delete the memory cue at the cursor"); enabled: root.has-track && !root.read-only; clicked => { root.act("memory-delete"); } }
+                            PlateButton { accessible-role: button; accessible-id: "player1.memory.set"; horizontal-stretch: 0; compact: true; height: 30px; label: root.narrow ? "" : @tr("MEMORY"); tooltip: @tr("Add a memory cue at the cursor"); glyph: "plus"; enabled: root.has-track && !root.read-only; clicked => { root.add-memory-cue(); } }
+                            Toggle { accessible-role: button; accessible-id: "player1.memory.prev"; size: 30px; width: 26px; label: "‹"; tooltip: @tr("Previous cue"); enabled: root.has-track; clicked => { root.act("memory-prev"); } }
+                            Toggle { accessible-role: button; accessible-id: "player1.memory.next"; size: 30px; width: 26px; label: "›"; tooltip: @tr("Next cue"); enabled: root.has-track; clicked => { root.act("memory-next"); } }
+                            Toggle { accessible-role: button; accessible-id: "player1.memory.delete"; size: 30px; label: @tr("DEL"); tone: Theme.fault; tooltip: @tr("Delete the memory cue at the cursor"); enabled: root.has-track && !root.read-only; clicked => { root.act("memory-delete"); } }
                             Rectangle { width: Theme.s2; }
-                            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.looping; accessible-label: "player1.loop.auto"; size: 30px; label: "LOOP"; on: root.looping; tone: Theme.attention; tooltip: @tr("Auto loop of the shown length while the track plays; again to leave"); enabled: root.has-track; clicked => { root.act("loop-auto"); } }
-                            Toggle { accessible-role: button; accessible-label: "player1.loop.manual"; size: 30px; label: root.looping ? @tr("EXIT") : root.loop-in-set ? @tr("OUT") : @tr("IN"); armed: root.loop-in-set && !root.looping; tone: Theme.attention; tooltip: @tr("Manual loop: in point, then out point; again to leave"); enabled: root.has-track; clicked => { root.act("loop-manual"); } }
-                            Toggle { accessible-role: button; accessible-label: "player1.loop.halve"; size: 30px; width: 26px; label: "½"; tooltip: @tr("Halve the loop"); clicked => { root.act("loop-halve"); } }
+                            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.looping; accessible-id: "player1.loop.auto"; size: 30px; label: "LOOP"; on: root.looping; tone: Theme.attention; tooltip: @tr("Auto loop of the shown length while the track plays; again to leave"); enabled: root.has-track; clicked => { root.act("loop-auto"); } }
+                            Toggle { accessible-role: button; accessible-id: "player1.loop.manual"; size: 30px; label: root.looping ? @tr("EXIT") : root.loop-in-set ? @tr("OUT") : @tr("IN"); armed: root.loop-in-set && !root.looping; tone: Theme.attention; tooltip: @tr("Manual loop: in point, then out point; again to leave"); enabled: root.has-track; clicked => { root.act("loop-manual"); } }
+                            Toggle { accessible-role: button; accessible-id: "player1.loop.halve"; size: 30px; width: 26px; label: "½"; tooltip: @tr("Halve the loop"); clicked => { root.act("loop-halve"); } }
                             Rectangle {
-                                accessible-role: text; accessible-label: "player1.loop.size"; accessible-value: root.loop-size;
+                                accessible-role: text; accessible-id: "player1.loop.size"; accessible-value: root.loop-size;
                                 width: 34px;
                                 background: Theme.plate; border-radius: Theme.r-control;
                                 Text { text: root.loop-size; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; }
                             }
-                            Toggle { accessible-role: button; accessible-label: "player1.loop.double"; size: 30px; width: 26px; label: "2×"; tooltip: @tr("Double the loop"); clicked => { root.act("loop-double"); } }
-                            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.quantize; accessible-label: "player1.quantize"; size: 30px; width: 28px; label: "Q"; on: root.quantize; tone: Theme.setup-on; tooltip: @tr("Quantize loops and cues to the beat"); clicked => { root.act("quantize"); } }
+                            Toggle { accessible-role: button; accessible-id: "player1.loop.double"; size: 30px; width: 26px; label: "2×"; tooltip: @tr("Double the loop"); clicked => { root.act("loop-double"); } }
+                            Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.quantize; accessible-id: "player1.quantize"; size: 30px; width: 28px; label: "Q"; on: root.quantize; tone: Theme.setup-on; tooltip: @tr("Quantize loops and cues to the beat"); clicked => { root.act("quantize"); } }
                             player-menu := ContextMenuArea {
                                 width: 28px;
                                 Menu {
@@ -972,7 +979,9 @@ export component PreparePlayer inherits Rectangle {
                                     MenuItem { title: @tr("Show in file manager"); enabled: root.has-track; activated => { root.act("menu:reveal"); } }
                                 }
                                 Rectangle {
-                                    accessible-role: button; accessible-label: "player1.menu";
+                                    accessible-role: button; accessible-id: "player1.menu";
+                                    accessible-label: TooltipState.name-for(self.accessible-id, "", mt.tooltip);
+                                    KeyFocus { activate => { player-menu.show({ x: 0, y: parent.height }); } }
                                     background: mt.has-hover ? Theme.plate-raised : Theme.plate;
                                     border-width: 1px; border-color: Theme.rule;
                                     Text { text: "⋯"; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone-2; }
@@ -988,19 +997,19 @@ export component PreparePlayer inherits Rectangle {
                         alignment: center;
                         HorizontalLayout {
                             spacing: Theme.s1;
-                            PlateButton { accessible-role: button; accessible-label: "player1.grid.edit"; horizontal-stretch: 0; compact: true; height: 30px; label: @tr("EDIT GRID"); tone: Theme.attention; command: "player.grid.edit"; tooltip: @tr("Edit the beatgrid with the kicks in view: move, tempo about the cursor, pins, AUTO-FIX; DONE keeps it"); enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { GridEdit.start(); } }
+                            PlateButton { accessible-role: button; accessible-id: "player1.grid.edit"; horizontal-stretch: 0; compact: true; height: 30px; label: @tr("EDIT GRID"); tone: Theme.attention; command: "player.grid.edit"; tooltip: @tr("Edit the beatgrid with the kicks in view: move, tempo about the cursor, pins, AUTO-FIX; DONE keeps it"); enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { GridEdit.start(); } }
                             Rectangle { width: Theme.s2; }
-                            Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.nudge-left"; label: "◀ 1"; tooltip: @tr("Grid 1 ms earlier"); command: "player.grid.earlier-fine"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-shift(-1); } }
-                            Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.nudge-right"; label: "1 ▶"; tooltip: @tr("Grid 1 ms later"); command: "player.grid.later-fine"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-shift(1); } }
-                            Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.halve"; label: "÷2"; tooltip: @tr("Half the tempo"); command: "player.grid.half"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-scale(0.5); } }
-                            Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-label: "player1.grid.double"; label: "×2"; tooltip: @tr("Double the tempo"); command: "player.grid.double"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-scale(2.0); } }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.downbeat"; label: @tr("SET 1 HERE"); tooltip: @tr("The beat at the cursor becomes the 1 and sits on its kick"); command: "player.grid.downbeat"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-downbeat(); } }
+                            Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.nudge-left"; label: "◀ 1"; tooltip: @tr("Grid 1 ms earlier"); command: "player.grid.earlier-fine"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-shift(-1); } }
+                            Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.nudge-right"; label: "1 ▶"; tooltip: @tr("Grid 1 ms later"); command: "player.grid.later-fine"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-shift(1); } }
+                            Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.halve"; label: "÷2"; tooltip: @tr("Half the tempo"); command: "player.grid.half"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-scale(0.5); } }
+                            Toggle { size: 30px; min-w: 44px; accessible-role: button; accessible-id: "player1.grid.double"; label: "×2"; tooltip: @tr("Double the tempo"); command: "player.grid.double"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-scale(2.0); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.downbeat"; label: @tr("SET 1 HERE"); tooltip: @tr("The beat at the cursor becomes the 1 and sits on its kick"); command: "player.grid.downbeat"; enabled: !root.grid-locked && !root.read-only && root.has-track; clicked => { root.grid-downbeat(); } }
                             Rectangle { horizontal-stretch: 1; }
                             // Narrow: the source, UNDO and REDO give way (EDIT GRID has its own).
-                            if !root.narrow: Caps { accessible-role: text; accessible-label: "player1.grid.source-tab"; accessible-value: self.text; text: root.grid-source; font-size: Theme.label; vertical-alignment: center; }
-                            if !root.narrow: Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.undo"; label: @tr("UNDO"); tooltip: @tr("Undo the last change"); command: "library.undo"; enabled: !root.read-only; clicked => { root.act("undo"); } }
-                            if !root.narrow: Toggle { size: 30px; accessible-role: button; accessible-label: "player1.grid.redo"; label: @tr("REDO"); tooltip: @tr("Redo"); command: "library.redo"; enabled: !root.read-only; clicked => { root.act("redo"); } }
-                            Toggle { size: 30px; accessible-role: checkbox; accessible-label: "player1.grid.lock"; accessible-checkable: true; accessible-checked: root.grid-locked; label: root.grid-locked ? @tr("GRID LOCKED") : @tr("LOCK GRID"); on: root.grid-locked; tone: Theme.attention; command: "player.grid.lock"; enabled: !root.read-only && root.has-track; clicked => { root.grid-lock(); } }
+                            if !root.narrow: Caps { accessible-role: text; accessible-id: "player1.grid.source-tab"; accessible-value: self.text; text: root.grid-source; font-size: Theme.label; vertical-alignment: center; }
+                            if !root.narrow: Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.undo"; label: @tr("UNDO"); tooltip: @tr("Undo the last change"); command: "library.undo"; enabled: !root.read-only; clicked => { root.act("undo"); } }
+                            if !root.narrow: Toggle { size: 30px; accessible-role: button; accessible-id: "player1.grid.redo"; label: @tr("REDO"); tooltip: @tr("Redo"); command: "library.redo"; enabled: !root.read-only; clicked => { root.act("redo"); } }
+                            Toggle { size: 30px; accessible-role: checkbox; accessible-id: "player1.grid.lock"; accessible-checkable: true; accessible-checked: root.grid-locked; label: root.grid-locked ? @tr("GRID LOCKED") : @tr("LOCK GRID"); on: root.grid-locked; tone: Theme.attention; command: "player.grid.lock"; enabled: !root.read-only && root.has-track; clicked => { root.grid-lock(); } }
                         }
                     }
                     if root.tool-tab == "phrase": VerticalLayout {
@@ -1011,16 +1020,16 @@ export component PreparePlayer inherits Rectangle {
                             spacing: Theme.s1;
                             property <bool> can-edit: root.has-track && !root.read-only;
                             for k[i] in PhraseEdit.kinds: Toggle { size: 30px;
-                                accessible-role: button; accessible-label: "player1.phrase.kind" + i;
+                                accessible-role: button; accessible-id: "player1.phrase.kind" + i;
                                 accessible-checkable: true; accessible-checked: PhraseEdit.current == k;
                                 label: k; on: PhraseEdit.current == k; enabled: parent.can-edit;
                                 tooltip: @tr("The phrase at the cursor becomes this kind (in a gap: a new phrase)");
                                 clicked => { PhraseEdit.kind(i); }
                             }
                             Rectangle { width: Theme.s2; }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.phrase.cut"; label: @tr("CUT"); command: "player.phrase.cut"; tooltip: @tr("Split the phrase at the cursor (on the nearest bar)"); enabled: parent.can-edit; clicked => { PhraseEdit.cut(); } }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.phrase.merge"; label: @tr("MERGE"); command: "player.phrase.merge"; tooltip: @tr("Join the phrase at the cursor with the next one"); enabled: parent.can-edit; clicked => { PhraseEdit.merge(); } }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.phrase.boundary"; label: @tr("BOUNDARY TO CURSOR"); command: "player.phrase.boundary"; tooltip: @tr("Move the nearest phrase boundary to the cursor (on the nearest bar)"); enabled: parent.can-edit; clicked => { PhraseEdit.boundary(); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.phrase.cut"; label: @tr("CUT"); command: "player.phrase.cut"; tooltip: @tr("Split the phrase at the cursor (on the nearest bar)"); enabled: parent.can-edit; clicked => { PhraseEdit.cut(); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.phrase.merge"; label: @tr("MERGE"); command: "player.phrase.merge"; tooltip: @tr("Join the phrase at the cursor with the next one"); enabled: parent.can-edit; clicked => { PhraseEdit.merge(); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.phrase.boundary"; label: @tr("BOUNDARY TO CURSOR"); command: "player.phrase.boundary"; tooltip: @tr("Move the nearest phrase boundary to the cursor (on the nearest bar)"); enabled: parent.can-edit; clicked => { PhraseEdit.boundary(); } }
                             // [62] An unsure phrase at the cursor says so, in
                             // the unsure-key language: half sodium line, sodium text.
                             if PhraseEdit.current-sure != "": VerticalLayout {
@@ -1028,7 +1037,7 @@ export component PreparePlayer inherits Rectangle {
                                 VLine { height: 14px; weight: 2px; tone: Theme.attention; form: "half"; }
                             }
                             Caps {
-                                accessible-role: text; accessible-label: "player1.phrase.hint"; accessible-value: self.text;
+                                accessible-role: text; accessible-id: "player1.phrase.hint"; accessible-value: self.text;
                                 accessible-description: PhraseEdit.current-sure != "" ? "unsure" : "";
                                 horizontal-stretch: 1; min-width: 0;
                                 text: PhraseEdit.current-sure != ""
@@ -1037,7 +1046,7 @@ export component PreparePlayer inherits Rectangle {
                                 color: PhraseEdit.current-sure != "" ? Theme.attention : Theme.bone-3;
                                 font-size: Theme.control; vertical-alignment: center; horizontal-alignment: center; overflow: elide;
                             }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.phrase.clear"; label: @tr("CLEAR"); command: "player.phrase.clear"; tone: Theme.fault; tooltip: @tr("Remove all phrases of this track"); enabled: parent.can-edit; clicked => { PhraseEdit.clear(); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.phrase.clear"; label: @tr("CLEAR"); command: "player.phrase.clear"; tone: Theme.fault; tooltip: @tr("Remove all phrases of this track"); enabled: parent.can-edit; clicked => { PhraseEdit.clear(); } }
                         }
                     }
                     if root.tool-tab == "shift": VerticalLayout {
@@ -1065,13 +1074,13 @@ export component PreparePlayer inherits Rectangle {
                                 step(d) => { root.act(d > 0 ? "shift-key-up" : "shift-key-down"); }
                             }
                             Text {
-                                accessible-role: text; accessible-label: "player1.shift.result"; accessible-value: self.text;
+                                accessible-role: text; accessible-id: "player1.shift.result"; accessible-value: self.text;
                                 text: root.shift-result; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
                                 color: Theme.bone-2; vertical-alignment: center;
                             }
                             Rectangle { horizontal-stretch: 1; }
                             Toggle {
-                                size: 30px; accessible-role: button; accessible-label: "player1.shift.reset";
+                                size: 30px; accessible-role: button; accessible-id: "player1.shift.reset";
                                 label: @tr("RESET"); tooltip: @tr("Back to the original tempo and key");
                                 enabled: root.shift-tempo != "0 %" || root.shift-key != "0";
                                 clicked => { root.act("shift-reset"); }
@@ -1085,20 +1094,20 @@ export component PreparePlayer inherits Rectangle {
                         HorizontalLayout {
                             spacing: Theme.s1;
                             property <bool> can-edit: root.has-track && !root.read-only && !TrackEdit.busy;
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.edit.in"; label: "IN"; command: "player.edit.in"; tooltip: @tr("Region start at the cursor (or shift-drag on the overview)"); enabled: parent.can-edit; on: TrackEdit.start >= 0; clicked => { TrackEdit.mark-in(); } }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.edit.out"; label: "OUT"; command: "player.edit.out"; tooltip: @tr("Region end at the cursor (or shift-drag on the overview)"); enabled: parent.can-edit; on: TrackEdit.end >= 0; clicked => { TrackEdit.mark-out(); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.edit.in"; label: "IN"; command: "player.edit.in"; tooltip: @tr("Region start at the cursor (or shift-drag on the overview)"); enabled: parent.can-edit; on: TrackEdit.start >= 0; clicked => { TrackEdit.mark-in(); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.edit.out"; label: "OUT"; command: "player.edit.out"; tooltip: @tr("Region end at the cursor (or shift-drag on the overview)"); enabled: parent.can-edit; on: TrackEdit.end >= 0; clicked => { TrackEdit.mark-out(); } }
                             Caps {
-                                accessible-role: text; accessible-label: "player1.edit.region"; accessible-value: TrackEdit.region;
+                                accessible-role: text; accessible-id: "player1.edit.region"; accessible-value: TrackEdit.region;
                                 min-width: 190px;
                                 text: TrackEdit.busy ? @tr("RENDERING…") : TrackEdit.region == "" ? @tr("SET IN AND OUT") : TrackEdit.region;
                                 font-size: Theme.control; vertical-alignment: center; horizontal-alignment: center;
                             }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.edit.cut"; label: @tr("CUT OUT"); command: "player.edit.cut"; tooltip: @tr("New file without the region"); enabled: parent.can-edit && TrackEdit.ready; clicked => { TrackEdit.apply("cut"); } }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.edit.trim"; label: @tr("TRIM"); command: "player.edit.trim"; tooltip: @tr("New file with only the region"); enabled: parent.can-edit && TrackEdit.ready; clicked => { TrackEdit.apply("trim"); } }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.edit.repeat"; label: @tr("REPEAT"); command: "player.edit.repeat"; tooltip: @tr("New file with the region played twice"); enabled: parent.can-edit && TrackEdit.ready; clicked => { TrackEdit.apply("repeat"); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.edit.cut"; label: @tr("CUT OUT"); command: "player.edit.cut"; tooltip: @tr("New file without the region"); enabled: parent.can-edit && TrackEdit.ready; clicked => { TrackEdit.apply("cut"); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.edit.trim"; label: @tr("TRIM"); command: "player.edit.trim"; tooltip: @tr("New file with only the region"); enabled: parent.can-edit && TrackEdit.ready; clicked => { TrackEdit.apply("trim"); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.edit.repeat"; label: @tr("REPEAT"); command: "player.edit.repeat"; tooltip: @tr("New file with the region played twice"); enabled: parent.can-edit && TrackEdit.ready; clicked => { TrackEdit.apply("repeat"); } }
                             Rectangle { horizontal-stretch: 1; }
                             Caps { text: @tr("NEW FILE · ORIGINAL KEPT"); font-size: Theme.label; vertical-alignment: center; }
-                            Toggle { size: 30px; accessible-role: button; accessible-label: "player1.edit.clear"; label: @tr("CLEAR"); tone: Theme.fault; tooltip: @tr("Forget the region"); enabled: TrackEdit.start >= 0 || TrackEdit.end >= 0; clicked => { TrackEdit.clear(); } }
+                            Toggle { size: 30px; accessible-role: button; accessible-id: "player1.edit.clear"; label: @tr("CLEAR"); tone: Theme.fault; tooltip: @tr("Forget the region"); enabled: TrackEdit.start >= 0 || TrackEdit.end >= 0; clicked => { TrackEdit.clear(); } }
                         }
                     }
                 }
@@ -1108,8 +1117,8 @@ export component PreparePlayer inherits Rectangle {
                 alignment: center;
                 HorizontalLayout {
                     spacing: Theme.s2;
-                    Transport { accessible-label: "player1.cue"; accessible-role: button; kind: "cue"; tone: Theme.attention; size: 52px; clicked => { root.jump-start(); } }
-                    Transport { accessible-label: "player1.play"; accessible-role: button; accessible-checkable: true; accessible-checked: root.previewing; kind: "play"; on: root.previewing; tone: Theme.live; size: 52px; clicked => { root.toggle-preview(); } }
+                    Transport { accessible-id: "player1.cue"; accessible-role: button; kind: "cue"; tone: Theme.attention; size: 52px; clicked => { root.jump-start(); } }
+                    Transport { accessible-id: "player1.play"; accessible-role: button; accessible-checkable: true; accessible-checked: root.previewing; kind: "play"; on: root.previewing; tone: Theme.live; size: 52px; clicked => { root.toggle-preview(); } }
                 }
             }
         }
@@ -1157,22 +1166,24 @@ export component MiniPlayer inherits Rectangle {
     if root.single-line: HorizontalLayout {
         padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.s2; padding-bottom: Theme.s2;
         spacing: Theme.s3;
-        VerticalLayout { alignment: center; Transport { accessible-label: root.p + ".play"; accessible-role: button; accessible-checkable: true; accessible-checked: root.view.previewing; kind: "play"; on: root.view.previewing; tone: Theme.live; size: 32px; clicked => { root.act("play"); } } }
+        VerticalLayout { alignment: center; Transport { accessible-id: root.p + ".play"; accessible-role: button; accessible-checkable: true; accessible-checked: root.view.previewing; kind: "play"; on: root.view.previewing; tone: Theme.live; size: 32px; clicked => { root.act("play"); } } }
         VerticalLayout { alignment: center; Rectangle {
-            accessible-role: image; accessible-label: root.p + ".artwork"; accessible-value: root.view.has-artwork ? "cover" : "none";
+            accessible-role: image; accessible-id: root.p + ".artwork"; accessible-value: root.view.has-artwork ? "cover" : "none";
             width: 30px; height: 30px;
             background: Theme.plate; border-width: root.view.has-artwork ? 0px : 1px; border-color: Theme.rule;
             if root.view.has-artwork: Image { width: parent.width; height: parent.height; source: root.view.artwork; image-fit: cover; }
         } }
         Text {
-            accessible-role: text; accessible-label: root.p + ".title"; accessible-value: self.text;
+            accessible-role: text; accessible-id: root.p + ".title"; accessible-value: self.text;
             width: 220px;
             text: root.view.has-track ? root.view.title : @tr("No track selected");
             font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; vertical-alignment: center;
             color: root.view.has-track ? Theme.bone : Theme.bone-3; overflow: elide;
         }
         Rectangle {
-            accessible-role: slider; accessible-label: root.p + ".overview";
+            accessible-role: slider; accessible-id: root.p + ".overview";
+            accessible-label: TooltipState.name-for(self.accessible-id, @tr("TRACK POSITION"), @tr("Click to jump there")); accessible-enabled: root.view.has-track;
+            KeyFocus { radius: 0; enabled: root.view.has-track; arrows: true; step(d) => { root.seek(clamp(root.view.cursor + d * 0.02, 0, 1)); } }
             accessible-value: round(root.view.cursor * 100) + "%";
             horizontal-stretch: 1;
             background: Theme.ground-band;
@@ -1187,7 +1198,7 @@ export component MiniPlayer inherits Rectangle {
         Reading { a11y-label: root.p + ".time-remaining"; label: @tr("REMAIN"); template: "-00:00"; value: root.view.remaining; }
         Reading { a11y-label: root.p + ".bpm"; label: "BPM"; template: "000.00"; value: root.view.bpm; }
         Text {
-            accessible-role: text; accessible-label: root.p + ".rating"; accessible-value: self.text;
+            accessible-role: text; accessible-id: root.p + ".rating"; accessible-value: self.text;
             text: root.view.has-track ? root.view.rating : "☆☆☆☆☆";
             font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center;
         }
@@ -1198,8 +1209,8 @@ export component MiniPlayer inherits Rectangle {
             padding: Theme.s2;
             spacing: Theme.s2;
             alignment: center;
-            HorizontalLayout { alignment: center; Transport { accessible-label: root.p + ".cue"; accessible-role: button; kind: "cue"; tone: Theme.attention; size: 36px; clicked => { root.act("cue"); } } }
-            HorizontalLayout { alignment: center; Transport { accessible-label: root.p + ".play"; accessible-role: button; accessible-checkable: true; accessible-checked: root.view.previewing; kind: "play"; on: root.view.previewing; tone: Theme.live; size: 36px; clicked => { root.act("play"); } } }
+            HorizontalLayout { alignment: center; Transport { accessible-id: root.p + ".cue"; accessible-role: button; kind: "cue"; tone: Theme.attention; size: 36px; clicked => { root.act("cue"); } } }
+            HorizontalLayout { alignment: center; Transport { accessible-id: root.p + ".play"; accessible-role: button; accessible-checkable: true; accessible-checked: root.view.previewing; kind: "play"; on: root.view.previewing; tone: Theme.live; size: 36px; clicked => { root.act("play"); } } }
         }
         VLine { weight: 1px; tone: Theme.rule; }
         VerticalLayout {
@@ -1211,25 +1222,27 @@ export component MiniPlayer inherits Rectangle {
                 spacing: root.narrow ? Theme.s2 : Theme.s4;
                 Caps { text: "\{root.index}"; color: Theme.deck-color(root.index); vertical-alignment: center; }
                 Text {
-                    accessible-role: text; accessible-label: root.p + ".title"; accessible-value: self.text;
+                    accessible-role: text; accessible-id: root.p + ".title"; accessible-value: self.text;
                     horizontal-stretch: 2;
                     text: root.view.has-track ? root.view.title : (root.can-load ? @tr("Empty — select a track and press LOAD, or drag it here") : @tr("No track selected"));
                     font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; vertical-alignment: center;
                     color: root.view.has-track ? Theme.bone : Theme.bone-3; overflow: elide;
                 }
-                if !root.narrow: Text { accessible-role: text; accessible-label: root.p + ".artist"; accessible-value: self.text; horizontal-stretch: 1; text: root.view.artist; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
+                if !root.narrow: Text { accessible-role: text; accessible-id: root.p + ".artist"; accessible-value: self.text; horizontal-stretch: 1; text: root.view.artist; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; overflow: elide; }
                 if !root.narrow: Reading { a11y-label: root.p + ".time-elapsed"; label: @tr("POS"); template: "00:00.000"; value: root.view.position; }
                 Reading { a11y-label: root.p + ".bpm"; label: "BPM"; template: "000.00"; value: root.view.bpm; }
                 Reading { a11y-label: root.p + ".key"; label: @tr("KEY"); template: "12A"; value: root.view.key; }
                 if root.can-load: PlateButton {
-                    accessible-label: root.p + ".load"; accessible-role: button; horizontal-stretch: 0; compact: true;
+                    accessible-id: root.p + ".load"; accessible-role: button; horizontal-stretch: 0; compact: true;
                     label: @tr("LOAD"); tone: Theme.deck-color(root.index);
                     tooltip: @tr("Load the selected track into this player");
                     clicked => { root.act("load"); }
                 }
             }
             Rectangle {
-                accessible-role: slider; accessible-label: root.p + ".overview";
+                accessible-role: slider; accessible-id: root.p + ".overview";
+                accessible-label: TooltipState.name-for(self.accessible-id, @tr("TRACK POSITION"), @tr("Click to jump there")); accessible-enabled: root.view.has-track;
+                KeyFocus { radius: 0; enabled: root.view.has-track; arrows: true; step(d) => { root.seek(clamp(root.view.cursor + d * 0.02, 0, 1)); } }
                 accessible-value: round(root.view.cursor * 100) + "%";
                 vertical-stretch: 1;
                 min-height: 36px;

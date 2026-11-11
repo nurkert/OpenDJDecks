@@ -373,7 +373,6 @@ fn phase_meter_shows_tempo_and_phase_and_practice_keeps_sync_off() {
 /// screen, three times the deck's).
 #[test]
 fn booth_view_shows_the_decks_large() {
-    use i_slint_backend_testing::ElementHandle;
     let ui = Ui::open((1440, 900));
     perform(&ui);
     play(&ui, 0, 0);
@@ -388,7 +387,7 @@ fn booth_view_shows_the_decks_large() {
         .expect("booth window");
     w.window().set_size(slint::LogicalSize::new(1920.0, 1080.0));
     ui.pump(300);
-    let find = |label: &str| ElementHandle::find_by_accessible_label(&w, label).next();
+    let find = |label: &str| super::harness::find_all(&w, label).next();
     let value = |label: &str| {
         find(label)
             .and_then(|e| e.accessible_value())

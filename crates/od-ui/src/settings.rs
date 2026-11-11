@@ -208,6 +208,11 @@ pub struct ViewSettings {
     /// The calm waveform: a crisp playhead, faint beat lines and softer
     /// band colours (off by default).
     pub calm_waveform: bool,
+    /// The touch layout: every control at least 44 px (decks, mixer, pads,
+    /// FX, browser, lighting). Off by default; offered once a touch arrives.
+    pub touch_layout: bool,
+    /// The touch layout was offered and answered (not offered again).
+    pub touch_offered: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -473,6 +478,8 @@ impl Default for ViewSettings {
             club_other_beat: true,
             incoming_overlay: true,
             calm_waveform: false,
+            touch_layout: false,
+            touch_offered: false,
         }
     }
 }

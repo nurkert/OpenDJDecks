@@ -3,7 +3,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
-import { Caps, Field, LineToggle, PlateButton, Star, TipArea } from "controls.slint";
+import { Caps, Field, LineToggle, PlateButton, Star, TipArea, KeyFocus, TooltipState } from "controls.slint";
 import { FilterView } from "structs.slint";
 
 export component FilterBar inherits Rectangle {
@@ -14,7 +14,7 @@ export component FilterBar inherits Rectangle {
     // "rating" (0..5), "user-tag" ("" = any), "clear".
     callback edit(string, string);
     height: 40px;
-    accessible-label: "browser.filter"; accessible-role: groupbox;
+    accessible-id: "browser.filter"; accessible-role: groupbox;
 
     tag-menu := ContextMenuArea {
         Menu {
@@ -30,14 +30,14 @@ export component FilterBar inherits Rectangle {
         spacing: Theme.s3;
         Caps { text: "BPM"; vertical-alignment: center; }
         min := Field {
-            accessible-label: "browser.filter.bpm-min"; accessible-role: text-input; accessible-value: self.text;
+            accessible-id: "browser.filter.bpm-min"; accessible-role: text-input; accessible-value: self.text;
             width: 70px; height: 28px;
             placeholder: @tr("FROM");
             text: root.filter.bpm-min;
             edited(t) => { root.edit("bpm-min", t); }
         }
         max := Field {
-            accessible-label: "browser.filter.bpm-max"; accessible-role: text-input; accessible-value: self.text;
+            accessible-id: "browser.filter.bpm-max"; accessible-role: text-input; accessible-value: self.text;
             width: 70px; height: 28px;
             placeholder: @tr("TO");
             text: root.filter.bpm-max;
@@ -45,7 +45,7 @@ export component FilterBar inherits Rectangle {
         }
         VLine { width: 1px; tone: Theme.rule; }
         LineToggle {
-            accessible-label: "browser.filter.key-master"; accessible-role: checkbox;
+            accessible-id: "browser.filter.key-master"; accessible-role: checkbox;
             accessible-checkable: true; accessible-checked: self.checked;
             label: @tr("Key fits master");
             tooltip: @tr("Only keys compatible with the master deck (same, ±1, relative)");
@@ -54,14 +54,14 @@ export component FilterBar inherits Rectangle {
             toggled(v) => { root.edit("key", v ? "1" : ""); }
         }
         pct := Field {
-            accessible-label: "browser.filter.bpm-pct"; accessible-role: text-input; accessible-value: self.text;
+            accessible-id: "browser.filter.bpm-pct"; accessible-role: text-input; accessible-value: self.text;
             width: 86px; height: 28px;
             placeholder: @tr("BPM ±%");
             text: root.filter.bpm-pct;
             edited(t) => { root.edit("pct", t); }
         }
         Caps {
-            accessible-label: "browser.filter.reference"; accessible-role: text; accessible-value: self.text;
+            accessible-id: "browser.filter.reference"; accessible-role: text; accessible-value: self.text;
             text: root.filter.reference == "" ? @tr("NO MASTER DECK") : root.filter.reference;
             vertical-alignment: center;
             color: root.filter.reference == "" ? Theme.bone-3 : Theme.bone-2;
@@ -74,7 +74,7 @@ export component FilterBar inherits Rectangle {
             for i in 5: VerticalLayout {
                 alignment: center;
                 Star {
-                    accessible-label: "browser.filter.rating\{i + 1}"; accessible-role: button;
+                    accessible-id: "browser.filter.rating\{i + 1}"; accessible-role: button;
                     lit: i < root.filter.rating;
                     TouchArea {
                         x: -2px; width: parent.width + 4px; y: -6px; height: parent.height + 12px;
@@ -86,7 +86,7 @@ export component FilterBar inherits Rectangle {
         }
         VLine { width: 1px; tone: Theme.rule; }
         tag := PlateButton {
-            accessible-label: "browser.filter.user-tag"; accessible-role: button;
+            accessible-id: "browser.filter.user-tag"; accessible-role: button;
             compact: true;
             label: root.filter.user-tag == "" ? @tr("TAGS: ANY") : root.filter.user-tag;
             tone: Theme.w436;
@@ -96,7 +96,7 @@ export component FilterBar inherits Rectangle {
         }
         Rectangle { horizontal-stretch: 1; }
         PlateButton {
-            accessible-label: "browser.filter.clear"; accessible-role: button;
+            accessible-id: "browser.filter.clear"; accessible-role: button;
             compact: true;
             label: @tr("CLEAR");
             enabled: root.filter.active;
@@ -119,7 +119,7 @@ export component FilterChips inherits HorizontalLayout {
     in property <FilterView> filter;
     callback edit(string, string);
     accessible-role: list;
-    accessible-label: "browser.filter.chips";
+    accessible-id: "browser.filter.chips";
     accessible-item-count: root.filter.chips.length;
     spacing: Theme.s1;
     alignment: start;
@@ -128,7 +128,7 @@ export component FilterChips inherits HorizontalLayout {
     Rectangle { width: Theme.s1; }
     for c[i] in root.filter.chips: Rectangle {
         accessible-role: button;
-        accessible-label: "browser.filter.chip\{i}";
+        accessible-id: "browser.filter.chip\{i}";
         accessible-value: c.text;
         accessible-action-default => { root.edit(c.field, ""); }
         y: 1px; height: 24px;
@@ -153,7 +153,7 @@ export component FilterChips inherits HorizontalLayout {
         ta := TipArea { tooltip: @tr("Remove this condition"); mouse-cursor: pointer; clicked => { root.edit(c.field, ""); } }
     }
     PlateButton {
-        accessible-label: "browser.filter.clear-all"; accessible-role: button;
+        accessible-id: "browser.filter.clear-all"; accessible-role: button;
         compact: true; label: @tr("CLEAR"); tooltip: @tr("Remove every condition");
         clicked => { root.edit("clear", ""); }
     }

@@ -2,7 +2,7 @@
 title: Erste Schritte
 description: OpenDJDecks installieren, Musik hinzufügen und die Analyse laufen lassen. In zehn Minuten vom Download zu den ersten Tracks auf den Decks.
 keywords: [installieren, installation, erste schritte, start, einrichten, musik hinzufügen, musik importieren, musikordner, analyse, analysieren, anfänger, neu, anleitung, loslegen, einstieg]
-features: [shell-first-start-guide, browser-import-files, analysis-beatgrid, analysis-key, analysis-waveform-3band, analysis-loudness-auto-gain, shell-mode-switch, shell-status-band, browser-track-preview, analysis-reanalyse-priority, shell-i18n]
+features: [shell-first-start-guide, browser-import-files, analysis-beatgrid, analysis-key, analysis-waveform-3band, analysis-loudness-auto-gain, shell-mode-switch, shell-status-band, browser-track-preview, analysis-reanalyse-priority, shell-i18n, shell-help-overlay]
 ---
 
 OpenDJDecks hat zwei Arbeitsmodi. In **Prepare** sortierst du Musik und setzt Cues, zu Hause. **Perform** sind die Decks und der Mixer für den Gig. Oben links schaltest du jederzeit um; was geladen ist, bleibt geladen.
@@ -76,6 +76,10 @@ Die App benutzt für jede Sache ein Wort, in der Oberfläche und in diesen Anlei
 | **Hot Cue** / **Memory Cue** | Ein gespeicherter Punkt auf einem Pad / ein gespeicherter Punkt, den du auf der Waveform ansteuerst. | |
 | **Gig-Preset** | Ein Klick für hohen Kontrast, die Palette für Farbenblinde und eine größere Oberfläche; **GIG** in der oberen Leiste. | |
 | **Beatgrid** | Die Beat-Marken eines Tracks. | |
+
+## Hilfe auf dem Bildschirm
+
+Drücke `F12` oder die Taste **?** rechts in der oberen Leiste: Jedes Bedienelement auf dem Bildschirm bekommt eine Nummer, und die Liste daneben nennt jedes mit seinem Kurzbefehl. Klicke auf eine Nummer oder ein Element, um zu lesen, was es tut. Siehe [Hilfe zu jedem Bedienelement](perform-basics.md#hilfe-zu-jedem-bedienelement).
 
 ## Wie es weitergeht
 

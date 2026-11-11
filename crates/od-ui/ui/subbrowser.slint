@@ -6,7 +6,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps } from "controls.slint";
+import { Caps, KeyFocus, TooltipState } from "controls.slint";
 import { DragState, DragTargets, DropZone } from "drag.slint";
 import { TreeRow } from "structs.slint";
 
@@ -37,7 +37,7 @@ component ListItem inherits Rectangle {
     callback clicked();
     property <bool> takes: root.item.kind == "playlist" || root.item.kind == "set";
     accessible-role: list-item;
-    accessible-label: "browser.sub.node\{root.item.id}";
+    accessible-id: "browser.sub.node\{root.item.id}";
     accessible-value: root.item.name;
     accessible-item-selectable: true;
     accessible-item-selected: root.selected;
@@ -82,7 +82,7 @@ component TrackItem inherits Rectangle {
     }
     touch := TouchArea {
         accessible-role: list-item;
-        accessible-label: "browser.sub.row\{root.index}";
+        accessible-id: "browser.sub.row\{root.index}";
         accessible-value: root.item.title;
         mouse-cursor: pointer;
         pointer-event(ev) => {
@@ -107,18 +107,18 @@ component TrackItem inherits Rectangle {
 export component SubBrowserPane inherits Rectangle {
     in property <length> tree-width: 220px;
     accessible-role: groupbox;
-    accessible-label: "browser.sub";
+    accessible-id: "browser.sub";
     HLine { y: 0; width: parent.width; tone: Theme.rule; }
     HorizontalLayout {
         padding-top: Theme.key-gap;
         // Lists.
         Rectangle {
           accessible-role: list;
-          accessible-label: "subbrowser.tree";
+          accessible-id: "subbrowser.tree";
           width: root.tree-width;
           Flickable {
             accessible-role: list;
-            accessible-label: "browser.sub.tree";
+            accessible-id: "browser.sub.tree";
             width: root.tree-width;
             // The wheel scrolls; mouse drags move tracks.
             mouse-drag-pan-enabled: false;
@@ -142,7 +142,7 @@ export component SubBrowserPane inherits Rectangle {
                 padding-left: Theme.s3; padding-right: Theme.s2;
                 spacing: Theme.s3;
                 Text {
-                    accessible-role: text; accessible-label: "browser.sub.title"; accessible-value: self.text;
+                    accessible-role: text; accessible-id: "browser.sub.title"; accessible-value: self.text;
                     text: SubBrowser.selected < 0 ? @tr("SUB-BROWSER — PICK A LIST") : SubBrowser.title;
                     font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone; vertical-alignment: center; overflow: elide;
                 }
@@ -152,12 +152,12 @@ export component SubBrowserPane inherits Rectangle {
             HLine { tone: Theme.rule; }
             Rectangle {
                 accessible-role: list;
-                accessible-label: "subbrowser.rows";
+                accessible-id: "subbrowser.rows";
                 accessible-value: SubBrowser.tracks.length;
                 vertical-stretch: 1;
                 Flickable {
                     accessible-role: list;
-                    accessible-label: "browser.sub.list";
+                    accessible-id: "browser.sub.list";
                     mouse-drag-pan-enabled: false;
                     VerticalLayout {
                         alignment: start;

@@ -1,5 +1,5 @@
 # Views, layouts and panels with their required elements (SPEC §16.3).
-# Labels follow the convention in docs/parity.md; the UI sets them as `accessible-label`.
+# Labels follow the convention in docs/parity.md; the UI sets them as `accessible-id` (the spoken `accessible-label` is a readable name).
 
 [meta]
 source = "SPEC §12 layout"
@@ -7545,13 +7545,13 @@ elements = [
   "prefs.view.language",
   "prefs.view.tooltips",
   "prefs.view.font-size",
+  "prefs.view.scale",
   "prefs.view.line-space",
   "prefs.view.phrase-enlarged",
   "prefs.view.phrase-overview",
   "prefs.view.phrase-types",
   "prefs.view.colour-blind",
   "prefs.view.high-contrast",
-  "prefs.view.scale",
   "prefs.reset",
 ]
 note = "fixed 'Reset to defaults' at the bottom left. Deviation: Not provided: bold list text, centring the selected row, a colour for played tracks and an iTunes media browser (an iTunes library is imported once from the File menu)."
@@ -8008,4 +8008,73 @@ elements = [
   "lighting.strip.flash",
   "lighting.strip.strobe",
   "lighting.strip.fog",
+]
+
+[[view]]
+id = "overlay.help"
+title = "Help overlay over Perform"
+mode = "perform"
+source = "Roadmap [23]"
+sizes = ["desktop", "laptop", "kiosk"]
+bands = ["overlay"]
+features = ["shell-help-overlay"]
+note = "F12, ? or the ? key in the top bar. Every control on screen gets a numbered callout (never overlapping) and a row in the list with its name and shortcut; a click or tap explains a control instead of pressing it."
+
+[[view.region]]
+id = "help.head"
+band = "overlay"
+place = "list panel, top"
+order = "row"
+elements = [
+  "app.help.count",
+  "app.help.side",
+  "app.help.close",
+]
+
+[[view.region]]
+id = "help.body"
+band = "overlay"
+place = "list panel: the explained control over the list"
+order = "column"
+elements = [
+  "app.help.detail",
+  "app.help.list",
+]
+
+[[view]]
+id = "perform.touch"
+title = "Perform with the touch layout"
+mode = "perform"
+source = "Roadmap [24]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "deck-row", "global", "browser", "status"]
+features = ["shell-touch-layout", "shell-compact-decks-fill"]
+note = "Preferences > View > Touch. Touch decks with pads, loop row and their own waveform, a mixer with knob and legend side by side; every control at least 44 px (touch.rs checks every operable element)."
+
+[[view.region]]
+id = "deck1.touch"
+band = "deck-row"
+place = "left deck, top to bottom"
+order = "column"
+elements = [
+  "deck1.title",
+  "deck1.overview",
+  "deck1.play",
+  "deck1.pad.A",
+  "deck1.pad.E",
+  "deck1.loop.auto",
+]
+
+[[view.region]]
+id = "mixer.touch"
+band = "deck-row"
+place = "between the decks"
+order = "column"
+elements = [
+  "mixer.ch1.trim",
+  "mixer.ch1.eq-high",
+  "mixer.ch1.eq-mid",
+  "mixer.ch1.eq-low",
+  "mixer.ch1.cue",
+  "mixer.ch1.fader",
 ]

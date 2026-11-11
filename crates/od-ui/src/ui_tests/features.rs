@@ -246,16 +246,16 @@ fn colour_blind_and_high_contrast() {
     // Tall enough to show the whole View page.
     prefs
         .window()
-        .set_size(slint::LogicalSize::new(1000.0, 900.0));
+        .set_size(slint::LogicalSize::new(1000.0, 1400.0));
     ui.pump(200);
-    let cb = i_slint_backend_testing::ElementHandle::find_by_accessible_label(
+    let cb = super::harness::find_all(
         &prefs,
         "prefs.view.colour-blind",
     )
     .next()
     .expect("switch");
     cb.mock_single_click(slint::platform::PointerEventButton::Left);
-    let hc = i_slint_backend_testing::ElementHandle::find_by_accessible_label(
+    let hc = super::harness::find_all(
         &prefs,
         "prefs.view.high-contrast",
     )
@@ -722,7 +722,7 @@ fn bpm_range_preference_reaches_the_analysis() {
     prefs.set_page("analysis".into());
     ui.pump(200);
     assert!(
-        i_slint_backend_testing::ElementHandle::find_by_accessible_label(&prefs, "prefs.analysis.bpm-range")
+        super::harness::find_all(&prefs, "prefs.analysis.bpm-range")
             .next()
             .is_some(),
         "the BPM range choice is on the page"

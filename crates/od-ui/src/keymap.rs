@@ -521,6 +521,14 @@ fn build() -> Vec<Action> {
         &["Mod+,"],
     );
     b.add(
+        "help.overlay",
+        "Help: name every control on screen",
+        None,
+        g,
+        Global,
+        &["F12"],
+    );
+    b.add(
         "gig.check",
         "Check before the gig: outputs, controller, disk, files",
         None,

@@ -5,7 +5,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, Knob, Toggle, Stepper, HoldButton, TipArea, PopupPlace } from "controls.slint";
+import { Caps, Knob, Toggle, Stepper, HoldButton, TipArea, PopupPlace, KeyFocus, TooltipState } from "controls.slint";
 import { FxUnitView, FxSlotView } from "structs.slint";
 
 // Multi mode controls (unit 1-based, slot 2 or 3).
@@ -45,6 +45,8 @@ export global FxNames {
 // (Heading, lit in the unit's tone while on) over a bar that fills with
 // it. Drag or click along it to set the level, the wheel steps 5 %.
 component Intensity inherits Rectangle {
+    accessible-role: slider;
+    accessible-label: @tr("FX {} LEVEL", root.u.unit);
     in property <FxUnitView> u;
     in property <color> tone;
     in property <bool> show-bpm: true;
@@ -57,7 +59,7 @@ component Intensity inherits Rectangle {
         HorizontalLayout {
             spacing: Theme.s1;
             Text {
-                accessible-role: text; accessible-label: "fx.unit\{root.u.unit}.tempo-fx"; accessible-value: FxNames.beat[root.u.kind];
+                accessible-role: text; accessible-id: "fx.unit\{root.u.unit}.tempo-fx"; accessible-value: FxNames.beat[root.u.kind];
                 text: "FX" + root.u.unit;
                 font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
                 color: root.lit ? root.tone : root.u.ringing ? Theme.bone-2 : Theme.bone-3;
@@ -70,7 +72,7 @@ component Intensity inherits Rectangle {
             }
         }
         Text {
-            accessible-role: slider; accessible-label: "fx.unit\{root.u.unit}.slot1.depth"; accessible-value: root.u.level-text;
+            accessible-role: text; accessible-id: "fx.unit\{root.u.unit}.slot1.depth"; accessible-value: root.u.level-text;
             text: root.u.level-text;
             font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
             color: root.lit ? root.tone : Theme.bone-2;
@@ -101,6 +103,8 @@ component Intensity inherits Rectangle {
             accept
         }
     }
+    // Keyboard: the arrows step the level 5 %.
+    KeyFocus { arrows: true; step(d) => { root.level(clamp(root.u.level + d * 0.05, 0, 1)); } }
 }
 
 // [61] XY: the whole unit becomes one surface; across sets the effect's
@@ -111,7 +115,7 @@ component XyPad inherits Rectangle {
     in property <FxUnitView> u;
     in property <color> tone;
     accessible-role: slider;
-    accessible-label: "fx.unit\{root.u.unit}.xy-pad";
+    accessible-id: "fx.unit\{root.u.unit}.xy-pad";
     accessible-value: Math.round(root.u.param * 100) / 100 + " / " + root.u.level-text;
     background: Theme.plate;
     border-radius: Theme.r-control;
@@ -149,8 +153,9 @@ component XyPad inherits Rectangle {
 // [61] Every effect off at once: a danger key (deep red on hover and
 // press, ash plate at rest so it never looks lit).
 component PanicKey inherits Rectangle {
+    accessible-label: TooltipState.name-for(self.accessible-id, t.text, touch.tooltip);
     accessible-role: button;
-    accessible-label: "fx.panic";
+    accessible-id: "fx.panic";
     accessible-action-default => { FxSlots.panic(); }
     min-width: t.preferred-width + 16px;
     background: touch.pressed || touch.has-hover ? Theme.fault : Theme.plate;
@@ -167,6 +172,7 @@ component PanicKey inherits Rectangle {
         mouse-cursor: pointer;
         clicked => { FxSlots.panic(); }
     }
+    KeyFocus { activate => { FxSlots.panic(); } }
 }
 
 // A list of choices in a popup (effect lists), `columns` wide.
@@ -246,14 +252,14 @@ component FxUnit inherits Rectangle {
                 spacing: Theme.s1; alignment: start;
                 Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: true;
-                    accessible-label: "fx.unit\{root.u.unit}.xy";
+                    accessible-id: "fx.unit\{root.u.unit}.xy";
                     size: Theme.target; width: 44px; label: "XY"; on: true; tone: root.tone;
                     tooltip: @tr("Back to the effect controls");
                     clicked => { FxSlots.xy-mode(root.u.unit, false); }
                 }
                 Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.on;
-                    accessible-label: "fx.unit\{root.u.unit}.on";
+                    accessible-id: "fx.unit\{root.u.unit}.on";
                     size: Theme.target; width: 44px; label: "ON"; on: root.u.on; tone: root.tone;
                     tooltip: @tr("Tempo FX on / off");
                     command: "fx" + root.u.unit + ".on";
@@ -262,7 +268,7 @@ component FxUnit inherits Rectangle {
             }
             XyPad { horizontal-stretch: 1; u: root.u; tone: root.tone; }
             Intensity { u: root.u; tone: root.tone; level(v) => { root.level(v); } }
-            if root.last: VerticalLayout { alignment: end; PanicKey { height: 24px; } }
+            if root.last: VerticalLayout { alignment: end; PanicKey { height: max(24px, Theme.touch-min); } }
         }
 
         if !root.xy: VerticalLayout {
@@ -281,7 +287,7 @@ component FxUnit inherits Rectangle {
                         spacing: Theme.key-gap;
                         for t[k] in [{ id: "ch1", label: "1", target: 1 }, { id: "ch2", label: "2", target: 2 }, { id: "sampler", label: "S", target: -1 }, { id: "ch3", label: "3", target: 3 }, { id: "ch4", label: "4", target: 4 }, { id: "master", label: "M", target: 0 }]: Toggle {
                             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.target == t.target;
-                            accessible-label: "fx.unit\{root.u.unit}.assign." + t.id;
+                            accessible-id: "fx.unit\{root.u.unit}.assign." + t.id;
                             size: 24px; width: 24px;
                             label: t.label;
                             enabled: t.target <= root.channels;
@@ -297,12 +303,12 @@ component FxUnit inherits Rectangle {
                         spacing: Theme.key-gap;
                         Caps { text: @tr("BUILD"); font-size: Theme.label; vertical-alignment: center; width: 40px; }
                         for n in [8, 16, 32]: Rectangle {
-                            width: 34px; height: 24px;
+                            width: max(34px, Theme.touch-min); height: max(24px, Theme.touch-min);
                             Toggle {
                                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.build-bars == n;
-                                accessible-label: "fx.unit\{root.u.unit}.build\{n}";
+                                accessible-id: "fx.unit\{root.u.unit}.build\{n}";
                                 accessible-value: root.u.build-bars == n ? root.u.build-left : "";
-                                width: parent.width; size: 24px; label: n; on: root.u.build-bars == n; tone: root.tone;
+                                width: parent.width; size: parent.height; label: n; on: root.u.build-bars == n; tone: root.tone;
                                 tooltip: @tr("Build-up that peaks on the next {}-bar line, then drops (again: stop)", n);
                                 clicked => { FxSlots.build(root.u.unit, n); }
                             }
@@ -319,7 +325,7 @@ component FxUnit inherits Rectangle {
                     alignment: center;
                     Toggle {
                         accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.multi;
-                        accessible-label: "fx.unit\{root.u.unit}.menu";
+                        accessible-id: "fx.unit\{root.u.unit}.menu";
                         size: Theme.target; width: Theme.touch ? 44px : 30px; label: root.u.multi ? "×3" : "×1"; on: root.u.multi; tone: root.tone;
                         tooltip: @tr("Single effect or three effects in a chain");
                         clicked => { FxSlots.multi(root.u.unit); }
@@ -330,7 +336,7 @@ component FxUnit inherits Rectangle {
                     spacing: Theme.s1; alignment: center;
                     Stepper {
                         accessible-role: combobox;
-                        accessible-label: "fx.unit\{root.u.unit}.slot1.type";
+                        accessible-id: "fx.unit\{root.u.unit}.slot1.type";
                         accessible-value: self.value;
                         size: Theme.target; arrow: 18px; font-size: Theme.control;
                         value: FxNames.beat[root.u.kind]; template: "VINYL BRAKE"; lit: root.u.on; tone: root.tone;
@@ -342,7 +348,7 @@ component FxUnit inherits Rectangle {
                     // Kiosk: level and beat keys are the controller's; the beat
                     // length shows.
                     if Theme.touch: Text {
-                        accessible-role: text; accessible-label: "fx.unit\{root.u.unit}.slot1.beats"; accessible-value: root.u.beats;
+                        accessible-role: text; accessible-id: "fx.unit\{root.u.unit}.slot1.beats"; accessible-value: root.u.beats;
                         text: @tr("{} BEATS", root.u.beats); font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2; horizontal-alignment: center;
                     }
                     if !Theme.touch: Stepper {
@@ -364,7 +370,7 @@ component FxUnit inherits Rectangle {
                             spacing: Theme.key-gap;
                             Stepper {
                                 accessible-role: combobox;
-                                accessible-label: "fx.unit\{root.u.unit}.slot\{sl.slot}.type";
+                                accessible-id: "fx.unit\{root.u.unit}.slot\{sl.slot}.type";
                                 accessible-value: self.value;
                                 horizontal-stretch: 1; size: Theme.target; arrow: 18px; font-size: Theme.control;
                                 value: FxNames.beat[sl.kind]; template: "PING PONG"; lit: sl.on; tone: root.tone;
@@ -373,20 +379,20 @@ component FxUnit inherits Rectangle {
                             }
                             Toggle {
                                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: sl.on;
-                                accessible-label: "fx.unit\{root.u.unit}.slot\{sl.slot}.on";
+                                accessible-id: "fx.unit\{root.u.unit}.slot\{sl.slot}.on";
                                 size: Theme.target; width: Theme.touch ? 44px : 30px; label: "ON"; on: sl.on; tone: root.tone;
                                 clicked => { FxSlots.on(root.u.unit, sl.slot); }
                             }
                         }
                         if Theme.touch: Text {
-                            accessible-role: text; accessible-label: "fx.unit\{root.u.unit}.slot\{sl.slot}.beats"; accessible-value: sl.beats;
+                            accessible-role: text; accessible-id: "fx.unit\{root.u.unit}.slot\{sl.slot}.beats"; accessible-value: sl.beats;
                             text: @tr("{} BEATS", sl.beats); font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2; horizontal-alignment: center;
                         }
                         if !Theme.touch: HorizontalLayout {
                             spacing: Theme.s1;
                             Knob {
                                 accessible-role: slider;
-                                accessible-label: "fx.unit\{root.u.unit}.slot\{sl.slot}.depth";
+                                accessible-id: "fx.unit\{root.u.unit}.slot\{sl.slot}.depth";
                                 accessible-value: sl.level;
                                 label: ""; size: 24px; minimum: 0; maximum: 1; default-value: 0.5;
                                 value: sl.level; tone: root.tone;
@@ -409,7 +415,7 @@ component FxUnit inherits Rectangle {
                 if root.tiny: VerticalLayout {
                     alignment: center;
                     Text {
-                        accessible-role: text; accessible-label: "fx.unit\{root.u.unit}.tempo-fx"; accessible-value: FxNames.beat[root.u.kind];
+                        accessible-role: text; accessible-id: "fx.unit\{root.u.unit}.tempo-fx"; accessible-value: FxNames.beat[root.u.kind];
                         text: "FX" + root.u.unit;
                         font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; letter-spacing: 1px;
                         color: root.u.on ? root.tone : root.u.ringing ? Theme.bone-2 : Theme.bone-3;
@@ -431,14 +437,14 @@ component FxUnit inherits Rectangle {
                         spacing: Theme.s1;
                         Toggle {
                             accessible-role: button;
-                            accessible-label: "fx.unit\{root.u.unit}.auto";
+                            accessible-id: "fx.unit\{root.u.unit}.auto";
                             size: Theme.target; min-w: Theme.target; label: "AUTO"; on: !root.u.tapped; tone: Theme.live;
                             tooltip: @tr("AUTO: the effect follows the deck tempo again");
                             clicked => { FxSlots.auto(root.u.unit); }
                         }
                         Toggle {
                             accessible-role: button;
-                            accessible-label: "fx.unit\{root.u.unit}.tap";
+                            accessible-id: "fx.unit\{root.u.unit}.tap";
                             size: Theme.target; min-w: Theme.target; label: "TAP"; on: root.u.tapped; tone: Theme.attention;
                             tooltip: @tr("Tap the tempo of the effect; AUTO returns to the deck tempo");
                             command: "fx" + root.u.unit + ".tap";
@@ -446,7 +452,7 @@ component FxUnit inherits Rectangle {
                         }
                         Toggle {
                             accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.on;
-                            accessible-label: "fx.unit\{root.u.unit}.on";
+                            accessible-id: "fx.unit\{root.u.unit}.on";
                             size: Theme.target; width: Theme.touch ? 44px : 40px; label: "ON"; on: root.u.on; tone: root.tone;
                             tooltip: @tr("Tempo FX on / off");
                             command: "fx" + root.u.unit + ".on";
@@ -456,7 +462,7 @@ component FxUnit inherits Rectangle {
                     // What rings out after release: off → echo → reverb.
                     if !root.tiny: Toggle {
                         accessible-role: button;
-                        accessible-label: "fx.unit\{root.u.unit}.tail";
+                        accessible-id: "fx.unit\{root.u.unit}.tail";
                         accessible-value: FxNames.tail[root.u.tail];
                         size: 24px; label: FxNames.tail[root.u.tail]; on: root.u.tail > 0; tone: root.tone;
                         tooltip: @tr("Tail: what rings out after you switch the effect off (off, echo, reverb)");
@@ -467,7 +473,7 @@ component FxUnit inherits Rectangle {
                     alignment: center;
                     Toggle {
                         accessible-role: checkbox; accessible-checkable: true; accessible-checked: false;
-                        accessible-label: "fx.unit\{root.u.unit}.xy";
+                        accessible-id: "fx.unit\{root.u.unit}.xy";
                         size: Theme.target; width: Theme.touch ? 44px : 32px; label: "XY"; tone: root.tone;
                         tooltip: @tr("XY: the unit becomes one surface, across the parameter, up the level");
                         clicked => { FxSlots.xy-mode(root.u.unit, true); }
@@ -480,8 +486,8 @@ component FxUnit inherits Rectangle {
                 // Narrow windows: XY on this line, out of the full first one.
                 if root.narrow: Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: false;
-                    accessible-label: "fx.unit\{root.u.unit}.xy";
-                    size: 24px; width: 32px; label: "XY"; tone: root.tone;
+                    accessible-id: "fx.unit\{root.u.unit}.xy";
+                    size: 24px; width: max(32px, Theme.touch-min); label: "XY"; tone: root.tone;
                     tooltip: @tr("XY: the unit becomes one surface, across the parameter, up the level");
                     clicked => { FxSlots.xy-mode(root.u.unit, true); }
                 }
@@ -491,7 +497,7 @@ component FxUnit inherits Rectangle {
                     spacing: Theme.key-gap;
                     for p[k] in [{ id: "all", label: "ALL", i: -1 }, { id: "vocal", label: "VOC", i: 0 }, { id: "drums", label: "DRUM", i: 1 }, { id: "bass", label: "BASS", i: 2 }, { id: "inst", label: "INST", i: 3 }]: Toggle {
                         accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.u.part == p.i;
-                        accessible-label: "fx.unit\{root.u.unit}.part." + p.id;
+                        accessible-id: "fx.unit\{root.u.unit}.part." + p.id;
                         size: 24px; width: 40px; label: p.label; on: root.u.part == p.i; tone: Theme.w656;
                         tooltip: p.i < 0 ? @tr("The effect takes the whole channel") : @tr("Stem FX: the effect takes only this stem of the channel");
                         clicked => { FxSlots.part(root.u.unit, p.i); }
@@ -509,7 +515,7 @@ component FxUnit inherits Rectangle {
                     released => { root.release(k, false); }
                 }
                 if root.last: Rectangle { horizontal-stretch: 1; }
-                if root.last: PanicKey { height: 24px; }
+                if root.last: PanicKey { height: max(24px, Theme.touch-min); }
             }
         }
     }
@@ -531,7 +537,7 @@ export component FxPanel inherits Rectangle {
     background: Theme.ground-band; border-radius: Theme.r-panel;
     // Side by side while both units show one effect; one unit per line
     // once a unit chains three, or when the window is too narrow for two.
-    property <bool> stack: root.units.length > 1 && (root.units[0].multi || root.units[1].multi || root.width < 1140px);
+    property <bool> stack: root.units.length > 1 && (root.units[0].multi || root.units[1].multi || root.width < 1140px || Theme.touch-mode);
     VerticalLayout {
         if !root.stack: HorizontalLayout {
             spacing: 0;
@@ -589,13 +595,13 @@ export component ChannelFxSelector inherits Rectangle {
     in property <int> current;
     callback select(int);
     callback step(int);
-    height: 24px;
+    height: Theme.touch-mode ? 44px : 24px;
     min-width: lay.min-width;
     lay := HorizontalLayout {
         spacing: 0px;
         Stepper {
             horizontal-stretch: 1;
-            size: 24px; arrow: 18px; font-size: Theme.control;
+            size: Theme.touch-mode ? 44px : 24px; arrow: Theme.touch-mode ? 44px : 18px; font-size: Theme.control;
             value: FxNames.color[root.current]; template: "DUB ECHO"; lit: root.current != 0; tone: Theme.w405;
             tooltip: @tr("Channel FX of the CH FX knobs: previous / next — click the name for the list");
             command: "channelfx.next";

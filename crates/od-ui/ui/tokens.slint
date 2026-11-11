@@ -148,6 +148,11 @@ export global Theme {
     // Touch layout (kiosk, 800 × 480): every key at least 44 px.
     in-out property <bool> touch;
     out property <length> target: root.touch ? 44px : 24px;
+    // The touch layout chosen in Preferences (beyond the kiosk): every
+    // control of the decks, mixer, pads, FX, browser and lighting gets at
+    // least `touch-min` on both edges.
+    in-out property <bool> touch-mode;
+    out property <length> touch-min: root.touch-mode ? 44px : 0px;
 
     // Deck n (1-based) to its emission line.
     public pure function deck-color(deck: int) -> color {

@@ -122,7 +122,7 @@ export component WaveLane inherits Rectangle {
     property <color> ov-tone: Theme.deck-color(root.ov.of-deck);
     if root.ov-shown: Rectangle {
         accessible-role: image;
-        accessible-label: "wave.incoming\{root.deck.deck}";
+        accessible-id: "wave.incoming\{root.deck.deck}";
         accessible-value: root.ov.of-deck;
         // A waiting track is drawn from its cue on, not what lies before it.
         property <length> x0: root.ov.mark < 0 ? root.gutter : max(root.gutter, min(root.width, root.gutter + (root.ov.mark - root.ov-left) / root.ov.span * root.area));
@@ -135,7 +135,7 @@ export component WaveLane inherits Rectangle {
     if root.ov-shown && root.ov.mark >= 0: Rectangle {
         property <length> px: root.gutter + (root.ov.mark - root.ov-left) / root.ov.span * root.area;
         accessible-role: image;
-        accessible-label: "wave.incoming-start\{root.deck.deck}";
+        accessible-id: "wave.incoming-start\{root.deck.deck}";
         accessible-value: root.ov.of-deck;
         visible: self.px >= root.gutter && self.px <= root.width;
         x: self.px - 1px; width: 2px; height: parent.height;
@@ -150,7 +150,7 @@ export component WaveLane inherits Rectangle {
     // the edges (the waveform's colours stay readable through it).
     if root.motion.loaded && root.deck.loop-out > root.deck.loop-in: band := Rectangle {
         accessible-role: image;
-        accessible-label: "wave.loop\{root.deck.deck}";
+        accessible-id: "wave.loop\{root.deck.deck}";
         property <length> x0: root.gutter + (root.deck.loop-in - root.left-t) / root.motion.span * root.area;
         property <length> x1: root.gutter + (root.deck.loop-out - root.left-t) / root.motion.span * root.area;
         property <float> strength: root.deck.looping ? 1 : 0.45;
@@ -165,7 +165,7 @@ export component WaveLane inherits Rectangle {
         // A held roll names itself on the band (filled, like the key).
         if root.deck.rolling: Rectangle {
             accessible-role: text;
-            accessible-label: "wave.roll\{root.deck.deck}";
+            accessible-id: "wave.roll\{root.deck.deck}";
             accessible-value: root.deck.roll-size;
             // Left of the band: the bar counter sits right of the playhead.
             x: -self.width - 4px; y: 5px; width: roll-text.preferred-width + 8px; height: 14px;
@@ -178,7 +178,7 @@ export component WaveLane inherits Rectangle {
     if root.motion.loaded && root.deck.slip-pos >= 0: Rectangle {
         property <length> px: root.gutter + (root.deck.slip-pos - root.left-t) / root.motion.span * root.area;
         accessible-role: image;
-        accessible-label: "wave.slip\{root.deck.deck}";
+        accessible-id: "wave.slip\{root.deck.deck}";
         visible: self.px >= root.gutter && self.px <= root.width;
         x: self.px; width: 1px; height: parent.height;
         background: Theme.bone.with-alpha(0.7);
@@ -189,7 +189,7 @@ export component WaveLane inherits Rectangle {
         property <length> px: root.gutter + (c.pos * root.deck.length - root.left-t) / root.motion.span * root.area;
         property <length> lw: c.is-loop ? (c.end - c.pos) * root.deck.length / root.motion.span * root.area : 0px;
         accessible-role: image;
-        accessible-label: c.slot >= 0 ? "wave.cue\{root.deck.deck}." + c.letter : "wave.memory\{root.deck.deck}." + i;
+        accessible-id: c.slot >= 0 ? "wave.cue\{root.deck.deck}." + c.letter : "wave.memory\{root.deck.deck}." + i;
         accessible-value: c.time;
         visible: root.motion.loaded && root.deck.length > 0 && self.px + self.lw >= root.gutter && self.px <= root.width;
         x: self.px; y: 0; height: parent.height;
@@ -213,7 +213,7 @@ export component WaveLane inherits Rectangle {
         }
         // Tall lanes: GRID opens the deck's track in EDIT GRID (Prepare).
         if root.deck.loaded && parent.height >= 60px: Rectangle {
-            accessible-role: button; accessible-label: "wave.grid-edit\{root.deck.deck}";
+            accessible-role: button; accessible-id: "wave.grid-edit\{root.deck.deck}";
             // Fully inside the numeral column, clear of its divider.
             x: 6px; y: 30px; width: root.gutter - 14px; height: 16px;
             border-radius: 3px;
@@ -234,7 +234,7 @@ export component WaveLane inherits Rectangle {
     Rectangle {
         x: root.head - (Theme.calm-wave ? 0.5px : 1px); width: Theme.calm-wave ? 1px : 2px; height: parent.height;
         accessible-role: image;
-        accessible-label: root.playhead-label ? "wave.playhead" : "";
+        accessible-id: root.playhead-label ? "wave.playhead" : "";
         background: root.deck.loaded ? Theme.bone : Theme.rule-strong;
     }
     // Scroll to zoom; double-click resets. Drag (Perform, a track loaded):
@@ -270,7 +270,7 @@ export component WaveLane inherits Rectangle {
     // While dragging: the offset (paused) or the bend (playing) at the playhead.
     if root.dragging && LaneDrag.deck == root.deck.deck: Rectangle {
         accessible-role: text;
-        accessible-label: "wave.drag\{root.deck.deck}";
+        accessible-id: "wave.drag\{root.deck.deck}";
         accessible-value: LaneDrag.text;
         x: root.head + 5px; y: parent.height - self.height - 4px;
         width: drag-text.preferred-width + 10px; height: 16px;
@@ -297,7 +297,7 @@ export component WaveLane inherits Rectangle {
     // mode (to phrase / to memory cue / bar.beat).
     if root.deck.loaded: Rectangle {
         accessible-role: button;
-        accessible-label: "wave.counter\{root.deck.deck}";
+        accessible-id: "wave.counter\{root.deck.deck}";
         accessible-value: root.deck.beat-pos;
         property <bool> tall: parent.height >= 44px;
         x: root.head + 5px; y: 3px;
@@ -352,7 +352,7 @@ export component VerticalLane inherits Rectangle {
     for c[i] in root.deck.cues: CueMarker {
         property <length> py: root.gutter + (c.pos * root.deck.length - root.top-t) / root.motion.span * root.area;
         accessible-role: image;
-        accessible-label: c.slot >= 0 ? "wave.cue\{root.deck.deck}." + c.letter : "wave.memory\{root.deck.deck}." + i;
+        accessible-id: c.slot >= 0 ? "wave.cue\{root.deck.deck}." + c.letter : "wave.memory\{root.deck.deck}." + i;
         accessible-value: c.time;
         visible: root.motion.loaded && root.deck.length > 0 && self.py >= root.gutter && self.py <= root.height;
         across: true;

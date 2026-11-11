@@ -103,7 +103,7 @@ pub(crate) fn setup_window(ui: &AppWindow, config: &AppConfig, settings: &Settin
     ui.set_show_phrases(settings.view.phrases);
     ui.set_show_phrases_overview(settings.view.phrases_overview);
     ui.global::<crate::DeckTime>().set_mode(settings.view.deck_time.clone().into());
-    apply_browser_style(ui, settings, config.kiosk);
+    apply_browser_style(ui, settings, config.kiosk || settings.view.touch_layout);
     ui.set_ground_texture(crate::render::ground_texture());
     if config.kiosk {
         ui.set_mode("perform".into());
@@ -167,6 +167,7 @@ pub(crate) fn apply_theme(theme: &crate::Theme<'_>, settings: &Settings, lite: b
     crate::appearance::apply(theme, &settings.view.appearance);
     crate::render::set_colorblind_safe(settings.view.colorblind_safe);
     theme.set_calm_wave(settings.view.calm_waveform);
+    theme.set_touch_mode(settings.view.touch_layout);
     crate::render::set_calm_waveform(settings.view.calm_waveform);
     crate::render::set_waveform_style(&settings.view.waveform);
     crate::render::set_waveform_colours([
@@ -292,6 +293,9 @@ fn analysis_band((done, total): (usize, usize)) -> Option<(f32, (usize, usize))>
 /// Keyboard: every key press goes through the keymap (Preferences >
 /// Keyboard); unbound keys are left to the focused element.
 fn key(app: &Rc<App>, text: &str, control: bool, meta: bool, alt: bool, shift: bool) -> bool {
+    if app.ui.global::<crate::Help>().get_on() {
+        return crate::help::key(app, text, control, meta);
+    }
     let Some(chord) = Chord::from_event(text, control, meta, alt, shift, app.prefs.borrow().layout)
     else {
         return false;
@@ -317,6 +321,11 @@ fn key(app: &Rc<App>, text: &str, control: bool, meta: bool, alt: bool, shift: b
             crate::commands::run(app, &id);
             true
         }
+        // `?` opens the help where no shortcut takes it (F12 always does).
+        None if text == "?" && !control && !meta && !alt => {
+            crate::help::toggle(app);
+            true
+        }
         None => false,
     }
 }
@@ -335,6 +344,19 @@ pub(crate) fn shortcut_text(keymap: &crate::keymap::Keymap, id: &str) -> String 
 
 /// Tooltips of a window look up the current binding when they open.
 pub(crate) fn wire_tooltips(app: &Rc<App>, tips: &crate::TooltipState<'_>) {
+    tips.on_name_for(|id, label, tip| crate::a11y::name_for(&id, &label, &tip).into());
+    let weak = Rc::downgrade(app);
+    tips.on_describe(move |tip, command| {
+        let Some(app) = weak.upgrade() else {
+            return tip;
+        };
+        let keys = if command.is_empty() {
+            String::new()
+        } else {
+            shortcut_text(&app.state.borrow().keymap, command.as_str())
+        };
+        crate::a11y::describe(&tip, &keys).into()
+    });
     let weak = Rc::downgrade(app);
     tips.on_shortcut_for(move |id| {
         let Some(app) = weak.upgrade() else {

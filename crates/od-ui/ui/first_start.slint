@@ -3,7 +3,7 @@
 // and never covers one.
 
 import { Theme } from "tokens.slint";
-import { Caps, PlateButton, Glyph, FirstStart } from "controls.slint";
+import { Caps, PlateButton, Glyph, FirstStart, KeyFocus, TooltipState } from "controls.slint";
 import { DeckLayout } from "perform.slint";
 
 // One step: a hollow ring, a sodium ring while current (it needs you), a
@@ -18,7 +18,7 @@ component StepMark inherits HorizontalLayout {
     spacing: Theme.s1;
     alignment: start;
     accessible-role: text;
-    accessible-label: "guide.step.\{root.index}";
+    accessible-id: "guide.step.\{root.index}";
     accessible-value: root.state == 2 ? "done" : root.state == 1 ? "current" : "open";
     VerticalLayout {
         alignment: center;
@@ -50,7 +50,7 @@ component StepLink inherits VerticalLayout {
 
 export component FirstStartBar inherits Rectangle {
     accessible-role: groupbox;
-    accessible-label: "guide.bar";
+    accessible-id: "guide.bar";
     height: 48px;
     background: Theme.ground-band; border-radius: Theme.r-panel;
     property <string> hint: FirstStart.hint;
@@ -72,7 +72,7 @@ export component FirstStartBar inherits Rectangle {
         }
         // What to do now.
         Text {
-            accessible-role: text; accessible-label: "guide.hint"; accessible-value: root.hint;
+            accessible-role: text; accessible-id: "guide.hint"; accessible-value: root.hint;
             horizontal-stretch: 1; min-width: 80px;
             vertical-alignment: center; wrap: word-wrap; overflow: elide;
             font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
@@ -92,7 +92,7 @@ export component FirstStartBar inherits Rectangle {
         if root.step == 0: VerticalLayout {
             alignment: center;
             PlateButton {
-                accessible-role: button; accessible-label: "guide.samples";
+                accessible-role: button; accessible-id: "guide.samples";
                 compact: true; label: @tr("SAMPLE TRACKS"); tone: Theme.live;
                 enabled: !FirstStart.samples-busy;
                 tooltip: @tr("Writes two short sample tracks to your library folder: synthesised here, no download");
@@ -112,7 +112,7 @@ export component FirstStartBar inherits Rectangle {
             for l in [{ id: "simple", label: @tr("SIMPLE") }, { id: "standard", label: @tr("STANDARD") }, { id: "full", label: @tr("FULL") }]: VerticalLayout {
                 alignment: center;
                 PlateButton {
-                    accessible-role: button; accessible-label: "guide.layout.\{l.id}";
+                    accessible-role: button; accessible-id: "guide.layout.\{l.id}";
                     accessible-checkable: true; accessible-checked: DeckLayout.level == l.id;
                     compact: true; label: l.label; selected: DeckLayout.level == l.id;
                     tooltip: l.id == "simple" ? @tr("Simple: about 25 large controls per deck, for a first mix") : l.id == "full" ? @tr("Full: everything, with the Tempo FX panel open") : @tr("Standard: the usual deck");
@@ -123,7 +123,7 @@ export component FirstStartBar inherits Rectangle {
         if root.step >= 2 && root.width < 1480px: VerticalLayout {
             alignment: center;
             PlateButton {
-                accessible-role: button; accessible-label: "guide.layout"; accessible-value: DeckLayout.level;
+                accessible-role: button; accessible-id: "guide.layout"; accessible-value: DeckLayout.level;
                 compact: true;
                 label: DeckLayout.level == "simple" ? @tr("DECKS: SIMPLE") : DeckLayout.level == "full" ? @tr("DECKS: FULL") : @tr("DECKS: STANDARD");
                 tooltip: @tr("Deck layout: Simple, Standard or Full — click for the next");
@@ -133,7 +133,7 @@ export component FirstStartBar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             PlateButton {
-                accessible-role: checkbox; accessible-label: "guide.tone";
+                accessible-role: checkbox; accessible-id: "guide.tone";
                 accessible-checkable: true; accessible-checked: FirstStart.tone-on;
                 compact: true; label: @tr("TEST TONE"); active: FirstStart.tone-on; tone: Theme.attention;
                 tooltip: @tr("A quiet tone on the master output and the headphones, so you know you can hear the deck");
@@ -143,7 +143,7 @@ export component FirstStartBar inherits Rectangle {
         VerticalLayout {
             alignment: center;
             PlateButton {
-                accessible-role: button; accessible-label: "guide.hide";
+                accessible-role: button; accessible-id: "guide.hide";
                 compact: true; label: @tr("HIDE");
                 tooltip: @tr("Hide this guide. View › First-Start Guide brings it back");
                 clicked => { FirstStart.close(); }

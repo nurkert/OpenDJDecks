@@ -50,7 +50,7 @@ The UI layer of SPEC §16.2–§16.4 runs in `crates/od-ui/src/ui_tests/`
 
 | Module | What it does |
 |---|---|
-| `harness` | Temporary library (generated 120 BPM WAVs imported into the collection, a playlist, an Explorer root with a folder holding a file outside the collection, English UI, recordings in the temp dir), the real `App` window on Slint's testing backend (`i-slint-backend-testing`, one backend per test thread, mock time) with `AppConfig { null_audio, headless }`: the engine renders into a null host thread, no MIDI service, no update check, no stem model download. Elements are found by `accessible-label`; input (click, double-click, right-click, drag, wheel, keys, menu items) is dispatched at the element's centre and every action counts one step. `OPENDJDECKS_VOLUMES_DIR` / `OPENDJDECKS_DATA_DIR` point at a per-process temp dir. |
+| `harness` | Temporary library (generated 120 BPM WAVs imported into the collection, a playlist, an Explorer root with a folder holding a file outside the collection, English UI, recordings in the temp dir), the real `App` window on Slint's testing backend (`i-slint-backend-testing`, one backend per test thread, mock time) with `AppConfig { null_audio, headless }`: the engine renders into a null host thread, no MIDI service, no update check, no stem model download. Elements are found by `accessible-id`; input (click, double-click, right-click, drag, wheel, keys, menu items) is dispatched at the element's centre and every action counts one step. `OPENDJDECKS_VOLUMES_DIR` / `OPENDJDECKS_DATA_DIR` point at a per-process temp dir. |
 | `views` | SPEC §16.3: for each size of `views.toml` (desktop, laptop, kiosk = the kiosk configuration at 800×480) and each view, a fresh app is opened in that view and each required element is checked: present (exactly once), visible, inside the window, no overlap within its region, order along the region axis, touch target ≥ `min_target` for interactive roles. Views the app cannot show are reported as unavailable. Writes `target/parity/views-<size>.{json,md}`. |
 | `flows` | SPEC §16.4: the six flows of `flows.toml`, driven through the window; the measured step count and whether the end state was reached go to `target/parity/flows/<id>.json`. |
 | `features` | Behaviour tests linked from `features.toml` (drag to deck, row menu, info panel, waveform zone and zoom, splitters, colour-blind / contrast, panel toggles, …). |
@@ -82,7 +82,7 @@ compiled into non-release builds (`crates/od-ui/build.rs`).
 - **Unknown test ids** — a listed test does not exist (always an error).
 - **Invalid exclusions** — `scope = "out"` with an exclusion SPEC §1 does not name (always an error).
 - **Deferred** — in-scope features with a `milestone` listed in `meta.deferred_milestones` (today `M6`: OneLibrary, Pro DJ Link). Tracked, shown, not counted. Remove the milestone from `deferred_milestones` when that milestone becomes current.
-- **Views and flows** — label coverage (how many required labels already appear literally as `accessible-label` in `crates/od-ui`; a progress indicator only) and flows without a driving UI test.
+- **Views and flows** — label coverage (how many required labels already appear literally as `accessible-id` in `crates/od-ui`; a progress indicator only) and flows without a driving UI test.
 
 ## How test ids are found
 
@@ -158,11 +158,15 @@ paths step by step (lengths must equal the counts; the step rule is in
 observed, list the labels the flow touches, and set `ui_test` to the id of
 the UI test that drives it once it exists.
 
-## Accessible-label convention
+## Accessible-id convention
 
-Every required element carries a stable `accessible-label` so the headless
-view test (Slint testing backend) can find it. Labels are identifiers, not
-UI text: they are never translated and never shown.
+Every required element carries a stable `accessible-id` so the headless
+view test (Slint testing backend) can find it. These labels are identifiers,
+not UI text: they are never translated, never shown and never spoken. The
+spoken `accessible-label` is a readable, translated name (a deck control
+reads "Deck 1: Play"), set by the shared controls from their legend, the
+keymap title or the tooltip; a test fails on an interactive control whose
+name is empty or looks like an id.
 
 ```
 <scope>[n].<part>[.<part>…]
@@ -200,7 +204,7 @@ Rules for the UI team:
 1. Set the label on the element the user operates (the touch area), not on
    a decorative child, so size and hit-test checks measure the right thing.
 2. Labels are unique within a window. Repeated components take the instance
-   from a property: `accessible-label: "deck\{root.deck}.play";`.
+   from a property: `accessible-id: "deck\{root.deck}.play";`.
 3. Mirrored decks keep the same part names; only the instance changes.
 4. Readouts that are not interactive (`deck1.bpm`, `rec.time`) carry labels
    too, so presence, order and clipping can be checked.

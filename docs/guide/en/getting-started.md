@@ -2,7 +2,7 @@
 title: Getting started
 description: Install OpenDJDecks, add your music and let the analysis run. Ten minutes from download to your first tracks on the decks.
 keywords: [install, installation, first steps, start, setup, add music, import music, music folder, analysis, analyse, beginner, new, tutorial, begin]
-features: [shell-first-start-guide, browser-import-files, analysis-beatgrid, analysis-key, analysis-waveform-3band, analysis-loudness-auto-gain, shell-mode-switch, shell-status-band, browser-track-preview, analysis-reanalyse-priority, shell-i18n]
+features: [shell-first-start-guide, browser-import-files, analysis-beatgrid, analysis-key, analysis-waveform-3band, analysis-loudness-auto-gain, shell-mode-switch, shell-status-band, browser-track-preview, analysis-reanalyse-priority, shell-i18n, shell-help-overlay]
 ---
 
 OpenDJDecks has two work modes. **Prepare** is where you sort music and set cues at home. **Perform** is the decks and the mixer for the gig. You switch between them at the top left at any time; whatever is loaded stays loaded.
@@ -76,6 +76,10 @@ The app uses one name for each thing, in the interface and in these guides. Wher
 | **Hot cue** / **Memory cue** | A stored point on a pad / a stored point you jump to on the waveform. | |
 | **Gig preset** | One click for high contrast, the colour-blind palette and a larger interface; **GIG** in the top bar. | |
 | **Beatgrid** | The beat markers of a track. | |
+
+## Help on screen
+
+Press `F12` or the **?** key at the right of the top bar: every control on screen gets a number, and the list beside them names each one with its shortcut. Click a number or a control to read what it does. See [Help on every control](perform-basics.md#help-on-every-control).
 
 ## Where next
 
