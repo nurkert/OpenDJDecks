@@ -1,0 +1,149 @@
+# OpenDJDecks controller mapping: a second controller for the lights.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+# A default layout for a lighting operator, built only from OpenDJDecks'
+# own lighting actions on generic MIDI numbers (MIDI channel 1). It names
+# no model and comes from no other product's chart or manual: any pad
+# controller or fader box that can send these notes and controllers works,
+# and most can be set to them in their own editor.
+#
+# It matches no port by itself: choose the controller under LIGHTING >
+# SETUP > REMOTE (or Preferences) and this layout plays the lights, while
+# another controller keeps the decks.
+#
+# Notes 36-43   pads 1-8 of the current page (a 2 x 4 pad block from C1)
+# Notes 44-47   pages 1-4
+# Notes 48, 49  page back, page on
+# Notes 50-53   blackout, flash, strobe, fog
+# Notes 54-56   release, hold, tap
+# Notes 57, 58  cue back, cue go
+# Notes 60-62   AUTO, EASY, PRO
+# CC 20-27      group masters 1-8 (controllers the MIDI standard leaves free)
+# CC 28         master dimmer
+
+schema = 1
+
+[device]
+id = "lighting-operator"
+name = "Lighting operator (generic)"
+vendor = "OpenDJDecks"
+model = "Generic lighting layout"
+decks = 0
+sources = [
+  "OpenDJDecks lighting actions (own layout)",
+]
+
+[device.match]
+# Assigned by hand, never matched by port name.
+port_names = []
+
+[options]
+soft_takeover = true
+takeover_threshold = 0.03
+
+[[input]]
+name = "Pad"
+note = 36
+repeat = 8
+index_arg = "pad"
+index_base = 1
+channel = 0
+action = "lighting.pad"
+
+[[input]]
+name = "Page"
+note = 44
+repeat = 4
+index_arg = "page"
+index_base = 1
+channel = 0
+action = "lighting.page"
+
+[[input]]
+name = "Page back"
+note = 48
+channel = 0
+action = "lighting.page_prev"
+
+[[input]]
+name = "Page on"
+note = 49
+channel = 0
+action = "lighting.page_next"
+
+[[input]]
+name = "Blackout"
+note = 50
+channel = 0
+action = "lighting.blackout"
+
+[[input]]
+name = "Flash"
+note = 51
+channel = 0
+action = "lighting.flash"
+
+[[input]]
+name = "Strobe"
+note = 52
+channel = 0
+action = "lighting.strobe"
+
+[[input]]
+name = "Fog"
+note = 53
+channel = 0
+action = "lighting.fog"
+
+[[input]]
+name = "Release"
+note = 54
+channel = 0
+action = "lighting.release"
+
+[[input]]
+name = "Hold"
+note = 55
+channel = 0
+action = "lighting.hold"
+
+[[input]]
+name = "Tap"
+note = 56
+channel = 0
+action = "lighting.tap"
+
+[[input]]
+name = "Cue back"
+note = 57
+channel = 0
+action = "lighting.cue_back"
+
+[[input]]
+name = "Cue go"
+note = 58
+channel = 0
+action = "lighting.cue_go"
+
+[[input]]
+name = "Mode"
+note = 60
+repeat = 3
+channel = 0
+action = "lighting.mode"
+args = { mode = ["auto", "easy", "pro"] }
+
+[[input]]
+name = "Group master"
+cc = 20
+repeat = 8
+index_arg = "group"
+index_base = 1
+channel = 0
+action = "lighting.group_master"
+
+[[input]]
+name = "Master"
+cc = 28
+channel = 0
+action = "lighting.master"

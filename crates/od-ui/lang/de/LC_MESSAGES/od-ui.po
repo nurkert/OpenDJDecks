@@ -8683,3 +8683,595 @@ msgstr "TOUCH-LAYOUT"
 msgctxt "TouchOfferBar"
 msgid "NOT NOW"
 msgstr "JETZT NICHT"
+
+msgctxt "FloorPlan"
+msgid "BACK"
+msgstr "HINTEN"
+
+msgctxt "FloorPlan"
+msgid "AUDIENCE"
+msgstr "PUBLIKUM"
+
+msgctxt "FloorPlan"
+msgid "No fixtures patched yet. Add your lights on the left."
+msgstr "Noch keine Scheinwerfer gepatcht. Füge deine Lichter links hinzu."
+
+msgctxt "FixtureInspector"
+msgid "GROUP"
+msgstr "GRUPPE"
+
+msgctxt "FixtureInspector"
+msgid "TURN"
+msgstr "DREHUNG"
+
+msgctxt "FixtureInspector"
+msgid "Which way it points, in steps of 15°: 0° towards the audience"
+msgstr "Wohin er zeigt, in Schritten von 15°: 0° zum Publikum"
+
+msgctxt "FixtureInspector"
+msgid "HEIGHT"
+msgstr "HÖHE"
+
+msgctxt "FixtureInspector"
+msgid "How high it hangs"
+msgstr "Wie hoch er hängt"
+
+msgctxt "FixtureInspector"
+msgid "GRID"
+msgstr "RASTER"
+
+msgctxt "FixtureInspector"
+msgid "Snap to the grid while dragging"
+msgstr "Beim Ziehen am Raster einrasten"
+
+msgctxt "FixtureInspector"
+msgid "DEFAULT SPOT"
+msgstr "STANDARDPLATZ"
+
+msgctxt "FixtureInspector"
+msgid "Back to the spot for its kind (movers at the back, washes at the front)"
+msgstr "Zurück an den Platz seiner Art (Moving Heads hinten, Washes vorn)"
+
+msgctxt "FixtureInspector"
+msgid "PROGRAMMING"
+msgstr "PROGRAMMIERUNG"
+
+msgctxt "FixtureInspector"
+msgid "PAN FROM"
+msgstr "PAN VON"
+
+msgctxt "FixtureInspector"
+msgid "Where the pan travel starts that looks use"
+msgstr "Wo der Pan-Weg beginnt, den Looks nutzen"
+
+msgctxt "FixtureInspector"
+msgid "PAN TO"
+msgstr "PAN BIS"
+
+msgctxt "FixtureInspector"
+msgid "Where the pan travel ends that looks use"
+msgstr "Wo der Pan-Weg endet, den Looks nutzen"
+
+msgctxt "FixtureInspector"
+msgid "TILT FROM"
+msgstr "TILT VON"
+
+msgctxt "FixtureInspector"
+msgid "Where the tilt travel starts that looks use"
+msgstr "Wo der Tilt-Weg beginnt, den Looks nutzen"
+
+msgctxt "FixtureInspector"
+msgid "TILT TO"
+msgstr "TILT BIS"
+
+msgctxt "FixtureInspector"
+msgid "Where the tilt travel ends that looks use"
+msgstr "Wo der Tilt-Weg endet, den Looks nutzen"
+
+msgctxt "FixtureInspector"
+msgid "INVERT PAN"
+msgstr "PAN UMKEHREN"
+
+msgctxt "FixtureInspector"
+msgid "Mirror pan, for a mover hung the other way round"
+msgstr "Pan spiegeln, für einen andersherum gehängten Moving Head"
+
+msgctxt "FixtureInspector"
+msgid "INVERT TILT"
+msgstr "TILT UMKEHREN"
+
+msgctxt "FixtureInspector"
+msgid "Mirror tilt, for a mover hung upside down"
+msgstr "Tilt spiegeln, für einen kopfüber gehängten Moving Head"
+
+msgctxt "FixtureInspector"
+msgid "RED"
+msgstr "ROT"
+
+msgctxt "FixtureInspector"
+msgid "Colour calibration: more or less red, so fixtures of different makes match"
+msgstr "Farbabgleich: mehr oder weniger Rot, damit Scheinwerfer verschiedener Hersteller zusammenpassen"
+
+msgctxt "FixtureInspector"
+msgid "GREEN"
+msgstr "GRÜN"
+
+msgctxt "FixtureInspector"
+msgid "Colour calibration: more or less green"
+msgstr "Farbabgleich: mehr oder weniger Grün"
+
+msgctxt "FixtureInspector"
+msgid "BLUE"
+msgstr "BLAU"
+
+msgctxt "FixtureInspector"
+msgid "Colour calibration: more or less blue"
+msgstr "Farbabgleich: mehr oder weniger Blau"
+
+msgctxt "FixtureInspector"
+msgid "DIMMER CURVE"
+msgstr "DIMMERKURVE"
+
+msgctxt "FixtureInspector"
+msgid "How the light follows the level: LINEAR, SQUARE (darker low end), ROOT (brighter low end), SOFT"
+msgstr "Wie das Licht dem Pegel folgt: LINEAR, QUADRAT (dunkler unten), WURZEL (heller unten), WEICH"
+
+msgctxt "FixtureInspector"
+msgid "The safety limits still apply to every value."
+msgstr "Die Sicherheitsgrenzen gelten weiter für jeden Wert."
+
+msgctxt "StageEditor"
+msgid "FLOOR PLAN"
+msgstr "GRUNDRISS"
+
+msgctxt "StageEditor"
+msgid "Drag a fixture to where it hangs; click it to turn it, set its height and group and tune it. Chases and sweeps run from left to right as placed."
+msgstr "Zieh einen Scheinwerfer dorthin, wo er hängt; klick ihn an, um ihn zu drehen, Höhe und Gruppe zu setzen und ihn einzustellen. Chases und Sweeps laufen so, wie platziert, von links nach rechts."
+
+msgctxt "StageEditor"
+msgid "GRID"
+msgstr "RASTER"
+
+msgctxt "StageEditor"
+msgid "Snap to the grid while dragging"
+msgstr "Beim Ziehen am Raster einrasten"
+
+msgctxt "CueList"
+msgid "TRACK"
+msgstr "TRACK"
+
+msgctxt "CueList"
+msgid "Load or play a track to give it light cues."
+msgstr "Lade oder spiele einen Track, um ihm Licht-Cues zu geben."
+
+msgctxt "CueList"
+msgid "CUE AT PLAYHEAD"
+msgstr "CUE AM PLAYHEAD"
+
+msgctxt "CueList"
+msgid "A light cue at the bar you hear, playing the cue, pad or chase that runs now"
+msgstr "Ein Licht-Cue am Takt, den du hörst, mit dem Cue, Pad oder Chase, der gerade läuft"
+
+msgctxt "CueList"
+msgid "AT"
+msgstr "BEI"
+
+msgctxt "CueList"
+msgid "NAME"
+msgstr "NAME"
+
+msgctxt "CueList"
+msgid "PLAYS"
+msgstr "SPIELT"
+
+msgctxt "CueList"
+msgid "FADE"
+msgstr "ÜBERBLENDUNG"
+
+msgctxt "CueList"
+msgid "No light cues for this track yet. A light cue plays a cue of the stack, a pad or a chase from its bar on, every time the track plays. In Prepare they sit on a lane under the waveform, where you can drag them."
+msgstr "Noch keine Licht-Cues für diesen Track. Ein Licht-Cue spielt ab seinem Takt einen Cue des Stacks, ein Pad oder einen Chase, jedes Mal, wenn der Track läuft. In Prepare liegen sie auf einer Spur unter der Wellenform, wo du sie ziehen kannst."
+
+msgctxt "CueList"
+msgid "Move the cue a bar earlier or later"
+msgstr "Den Cue einen Takt früher oder später setzen"
+
+msgctxt "CueList"
+msgid "Name"
+msgstr "Name"
+
+msgctxt "CueList"
+msgid "What the cue plays: a cue of the stack, a pad's look or a chase"
+msgstr "Was der Cue spielt: einen Cue des Stacks, den Look eines Pads oder einen Chase"
+
+msgctxt "CueList"
+msgid "Fade into the cue, in beats"
+msgstr "Überblendung in den Cue, in Beats"
+
+msgctxt "CueList"
+msgid "Remove this light cue"
+msgstr "Diesen Licht-Cue entfernen"
+
+msgctxt "CueList"
+msgid "Type a name and press Enter to rename. The cue starts at its bar each time the track plays, in every mode."
+msgstr "Namen eingeben und Enter drücken, um umzubenennen. Der Cue beginnt jedes Mal an seinem Takt, wenn der Track läuft, in jedem Modus."
+
+msgctxt "FilesTab"
+msgid "VENUES"
+msgstr "LOCATIONS"
+
+msgctxt "FilesTab"
+msgid "RIGS"
+msgstr "RIGS"
+
+msgctxt "FilesTab"
+msgid "SHOWS"
+msgstr "SHOWS"
+
+msgctxt "FilesTab"
+msgid "A venue binds a rig to a show and the safety limits. Pick yours when you arrive and press LOAD."
+msgstr "Eine Location verbindet ein Rig mit einer Show und den Sicherheitsgrenzen. Wähle deine bei der Ankunft und drück LADEN."
+
+msgctxt "FilesTab"
+msgid "A rig is the patch and the outputs."
+msgstr "Ein Rig ist der Patch mit den Ausgängen."
+
+msgctxt "FilesTab"
+msgid "A show is the looks, pads, chases, cue lists, the AUTO table and the palette."
+msgstr "Eine Show sind die Looks, Pads, Chases, Cue-Listen, die AUTO-Tabelle und die Palette."
+
+msgctxt "FilesTab"
+msgid "Nothing saved yet. Type a name and press SAVE AS NEW."
+msgstr "Noch nichts gesichert. Namen eingeben und NEU SICHERN drücken."
+
+msgctxt "FilesTab"
+msgid "IN USE"
+msgstr "IN BENUTZUNG"
+
+msgctxt "FilesTab"
+msgid "LOAD"
+msgstr "LADEN"
+
+msgctxt "FilesTab"
+msgid "Load the venue: its rig, its show and its safety limits"
+msgstr "Die Location laden: ihr Rig, ihre Show und ihre Sicherheitsgrenzen"
+
+msgctxt "FilesTab"
+msgid "Load it in place of the one in use"
+msgstr "Anstelle des benutzten laden"
+
+msgctxt "FilesTab"
+msgid "SAVE"
+msgstr "SICHERN"
+
+msgctxt "FilesTab"
+msgid "Save what runs now under this name"
+msgstr "Das, was gerade läuft, unter diesem Namen sichern"
+
+msgctxt "FilesTab"
+msgid "DUPLICATE"
+msgstr "DUPLIZIEREN"
+
+msgctxt "FilesTab"
+msgid "Make a copy under a new name"
+msgstr "Eine Kopie unter neuem Namen anlegen"
+
+msgctxt "FilesTab"
+msgid "DELETE"
+msgstr "LÖSCHEN"
+
+msgctxt "FilesTab"
+msgid "Delete this file (what runs now stays)"
+msgstr "Diese Datei löschen (was gerade läuft, bleibt)"
+
+msgctxt "FilesTab"
+msgid "Name"
+msgstr "Name"
+
+msgctxt "FilesTab"
+msgid "RENAME"
+msgstr "UMBENENNEN"
+
+msgctxt "FilesTab"
+msgid "Give the chosen file the name typed above"
+msgstr "Der gewählten Datei den oben eingegebenen Namen geben"
+
+msgctxt "FilesTab"
+msgid "SAVE AS NEW"
+msgstr "NEU SICHERN"
+
+msgctxt "FilesTab"
+msgid "Save what runs now under the name typed above"
+msgstr "Das, was gerade läuft, unter dem oben eingegebenen Namen sichern"
+
+msgctxt "FilesTab"
+msgid "ONE FILE"
+msgstr "EINE DATEI"
+
+msgctxt "FilesTab"
+msgid "IMPORT…"
+msgstr "IMPORTIEREN…"
+
+msgctxt "FilesTab"
+msgid "Open a venue with its rig and show from one file"
+msgstr "Eine Location mit Rig und Show aus einer Datei öffnen"
+
+msgctxt "FilesTab"
+msgid "EXPORT…"
+msgstr "EXPORTIEREN…"
+
+msgctxt "FilesTab"
+msgid "Write the venue, rig and show in use to one file"
+msgstr "Die benutzte Location mit Rig und Show in eine Datei schreiben"
+
+msgctxt "FilesTab"
+msgid "The files sit in the lighting folder next to the library."
+msgstr "Die Dateien liegen im Ordner lighting neben der Bibliothek."
+
+msgctxt "SetupPanel"
+msgid "VENUE"
+msgstr "LOCATION"
+
+msgctxt "SetupPanel"
+msgid "None"
+msgstr "Keine"
+
+msgctxt "SetupPanel"
+msgid "FILES"
+msgstr "DATEIEN"
+
+msgctxt "SetupPanel"
+msgid "Venues, rigs and shows: load, save, rename, duplicate, import and export"
+msgstr "Locations, Rigs und Shows: laden, sichern, umbenennen, duplizieren, importieren und exportieren"
+
+msgctxt "ShowPanel"
+msgid "All lights off, over everything else; press again to bring them back"
+msgstr "Alle Lichter aus, über allem anderen; nochmals drücken bringt sie zurück"
+
+msgctxt "LightingView"
+msgid "Rig, patch, outputs, safety and files; the stage as a floor plan"
+msgstr "Rig, Patch, Ausgänge, Sicherheit und Dateien; die Bühne als Grundriss"
+
+msgctxt "LightingView"
+msgid "The stage, pads and light cues; AUTO, masters and the keys to play the show"
+msgstr "Bühne, Pads und Licht-Cues; AUTO, Master und die Tasten, um die Show zu spielen"
+
+msgctxt "LightingView"
+msgid "CUES"
+msgstr "CUES"
+
+msgctxt "LightingView"
+msgid "The floor plan: place, turn and tune the fixtures"
+msgstr "Der Grundriss: Scheinwerfer platzieren, drehen und einstellen"
+
+msgctxt "LightingView"
+msgid "TEST"
+msgstr "TEST"
+
+msgctxt "LightingView"
+msgid "Output test: light each fixture in turn (other patterns under OUTPUT)"
+msgstr "Ausgangstest: jeden Scheinwerfer nacheinander leuchten lassen (weitere Muster unter AUSGANG)"
+
+msgctxt "LightingView"
+msgid "Stop the output test and go back to the show"
+msgstr "Den Ausgangstest beenden und zurück zur Show"
+
+msgctxt "LightCueStrip"
+msgid "Light cue: {} · drag to another bar"
+msgstr "Licht-Cue: {} · auf einen anderen Takt ziehen"
+
+msgctxt "SafetyTab"
+msgid "UNATTENDED"
+msgstr "UNBEAUFSICHTIGT"
+
+msgctxt "SafetyTab"
+msgid "RUNS UNATTENDED"
+msgstr "LÄUFT UNBEAUFSICHTIGT"
+
+msgctxt "SafetyTab"
+msgid "RUN UNATTENDED"
+msgstr "UNBEAUFSICHTIGT LAUFEN LASSEN"
+
+msgctxt "SafetyTab"
+msgid "For a fixed venue: the show runs by itself, locked behind the setup PIN"
+msgstr "Für eine feste Location: Die Show läuft von selbst, gesperrt hinter der Setup-PIN"
+
+msgctxt "SafetyTab"
+msgid "START WITH THE APP"
+msgstr "MIT DER APP STARTEN"
+
+msgctxt "SafetyTab"
+msgid "Each start of the app opens LIGHTING in SHOW with DMX OUT on"
+msgstr "Jeder Start der App öffnet LIGHTING in SHOW mit eingeschalteter DMX-Ausgabe"
+
+msgctxt "SafetyTab"
+msgid "CALM AFTER"
+msgstr "RUHIG NACH"
+
+msgctxt "SafetyTab"
+msgid "Silence for this long fades the rig to a calm warm wash"
+msgstr "So lange Stille blendet das Rig in ein ruhiges, warmes Licht über"
+
+msgctxt "SafetyTab"
+msgid "Set a setup PIN first: the PIN is what takes the show back."
+msgstr "Leg zuerst eine Setup-PIN fest: Mit ihr übernimmst du die Show wieder."
+
+msgctxt "SafetyTab"
+msgid "The show follows the music and comes back by itself after a restart; on silence the rig fades to a calm warm wash. The keys, the lighting controller and OSC are locked, fog and lasers stay locked out, and every limit above holds. LOCK the setup when you leave."
+msgstr "Die Show folgt der Musik und läuft nach einem Neustart von selbst weiter; bei Stille blendet das Rig in ein ruhiges, warmes Licht über. Die Tasten, der Licht-Controller und OSC sind gesperrt, Nebel und Laser bleiben gesperrt, und jede Grenze oben gilt. SPERRE das Setup, wenn du gehst."
+
+msgctxt "RemoteTab"
+msgid "LIGHTING CONTROLLER"
+msgstr "LICHT-CONTROLLER"
+
+msgctxt "RemoteTab"
+msgid "REFRESH"
+msgstr "AKTUALISIEREN"
+
+msgctxt "RemoteTab"
+msgid "Look for MIDI controllers again"
+msgstr "Erneut nach MIDI-Controllern suchen"
+
+msgctxt "RemoteTab"
+msgid "Give one controller to the lights: it plays them with the lighting layout (pads, pages, group masters, blackout, flash, strobe, fog) while another controller keeps the decks."
+msgstr "Gib einen Controller dem Licht: Er spielt es mit dem Licht-Layout (Pads, Seiten, Gruppen-Master, Blackout, Flash, Strobe, Nebel), während ein anderer Controller die Decks behält."
+
+msgctxt "RemoteTab"
+msgid "No MIDI controller found. Plug it in and press REFRESH."
+msgstr "Kein MIDI-Controller gefunden. Schließ ihn an und drück AKTUALISIEREN."
+
+msgctxt "RemoteTab"
+msgid "GIVE BACK"
+msgstr "ZURÜCKGEBEN"
+
+msgctxt "RemoteTab"
+msgid "USE FOR LIGHTS"
+msgstr "FÜRS LICHT"
+
+msgctxt "RemoteTab"
+msgid "The controller goes back to its own mapping"
+msgstr "Der Controller kehrt zu seinem eigenen Mapping zurück"
+
+msgctxt "RemoteTab"
+msgid "This controller plays the lights with the lighting layout"
+msgstr "Dieser Controller spielt das Licht mit dem Licht-Layout"
+
+msgctxt "RemoteTab"
+msgid "OSC IN"
+msgstr "OSC-EINGANG"
+
+msgctxt "RemoteTab"
+msgid "LISTEN"
+msgstr "HÖREN"
+
+msgctxt "RemoteTab"
+msgid "Take lighting commands and music over OSC on the port below"
+msgstr "Lichtbefehle und Musik über OSC am Port unten annehmen"
+
+msgctxt "RemoteTab"
+msgid "UDP PORT"
+msgstr "UDP-PORT"
+
+msgctxt "RemoteTab"
+msgid "Off by default. While on, any device on the local network can play the lights: a tablet, a second computer, a show controller. The addresses are in the guide."
+msgstr "Standardmäßig aus. Solange es an ist, kann jedes Gerät im lokalen Netzwerk das Licht spielen: ein Tablet, ein zweiter Computer, ein Show-Controller. Die Adressen stehen in der Anleitung."
+
+msgctxt "RemoteTab"
+msgid "SEND THE MUSIC"
+msgstr "MUSIK SENDEN"
+
+msgctxt "RemoteTab"
+msgid "SEND"
+msgstr "SENDEN"
+
+msgctxt "RemoteTab"
+msgid "Send tempo, beat, phrase and energy to the address on the left"
+msgstr "Tempo, Beat, Phrase und Energie an die Adresse links senden"
+
+msgctxt "RemoteTab"
+msgid "Sends the tempo, beat, phrase and energy of the deck you hear 20 times a second. On the other computer turn OSC IN on and choose MUSIC FROM NETWORK under SHOW › TRIGGERS."
+msgstr "Sendet Tempo, Beat, Phrase und Energie des Decks, das du hörst, 20-mal pro Sekunde. Schalte am anderen Computer den OSC-EINGANG ein und wähle MUSIK VON NETZWERK unter SHOW › TRIGGER."
+
+msgctxt "TriggersCentre"
+msgid "MUSIC FROM"
+msgstr "MUSIK VON"
+
+msgctxt "TriggersCentre"
+msgid "DECKS"
+msgstr "DECKS"
+
+msgctxt "TriggersCentre"
+msgid "AUDIO INPUT"
+msgstr "AUDIOEINGANG"
+
+msgctxt "TriggersCentre"
+msgid "NETWORK"
+msgstr "NETZWERK"
+
+msgctxt "TriggersCentre"
+msgid "The show follows the decks of this app"
+msgstr "Die Show folgt den Decks dieser App"
+
+msgctxt "TriggersCentre"
+msgid "The show follows an audio input (line-in or a microphone) by its beat and level"
+msgstr "Die Show folgt einem Audioeingang (Line-In oder Mikrofon) nach Beat und Pegel"
+
+msgctxt "TriggersCentre"
+msgid "The show follows another OpenDJDecks on the network (OSC IN under SETUP › REMOTE)"
+msgstr "Die Show folgt einem anderen OpenDJDecks im Netzwerk (OSC-EINGANG unter SETUP › EXTERN)"
+
+msgctxt "TriggersCentre"
+msgid "DJ EVENTS"
+msgstr "DJ-EREIGNISSE"
+
+msgctxt "TriggersCentre"
+msgid "LAST: {}"
+msgstr "ZULETZT: {}"
+
+msgctxt "TriggersCentre"
+msgid "WHEN"
+msgstr "WENN"
+
+msgctxt "TriggersCentre"
+msgid "PLAYS"
+msgstr "SPIELT"
+
+msgctxt "TriggersCentre"
+msgid "FOR"
+msgstr "DAUER"
+
+msgctxt "TriggersCentre"
+msgid "What the event plays: nothing, RELEASE, a pad's look or chase, or a cue of the stack"
+msgstr "Was das Ereignis spielt: nichts, FREIGEBEN, den Look oder Chase eines Pads oder einen Cue des Stapels"
+
+msgctxt "TriggersCentre"
+msgid "How long it plays, in beats, or until the next event"
+msgstr "Wie lange es spielt, in Beats, oder bis zum nächsten Ereignis"
+
+msgctxt "TriggersCentre"
+msgid "A DJ event plays a pad's look or chase or a cue of the stack over what runs, for the beats set or until the next event; RELEASE hands back. A drop or a breakdown wins over PHRASE CHANGES. Everything stays within the safety limits."
+msgstr "Ein DJ-Ereignis spielt den Look oder Chase eines Pads oder einen Cue des Stapels über das, was läuft, für die eingestellten Beats oder bis zum nächsten Ereignis; FREIGEBEN gibt zurück. Ein Drop oder Breakdown gewinnt gegen PHRASE WECHSELT. Alles bleibt innerhalb der Sicherheitsgrenzen."
+
+msgctxt "UnattendedNote"
+msgid "UNATTENDED"
+msgstr "UNBEAUFSICHTIGT"
+
+msgctxt "UnattendedNote"
+msgid "The show runs by itself and follows the music; on silence it fades to a calm warm wash. The keys, the lighting controller and OSC are locked; BLACKOUT stays. The setup PIN takes over."
+msgstr "Die Show läuft von selbst und folgt der Musik; bei Stille blendet sie in ein ruhiges, warmes Licht über. Die Tasten, der Licht-Controller und OSC sind gesperrt; BLACKOUT bleibt. Die Setup-PIN übernimmt."
+
+msgctxt "UnattendedNote"
+msgid "PIN"
+msgstr "PIN"
+
+msgctxt "UnattendedNote"
+msgid "TAKE OVER"
+msgstr "ÜBERNEHMEN"
+
+msgctxt "UnattendedNote"
+msgid "Open the show and the setup with the PIN"
+msgstr "Show und Setup mit der PIN öffnen"
+
+msgctxt "SetupPanel"
+msgid "REMOTE"
+msgstr "EXTERN"
+
+msgctxt "SetupPanel"
+msgid "A second controller for the lights, OSC in, and the music sent to another computer"
+msgstr "Ein zweiter Controller fürs Licht, OSC-Eingang und die Musik an einen anderen Computer"
+
+msgctxt "LightingView"
+msgid "TRIGGERS"
+msgstr "TRIGGER"
+
+msgctxt "LightingPanel"
+msgid "UNATTENDED"
+msgstr "UNBEAUFSICHTIGT"
+
+msgctxt "LightingPanel"
+msgid "The show runs by itself. The setup PIN under LIGHTING takes over."
+msgstr "Die Show läuft von selbst. Die Setup-PIN unter LIGHTING übernimmt."
+
+msgctxt "OrderChain"
+msgid "TRIGGER"
+msgstr "TRIGGER"

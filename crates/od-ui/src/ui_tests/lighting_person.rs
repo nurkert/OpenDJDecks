@@ -59,6 +59,7 @@ fn own_looks_and_chases_on_pads_are_saved_with_the_rig() {
     ui.click("topbar.mode.lighting");
     ui.pump(200);
     patch_two_groups(&ui);
+    ui.click("lighting.space.show");
     ui.click("lighting.centre.pads");
     assert!(ui.wait_until(3.0, |u| u.has("lighting.pad0")));
     assert!(ui.value("lighting.pad0").contains("1.1"));
@@ -246,6 +247,7 @@ fn auto_palette_table_hold_and_release() {
         look.groups.insert("Wash".into(), Default::default());
         rt.config.settings.pads.push(look);
     }
+    ui.click("lighting.space.show");
     ui.click("lighting.mode.auto");
     assert!(ui.wait_until(3.0, |u| u.has("lighting.auto.palette2")));
     ui.click("lighting.auto.palette2");
@@ -254,9 +256,11 @@ fn auto_palette_table_hold_and_release() {
         |u| u.app.lighting.borrow().config.settings.auto.palette == od_lighting::Palette::Cool
     ));
     // OWN: chosen swatches make the palette.
-    ui.click("lighting.auto.palette6");
-    assert!(ui.wait_until(3.0, |u| u.has("lighting.auto.custom4")));
-    ui.click("lighting.auto.custom4");
+    let own = ui.scroll_into_view("lighting.auto", |u| u.find("lighting.auto.palette6"));
+    ui.click_el(&own.expect("OWN in view"));
+    ui.pump(100);
+    let custom = ui.scroll_into_view("lighting.auto", |u| u.find("lighting.auto.custom4"));
+    ui.click_el(&custom.expect("the swatches of OWN"));
     assert!(ui.wait_until(
         3.0,
         |u| u.app.lighting.borrow().config.settings.auto.custom.len() == 1
@@ -382,14 +386,16 @@ fn connecting_interfaces_ports_nodes_test_pattern_and_guide() {
             *x == 1 && matches!(k, OutputKind::EnttecPro { device } if device.ends_with("DMX1"))
         })
     }));
-    // The test pattern lights the fixtures one after another.
-    ui.click("lighting.test.each");
+    // [21] The output test is one key away in SETUP: the test pattern
+    // lights the fixtures one after another.
+    ui.click("lighting.test");
     assert!(ui.wait_until(5.0, |u| {
         let rt = u.app.lighting.borrow();
         let s = rt.runner.snapshot.lock().unwrap();
         s.looks.len() == 3 && s.looks.iter().filter(|l| l.intensity > 0.5).count() == 1
     }));
-    ui.click("lighting.test.off");
+    assert_eq!(g(&ui).get_test(), "each");
+    ui.click("lighting.test");
     assert!(ui.wait_until(3.0, |u| u.app.lighting.borrow().test.is_none()));
     // The guided setup: Art-Net, the node, universe 2, test, done.
     ui.click("lighting.guide.open");
@@ -516,3 +522,4 @@ fn own_pads_from_controllers_and_deck_pads() {
         od_lighting::Program::Chase
     );
 }
+

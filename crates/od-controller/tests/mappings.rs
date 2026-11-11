@@ -856,3 +856,72 @@ fn the_published_hardware_status_matches_the_mapping_files() {
         );
     }
 }
+
+// ---------------------------------------------------------- lighting layout
+
+fn lighting_layout() -> Arc<Mapping> {
+    let p = od_controller::bundled_mappings_dir().join("lighting/lighting-operator.toml");
+    Arc::new(Mapping::load(&p).unwrap_or_else(|e| panic!("lighting layout: {e}")))
+}
+
+/// [34] The default layout for a second controller dedicated to the
+/// lights: only lighting actions, generic notes and controllers on channel
+/// 1, every address bound once, and no port matched by name (it is
+/// assigned by hand).
+#[test]
+fn the_lighting_layout_plays_only_the_lights() {
+    use LightingAction as L;
+    let m = lighting_layout();
+    assert_eq!(m.device().decks, 0);
+    for port in ["DDJ-FLX4", "Any MIDI Controller", ""] {
+        assert!(!m.matches_port(port), "{port}");
+    }
+    let mut seen = HashSet::new();
+    for b in &m.inputs {
+        assert!(b.template.name.starts_with("lighting."), "{}", b.template.name);
+        assert!(seen.insert(b.addr), "{} bound twice", b.addr);
+    }
+    let mut s = ControllerSession::new(m);
+    let l = |a| ControlAction::Lighting(a);
+    assert_eq!(
+        feed(&mut s, &[[0x90, 36, 0x7F], [0x80, 36, 0], [0x90, 43, 0x7F]]),
+        vec![
+            l(L::Pad { pad: 0, pressed: true }),
+            l(L::Pad { pad: 0, pressed: false }),
+            l(L::Pad { pad: 7, pressed: true }),
+        ]
+    );
+    assert_eq!(feed(&mut s, &[[0x90, 47, 0x7F]]), vec![l(L::Page(3))]);
+    assert_eq!(feed(&mut s, &[[0x90, 49, 0x7F]]), vec![l(L::PageNext)]);
+    assert_eq!(feed(&mut s, &[[0x90, 50, 0x7F]]), vec![l(L::BlackoutToggle)]);
+    assert_eq!(feed(&mut s, &[[0x90, 52, 0x7F], [0x90, 52, 0]]), vec![l(L::Strobe(true)), l(L::Strobe(false))]);
+    assert_eq!(feed(&mut s, &[[0x90, 56, 0x7F]]), vec![l(L::Tap)]);
+    assert_eq!(feed(&mut s, &[[0x90, 58, 0x7F]]), vec![l(L::CueGo)]);
+    assert_eq!(feed(&mut s, &[[0x90, 62, 0x7F]]), vec![l(L::Mode("pro".into()))]);
+    let a = feed(&mut s, &[[0xB0, 22, 127]]);
+    assert_eq!(a, vec![l(L::GroupMaster { group: 2, level: 1.0 })]);
+    let a = feed(&mut s, &[[0xB0, 28, 0]]);
+    assert_eq!(a, vec![l(L::Master(0.0))]);
+    // Other channels are not part of the layout.
+    assert!(feed(&mut s, &[[0x91, 36, 0x7F]]).is_empty());
+}
+
+/// [34] One controller is given to the lights by its port while another
+/// keeps its own mapping by name.
+#[test]
+fn a_port_can_be_given_to_the_lights() {
+    let all = vec![load("ddj-flx4.toml"), lighting_layout()];
+    let assigned = vec![("Pad Box MIDI 1".to_string(), "lighting-operator".to_string())];
+    let id = |port: &str| Mapping::for_port(&all, &assigned, port).map(|m| m.device().id.clone());
+    assert_eq!(id("Pad Box MIDI 1").as_deref(), Some("lighting-operator"));
+    assert_eq!(id("DDJ-FLX4 MIDI 1").as_deref(), Some("ddj-flx4"));
+    assert_eq!(id("Pad Box MIDI 2"), None);
+    // Without the assignment the box has no mapping.
+    assert_eq!(Mapping::for_port(&all, &[], "Pad Box MIDI 1").map(|m| m.device().id.clone()), None);
+    // The deck controller itself can be given to the lights too.
+    let assigned = vec![("DDJ-FLX4 MIDI 1".to_string(), "lighting-operator".to_string())];
+    assert_eq!(
+        Mapping::for_port(&all, &assigned, "DDJ-FLX4 MIDI 1").map(|m| m.device().id.clone()).as_deref(),
+        Some("lighting-operator")
+    );
+}

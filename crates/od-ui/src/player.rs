@@ -500,6 +500,7 @@ pub(crate) fn refresh_detail(app: &App) {
     });
     drop(st);
     crate::key_mix::show(app, confidence.as_ref());
+    crate::lighting_stage::sync(app);
     render_detail(app);
     refresh_minis(app);
     crate::track_edit::refresh(app);

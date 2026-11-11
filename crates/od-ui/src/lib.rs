@@ -46,6 +46,8 @@ mod lane_drag;
 mod keymap;
 mod lighting;
 mod lighting_pads;
+mod lighting_remote;
+mod lighting_stage;
 mod mic;
 mod midi_tools;
 mod mixer;

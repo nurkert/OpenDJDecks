@@ -116,6 +116,27 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             }
             w.invoke_set_mode("lighting".into());
         }
+        "lighting.show" => {
+            if kiosk {
+                return Err("Lighting is not part of the kiosk".into());
+            }
+            w.invoke_set_mode("lighting".into());
+            slint::ComponentHandle::global::<crate::Lighting>(w).set_space("show".into());
+        }
+        "lighting.remote" | "lighting.triggers" => {
+            if kiosk {
+                return Err("Lighting is not part of the kiosk".into());
+            }
+            w.invoke_set_mode("lighting".into());
+            let l = slint::ComponentHandle::global::<crate::Lighting>(w);
+            if id == "lighting.remote" {
+                l.set_space("setup".into());
+                l.set_setup_tab("remote".into());
+            } else {
+                l.set_space("show".into());
+                l.set_centre("triggers".into());
+            }
+        }
         "panel.lighting" => {
             perform(2);
             slint::ComponentHandle::global::<crate::Lighting>(w).set_panel(true);

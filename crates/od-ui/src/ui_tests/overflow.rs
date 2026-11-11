@@ -398,6 +398,9 @@ const ALLOW: &[(&str, &str, &str, &str)] = &[
     // A dashed rule repeats its dash and clips the last one at its own end.
     ("clipped", "Rectangle in HLine", "in HLine", "dash pattern cut at the rule's end"),
     ("clipped", "Rectangle in VLine", "in VLine", "dash pattern cut at the rule's end"),
+    // [32] Fixtures stand on the floor plan where they are placed; two
+    // hung close together overlap there as they do on the truss.
+    ("overlap", "lighting.plan.fixture", "", "fixtures placed close together"),
 ];
 
 fn allowed(f: &Finding) -> bool {
@@ -883,25 +886,217 @@ fn main_states() -> Vec<State> {
         State {
             id: "touch.lighting (touch layout)",
             setup: |u| {
-                lighting(u, "stage", "rig");
+                lighting(u, "show", "stage", "rig");
                 super::touch::touch_on(u, true);
             },
             teardown: Some(|u| super::touch::touch_on(u, false)),
         },
-        State { id: "lighting.stage+rig", setup: |u| lighting(u, "stage", "rig"), teardown: None },
-        State { id: "lighting.pads+output", setup: |u| lighting(u, "pads", "output"), teardown: None },
-        State { id: "lighting.patch+safety", setup: |u| lighting(u, "patch", "safety"), teardown: None },
-        State { id: "lighting.channels", setup: |u| lighting(u, "channels", "rig"), teardown: None },
+        // [21] SETUP: the floor plan, patch and channels beside rig,
+        // outputs, safety and files; SHOW: stage, pads and cues beside the
+        // show column with its large BLACKOUT.
+        State { id: "lighting.setup stage+rig", setup: |u| lighting(u, "setup", "stage", "rig"), teardown: None },
+        State { id: "lighting.setup patch+output", setup: |u| lighting(u, "setup", "patch", "output"), teardown: None },
+        State { id: "lighting.setup channels+safety", setup: |u| lighting(u, "setup", "channels", "safety"), teardown: None },
+        State { id: "lighting.setup files", setup: |u| lighting(u, "setup", "stage", "files"), teardown: None },
+        State { id: "lighting.show stage", setup: |u| lighting(u, "show", "stage", "rig"), teardown: None },
+        State { id: "lighting.show pads", setup: |u| lighting(u, "show", "pads", "rig"), teardown: None },
+        State { id: "lighting.show cues (empty)", setup: |u| lighting(u, "show", "cues", "rig"), teardown: None },
+        // [32] The floor plan with a mover open in the inspector.
+        State {
+            id: "lighting.plan (a fixture open)",
+            setup: |u| {
+                patched_rig(u);
+                lighting(u, "setup", "stage", "rig");
+                u.app.ui.global::<crate::Lighting>().invoke_select_fixture(3);
+                u.pump(200);
+            },
+            teardown: None,
+        },
+        // [35] The files of a rig with venues saved.
+        State {
+            id: "lighting.files (venues saved)",
+            setup: |u| {
+                patched_rig(u);
+                lighting(u, "setup", "stage", "files");
+            },
+            teardown: None,
+        },
+        // [33] The cue list with light cues, PRO with its groups.
+        State {
+            id: "lighting.cues (two light cues), PRO",
+            setup: |u| {
+                patched_rig(u);
+                light_cues(u);
+                lighting(u, "show", "cues", "rig");
+                u.app.ui.global::<crate::Lighting>().invoke_set_mode("pro".into());
+                u.pump(200);
+            },
+            teardown: Some(|u| u.app.ui.global::<crate::Lighting>().invoke_set_mode("auto".into())),
+        },
+        // [34] REMOTE: controllers to give to the lights (one given), OSC
+        // in and the music sent out.
+        State {
+            id: "lighting.setup remote",
+            setup: |u| {
+                patched_rig(u);
+                {
+                    let mut rt = u.app.lighting.borrow_mut();
+                    rt.remote.midi_inputs = vec![
+                        "A very long controller name MIDI 1".into(),
+                        "Pad Box MIDI 1".into(),
+                    ];
+                    rt.remote.midi_fixed = true;
+                    rt.config.remote.controller = "Pad Box MIDI 1".into();
+                    rt.config.remote.send_to = "192.168.100.200:9300".into();
+                }
+                crate::lighting::refresh(&u.app);
+                lighting(u, "setup", "stage", "remote");
+            },
+            teardown: Some(|u| {
+                u.app.lighting.borrow_mut().config.remote = Default::default();
+                crate::lighting::refresh(&u.app);
+            }),
+        },
+        // [36] TRIGGERS: the music source and DJ events tied to pads.
+        State {
+            id: "lighting.show triggers",
+            setup: |u| {
+                patched_rig(u);
+                light_cues(u);
+                {
+                    let mut rt = u.app.lighting.borrow_mut();
+                    rt.config.settings.triggers = vec![
+                        od_lighting::Trigger { event: od_lighting::DjEvent::Drop, target: od_lighting::TriggerTarget::Pad(0), beats: 16.0 },
+                        od_lighting::Trigger { event: od_lighting::DjEvent::Breakdown, target: od_lighting::TriggerTarget::Release, beats: 0.0 },
+                        od_lighting::Trigger { event: od_lighting::DjEvent::EndNear, target: od_lighting::TriggerTarget::Cue(0), beats: 0.0 },
+                    ];
+                }
+                crate::lighting::refresh(&u.app);
+                lighting(u, "show", "triggers", "rig");
+            },
+            teardown: None,
+        },
+        // [37] Unattended: SAFETY with the mode on, then SHOW and the
+        // Perform strip locked.
+        State {
+            id: "lighting.setup safety (unattended)",
+            setup: |u| {
+                patched_rig(u);
+                {
+                    let mut rt = u.app.lighting.borrow_mut();
+                    rt.config.safety.pin = "2468".into();
+                    rt.config.unattended.enabled = true;
+                    rt.unlocked = true;
+                }
+                crate::lighting::refresh(&u.app);
+                lighting(u, "setup", "stage", "safety");
+                u.scroll("lighting.safety", -3000.0);
+                u.pump(100);
+            },
+            teardown: None,
+        },
+        State {
+            id: "lighting.show unattended (locked)",
+            setup: |u| {
+                u.app.lighting.borrow_mut().unlocked = false;
+                crate::lighting::refresh(&u.app);
+                lighting(u, "show", "stage", "rig");
+            },
+            teardown: None,
+        },
+        State {
+            id: "perform.lighting strip (unattended)",
+            setup: |u| {
+                perform(u, 2, "standard");
+                u.app.ui.global::<crate::Lighting>().set_panel(true);
+                u.pump(300);
+            },
+            teardown: Some(|u| {
+                u.app.ui.global::<crate::Lighting>().set_panel(false);
+                {
+                    let mut rt = u.app.lighting.borrow_mut();
+                    rt.config.unattended.enabled = false;
+                    rt.config.safety.pin.clear();
+                    rt.unlocked = false;
+                }
+                crate::lighting::refresh(&u.app);
+            }),
+        },
+        // [33] The light cue lane under the Prepare waveform.
+        State {
+            id: "prepare.light-cue lane",
+            setup: |u| {
+                patched_rig(u);
+                light_cues(u);
+                prepare(u, "view.layout.player");
+                crate::player::refresh_detail(&u.app);
+                u.pump(200);
+            },
+            teardown: None,
+        },
     ]
 }
 
-fn lighting(ui: &Ui, centre: &str, tab: &str) {
+fn lighting(ui: &Ui, space: &str, centre: &str, tab: &str) {
     let w = &ui.app.ui;
     w.invoke_set_mode("lighting".into());
     let l = w.global::<crate::Lighting>();
+    l.set_space(space.into());
     l.set_centre(centre.into());
     l.set_setup_tab(tab.into());
     ui.pump(300);
+}
+
+/// Pars, a bar and a mover with long names in long groups, a placed and
+/// turned fixture, and two saved venues (once per fixture).
+fn patched_rig(ui: &Ui) {
+    if !ui.app.lighting.borrow().config.patch.fixtures.is_empty() {
+        return;
+    }
+    let l = ui.app.ui.global::<crate::Lighting>();
+    l.invoke_add_fixtures(2, "Front wash left".into(), "Front wash".into(), "3".into(), "".into(), "".into());
+    l.invoke_add_fixtures(4, "Light bar".into(), "Bars".into(), "1".into(), "".into(), "".into());
+    l.invoke_add_fixtures(3, "Moving head stage right".into(), "Movers".into(), "1".into(), "".into(), "".into());
+    l.invoke_place_fixture(0, 0.9, 0.85);
+    l.invoke_rotate_fixture(0, 3);
+    l.invoke_file_save_as("Harbour club with a long name".into());
+    l.invoke_file_save_as("Summer festival".into());
+    ui.pump(100);
+}
+
+/// Two light cues on the first track (with a 120 BPM grid, so the lane in
+/// Prepare can place them), once per fixture.
+fn light_cues(ui: &Ui) {
+    let id = ui.fx.tracks[0].0;
+    {
+        let mut lib = ui.fx.lib();
+        let mut a = lib.analysis(id).unwrap_or_default();
+        if a.beatgrid.beats.is_empty() {
+            a.beatgrid = od_core::Beatgrid::constant(120.0, 0.0, 1, 8.0);
+            lib.store_analysis(id, &a, od_core::DataSource::Analysis).unwrap();
+        }
+    }
+    {
+        let mut rt = ui.app.lighting.borrow_mut();
+        let s = &mut rt.config.settings;
+        if s.track_cues.contains_key(&id.0) {
+            return;
+        }
+        s.cues.push(od_lighting::LightCue { name: "Warm build with a long name".into(), fade_beats: 4.0, ..Default::default() });
+        s.pads.push(od_lighting::PadLook::new(0, "Red wash over everything"));
+        s.track_cues.insert(
+            id.0,
+            vec![
+                od_lighting::TrackCue::new(0, 0),
+                od_lighting::TrackCue { pad: Some(0), name: "Drop into the red".into(), ..od_lighting::TrackCue::new(8, 0) },
+            ],
+        );
+    }
+    {
+        let mut st = ui.app.state.borrow_mut();
+        st.player.current = Some(id);
+    }
+    crate::lighting::refresh(&ui.app);
 }
 
 fn popup_states() -> Vec<State> {

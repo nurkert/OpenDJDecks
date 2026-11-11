@@ -10,7 +10,10 @@
 //! - [`monitor`] and [`learn`]: MIDI monitor and MIDI learn.
 //! - [`guided`]: guided setup for controllers without a mapping, from the
 //!   class templates in `mappings/templates/`.
-//! - `io` (feature `midi-io`): midir port discovery, hot-plug, threads.
+//! - `io` (feature `midi-io`): midir port discovery, hot-plug, threads, and
+//!   controllers assigned to the lights.
+//! - [`osc`]: OSC for the lights: the address space, a UDP receiver and a
+//!   sender for the music.
 
 pub mod action;
 pub mod device_module;
@@ -23,6 +26,7 @@ pub mod learn;
 pub mod mapping;
 pub mod midi;
 pub mod monitor;
+pub mod osc;
 pub mod output;
 pub mod session;
 pub mod takeover;

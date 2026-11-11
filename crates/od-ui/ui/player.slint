@@ -257,6 +257,68 @@ component PhraseStrip inherits Rectangle {
     }
 }
 
+// [33] A light cue of the prepared track on its lane.
+export struct LightCueMark {
+    // Fraction of the track.
+    pos: float,
+    label: string,
+    // What it plays ("PAD 1.3 RED WASH").
+    plays: string,
+}
+
+// [33] The light cues of the prepared track, on a lane under the phrases.
+export global LightCueLane {
+    in property <[LightCueMark]> marks;
+    // Cue `i` dragged to `pos` (a fraction of the track; lands on a bar).
+    callback move(int, float);
+    // The bar a cue dragged to `pos` lands on, as a fraction.
+    pure callback snap(float) -> float;
+}
+
+// The light cues of the Prepare player: a sodium flag with the cue's name
+// at its bar; drag one to another bar. Shown while the track has any.
+component LightCueStrip inherits Rectangle {
+    in property <bool> can-edit;
+    property <int> dragging: -1;
+    property <float> guide;
+    accessible-role: list;
+    accessible-id: "player1.light-cues";
+    height: 18px;
+    background: Theme.ground;
+    for m[i] in LightCueLane.marks: Rectangle {
+        property <float> at: root.dragging == i ? root.guide : m.pos;
+        accessible-role: slider;
+        accessible-id: "player1.light-cue\{i}";
+        accessible-value: m.label + " " + Math.round(m.pos * 1000) / 10 + " %";
+        x: parent.width * self.at - 1px;
+        width: min(140px, max(24px, parent.width - self.x));
+        VLine { x: 0; height: parent.height; weight: 2px; tone: Theme.attention; }
+        Text {
+            x: 5px; width: parent.width - 6px; height: parent.height;
+            text: m.label; overflow: elide;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.8px;
+            color: root.dragging == i ? Theme.bone : Theme.bone-2; vertical-alignment: center;
+        }
+        TipArea {
+            enabled: root.can-edit;
+            mouse-cursor: root.dragging == i ? MouseCursor.grabbing : MouseCursor.ew-resize;
+            tooltip: @tr("Light cue: {} · drag to another bar", m.plays);
+            moved => {
+                if (self.pressed) {
+                    root.dragging = i;
+                    root.guide = LightCueLane.snap(clamp((self.absolute-position.x + self.mouse-x - root.absolute-position.x) / root.width, 0, 1));
+                }
+            }
+            pointer-event(ev) => {
+                if (ev.kind == PointerEventKind.up && root.dragging == i) {
+                    LightCueLane.move(i, root.guide);
+                    root.dragging = -1;
+                }
+            }
+        }
+    }
+}
+
 // Edit mode (EDIT tab): a region rendered into a new file.
 export global TrackEdit {
     // Region ends as fractions of the track (-1 = not set).
@@ -897,6 +959,7 @@ export component PreparePlayer inherits Rectangle {
                     }
                 }
                 PhraseStrip { phrases: root.has-track ? root.phrases : []; can-edit: root.has-track && !root.read-only; cursor: root.cursor; }
+                if root.has-track && LightCueLane.marks.length > 0: LightCueStrip { can-edit: !root.read-only; }
             }
         }
         HLine { tone: Theme.rule; }

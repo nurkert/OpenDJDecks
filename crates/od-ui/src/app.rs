@@ -185,6 +185,7 @@ impl App {
 
         let _ = app.state.borrow_mut().lib.check_missing();
         shell::restore_view(&app);
+        crate::lighting_remote::autostart(&app);
         app.refresh_all();
         crate::covers::spawn_backfill(&app);
         let weak = Rc::downgrade(&app);

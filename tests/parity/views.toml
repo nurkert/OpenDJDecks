@@ -7843,13 +7843,13 @@ note = "Layout entries in the Prepare Layout submenu. Deviation: no pad / platte
 
 [[view]]
 id = "lighting"
-title = "Lighting: rig, stage preview and show"
+title = "Lighting: SETUP (rig, patch, outputs, safety, files, the floor plan)"
 mode = "lighting"
-source = "SPEC §10.5"
+source = "SPEC §10.5, roadmap [21] [32] [35]"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "lighting"]
-features = ["lighting-views", "lighting-easy", "lighting-pro", "lighting-fixtures", "lighting-outputs", "lighting-patch-table", "lighting-failsafe", "lighting-safety", "lighting-auto-steer"]
-note = "SETUP (RIG / OUTPUT / SAFETY) | STAGE / PADS / PATCH / CHANNELS | SHOW columns; the browser stays below. With AUTO chosen the SHOW column steers it (HOLD, RELEASE, palette, phrase-to-look table, the order of who wins)"
+features = ["lighting-setup-show", "lighting-floor-plan", "lighting-venues", "lighting-views", "lighting-fixtures", "lighting-outputs", "lighting-patch-table", "lighting-failsafe", "lighting-safety"]
+note = "An empty rig opens on SETUP: the side column (SETUP / SHOW at its top; the VENUE with FILES, RIG / OUTPUT / SAFETY) beside the centre (STAGE as a floor plan, PATCH, CHANNELS, with TEST and WINDOW); the browser stays below"
 
 [[view.region]]
 id = "topbar.modes"
@@ -7863,25 +7863,45 @@ elements = [
 ]
 
 [[view.region]]
-id = "lighting.rig"
+id = "lighting.space"
 band = "lighting"
-place = "left column, RIG tab: add fixtures"
+place = "side column, top: the two modes"
 order = "row"
 elements = [
-  "lighting.rig.name",
-  "lighting.rig.group",
-  "lighting.rig.add",
+  "lighting.space.setup",
+  "lighting.space.show",
 ]
 
 [[view.region]]
 id = "lighting.setup"
 band = "lighting"
-place = "left column, top: RIG, OUTPUT and SAFETY tabs"
+place = "side column, under the modes: the venue in use, REMOTE and FILES"
+order = "row"
+elements = [
+  "lighting.venue",
+  "lighting.setup.remote",
+  "lighting.setup.files",
+]
+
+[[view.region]]
+id = "lighting.setup.tabs"
+band = "lighting"
+place = "side column: RIG, OUTPUT and SAFETY tabs"
 order = "row"
 elements = [
   "lighting.setup.rig",
   "lighting.setup.output",
   "lighting.setup.safety",
+]
+
+[[view.region]]
+id = "lighting.rig"
+band = "lighting"
+place = "side column, RIG tab: add fixtures"
+order = "row"
+elements = [
+  "lighting.rig.name",
+  "lighting.rig.group",
 ]
 
 [[view.region]]
@@ -7891,9 +7911,62 @@ place = "centre column, top: STAGE, PATCH and CHANNELS"
 order = "row"
 elements = [
   "lighting.centre.stage",
-  "lighting.centre.pads",
   "lighting.centre.patch",
   "lighting.centre.channels",
+]
+
+[[view.region]]
+id = "lighting.plan"
+band = "lighting"
+place = "centre column: the output test in the header, the floor plan under it"
+order = "column"
+elements = [
+  "lighting.test",
+  "lighting.plan",
+]
+
+[[view]]
+id = "lighting.show"
+title = "Lighting: SHOW (stage, pads, cues; AUTO, masters, keys and a large BLACKOUT)"
+mode = "lighting"
+source = "SPEC §10.5, roadmap [21] [33]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "lighting"]
+features = ["lighting-setup-show", "lighting-cue-list", "lighting-views", "lighting-easy", "lighting-pro", "lighting-auto-steer"]
+note = "SHOW: the side column scrolls (modes, DMX OUT, master, FLASH / STROBE / FOG / TAP, who is in control, AUTO's palette and table) over a large BLACKOUT that stays in view; the centre holds STAGE (live preview), PADS and CUES (the light cues of the track)"
+
+[[view.region]]
+id = "lighting.show.mode"
+band = "lighting"
+place = "side column, top"
+order = "row"
+elements = [
+  "lighting.mode.auto",
+  "lighting.mode.easy",
+  "lighting.mode.pro",
+]
+
+[[view.region]]
+id = "lighting.show.buttons"
+band = "lighting"
+place = "side column: the hold keys beside the master fader, BLACKOUT at the foot"
+order = "column"
+elements = [
+  "lighting.flash",
+  "lighting.strobe",
+  "lighting.blackout",
+]
+
+[[view.region]]
+id = "lighting.show.centre"
+band = "lighting"
+place = "centre column, top: STAGE, PADS, CUES and TRIGGERS"
+order = "row"
+elements = [
+  "lighting.centre.stage",
+  "lighting.centre.pads",
+  "lighting.centre.cues",
+  "lighting.centre.triggers",
 ]
 
 [[view.region]]
@@ -7906,36 +7979,72 @@ elements = [
   "lighting.stage",
 ]
 
-[[view.region]]
-id = "lighting.show.mode"
-band = "lighting"
-place = "right column, top"
-order = "row"
-elements = [
-  "lighting.mode.auto",
-  "lighting.mode.easy",
-  "lighting.mode.pro",
-]
+[[view]]
+id = "lighting.remote"
+title = "Lighting: SETUP › REMOTE (a controller for the lights, OSC in, the music sent out)"
+mode = "lighting"
+source = "SPEC §10.5, roadmap [34]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "lighting"]
+features = ["lighting-operator"]
+note = "The side column lists the MIDI inputs to give to the lights (none in a test), OSC IN with its UDP port, and SEND THE MUSIC with the address of the other computer"
 
 [[view.region]]
-id = "lighting.show.buttons"
+id = "lighting.remote.osc"
 band = "lighting"
-place = "right column, beside the master fader"
+place = "side column, REMOTE: OSC in and its port"
 order = "column"
 elements = [
-  "lighting.blackout",
-  "lighting.flash",
-  "lighting.strobe",
+  "lighting.remote.refresh",
+  "lighting.remote.osc-in",
+  "lighting.remote.osc-port",
 ]
 
 [[view.region]]
-id = "lighting.show.auto"
+id = "lighting.remote.send"
 band = "lighting"
-place = "right column, AUTO: hold and release under the order of who wins"
+place = "side column, REMOTE: the address and SEND"
 order = "row"
 elements = [
-  "lighting.auto.hold",
-  "lighting.auto.release",
+  "lighting.remote.send-to",
+  "lighting.remote.send",
+]
+
+[[view]]
+id = "lighting.triggers"
+title = "Lighting: SHOW › TRIGGERS (the music followed and DJ events tied to pads and cues)"
+mode = "lighting"
+source = "SPEC §10.5, roadmap [36]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "lighting"]
+features = ["lighting-triggers", "lighting-music-sources"]
+note = "The centre: MUSIC FROM DECKS / AUDIO INPUT / NETWORK with what arrives, then one row per DJ event with what it plays and for how long"
+
+[[view.region]]
+id = "lighting.triggers.source"
+band = "lighting"
+place = "centre column, top: where the music comes from"
+order = "row"
+elements = [
+  "lighting.source.decks",
+  "lighting.source.input",
+  "lighting.source.network",
+]
+
+[[view.region]]
+id = "lighting.triggers.rows"
+band = "lighting"
+place = "centre column: a row per DJ event"
+order = "column"
+elements = [
+  "lighting.triggers.row0",
+  "lighting.triggers.row1",
+  "lighting.triggers.row2",
+  "lighting.triggers.row3",
+  "lighting.triggers.row4",
+  "lighting.triggers.row5",
+  "lighting.triggers.row6",
+  "lighting.triggers.row7",
 ]
 
 [[view]]

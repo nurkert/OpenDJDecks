@@ -45,5 +45,7 @@ mod views;
 mod hierarchy;
 mod layouts;
 mod lighting_person;
+mod lighting_craft;
+mod lighting_operator;
 mod overflow;
 mod set_safety;

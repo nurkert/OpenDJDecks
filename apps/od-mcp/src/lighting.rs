@@ -224,6 +224,7 @@ fn overview(lib: &mut Library, _: NoArgs) -> ToolResult {
                 "cues": list.iter().map(|c| json!({
                     "bar": c.beat / 4 + 1, "beat": c.beat, "cue": c.cue,
                     "cue_name": s.cues.get(c.cue).map(|q| q.name.as_str()),
+                    "pad": c.pad, "name": c.name, "fade_beats": c.fade_beats,
                 })).collect::<Vec<_>>(),
             })
         })
@@ -820,7 +821,7 @@ fn track_cues(lib: &mut Library, a: TrackCuesArgs) -> ToolResult {
             _ => None,
         }
         .ok_or_else(|| format!("no cue {} in the stack", t.cue))?;
-        list.push(TrackCue { beat, cue });
+        list.push(TrackCue::new(beat, cue));
     }
     list.sort_by_key(|c| c.beat);
     let n = list.len();

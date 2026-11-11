@@ -49,6 +49,7 @@ rfd = "0.15"
 symphonia.workspace = true
 # Edit mode: the rendered edit is written as WAV.
 hound = "3"
+rtrb = "0.4"
 
 # The pointer over the window while files from Finder hover it (winit
 # reports native file drops without a position).

@@ -646,6 +646,78 @@ mod tests {
         assert!(first > 128, "first fixture lit ({first})");
     }
 
+    /// [32] [33] Fixtures tuned on the floor plan (a brighter dimmer curve,
+    /// colour raised, turned round) and light cues of a track (a strobing
+    /// chase fired by the cue lane, a stack cue over AUTO) pass through the
+    /// same limits: strobe cap, level cap, lockout.
+    #[test]
+    fn tuned_fixtures_and_track_cues_stay_within_the_limits() {
+        use crate::show::{LightCue, TrackCue};
+        use crate::stage::{DimmerCurve, Placement, Tune};
+        let mut patch = rig(&[("rgbw-par", "Wash"), ("strobe", "Strobes"), ("fog", "Fog")]);
+        patch.fixtures[0].tune = Tune {
+            color: [0.5, 0.5, 0.5],
+            curve: DimmerCurve::Root,
+            ..Tune::default()
+        };
+        let mut place = Placement::new(0.9, 0.2);
+        place.rotate(180.0);
+        patch.fixtures[0].place = Some(place);
+        let mut settings = strobing_chase(0.0625);
+        settings.cues.push(LightCue {
+            name: "Full".into(),
+            groups: [(
+                "Wash".to_string(),
+                GroupSettings {
+                    program: Some(Program::Strobe),
+                    intensity: Some(1.0),
+                    ..Default::default()
+                },
+            )]
+            .into(),
+            fade_beats: 0.0,
+        });
+        settings.track_cues.insert(
+            3,
+            vec![
+                TrackCue {
+                    pad: Some(2),
+                    fade_beats: Some(0.0),
+                    ..TrackCue::new(0, 0)
+                },
+                TrackCue::new(64, 0),
+            ],
+        );
+        let mut show = Show::new(settings);
+        show.momentary.fog = true;
+        let mut rig =
+            crate::Lighting::with_opener(patch.clone(), show, crate::TestLink::default().opener());
+        rig.limits.group_caps.insert("Wash".into(), 0.6);
+        let mut deck = DeckMusic {
+            track: Some(3),
+            ..playing(174.0)
+        };
+        let slots = level_slots(&patch.fixtures[0]);
+        let mut levels = Vec::new();
+        let dt = 1.0 / 40.0;
+        let mut cues = std::collections::BTreeSet::new();
+        // 30 s at 174 BPM: the chase cue, then past beat 64 the stack cue.
+        for _ in 0..1200 {
+            deck.beat += dt as f64 * deck.bpm / 60.0;
+            rig.tick(&[deck], dt);
+            cues.insert(rig.show.active_track_cue());
+            let u = &rig.frame[0];
+            let level = slots.iter().map(|s| u[*s]).max().unwrap();
+            assert!(level <= 153, "level cap held ({level})");
+            let fog = patch.fixtures[2].address as usize - 1;
+            assert_eq!(u[fog], 0, "fog locked out");
+            levels.push(level);
+        }
+        assert!(cues.contains(&Some((3, 0))) && cues.contains(&Some((3, 64))), "{cues:?}");
+        let n = rises(&levels);
+        assert!(n > 0 && n <= 91, "{n} flashes in 30 s");
+    }
+
     /// Rises of [`FLASH_RISE`] or more in `levels`, counted like the
     /// limiter counts them.
     fn rises(levels: &[u8]) -> usize {
@@ -694,5 +766,190 @@ mod tests {
             let n = rises(&out);
             assert!(n > 0 && n <= 31, "cap {cap}, peak {peak}: {n} flashes in 10 s");
         }
+    }
+
+    /// Runs `rig` for `secs` at 40 frames a second, with `each` before every
+    /// frame, and checks every frame against the limits: the strobe channel
+    /// at or under the cap, no more flashes than the cap allows, the Wash
+    /// group at or under its level cap, fog and lasers dark. Returns the
+    /// flashes of the wash.
+    fn within_limits(
+        rig: &mut crate::Lighting,
+        secs: f32,
+        mut each: impl FnMut(&mut crate::Lighting, usize) -> Vec<DeckMusic>,
+    ) -> usize {
+        let dt = 1.0 / 40.0;
+        let patch = rig.patch.clone();
+        let wash = level_slots(&patch.fixtures[0]);
+        let cap = (rig.limits.group_cap("Wash") * 255.0).round() as u8;
+        let mut levels = Vec::new();
+        for frame in 0..(secs / dt) as usize {
+            let decks = each(rig, frame);
+            rig.tick(&decks, dt);
+            let u = &rig.frame[0];
+            let level = wash.iter().map(|s| u[*s]).max().unwrap();
+            assert!(level <= cap, "frame {frame}: level cap held ({level} > {cap})");
+            levels.push(level);
+            for f in &patch.fixtures {
+                let base = f.address as usize - 1;
+                for (n, k) in f.def.channels.iter().enumerate() {
+                    let v = u[base + n];
+                    if *k == ChannelKind::Strobe && v != 255 && v >= 64 {
+                        let hz = (v - 64) as f32 / 190.0 * STROBE_CHANNEL_MAX_HZ;
+                        assert!(hz <= rig.limits.strobe_cap() + 0.01, "{} strobes at {hz}", f.name);
+                    }
+                    if !rig.arming.fog && *k == ChannelKind::Fog {
+                        assert_eq!(v, 0, "fog locked out");
+                    }
+                    if !rig.arming.laser && f.def.is_laser() {
+                        assert_eq!(v, 0, "laser locked out");
+                    }
+                }
+            }
+        }
+        let n = rises(&levels);
+        let allowed = (secs * rig.limits.strobe_cap().max(1.0)).ceil() as usize + 1;
+        assert!(n <= allowed, "{n} flashes in {secs} s (at most {allowed})");
+        n
+    }
+
+    /// A rig with a strobing chase on pad 2, a full strobe cue, and DJ
+    /// events tied to both.
+    fn triggered_rig() -> crate::Lighting {
+        use crate::events::{DjEvent, Trigger, TriggerTarget};
+        let patch = rig(&[("rgbw-par", "Wash"), ("strobe", "Strobes"), ("fog", "Fog"), ("laser", "Laser")]);
+        let mut settings = strobing_chase(0.0625);
+        settings.cues.push(crate::show::LightCue {
+            name: "Strobe all".into(),
+            groups: ["Wash", "Strobes"]
+                .iter()
+                .map(|g| {
+                    (
+                        g.to_string(),
+                        GroupSettings {
+                            program: Some(Program::Strobe),
+                            intensity: Some(1.0),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+            fade_beats: 0.0,
+        });
+        let t = |event, target| Trigger { event, target, beats: 0.0 };
+        settings.triggers = vec![
+            t(DjEvent::Drop, TriggerTarget::Pad(2)),
+            t(DjEvent::Breakdown, TriggerTarget::Cue(0)),
+            t(DjEvent::CrossfaderRight, TriggerTarget::Pad(2)),
+            t(DjEvent::PlayStart, TriggerTarget::Cue(0)),
+        ];
+        let mut rig = crate::Lighting::with_opener(
+            patch,
+            Show::new(settings),
+            crate::TestLink::default().opener(),
+        );
+        rig.limits.group_caps.insert("Wash".into(), 0.6);
+        rig
+    }
+
+    /// [36] DJ events fire a strobing chase and a strobe cue again and
+    /// again (drops and breakdowns every bar, the crossfader slammed from
+    /// side to side, the deck stopped and started), with the STROBE and
+    /// FLASH keys held on top: every frame stays within the cap, the level
+    /// cap and the lockout.
+    #[test]
+    fn triggers_cannot_exceed_the_limits() {
+        use od_core::PhraseKind;
+        let mut rig = triggered_rig();
+        let mut fired = std::collections::BTreeSet::new();
+        let n = within_limits(&mut rig, 20.0, |rig, frame| {
+            let t = frame as f64 / 40.0;
+            let bar = (t * 174.0 / 60.0 / 4.0) as u64;
+            rig.crossfader = Some(if bar % 2 == 0 { -1.0 } else { 1.0 });
+            rig.show.momentary.strobe = frame % 80 < 40;
+            rig.show.momentary.flash = frame % 120 < 10;
+            rig.show.momentary.fog = true;
+            if let Some(a) = rig.show.active_trigger() {
+                fired.insert(format!("{:?}", a.target));
+            }
+            vec![DeckMusic {
+                track: Some(1),
+                playing: frame % 400 > 5,
+                phrase: Some(if bar % 2 == 0 { PhraseKind::Chorus } else { PhraseKind::Down }),
+                beat: t * 174.0 / 60.0,
+                ..playing(174.0)
+            }]
+        });
+        assert!(n > 0, "the show still flashes");
+        assert_eq!(fired.len(), 2, "both triggers played: {fired:?}");
+    }
+
+    /// [34] [36] Music over the network (another instance, over OSC) and
+    /// from an audio input drives the same strobing triggers; the limits
+    /// hold.
+    #[test]
+    fn network_and_input_music_cannot_exceed_the_limits() {
+        use od_core::PhraseKind;
+        let mut rig = triggered_rig();
+        rig.source = crate::MusicSource::Network;
+        within_limits(&mut rig, 15.0, |rig, frame| {
+            // An update every 5th frame, as the network brings them.
+            if frame % 5 == 0 {
+                let t = frame as f64 / 40.0;
+                let bar = (t * 140.0 / 60.0 / 4.0) as u64;
+                rig.external.set(DeckMusic {
+                    phrase: Some(if bar % 2 == 0 { PhraseKind::Chorus } else { PhraseKind::Down }),
+                    beat: t * 140.0 / 60.0,
+                    ..playing(140.0)
+                });
+            }
+            Vec::new()
+        });
+        let mut rig = triggered_rig();
+        rig.source = crate::MusicSource::Input;
+        let audio = crate::listen::click_track(174.0, 15.0, 44_100, 0.0);
+        let mut follower = crate::BeatFollower::new(44_100);
+        let per_frame = 44_100 / 40;
+        rig.show.settings.mode = crate::show::Mode::Auto;
+        rig.show.settings.auto.table.set(crate::looks::PhraseSlot::Verse, crate::looks::AutoPick::Pad(2));
+        let mut played = false;
+        within_limits(&mut rig, 15.0, |rig, frame| {
+            let from = frame * per_frame;
+            if let Some(chunk) = audio.get(from..from + per_frame) {
+                follower.feed(chunk);
+            }
+            rig.listener = Some(follower.clone());
+            played |= rig.followed.iter().any(|d| d.playing);
+            Vec::new()
+        });
+        assert!(played, "the input was followed");
+    }
+
+    /// [37] Unattended mode: the keys are let go, fog and lasers stay dark
+    /// even when something arms them, and the calm look on silence passes
+    /// the limits too.
+    #[test]
+    fn unattended_mode_keeps_every_limit() {
+        let mut rig = triggered_rig();
+        rig.unattended.enabled = true;
+        rig.unattended.calm_after = 2.0;
+        within_limits(&mut rig, 12.0, |rig, frame| {
+            // Something tries to arm fog and lasers and hold the keys.
+            rig.arming = Arming { fog: true, laser: true };
+            rig.show.momentary.strobe = true;
+            rig.show.momentary.fog = true;
+            if frame < 160 {
+                vec![DeckMusic {
+                    track: Some(1),
+                    phrase: Some(od_core::PhraseKind::Chorus),
+                    beat: frame as f64 / 40.0 * 174.0 / 60.0,
+                    ..playing(174.0)
+                }]
+            } else {
+                Vec::new()
+            }
+        });
+        assert!(!rig.arming.fog && !rig.arming.laser, "disarmed");
+        assert_eq!(rig.calm_mix(), 1.0, "calm look after the silence");
     }
 }

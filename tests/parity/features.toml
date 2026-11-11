@@ -3557,6 +3557,146 @@ spec = "SPEC §10.5"
 note = "Roadmap [20]. OUTPUT: each universe its own Art-Net Port-Address or sACN universe by default; PORTS lists USB serial adapters (REFRESH); FIND NODES sends an ArtPoll to the broadcast address and lists the ArtPollReply answers; TEST PATTERN each / colours / full, through the safety limits; GUIDED SETUP in four steps ending with the test. Tested with a fake node on the loopback address (documentation-range IP) and listed test ports; no real Art-Net node, sACN receiver or USB-DMX interface has been tried"
 
 [[feature]]
+id = "lighting-setup-show"
+area = "lighting"
+name = "LIGHTING in two modes: SETUP (rig, patch, outputs, safety, files, floor plan, output test one key away) and SHOW (stage, pads, cues, AUTO, masters, keys, a large BLACKOUT always in view)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::lighting_craft::setup_and_show_with_a_large_blackout_and_the_output_test",
+  "od-ui::ui_tests::stage::lighting_view_patches_and_controls_the_show",
+  "od-ui::ui_tests::lighting_person::connecting_interfaces_ports_nodes_test_pattern_and_guide",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [21]. The narrow-window SETUP / SHOW switch of the overflow audit is now the general model: one side column chosen at its top, the centre's parts following; an empty rig opens on SETUP, a patched one on SHOW. TEST in the centre header starts and stops the test pattern (each fixture in turn). BLACKOUT is a 56 px key under the scrolling SHOW column, in view at every window size; the show column scrolls with the wheel only, so FLASH, STROBE and FOG act on the press. Tried with a mouse and in UI tests, not on a touch screen"
+
+[[feature]]
+id = "lighting-floor-plan"
+area = "lighting"
+name = "Stage as an editor: fixtures dragged on a top-down floor plan (grid snap, rotation, height, group) and programmed one by one (pan and tilt range, invert, colour calibration, dimmer curve)"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-lighting::stage::tests::placement_snaps_and_orders_left_to_right",
+  "od-lighting::stage::tests::tune_ranges_invert_colour_and_curves",
+  "od-lighting::render::tests::tune_maps_pan_tilt_colour_and_dimmer",
+  "od-lighting::show::tests::a_chase_runs_left_to_right_on_the_floor_plan",
+  "od-lighting::safety::tests::tuned_fixtures_and_track_cues_stay_within_the_limits",
+  "od-ui::lighting_stage::tests::tuning_steps_stay_in_range",
+  "od-ui::ui_tests::lighting_craft::floor_plan_places_turns_and_tunes_fixtures",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [32]. STAGE in SETUP: unplaced fixtures keep the default spot of their kind; positions order chases, sweeps and the phase spread from stage left to right, a bar turned to the back runs its cells the other way. Tuning applies when a look becomes DMX, before the safety limits (a test runs a tuned, turned fixture with a strobing chase through the limits). Saved with the rig. Not tried on a real rig"
+
+[[feature]]
+id = "lighting-cue-list"
+area = "lighting"
+name = "Editable light cue list per track (add, move, rename, delete; a stack cue, a pad's look or a chase; a fade) and a light cue lane on the Prepare waveform"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-lighting::show::tests::track_cues_play_pads_and_stack_cues_in_every_mode_with_a_fade",
+  "od-lighting::show::tests::pro_cue_stack_and_track_cues",
+  "od-lighting::safety::tests::tuned_fixtures_and_track_cues_stay_within_the_limits",
+  "od-ui::lighting_stage::tests::targets_labels_fades_and_bars",
+  "od-ui::ui_tests::lighting_craft::light_cue_list_and_its_lane_in_prepare",
+  "od-ui::ui_tests::stage::lighting_track_cue_timeline",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [33]. CUES in SHOW lists the light cues of the track you hear (else the Prepare player's); a light cue plays in every mode until the next one, under a latched or held pad; old track cues (a beat and a stack cue) read unchanged. In Prepare a lane under the phrases shows them while the track has any, dragged to the nearest bar. Not tried at a gig"
+
+[[feature]]
+id = "lighting-venues"
+area = "lighting"
+name = "Named rig and show files and venue profiles (rig + show + safety limits), save / load / rename / duplicate / delete, one-file import and export"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-lighting::files::tests::old_rig_file_migrates_into_a_default_profile",
+  "od-lighting::files::tests::save_load_rename_duplicate_delete",
+  "od-lighting::files::tests::one_file_export_and_import",
+  "od-ui::ui_tests::lighting_craft::venue_profiles_rigs_and_shows_as_named_files",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [35]. FILES in SETUP: venues, rigs and shows in the lighting folder next to the library; lighting.json stays the working rig (the app and the MCP server read it) and names the venue, rig and show in use; the first start migrates it into a Default venue. A new venue never overwrites the rig or show of another. Behind the setup PIN"
+
+[[feature]]
+id = "lighting-operator"
+area = "lighting"
+name = "A separate lighting operator: a default MIDI layout for a second controller, one controller given to the lights while another drives the decks, OSC in on a UDP port, and the music sent to another instance over OSC"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-controller::osc::tests::messages_round_trip",
+  "od-controller::osc::tests::the_address_space_mirrors_the_lighting_actions",
+  "od-controller::osc::tests::bundles_and_garbage",
+  "od-controller::osc::tests::a_loopback_sender_reaches_the_receiver",
+  "od-controller::mappings::the_lighting_layout_plays_only_the_lights",
+  "od-controller::mappings::a_port_can_be_given_to_the_lights",
+  "od-lighting::safety::tests::network_and_input_music_cannot_exceed_the_limits",
+  "od-ui::ui_tests::lighting_operator::a_lighting_controller_osc_in_and_the_music_sent_out",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [34]. mappings/lighting/lighting-operator.toml: only OpenDJDecks' lighting actions on generic notes 36-62 and controllers 20-28 of MIDI channel 1, matched by no port; SETUP › REMOTE gives a connected MIDI input to it (the controller layer opens that port with the layout, the others keep their mappings). OSC IN (off by default, UDP port 9300 unless set) takes /opendjdecks/light/... (pads, pages, group masters, master, blackout, flash, strobe, fog, looks, mode, cue stack, release, hold, tap) and /opendjdecks/music; SEND THE MUSIC sends the deck you hear 20 times a second, so a second instance with MUSIC FROM NETWORK follows it. Tested with simulated MIDI and a loopback sender only; no real second controller, no real network beyond the loopback address; there is no lighting-only start mode and no discovery of the other instance"
+
+[[feature]]
+id = "lighting-triggers"
+area = "lighting"
+name = "DJ events as triggers (track loaded, play starts, phrase changes, drop, breakdown, crossfader to a side, track end near) tied to pads, cues or a release, for a number of beats"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-lighting::events::tests::events_from_successive_frames",
+  "od-lighting::events::tests::the_most_specific_trigger_wins",
+  "od-lighting::tests::a_trigger_plays_its_pad_for_its_beats",
+  "od-lighting::safety::tests::triggers_cannot_exceed_the_limits",
+  "od-ui::ui_tests::lighting_operator::dj_events_trigger_pads_and_the_show_follows_the_network",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [36]. TRIGGERS in SHOW: one row per event, what it plays (nothing, RELEASE, a cue of the stack, a pad's look or chase) and for how long (until the next event, 4 to 64 beats). Events come from the decks frame to frame (the phrase ones from the deck you hear); a drop or breakdown wins over a plain phrase change. A trigger plays over AUTO, EASY, PRO and HOLD, under a latched or held pad, and passes the safety limits. Not tried at a gig"
+
+[[feature]]
+id = "lighting-music-sources"
+area = "lighting"
+name = "Music sources beyond the decks: an audio input (line-in or microphone) analysed for beat and energy, or another instance on the network, for AUTO to follow"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-lighting::listen::tests::finds_the_tempo_of_generated_kicks",
+  "od-lighting::listen::tests::the_beat_lands_on_the_kicks",
+  "od-lighting::listen::tests::silence_stops_and_level_sets_energy",
+  "od-lighting::listen::tests::stereo_is_mixed_down",
+  "od-lighting::source::tests::external_music_runs_on_and_times_out",
+  "od-lighting::safety::tests::network_and_input_music_cannot_exceed_the_limits",
+  "od-ui::ui_tests::lighting_operator::dj_events_trigger_pads_and_the_show_follows_the_network",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [36]. MUSIC FROM DECKS / AUDIO INPUT / NETWORK in TRIGGERS. The input (the system's default input) is followed by an onset curve, a tempo by autocorrelation (70-180 BPM, leaning to 120) and a comb for the beat; its level sets the energy, half a second under -50 dBFS is silence. No phrases from an input. Tested with generated kicks (96-140 BPM), not with a real microphone, band or club mixer"
+
+[[feature]]
+id = "lighting-unattended"
+area = "lighting"
+name = "Unattended mode for a fixed venue: a locked show that starts with the app, follows the music, comes back after a restart, fades to a calm look on silence and keeps every safety limit, behind the setup PIN"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-lighting::tests::unattended_falls_back_to_the_calm_look_on_silence",
+  "od-lighting::safety::tests::unattended_mode_keeps_every_limit",
+  "od-ui::ui_tests::lighting_operator::unattended_mode_is_locked_and_starts_by_itself",
+  "od-ui::ui_tests::lighting_operator::an_unattended_show_starts_with_the_app",
+]
+spec = "SPEC §10.5"
+note = "Roadmap [37]. SETUP › SAFETY › UNATTENDED needs a setup PIN (clearing the PIN ends it). Locked (the setup locked), SHOW and the Perform strip show the state with a PIN field instead of the controls, BLACKOUT stays; the lighting controller, OSC, the deck pads and the remote inbox are ignored; the show ignores the hold keys and keeps fog and lasers locked out whatever arms them. START WITH THE APP opens LIGHTING in SHOW with DMX OUT on at every start; the app itself has to be started by the system (a login item), which it does not set up. Silence for 10 s to 5 min fades to the safe warm wash at 30 % in 4 s. Not tried at a real venue"
+
+[[feature]]
 id = "fx-remix"
 area = "effects"
 name = "Remix-type effects (build-up riser, breakdown, reverse roll)"

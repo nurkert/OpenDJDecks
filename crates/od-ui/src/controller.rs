@@ -21,7 +21,56 @@ pub(crate) struct Controllers {
     manager: Option<ControllerManager>,
     /// Name of the connected controller.
     pub name: Option<String>,
+    /// [34] The MIDI input given to the lights, and its port while it is
+    /// connected.
+    lighting_port: String,
+    lighting_connected: Option<String>,
 }
+
+/// Mapping id of the default layout for a lighting controller
+/// (`mappings/lighting/lighting-operator.toml`).
+pub(crate) const LIGHTING_LAYOUT: &str = "lighting-operator";
+
+/// [34] Gives the MIDI input `port` to the lights (the lighting layout),
+/// and the one given before back to its own mapping. "" gives it back.
+pub(crate) fn assign_lighting(app: &App, port: &str) {
+    let mut c = app.controller.borrow_mut();
+    if c.lighting_port == port {
+        return;
+    }
+    let before = std::mem::replace(&mut c.lighting_port, port.to_string());
+    if let Some(m) = c.manager.as_ref() {
+        if !before.is_empty() {
+            m.assign(&before, None);
+        }
+        if !port.is_empty() {
+            m.assign(port, Some(LIGHTING_LAYOUT));
+        }
+    }
+    if c.lighting_connected.as_deref() != Some(port) {
+        c.lighting_connected = None;
+    }
+}
+
+/// [34] The port of the lighting controller while it is connected.
+pub(crate) fn lighting_connected(app: &App) -> Option<String> {
+    app.controller.borrow().lighting_connected.clone()
+}
+
+/// MIDI inputs present now (for choosing the lighting controller).
+pub(crate) fn midi_inputs(app: &App) -> Vec<String> {
+    if app.state.borrow().config.headless {
+        return Vec::new();
+    }
+    let mut v = od_controller::io::list_ports()
+        .map(|p| p.inputs)
+        .unwrap_or_default();
+    v.retain(|p| !p.starts_with("OpenDJDecks"));
+    v.sort();
+    v.dedup();
+    v
+}
+
 
 /// Directory with controller mapping files.
 fn mappings_dir() -> PathBuf {
@@ -127,7 +176,11 @@ pub(crate) fn start(app: &Rc<App>) {
             }
         })
         .collect();
-    c.manager = Some(ControllerManager::start(mappings, Default::default()));
+    let manager = ControllerManager::start(mappings, Default::default());
+    if !c.lighting_port.is_empty() {
+        manager.assign(&c.lighting_port, Some(LIGHTING_LAYOUT));
+    }
+    c.manager = Some(manager);
 }
 
 /// The controller layer's MIDI monitor (Preferences ▸ Controller: monitor
@@ -154,6 +207,16 @@ pub(crate) fn poll(app: &App) {
             ControllerEvent::Action { action, .. } => {
                 engine::ensure_engine(app);
                 handle_action(app, action);
+            }
+            ControllerEvent::Connected { device, port, .. } if device == LIGHTING_LAYOUT => {
+                app.status(od_i18n::trf("Lighting controller connected: {}", &[&port]));
+                app.controller.borrow_mut().lighting_connected = Some(port);
+                crate::lighting::refresh(app);
+            }
+            ControllerEvent::Disconnected { device, port } if device == LIGHTING_LAYOUT => {
+                app.status(od_i18n::trf("Lighting controller disconnected: {}", &[&port]));
+                app.controller.borrow_mut().lighting_connected = None;
+                crate::lighting::refresh(app);
             }
             ControllerEvent::Connected { device, .. } => {
                 app.status(format!("Controller connected: {device}"));
