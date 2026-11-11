@@ -1,0 +1,107 @@
+// Roadmap 0.9.0 [65]: the planned set in Perform. One line over the list:
+// the set, the position on air, the next track with its transition note,
+// and where you stand against the plan in the line grammar (solid on plan,
+// dashed ahead or behind, half without a planned start, struck when the
+// track on air is not in the set).
+
+import { Theme } from "tokens.slint";
+import { VLine } from "lines.slint";
+import { Caps, TooltipState, KeyFocus, TipArea } from "controls.slint";
+
+export global SetPlan {
+    in property <bool> shown;
+    in property <string> name;
+    // Position on air (1-based, 0 = none yet) of `total`, and its title.
+    in property <int> now;
+    in property <int> total;
+    in property <string> now-title;
+    // The next position (0 = none), its track and "124.0 BPM · 8A · 6:12".
+    in property <int> next;
+    in property <string> next-title;
+    in property <string> next-artist;
+    in property <string> next-detail;
+    // The transition note from the track on air into the next one.
+    in property <string> note;
+    // "BEHIND 1:20 · 1 TRACK BEHIND", and its line form.
+    in property <string> standing;
+    in property <string> form: "half";
+    in property <bool> off-plan;
+    callback close();
+}
+
+export component PlanLine inherits Rectangle {
+    accessible-role: groupbox; accessible-id: "plan.line";
+    accessible-label: TooltipState.name-for(self.accessible-id, @tr("PLAN"), "");
+    // Two rows when the note needs its own.
+    height: SetPlan.note != "" ? 56px : 30px;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    HorizontalLayout {
+        padding-left: Theme.s3; padding-right: Theme.s1;
+        spacing: Theme.s3;
+        VLine {
+            accessible-role: image; accessible-id: "plan.form"; accessible-value: SetPlan.form;
+            y: 6px; height: parent.height - 12px;
+            weight: 2px;
+            form: SetPlan.form;
+            tone: SetPlan.form == "struck" ? Theme.fault : SetPlan.form == "solid" ? Theme.live : Theme.attention;
+        }
+        VerticalLayout {
+            horizontal-stretch: 1; min-width: 0px;
+            alignment: center;
+            spacing: 0px;
+            HorizontalLayout {
+                spacing: Theme.s3;
+                height: 22px;
+                Caps { text: @tr("PLAN"); vertical-alignment: center; horizontal-stretch: 0; }
+                Text {
+                    accessible-role: text; accessible-id: "plan.name"; accessible-value: self.text;
+                    text: SetPlan.name;
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone;
+                    vertical-alignment: center; overflow: elide; min-width: 40px; max-width: 160px; horizontal-stretch: 0;
+                }
+                Text {
+                    accessible-role: text; accessible-id: "plan.now"; accessible-value: SetPlan.now;
+                    text: SetPlan.now > 0 ? @tr("ON AIR {} / {}", SetPlan.now, SetPlan.total) : @tr("{} TRACKS", SetPlan.total);
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px; color: Theme.bone-2;
+                    vertical-alignment: center; horizontal-stretch: 0;
+                }
+                Text {
+                    accessible-role: text; accessible-id: "plan.next"; accessible-value: self.text;
+                    text: SetPlan.next > 0 ? @tr("NEXT {}  {} — {}  {}", SetPlan.next, SetPlan.next-title, SetPlan.next-artist, SetPlan.next-detail) : @tr("LAST TRACK OF THE SET");
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone;
+                    vertical-alignment: center; overflow: elide; horizontal-stretch: 1; min-width: 0px;
+                }
+                Text {
+                    accessible-role: text; accessible-id: "plan.standing"; accessible-value: self.text;
+                    text: SetPlan.standing;
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+                    color: SetPlan.form == "struck" ? Theme.fault : Theme.bone;
+                    vertical-alignment: center; horizontal-stretch: 0; overflow: elide; max-width: 360px;
+                }
+            }
+            if SetPlan.note != "": Text {
+                accessible-role: text; accessible-id: "plan.note"; accessible-value: self.text;
+                height: 22px;
+                text: @tr("NOTE  {}", SetPlan.note);
+                font-family: Theme.family; font-size: Theme.control; color: Theme.attention;
+                vertical-alignment: center; overflow: elide;
+            }
+        }
+        // Close: hidden until another set is opened.
+        Rectangle {
+            accessible-role: button; accessible-id: "plan.close";
+            accessible-label: TooltipState.name-for(self.accessible-id, @tr("CLOSE"), @tr("Hide the plan until another set is opened"));
+            accessible-action-default => { SetPlan.close(); }
+            width: 28px; height: 28px; y: (parent.height - self.height) / 2;
+            border-radius: Theme.r-control;
+            background: ct.has-hover ? Theme.plate-raised : transparent;
+            Path {
+                x: 9px; y: 9px; width: 10px; height: 10px; viewbox-width: 10; viewbox-height: 10;
+                stroke: ct.has-hover ? Theme.bone : Theme.bone-3; stroke-width: 1px;
+                MoveTo { x: 0; y: 0; } LineTo { x: 10; y: 10; } MoveTo { x: 10; y: 0; } LineTo { x: 0; y: 10; }
+            }
+            KeyFocus { activate => { SetPlan.close(); } }
+            ct := TipArea { tooltip: @tr("Hide the plan until another set is opened"); mouse-cursor: pointer; clicked => { SetPlan.close(); } }
+        }
+    }
+}

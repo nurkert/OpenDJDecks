@@ -2,7 +2,7 @@
 title: Preparing a set
 description: A set is a playlist with a plan. See the flow of tempo, key and energy, add transition notes, keep backup tracks ready and plan the start time.
 keywords: [set, sets, set list, setlist, plan, planning, flow, transition, transitions, notes, backup, backups, order, energy, key, tempo, harmonic]
-features: [prepare-preview-shift, browser-sets-flow, browser-set-flow-chart, browser-set-backups, shell-prepare-layouts]
+features: [prepare-preview-shift, browser-sets-flow, browser-set-flow-chart, browser-set-backups, perform-set-plan, shell-prepare-layouts]
 ---
 
 A set is an ordered list with extras for playing it live: it shows how tempo, key and energy move from track to track, and you can leave yourself notes for each transition.
@@ -37,7 +37,7 @@ Click a warning or a marker to select the transition: both tracks are selected i
 ## Notes and backups
 
 - Type in **TRANSITION NOTE** and press Return to keep a note for that transition.
-- **PLANNED START**, for example `23:30`, adds real clock times to the flow.
+- **PLANNED START**, for example `23:30`, adds real clock times to the flow. In Perform the plan line counts from it whether you are ahead or behind ([Perform](perform-basics.md#the-set-plan)).
 - **BACKUPS FROM TAG LIST** turns the tracks of the tag list into backups for the selected position, in case the crowd goes elsewhere. The button next to it clears them.
 
 ## Find the right order

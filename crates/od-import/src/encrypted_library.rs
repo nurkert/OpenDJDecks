@@ -327,6 +327,7 @@ pub(crate) fn read(conn: &Connection, folder: &Path, with_smart: bool) -> Result
             color,
             source: DataSource::Imported,
             active: false,
+            trigger: Default::default(),
         };
         lib.tracks[ti]
             .db_cues

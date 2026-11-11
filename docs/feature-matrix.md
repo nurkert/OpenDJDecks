@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 311 features; 305 in scope: 305 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 323 features; 317 in scope: 317 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -141,6 +141,8 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Cue comments / labels | DONE | Double-click a cue in the list, type the name, Return; names show on pads and in the list | 2 | **P1** |
 | Auto cue on load (first memory cue / first beat) | DONE | `DeckCommand::Load` behaviour (`command.rs` doc, `deck.rs`) | 1 |  |
 | Cues and histories changed on players come back as proposals | DONE (beyond the usual) | `od-devices/src/club_usb.rs` proposals, reviewed in the stick board (`on_accept_proposal`) | 2 |  |
+| Hot cue edits from Perform: rename, recolour, move to (or store at) the playhead, delete | DONE | `crates/od-ui/src/deck_craft.rs::move_here`, `crates/od-ui/ui/cue_edit.slint::CueEditPanel`; Each edit is a library edit (one undo step), the deck's engine cues follow at once; tracks played from a stick are read-only here; (Roadmap [31]) | 1 | **P1** |
+| Per-cue trigger behaviour: CUE, LATCH, GATE, MOMENTARY per hot cue | DONE | `DeckCommand::SetHotCueTrigger`, `od_core::CueTrigger`; Stored with the cue (schema 5); a pad that does not play the usual way names it in its corner. Not exported to Club USB sticks (they keep the usual behaviour). Not tried on a hardware controller; (Roadmap [64]) | 2 | P2 |
 
 ## 4. Deck / player
 
@@ -156,7 +158,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Beat sync + master deck | DONE | `SetSync`, `SetMasterDeck`; UI + controller | 1 |  |
 | Quantize | DONE | `Command::SetQuantize`; UI + controller | 1 |  |
 | Slip | DONE | `SetSlip`; UI + controller | 1 |  |
-| Reverse | DONE | `SetReverse` via controller; no UI button | 2 |  |
+| Reverse | DONE | `crates/od-ui/src/deck_craft.rs::toggle_reverse`, `crates/od-ui/ui/perform.slint::PlatterGroup`; Roadmap [30]. REV at the top of the platter's key block (and `deck.reverse` in mappings): the deck plays backwards until pressed again, with SLIP it returns where it would have been. Not tried on a hardware controller | 3 |  |
 | Censor (slip reverse) | DONE | `DeckAction::Censor` in `handle_action` | 1 |  |
 | Beat jump | DONE | `DeckCommand::BeatJump`; UI ±4, controller, pad mode | 1 |  |
 | Beat jump size setting | DONE | `decks.rs::step_jump_size`; ‹ › in Beat Jump pad mode (1/8 … 64); the deck's −/+ buttons and the keyboard jump by it | 1 | P3 |
@@ -209,6 +211,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Requests: a quick note of a requested track, matched to the library when every word fits, else tied to a track by hand | DONE | `crates/od-ui/src/queue.rs::match_request`; Matched with the fuzzy search's scoring (typos forgiven; the best score wins). An unmatched request stays as a note until MATCH takes the track selected in the browser; (Roadmap [29]) | 1 | P3 |
 | Auto-play of the queue with a configurable mix (cut, 8, 16 or 32 beats) | DONE | `crates/od-ui/src/queue.rs::auto_play`; Keeps a deck cued with the next playable track, starts the queue when nothing plays, and starts the cued deck when the track on air is the mix length from its end: the channel faders cross (or the crossfader moves when the decks sit on its two sides), SYNC on for the incoming deck when both have a beatgrid. The outgoing fader stays down afterwards. Tested with generated 8 s tracks in the headless engine; not tried at a gig; (Roadmap [29]) | 2 | P3 |
 | Dead-air warning: the track on air is about to run out and no deck is cued | DONE | `crates/od-ui/src/queue.rs::dead_air`, `crates/od-ui/ui/queue.slint::SetAlertBar`; 15, 30 or 60 s before the end (WARN BEFORE SILENCE), over the foot of the list in Perform and in the status band, with LOAD NEXT when the queue holds a track. A deck counts as cued when it holds a track that is not played out and is not on air; nothing warns while another deck plays on or auto-play has a track; (Roadmap [29]) | 2 | P2 |
+| Cut-in: while held, the deck's channel reaches the master as if the crossfader were open on its side | DONE | `ChannelCommand::SetCutIn`, `crates/od-ui/src/mixer.rs::cut_in`; CUT IN at the foot of the platter's key block, momentary (`deck.cut_in` in mappings, a step of the battle template). The channel fader still counts. Not tried on a hardware controller or at a gig; (Roadmap [30]) | 3 | P2 |
+| Phrase-quantized jumps: to the next or previous phrase (or the next build-up, drop, breakdown, outro, the marked drop), landing its start on the next downbeat | DONE | `crates/od-ui/src/deck_craft.rs::landing_jump`, `crates/od-ui/src/deck_craft.rs::phrase_jump`; Whole-beat jumps that keep the bar phase, so the target arrives exactly when the next bar would have begun; without phrases the 16-bar marks count, without a grid nothing jumps. PHRASE pad mode and `deck.phrase_jump`. Not tried at a gig or on a hardware controller; (Roadmap [31]) | 3 | P2 |
+| Drop marker: mark the drop on a downbeat; shown on the waveform and overview; the phrases (drop look, DROP n, phrase pads) use it | DONE | `crates/od-library/src/tracks.rs::set_drop_marker`, `od_core::mark_drop`; Stored per track in the library (schema 5, one undo step); Library::analysis gives the phrases with the drop in them, so lighting and Prepare follow. Not written to sticks; (Roadmap [31]) | 4 | P2 |
+| Pad mode PHRASE: back / on one phrase, to the marked drop, mark the drop, to the next build-up, drop, breakdown, outro | DONE | `crates/od-ui/src/pads.rs::pad_views`, `crates/od-ui/src/deck_craft.rs::phrase_pad`; `deck.pad_mode` with `mode = "phrase"`; (Roadmap [31]) | 2 | P2 |
+| Pad mode CUE EDIT: the pads pick the hot cue the panel beside the list edits | DONE | `crates/od-ui/src/deck_craft.rs::select_pad`; `deck.pad_mode` with `mode = "cue_edit"`; DONE or another mode closes the panel; (Roadmap [31]) | 1 | P2 |
+| PLATTER group in the deck layout: hidden, the pads take its room (larger cue pads with their names) | DONE | `crates/od-ui/src/deck_layout.rs::HIDEABLE`; With the platter go its keys (REV, SLIP, QUANTIZE, KEYLOCK, range, CUT IN); (Roadmap [64]) | 1 | P3 |
+| The planned set in Perform: the track on air, the next one with its transition note, ahead or behind the plan by time and position | DONE | `crates/od-ui/src/set_plan.rs::tick`, `crates/od-ui/ui/set_plan.slint::PlanLine`; The last set opened in the browser is the plan; the time needs the set's PLANNED START. Tried with the demo library and the clock, not at a gig; (Roadmap [65]) | 4 | P2 |
 
 ## 5. Mixer
 
@@ -236,6 +245,8 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Auto gain toggle | DONE | `ChannelCommand::SetAutoGain`; Preferences > Controller > Mixer: auto gain on / off for every channel | 2 |  |
 | STEM button per mixer channel | DONE | STEM per mixer channel switches its HI / MID / LOW knobs to part isolation (vocals / inst / drums), centre = full level; the channel EQ stays as it was; (UX §1.3, §2.4) | 1 | P2 |
 | Knobs, faders and meters that feel physical: value arcs, centre marks, drag readouts, fader caps and detent, peak hold | DONE | `crates/od-ui/ui/controls.slint::Knob`, `crates/od-ui/ui/controls.slint::Fader`, `crates/od-ui/src/mixer.rs::channel_view`; Sizes unchanged at 1440 x 900 and 1280 x 800. Tried with the mouse only, not on a touch screen.; (Roadmap [46]) | 5 | P2 |
+| Split cue: the cue in mono on the left ear, the master in mono on the right | DONE | `MixerCommand::SetSplitCue`, `crates/od-ui/src/mixer.rs::toggle_split_cue`; SPLIT after the PHONES knobs (and `split_cue` in mappings); MIX has no effect while it is on, LEVEL does. Tested with generated signals; split cue on one interface with separate outputs is roadmap [67]; (Roadmap [30]) | 2 | P2 |
+| Crossfader curve on the mixer: a key that draws the curve and steps through constant power, linear and cut | DONE | `crates/od-ui/src/mixer.rs::set_crossfader_curve`, `crates/od-ui/ui/perform.slint::XfCurveKey`; Right of the B assign keys from 1000 px window width; the same setting as Preferences › Controller › Mixer, and `crossfader_curve` (optional `curve`) in mappings; (Roadmap [30]) | 2 | P3 |
 
 ## 6. Effects
 
@@ -286,6 +297,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Sequencer | DONE | `sampler.slint::SamplerPanel`; Footer row of the sampler panel: REC / PLAY / SAVE (onto the next free Pattern Recall pad), the 16 steps of the selected slot, the playing step and CLR; patterns saved with the slots | 4 | P3 |
 | Sampler panel (2 x 8 slots, gain, cue, BPM, bank row) | DONE | `crates/od-ui/ui/sampler.slint`; Between the global bar and the browser (top bar SAMPLER): bank, 2 × 8 pads, selected slot (mode, sync, BPM, gain), quantise, cue, volume; (SPEC §10.3a; UX §1.5) | 2 | P2 |
 | Gate mode, quantised triggering, sample sync to the master tempo | DONE | `sampler.slint::SamplerPanel`; 1-SHOT / LOOP / GATE (pads report press and release), QUANT, SYNC per slot; (SPEC §10.3a) | 4 | P2 |
+| The sampler panel stays in view when another bottom panel opens | DONE | `crates/od-ui/src/engine.rs::panel_to_close`; When Perform runs out of room the Tempo FX panel or the mix preview gives way, never the sampler; (Roadmap [64]) | 3 | P2 |
 
 ## 9. Recording
 
@@ -420,13 +432,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 305 |
+| DONE | 317 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **311** |
+| **Total** | **323** |
 
 ## P1 gaps and implementation notes
 

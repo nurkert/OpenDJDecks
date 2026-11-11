@@ -163,9 +163,10 @@ pub(crate) fn parts_view(channel: usize, c: &ChannelState, d: &DeckState) -> Cha
         high_text: pct(2).into(),
         mid_text: pct(1).into(),
         low_text: pct(0).into(),
-        kill_high: false,
-        kill_mid: false,
-        kill_low: false,
+        // The legends stay kill keys: a killed part is a muted one.
+        kill_high: d.stem_levels[PART_BANDS[2].index()] < 0.01,
+        kill_mid: d.stem_levels[PART_BANDS[1].index()] < 0.01,
+        kill_low: d.stem_levels[PART_BANDS[0].index()] < 0.01,
         parts: true,
         ..channel_view(channel, c, false)
     }
@@ -341,11 +342,78 @@ pub(crate) fn toggle_kill(app: &App, c: usize, band: usize) {
     engine::ensure_engine(app);
     let c = c.min(decks::DECKS - 1);
     let band = band.min(2);
+    // STEM mode: the kill key mutes the band's part (and brings it back).
+    if app.mixer.parts.get()[c] {
+        let stem = PART_BANDS[band];
+        let level = engine::snapshot(app).map_or(1.0, |s| s.decks[c].stem_levels[stem.index()]);
+        engine::deck_cmd(
+            app,
+            c,
+            DeckCommand::SetStemLevel {
+                stem,
+                level: if level < 0.01 { 1.0 } else { 0.0 },
+            },
+        );
+        return;
+    }
     let on = engine::snapshot(app).is_some_and(|s| s.channels[c].eq_kill[band]);
     engine::send(
         app,
         Command::Channel(c, ChannelCommand::SetEqKill { band, on: !on }),
     );
+}
+
+/// Split cue on / off (cue left, master right on the headphones).
+pub(crate) fn toggle_split_cue(app: &App) {
+    engine::ensure_engine(app);
+    let on = !engine::snapshot(app).is_some_and(|s| s.split_cue);
+    engine::send(app, Command::Mixer(MixerCommand::SetSplitCue(on)));
+    app.ui.global::<crate::MixerParts>().set_split_cue(on);
+}
+
+/// The spoken name of a crossfader curve setting.
+pub(crate) fn curve_name(curve: &str) -> String {
+    match curve {
+        "linear" => od_i18n::tr("LINEAR"),
+        "cut" => od_i18n::tr("CUT"),
+        _ => od_i18n::tr("CONSTANT POWER"),
+    }
+    .into()
+}
+
+/// The curve after `curve`: constant power → linear → cut → constant power.
+pub(crate) fn next_curve(curve: &str) -> &'static str {
+    let all = crate::settings::CROSSFADER_CURVES;
+    let i = all.iter().position(|c| *c == curve).unwrap_or(0);
+    all[(i + 1) % all.len()]
+}
+
+/// Sets the crossfader curve (`None`: the next one) in the settings and
+/// the engine, as Preferences › Controller does.
+pub(crate) fn set_crossfader_curve(app: &App, curve: Option<&str>) {
+    let now = app.state.borrow().settings.mixer.crossfader_curve.clone();
+    let curve = curve
+        .filter(|c| crate::settings::CROSSFADER_CURVES.contains(c))
+        .unwrap_or_else(|| next_curve(&now))
+        .to_string();
+    crate::preferences::set_crossfader_curve(app, &curve);
+    show_curve(app);
+    app.status(format!("{} {}", od_i18n::tr("Crossfader curve:"), curve_name(&curve)));
+}
+
+/// The curve key shows the curve in the settings.
+pub(crate) fn show_curve(app: &App) {
+    let curve = app.state.borrow().settings.mixer.crossfader_curve.clone();
+    let g = app.ui.global::<crate::MixerParts>();
+    g.set_xf_curve_name(curve_name(&curve).into());
+    g.set_xf_curve(curve.into());
+}
+
+/// Cut-in on deck `d`'s channel (0-based) while `on`.
+pub(crate) fn cut_in(app: &App, d: usize, on: bool) {
+    engine::ensure_engine(app);
+    let c = d.min(decks::DECKS - 1);
+    engine::send(app, Command::Channel(c, ChannelCommand::SetCutIn(on)));
 }
 
 /// One-tap swap of EQ band `band` between the pair of decks, at the set
@@ -428,6 +496,9 @@ pub(crate) fn wire(app: &Rc<App>) {
         band.max(0) as usize
     )));
     g.on_swap(handler!(app, |a, band: i32| swap(&a, band.max(0) as usize)));
+    g.on_toggle_split_cue(handler!(app, |a| toggle_split_cue(&a)));
+    g.on_cycle_xf_curve(handler!(app, |a| set_crossfader_curve(&a, None)));
+    show_curve(app);
     g.on_cycle_swap_at(handler!(app, |a| cycle_swap_at(&a)));
     g.on_reset_clip(handler!(app, |a| engine::send(
         &a,

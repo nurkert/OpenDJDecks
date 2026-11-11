@@ -16,7 +16,7 @@ use od_engine::{
 
 /// Pad modes offered on screen, in selector order (Hold FX page 2 is
 /// reached with the ‹ › of the Hold FX mode).
-pub(crate) const UI_MODES: [PadMode; 14] = [
+pub(crate) const UI_MODES: [PadMode; 16] = [
     PadMode::HotCue,
     PadMode::HoldFx1,
     PadMode::BeatJump,
@@ -31,6 +31,8 @@ pub(crate) const UI_MODES: [PadMode; 14] = [
     PadMode::TimedCensor,
     PadMode::PatternRecall,
     PadMode::LoopRoll,
+    PadMode::Phrase,
+    PadMode::CueEdit,
 ];
 
 /// Looks of the Lighting pads A–F (G strobe, H flash).
@@ -92,6 +94,21 @@ pub(crate) struct PadCtx<'a> {
     pub sampler_slots: &'a [Option<SlotInfo>],
     /// Memory cue starts (seconds, track order).
     pub memory: &'a [f64],
+    /// How each hot cue's pad plays it, by library index.
+    pub triggers: &'a [od_core::CueTrigger],
+    /// The track's phrases and marked drop (grid beat), for the PHRASE pads.
+    pub phrases: &'a [od_core::Phrase],
+    pub drop_beat: Option<f64>,
+}
+
+/// The badge of a hot cue pad that does not play its cue the usual way.
+pub(crate) fn trigger_badge(t: od_core::CueTrigger) -> &'static str {
+    match t {
+        od_core::CueTrigger::Cue => "",
+        od_core::CueTrigger::Latch => "LATCH",
+        od_core::CueTrigger::Gate => "GATE",
+        od_core::CueTrigger::Momentary => "MOMENT",
+    }
 }
 
 /// Hot cue letter of library index `i`: A … Z, then AA, AB, …
@@ -163,7 +180,7 @@ pub(crate) fn step_in(list: &[f64], current: f64, delta: i32) -> f64 {
 /// The ‹ › value beside the mode selector ("" = none for this mode).
 pub(crate) fn param_label(s: &DeckState, ctx: &PadCtx) -> String {
     match ctx.mode {
-        PadMode::HotCue => bank_label(s.hot_cue_bank),
+        PadMode::HotCue | PadMode::CueEdit => bank_label(s.hot_cue_bank),
         PadMode::HoldFx1 => "PAGE 1".into(),
         PadMode::HoldFx2 => "PAGE 2".into(),
         PadMode::BeatJump => format!("JUMP {}", beats_label(s.beat_jump_size)),
@@ -188,6 +205,8 @@ pub(crate) fn param_label(s: &DeckState, ctx: &PadCtx) -> String {
         PadMode::PatternRecall => "SEQUENCES".into(),
         // The CAPTURE key takes this place.
         PadMode::LoopRoll => String::new(),
+        // The pads say what they do; the tooltips say more.
+        PadMode::Phrase => String::new(),
     }
 }
 
@@ -207,6 +226,7 @@ fn pad(
         lit,
         cue_slot,
         tone: Default::default(),
+        badge: Default::default(),
     }
 }
 
@@ -219,7 +239,7 @@ pub(crate) fn pad_views(
 ) -> Vec<PadView> {
     (0..8)
         .map(|i| match ctx.mode {
-            PadMode::HotCue => {
+            PadMode::HotCue | PadMode::CueEdit => {
                 let idx = s.hot_cue_bank * HOT_CUES + i;
                 let hc = s.hot_cues[i];
                 let label = ctx.labels.get(idx).cloned().unwrap_or_default();
@@ -229,7 +249,27 @@ pub(crate) fn pad_views(
                     hc.map(|h| crate::format::deck_time(h.start))
                         .unwrap_or_default()
                 };
-                pad(i, hot_letter(idx), sub, hc.is_some(), false, i as i32)
+                let mut p = pad(i, hot_letter(idx), sub, hc.is_some(), false, i as i32);
+                if hc.is_some() {
+                    let t = ctx.triggers.get(idx).copied().unwrap_or_default();
+                    p.badge = trigger_badge(t).into();
+                }
+                p
+            }
+            PadMode::Phrase => {
+                let has_grid = s.beat_in_bar > 0;
+                let can = |t: Option<f64>| has_grid && t.is_some();
+                match i {
+                    0 => pad(i, "−1", "", can(crate::deck_craft::pad_target(ctx.phrases, ctx.drop_beat, s, 0)), false, -1),
+                    1 => pad(i, "+1", "", can(crate::deck_craft::pad_target(ctx.phrases, ctx.drop_beat, s, 1)), false, -1),
+                    2 => pad(i, "JUMP", "", can(ctx.drop_beat), false, -1),
+                    3 => pad(i, "MARK", "", s.track.is_some(), ctx.drop_beat.is_some(), -1),
+                    _ => {
+                        let k = crate::deck_craft::KIND_PADS[i - 4];
+                        let t = crate::deck_craft::pad_target(ctx.phrases, ctx.drop_beat, s, i);
+                        pad(i, crate::deck_craft::kind_pad_label(k), "", can(t), false, -1)
+                    }
+                }
             }
             PadMode::HoldFx1 | PadMode::HoldFx2 => {
                 let page = usize::from(ctx.mode == PadMode::HoldFx2);
@@ -537,6 +577,9 @@ mod tests {
             labels,
             sampler_slots: slots,
             memory: &[],
+            triggers: &[],
+            phrases: &[],
+            drop_beat: None,
         }
     }
 
@@ -560,13 +603,15 @@ mod tests {
     #[test]
     fn modes_cycle_on_screen() {
         assert_eq!(step_mode(PadMode::HotCue, 1), PadMode::HoldFx1);
-        assert_eq!(step_mode(PadMode::HotCue, -1), PadMode::LoopRoll);
+        assert_eq!(step_mode(PadMode::HotCue, -1), PadMode::CueEdit);
         assert_eq!(step_mode(PadMode::HoldFx2, 1), PadMode::BeatJump);
         assert_eq!(step_mode(PadMode::Slicer, 1), PadMode::Stems);
         assert_eq!(step_mode(PadMode::MemoryCue, 1), PadMode::Lighting);
         assert_eq!(step_mode(PadMode::Lighting, 1), PadMode::TimedCensor);
         assert_eq!(step_mode(PadMode::PatternRecall, 1), PadMode::LoopRoll);
-        assert_eq!(step_mode(PadMode::LoopRoll, 1), PadMode::HotCue);
+        assert_eq!(step_mode(PadMode::LoopRoll, 1), PadMode::Phrase);
+        assert_eq!(step_mode(PadMode::Phrase, 1), PadMode::CueEdit);
+        assert_eq!(step_mode(PadMode::CueEdit, 1), PadMode::HotCue);
     }
 
     /// [59] Loop roll pads: 1/32 … 4 beats, lit while their roll is held;
@@ -616,6 +661,7 @@ mod tests {
         s.hot_cues[2] = Some(HotCue {
             start: 61.0,
             loop_end: None,
+            trigger: Default::default(),
         });
         let mut labels = vec![String::new(); 32];
         labels[10] = "Drop".into();

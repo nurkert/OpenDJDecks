@@ -127,6 +127,9 @@ pub(crate) struct Deck {
     hot_cues: [[Option<HotCue>; HOT_CUES]; HOT_CUE_BANKS],
     hot_bank: usize,
     hot_preview: Option<usize>,
+    /// A MOMENTARY hot cue held while playing: on release the deck returns
+    /// where it would have been (slip).
+    hot_momentary: Option<usize>,
     auto_cue: bool,
     beat_jump_size: f64,
     censor: bool,
@@ -279,6 +282,7 @@ impl Deck {
             hot_cues: [[None; HOT_CUES]; HOT_CUE_BANKS],
             hot_bank: 0,
             hot_preview: None,
+            hot_momentary: None,
             auto_cue: true,
             beat_jump_size: 4.0,
             censor: false,
@@ -479,10 +483,12 @@ impl Deck {
             (true, Some(i), Some(o)) => HotCue {
                 start: i / self.sr,
                 loop_end: Some(o / self.sr),
+                trigger: od_core::CueTrigger::Cue,
             },
             _ => HotCue {
                 start: self.snap(self.pos, ctx.quantize) / self.sr,
                 loop_end: None,
+                trigger: od_core::CueTrigger::Cue,
             },
         };
         self.hot_cues[self.hot_bank][slot] = Some(cue);
@@ -758,9 +764,21 @@ impl Deck {
                 start,
                 loop_end,
             } if slot < HOT_CUES => {
-                self.hot_cues[self.hot_bank][slot] = Some(HotCue { start, loop_end });
+                // A moved cue keeps how its pad plays it.
+                let trigger = self.hot_cues[self.hot_bank][slot].map(|h| h.trigger).unwrap_or_default();
+                self.hot_cues[self.hot_bank][slot] = Some(HotCue {
+                    start,
+                    loop_end,
+                    trigger,
+                });
                 self.emit_hot_cue_set(slot, ctx);
             }
+            DeckCommand::SetHotCueTrigger { slot, trigger } if slot < HOT_CUES => {
+                if let Some(h) = self.hot_cues[self.hot_bank][slot].as_mut() {
+                    h.trigger = trigger;
+                }
+            }
+            DeckCommand::SetHotCueTrigger { .. } => {}
             DeckCommand::DeleteHotCue { slot } if slot < HOT_CUES => {
                 if self.hot_cues[self.hot_bank][slot].take().is_some()
                     && let Some(t) = &self.track
@@ -919,6 +937,7 @@ impl Deck {
         self.cue_preview = false;
         self.play_latched = false;
         self.hot_preview = None;
+        self.hot_momentary = None;
         self.loop_in = None;
         self.loop_out = None;
         self.loop_active = false;
@@ -994,6 +1013,7 @@ impl Deck {
     }
 
     fn hot_cue_pad(&mut self, slot: usize, pressed: bool, quantized: bool, ctx: &mut RtCtx) {
+        use od_core::CueTrigger;
         if pressed {
             let Some(hc) = self.hot_cues[self.hot_bank][slot] else {
                 if quantized {
@@ -1003,6 +1023,42 @@ impl Deck {
             };
             let (start, end) = self.hot_cue_frames(&hc);
             let range = end.map(|e| (start, e));
+            let previewing = self.hot_preview.is_some() || self.cue_preview;
+            match hc.trigger {
+                // Plays on from the cue, also from a paused deck.
+                CueTrigger::Latch if !self.playing || previewing => {
+                    self.pending_jump = None;
+                    self.perform_jump(start, range);
+                    self.hot_preview = None;
+                    self.cue_preview = false;
+                    self.play_latched = false;
+                    self.start_playing();
+                    return;
+                }
+                // Plays from the cue while held, also while playing.
+                CueTrigger::Gate => {
+                    self.pending_jump = None;
+                    self.perform_jump(start, range);
+                    self.hot_preview = Some(slot);
+                    self.cue_preview = false;
+                    self.play_latched = false;
+                    self.start_playing();
+                    return;
+                }
+                // While playing: the track runs on underneath and comes back
+                // on release.
+                CueTrigger::Momentary if self.playing && !previewing => {
+                    if !self.slip_diverged {
+                        self.slip_pos = self.pos;
+                        self.slip_diverged = true;
+                    }
+                    self.hot_momentary = Some(slot);
+                    self.pending_jump = None;
+                    self.jump_to(start);
+                    return;
+                }
+                _ => {}
+            }
             if self.playing && self.hot_preview.is_none() && !self.cue_preview {
                 if quantized {
                     self.jump_to_cue(start, range, ctx);
@@ -1018,6 +1074,13 @@ impl Deck {
                 self.cue_preview = false;
                 self.play_latched = false;
                 self.start_playing();
+            }
+        } else if self.hot_momentary == Some(slot) {
+            self.hot_momentary = None;
+            if self.slip_diverged && !(self.slip && self.slip_action_active()) {
+                self.slip_diverged = false;
+                let t = self.slip_pos;
+                self.jump_to(t);
             }
         } else if self.hot_preview == Some(slot) {
             self.hot_preview = None;

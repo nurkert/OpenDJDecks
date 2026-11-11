@@ -1381,8 +1381,10 @@ status = "done"
 tests = [
   "od-engine::render::slip_returns_to_the_right_position",
   "od-engine::stems::loops_and_reverse_play_the_stem_mix",
+  "od-ui::ui_tests::perform_craft::reverse_cut_in_split_cue_and_curve_key",
 ]
-note = "`SetReverse` via controller; no UI button"
+evidence = ["crates/od-ui/src/deck_craft.rs::toggle_reverse", "crates/od-ui/ui/perform.slint::PlatterGroup"]
+note = "Roadmap [30]. REV at the top of the platter's key block (and `deck.reverse` in mappings): the deck plays backwards until pressed again, with SLIP it returns where it would have been. Not tried on a hardware controller"
 
 [[feature]]
 id = "deck-censor"
@@ -4761,3 +4763,187 @@ tests = [
 evidence = ["crates/od-ui/src/browser/mod.rs::edit_tags", "crates/od-ui/src/browser/mod.rs::refresh_info", "crates/od-ui/ui/info.slint::InfoPanel"]
 spec = "Roadmap [63]"
 note = "In the info panel's SUMMARY: title, artist, album, genre, label, remixer, composer, year and comment, plus Do not play. Rating and colour keep their row and menu ways; the Tags panel already tagged a selection"
+
+[[feature]]
+id = "deck-cut-in"
+area = "deck"
+name = "Cut-in: while held, the deck's channel reaches the master as if the crossfader were open on its side"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::perform_craft::reverse_cut_in_split_cue_and_curve_key",
+  "od-engine::mixer::tests::cut_in_opens_the_crossfader_for_its_channel",
+  "od-controller::templates::tests::cut_in_phrase_jump_drop_split_and_curve_map",
+]
+evidence = ["ChannelCommand::SetCutIn", "crates/od-ui/src/mixer.rs::cut_in"]
+spec = "Roadmap [30]"
+note = "CUT IN at the foot of the platter's key block, momentary (`deck.cut_in` in mappings, a step of the battle template). The channel fader still counts. Not tried on a hardware controller or at a gig"
+
+[[feature]]
+id = "mixer-split-cue"
+area = "mixer"
+name = "Split cue: the cue in mono on the left ear, the master in mono on the right"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::render::split_cue_puts_cue_left_and_master_right",
+  "od-ui::ui_tests::perform_craft::reverse_cut_in_split_cue_and_curve_key",
+]
+evidence = ["MixerCommand::SetSplitCue", "crates/od-ui/src/mixer.rs::toggle_split_cue"]
+spec = "Roadmap [30]"
+note = "SPLIT after the PHONES knobs (and `split_cue` in mappings); MIX has no effect while it is on, LEVEL does. Tested with generated signals; split cue on one interface with separate outputs is roadmap [67]"
+
+[[feature]]
+id = "mixer-crossfader-curve-key"
+area = "mixer"
+name = "Crossfader curve on the mixer: a key that draws the curve and steps through constant power, linear and cut"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::perform_craft::reverse_cut_in_split_cue_and_curve_key",
+  "od-controller::templates::tests::cut_in_phrase_jump_drop_split_and_curve_map",
+]
+evidence = ["crates/od-ui/src/mixer.rs::set_crossfader_curve", "crates/od-ui/ui/perform.slint::XfCurveKey"]
+spec = "Roadmap [30]"
+note = "Right of the B assign keys from 1000 px window width; the same setting as Preferences › Controller › Mixer, and `crossfader_curve` (optional `curve`) in mappings"
+
+[[feature]]
+id = "deck-phrase-jump"
+area = "deck"
+name = "Phrase-quantized jumps: to the next or previous phrase (or the next build-up, drop, breakdown, outro, the marked drop), landing its start on the next downbeat"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::perform_craft::drop_marker_and_phrase_jumps",
+  "od-ui::deck_craft::tests::a_jump_lands_its_target_on_the_next_downbeat",
+  "od-ui::deck_craft::tests::phrase_targets_forward_and_back",
+]
+evidence = ["crates/od-ui/src/deck_craft.rs::landing_jump", "crates/od-ui/src/deck_craft.rs::phrase_jump"]
+spec = "Roadmap [31]"
+note = "Whole-beat jumps that keep the bar phase, so the target arrives exactly when the next bar would have begun; without phrases the 16-bar marks count, without a grid nothing jumps. PHRASE pad mode and `deck.phrase_jump`. Not tried at a gig or on a hardware controller"
+
+[[feature]]
+id = "deck-drop-marker"
+area = "deck"
+name = "Drop marker: mark the drop on a downbeat; shown on the waveform and overview; the phrases (drop look, DROP n, phrase pads) use it"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::perform_craft::drop_marker_and_phrase_jumps",
+  "od-core::phrase::tests::a_marked_drop_splits_its_phrase_into_build_up_and_drop",
+  "od-library::tracks::tests::drop_marker_and_cue_trigger_round_trip",
+  "od-ui::deck_craft::tests::the_drop_key_marks_on_a_downbeat_and_clears_near_the_mark",
+]
+evidence = ["crates/od-library/src/tracks.rs::set_drop_marker", "od_core::mark_drop"]
+spec = "Roadmap [31]"
+note = "Stored per track in the library (schema 5, one undo step); Library::analysis gives the phrases with the drop in them, so lighting and Prepare follow. Not written to sticks"
+
+[[feature]]
+id = "pad-mode-phrase"
+area = "deck"
+name = "Pad mode PHRASE: back / on one phrase, to the marked drop, mark the drop, to the next build-up, drop, breakdown, outro"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::perform_craft::drop_marker_and_phrase_jumps",
+  "od-ui::pads::tests::modes_cycle_on_screen",
+]
+evidence = ["crates/od-ui/src/pads.rs::pad_views", "crates/od-ui/src/deck_craft.rs::phrase_pad"]
+spec = "Roadmap [31]"
+note = "`deck.pad_mode` with `mode = \"phrase\"`"
+
+[[feature]]
+id = "pad-mode-cue-edit"
+area = "deck"
+name = "Pad mode CUE EDIT: the pads pick the hot cue the panel beside the list edits"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::perform_craft::hot_cue_edits_from_perform",
+]
+evidence = ["crates/od-ui/src/deck_craft.rs::select_pad"]
+spec = "Roadmap [31]"
+note = "`deck.pad_mode` with `mode = \"cue_edit\"`; DONE or another mode closes the panel"
+
+[[feature]]
+id = "cues-edit-perform"
+area = "cues"
+name = "Hot cue edits from Perform: rename, recolour, move to (or store at) the playhead, delete"
+scope = "in"
+status = "done"
+prio = "P1"
+tests = [
+  "od-ui::ui_tests::perform_craft::hot_cue_edits_from_perform",
+]
+evidence = ["crates/od-ui/src/deck_craft.rs::move_here", "crates/od-ui/ui/cue_edit.slint::CueEditPanel"]
+spec = "Roadmap [31]"
+note = "Each edit is a library edit (one undo step), the deck's engine cues follow at once; tracks played from a stick are read-only here"
+
+[[feature]]
+id = "cues-trigger-modes"
+area = "cues"
+name = "Per-cue trigger behaviour: CUE, LATCH, GATE, MOMENTARY per hot cue"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::render::hot_cue_triggers_latch_gate_momentary",
+  "od-ui::ui_tests::perform_craft::hot_cue_edits_from_perform",
+]
+evidence = ["DeckCommand::SetHotCueTrigger", "od_core::CueTrigger"]
+spec = "Roadmap [64]"
+note = "Stored with the cue (schema 5); a pad that does not play the usual way names it in its corner. Not exported to Club USB sticks (they keep the usual behaviour). Not tried on a hardware controller"
+
+[[feature]]
+id = "deck-layout-platter"
+area = "deck"
+name = "PLATTER group in the deck layout: hidden, the pads take its room (larger cue pads with their names)"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::deck_layout::tests::groups_toggle_and_unknown_ones_are_ignored",
+]
+evidence = ["crates/od-ui/src/deck_layout.rs::HIDEABLE"]
+spec = "Roadmap [64]"
+note = "With the platter go its keys (REV, SLIP, QUANTIZE, KEYLOCK, range, CUT IN)"
+
+[[feature]]
+id = "sampler-stays-in-view"
+area = "sampler"
+name = "The sampler panel stays in view when another bottom panel opens"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::perform_craft::the_sampler_stays_when_fx_opens",
+  "od-ui::engine::tests::the_sampler_never_gives_way",
+  "od-ui::ui_tests::perform::bottom_panels_keep_the_status_band_in_the_window",
+]
+evidence = ["crates/od-ui/src/engine.rs::panel_to_close"]
+spec = "Roadmap [64]"
+note = "When Perform runs out of room the Tempo FX panel or the mix preview gives way, never the sampler"
+
+[[feature]]
+id = "perform-set-plan"
+area = "deck"
+name = "The planned set in Perform: the track on air, the next one with its transition note, ahead or behind the plan by time and position"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::perform_craft::the_set_plan_in_perform",
+  "od-ui::set_plan::tests::behind_or_ahead_by_time_and_position",
+  "od-ui::set_plan::tests::the_position_follows_the_track_on_air",
+  "od-ui::set_plan::tests::planned_starts_parse",
+]
+evidence = ["crates/od-ui/src/set_plan.rs::tick", "crates/od-ui/ui/set_plan.slint::PlanLine"]
+spec = "Roadmap [65]"
+note = "The last set opened in the browser is the plan; the time needs the set's PLANNED START. Tried with the demo library and the clock, not at a gig"

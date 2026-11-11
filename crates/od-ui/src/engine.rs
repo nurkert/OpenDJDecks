@@ -255,13 +255,20 @@ fn track_panel_order(app: &App) {
     });
 }
 
-/// Closes the bottom panel that has been open longest (never the last one
-/// left) and says so in the status band. False when there is none to close.
+/// The panel that gives way when Perform runs out of room: the one open
+/// longest, never the last one left, and never the sampler ([64]: it stays
+/// in view while another panel opens).
+pub(crate) fn panel_to_close(order: &[&'static str]) -> Option<&'static str> {
+    if order.len() < 2 {
+        return None;
+    }
+    order.iter().copied().find(|p| *p != "sampler")
+}
+
+/// Closes the bottom panel that gives way ([`panel_to_close`]) and says so
+/// in the status band. False when there is none to close.
 fn close_oldest_panel(app: &App) -> bool {
-    let Some(oldest) = PANEL_ORDER.with(|o| {
-        let o = o.borrow();
-        (o.len() > 1).then(|| o[0])
-    }) else {
+    let Some(oldest) = PANEL_ORDER.with(|o| panel_to_close(&o.borrow())) else {
         return false;
     };
     let name = match oldest {
@@ -569,6 +576,15 @@ pub(crate) fn start(app: &Rc<App>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_sampler_never_gives_way() {
+        assert_eq!(panel_to_close(&["sampler"]), None);
+        assert_eq!(panel_to_close(&["sampler", "fx"]), Some("fx"));
+        assert_eq!(panel_to_close(&["fx", "sampler"]), Some("fx"));
+        assert_eq!(panel_to_close(&["sampler", "fx", "mix-preview"]), Some("fx"));
+        assert_eq!(panel_to_close(&["mix-preview", "fx"]), Some("mix-preview"));
+    }
 
     #[test]
     fn audio_settings_to_config() {

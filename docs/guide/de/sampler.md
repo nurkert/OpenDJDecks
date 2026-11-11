@@ -2,10 +2,12 @@
 title: Sampler und Sequencer
 description: Sechzehn Slots in vier Banken, Loops und One-Shots und ein Step-Sequencer, der am Beat bleibt.
 keywords: [sampler, sample, samples, one shot, loop, gate, bank, slots, pads, sequencer, sequence, pattern, drum machine, pattern recall, quantisieren, sample sync]
-features: [sampler-slots, sampler-load-library, sampler-banks, sampler-volume-cue, sampler-sequencer, sampler-panel, sampler-modes-sync, pad-mode-sampler, pad-mode-pattern-recall]
+features: [sampler-slots, sampler-load-library, sampler-banks, sampler-volume-cue, sampler-sequencer, sampler-panel, sampler-stays-in-view, sampler-modes-sync, pad-mode-sampler, pad-mode-pattern-recall]
 ---
 
 Drücke **SAMPLER** in der oberen Leiste (`⌥⌘S`), um das Panel zwischen Mixer und Browser zu öffnen.
+
+Der Sampler bleibt sichtbar: Wenn einem kleinen Fenster der Platz für die unteren Bereiche von Perform ausgeht, weicht der Tempo-FX-Bereich oder die Mix-Vorschau (die Statusleiste sagt, welcher), nie der Sampler.
 
 ![Das Sampler-Panel mit Slots, dem gewählten Slot und der Sequencer-Zeile](../img/sampler.png)
 

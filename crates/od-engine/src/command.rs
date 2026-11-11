@@ -255,6 +255,11 @@ pub enum DeckCommand {
     DeleteHotCue {
         slot: usize,
     },
+    /// How the pad of hot cue `slot` (active bank) plays it.
+    SetHotCueTrigger {
+        slot: usize,
+        trigger: od_core::CueTrigger,
+    },
     /// Jumps to a memory cue and makes it the cue point.
     MemoryCue(MemoryCueJump),
     /// Recalls a saved loop (a memory cue with a loop end): previous/next
@@ -437,6 +442,9 @@ pub enum ChannelCommand {
     SetCrossfaderAssign(XfAssign),
     /// Headphone cue (PFL) on/off.
     SetCue(bool),
+    /// Cut-in: while on, the channel reaches the master as if the
+    /// crossfader were open on its side (the channel fader still counts).
+    SetCutIn(bool),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -463,6 +471,9 @@ pub enum MixerCommand {
     SetBoothLevel(f32),
     /// Master cue: adds the master output to the headphone cue bus.
     SetMasterCue(bool),
+    /// Split cue: the headphones carry the cue bus in mono on the left and
+    /// the master in mono on the right (the headphone mix is set aside).
+    SetSplitCue(bool),
     /// Master limiter + soft clip (default on).
     SetLimiter(bool),
     ResetClipIndicators,

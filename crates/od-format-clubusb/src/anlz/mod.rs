@@ -961,6 +961,7 @@ fn make_cue(
         color,
         source: DataSource::Imported,
         active: false,
+        trigger: Default::default(),
     }
 }
 

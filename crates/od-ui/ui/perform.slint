@@ -33,6 +33,9 @@ export global DeckLayout {
     in property <bool> fx: true;
     in property <bool> phase: true;
     in property <bool> setup: true;
+    // [64] The platter with its key block; hidden, the pads take its room
+    // (larger pads with the cue names in full).
+    in property <bool> platter: true;
     // Saved layouts by name, and the one in use ("" none or changed since).
     in property <[string]> saved;
     // Opens the view menu (documentation screenshots).
@@ -43,6 +46,16 @@ export global DeckLayout {
     callback save(string);
     callback apply(string);
     callback remove(string);
+}
+
+// Deck craft (roadmap 0.9.0 block G): reverse and cut-in per deck
+// (1-based).
+export global DeckCraft {
+    callback reverse(int);
+    callback cut-in(int, bool);
+    // Phrase jump (forward or back) and the drop mark, per deck.
+    callback phrase-jump(int, bool);
+    callback drop-mark(int);
 }
 
 // Phrase bar: one labelled block per phrase.
@@ -266,6 +279,12 @@ component Overview inherits VerticalLayout {
             tone: c.slot >= 0 ? Theme.cue-tone(c.slot, c.tone) : Theme.bone;
             form: c.slot >= 0 ? "solid" : "dashed";
         }
+        // The marked drop: a bone line with a D at its foot.
+        if root.deck.drop-at >= 0 && root.deck.length > 0: Rectangle {
+            accessible-role: image; accessible-id: "deck\{root.deck.deck}.overview.drop"; accessible-value: root.deck.drop-at;
+            x: parent.width * root.deck.drop-at / root.deck.length - 1px; width: 2px; height: parent.height;
+            background: Theme.bone;
+        }
         // Vocal position: a band along the top where the vocals sing.
         for v in root.deck.vocals: Rectangle {
             x: parent.width * v.start; width: max(1px, parent.width * (v.end - v.start));
@@ -297,8 +316,8 @@ global PadLetters {
 
 // Pad modes, in selector order (ids as in DeckView.pad-mode).
 global PadModes {
-    out property <[string]> ids: ["hot_cue", "hold_fx1", "beat_jump", "sampler", "keyboard", "key_shift", "beat_loop", "slicer", "stems", "memory_cue", "lighting", "timed_censor", "pattern_recall", "loop_roll"];
-    out property <[string]> names: [@tr("HOT CUE"), @tr("HOLD FX"), @tr("BEAT JUMP"), @tr("SAMPLER"), @tr("KEYBOARD"), @tr("KEY SHIFT"), @tr("BEAT LOOP"), @tr("SLICER"), @tr("STEMS"), @tr("MEMORY CUE"), @tr("LIGHTING"), @tr("CENSOR"), @tr("PATTERN"), @tr("ROLL")];
+    out property <[string]> ids: ["hot_cue", "hold_fx1", "beat_jump", "sampler", "keyboard", "key_shift", "beat_loop", "slicer", "stems", "memory_cue", "lighting", "timed_censor", "pattern_recall", "loop_roll", "phrase", "cue_edit"];
+    out property <[string]> names: [@tr("HOT CUE"), @tr("HOLD FX"), @tr("BEAT JUMP"), @tr("SAMPLER"), @tr("KEYBOARD"), @tr("KEY SHIFT"), @tr("BEAT LOOP"), @tr("SLICER"), @tr("STEMS"), @tr("MEMORY CUE"), @tr("LIGHTING"), @tr("CENSOR"), @tr("PATTERN"), @tr("ROLL"), @tr("PHRASE"), @tr("CUE EDIT")];
     public pure function index(id: string) -> int {
         if (id == "hold_fx1" || id == "hold_fx2") { return 1; }
         if (id == "beat_jump") { return 2; }
@@ -313,6 +332,8 @@ global PadModes {
         if (id == "timed_censor") { return 11; }
         if (id == "pattern_recall") { return 12; }
         if (id == "loop_roll") { return 13; }
+        if (id == "phrase") { return 14; }
+        if (id == "cue_edit") { return 15; }
         return 0;
     }
     // Hot cues keep their cue colours (with their letter); every other pad
@@ -350,6 +371,14 @@ export component DeckPad inherits Rectangle {
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
         color: root.filled ? Theme.ink-on : root.p.set ? Theme.bone : Theme.bone-3; vertical-alignment: center;
     }
+    // A hot cue pad that plays its cue another way names it in the top
+    // right corner (LATCH, GATE, MOMENT).
+    if root.p.badge != "" && root.width >= 56px: Text {
+        x: parent.width - self.preferred-width - 4px; y: 1px; height: 11px;
+        text: root.p.badge;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 0.4px;
+        color: root.filled ? Theme.ink-on : Theme.bone-2; vertical-alignment: center;
+    }
     Text {
         x: max(20px, cap.preferred-width + 10px); width: parent.width - self.x - 4px; height: parent.height;
         // Narrow pads (four-deck layouts) show just the letter.
@@ -366,6 +395,12 @@ export component DeckPad inherits Rectangle {
             : root.mode == "key_shift" ? @tr("Shift the key by these semitones")
             : root.mode == "keyboard" ? @tr("Play the hot cue at this key")
             : root.mode == "slicer" ? @tr("Play this slice while held")
+            : root.mode == "phrase" ? (root.p.index == 0 ? @tr("Back one phrase: its start lands on the next downbeat, in time")
+                : root.p.index == 1 ? @tr("On one phrase: its start lands on the next downbeat, in time")
+                : root.p.index == 2 ? @tr("Jump to the marked drop: it lands on the next downbeat, in time")
+                : root.p.index == 3 ? @tr("Mark the drop on the bar at the playhead (at the mark: clear it)")
+                : @tr("Jump to the next phrase of this kind: it lands on the next downbeat, in time"))
+            : root.mode == "cue_edit" ? @tr("Pick this hot cue to edit it in the panel beside the list")
             : @tr("Effect while held");
         mouse-cursor: pointer;
         pointer-event(ev) => {
@@ -1168,6 +1203,10 @@ component PlatterGroup inherits Rectangle {
     // The key column: as before at desktop and laptop sizes, a little larger
     // with a larger platter.
     property <length> kh: clamp(root.d * 0.145, 24px, 30px);
+    // REV and CUT IN join the block where six keys fit the group's height
+    // (1440 × 900 and larger); shorter decks keep the four setup keys.
+    property <bool> six: root.setup && root.height >= 6 * root.kh + 5 * root.kgap;
+    property <int> first: root.six ? 1 : 0;
     property <length> kw: (root.narrow ? 56px : 72px) * root.kh / 24px;
     property <length> kcol: root.setup ? root.kw + root.kgap : 0px;
     min-height: 5 * root.base + 16px;
@@ -1197,45 +1236,64 @@ component PlatterGroup inherits Rectangle {
         set-bpm(t) => { root.set-bpm(t); }
         range => { root.range(); }
     }
-    // The key block: four keys centred on the platter's axis.
-    property <length> top: root.cy - (4 * root.kh + 3 * root.kgap) / 2;
+    // The key block: six keys centred on the platter's axis: REV, then
+    // the setup keys SLIP, QUANTIZE, KEYLOCK and the tempo range, then
+    // CUT IN.
+    property <length> top: root.cy - ((root.six ? 6 : 4) * root.kh + (root.six ? 5 : 3) * root.kgap) / 2;
     property <length> arc: root.d / 2 + root.kgap;
     // A key's box starts where its arc reaches deepest towards the centre
     // (at its edge farthest from the axis), so the box holds only the key.
     pure function reach(y: length) -> length {
         return Math.sqrt(Math.max(0, (root.arc / 1px) * (root.arc / 1px) - Math.pow(Math.max(Math.abs(root.cy - y), Math.abs(root.cy - y - root.kh)) / 1px, 2))) * 1px;
     }
+    pure function key-y(i: int) -> length { return root.top + i * (root.kh + root.kgap); }
+    if root.six: ConcaveKey {
+        accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.reverse; accessible-id: "deck\{root.deck.deck}.reverse";
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.key-y(0)); y: root.key-y(0); width: root.arc + root.kw - root.reach(root.key-y(0)); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.key-y(0));
+        label: "REV"; on: root.deck.reverse; tone: Theme.attention;
+        tooltip: @tr("Reverse: the deck plays backwards until pressed again");
+        clicked => { DeckCraft.reverse(root.deck.deck); }
+    }
     if root.setup: ConcaveKey {
         accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.slip; accessible-id: "deck\{root.deck.deck}.slip";
-        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.top); y: root.top; width: root.arc + root.kw - root.reach(root.top); height: root.kh;
-        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.top);
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.key-y(1 - 1 + root.first)); y: root.key-y(1 - 1 + root.first); width: root.arc + root.kw - root.reach(root.key-y(1 - 1 + root.first)); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.key-y(1 - 1 + root.first));
         label: "SLIP"; on: root.deck.slip; tone: Theme.attention;
         tooltip: @tr("Slip: the track keeps running underneath loops, scratches and reverse");
         clicked => { root.slip(); }
     }
     if root.setup: ConcaveKey {
         accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.quantize; accessible-id: "deck\{root.deck.deck}.quantize";
-        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.top + root.kh + root.kgap); y: root.top + root.kh + root.kgap; width: root.arc + root.kw - root.reach(root.top + root.kh + root.kgap); height: root.kh;
-        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.top + root.kh + root.kgap);
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.key-y(2 - 1 + root.first)); y: root.key-y(2 - 1 + root.first); width: root.arc + root.kw - root.reach(root.key-y(2 - 1 + root.first)); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.key-y(2 - 1 + root.first));
         label: root.narrow ? "Q" : "QUANTIZE"; on: root.deck.quantize; tone: Theme.setup-on;
         tooltip: @tr("Quantize cues, loops and jumps to the beat");
         clicked => { root.quantize(); }
     }
     if root.setup: ConcaveKey {
         accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.keylock; accessible-id: "deck\{root.deck.deck}.keylock";
-        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.top + 2 * (root.kh + root.kgap)); y: root.top + 2 * (root.kh + root.kgap); width: root.arc + root.kw - root.reach(root.top + 2 * (root.kh + root.kgap)); height: root.kh;
-        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.top + 2 * (root.kh + root.kgap));
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.key-y(3 - 1 + root.first)); y: root.key-y(3 - 1 + root.first); width: root.arc + root.kw - root.reach(root.key-y(3 - 1 + root.first)); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.key-y(3 - 1 + root.first));
         label: root.narrow ? "LOCK" : "KEYLOCK"; on: root.deck.keylock; tone: Theme.w436;
         tooltip: @tr("Keylock: the key stays when the tempo changes");
         clicked => { root.keylock(); }
     }
     if root.setup: ConcaveKey {
         accessible-role: button; accessible-id: "deck\{root.deck.deck}.tempo-mode"; accessible-value: root.deck.tempo-range;
-        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.top + 3 * (root.kh + root.kgap)); y: root.top + 3 * (root.kh + root.kgap); width: root.arc + root.kw - root.reach(root.top + 3 * (root.kh + root.kgap)); height: root.kh;
-        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.top + 3 * (root.kh + root.kgap));
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.key-y(4 - 1 + root.first)); y: root.key-y(4 - 1 + root.first); width: root.arc + root.kw - root.reach(root.key-y(4 - 1 + root.first)); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.key-y(4 - 1 + root.first));
         label: root.deck.tempo-range == "" ? "±10%" : root.deck.tempo-range;
         tooltip: @tr("Tempo range of the fader — click for the next");
         clicked => { root.tempo-range(); }
+    }
+    if root.six: ConcaveKey {
+        accessible-role: button; accessible-id: "deck\{root.deck.deck}.cut-in"; accessible-value: root.deck.cut-in ? "held" : "";
+        x: root.mirror ? root.cx - root.arc - root.kw : root.cx + root.reach(root.key-y(5)); y: root.key-y(5); width: root.arc + root.kw - root.reach(root.key-y(5)); height: root.kh;
+        inner-right: root.mirror; cy: root.cy - self.y; arc-r: root.arc; gap: root.kgap; centre-offset: root.reach(root.key-y(5));
+        label: "CUT IN"; on: root.deck.cut-in; tone: Theme.live;
+        tooltip: @tr("Cut in: while held, the deck is heard as if the crossfader were open on its side");
+        held(p) => { DeckCraft.cut-in(root.deck.deck, p); }
     }
 }
 
@@ -1274,7 +1332,7 @@ component DeckControls inherits HorizontalLayout {
     property <bool> grid-open;
 
     if root.mirror: tempo-r := VerticalLayout { TempoColumn { vertical-stretch: 1; mirror: true; deck: root.deck; tempo(v) => { root.tempo(v); } } }
-    if root.mirror: PlatterGroup { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; mirror: true; setup: DeckLayout.setup; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
+    if root.mirror && DeckLayout.platter: PlatterGroup { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; mirror: true; setup: DeckLayout.setup; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
     if root.mirror: TransportRows { deck: root.deck; base: root.base; cue => { root.cue(); } toggle-play => { root.toggle-play(); } sync => { root.sync(); } }
     if root.mirror && DeckLayout.loops: LoopRows { deck: root.deck; base: root.base; narrow: root.narrow; grid-open: root.grid-open; grid-toggle => { root.grid-open = !root.grid-open; } loop(b) => { root.loop(b); } loop-exit => { root.loop-exit(); } loop-scale(f) => { root.loop-scale(f); } beat-jump-step(f) => { root.beat-jump-step(f); } loop-manual => { root.loop-manual(); } }
 
@@ -1286,7 +1344,7 @@ component DeckControls inherits HorizontalLayout {
 
     if !root.mirror && DeckLayout.loops: LoopRows { deck: root.deck; base: root.base; narrow: root.narrow; grid-open: root.grid-open; grid-toggle => { root.grid-open = !root.grid-open; } loop(b) => { root.loop(b); } loop-exit => { root.loop-exit(); } loop-scale(f) => { root.loop-scale(f); } beat-jump-step(f) => { root.beat-jump-step(f); } loop-manual => { root.loop-manual(); } }
     if !root.mirror: TransportRows { deck: root.deck; base: root.base; cue => { root.cue(); } toggle-play => { root.toggle-play(); } sync => { root.sync(); } }
-    if !root.mirror: PlatterGroup { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; mirror: false; setup: DeckLayout.setup; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
+    if !root.mirror && DeckLayout.platter: PlatterGroup { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; mirror: false; setup: DeckLayout.setup; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
     if !root.mirror: VerticalLayout { TempoColumn { vertical-stretch: 1; deck: root.deck; tempo(v) => { root.tempo(v); } } }
 }
 
@@ -2065,6 +2123,61 @@ export global MixerParts {
     in property <int> swap-pending: -1;
     // Clears the clip indicators (channels and master).
     callback reset-clip();
+    // Split cue: cue left, master right on the headphones.
+    in property <bool> split-cue;
+    callback toggle-split-cue();
+    // Crossfader curve ("constant_power", "linear", "cut"), its spoken
+    // name, and the step to the next.
+    in property <string> xf-curve: "constant_power";
+    in property <string> xf-curve-name: "CONSTANT POWER";
+    callback cycle-xf-curve();
+}
+
+// The crossfader curve key beside the crossfader: the curve drawn as two
+// crossing gains (smooth arcs, straight lines, or the steep cut), so the
+// key says which curve is set without words; a click steps to the next.
+component XfCurveKey inherits Rectangle {
+    accessible-role: button;
+    accessible-id: "global.xf-curve";
+    accessible-value: MixerParts.xf-curve-name;
+    accessible-label: TooltipState.name-for(self.accessible-id, @tr("CROSSFADER CURVE"), root.tip);
+    accessible-description: root.tip;
+    accessible-action-default => { MixerParts.cycle-xf-curve(); }
+    property <string> tip: @tr("Crossfader curve: constant power, linear or cut — click for the next");
+    width: 40px; height: 24px;
+    border-radius: Theme.r-control;
+    background: Theme.face(true, ta.pressed, ta.has-hover, false, false, Theme.setup-on);
+    animate background { duration: Theme.t-press; easing: Theme.ease; }
+    KeyFocus { activate => { MixerParts.cycle-xf-curve(); } }
+    property <color> ink: ta.has-hover ? Theme.bone : Theme.bone-2;
+    // A side's gain from full (left) to closed (right), and the other side
+    // mirrored.
+    if MixerParts.xf-curve == "constant_power": Path {
+        x: 8px; y: 5px; width: 24px; height: 14px;
+        viewbox-width: 24; viewbox-height: 14;
+        stroke: root.ink; stroke-width: 1.5px;
+        MoveTo { x: 0; y: 1; } QuadraticTo { x: 24; y: 13; control-x: 21; control-y: 1; }
+        MoveTo { x: 24; y: 1; } QuadraticTo { x: 0; y: 13; control-x: 3; control-y: 1; }
+    }
+    if MixerParts.xf-curve == "linear": Path {
+        x: 8px; y: 5px; width: 24px; height: 14px;
+        viewbox-width: 24; viewbox-height: 14;
+        stroke: root.ink; stroke-width: 1.5px;
+        MoveTo { x: 0; y: 1; } LineTo { x: 24; y: 13; }
+        MoveTo { x: 24; y: 1; } LineTo { x: 0; y: 13; }
+    }
+    if MixerParts.xf-curve == "cut": Path {
+        x: 8px; y: 5px; width: 24px; height: 14px;
+        viewbox-width: 24; viewbox-height: 14;
+        stroke: root.ink; stroke-width: 1.5px;
+        MoveTo { x: 0; y: 1; } LineTo { x: 22; y: 1; } LineTo { x: 24; y: 13; }
+        MoveTo { x: 24; y: 1; } LineTo { x: 2; y: 1; } LineTo { x: 0; y: 13; }
+    }
+    ta := TipArea {
+        tooltip: root.tip;
+        mouse-cursor: pointer;
+        clicked => { MixerParts.cycle-xf-curve(); }
+    }
 }
 
 // One knob group of a channel strip: the knob centred on the channel's
@@ -2201,7 +2314,7 @@ component ChannelStrip inherits Rectangle {
             id: "mixer.ch\{root.ch.channel}.eq-high"; channel: root.ch.channel;
             label: root.ch.parts ? "VOCAL" : "HI"; value: root.ch.high; readout: root.ch.high-text; tone: Theme.w486;
             compact: root.compact; roomy: root.roomy; knob: root.band;
-            has-kill: !root.ch.parts; kill: root.ch.kill-high; kill-tip: @tr("Kill HI (tap)");
+            has-kill: true; kill: root.ch.kill-high; kill-tip: root.ch.parts ? @tr("Mute the vocals (tap)") : @tr("Kill HI (tap)");
             changed(v) => { root.eq(2, v); }
             toggle-kill => { MixerParts.kill(root.ch.channel, 2); }
         }
@@ -2209,7 +2322,7 @@ component ChannelStrip inherits Rectangle {
             id: "mixer.ch\{root.ch.channel}.eq-mid"; channel: root.ch.channel;
             label: root.ch.parts ? "INST" : "MID"; value: root.ch.mid; readout: root.ch.mid-text; tone: Theme.w546;
             compact: root.compact; roomy: root.roomy; knob: root.band;
-            has-kill: !root.ch.parts; kill: root.ch.kill-mid; kill-tip: @tr("Kill MID (tap)");
+            has-kill: true; kill: root.ch.kill-mid; kill-tip: root.ch.parts ? @tr("Mute the instruments (tap)") : @tr("Kill MID (tap)");
             changed(v) => { root.eq(1, v); }
             toggle-kill => { MixerParts.kill(root.ch.channel, 1); }
         }
@@ -2217,7 +2330,7 @@ component ChannelStrip inherits Rectangle {
             id: "mixer.ch\{root.ch.channel}.eq-low"; channel: root.ch.channel;
             label: root.ch.parts ? "DRUMS" : "LOW"; value: root.ch.low; readout: root.ch.low-text; tone: Theme.w656;
             compact: root.compact; roomy: root.roomy; knob: root.band;
-            has-kill: !root.ch.parts; kill: root.ch.kill-low; kill-tip: @tr("Kill LOW (tap)");
+            has-kill: true; kill: root.ch.kill-low; kill-tip: root.ch.parts ? @tr("Mute the drums (tap)") : @tr("Kill LOW (tap)");
             changed(v) => { root.eq(0, v); }
             toggle-kill => { MixerParts.kill(root.ch.channel, 0); }
         }
@@ -2458,6 +2571,16 @@ component GlobalBar inherits Rectangle {
             Caps { text: @tr("PHONES"); vertical-alignment: center; }
             VerticalLayout { alignment: center; Knob { accessible-role: slider; accessible-id: "global.phones.mix"; accessible-value: root.headphone-mix; label: "MIX"; size: 20px; minimum: 0; maximum: 1; default-value: 0.5; value: root.headphone-mix; changed(v) => { root.set-headphone-mix(v); } } }
             VerticalLayout { alignment: center; Knob { accessible-role: slider; accessible-id: "global.phones.level"; accessible-value: root.headphone-level; label: @tr("LEVEL"); size: 20px; guide: "global.phones.level"; minimum: 0; maximum: 1; default-value: 0.8; value: root.headphone-level; changed(v) => { root.set-headphone-level(v); } } }
+            VerticalLayout {
+                alignment: center;
+                Toggle {
+                    accessible-role: checkbox; accessible-checkable: true; accessible-checked: MixerParts.split-cue;
+                    accessible-id: "global.phones.split";
+                    size: 24px; label: "SPLIT"; on: MixerParts.split-cue; tone: Theme.setup-on;
+                    tooltip: @tr("Split cue: the cue in the left ear, the master in the right");
+                    clicked => { MixerParts.toggle-split-cue(); }
+                }
+            }
         }
         HorizontalLayout {
             width: max(220px, root.centre-width);
@@ -2482,9 +2605,13 @@ component GlobalBar inherits Rectangle {
         }
         HorizontalLayout {
             width: (root.width - 28px - max(220px, root.centre-width)) / 2;
-            alignment: end;
             spacing: Theme.s3;
             padding-left: Theme.s4;
+            // The crossfader curve next to the crossfader; the rest of the
+            // zone stays at its right end.
+            // Narrow windows leave it to Preferences (the record time keeps its room).
+            if root.width >= 1000px: VerticalLayout { alignment: center; XfCurveKey { } }
+            Rectangle { horizontal-stretch: 1; }
             if root.show-rec: RecStrip { tall: root.touch-size; compact: root.width < 1000px; }
             // Recording, one click away.
             if root.show-rec: Rectangle {

@@ -20,6 +20,41 @@ impl CueKind {
     }
 }
 
+/// How a hot cue pad plays its cue.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CueTrigger {
+    /// The usual pad: jumps while playing; while paused it plays from the
+    /// cue as long as it is held and returns to it on release.
+    #[default]
+    Cue,
+    /// Jumps and plays on, also from a paused deck.
+    Latch,
+    /// Plays from the cue while held; on release the deck stops and
+    /// returns to the cue, also while playing.
+    Gate,
+    /// Plays from the cue while held; on release the track continues
+    /// where it would have been without the press (slip).
+    Momentary,
+}
+
+impl CueTrigger {
+    pub const ALL: [CueTrigger; 4] = [Self::Cue, Self::Latch, Self::Gate, Self::Momentary];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Cue => "cue",
+            Self::Latch => "latch",
+            Self::Gate => "gate",
+            Self::Momentary => "momentary",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|t| t.as_str() == s)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Cue {
     pub kind: CueKind,
@@ -34,6 +69,13 @@ pub struct Cue {
     /// reaches it (loops only).
     #[serde(default)]
     pub active: bool,
+    /// How the hot cue pad plays it (hot cues only).
+    #[serde(default, skip_serializing_if = "is_default_trigger")]
+    pub trigger: CueTrigger,
+}
+
+fn is_default_trigger(t: &CueTrigger) -> bool {
+    *t == CueTrigger::Cue
 }
 
 impl Cue {
@@ -46,6 +88,7 @@ impl Cue {
             color: None,
             source: DataSource::Manual,
             active: false,
+            trigger: CueTrigger::Cue,
         }
     }
 

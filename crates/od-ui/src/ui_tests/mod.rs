@@ -28,6 +28,7 @@ mod browser;
 mod browser_craft;
 mod design;
 mod dj_craft;
+mod perform_craft;
 mod editing;
 mod features;
 mod flows;

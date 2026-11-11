@@ -314,6 +314,8 @@ pub(crate) fn handle_action(app: &App, action: ControlAction) {
         }
         ControlAction::EqSwap(band) => crate::mixer::swap(app, band.index()),
         ControlAction::FxPanic => fx::panic(app),
+        ControlAction::SplitCue => crate::mixer::toggle_split_cue(app),
+        ControlAction::CrossfaderCurve(c) => crate::mixer::set_crossfader_curve(app, c.as_deref()),
         ControlAction::MasterCue => {
             let on = engine::snapshot(app).map(|s| s.master_cue).unwrap_or(false);
             engine::send(app, Command::Mixer(MixerCommand::SetMasterCue(!on)));
@@ -525,6 +527,18 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
         }),
         DeckAction::Slip => Some(DeckCommand::SetSlip(!s.slip)),
         DeckAction::Reverse => Some(DeckCommand::SetReverse(!s.reverse)),
+        DeckAction::CutIn(on) => {
+            crate::mixer::cut_in(app, d, on);
+            None
+        }
+        DeckAction::PhraseJump { forward } => {
+            crate::deck_craft::phrase_jump(app, d, forward);
+            None
+        }
+        DeckAction::DropMark => {
+            crate::deck_craft::toggle_drop(app, d);
+            None
+        }
         DeckAction::Censor(on) => Some(DeckCommand::Censor(on)),
         DeckAction::VinylMode => Some(DeckCommand::SetJogMode(if s.jog_mode == JogMode::Vinyl {
             JogMode::Bend

@@ -70,6 +70,8 @@ pub(crate) struct Channel {
     pub fader_curve: FaderCurve,
     pub xf: XfAssign,
     pub cue: bool,
+    /// Cut-in held (crossfader bypassed).
+    pub cut_in: bool,
     /// Pre-fader gain (trim + auto gain).
     pub pre_gain: Smoothed,
     /// Post-fader gain to the master bus (fader × crossfader).
@@ -93,6 +95,7 @@ impl Channel {
             fader_curve: FaderCurve::default(),
             xf: XfAssign::Thru,
             cue: false,
+            cut_in: false,
             pre_gain: Smoothed::new(1.0, ramp),
             post_gain: Smoothed::new(1.0, ramp),
             meter: Meter::new(sample_rate),
@@ -119,6 +122,7 @@ impl Channel {
             ChannelCommand::SetFaderCurve(c) => self.fader_curve = c,
             ChannelCommand::SetCrossfaderAssign(x) => self.xf = x,
             ChannelCommand::SetCue(on) => self.cue = on,
+            ChannelCommand::SetCutIn(on) => self.cut_in = on,
         }
     }
 
@@ -131,6 +135,7 @@ impl Channel {
             db_to_gain(db)
         });
         let x = match self.xf {
+            _ if self.cut_in => 1.0,
             XfAssign::A => xf.0,
             XfAssign::B => xf.1,
             XfAssign::Thru => 1.0,
@@ -179,6 +184,7 @@ impl Channel {
             channel_fx_amount: self.color.amount(),
             xf_assign: self.xf,
             cue: self.cue,
+            cut_in: self.cut_in,
             hold_fx: Default::default(),
             gain_to_master: self.gain_to_master,
         }
@@ -231,6 +237,27 @@ mod tests {
         assert_eq!(swap_beat(8.9, Some(1), SwapAt::Bar), Some(12.0));
         // Without a grid position the bar counts from the current beat.
         assert_eq!(swap_beat(3.5, None, SwapAt::Bar), Some(7.0));
+    }
+
+    #[test]
+    fn cut_in_opens_the_crossfader_for_its_channel() {
+        let mut c = Channel::new(48_000, 1);
+        c.apply(ChannelCommand::SetCrossfaderAssign(XfAssign::A));
+        // Crossfader full on B: side A is closed.
+        c.update_gains(0.0, (0.0, 1.0));
+        assert_eq!(c.post_gain.target(), 0.0);
+        c.apply(ChannelCommand::SetCutIn(true));
+        c.update_gains(0.0, (0.0, 1.0));
+        assert_eq!(c.post_gain.target(), 1.0);
+        assert!(c.state().cut_in);
+        // The channel fader still counts.
+        c.apply(ChannelCommand::SetFader(0.0));
+        c.update_gains(0.0, (0.0, 1.0));
+        assert_eq!(c.post_gain.target(), 0.0);
+        c.apply(ChannelCommand::SetCutIn(false));
+        c.apply(ChannelCommand::SetFader(1.0));
+        c.update_gains(0.0, (0.0, 1.0));
+        assert_eq!(c.post_gain.target(), 0.0);
     }
 
     #[test]

@@ -305,7 +305,7 @@ component ViewMenu inherits Rectangle {
     property <length> pop-w: 300px;
     property <bool> want-menu: DeckLayout.show-menu;
     changed want-menu => { if (self.want-menu) { pop.show(); } }
-    property <length> pop-h: 5 * 36px + 2px + 208px + DeckLayout.saved.length * 30px;
+    property <length> pop-h: 5 * 36px + 2px + 238px + DeckLayout.saved.length * 30px;
     pop := PopupWindow {
         x: PopupPlace.x(root.absolute-position.x, 0, root.pop-w);
         y: PopupPlace.y(root.absolute-position.y, root.height - 6px, -root.pop-h, root.pop-h);
@@ -366,7 +366,8 @@ component ViewMenu inherits Rectangle {
                 }
                 for group-row in [
                     [{ id: "pads", label: @tr("PADS"), on: DeckLayout.pads }, { id: "loops", label: @tr("LOOPS"), on: DeckLayout.loops }, { id: "stems", label: @tr("STEMS"), on: DeckLayout.stems }, { id: "fx", label: "FX", on: DeckLayout.fx }],
-                    [{ id: "mixer", label: @tr("MIXER"), on: root.mixer-on }, { id: "phase", label: @tr("PHASE"), on: DeckLayout.phase }, { id: "setup", label: @tr("SETUP KEYS"), on: DeckLayout.setup }],
+                    [{ id: "mixer", label: @tr("MIXER"), on: root.mixer-on }, { id: "phase", label: @tr("PHASE"), on: DeckLayout.phase }],
+                    [{ id: "setup", label: @tr("SETUP KEYS"), on: DeckLayout.setup }, { id: "platter", label: @tr("PLATTER"), on: DeckLayout.platter }],
                 ]: HorizontalLayout {
                     padding-left: Theme.s2; padding-right: Theme.s2; padding-bottom: Theme.key-gap;
                     spacing: Theme.key-gap;

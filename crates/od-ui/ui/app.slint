@@ -60,8 +60,12 @@ export { MiniView }
 export { CueEdit, PhraseEdit, TrackEdit, LightCueLane, LightCueMark }
 import { FxSlots } from "fx.slint";
 export { FxSlots }
-import { MixerParts, PerformLayout, DeckLayout } from "perform.slint";
-export { MixerParts, PerformLayout, DeckLayout }
+import { MixerParts, PerformLayout, DeckLayout, DeckCraft } from "perform.slint";
+export { MixerParts, PerformLayout, DeckLayout, DeckCraft }
+import { CueEditPerform, CueEditPanel } from "cue_edit.slint";
+export { CueEditPerform }
+import { SetPlan, PlanLine } from "set_plan.slint";
+export { SetPlan }
 export { Lighting, LightFixtureView, LightGroupView, LightingWindow, LightPlaceRow, LightTuneView, LightCueRow, LightFileRow }
 import { PreferencesWindow, KeyRow } from "preferences.slint";
 import { VocalMark, TreeRow, TrackRow, CueMark, HotCueSlot, DeviceRow, VolumeRow, FlowPoint, FlowWarning, DeckView, ChannelView, PhraseMark, ExplorerRow, LaneMotion, MenuTarget } from "structs.slint";
@@ -120,10 +124,12 @@ export component AppWindow inherits Window {
     default-font-size: Theme.body;
 
     // The list header's keys shorten when a panel takes the room (small window).
-    property <bool> list-tight: root.width < 1100px || (root.width < 1500px && (root.info-open || root.user-tag-open || root.similar-open || root.queue-open));
+    // [31] The hot cue panel of a deck in CUE EDIT (Perform).
+    property <bool> cue-edit-open: CueEditPerform.deck > 0 && root.mode == "perform";
+    property <bool> list-tight: root.width < 1100px || (root.width < 1500px && (root.info-open || root.user-tag-open || root.similar-open || root.queue-open || root.cue-edit-open));
     // The list header cannot hold the search as well: it gets a line of its own.
     // Too narrow for the lists, the list and a panel beside it.
-    property <bool> lists-yield: !root.kiosk && root.width < 1100px && (root.info-open || root.user-tag-open || root.similar-open || root.queue-open) && root.section == "library";
+    property <bool> lists-yield: !root.kiosk && root.width < 1100px && (root.info-open || root.user-tag-open || root.similar-open || root.queue-open || root.cue-edit-open) && root.section == "library";
     property <bool> search-row: !root.kiosk && root.width < 1180px;
     in-out property <string> mode: "prepare";
     in-out property <string> section: "library";
@@ -1251,6 +1257,8 @@ export component AppWindow inherits Window {
                             tone: Theme.attention;
                             accepted(t) => { root.set-transition-note(t); }
                         }
+                        // [65] The planned set in Perform, over the list.
+                        if root.section == "library" && root.mode == "perform" && SetPlan.shown: PlanLine { }
                         // The list takes the keyboard after a click in it: a letter or a
                         // digit starts a search, the other keys work as everywhere.
                         list-keys := FocusScope {
@@ -1460,6 +1468,7 @@ export component AppWindow inherits Window {
                         add(t) => { root.user-tag-add(t); }
                     }
                     if root.queue-open && root.section == "library": QueuePanel { }
+                    if root.cue-edit-open && root.section == "library": CueEditPanel { narrow: root.width < 1600px; }
                     if root.similar-open && root.section == "library": SuggestionPanel {
                         rows: root.suggestions;
                         reference: root.suggestion-reference;

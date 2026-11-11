@@ -301,6 +301,7 @@ pub struct EngineProcessor {
     booth_level: f32,
     booth_gain: Smoothed,
     master_cue: bool,
+    split_cue: bool,
     frames_total: u64,
     state: EngineState,
 }
@@ -383,6 +384,7 @@ impl EngineProcessor {
             booth_level: 1.0,
             booth_gain: Smoothed::new(1.0, ramp),
             master_cue: false,
+            split_cue: false,
             frames_total: 0,
             state: EngineState {
                 sample_rate: sr,
@@ -519,6 +521,7 @@ impl EngineProcessor {
                 MixerCommand::SetTestTone(on) => self.test_tone = on,
                 MixerCommand::SetBoothLevel(l) => self.booth_level = l.clamp(0.0, 1.5),
                 MixerCommand::SetMasterCue(on) => self.master_cue = on,
+                MixerCommand::SetSplitCue(on) => self.split_cue = on,
                 MixerCommand::SetLimiter(on) => self.limiter_on = on,
                 MixerCommand::ResetClipIndicators => {
                     self.master_meter.reset_clip();
@@ -927,6 +930,7 @@ impl EngineProcessor {
         let ang = self.hp_mix * std::f32::consts::FRAC_PI_2;
         let (cg, mg) = (ang.cos(), ang.sin());
         self.hp_gain.set(level_gain(self.hp_level));
+        let split = self.split_cue;
         for (c, m) in cue_buf
             .as_chunks_mut::<2>()
             .0
@@ -934,8 +938,16 @@ impl EngineProcessor {
             .zip(master_buf.chunks_exact(2))
         {
             let g = self.hp_gain.next();
-            c[0] = soft_clip((c[0] * cg + m[0] * mg) * g);
-            c[1] = soft_clip((c[1] * cg + m[1] * mg) * g);
+            if split {
+                // Cue in mono on the left, the master in mono on the right.
+                let cue = (c[0] + c[1]) * 0.5;
+                let main = (m[0] + m[1]) * 0.5;
+                c[0] = soft_clip(cue * g);
+                c[1] = soft_clip(main * g);
+            } else {
+                c[0] = soft_clip((c[0] * cg + m[0] * mg) * g);
+                c[1] = soft_clip((c[1] * cg + m[1] * mg) * g);
+            }
         }
         self.hp_meter.process(cue_buf);
 
@@ -981,6 +993,7 @@ impl EngineProcessor {
         s.sampler_cue = self.sampler_cue;
         s.booth_level = self.booth_level;
         s.master_cue = self.master_cue;
+        s.split_cue = self.split_cue;
         s.quantize = self.quantize;
         s.master_deck = self.master;
         s.master_bpm = self.master_bpm;

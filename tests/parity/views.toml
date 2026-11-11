@@ -8293,3 +8293,157 @@ elements = [
   "devices.emergency-eject",
   "devices.emergency-close",
 ]
+
+# ---- Roadmap 0.9.0 block G ----
+[[view]]
+id = "perform.deck-craft"
+title = "Perform: REV and CUT IN on the deck, SPLIT on the headphones, the crossfader curve key"
+mode = "perform"
+source = "Roadmap [30]"
+sizes = ["desktop"]
+bands = ["deck-row", "global"]
+features = ["deck-reverse", "deck-cut-in", "mixer-split-cue", "mixer-crossfader-curve-key"]
+note = "Where six keys fit the platter's height (1440 × 900 and larger) its key block holds REV, the setup keys and CUT IN; shorter decks keep the four setup keys. SPLIT stands after the PHONES knobs, the curve key right of the B assign keys (from 1000 px)"
+
+[[view.region]]
+id = "deck1.platter-keys"
+band = "deck-row"
+place = "deck 1, inner side of the platter"
+order = "column"
+elements = [
+  "deck1.reverse",
+  "deck1.slip",
+  "deck1.quantize",
+  "deck1.keylock",
+  "deck1.tempo-mode",
+  "deck1.cut-in",
+]
+
+[[view.region]]
+id = "global.phones-split"
+band = "global"
+place = "left of the crossfader"
+order = "row"
+elements = [
+  "global.phones.mix",
+  "global.phones.level",
+  "global.phones.split",
+]
+
+[[view.region]]
+id = "global.xfader-curve"
+band = "global"
+place = "the crossfader and, right of the B keys, its curve"
+order = "row"
+elements = [
+  "global.xfader",
+  "global.xf-curve",
+]
+
+[[view]]
+id = "panel.cue-edit"
+title = "Hot cue panel of CUE EDIT beside the list (Perform)"
+mode = "perform"
+source = "Roadmap [31] [64]"
+sizes = ["desktop", "laptop"]
+bands = ["deck-row", "browser"]
+features = ["cues-edit-perform", "cues-trigger-modes", "deck-drop-marker", "pad-mode-cue-edit"]
+note = "Deck 1 in CUE EDIT with a track: the pads pick the cue; beside the list the title with DONE, the eight pads, name with TO PLAYHEAD and DELETE, eight colours, the pad behaviour (CUE, LATCH, GATE, MOMENTARY) and the drop with MARK DROP"
+
+[[view.region]]
+id = "cue-edit.head"
+band = "browser"
+place = "panel, top"
+order = "row"
+elements = [
+  "cue-edit.title",
+  "cue-edit.done",
+]
+
+[[view.region]]
+id = "cue-edit.slots"
+band = "browser"
+place = "panel, second row"
+order = "row"
+elements = [
+  "cue-edit.slot.A",
+  "cue-edit.slot.B",
+  "cue-edit.slot.C",
+  "cue-edit.slot.D",
+  "cue-edit.slot.E",
+  "cue-edit.slot.F",
+  "cue-edit.slot.G",
+  "cue-edit.slot.H",
+]
+
+[[view.region]]
+id = "cue-edit.name-row"
+band = "browser"
+place = "panel, third row"
+order = "row"
+elements = [
+  "cue-edit.name",
+  "cue-edit.move-here",
+  "cue-edit.delete",
+]
+
+[[view.region]]
+id = "cue-edit.colours"
+band = "browser"
+place = "panel, fourth row"
+order = "row"
+elements = [
+  "cue-edit.color.1",
+  "cue-edit.color.2",
+  "cue-edit.color.3",
+  "cue-edit.color.4",
+  "cue-edit.color.5",
+  "cue-edit.color.6",
+  "cue-edit.color.7",
+  "cue-edit.color.8",
+]
+
+[[view.region]]
+id = "cue-edit.triggers"
+band = "browser"
+place = "panel, fifth row"
+order = "row"
+elements = [
+  "cue-edit.trigger.cue",
+  "cue-edit.trigger.latch",
+  "cue-edit.trigger.gate",
+  "cue-edit.trigger.momentary",
+]
+
+[[view.region]]
+id = "cue-edit.drop-row"
+band = "browser"
+place = "panel, last row"
+order = "row"
+elements = [
+  "cue-edit.drop",
+  "cue-edit.drop-mark",
+]
+
+[[view]]
+id = "perform.plan"
+title = "The set plan over the list in Perform"
+mode = "perform"
+source = "Roadmap [65]"
+sizes = ["desktop", "laptop"]
+bands = ["browser"]
+features = ["perform-set-plan"]
+note = "A set with a planned start opened in the browser, a track of it on air: PLAN, the set, ON AIR n / m, NEXT with the track, where the set stands, ×; the transition note in a second row"
+
+[[view.region]]
+id = "plan.line"
+band = "browser"
+place = "over the list"
+order = "row"
+elements = [
+  "plan.name",
+  "plan.now",
+  "plan.next",
+  "plan.standing",
+  "plan.close",
+]

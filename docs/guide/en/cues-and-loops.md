@@ -2,7 +2,7 @@
 title: Hot cues, memory cues and loops
 description: Mark the places you play. Eight hot cues per bank, memory cues, saved and active loops, names and colours, and cues set like on your other tracks.
 keywords: [hot cue, hotcue, hot cues, memory cue, memory, cue point, cue points, loop, loops, saved loop, active loop, set cue, jump, marker, banks, name, colour, auto cue, loop roll, roll, capture, slip]
-features: [cues-hot-cues-prepare, cues-hot-cues-perform, cues-hot-cue-banks, cues-memory-add, cues-memory-edit, cues-memory-call, cues-memory-controller, cues-saved-loops, cues-auto-personalised, cues-active-loop, cues-colours, cues-labels, cues-auto-cue, deck-manual-loop, deck-auto-loop, deck-loop-roll, deck-loop-capture]
+features: [cues-hot-cues-prepare, cues-hot-cues-perform, cues-hot-cue-banks, cues-edit-perform, cues-trigger-modes, cues-memory-add, cues-memory-edit, cues-memory-call, cues-memory-controller, cues-saved-loops, cues-auto-personalised, cues-active-loop, cues-colours, cues-labels, cues-auto-cue, deck-manual-loop, deck-auto-loop, deck-loop-roll, deck-loop-capture]
 ---
 
 Open a track in the player at the top of Prepare to set cues. Everything you set here is saved with the track and reaches your [USB sticks](usb-sticks.md) by itself.
@@ -20,6 +20,22 @@ Eight pads, **A** to **H**, jump to a place in the track at once.
 In Perform, pad presses work the same way and are saved at once: on the deck, or on a controller, hot cue set and delete are one undo step each. Hold a set hot cue while the deck is paused to preview it; a right click deletes.
 
 With more than eight places, switch the bank at the deck: **A–H**, **I–P**, **Q–X** and **Y–AF** with **‹ ›** in **HOT CUE** pad mode, or by keyboard.
+
+## Edit hot cues in Perform
+
+![CUE EDIT: deck 1's pads pick a hot cue, the panel beside the list renames, recolours, moves it and sets how its pad plays](../img/perform-cue-edit.png)
+
+Choose **CUE EDIT** as a deck's pad mode. The pads now pick a hot cue instead of playing it (the one you edit is lit), and a panel beside the list edits it, without leaving Perform:
+
+- **NAME**: type and press Return. The name shows on the pad.
+- **COLOUR**: eight colours; the chosen one is filled.
+- The row **CUE**, **LATCH**, **GATE**, **MOMENTARY** says how the pad plays this cue. **CUE** is the usual pad: it jumps while the deck plays, and while it is paused it plays only as long as you hold it. **LATCH** jumps and plays on, also from a paused deck. **GATE** plays from the cue only while you hold the pad, also while the deck plays, then stops on the cue. **MOMENTARY** plays from the cue while you hold it and then lets the track carry on where it would have been, like slip. A pad that does not play the usual way names its behaviour in its corner.
+- **TO PLAYHEAD** moves the cue to the playhead (on the beat with quantize), or stores one there when the pad was empty; **DELETE** removes it.
+- **DROP** marks the drop of the track, see [Phrases](phrases.md#phrase-jumps-and-the-drop).
+
+Every edit is one undo step and reaches sticks with the next sync. **DONE** (or another pad mode) goes back to the pads. On a controller, `deck.pad_mode` with `mode = "cue_edit"` switches to it; the controller's pads then pick the cue. The behaviours are tested in the engine; they have not been tried on a hardware controller.
+
+With the **PLATTER** hidden (**View › Deck Layout › SHOW**), the pads take its room and show the cue names in full.
 
 ## Memory cues
 

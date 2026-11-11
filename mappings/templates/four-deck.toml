@@ -509,3 +509,41 @@ action = "headphone_level"
 expect = "fader"
 name = "Headphone level"
 screen = "global.phones.level"
+
+[[step]]
+action = "mixer.eq_kill"
+deck = 1
+args = { band = "low" }
+expect = "button"
+name = "Kill LOW (channel 1)"
+screen = "mixer.ch1.eq-low.kill"
+
+[[step]]
+action = "mixer.eq_kill"
+deck = 2
+args = { band = "low" }
+expect = "button"
+name = "Kill LOW (channel 2)"
+screen = "mixer.ch2.eq-low.kill"
+
+[[step]]
+action = "mixer.eq_kill"
+deck = 3
+args = { band = "low" }
+expect = "button"
+name = "Kill LOW (channel 3)"
+screen = "mixer.ch3.eq-low.kill"
+
+[[step]]
+action = "mixer.eq_kill"
+deck = 4
+args = { band = "low" }
+expect = "button"
+name = "Kill LOW (channel 4)"
+screen = "mixer.ch4.eq-low.kill"
+
+[[step]]
+action = "split_cue"
+expect = "button"
+name = "Split cue"
+screen = "global.phones.split"

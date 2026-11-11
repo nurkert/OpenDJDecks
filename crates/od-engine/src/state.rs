@@ -123,6 +123,8 @@ pub struct ChannelState {
     pub channel_fx_amount: f32,
     pub xf_assign: XfAssign,
     pub cue: bool,
+    /// Cut-in held: the crossfader is open for this channel.
+    pub cut_in: bool,
     /// Hold FX of this channel.
     pub hold_fx: HoldFxState,
     /// Linear gain from this channel to the master bus (fader × crossfader ×
@@ -238,6 +240,8 @@ pub struct EngineState {
     pub sampler_cue: bool,
     pub booth_level: f32,
     pub master_cue: bool,
+    /// Split cue: cue left, master right on the headphones.
+    pub split_cue: bool,
     pub quantize: bool,
     /// Current sync master deck.
     pub master_deck: Option<usize>,
@@ -281,6 +285,7 @@ impl Default for EngineState {
             sampler_cue: false,
             booth_level: 1.0,
             master_cue: false,
+            split_cue: false,
             quantize: true,
             master_deck: None,
             master_bpm: 120.0,

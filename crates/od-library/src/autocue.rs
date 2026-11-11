@@ -374,6 +374,7 @@ pub fn apply(
             color: r.color,
             source: DataSource::Analysis,
             active: false,
+            trigger: Default::default(),
         });
     }
     out

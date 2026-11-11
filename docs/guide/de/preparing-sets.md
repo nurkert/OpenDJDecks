@@ -2,7 +2,7 @@
 title: Ein Set vorbereiten
 description: Ein Set ist eine Playlist mit Plan. Sieh den Verlauf von Tempo, Tonart und Energie, schreib Übergangsnotizen, halte Ersatz-Tracks bereit und plane die Startzeit.
 keywords: [set, sets, setliste, planen, planung, verlauf, set verlauf, übergang, übergänge, notizen, ersatz, reihenfolge, energie, tonart, tempo, harmonisch]
-features: [prepare-preview-shift, browser-sets-flow, browser-set-flow-chart, browser-set-backups, shell-prepare-layouts]
+features: [prepare-preview-shift, browser-sets-flow, browser-set-flow-chart, browser-set-backups, perform-set-plan, shell-prepare-layouts]
 ---
 
 Ein Set ist eine geordnete Liste mit Extras für den Auftritt: Es zeigt, wie sich Tempo, Tonart und Energie von Track zu Track entwickeln, und du kannst dir für jeden Übergang Notizen hinterlassen.
@@ -37,7 +37,7 @@ Klicke eine Warnung oder eine Marke an, um den Übergang auszuwählen: Beide Tra
 ## Notizen und Ersatz
 
 - Tippe in **ÜBERGANGSNOTIZ** und drücke Return, um eine Notiz für diesen Übergang zu behalten.
-- **GEPLANTER START**, zum Beispiel `23:30`, fügt dem Verlauf echte Uhrzeiten hinzu.
+- **GEPLANTER START**, zum Beispiel `23:30`, fügt dem Verlauf echte Uhrzeiten hinzu. In Perform rechnet die Planzeile davon aus, ob du voraus oder zurück bist ([Perform](perform-basics.md#der-set-plan)).
 - **ERSATZ AUS TAG-LISTE** macht die Tracks der Tag-Liste zu Ersatz-Tracks für die gewählte Position, falls das Publikum woanders hinwill. Der Knopf daneben entfernt sie wieder.
 
 ## Die richtige Reihenfolge finden

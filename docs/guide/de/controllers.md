@@ -21,9 +21,9 @@ Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Model
 |---|---|---|---|---|
 | kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | nicht bestätigt: 0 bestätigt, 125 teilweise, 135 ungetestet |
 | kompatibel mit DDJ-FLX4 | 2 | eingebaut | MIDI-Portname `DDJ-FLX4` | nicht bestätigt: 0 bestätigt, 126 teilweise, 47 ungetestet |
-| Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (39 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
-| Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (34 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
-| Jeder Controller mit vier Decks | 4 | geführte Einrichtung, Vorlage `four-deck` (73 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
+| Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (46 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
+| Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (44 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
+| Jeder Controller mit vier Decks | 4 | geführte Einrichtung, Vorlage `four-deck` (78 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
 <!-- controller-list:end -->
 
 Jeder andere Controller lässt sich mit der geführten Einrichtung unten einrichten, ausgehend von einer von drei allgemeinen Vorlagen. Weitere Modell-Mappings, auch für Einsteiger- und Battle-Controller, kommen von Besitzern, die ihr eigenes Gerät mit der geführten Einrichtung aufnehmen und die Datei weitergeben. Keines davon ist schon für andere Geräte bestätigt. OpenDJDecks leitet keine Mappings aus Herstellerhandbüchern, MIDI-Tabellen, Herstellersoftware oder Mapping-Dateien anderer Projekte ab.
