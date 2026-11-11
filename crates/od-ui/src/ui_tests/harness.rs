@@ -290,6 +290,11 @@ impl Ui {
         cfg.kiosk = kiosk;
         cfg.window = Some(size);
         let app = App::new(cfg).expect("app starts headless");
+        // Lighting outputs never reach the network or a serial port from a
+        // test: a test that wants to see the frames sets its own link.
+        app.lighting
+            .borrow()
+            .use_opener(od_lighting::TestLink::default().opener());
         app.ui.show().unwrap();
         let ui = Self {
             app,

@@ -387,6 +387,8 @@ pub(crate) fn phrase_marks(
                 end: (at(p.end_beat) / duration).min(1.0) as f32,
                 label: render::phrase_label(p.kind).into(),
                 tone: slint::Color::from_rgb_u8(r, g, b),
+                unsure: p.is_unsure(),
+                sure: crate::key_mix::unsure_text(p.confidence).into(),
             }
         })
         .collect()
@@ -474,6 +476,10 @@ pub(crate) fn refresh_detail(app: &App) {
     ui.set_track_position(format::cue_time(st.player.cursor).into());
     ui.global::<crate::PhraseEdit>().set_current(
         crate::phrase_edit::current_label(&analysis.phrases, &analysis.beatgrid, st.player.cursor)
+            .into(),
+    );
+    ui.global::<crate::PhraseEdit>().set_current_sure(
+        crate::phrase_edit::current_unsure(&analysis.phrases, &analysis.beatgrid, st.player.cursor)
             .into(),
     );
     let phrases = if st.settings.view.phrases {

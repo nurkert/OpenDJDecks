@@ -48,21 +48,9 @@ fn build_fixture() -> (AnlzSet, Beatgrid, Vec<Cue>, Vec<Phrase>) {
     let grid = Beatgrid::constant(128.0, 0.12, 1, 60.0);
     let cues = fixture_cues();
     let phrases = vec![
-        Phrase {
-            start_beat: 0,
-            end_beat: 32,
-            kind: PhraseKind::Intro,
-        },
-        Phrase {
-            start_beat: 32,
-            end_beat: 64,
-            kind: PhraseKind::Chorus,
-        },
-        Phrase {
-            start_beat: 64,
-            end_beat: 96,
-            kind: PhraseKind::Outro,
-        },
+        Phrase::new(0, 32, PhraseKind::Intro),
+        Phrase::new(32, 64, PhraseKind::Chorus),
+        Phrase::new(64, 96, PhraseKind::Outro),
     ];
     let wf = fixture_waveform(60.0);
     let vbr: Vec<u32> = (0..401).map(|i| i * 1000).collect();

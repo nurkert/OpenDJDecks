@@ -153,11 +153,7 @@ mod tests {
     use super::*;
 
     fn p(start: u32, end: u32, kind: PhraseKind) -> Phrase {
-        Phrase {
-            start_beat: start,
-            end_beat: end,
-            kind,
-        }
+        Phrase::new(start, end, kind)
     }
 
     /// Intro 16 bars, up 8, chorus 16, down 8, chorus 16, outro 8.

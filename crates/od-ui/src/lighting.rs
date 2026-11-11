@@ -1950,16 +1950,8 @@ mod tests {
     fn track() -> TrackLight {
         TrackLight {
             phrases: vec![
-                Phrase {
-                    start_beat: 0,
-                    end_beat: 64,
-                    kind: PhraseKind::Intro,
-                },
-                Phrase {
-                    start_beat: 64,
-                    end_beat: 128,
-                    kind: PhraseKind::Chorus,
-                },
+                Phrase::new(0, 64, PhraseKind::Intro),
+                Phrase::new(64, 128, PhraseKind::Chorus),
             ],
             mood: Some(PhraseMood::High),
             key: None,

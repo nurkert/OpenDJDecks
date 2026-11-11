@@ -405,10 +405,20 @@ fn drag_tree_node_into_folder() {
     let folder = fx.lib_mut_create_folder();
     let ui = Ui::start(fx, (1440, 900), false);
     let pl = ui.fx.playlist;
-    let to = Rect::of(&ui.get(&format!("browser.tree.node{}", folder.0))).centre();
-    ui.drag_el(&ui.get(&format!("browser.tree.node{}", pl.0)), to);
+    let moved = |u: &Ui| u.fx.lib().node(pl).unwrap().parent == Some(folder);
+    // The tree can still be refreshing from the start-up analysis on a
+    // loaded machine: take the rects afresh and drag again if the first
+    // drag landed before the rows settled.
+    for _ in 0..3 {
+        ui.pump(200);
+        let to = Rect::of(&ui.get(&format!("browser.tree.node{}", folder.0))).centre();
+        ui.drag_el(&ui.get(&format!("browser.tree.node{}", pl.0)), to);
+        if ui.wait_until(5.0, moved) {
+            break;
+        }
+    }
     assert!(
-        ui.wait_until(5.0, |u| u.fx.lib().node(pl).unwrap().parent == Some(folder)),
+        ui.wait_until(5.0, moved),
         "playlist moved into the folder"
     );
 }

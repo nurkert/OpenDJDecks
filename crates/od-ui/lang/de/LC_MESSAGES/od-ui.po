@@ -3919,6 +3919,10 @@ msgid "Click: phrase type · drag an edge to move it (snaps to bars) · Shift+X 
 msgstr "Klick: Phrasentyp · Kante ziehen zum Verschieben (rastet auf Takte) · Shift+X am Cursor teilen · Shift+J verbinden"
 
 msgctxt "PhraseStrip"
+msgid "The analysis is unsure of this phrase ({}): click to confirm its type or pick another · drag an edge to move it"
+msgstr "Die Analyse ist sich bei dieser Phrase unsicher ({}): klicken, um ihren Typ zu bestätigen oder einen anderen zu wählen · Kante ziehen zum Verschieben"
+
+msgctxt "PhraseStrip"
 msgid "Drag to move the boundary (snaps to bars)"
 msgstr "Ziehen verschiebt die Grenze (rastet auf Takte)"
 
@@ -3937,6 +3941,10 @@ msgstr "Die Phrase am Cursor mit der nächsten verbinden"
 msgctxt "PreparePlayer"
 msgid "OR ON THE STRIP: CLICK A PHRASE FOR ITS TYPE, DRAG AN EDGE"
 msgstr "ODER AUF DER LEISTE: PHRASE ANKLICKEN FÜR DEN TYP, KANTE ZIEHEN"
+
+msgctxt "PreparePlayer"
+msgid "UNSURE {}: PICK ITS TYPE TO CONFIRM"
+msgstr "UNSICHER {}: TYP WÄHLEN ZUM BESTÄTIGEN"
 
 msgctxt "PreferencesWindow"
 msgid "Remaining time"

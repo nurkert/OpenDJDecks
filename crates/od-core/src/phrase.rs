@@ -30,6 +30,41 @@ pub struct Phrase {
     /// Index of the beat after the phrase.
     pub end_beat: u32,
     pub kind: PhraseKind,
+    /// How sure the analysis is of this phrase: 0 (a guess) ..= 1 (clear
+    /// boundaries and a clear type). `None` for phrases you set or
+    /// corrected, imported phrases and analyses older than this value:
+    /// those count as sure.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub confidence: Option<f32>,
+}
+
+impl Phrase {
+    /// A phrase without a confidence value (set by hand, imported).
+    pub const fn new(start_beat: u32, end_beat: u32, kind: PhraseKind) -> Self {
+        Self {
+            start_beat,
+            end_beat,
+            kind,
+            confidence: None,
+        }
+    }
+
+    /// Whether the analysis was unsure of this phrase (below
+    /// [`crate::AnalysisConfidence::UNSURE`]).
+    pub fn is_unsure(&self) -> bool {
+        self.confidence
+            .is_some_and(|c| c < crate::AnalysisConfidence::UNSURE)
+    }
+}
+
+/// The confidence of two phrases joined into one: the lower of the values
+/// the analysis gave (a value you confirmed, `None`, does not lift an
+/// unsure neighbour).
+fn joined_confidence(a: Option<f32>, b: Option<f32>) -> Option<f32> {
+    match (a, b) {
+        (Some(x), Some(y)) => Some(x.min(y)),
+        (x, None) | (None, x) => x,
+    }
 }
 
 /// Beats per bar assumed when phrase lengths are judged.
@@ -59,7 +94,8 @@ pub fn normalize_phrases(phrases: &[Phrase]) -> Vec<Phrase> {
         for p in v.drain(..) {
             match out.last_mut() {
                 Some(last) if last.kind == p.kind && last.end_beat >= p.start_beat => {
-                    last.end_beat = p.end_beat
+                    last.end_beat = p.end_beat;
+                    last.confidence = joined_confidence(last.confidence, p.confidence);
                 }
                 _ => out.push(p),
             }
@@ -91,11 +127,7 @@ mod tests {
     use super::*;
 
     fn p(start_bar: u32, end_bar: u32, kind: PhraseKind) -> Phrase {
-        Phrase {
-            start_beat: start_bar * 4,
-            end_beat: end_bar * 4,
-            kind,
-        }
+        Phrase::new(start_bar * 4, end_bar * 4, kind)
     }
 
     #[test]
@@ -144,5 +176,41 @@ mod tests {
             p(96, 112, Outro),
         ];
         assert_eq!(normalize_phrases(&input), input.to_vec());
+    }
+
+    #[test]
+    fn joined_phrases_keep_the_lower_confidence() {
+        use PhraseKind::*;
+        let mut a = p(0, 16, Chorus);
+        a.confidence = Some(0.9);
+        let mut b = p(16, 32, Chorus);
+        b.confidence = Some(0.3);
+        let n = normalize_phrases(&[a, b]);
+        assert_eq!(n.len(), 1);
+        assert_eq!(n[0].confidence, Some(0.3));
+        assert!(n[0].is_unsure());
+        // A confirmed phrase (None) does not lift its unsure neighbour.
+        let n = normalize_phrases(&[p(0, 16, Down), b]);
+        assert_eq!(n[1].confidence, Some(0.3));
+        let n = normalize_phrases(&[p(0, 16, Chorus), p(16, 32, Chorus)]);
+        assert_eq!(n[0].confidence, None);
+        assert!(!n[0].is_unsure());
+    }
+
+    #[test]
+    fn confidence_is_optional_in_stored_json() {
+        // Phrases stored before the confidence value read as sure.
+        let old: Phrase =
+            serde_json::from_str(r#"{"start_beat":0,"end_beat":64,"kind":"chorus"}"#).unwrap();
+        assert_eq!(old.confidence, None);
+        // Without a value nothing new is written.
+        assert_eq!(
+            serde_json::to_string(&old).unwrap(),
+            r#"{"start_beat":0,"end_beat":64,"kind":"chorus"}"#
+        );
+        let mut new = old;
+        new.confidence = Some(0.25);
+        let back: Phrase = serde_json::from_str(&serde_json::to_string(&new).unwrap()).unwrap();
+        assert_eq!(back, new);
     }
 }

@@ -259,21 +259,9 @@ fn anlz_set() -> (od_format_clubusb::anlz::AnlzSet, Vec<Cue>) {
             .collect(),
     };
     let phrases = [
-        Phrase {
-            start_beat: 0,
-            end_beat: 16,
-            kind: PhraseKind::Intro,
-        },
-        Phrase {
-            start_beat: 16,
-            end_beat: 48,
-            kind: PhraseKind::Verse,
-        },
-        Phrase {
-            start_beat: 48,
-            end_beat: 60,
-            kind: PhraseKind::Outro,
-        },
+        Phrase::new(0, 16, PhraseKind::Intro),
+        Phrase::new(16, 48, PhraseKind::Verse),
+        Phrase::new(48, 60, PhraseKind::Outro),
     ];
     let set = build_anlz(&AnlzInput {
         device_path: "/Contents/A/B/ünï.mp3",

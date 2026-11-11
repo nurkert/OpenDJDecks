@@ -1,13 +1,38 @@
 ---
 title: Phrases
 description: Intro, chorus, up, down, outro. Phrases are detected automatically; see them on every waveform and correct them when you need to.
-keywords: [phrase, phrases, phrasing, drop, breakdown, phrase start, phrase sync, blend, transition, incoming track, overlay, structure, intro, chorus, outro, up, down, verse, sections, track structure, edit phrases]
-features: [analysis-phrase, analysis-phrase-edit, deck-phrase-display, mix-phrase-ahead, mix-phrase-start, mix-phrase-sync, mix-incoming-overlay]
+keywords: [phrase, phrases, phrasing, drop, breakdown, build-up, phrase detection, confidence, unsure, phrase start, phrase sync, blend, transition, incoming track, overlay, structure, intro, chorus, outro, up, down, verse, sections, track structure, edit phrases]
+features: [analysis-phrase, analysis-phrase-confidence, analysis-phrase-edit, deck-phrase-display, mix-phrase-ahead, mix-phrase-start, mix-phrase-sync, mix-incoming-overlay]
 ---
 
 Phrases are the sections of a track: intro, chorus, up, down, outro. The analysis finds them for you and draws them as a coloured bar under the overview in Prepare and on every deck, so you can see at a glance what comes next.
 
 ![The phrase bar and the PHRASE tab of the Prepare player](../img/phrases.png)
+
+## How phrases are found
+
+The analysis listens to the track bar by bar, on the beatgrid:
+
+- **What each bar sounds like:** how loud it is, how much is in the low, middle and high end, whether a kick hits, whether a bass holds under it, how many hits there are per beat, how bright it is and which notes sound.
+- **Where the music changes:** every bar is compared with every other one. Where the bars before a point sound different from the bars after it, a section may start. Small changes (under about 3 dB) do not count.
+- **Where the sections go:** the boundaries are placed where the music changes most, with a preference for the lengths tracks are built from: 8, 16 and 32 bars, starting on a 4-bar group. Other lengths (4, 12, 24 bars, an odd fill) are allowed when the music clearly says so; nothing shorter than 4 bars.
+- **What each section is:**
+  - **Intro** and **Outro** are the beat-led ends you mix on: the beat without the bass, whatever comes before the first beat, and a beatless tail at the end.
+  - **Down** is a breakdown: the kick drops out.
+  - **Up** is a build: energy, hits or brightness rise, and the beat comes back right after it.
+  - **Chorus** is the drop: kick and bass, out of a breakdown or a build, near the loudest part of the track. A section that sounds like a drop is a drop too.
+  - **Verse** is the groove before the first drop.
+  - **Bridge** is a groove after a drop that does not sound like it.
+
+A track without a breakdown or build gets no drop: a long groove stays Intro, Verse and Outro.
+
+## How sure the analysis is
+
+Every phrase the analysis finds gets a percentage: how clear its boundaries are and how clearly it is the type it got, whichever is weaker. Under 50 % it counts as unsure. On the phrase bar in Prepare an unsure phrase has a **half-height sodium line** at its start (the same mark as an unsure key) and shows its percentage on hover; with the cursor inside it, the **PHRASE** tab says **UNSURE 41 %**.
+
+Check an unsure phrase by ear. If it is right, click it and pick the type it already has: that confirms it and the mark goes. Cutting, merging or moving one of its edges confirms it too. Phrases you set yourself, imported phrases and phrases from an earlier version of the analysis carry no percentage and count as sure; **ANALYSE AGAIN** (in the **INFO** tab) finds them anew with the current analysis.
+
+On 31 generated tracks (house, techno, drum & bass, breakbeat, half-time, tracks without a drop, long intros, 4- and 12-bar sections) the analysis puts 99 % of the boundaries within one bar of the right place, gives 99 % of the bars the right type and finds no drop where there is none; the earlier analysis managed 79 %, 73 % and 21 false drops. With other mixes, saturation, noise and the detected grid instead of the exact one the figures stay at 100 %, 99 % and none. These are generated tracks with a known structure, not records: real music is less tidy, so check the phrases before you rely on them at a gig.
 
 ## Correct a phrase
 
@@ -19,7 +44,7 @@ Open the track in Prepare and pick the **PHRASE** tab.
 - **Join two phrases:** **MERGE** (`⇧J`).
 - **CLEAR** removes all phrases of the track.
 
-A new analysis of the track replaces your edits. Every change is one undo step and reaches your sticks.
+A new analysis of the track replaces your edits. Every change is one undo step, confirms the phrases it touches and reaches your sticks.
 
 ## How phrases are shown
 

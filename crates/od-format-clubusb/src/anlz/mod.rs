@@ -870,11 +870,11 @@ impl AnlzFile {
             .enumerate()
             .map(|(i, e)| {
                 let end = s.entries.get(i + 1).map(|n| n.beat).unwrap_or(s.end_beat);
-                Phrase {
-                    start_beat: (e.beat as u32).saturating_sub(1),
-                    end_beat: (end as u32).saturating_sub(1),
-                    kind: phrase_kind(mood, e.kind),
-                }
+                Phrase::new(
+                    (e.beat as u32).saturating_sub(1),
+                    (end as u32).saturating_sub(1),
+                    phrase_kind(mood, e.kind),
+                )
             })
             .collect();
         Some((phrases, mood))

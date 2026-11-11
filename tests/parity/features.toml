@@ -968,10 +968,13 @@ scope = "in"
 status = "done"
 tests = [
   "od-analysis::phrase::tests::edm_arrangement_is_segmented_and_labelled",
-  "od-analysis::phrase::tests::segmentation_prefers_novel_boundaries",
+  "od-analysis::phrase::tests::segmentation_prefers_novel_boundaries_and_regular_lengths",
+  "od-analysis::phrase::tests::a_track_without_breakdown_has_no_drop",
+  "od-analysis::phrase::tests::lite_rate_finds_the_same_structure",
+  "od-analysis::phrase_eval::tests::evaluation_set_old_vs_new",
 ]
-evidence = ["od-analysis/src/phrase.rs", "anlz/build.rs"]
-note = "Analysed (`od-analysis/src/phrase.rs`) and stored. Display: see `deck-phrase-display`"
+evidence = ["od-analysis/src/phrase.rs", "od-analysis/src/phrase_eval.rs", "anlz/build.rs"]
+note = "Analysed (`od-analysis/src/phrase.rs`) and stored: bar features from a spectrum, a self-similarity novelty curve, boundaries by dynamic programming with an 8/16/32-bar prior, labels by musical role (a track without breakdown or build gets no drop). Measured on 31 generated arrangements and a held-out variant (other seeds, saturation, noise, detected grid) against the earlier detector: boundaries within one bar 79 % to 99 %, labels 73 % to 99 %, fake drops 21 to 0; generated tracks, not records. Display: see `deck-phrase-display`"
 
 [[feature]]
 id = "analysis-waveform-3band"
@@ -3983,6 +3986,24 @@ tests = [
 ]
 evidence = ["od_core::AnalysisConfidence", "key.rs::ranked_key", "tempo.rs::grid_confidence"]
 note = "Roadmap [62]. The key detection reports its lead over the runner-up, the grid its share of beats on a hit (lower when half / double was close). Prepare's INFO tab shows both in percent beside BPM and KEY, an unsure one with a half-height sodium line and USE for the likely key or tempo (your key, or the grid at half / double; one undo step) and ANALYSE AGAIN; an unsure key shows its percent under the deck's KEY. Analyses from before this version show none until analysed again"
+
+[[feature]]
+id = "analysis-phrase-confidence"
+area = "analysis"
+name = "Confidence per phrase, unsure phrases marked in Prepare"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-analysis::phrase::tests::subtle_changes_are_unsure",
+  "od-analysis::phrase::tests::confidence_maps_margins",
+  "od-core::phrase::tests::joined_phrases_keep_the_lower_confidence",
+  "od-core::phrase::tests::confidence_is_optional_in_stored_json",
+  "od-ui::phrase_edit::tests::edits_confirm_the_phrases_they_touch",
+  "od-ui::ui_tests::editing::unsure_phrases_are_marked_and_confirmed",
+]
+evidence = ["od_core::Phrase::confidence", "phrase.rs::label", "ui/player.slint::PhraseStrip"]
+note = "Roadmap [62] for phrases. Each analysed phrase says how sure the analysis is: the weaker of how clear its boundaries are and how clearly its type tests pass. Below 50 % the Prepare phrase strip marks it with a half-height sodium line (as an unsure key) and its percent on hover, and the PHRASE tab says UNSURE with the percent while the cursor is in it; picking its type, cutting, merging or moving an edge confirms it (one undo step). Phrases set by hand, imported or from older analyses carry no value and count as sure"
 
 [[feature]]
 id = "deck-layouts"

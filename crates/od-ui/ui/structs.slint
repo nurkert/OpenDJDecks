@@ -146,6 +146,9 @@ export struct PhraseMark {
     end: float,
     label: string,
     tone: color,
+    // [62] The analysis was unsure of this phrase; how sure ("41 %").
+    unsure: bool,
+    sure: string,
 }
 
 export struct CueMark {
