@@ -21,7 +21,21 @@ impl UserTag {
             value: value.trim().to_string(),
         }
     }
+
+    /// The do-not-play tag ([29]): a track that carries it warns when it is
+    /// loaded and is left out of auto-play. An ordinary tag value, so it
+    /// filters, smart lists and the Tags panel see it too.
+    pub fn do_not_play() -> Self {
+        Self::new(DO_NOT_PLAY.0, DO_NOT_PLAY.1)
+    }
+
+    pub fn is_do_not_play(&self) -> bool {
+        self.category == DO_NOT_PLAY.0 && self.value == DO_NOT_PLAY.1
+    }
 }
+
+/// Category and value of the do-not-play tag.
+pub const DO_NOT_PLAY: (&str, &str) = ("Play", "Do not play");
 
 pub(crate) fn read(conn: &Connection, track: TrackId) -> Result<Vec<UserTag>> {
     let mut stmt = conn.prepare_cached(

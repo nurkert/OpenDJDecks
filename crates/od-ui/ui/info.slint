@@ -3,7 +3,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, Field, TipArea, TooltipState, KeyFocus } from "controls.slint";
+import { Caps, Field, TipArea, TooltipState, KeyFocus, LineToggle } from "controls.slint";
 
 export struct TrackInfo {
     has-track: bool,
@@ -31,6 +31,20 @@ export struct TrackInfo {
     // Cover art from the file's tags (thumbnail).
     has-artwork: bool,
     artwork: image,
+    // [63] Tracks selected: above one, an edit goes to all of them, and a
+    // field whose values differ shows empty with MIXED.
+    count: int,
+    mixed-title: bool,
+    mixed-artist: bool,
+    mixed-album: bool,
+    mixed-genre: bool,
+    mixed-label: bool,
+    mixed-remixer: bool,
+    mixed-composer: bool,
+    mixed-year: bool,
+    mixed-comment: bool,
+    // [29] Every selected track is tagged do not play.
+    dnp: bool,
 }
 
 component InfoField inherits VerticalLayout {
@@ -41,12 +55,16 @@ component InfoField inherits VerticalLayout {
     in property <bool> path;
     // Accessible label of the value (`info.<field>`).
     in property <string> field;
+    // [63] The selected tracks differ here: empty, with MIXED as its hint.
+    in property <bool> mixed;
     callback save(string);
     spacing: Theme.key-gap;
     Caps { text: root.label; font-size: Theme.label; }
     if root.editable: Field {
         accessible-id: root.field; accessible-role: text-input; accessible-value: self.text;
-        height: 28px; text: root.value; accepted(t) => { root.save(t); }
+        height: 28px; text: root.value;
+        placeholder: root.mixed ? @tr("MIXED · RETURN SETS ALL") : "";
+        accepted(t) => { root.save(t); }
     }
     if !root.editable: Text {
         accessible-id: root.field; accessible-role: text; accessible-value: root.value;
@@ -78,6 +96,7 @@ component InfoTab inherits Rectangle {
         color: root.current ? Theme.bone : Theme.bone-3;
     }
     tt := TipArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    KeyFocus { activate => { root.clicked(); } }
 }
 
 export component InfoPanel inherits Rectangle {
@@ -111,15 +130,32 @@ export component InfoPanel inherits Rectangle {
                 width: summary-pane.width;
                 padding: Theme.s3;
                 spacing: Theme.s2;
-                InfoField { field: "info.title"; label: @tr("TITLE"); value: root.info.title; editable: !root.info.read-only; save(v) => { root.edit("title", v); } }
-                InfoField { field: "info.artist"; label: @tr("ARTIST"); value: root.info.artist; editable: !root.info.read-only; save(v) => { root.edit("artist", v); } }
-                InfoField { field: "info.album"; label: @tr("ALBUM"); value: root.info.album; editable: !root.info.read-only; save(v) => { root.edit("album", v); } }
-                InfoField { field: "info.genre"; label: @tr("GENRE"); value: root.info.genre; editable: !root.info.read-only; save(v) => { root.edit("genre", v); } }
-                InfoField { field: "info.label"; label: @tr("LABEL"); value: root.info.label; editable: !root.info.read-only; save(v) => { root.edit("label", v); } }
-                InfoField { field: "info.remixer"; label: @tr("REMIXER"); value: root.info.remixer; editable: !root.info.read-only; save(v) => { root.edit("remixer", v); } }
-                InfoField { field: "info.composer"; label: @tr("COMPOSER"); value: root.info.composer; editable: !root.info.read-only; save(v) => { root.edit("composer", v); } }
-                InfoField { field: "info.year"; label: @tr("YEAR"); value: root.info.year; editable: !root.info.read-only; save(v) => { root.edit("year", v); } }
-                InfoField { field: "info.comment"; label: @tr("COMMENT"); value: root.info.comment; editable: !root.info.read-only; save(v) => { root.edit("comment", v); } }
+                // [63] Many tracks at once: what an edit reaches.
+                if root.info.count > 1: Text {
+                    accessible-role: text; accessible-id: "info.bulk"; accessible-value: root.info.count;
+                    text: @tr("{} tracks selected: a field you change is set on all of them, in one undo step.", root.info.count);
+                    wrap: word-wrap;
+                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.attention;
+                }
+                InfoField { field: "info.title"; label: @tr("TITLE"); value: root.info.title; mixed: root.info.mixed-title; editable: !root.info.read-only; save(v) => { root.edit("title", v); } }
+                InfoField { field: "info.artist"; label: @tr("ARTIST"); value: root.info.artist; mixed: root.info.mixed-artist; editable: !root.info.read-only; save(v) => { root.edit("artist", v); } }
+                InfoField { field: "info.album"; label: @tr("ALBUM"); value: root.info.album; mixed: root.info.mixed-album; editable: !root.info.read-only; save(v) => { root.edit("album", v); } }
+                InfoField { field: "info.genre"; label: @tr("GENRE"); value: root.info.genre; mixed: root.info.mixed-genre; editable: !root.info.read-only; save(v) => { root.edit("genre", v); } }
+                InfoField { field: "info.label"; label: @tr("LABEL"); value: root.info.label; mixed: root.info.mixed-label; editable: !root.info.read-only; save(v) => { root.edit("label", v); } }
+                InfoField { field: "info.remixer"; label: @tr("REMIXER"); value: root.info.remixer; mixed: root.info.mixed-remixer; editable: !root.info.read-only; save(v) => { root.edit("remixer", v); } }
+                InfoField { field: "info.composer"; label: @tr("COMPOSER"); value: root.info.composer; mixed: root.info.mixed-composer; editable: !root.info.read-only; save(v) => { root.edit("composer", v); } }
+                InfoField { field: "info.year"; label: @tr("YEAR"); value: root.info.year; mixed: root.info.mixed-year; editable: !root.info.read-only; save(v) => { root.edit("year", v); } }
+                InfoField { field: "info.comment"; label: @tr("COMMENT"); value: root.info.comment; mixed: root.info.mixed-comment; editable: !root.info.read-only; save(v) => { root.edit("comment", v); } }
+                // [29] The do-not-play tag of the selected tracks.
+                if !root.info.read-only: LineToggle {
+                    accessible-id: "info.dnp";
+                    accessible-checkable: true; accessible-checked: self.checked;
+                    label: @tr("Do not play");
+                    tooltip: @tr("Warn when these tracks are loaded, and leave them out of auto-play");
+                    tone: Theme.fault;
+                    checked: root.info.dnp;
+                    toggled(v) => { root.edit("dnp", v ? "1" : ""); }
+                }
                 HorizontalLayout {
                     spacing: Theme.s3;
                     InfoField { field: "info.bpm"; label: "BPM"; value: root.info.bpm; editable: false; }

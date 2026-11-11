@@ -3,7 +3,7 @@
 Every user action of OpenDJDecks is a command in one registry
 (`crates/od-ui/src/keymap.rs`) with an id, a default binding per platform
 and optional user bindings (SPEC §12.2). The registry currently holds
-**285 actions**; every one has a default binding, and no two defaults
+**289 actions**; every one has a default binding, and no two defaults
 collide where they apply (checked by tests, together with this table).
 
 `F12` (and `?` wherever no shortcut takes it) shows the help overlay, which
@@ -102,6 +102,10 @@ Perform). Text fields keep the keys they type.
 | Show USB sticks | `section.devices` | both | `⌥⌘D` | `Alt+D` |
 | Show recordings | `section.recordings` | both | `⌥⌘R` | `Alt+R` |
 | Start / stop recording | `record.toggle` | both | `⌘Return` | `Ctrl+Return` |
+| Add the selected tracks to the queue | `queue.add` | both | `⌥⇧⌘Q` | `Ctrl+Alt+Shift+Q` |
+| Load the next track of the queue | `queue.next` | both | `⌥⇧⌘N` | `Ctrl+Alt+Shift+N` |
+| Set a chapter marker in the recording | `record.mark` | both | `⇧⌘Return` | `Ctrl+Shift+Return` |
+| Emergency stick: copy the open list and the decks to a stick | `devices.emergency` | both | `⌥⇧⌘E` | `Ctrl+Alt+Shift+E` |
 | Sync USB sticks now | `devices.sync` | both | `⌘S` | `Ctrl+S` |
 | Eject the selected stick | `devices.eject` | both | `⌘E` | `Ctrl+E` |
 | Quantize on / off | `perform.quantize` | Perform | `⌘K` | `Ctrl+K` |

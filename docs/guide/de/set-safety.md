@@ -1,8 +1,8 @@
 ---
 title: Sicher durch das Set
 description: Die Audiozeile in der Statusleiste, was passiert, wenn das Audiointerface verloren geht, und der Check vor dem Gig.
-keywords: [sperre, gesperrt, performance-sperre, ruhezustand, wach, bildschirmschoner, hintergrund, analyse pausieren, absturz, wiederherstellen, abgestürzt, beendet, stromausfall, sitzung, audio, ausgang, gerät, interface, latenz, aussetzer, xrun, verloren, ausgesteckt, getrennt, soundkarte, gig-check, vor dem gig, speicherplatz, fehlende dateien, sicherheit]
-features: [shell-audio-health, shell-gig-check, shell-crash-restore, shell-perform-lock]
+keywords: [sperre, gesperrt, performance-sperre, ruhezustand, wach, bildschirmschoner, hintergrund, analyse pausieren, absturz, wiederherstellen, abgestürzt, beendet, stromausfall, sitzung, audio, ausgang, gerät, interface, latenz, aussetzer, xrun, verloren, ausgesteckt, getrennt, soundkarte, gig-check, vor dem gig, speicherplatz, fehlende dateien, sicherheit, stille, nichts bereit, läuft aus, dead air]
+features: [perform-dead-air, shell-audio-health, shell-gig-check, shell-crash-restore, shell-perform-lock]
 ---
 
 OpenDJDecks behält die Dinge im Blick, die ein Set vorzeitig beenden können. Diese Seite erklärt, was es zeigt und was du tun kannst.
@@ -19,6 +19,14 @@ Die Statusleiste unten rechts zeigt immer **AUDIO**, den Ausgang, der spielt, se
 | Halbe Höhe | Der Ton läuft noch nicht; er startet mit dem ersten Track |
 
 Kommen immer wieder Aussetzer, erhöhe die Puffergröße unter **Einstellungen › Audio**. Gerät, Puffergröße und Kopfhörerausgang gelten dort sofort, ohne Neustart. Nur eine neue Samplerate wartet auf den nächsten Start.
+
+## Stille vermeiden
+
+Wenn der laufende Track bald endet und kein anderes Deck bereitsteht, warnt OpenDJDecks, bevor die Musik aufhört: *Stille in 0:24* in Rot über dem Fuß der Liste in Perform, mit dem Deck, das ausläuft, und dieselben Worte in der Statusleiste. **NÄCHSTEN LADEN** in der Warnung lädt den nächsten Track der Warteschlange auf ein freies Deck; bei leerer Warteschlange sagt sie, dass du einen laden sollst. Die Warnung verschwindet, sobald ein Deck bereitsteht (ein geladener, nicht zu Ende gespielter Track, oder einer, der mit geschlossenem Fader läuft) oder die Musik auf einem anderen Deck weiterläuft.
+
+![Die Stille-Warnung über dem Fuß der Liste mit NÄCHSTEN LADEN, und in der Statusleiste](../img/dead-air.png)
+
+Wie früh sie warnt, stellst du in der Warteschlange unter **VOR STILLE WARNEN** ein: **15 S**, **30 S** oder **60 S** vor dem Ende. Mit Auto-Play und einem Track in der Warteschlange warnt sie nicht, denn Auto-Play kümmert sich darum.
 
 ## Wenn das Audiointerface verloren geht
 

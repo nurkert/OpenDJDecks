@@ -19,6 +19,8 @@ pub(crate) struct DevicesState {
     pub statuses: Vec<DeviceStatus>,
     pub volumes: Vec<Volume>,
     pub proposals: Vec<(DeviceId, Proposal)>,
+    /// [28] The emergency stick being copied or its result.
+    pub emergency: Option<crate::emergency::Emergency>,
 }
 
 /// Selects the first registered stick when none is selected.
@@ -430,6 +432,7 @@ pub(crate) fn poll(app: &App) -> bool {
     let mut need_refresh = false;
     let mut changed = false;
     for e in app.device_manager.events().try_iter() {
+        crate::emergency::event(app, &e);
         match e {
             Event::Status(s) => {
                 app.state.borrow_mut().devices.statuses = s;

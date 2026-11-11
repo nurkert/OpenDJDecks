@@ -1,8 +1,8 @@
 ---
 title: USB sticks and sync
 description: Register a stick once. From then on every change reaches it automatically and incrementally, ready for OpenDJDecks on another computer or the Raspberry Pi.
-keywords: [usb, stick, sticks, usb stick, sync, synchronise, export, export stick, register, eject, rebuild, stick status, device, sync manager]
-features: [export-stick-screen, export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
+keywords: [usb, stick, sticks, usb stick, sync, synchronise, export, export stick, register, eject, rebuild, stick status, device, sync manager, emergency, backup stick, spare stick, format, stems on stick]
+features: [export-emergency-stick, export-stick-formats, export-stems-on-stick, export-stick-screen, export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
 ---
 
 The stick is a mirror of your library. Register it once with the lists that belong on it, and every changed cue, playlist or beatgrid reaches it within seconds, while it is plugged in. There is no export step to remember.
@@ -43,6 +43,22 @@ If something goes wrong with one stick, for example it is full, the error shows 
 
 The small sync arrow next to **DEVICES** in the tree does the same with the same setting.
 
+## Emergency stick
+
+When a stick has to be ready right now, a backup for the club players or a spare for another DJ, press **EMERGENCY STICK** on the USB screen or under **DEVICES** in the lists column (or `⌥⇧⌘E`). One press:
+
+- takes the set, playlist or list that is open in the browser and the tracks on the decks (never the whole collection),
+- puts them in a new playlist named *Emergency stick* with the date and time,
+- and copies them to the plugged-in stick in the formats club players and OpenDJDecks play: Club player USB with WAV copies for older players, and OpenDJDecks.
+
+A stick that is not registered yet is registered on the way; a registered stick keeps what it carries, gets the new playlist beside it and Club player USB if it lacked it. While it copies, the key shows its percent and the stick's line fills. Then the USB screen says the result in one band: ready with the formats written and **EJECT**, or failed with the reason (no space, pulled out too early). The status band says it too.
+
+![The USB screen with an emergency stick ready: its formats as badges and EJECT](../img/usb-emergency.png)
+
+## The formats on a stick
+
+Each stick shows its formats as a labelled element: **FORMAT** followed by a badge for each one it carries, **CLUB USB**, **WAV** (the copies for older players) and **OPENDJDECKS**. The same badges sit over the track list when you browse a stick, beside how many of its tracks the stick carries stems for.
+
 ## What is on the stick
 
 Under **CONTENT — LISTS ON THIS STICK** you choose the lists. The stick holds your music with its cues, beatgrids, phrases and, if you have them, the stems. Sticks are read by OpenDJDecks, for example on another computer or the [Raspberry Pi unit](raspberry-pi.md). To also play a stick on club players, turn on the Club player USB format below.
@@ -50,6 +66,8 @@ Under **CONTENT — LISTS ON THIS STICK** you choose the lists. The stick holds 
 ## Playing from a stick
 
 Open a stick in the tree to browse and load from it directly, read-only. This is what the Raspberry Pi unit does all day.
+
+With the **STEMS** column shown (row menu of the column headers), each track of the stick says whether the stick carries its stems: **ON STICK** with a solid line, or **NONE**. Over the list, *STEMS ON THE STICK 12 OF 40* counts them.
 
 ## Play on club players (Club player USB)
 

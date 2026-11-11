@@ -13,14 +13,31 @@ use od_library::TrackRecord;
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct Query {
     words: Vec<String>,
+    chars: Vec<Vec<char>>,
+    masks: Vec<u64>,
     whole: String,
+}
+
+/// The letters of a word as a bit set (a–z, 0–9, the rest shared), for a
+/// quick lower bound of the typos between two words: every letter of the
+/// query the word lacks costs at least one edit.
+fn mask(chars: &[char]) -> u64 {
+    chars.iter().fold(0u64, |m, c| {
+        m | 1 << match c {
+            'a'..='z' => *c as u32 - 'a' as u32,
+            '0'..='9' => 26 + (*c as u32 - '0' as u32),
+            _ => 63,
+        }
+    })
 }
 
 impl Query {
     pub fn new(q: &str) -> Self {
         let whole = fold(q.trim());
-        let words = words(&whole).map(str::to_string).collect();
-        Self { words, whole }
+        let words: Vec<String> = words(&whole).map(str::to_string).collect();
+        let chars: Vec<Vec<char>> = words.iter().map(|w| w.chars().collect()).collect();
+        let masks = chars.iter().map(|c| mask(c)).collect();
+        Self { words, chars, masks, whole }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -60,6 +77,41 @@ fn distance(a: &[char], b: &[char], max: usize) -> usize {
         return max + 1;
     }
     let (n, m) = (a.len(), b.len());
+    // Rows on the stack for ordinary words ([63]: no allocation per pair).
+    const ROW: usize = 48;
+    if m + 1 > ROW {
+        return distance_long(a, b, max);
+    }
+    let mut prev2 = [0usize; ROW];
+    let mut prev = [0usize; ROW];
+    for (j, v) in prev.iter_mut().enumerate().take(m + 1) {
+        *v = j;
+    }
+    let mut cur = [0usize; ROW];
+    for i in 1..=n {
+        cur[0] = i;
+        let mut row_min = cur[0];
+        for j in 1..=m {
+            let cost = usize::from(a[i - 1] != b[j - 1]);
+            let mut v = (prev[j] + 1).min(cur[j - 1] + 1).min(prev[j - 1] + cost);
+            if i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1] {
+                v = v.min(prev2[j - 2] + 1);
+            }
+            cur[j] = v;
+            row_min = row_min.min(v);
+        }
+        if row_min > max {
+            return max + 1;
+        }
+        std::mem::swap(&mut prev2, &mut prev);
+        std::mem::swap(&mut prev, &mut cur);
+    }
+    prev[m]
+}
+
+/// [`distance`] for words longer than its stack rows.
+fn distance_long(a: &[char], b: &[char], max: usize) -> usize {
+    let (n, m) = (a.len(), b.len());
     let mut prev2 = vec![0usize; m + 1];
     let mut prev: Vec<usize> = (0..=m).collect();
     let mut cur = vec![0usize; m + 1];
@@ -93,25 +145,69 @@ fn typos(len: usize) -> usize {
     }
 }
 
+/// A field folded once ([63]): its text and its words with their chars.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Field {
+    text: String,
+    words: Vec<(String, Vec<char>, u64)>,
+}
+
+impl Field {
+    fn new(raw: &str) -> Self {
+        let text = fold(raw);
+        let words = words(&text)
+            .map(|w| {
+                let c: Vec<char> = w.chars().collect();
+                let m = mask(&c);
+                (w.to_string(), c, m)
+            })
+            .collect();
+        Self { text, words }
+    }
+}
+
+/// A track's searchable text, folded once and kept while only the search
+/// changes ([63]).
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Folded {
+    title: Field,
+    artist: Field,
+    album: Field,
+    rest: String,
+}
+
+impl Folded {
+    pub fn of(t: &TrackRecord) -> Self {
+        Self {
+            title: Field::new(&t.tags.title),
+            artist: Field::new(&t.tags.artist),
+            album: Field::new(&t.tags.album),
+            rest: fold(&format!(
+                "{} {} {} {}",
+                t.tags.genre, t.tags.label, t.tags.remixer, t.tags.comment
+            )),
+        }
+    }
+}
+
 /// How well one query word matches one field (0 = not at all).
-fn word_score(q: &str, field: &str) -> u32 {
-    let qc: Vec<char> = q.chars().collect();
+fn word_score(q: &str, qc: &[char], qm: u64, field: &Field) -> u32 {
     let max = typos(qc.len());
     let mut best = 0;
-    for w in words(field) {
+    for (w, wc, wm) in &field.words {
+        let w = w.as_str();
         let s = if w == q {
             100
         } else if w.starts_with(q) {
             80
         } else if w.contains(q) && qc.len() >= 3 {
             55
-        } else if max > 0 {
-            let wc: Vec<char> = w.chars().collect();
+        } else if max > 0 && (qm & !wm).count_ones() as usize <= max {
             // The whole word, or its start as long as the query (a typo in
             // a word still being typed).
-            let whole = distance(&qc, &wc, max);
+            let whole = distance(qc, wc, max);
             let start = if wc.len() > qc.len() {
-                distance(&qc, &wc[..qc.len()], max)
+                distance(qc, &wc[..qc.len()], max)
             } else {
                 max + 1
             };
@@ -135,19 +231,25 @@ pub(crate) fn score(q: &Query, t: &TrackRecord) -> Option<u32> {
     if q.is_empty() {
         return Some(0);
     }
-    let title = fold(&t.tags.title);
-    let artist = fold(&t.tags.artist);
-    let album = fold(&t.tags.album);
-    let rest = fold(&format!(
-        "{} {} {} {}",
-        t.tags.genre, t.tags.label, t.tags.remixer, t.tags.comment
-    ));
+    score_folded(q, &Folded::of(t))
+}
+
+/// [`score`] on text folded beforehand.
+pub(crate) fn score_folded(q: &Query, f: &Folded) -> Option<u32> {
+    if q.is_empty() {
+        return Some(0);
+    }
     let mut total = 0;
-    for w in &q.words {
-        let s = (word_score(w, &title) * 3)
-            .max(word_score(w, &artist) * 2)
-            .max(word_score(w, &album))
-            .max(if rest.contains(w.as_str()) { 40 } else { 0 });
+    for ((w, wc), qm) in q.words.iter().zip(&q.chars).zip(&q.masks) {
+        // Best place first: a title hit outweighs anything else.
+        let t = word_score(w, wc, *qm, &f.title) * 3;
+        let s = if t >= 300 {
+            t
+        } else {
+            t.max(word_score(w, wc, *qm, &f.artist) * 2)
+                .max(word_score(w, wc, *qm, &f.album))
+                .max(if f.rest.contains(w.as_str()) { 40 } else { 0 })
+        };
         if s == 0 {
             return None;
         }
@@ -155,13 +257,23 @@ pub(crate) fn score(q: &Query, t: &TrackRecord) -> Option<u32> {
     }
     // The query as typed, in one piece.
     if q.words.len() > 1 || q.whole.len() >= 3 {
-        if title.starts_with(&q.whole) {
+        if f.title.text.starts_with(&q.whole) {
             total += 150;
-        } else if title.contains(&q.whole) || artist.contains(&q.whole) {
+        } else if f.title.text.contains(&q.whole) || f.artist.text.contains(&q.whole) {
             total += 60;
         }
     }
     Some(total)
+}
+
+/// Indices of the tracks that match `q` with their scores, in list order
+/// ([63]: over text folded once).
+pub(crate) fn matches(q: &Query, folded: &[Folded]) -> Vec<(usize, u32)> {
+    folded
+        .iter()
+        .enumerate()
+        .filter_map(|(i, f)| score_folded(q, f).map(|s| (i, s)))
+        .collect()
 }
 
 /// Keeps the tracks that match `q`, best first (a stable sort: equal

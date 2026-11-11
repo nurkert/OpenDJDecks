@@ -137,6 +137,30 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
                 l.set_centre("triggers".into());
             }
         }
+        "recordings.tracklist" | "panel.queue" | "devices.emergency" => {
+            if kiosk {
+                return Err("not part of the kiosk".into());
+            }
+            w.invoke_set_mode("prepare".into());
+            w.invoke_menu_action("view.layout.browser".into());
+            ui.pump(100);
+            match id {
+                "recordings.tracklist" => {
+                    let rec = super::dj_craft::finished_recording(ui);
+                    w.invoke_select_section("recordings".into());
+                    slint::ComponentHandle::global::<crate::RecEdit>(w).invoke_edit(rec);
+                }
+                "panel.queue" => {
+                    w.invoke_select_section("library".into());
+                    super::dj_craft::fill_queue(ui);
+                    w.set_queue_open(true);
+                }
+                _ => {
+                    super::dj_craft::fake_emergency(ui, "done");
+                    w.invoke_select_section("devices".into());
+                }
+            }
+        }
         "panel.lighting" => {
             perform(2);
             slint::ComponentHandle::global::<crate::Lighting>(w).set_panel(true);

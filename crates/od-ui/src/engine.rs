@@ -97,7 +97,7 @@ fn start_engine(app: &App) -> bool {
     match od_audio_io::AudioHost::start(&cfg, processor) {
         Ok(host) => {
             if let Some(tap) = engine.take_record_tap() {
-                recorder::attach(app, tap, negotiated.sample_rate);
+                recorder::attach(app, tap, engine.take_voice_tap(), negotiated.sample_rate);
             }
             let mut h = app.engine.borrow_mut();
             h.message = device_line(host.info());
@@ -147,7 +147,7 @@ fn start_null(app: &App, lite: bool) {
         profile: if lite { Profile::Lite } else { Profile::Full },
     });
     if let Some(tap) = engine.take_record_tap() {
-        recorder::attach(app, tap, NULL_RATE);
+        recorder::attach(app, tap, engine.take_voice_tap(), NULL_RATE);
     }
     let host = od_audio_io::AudioHost::start_virtual(&null_output(), processor);
     let mut h = app.engine.borrow_mut();
@@ -484,6 +484,7 @@ fn frame(app: &App) {
     };
     player::follow_preview(app, &state);
     recorder::frame(app, &state);
+    crate::queue::frame(app, &state);
     crate::restore::frame(app, &state);
     crate::perform_lock::frame(app, &state);
     if app.ui.get_mode() != "perform" {

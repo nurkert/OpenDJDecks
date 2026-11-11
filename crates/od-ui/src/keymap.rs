@@ -642,6 +642,38 @@ fn build() -> Vec<Action> {
         &["Mod+Return"],
     );
     b.add(
+        "queue.add",
+        "Add the selected tracks to the queue",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+Q"],
+    );
+    b.add(
+        "queue.next",
+        "Load the next track of the queue",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+N"],
+    );
+    b.add(
+        "record.mark",
+        "Set a chapter marker in the recording",
+        None,
+        g,
+        Global,
+        &["Mod+Shift+Return"],
+    );
+    b.add(
+        "devices.emergency",
+        "Emergency stick: copy the open list and the decks to a stick",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+Shift+E"],
+    );
+    b.add(
         "devices.sync",
         "Sync USB sticks now",
         None,

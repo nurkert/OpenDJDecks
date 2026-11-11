@@ -66,6 +66,7 @@ tempfile.workspace = true
 i-slint-backend-testing = "=1.18.1"
 od-parity = { path = "../od-parity" }
 sha2 = "0.10"
+rusqlite.workspace = true
 
 [build-dependencies]
 slint-build = "1.18"

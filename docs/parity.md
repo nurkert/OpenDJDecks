@@ -194,6 +194,8 @@ name is empty or looks like an id.
 | `sampler` | sampler panel | `sampler.slot1`, `sampler.bank`, `sampler.seq.rec` |
 | `browser` | browser | `browser.search`, `browser.rail.explorer`, `browser.tree`, `browser.rows`, `browser.header.bpm`, `browser.panel.info` |
 | `info`, `subbrowser` | right-hand panels | `info.bitrate`, `subbrowser.tree` |
+| `queue` | queue panel (roadmap [29]) | `queue.add`, `queue.load-next`, `queue.row0.up`, `queue.auto` |
+| `devices` | USB screen | `devices.stick1`, `devices.emergency`, `devices.check-panel` |
 | `status` | status band | `status.summary`, `status.activity` |
 | `lighting` | LIGHTING view | `lighting.rig.add`, `lighting.output.artnet`, `lighting.stage`, `lighting.mode.auto`, `lighting.blackout`, `lighting.cue.go` |
 | `prefs` | Preferences window | `prefs.nav.audio`, `prefs.audio.buffer`, `prefs.reset` |

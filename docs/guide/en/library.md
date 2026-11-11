@@ -1,8 +1,8 @@
 ---
 title: Library, playlists and smart lists
 description: Find, sort and tag your tracks. Playlists, smart lists, Tags, auto sort, the match column, similar tracks and the explorer.
-keywords: [library, collection, playlist, playlists, smart list, smart playlist, folder, search, filter, tag, tags, rating, stars, colour, comment, sort, auto sort, match, match column, similar, duplicates, relocate, moved files, missing files, explorer, history, histories, column, columns, undo, backup]
-features: [browser-fuzzy-search, browser-filter-chips, browser-rails-and-areas, browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck, browser-calm-table]
+keywords: [library, collection, playlist, playlists, smart list, smart playlist, folder, search, filter, tag, tags, rating, stars, colour, comment, sort, auto sort, match, match column, similar, duplicates, relocate, moved files, missing files, explorer, history, histories, column, columns, undo, backup, played tonight, already played, bulk edit, edit many, several tracks, mixed, do not play, search speed]
+features: [browser-do-not-play, browser-search-speed, browser-played-tonight, browser-bulk-tags, browser-fuzzy-search, browser-filter-chips, browser-rails-and-areas, browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck, browser-calm-table]
 ---
 
 The browser is the same in Prepare and Perform. On the left are your sources and lists, in the middle the tracks, on the right a strip of panels.
@@ -62,9 +62,15 @@ The search forgives typos and finds words in the title, artist and album, also a
 - `↓` and `↑` in the search move through the results.
 - `Return` loads the top hit, or the row you moved to: into a free deck in Perform, into the player in Prepare, where it starts playing. In Perform the deck keys work again right after the load.
 
-The filter button above the list (`⌘J`) opens a bar with a BPM range, **Key fits master**, **BPM ±%** around the master deck (double and half time count), a minimum **RATING** and one **TAGS** value.
+The search keeps up while you type, also in a large collection: the list it searches and the folded text of every track are kept from one keystroke to the next, so a keystroke only scores, filters and draws. On a generated collection of 50 000 tracks a keystroke took about 0.1 s in a development build; the released app is an optimised build.
+
+The filter button above the list (`⌘J`) opens a bar with a BPM range, **Key fits master**, **BPM ±%** around the master deck (double and half time count), a minimum **RATING**, one **TAGS** value and **Not played tonight**, which leaves out what was already on air in this session.
 
 Every condition that is set shows above the list as a chip, also when the bar is closed: **FILTERED BY** **BPM 120–128**, **RATING ≥ 3** and so on. Click a chip to remove that condition; **CLEAR** next to the chips removes them all.
+
+## Played tonight
+
+A track that was on air for 30 seconds in all this session gets a green tick in the list where the deck numeral goes. The **TONIGHT** column (row menu of the column headers) shows the time it went on air, such as *22:41*, and **Not played tonight** in the filter bar hides those tracks, so a request is never played twice by accident.
 
 ## The MATCH column
 
@@ -80,8 +86,12 @@ The **SIMILAR** panel in the right strip shows what fits after the selected trac
 
 ## Tags, rating and colour
 
+![Three tracks selected: the info panel shows MIXED where they differ](../img/library-bulk-tags.png)
+
 - Click the stars in a row to rate it; click again to clear. The row menu has the same options, and **Colour** sets one of eight marks.
 - The **INFO** panel on the right shows every tag of the selected track; click a field, type, press Return to store it, including the **COMMENT**. The **ARTWORK** tab shows the cover.
+- With several tracks selected the **INFO** panel edits all of them: a field they share shows its value, a field where they differ is empty with *MIXED · RETURN SETS ALL*. Whatever you type into a field and confirm with Return is set on every selected track, and one undo (`⌘Z`) takes it back from all of them.
+- **Do not play** at the foot of the panel (or *Do not play (on / off)* in the row menu) tags the selected tracks with the tag value *Play: Do not play*. They show a struck red mark in the list, warn when loaded, and auto-play leaves them out (see [Perform](perform-basics.md#the-queue-requests-and-auto-play)).
 - **TAGS** is yours to fill: in the panel type `Category: Value` (for example `Mood: Peak`) and press Return to tag the selection, then click a value to tag or untag. The Tags filter and column use the same values.
 
 ## The tag list

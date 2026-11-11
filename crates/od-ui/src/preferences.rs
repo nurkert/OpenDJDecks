@@ -546,6 +546,7 @@ pub(crate) fn refresh(app: &App) {
         w.set_auto_split(s.recording.auto_split);
         w.set_silence_start(s.recording.silence_start);
         w.set_silence_stop(s.recording.silence_stop);
+        w.set_rec_voice(s.recording.voice);
         w.set_rec_pattern(s.recording.name_pattern.clone().into());
         w.set_rec_example(
             crate::recorder::recording_name(&s.recording.name_pattern, "2026-11-07T21:30:00Z", 1)
@@ -1520,6 +1521,7 @@ fn flag(app: &App, key: &str, v: bool) {
         "analysis.auto-cues" => change(app, |s| s.analysis.auto_cues = v),
         "rec.split" => change(app, |s| s.recording.auto_split = v),
         "rec.silence-stop" => change(app, |s| s.recording.silence_stop = v),
+        "rec.voice" => change(app, |s| s.recording.voice = v),
         "deck.quantize" => change_engine(app, key, |s| s.deck.quantize = v),
         "deck.auto-cue" => change_engine(app, key, |s| s.deck.auto_cue = v),
         "mixer.auto-gain" => change_engine(app, key, |s| s.mixer.auto_gain = v),

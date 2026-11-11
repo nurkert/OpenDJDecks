@@ -52,6 +52,10 @@ export struct TrackRow {
     deck: int,
     // On air long enough this session to count as played.
     played: bool,
+    // [63] When it went on air tonight ("22:41"; "" when not played).
+    played-at: string,
+    // [29] Tagged do not play.
+    dnp: bool,
     // Track colour tag (transparent when none).
     tag-color: color,
     // Optional columns (browser::columns).
@@ -115,6 +119,8 @@ export struct FilterView {
     user-tag: string,
     // Key compatible with the master deck.
     key-match: bool,
+    // [63] Only tracks not played tonight.
+    unplayed: bool,
     // BPM within ± this percentage of the master deck ("" = off).
     bpm-pct: string,
     // The reference ("MASTER 124.0 · 8A"), "" when no deck plays.

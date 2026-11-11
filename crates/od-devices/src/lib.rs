@@ -12,6 +12,6 @@ pub use club_usb::{ClubUsbWriter, Proposal};
 pub use manager::{Command, DeviceManager, DeviceState, DeviceStatus, Event, ManagerConfig};
 pub use sync::{
     FormatWriter, NativeWriter, PlacedTrack, Progress, SyncContext, SyncError, SyncOptions,
-    SyncReport,
+    SyncReport, stems_on_stick, stick_formats,
 };
 pub use volumes::Volume;

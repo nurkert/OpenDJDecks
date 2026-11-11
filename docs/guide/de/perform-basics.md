@@ -1,8 +1,8 @@
 ---
 title: Die Grundlagen von Perform
 description: Decks, Layouts, Sync, Keylock, Tempo, Loops und Beat Jump und jeder Pad-Modus am Deck.
-keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, tonarten passen, harmonisch mischen, passende tonart, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom, einfach, standard, voll, deck-layout, ausblenden, gruppen, gespeichertes layout]
-features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
+keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, tonarten passen, harmonisch mischen, passende tonart, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom, einfach, standard, voll, deck-layout, ausblenden, gruppen, gespeichertes layout, warteschlange, als nächstes, wunsch, wünsche, auto-play, automix, nicht spielen, nächsten laden]
+features: [perform-queue, perform-requests, perform-auto-play, deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
 ---
 
 Perform ist der Live-Modus: Decks, Mixer und Browser in einer Ansicht.
@@ -12,6 +12,19 @@ Perform ist der Live-Modus: Decks, Mixer und Browser in einer Ansicht.
 ## Laden und spielen
 
 Doppelklicke einen Track im Browser, ziehe ihn auf ein Deck oder nutze `⇧←` und `⇧→`. **Play** und **CUE** funktionieren wie an einem Player: CUE im Stillstand setzt den Cue-Punkt, CUE während der Wiedergabe springt zurück, gehaltenes CUE spielt, bis du loslässt.
+
+## Die Warteschlange, Wünsche und Auto-Play
+
+**REIHE** in der Panelleiste neben der Liste zeigt, was als Nächstes kommt (`Ansicht › Warteschlange` öffnet sie auch):
+
+![Perform mit der Warteschlange: Tracks, ein Wunsch, ein offener Wunsch und ein Nicht-spielen-Track, Auto-Play mischt](../img/perform-queue.png)
+
+- **HINZU** (oder `⌥⇧⌘Q`, oder *Zur Warteschlange hinzufügen* im Zeilenmenü) fügt die im Browser ausgewählten Tracks hinzu. Jede Zeile hat Tasten, um sie nach oben oder unten zu schieben, und **×** zum Entfernen. Die Warteschlange bleibt bei der Bibliothek und übersteht einen Neustart.
+- **NÄCHSTEN LADEN** (oder `⌥⇧⌘N`) lädt den nächsten Track der Warteschlange auf ein freies Deck: eines, das leer ist oder seinen Track zu Ende gespielt hat.
+- **Wünsche**: Tippe, was sich jemand gewünscht hat, ins Wunschfeld (*Künstler, Titel*) und drück Return. Passt ein Track der Bibliothek zu jedem Wort, kommt der Wunsch mit ihm in die Warteschlange; sonst bleibt er als Notiz (*WUNSCH · NICHT IN DER BIBLIOTHEK*), bis du den Track im Browser auswählst und auf seiner Zeile die Haken-Taste drückst.
+- **Nicht spielen**: Ein so markierter Track (siehe [Bibliothek](library.md#tags-bewertung-und-farbe)) steht rot durchgestrichen in der Warteschlange und in der Liste, NÄCHSTEN LADEN und Auto-Play gehen an ihm vorbei, und lädst du ihn doch, erscheint eine rote Warnung über dem Fuß der Liste mit **ENTLADEN** und **BEHALTEN**.
+
+**AUTO-PLAY** spielt die Warteschlange von selbst. Es hält ein Deck mit dem nächsten Track bereit, startet die Warteschlange, wenn nichts spielt, und wenn der laufende Track so viele Beats vor seinem Ende ist, startet es das bereite Deck und mischt hinein: über **SCHNITT** (ganz am Ende), **8**, **16** oder **32** Beats unter **MIX-BEATS**. Der Mix kreuzt die beiden Kanalfader (oder bewegt den Crossfader, wenn die beiden Decks auf seinen beiden Seiten liegen) und schaltet SYNC für das kommende Deck ein, wenn beide Tracks ein Beatgrid haben. Während es mischt, sagt das Panel es in Gelb. Schaltest du Auto-Play mitten im Mix aus, gehen die Pegel sofort ans Ziel. Der Fader des abgehenden Kanals bleibt danach unten; schieb ihn hoch, bevor du dieses Deck von Hand spielst.
 
 ## Deck-Anzeigen
 

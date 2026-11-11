@@ -1,8 +1,8 @@
 ---
 title: USB-Sticks und Sync
 description: Registriere einen Stick einmal. Danach erreicht ihn jede Änderung automatisch und schrittweise, bereit für OpenDJDecks auf einem anderen Rechner oder den Raspberry Pi.
-keywords: [usb, stick, sticks, usb stick, sync, synchronisieren, sychronisieren, export, exportieren, registrieren, auswerfen, neu schreiben, stick status, gerät, sync manager]
-features: [export-stick-screen, export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
+keywords: [usb, stick, sticks, usb stick, sync, synchronisieren, sychronisieren, export, exportieren, registrieren, auswerfen, neu schreiben, stick status, gerät, sync manager, notfall, notfall-stick, ersatzstick, backup-stick, format, stems auf dem stick, notfall, notfall-stick, ersatzstick, backup-stick, format, stems auf dem stick]
+features: [export-emergency-stick, export-stick-formats, export-stems-on-stick, export-emergency-stick, export-stick-formats, export-stems-on-stick, export-stick-screen, export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
 ---
 
 Der Stick ist ein Spiegel deiner Bibliothek. Registriere ihn einmal mit den Listen, die darauf gehören, und jeder geänderte Cue, jede Playlist und jedes Grid ist innerhalb von Sekunden auf dem Stick, solange er steckt. Es gibt keinen Export-Schritt, an den du denken musst.
@@ -43,6 +43,22 @@ Läuft bei einem Stick etwas schief, zum Beispiel weil er voll ist, erscheint de
 
 Der kleine Sync-Pfeil neben **GERÄTE** im Baum macht dasselbe mit derselben Einstellung.
 
+## Notfall-Stick
+
+Wenn ein Stick sofort bereit sein muss, als Reserve für die Club-Player oder für einen anderen DJ, drück **NOTFALL-STICK** im USB-Bildschirm oder unter **GERÄTE** in der Listenspalte (oder `⌥⇧⌘E`). Ein Druck:
+
+- nimmt das Set, die Playlist oder Liste, die im Browser offen ist, und die Tracks auf den Decks (nie die ganze Sammlung),
+- legt sie in eine neue Playlist namens *Notfall-Stick* mit Datum und Uhrzeit,
+- und kopiert sie auf den eingesteckten Stick in den Formaten, die Club-Player und OpenDJDecks spielen: Club-Player-USB mit WAV-Kopien für ältere Player, und OpenDJDecks.
+
+Ein noch nicht registrierter Stick wird dabei registriert; ein registrierter Stick behält, was er trägt, bekommt die neue Playlist dazu und Club-Player-USB, falls es fehlte. Während er kopiert, zeigt die Taste ihren Prozentwert und die Linie des Sticks füllt sich. Danach sagt der USB-Bildschirm das Ergebnis in einem Band: bereit mit den geschriebenen Formaten und **AUSWERFEN**, oder fehlgeschlagen mit dem Grund (kein Platz, zu früh abgezogen). Die Statusleiste sagt es auch.
+
+![Der USB-Bildschirm mit einem bereiten Notfall-Stick: seine Formate als Abzeichen und AUSWERFEN](../img/usb-emergency.png)
+
+## Die Formate auf einem Stick
+
+Jeder Stick zeigt seine Formate als beschriftetes Element: **FORMAT** und dahinter ein Abzeichen für jedes, das er trägt, **CLUB-USB**, **WAV** (die Kopien für ältere Player) und **OPENDJDECKS**. Dieselben Abzeichen stehen über der Trackliste, wenn du einen Stick durchsuchst, neben der Zahl seiner Tracks, deren Stems der Stick dabeihat.
+
 ## Was auf dem Stick liegt
 
 Unter **INHALT — LISTEN AUF DIESEM STICK** wählst du die Listen. Der Stick trägt deine Musik mit Cues, Beatgrids, Phrasen und, falls vorhanden, den getrennten Stems für Stems. Sticks werden von OpenDJDecks gelesen, etwa auf einem anderen Rechner oder der [Raspberry-Pi-Einheit](raspberry-pi.md). Damit ein Stick auch auf Club-Playern läuft, schalte unten das Club-Player-USB-Format ein.
@@ -50,6 +66,8 @@ Unter **INHALT — LISTEN AUF DIESEM STICK** wählst du die Listen. Der Stick tr
 ## Direkt vom Stick spielen
 
 Öffne einen Stick im Baum, um direkt von ihm zu stöbern und zu laden, schreibgeschützt. Das macht die Raspberry-Pi-Einheit den ganzen Tag.
+
+Mit der Spalte **STEMS** (Zeilenmenü der Spaltenköpfe) sagt jeder Track des Sticks, ob der Stick seine Stems dabeihat: **AUF DEM STICK** mit durchgehender Linie, oder **KEINE**. Über der Liste zählt *STEMS AUF DEM STICK 12 VON 40* sie.
 
 ## Auf Club-Playern spielen (Club-Player-USB)
 
