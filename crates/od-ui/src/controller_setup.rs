@@ -264,6 +264,14 @@ pub(crate) fn close(app: &App) {
 
 /// "A" for hot cue slot 0 (the prompt names the pad).
 fn args_text(s: &od_controller::guided::Step) -> String {
+    if let Some(b) = s.args.get("band").and_then(|v| v.as_str()) {
+        return match b {
+            "low" => "LOW",
+            "mid" => "MID",
+            _ => "HI",
+        }
+        .into();
+    }
     match s.args.get("slot").and_then(|v| v.as_integer()) {
         Some(i) => crate::pads::hot_letter(i as usize),
         None => String::new(),

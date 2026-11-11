@@ -45,6 +45,11 @@ pub const SCOPES: &[(&str, &str)] = &[
         "queue panel beside the list: up next, requests, auto-play (roadmap [29])",
     ),
     (
+        "cue-edit",
+        "hot cue panel beside the list in CUE EDIT: pick, name, colour, pad behaviour, the drop (roadmap [31] [64])",
+    ),
+    ("plan", "the set plan over the list in Perform (roadmap [65])"),
+    (
         "devices",
         "USB screen: sticks, their formats, the stick check and the emergency stick",
     ),

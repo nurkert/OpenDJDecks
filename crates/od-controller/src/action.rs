@@ -32,6 +32,11 @@ pub enum ControlAction {
     HeadphoneLevel(f32),
     /// Press of the master cue button.
     MasterCue,
+    /// Split cue on / off (cue left, master right on the headphones).
+    SplitCue,
+    /// Crossfader curve by name (`constant_power`, `linear`, `cut`), or the
+    /// next one when `None`.
+    CrossfaderCurve(Option<String>),
     /// One-tap EQ swap of a band between the two decks being mixed, at the
     /// swap timing set in the app (now, next beat or next bar).
     EqSwap(EqBand),
@@ -125,10 +130,17 @@ pub enum PadMode {
     /// Loop roll: each pad rolls a loop of 1/32 … 4 beats while held; the
     /// track carries on underneath and resumes on release.
     LoopRoll,
+    /// Phrase jumps: A previous and B next phrase, C to the marked drop,
+    /// D marks the drop; E–H to the next build-up, drop, breakdown and
+    /// outro. Every jump lands its phrase on the next downbeat, in time.
+    Phrase,
+    /// Hot cue edits: a pad picks the hot cue the cue panel edits (name,
+    /// colour, position, how the pad plays it).
+    CueEdit,
 }
 
 impl PadMode {
-    pub const ALL: [PadMode; 15] = [
+    pub const ALL: [PadMode; 17] = [
         PadMode::HotCue,
         PadMode::BeatLoop,
         PadMode::BeatJump,
@@ -144,6 +156,8 @@ impl PadMode {
         PadMode::TimedCensor,
         PadMode::PatternRecall,
         PadMode::LoopRoll,
+        PadMode::Phrase,
+        PadMode::CueEdit,
     ];
 
     pub fn name(self) -> &'static str {
@@ -163,6 +177,8 @@ impl PadMode {
             PadMode::TimedCensor => "timed_censor",
             PadMode::PatternRecall => "pattern_recall",
             PadMode::LoopRoll => "loop_roll",
+            PadMode::Phrase => "phrase",
+            PadMode::CueEdit => "cue_edit",
         }
     }
 
@@ -247,6 +263,17 @@ pub enum DeckAction {
     /// Momentary slip-reverse ("censor").
     Censor(bool),
     Reverse,
+    /// Cut-in while held: the deck's channel reaches the master as if the
+    /// crossfader were open on its side.
+    CutIn(bool),
+    /// Jumps to the next (`forward`) or previous phrase so that the phrase
+    /// boundary lands on the next downbeat, in time.
+    PhraseJump {
+        forward: bool,
+    },
+    /// Marks the drop at the bar nearest the playhead (again near the mark:
+    /// clears it).
+    DropMark,
     /// Absolute position in the track, 0.0..=1.0.
     NeedleSearch(f32),
     /// This deck became the active deck on its side of a 4-deck controller.

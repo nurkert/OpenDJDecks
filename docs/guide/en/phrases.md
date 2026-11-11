@@ -2,7 +2,7 @@
 title: Phrases
 description: Intro, chorus, up, down, outro. Phrases are detected automatically; see them on every waveform and correct them when you need to.
 keywords: [phrase, phrases, phrasing, drop, breakdown, build-up, phrase detection, confidence, unsure, phrase start, phrase sync, blend, transition, incoming track, overlay, structure, intro, chorus, outro, up, down, verse, sections, track structure, edit phrases]
-features: [analysis-phrase, analysis-phrase-confidence, analysis-phrase-edit, deck-phrase-display, mix-phrase-ahead, mix-phrase-start, mix-phrase-sync, mix-incoming-overlay]
+features: [analysis-phrase, analysis-phrase-confidence, analysis-phrase-edit, deck-phrase-display, mix-phrase-ahead, mix-phrase-start, mix-phrase-sync, mix-incoming-overlay, deck-phrase-jump, deck-drop-marker]
 ---
 
 Phrases are the sections of a track: intro, chorus, up, down, outro. The analysis finds them for you and draws them as a coloured bar under the overview in Prepare and on every deck, so you can see at a glance what comes next.
@@ -60,3 +60,20 @@ Under **Preferences › View** you switch the phrases on the enlarged waveforms 
 - **The incoming track over the playing one:** the master's lane draws the other deck's waveform as an outline in that deck's colour, on the same time scale. While it plays you see where its beats fall; while it is cued, the outline starts at its cue, placed on the master's next phrase, with a mark carrying the deck number. **Preferences › View › Incoming track** switches it off.
 
 The start lands within one audio block of the phrase boundary (a few milliseconds) in tests with generated tracks. It has not been tried at a gig or on a hardware controller yet, and it can only be as right as the phrases and the grid: check them in Prepare first.
+
+## Phrase jumps and the drop
+
+![The PHRASE pads and the drop marked on deck 1's waveform](../img/phrase-jumps.png)
+
+The **PHRASE** pad mode jumps by phrases:
+
+- **A** (−1) goes back to the start of the phrase you are in, or to the one before when you are in its first bar; **B** (+1) goes on to the next phrase.
+- **C** (JUMP) goes to the drop you marked.
+- **D** (MARK) marks the drop.
+- **E** to **H** (BUILD, DROP, BREAK, OUTRO) go to the next build-up, drop, breakdown and outro.
+
+Every jump lands in time: the deck moves by whole beats so that the start of the target phrase arrives on the next downbeat, exactly when the next bar would have begun. The playhead keeps its place in the bar, so a synced deck stays in sync. Without a beatgrid there is nothing to land on, and the status band says so. Without phrases the 16-bar marks count. On a controller: `deck.phrase_jump` (with `forward = false` for back).
+
+**Mark the drop** with pad D, with **MARK DROP** in the cue panel of [CUE EDIT](cues-and-loops.md#edit-hot-cues-in-perform), or with `deck.drop_mark` on a controller: it is set on the downbeat nearest the playhead; pressing it again within a bar of the mark clears it, elsewhere it moves there. The drop shows as a bone line with **DROP** on the waveform and a line on the deck's overview. The phrases follow it: the phrase it falls in is split there, the part from the drop on becomes a **CHORUS** (the drop) and the part before it the build-up (**UP**). So **DROP 8** on the platter, the lighting's drop look and the phrase pads all use the drop you marked. It is one undo step; it stays in the library and does not go onto sticks.
+
+The phrase arithmetic is tested with generated grids; it has not been tried at a gig or on a hardware controller.

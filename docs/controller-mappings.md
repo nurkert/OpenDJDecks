@@ -182,8 +182,11 @@ release.
 | `deck.search` | momentary | `forward` (bool) | |
 | `deck.slip`, `deck.vinyl`, `deck.reverse`, `deck.load` | press | | |
 | `deck.censor` | momentary | | `Censor(bool)` |
+| `deck.cut_in` | momentary | | `CutIn(bool)`: while held, the deck's channel reaches the master as if the crossfader were open on its side (the channel fader still counts) |
+| `deck.phrase_jump` | press | `forward` (bool, default `true`) | `PhraseJump { forward }`: to the next or previous phrase, whole beats so that the phrase start lands on the next downbeat, in time |
+| `deck.drop_mark` | press | | `DropMark`: marks the drop on the downbeat nearest the playhead; near the marked drop it clears it (one undo step) |
 | `deck.shift` | momentary | | `Shift(bool)`; also drives software shift |
-| `deck.pad_mode` | press | `mode` = `hot_cue`, `beat_loop`, `beat_jump`, `sampler`, `hold_fx1`, `hold_fx2`, `keyboard`, `key_shift`, `slicer`, `loop_roll` (pads roll 1/32 … 4 beats while held) | |
+| `deck.pad_mode` | press | `mode` = `hot_cue`, `beat_loop`, `beat_jump`, `sampler`, `hold_fx1`, `hold_fx2`, `keyboard`, `key_shift`, `slicer`, `loop_roll` (pads roll 1/32 … 4 beats while held), `phrase` (phrase jumps and the drop), `cue_edit` (pads pick the hot cue the cue panel edits) | |
 | `deck.pad` | momentary | `index` | `Pad { index, pressed, velocity }` (generic, interpreted by pad mode) |
 | `deck.needle_search` | absolute | | `NeedleSearch(0..1)` |
 | `deck.select` | press | optional `deck` | `DeckSelect` for the bound deck, or for `deck` |
@@ -198,6 +201,8 @@ release.
 | `mixer.crossfader_assign` | press | `side` = `a` / `thru` / `b` | |
 | `crossfader`, `master_level`, `booth_level`, `headphone_mix`, `headphone_level` | absolute | | |
 | `master_cue` | press | | |
+| `split_cue` | press | | `SplitCue`: split cue on / off (the cue in mono on the left, the master in mono on the right) |
+| `crossfader_curve` | press | optional `curve` = `constant_power` / `linear` / `cut` | `CrossfaderCurve(curve)`: sets the curve, or steps to the next one without `curve`; the same setting as Preferences › Controller › Mixer |
 | `eq_swap` | press | `band` = `low` / `mid` / `high` | `EqSwap(band)`: swaps that band (knob and kill) between the two decks being mixed, at the swap timing set on the mixer (now, next beat, next bar); a second press while it waits cancels it |
 | `tempo_fx.toggle`, `tempo_fx.beat_down`, `tempo_fx.beat_up`, `tempo_fx.auto_beat`, `tempo_fx.tap`, `tempo_fx.select_next`, `tempo_fx.select_prev` | press | `unit` (default 1) | |
 | `tempo_fx.release` | momentary | `unit` | |

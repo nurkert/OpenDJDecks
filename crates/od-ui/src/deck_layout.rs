@@ -21,7 +21,7 @@ use std::rc::Rc;
 pub(crate) const LEVELS: [&str; 3] = ["simple", "standard", "full"];
 
 /// Groups kept in `perform.hidden` (the mixer has its own switch).
-pub(crate) const HIDEABLE: [&str; 6] = ["pads", "loops", "stems", "fx", "phase", "setup"];
+pub(crate) const HIDEABLE: [&str; 7] = ["pads", "loops", "stems", "fx", "phase", "setup", "platter"];
 
 /// What choosing a layout sets: hidden groups, mixer column, Tempo FX panel.
 #[derive(Clone, Debug, PartialEq)]
@@ -90,6 +90,7 @@ pub(crate) fn apply(app: &App) {
     g.set_fx(shown("fx"));
     g.set_phase(shown("phase"));
     g.set_setup(shown("setup"));
+    g.set_platter(shown("platter"));
     let names: Vec<SharedString> = p
         .saved_layouts
         .iter()

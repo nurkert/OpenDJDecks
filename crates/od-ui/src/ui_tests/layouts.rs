@@ -335,7 +335,7 @@ fn guided_controller_setup_learns_controls_and_saves_a_mapping() {
     ui.click("app.controller-setup.class.slot1");
     ui.click("app.controller-setup.start");
     assert!(ui.wait_until(10.0, |u| u.has("app.controller-setup.prompt")
-        && u.value("app.controller-setup.step") == "1/39"));
+        && u.value("app.controller-setup.step") == "1/46"));
     assert_eq!(ui.app.ui.get_mode(), "perform", "the setup shows the decks");
     assert_eq!(
         ui.value("app.controller-setup.prompt"),
@@ -363,12 +363,12 @@ fn guided_controller_setup_learns_controls_and_saves_a_mapping() {
         ui.wait_until(10.0, |u| u
             .value("app.controller-setup.heard")
             .contains("NOTE 0x0B")
-            || u.value("app.controller-setup.step") == "2/39"),
+            || u.value("app.controller-setup.step") == "2/46"),
         "what arrived is shown: {}",
         ui.value("app.controller-setup.heard")
     );
     assert!(
-        ui.wait_until(20.0, |u| u.value("app.controller-setup.step") == "2/39"),
+        ui.wait_until(20.0, |u| u.value("app.controller-setup.step") == "2/46"),
         "taken once it rests"
     );
     // The same key for CUE is refused.
@@ -382,24 +382,24 @@ fn guided_controller_setup_learns_controls_and_saves_a_mapping() {
         20.0,
         |u| u.app.ui.global::<crate::ControllerSetup>().get_taken() == "1"
     ));
-    assert_eq!(ui.value("app.controller-setup.step"), "2/39");
+    assert_eq!(ui.value("app.controller-setup.step"), "2/46");
     m.record(
         "UNLISTED UNIT",
         Direction::In,
         &[0x90, 0x0C, 0x7F],
         Vec::new(),
     );
-    assert!(ui.wait_until(20.0, |u| u.value("app.controller-setup.step") == "3/39"));
+    assert!(ui.wait_until(20.0, |u| u.value("app.controller-setup.step") == "3/46"));
     // BACK and SKIP.
     ui.click("app.controller-setup.back");
-    assert!(ui.wait_until(10.0, |u| u.value("app.controller-setup.step") == "2/39"));
+    assert!(ui.wait_until(10.0, |u| u.value("app.controller-setup.step") == "2/46"));
     m.record(
         "UNLISTED UNIT",
         Direction::In,
         &[0x90, 0x0D, 0x7F],
         Vec::new(),
     );
-    assert!(ui.wait_until(20.0, |u| u.value("app.controller-setup.step") == "3/39"));
+    assert!(ui.wait_until(20.0, |u| u.value("app.controller-setup.step") == "3/46"));
     while ui.has("app.controller-setup.skip") {
         ui.click("app.controller-setup.skip");
     }

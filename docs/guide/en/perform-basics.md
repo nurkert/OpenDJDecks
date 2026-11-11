@@ -2,7 +2,7 @@
 title: The basics of Perform
 description: Decks, layouts, sync, keylock, tempo, loops and beat jump, and every pad mode on the deck.
 keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, key clash, harmonic mixing, compatible key, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom, simple, standard, full, deck layout, hide, groups, saved layout, queue, up next, request, requests, auto-play, autoplay, auto mix, do not play, load next]
-features: [perform-queue, perform-requests, perform-auto-play, deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
+features: [perform-queue, perform-requests, perform-auto-play, deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-cut-in, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-mode-phrase, pad-mode-cue-edit, deck-layout-platter, perform-set-plan, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
 ---
 
 Perform is the live mode: the decks, the mixer and the browser in one view.
@@ -51,7 +51,7 @@ While you drag, a small readout at the playhead shows the offset in seconds (pau
 
 ![Perform in a large window: the platter centred with its keys, SYNC, CUE and PLAY on the same axis](../img/perform-large.png)
 
-The platter sits in the middle of the deck's rows, with **SLIP**, **QUANTIZE**, **KEYLOCK** and the tempo range as one block on its inner side. Their inner edges follow the ring, one key gap away, and **SYNC**, **CUE** and **PLAY** stand on the same axis. In a larger window the platter grows up to a limit and the keys grow with it; any room left goes above and below, never between the keys. On the player screens of Club mode, the ◀◀ / ◀ CALL and ▶▶ / CALL ▶ keys wrap the jog the same way.
+The platter sits in the middle of the deck's rows, with **REV**, **SLIP**, **QUANTIZE**, **KEYLOCK**, the tempo range and **CUT IN** as one block on its inner side. Their inner edges follow the ring, one key gap away, and **SYNC**, **CUE** and **PLAY** stand on the same axis. In a larger window the platter grows up to a limit and the keys grow with it; any room left goes above and below, never between the keys. On the player screens of Club mode, the ◀◀ / ◀ CALL and ▶▶ / CALL ▶ keys wrap the jog the same way.
 
 ## Knobs, faders and meters
 
@@ -93,11 +93,24 @@ How much each deck shows is up to you. Choose in the view menu at the top of Per
 - **Standard** is the deck as described on this page.
 - **Full** shows everything, with the Tempo FX panel open.
 
-Under **SHOW** in the same menu, whole groups can be hidden or shown again: **PADS**, **LOOPS**, **STEMS**, **FX** (the Tempo FX panel and its key, the CH FX knobs), **MIXER** (the mixer column, the same as the top bar's **MIXER**), **PHASE** (the phase strip) and **SETUP KEYS** (SLIP, QUANTIZE, KEYLOCK, the tempo range, GRID, KEY SYNC, key shift and ½ / 2× on the BPM). A hidden group is gone completely, so the keyboard cannot land on it either. The pad mode stays with the pads.
+Under **SHOW** in the same menu, whole groups can be hidden or shown again: **PADS**, **LOOPS**, **STEMS**, **FX** (the Tempo FX panel and its key, the CH FX knobs), **MIXER** (the mixer column, the same as the top bar's **MIXER**), **PHASE** (the phase strip) and **SETUP KEYS** (REV, SLIP, QUANTIZE, KEYLOCK, the tempo range, CUT IN, GRID, KEY SYNC, key shift and ½ / 2× on the BPM) and **PLATTER** (the platter with its key block: hidden, the pads take its room, so they are much larger and show the cue names in full). A hidden group is gone completely, so the keyboard cannot land on it either. The pad mode stays with the pads.
 
 To keep a layout, type a name under **SAVED LAYOUTS** and press **SAVE**. A press on the name brings it back, **×** deletes it. A saved layout remembers the deck layout, the hidden groups, the mixer column and the Tempo FX panel, and stays with your settings. Saving under a name that exists replaces it.
 
 The kiosk on the Raspberry Pi keeps its own deck, and Club mode its player screens, whatever the layout. Simple and Full have not been tried on a touch screen yet.
+
+## The set plan
+
+![Perform with the plan over the list: the track on air, the next one with its note, and how far behind the plan the set is](../img/perform-plan.png)
+
+The last set you opened in the browser is your plan. In Perform a line over the list follows it:
+
+- **PLAN** and the set's name, then **ON AIR 4 / 10**: where the track you hear stands in the set.
+- **NEXT** with the next track's title, artist, tempo, key and length.
+- **NOTE**: the transition note you wrote for the change from the track on air to the next one (see [Preparing sets](preparing-sets.md#notes-and-backups)).
+- At the right, where you stand: **ON TIME** within a minute of the plan, else **BEHIND 1:20** or **AHEAD 0:45**, counted from the set's **PLANNED START** and the track lengths, and **1 TRACK BEHIND** when the plan expects another position by now. Without a planned start it says **NO PLANNED START** and counts positions only.
+
+The line beside it follows the status grammar: solid green on time, dashed sodium ahead or behind, half without a planned start, struck red when the track on air is not in the set (**OFF PLAN**). **×** hides the line until you open another set. The plan does not change what plays; it only shows. It was tried with the demo library and the clock, not at a gig.
 
 ## Tempo and sync
 
@@ -149,7 +162,11 @@ On a controller the jog wheel scratches, bends or searches. Vinyl mode is switch
 
 **SLIP** lets you loop, cue or scratch while the track carries on silently underneath; when you let go, it comes back where it would have been.
 
-**Censor** is available from a controller and as the **CENSOR** pad mode (see below): the deck plays backwards with slip on, then carries on where it would be. A controller can also play a deck in reverse.
+**Censor** is available from a controller and as the **CENSOR** pad mode (see below): the deck plays backwards with slip on, then carries on where it would be.
+
+### Reverse and cut-in
+
+**REV** above **SLIP** plays the deck backwards until you press it again; with **SLIP** on, the track comes back where it would have been. **CUT IN** below the tempo range lets the deck's channel through to the master as if the crossfader were open on its side, for as long as you hold it: for cuts and scratch patterns with the crossfader closed. The channel fader still counts. The two keys join the platter's block where six keys fit its height (a 1440 × 900 window and larger); in shorter decks, such as 1280 × 800, the block keeps its four setup keys and REV and CUT IN are on the controller only. On a controller: `deck.reverse` and `deck.cut_in`. Both are tested in software; they have not been tried on a hardware controller.
 
 ## Loops and beat jump
 
@@ -177,5 +194,7 @@ The sixteen pads at the left of each deck change meaning with the mode. Pick a m
 | **PATTERN** | Store and recall sampler sequences |
 | **LIGHTING** | A–F looks, G strobe, H flash, see [Light show](light-show.md) |
 | **ROLL** | Roll 1/32 to 4 beats while held; CAPTURE keeps it, see [Loop roll](cues-and-loops.md#loop-roll-and-capture) |
+| **PHRASE** | A back and B on one phrase, C to the marked drop, D marks the drop, E–H to the next build-up, drop, breakdown and outro, see [Phrases](phrases.md#phrase-jumps-and-the-drop) |
+| **CUE EDIT** | A pad picks the hot cue to edit beside the list, see [Cues](cues-and-loops.md#edit-hot-cues-in-perform) |
 
 The **GRID** key next to the mode swaps the pads for the grid and gain panel; see [Beatgrids](beatgrid.md#fix-a-grid-while-the-track-plays).

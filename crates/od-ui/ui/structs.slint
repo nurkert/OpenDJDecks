@@ -281,6 +281,9 @@ export struct PadView {
     cue-slot: int,
     // Stored cue colour (transparent = the slot colour).
     tone: color,
+    // How a hot cue pad plays its cue when not the usual way ("LATCH",
+    // "GATE", "MOMENT"; "" = usual).
+    badge: string,
 }
 
 // A span where the vocals sing, as fractions of the track.
@@ -318,6 +321,11 @@ export struct DeckView {
     counter-mode: string,
     loop-beats: string,
     slip: bool,
+    // The drop you marked (seconds, < 0: none).
+    drop-at: float,
+    // REV: playing backwards; CUT IN held on the deck's channel.
+    reverse: bool,
+    cut-in: bool,
     level: float,
     fader: float,
     waveform: image,

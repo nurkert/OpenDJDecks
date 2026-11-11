@@ -2,7 +2,7 @@
 title: Der Mixer
 description: Trim, EQ, Channel FX, Fader, Crossfader, Kopfhörer und Master und ihre Optionen.
 keywords: [mixer, eq, kill, bass swap, basswechsel, tauschen, clip, übersteuerung, trim, gain, fader, kanalfader, crossfader, kopfhörer, phones, cue, master, pegel, limiter, anzeige, vu, booth, mikrofon, mic, talkover, auto fader, stem taste, auto gain]
-features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
+features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
 ---
 
 Der Mixer steht zwischen den Decks. Drücke **MIXER** in der oberen Leiste (`⌥⌘M`), um ihn auszublenden, wenn dein Controller das übernimmt; die Decks treffen sich dann in der Mitte.
@@ -29,7 +29,7 @@ Die Kanalpegel und der **MASTER**-Pegel in der oberen Leiste halten ihre Spitze:
 
 ![Der Mixer mit gekilltem LOW auf einem Deck und einem LOW-Tausch, der auf den nächsten Takt wartet](../img/mixer-bass-swap.png)
 
-Die Namen **HI**, **MID** und **LOW** unter den EQ-Reglern sind Kill-Tasten: Tippe darauf, um das Band herauszunehmen (die Taste wird gelb und zeigt **KILL**), tippe erneut, um es zurückzuholen. Der Regler bleibt, wo er ist; lässt du den Kill los, kommt das Band mit dem Wert des Reglers zurück. Mit dem Isolator-EQ ist ein gekilltes Band stumm, mit dem klassischen EQ steht es auf der tiefsten Stellung des Reglers (−26 dB).
+Die Namen **HI**, **MID** und **LOW** unter den EQ-Reglern sind Kill-Tasten: Tippe darauf, um das Band herauszunehmen (die Taste wird gelb und zeigt **KILL**), tippe erneut, um es zurückzuholen. Der Regler bleibt, wo er ist; lässt du den Kill los, kommt das Band mit dem Wert des Reglers zurück. Mit dem Isolator-EQ ist ein gekilltes Band stumm, mit dem klassischen EQ steht es auf der tiefsten Stellung des Reglers (−26 dB). Mit **STEM** schalten dieselben Tasten den Teil stumm, den ihr Regler steuert (Vocals, Instrumente, Drums), und zeigen **KILL**, solange er stumm ist; so bleiben die Kills in jedem Modus unter deinen Fingern.
 
 Die Tauschreihe unter den Kanälen (mit zwei gegenläufigen Pfeilen markiert) tauscht mit einem Tippen ein Band zwischen den zwei Decks im Mix:
 
@@ -40,7 +40,7 @@ Die Taste am Ende der Reihe bestimmt, wann getauscht wird: **SOFORT**, **BEAT** 
 
 Der Tausch wirkt auf die zwei lautesten spielenden Decks. Spielt nur ein Deck, tauscht es mit dem nächsten Deck, auf dem ein Track geladen ist; spielt keins, mit Deck 1 und 2. Bei vier Decks nennt die Reihe das Paar (zum Beispiel **2/3**).
 
-Ein Controller kann beides: Lege `mixer.eq_kill` (mit `band = "low"`, `"mid"` oder `"high"`) auf eine Taste eines Kanals und `eq_swap` (mit einem `band`) auf eine beliebige Taste; siehe [Controller-Mappings](controllers.md). Noch kein mitgeliefertes Controller-Mapping nutzt sie, und an einem echten Controller wurden sie noch nicht ausprobiert; getestet sind sie nur in der Software.
+Ein Controller kann beides: Lege `mixer.eq_kill` (mit `band = "low"`, `"mid"` oder `"high"`) auf eine Taste eines Kanals und `eq_swap` (mit einem `band`) auf eine beliebige Taste; siehe [Controller-Mappings](controllers.md). Die geführte Controller-Einrichtung fragt die Kill-Tasten mit ab (alle drei Bänder bei den Vorlagen für zwei Decks, HI und LOW bei der Battle-Vorlage, LOW bei vier Decks); überspringe, was dein Controller nicht hat. Die beiden mitgelieferten Controller-Mappings nutzen sie nicht, und an einem echten Controller wurden sie noch nicht ausprobiert; getestet sind sie nur in der Software.
 
 ## Crossfader
 
@@ -48,11 +48,15 @@ Unter dem Mixer blendet der Crossfader zwischen seinen Seiten. Die kleinen Taste
 
 **AUTO** neben dem Crossfader schaltet Auto Fader ein: Der Crossfader tauscht auch die Bässe der beiden Seiten und hält die Decks darauf im Master-Tempo.
 
-Die Kurven liegen in **Einstellungen › Controller › Mixer**: die **Kanalfader-Kurve** (linear, weich, steil) und die **Crossfader-Kurve** (konstante Leistung, linear, cut).
+Die Taste rechts neben der Seite B zeigt die **Crossfader-Kurve** als kleine Zeichnung: zwei Bögen für konstante Leistung (weiche Übergänge), zwei gerade Linien für linear und zwei steile Ecken für Cut (Scratchen: beide Seiten voll bis auf die letzten Prozent). Ein Klick schaltet zur nächsten Kurve. Es ist dieselbe Einstellung wie die **Crossfader-Kurve** in **Einstellungen › Controller › Mixer**, wo auch die **Kanalfader-Kurve** (linear, weich, steil) liegt; eine Controller-Taste schafft es mit `crossfader_curve`. In schmalen Fenstern unter 1000 px bleibt die Kurve den Einstellungen überlassen.
+
+**CUT IN** an einem Deck (siehe [Perform](perform-basics.md#reverse-und-cut-in)) lässt einen Kanal durch, als stünde der Crossfader auf seiner Seite offen, solange du die Taste hältst.
 
 ## Kopfhörer und Master
 
 **KOPFHÖRER** hat den **MIX** zwischen Cue und Master und den **PEGEL**. Drücke **CUE** an einem Kanal, um ihn vorzuhören. Am Controller hört die Master-Cue-Taste den Master vor.
+
+**SPLIT** (Split Cue) legt den Cue auf dein linkes Ohr und den Master auf das rechte, beide in Mono, damit du beides auf einem Kopfhörer hörst; **MIX** wirkt dann nicht, **PEGEL** schon. Eine Controller-Taste schaltet es mit `split_cue`. Getestet ist es mit erzeugten Signalen, auf einem Gig noch nicht.
 
 **MASTER** stellt den Ausgangspegel mit **−** und **+** oder dem Regler ein, hat eine Anzeige und einen Sicherheits-Limiter, der immer an ist. Daneben liegen die Aufnahmetaste und die Zeit; siehe [Aufnahme](recording.md). Den Booth-Ausgang stellst du mit dem Booth-Regler am Controller ein.
 

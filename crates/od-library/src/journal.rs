@@ -63,6 +63,11 @@ pub enum EntityState {
         track: TrackId,
         phrases: Vec<Phrase>,
     },
+    /// The drop marked on a track (seconds).
+    Drop {
+        track: TrackId,
+        at: Option<f64>,
+    },
 }
 
 impl EntityState {
@@ -103,6 +108,10 @@ impl EntityState {
             EntityState::Phrases { track, .. } => EntityState::Phrases {
                 track: *track,
                 phrases: read_phrases(conn, *track)?,
+            },
+            EntityState::Drop { track, .. } => EntityState::Drop {
+                track: *track,
+                at: crate::tracks::read_drop(conn, *track)?,
             },
         })
     }
@@ -155,6 +164,10 @@ impl EntityState {
             }
             EntityState::Phrases { track, phrases } => {
                 write_phrases(conn, *track, phrases)?;
+                record_change(conn, "phrases", Some(*track), None)
+            }
+            EntityState::Drop { track, at } => {
+                crate::tracks::write_drop(conn, *track, *at)?;
                 record_change(conn, "phrases", Some(*track), None)
             }
         }

@@ -161,6 +161,22 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
                 }
             }
         }
+        "perform.deck-craft" => perform(2),
+        "panel.cue-edit" | "perform.plan" => {
+            if kiosk {
+                return Err("not part of the kiosk".into());
+            }
+            perform(2);
+            if id == "panel.cue-edit" {
+                super::perform_craft::load(ui, 0, 0);
+                crate::decks::set_pad_mode(&ui.app, 0, od_controller::PadMode::CueEdit);
+            } else {
+                super::perform_craft::plan_set(ui, "22:00");
+                super::perform_craft::load(ui, 0, 0);
+                crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::Play);
+                ui.wait_until(10.0, |u| u.has("plan.line") && u.value("plan.now") == "1");
+            }
+        }
         "panel.lighting" => {
             perform(2);
             slint::ComponentHandle::global::<crate::Lighting>(w).set_panel(true);

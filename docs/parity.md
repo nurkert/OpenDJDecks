@@ -195,6 +195,8 @@ name is empty or looks like an id.
 | `browser` | browser | `browser.search`, `browser.rail.explorer`, `browser.tree`, `browser.rows`, `browser.header.bpm`, `browser.panel.info` |
 | `info`, `subbrowser` | right-hand panels | `info.bitrate`, `subbrowser.tree` |
 | `queue` | queue panel (roadmap [29]) | `queue.add`, `queue.load-next`, `queue.row0.up`, `queue.auto` |
+| `cue-edit` | hot cue panel of CUE EDIT (roadmap [31] [64]) | `cue-edit.slot.A`, `cue-edit.name`, `cue-edit.trigger.gate`, `cue-edit.drop-mark` |
+| `plan` | the set plan over the list (roadmap [65]) | `plan.now`, `plan.next`, `plan.standing`, `plan.close` |
 | `devices` | USB screen | `devices.stick1`, `devices.emergency`, `devices.check-panel` |
 | `status` | status band | `status.summary`, `status.activity` |
 | `lighting` | LIGHTING view | `lighting.rig.add`, `lighting.output.artnet`, `lighting.stage`, `lighting.mode.auto`, `lighting.blackout`, `lighting.cue.go` |

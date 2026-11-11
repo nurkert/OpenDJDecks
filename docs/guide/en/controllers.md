@@ -21,9 +21,9 @@ Which controllers OpenDJDecks knows and how far each is confirmed. A model count
 |---|---|---|---|---|
 | compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | not confirmed: 0 verified, 125 partial, 135 untested |
 | compatible with DDJ-FLX4 | 2 | built in | MIDI port name `DDJ-FLX4` | not confirmed: 0 verified, 126 partial, 47 untested |
-| Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (39 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
-| Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (34 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
-| Any four-deck controller | 4 | guided setup, template `four-deck` (73 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
+| Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (46 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
+| Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (44 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
+| Any four-deck controller | 4 | guided setup, template `four-deck` (78 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
 <!-- controller-list:end -->
 
 Any other controller can be set up with the guided setup below, from one of three generic templates. More model mappings, for entry-level and battle-style controllers too, come from owners who capture their own unit with the guided setup and share the file. None of those is confirmed for other units yet. OpenDJDecks does not derive mappings from manufacturer manuals, MIDI charts, vendor software or other projects' mapping files.

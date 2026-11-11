@@ -16,9 +16,9 @@ pub mod waveform;
 
 pub use beatgrid::{Beat, Beatgrid};
 pub use color::{CueColor, TRACK_COLORS};
-pub use cue::{Cue, CueKind};
+pub use cue::{Cue, CueKind, CueTrigger};
 pub use ids::*;
 pub use key::{KeyNotation, KeyRelation, Mode, MusicalKey};
-pub use phrase::{Phrase, PhraseKind, PhraseMood, normalize_phrases};
+pub use phrase::{Phrase, PhraseKind, PhraseMood, mark_drop, normalize_phrases};
 pub use track::{AnalysisConfidence, AudioFormat, DataSource, TrackAnalysis, TrackTags};
 pub use waveform::{Waveform, WaveformColumn};

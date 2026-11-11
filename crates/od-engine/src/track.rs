@@ -23,6 +23,8 @@ pub struct HotCue {
     pub start: f64,
     /// `Some` for a loop hot cue.
     pub loop_end: Option<f64>,
+    /// How the pad plays the cue.
+    pub trigger: od_core::CueTrigger,
 }
 
 /// A fully decoded track, interleaved stereo `f32` at the engine rate.
@@ -99,6 +101,7 @@ impl TrackData {
             let hc = HotCue {
                 start: c.start,
                 loop_end: c.loop_end,
+                trigger: c.trigger,
             };
             match c.kind {
                 CueKind::Hot(slot) if (slot as usize) < HOT_CUES * HOT_CUE_BANKS => {

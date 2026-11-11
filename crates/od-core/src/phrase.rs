@@ -57,6 +57,32 @@ impl Phrase {
     }
 }
 
+/// The phrases with the drop you marked at grid beat `drop`: the phrase
+/// it falls in is split there and the part from the drop on becomes a
+/// Chorus (the drop); the part before it, or a Chorus right before a drop
+/// that starts a phrase, becomes the build-up (Up). Without a phrase at
+/// that beat the list is returned as it is.
+pub fn mark_drop(phrases: &[Phrase], drop: u32) -> Vec<Phrase> {
+    let mut out: Vec<Phrase> = phrases.to_vec();
+    out.sort_by_key(|p| p.start_beat);
+    let Some(i) = out.iter().position(|p| p.start_beat <= drop && drop < p.end_beat) else {
+        return out;
+    };
+    let p = out[i];
+    if p.start_beat == drop {
+        out[i] = Phrase::new(p.start_beat, p.end_beat, PhraseKind::Chorus);
+        if i > 0 && out[i - 1].kind == PhraseKind::Chorus && out[i - 1].end_beat == drop {
+            let q = out[i - 1];
+            out[i - 1] = Phrase::new(q.start_beat, q.end_beat, PhraseKind::Up);
+        }
+    } else {
+        let before = if p.kind == PhraseKind::Chorus { PhraseKind::Up } else { p.kind };
+        out[i] = Phrase { end_beat: drop, kind: before, ..p };
+        out.insert(i + 1, Phrase::new(drop, p.end_beat, PhraseKind::Chorus));
+    }
+    out
+}
+
 /// The confidence of two phrases joined into one: the lower of the values
 /// the analysis gave (a value you confirmed, `None`, does not lift an
 /// unsure neighbour).
@@ -212,5 +238,28 @@ mod tests {
         new.confidence = Some(0.25);
         let back: Phrase = serde_json::from_str(&serde_json::to_string(&new).unwrap()).unwrap();
         assert_eq!(back, new);
+    }
+
+    #[test]
+    fn a_marked_drop_splits_its_phrase_into_build_up_and_drop() {
+        let p = [
+            Phrase::new(0, 64, PhraseKind::Intro),
+            Phrase::new(64, 128, PhraseKind::Verse),
+            Phrase::new(128, 192, PhraseKind::Chorus),
+        ];
+        let m = mark_drop(&p, 96);
+        assert_eq!(m.len(), 4);
+        assert_eq!(m[1], Phrase::new(64, 96, PhraseKind::Verse));
+        assert_eq!(m[2], Phrase::new(96, 128, PhraseKind::Chorus));
+        // A drop on a phrase start: that phrase is the drop, a chorus
+        // before it becomes the build-up.
+        let m = mark_drop(&[Phrase::new(0, 64, PhraseKind::Chorus), Phrase::new(64, 128, PhraseKind::Verse)], 64);
+        assert_eq!(m[0].kind, PhraseKind::Up);
+        assert_eq!(m[1].kind, PhraseKind::Chorus);
+        // Inside a chorus: the part before becomes the build-up.
+        let m = mark_drop(&[Phrase::new(0, 64, PhraseKind::Chorus)], 32);
+        assert_eq!(m, vec![Phrase::new(0, 32, PhraseKind::Up), Phrase::new(32, 64, PhraseKind::Chorus)]);
+        // Outside every phrase: nothing changes.
+        assert_eq!(mark_drop(&p, 500), p.to_vec());
     }
 }

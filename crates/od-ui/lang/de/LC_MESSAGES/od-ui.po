@@ -9735,3 +9735,318 @@ msgstr "Nicht spielen"
 msgctxt "InfoPanel"
 msgid "Warn when these tracks are loaded, and leave them out of auto-play"
 msgstr "Beim Laden dieser Tracks warnen und sie bei Auto-Play auslassen"
+
+#: ui/controller_setup.slint:33
+msgctxt "ControllerSetupBar"
+msgid "Press the {} kill of channel {}"
+msgstr "Drücke den {}-Kill von Kanal {}"
+
+#: ui/controller_setup.slint:34
+msgctxt "ControllerSetupBar"
+msgid "Press CUT IN for deck {}"
+msgstr "Drücke CUT IN für Deck {}"
+
+#: ui/controller_setup.slint:35
+msgctxt "ControllerSetupBar"
+msgid "Press REVERSE on deck {}"
+msgstr "Drücke REVERSE auf Deck {}"
+
+#: ui/controller_setup.slint:36
+msgctxt "ControllerSetupBar"
+msgid "Press the split cue key of the headphones"
+msgstr "Drücke die Split-Cue-Taste des Kopfhörers"
+
+#: ui/controller_setup.slint:37
+msgctxt "ControllerSetupBar"
+msgid "Press the crossfader curve key"
+msgstr "Drücke die Taste für die Crossfader-Kurve"
+
+#: ui/cue_edit.slint:87
+msgctxt "CueEditPanel"
+msgid "HOT CUES · DECK {}"
+msgstr "HOT CUES · DECK {}"
+
+#: ui/cue_edit.slint:93
+msgctxt "CueEditPanel"
+msgid "DONE"
+msgstr "FERTIG"
+
+#: ui/cue_edit.slint:94
+msgctxt "CueEditPanel"
+msgid "Back to the hot cue pads"
+msgstr "Zurück zu den Hot-Cue-Pads"
+
+#: ui/cue_edit.slint:107
+msgctxt "CueEditPanel"
+msgid "HOT CUE {}"
+msgstr "HOT CUE {}"
+
+#: ui/cue_edit.slint:107 ui/cue_edit.slint:124
+msgctxt "CueEditPanel"
+msgid "Edit this hot cue"
+msgstr "Diesen Hot Cue bearbeiten"
+
+#: ui/cue_edit.slint:129
+msgctxt "CueEditPanel"
+msgid "Hot cue {}"
+msgstr "Hot Cue {}"
+
+#: ui/cue_edit.slint:129
+msgctxt "CueEditPanel"
+msgid "Pad {} has no cue: TO PLAYHEAD stores one"
+msgstr "Pad {} hat keinen Cue: AN ABSPIELPUNKT speichert einen"
+
+#: ui/cue_edit.slint:132 ui/cue_edit.slint:135
+msgctxt "CueEditPanel"
+msgid "NAME"
+msgstr "NAME"
+
+#: ui/cue_edit.slint:138
+msgctxt "CueEditPanel"
+msgid "Name, then Return"
+msgstr "Name, dann Return"
+
+#: ui/cue_edit.slint:141
+msgctxt "CueEditPanel"
+msgid "COLOUR"
+msgstr "FARBE"
+
+#: ui/cue_edit.slint:150
+msgctxt "CueEditPanel"
+msgid "COLOUR {}"
+msgstr "FARBE {}"
+
+#: ui/cue_edit.slint:150 ui/cue_edit.slint:160
+msgctxt "CueEditPanel"
+msgid "Give the hot cue this colour"
+msgstr "Dem Hot Cue diese Farbe geben"
+
+#: ui/cue_edit.slint:163
+msgctxt "CueEditPanel"
+msgid "THE PAD PLAYS"
+msgstr "DAS PAD SPIELT"
+
+#: ui/cue_edit.slint:167
+msgctxt "CueEditPanel"
+msgid "CUE"
+msgstr "CUE"
+
+#: ui/cue_edit.slint:167
+msgctxt "CueEditPanel"
+msgid "As usual: jumps while playing; while paused it plays as long as it is held"
+msgstr "Wie gewohnt: springt beim Spielen; pausiert spielt es, solange es gehalten wird"
+
+#: ui/cue_edit.slint:168
+msgctxt "CueEditPanel"
+msgid "LATCH"
+msgstr "LATCH"
+
+#: ui/cue_edit.slint:168
+msgctxt "CueEditPanel"
+msgid "Latch: jumps and plays on, also from a paused deck"
+msgstr "Latch: springt und spielt weiter, auch von einem pausierten Deck"
+
+#: ui/cue_edit.slint:171
+msgctxt "CueEditPanel"
+msgid "GATE"
+msgstr "GATE"
+
+#: ui/cue_edit.slint:171
+msgctxt "CueEditPanel"
+msgid "Gate: plays from the cue while held, then stops on the cue, also while playing"
+msgstr "Gate: spielt ab dem Cue, solange gehalten, und hält dann am Cue an, auch beim Spielen"
+
+#: ui/cue_edit.slint:172
+msgctxt "CueEditPanel"
+msgid "MOMENTARY"
+msgstr "MOMENTAN"
+
+#: ui/cue_edit.slint:172
+msgctxt "CueEditPanel"
+msgid "Momentary: plays from the cue while held, then the track carries on where it would have been"
+msgstr "Momentan: spielt ab dem Cue, solange gehalten, dann läuft der Track dort weiter, wo er ohne Druck wäre"
+
+#: ui/cue_edit.slint:179
+msgctxt "CueEditPanel"
+msgid "TO PLAYHEAD"
+msgstr "AN ABSPIELPUNKT"
+
+#: ui/cue_edit.slint:180
+msgctxt "CueEditPanel"
+msgid "Move the hot cue to the playhead (on the beat with quantize)"
+msgstr "Hot Cue an den Abspielpunkt setzen (mit Quantize auf den Beat)"
+
+#: ui/cue_edit.slint:180
+msgctxt "CueEditPanel"
+msgid "Store the hot cue at the playhead (on the beat with quantize)"
+msgstr "Hot Cue am Abspielpunkt speichern (mit Quantize auf den Beat)"
+
+#: ui/cue_edit.slint:185
+msgctxt "CueEditPanel"
+msgid "DELETE"
+msgstr "LÖSCHEN"
+
+#: ui/cue_edit.slint:187
+msgctxt "CueEditPanel"
+msgid "Delete the hot cue (undo brings it back)"
+msgstr "Hot Cue löschen (Rückgängig holt ihn zurück)"
+
+#: ui/cue_edit.slint:192
+msgctxt "CueEditPanel"
+msgid "DROP"
+msgstr "DROP"
+
+#: ui/cue_edit.slint:204
+msgctxt "CueEditPanel"
+msgid "MOVE OR CLEAR"
+msgstr "VERSETZEN/ENTFERNEN"
+
+#: ui/cue_edit.slint:204
+msgctxt "CueEditPanel"
+msgid "MARK DROP"
+msgstr "DROP MARKIEREN"
+
+#: ui/cue_edit.slint:205
+msgctxt "CueEditPanel"
+msgid "Mark the drop on the bar at the playhead; at the marked drop the key clears it. The phrases and the light show follow."
+msgstr "Den Drop auf dem Takt am Abspielpunkt markieren; am markierten Drop entfernt ihn die Taste. Phrasen und Lichtshow folgen."
+
+#: ui/perform.slint:320
+msgctxt "PadModes"
+msgid "PHRASE"
+msgstr "PHRASE"
+
+#: ui/perform.slint:320
+msgctxt "PadModes"
+msgid "CUE EDIT"
+msgstr "CUE-EDIT"
+
+#: ui/perform.slint:399
+msgctxt "DeckPad"
+msgid "Back one phrase: its start lands on the next downbeat, in time"
+msgstr "Eine Phrase zurück: ihr Anfang landet im Takt auf der nächsten Eins"
+
+#: ui/perform.slint:400
+msgctxt "DeckPad"
+msgid "On one phrase: its start lands on the next downbeat, in time"
+msgstr "Eine Phrase weiter: ihr Anfang landet im Takt auf der nächsten Eins"
+
+#: ui/perform.slint:401
+msgctxt "DeckPad"
+msgid "Jump to the marked drop: it lands on the next downbeat, in time"
+msgstr "Zum markierten Drop springen: er landet im Takt auf der nächsten Eins"
+
+#: ui/perform.slint:402
+msgctxt "DeckPad"
+msgid "Mark the drop on the bar at the playhead (at the mark: clear it)"
+msgstr "Den Drop auf dem Takt am Abspielpunkt markieren (an der Marke: entfernen)"
+
+#: ui/perform.slint:403
+msgctxt "DeckPad"
+msgid "Jump to the next phrase of this kind: it lands on the next downbeat, in time"
+msgstr "Zur nächsten Phrase dieser Art springen: sie landet im Takt auf der nächsten Eins"
+
+#: ui/perform.slint:404
+msgctxt "DeckPad"
+msgid "Pick this hot cue to edit it in the panel beside the list"
+msgstr "Diesen Hot Cue wählen, um ihn im Bereich neben der Liste zu bearbeiten"
+
+#: ui/perform.slint:1252
+msgctxt "PlatterGroup"
+msgid "Reverse: the deck plays backwards until pressed again"
+msgstr "Reverse: das Deck spielt rückwärts, bis die Taste wieder gedrückt wird"
+
+#: ui/perform.slint:1292
+msgctxt "PlatterGroup"
+msgid "Cut in: while held, the deck is heard as if the crossfader were open on its side"
+msgstr "Cut in: solange gehalten, ist das Deck zu hören, als stünde der Crossfader auf seiner Seite offen"
+
+#: ui/perform.slint:2140
+msgctxt "XfCurveKey"
+msgid "CROSSFADER CURVE"
+msgstr "CROSSFADER-KURVE"
+
+#: ui/perform.slint:2143
+msgctxt "XfCurveKey"
+msgid "Crossfader curve: constant power, linear or cut — click for the next"
+msgstr "Crossfader-Kurve: konstante Leistung, linear oder Cut – Klick für die nächste"
+
+#: ui/perform.slint:2314
+msgctxt "ChannelStrip"
+msgid "Mute the vocals (tap)"
+msgstr "Vocals stummschalten (antippen)"
+
+#: ui/perform.slint:2322
+msgctxt "ChannelStrip"
+msgid "Mute the instruments (tap)"
+msgstr "Instrumente stummschalten (antippen)"
+
+#: ui/perform.slint:2330
+msgctxt "ChannelStrip"
+msgid "Mute the drums (tap)"
+msgstr "Drums stummschalten (antippen)"
+
+#: ui/perform.slint:2577
+msgctxt "GlobalBar"
+msgid "Split cue: the cue in the left ear, the master in the right"
+msgstr "Split Cue: Cue im linken Ohr, Master im rechten"
+
+#: ui/set_plan.slint:34 ui/set_plan.slint:55
+msgctxt "PlanLine"
+msgid "PLAN"
+msgstr "PLAN"
+
+#: ui/set_plan.slint:64
+msgctxt "PlanLine"
+msgid "ON AIR {} / {}"
+msgstr "LÄUFT {} / {}"
+
+#: ui/set_plan.slint:64
+msgctxt "PlanLine"
+msgid "{} TRACKS"
+msgstr "{} TRACKS"
+
+#: ui/set_plan.slint:70
+msgctxt "PlanLine"
+msgid "NEXT {}  {} — {}  {}"
+msgstr "ALS NÄCHSTES {}  {} — {}  {}"
+
+#: ui/set_plan.slint:70
+msgctxt "PlanLine"
+msgid "LAST TRACK OF THE SET"
+msgstr "LETZTER TRACK DES SETS"
+
+#: ui/set_plan.slint:85
+msgctxt "PlanLine"
+msgid "NOTE  {}"
+msgstr "NOTIZ  {}"
+
+#: ui/set_plan.slint:93
+msgctxt "PlanLine"
+msgid "CLOSE"
+msgstr "SCHLIESSEN"
+
+#: ui/set_plan.slint:93 ui/set_plan.slint:104
+msgctxt "PlanLine"
+msgid "Hide the plan until another set is opened"
+msgstr "Plan ausblenden, bis ein anderes Set geöffnet wird"
+
+#: ui/topbar.slint:369
+msgctxt "ViewMenu"
+msgid "PLATTER"
+msgstr "PLATTER"
+
+#: ui/wave.slint:198
+msgctxt "WaveLane"
+msgid "DROP"
+msgstr "DROP"
+
+#: ui/cue_edit.slint:90
+msgctxt "CueEditPanel"
+msgid "HOT CUE {} · DECK {}"
+msgstr "HOT CUE {} · DECK {}"
+
+#: ui/cue_edit.slint:96
+msgctxt "CueEditPanel"
+msgid "No cue yet"
+msgstr "Noch kein Cue"

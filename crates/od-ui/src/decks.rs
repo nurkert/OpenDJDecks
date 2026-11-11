@@ -50,7 +50,11 @@ pub(crate) struct Loaded {
     cues: Vec<CueMark>,
     /// Hot cue labels by library index (bank * 8 + slot).
     labels: Vec<String>,
-    phrases: Vec<od_core::Phrase>,
+    /// How each hot cue's pad plays it, by library index.
+    triggers: Vec<od_core::CueTrigger>,
+    /// The drop you marked (seconds).
+    pub drop: Option<f64>,
+    pub phrases: Vec<od_core::Phrase>,
     phrase_marks: Vec<PhraseMark>,
     vocals: Vec<crate::VocalMark>,
     /// What a reload with stems needs.
@@ -180,6 +184,11 @@ pub(crate) fn stick_stem_cache(root: &std::path::Path) -> od_stems::StemCache {
 }
 
 impl Loaded {
+    /// The marked drop's grid beat.
+    pub(crate) fn drop_beat(&self) -> Option<f64> {
+        crate::deck_craft::drop_beat(&self.grid, self.drop)
+    }
+
     /// Memory cue starts in seconds, in track order.
     pub(crate) fn memory_starts(&self, duration: f64) -> Vec<f64> {
         let mut v: Vec<f64> = self
@@ -258,7 +267,7 @@ pub(crate) struct Decks {
     pending: [Option<Loaded>; DECKS],
     prepared_tx: Sender<Prepared>,
     prepared_rx: Receiver<Prepared>,
-    loaded_from_stick: bool,
+    pub(crate) loaded_from_stick: bool,
     /// Auto-loop size per deck, in beats.
     pub loop_size: [f64; DECKS],
     pub shift: [bool; DECKS],
@@ -608,6 +617,8 @@ pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Opti
         grid: analysis.beatgrid.clone(),
         cues: cue_marks(&cues, t.duration, false),
         labels: hot_labels(&cues),
+        triggers: hot_triggers(&cues),
+        drop: st.src().drop_marker(track).ok().flatten(),
         phrases: analysis.phrases.clone(),
         phrase_marks: phrase_marks(&analysis.phrases, &analysis.beatgrid, t.duration),
         vocals: Vec::new(),
@@ -1233,6 +1244,11 @@ pub(crate) struct DeckFields {
     pub counter_mode: SharedString,
     pub loop_beats: SharedString,
     pub slip: bool,
+    /// The marked drop (seconds, −1 = none).
+    pub drop_at: f32,
+    /// Playing backwards (REV), and the channel's cut-in held.
+    pub reverse: bool,
+    pub cut_in: bool,
     pub level: f32,
     pub fader: f32,
     pub tempo_value: f32,
@@ -1296,6 +1312,8 @@ pub(crate) struct DeckInputs<'a> {
     pub loading: bool,
     pub level: f32,
     pub fader: f32,
+    /// The channel's cut-in is held.
+    pub cut_in: bool,
     pub quantize: bool,
     /// Separation progress (0..1) while parts are being separated.
     pub stems_busy: Option<f32>,
@@ -1414,6 +1432,9 @@ pub(crate) fn deck_fields(s: &DeckState, i: &DeckInputs) -> DeckFields {
             .unwrap_or_default()
             .into(),
         slip: s.slip,
+        drop_at: meta.and_then(|m| m.drop).map_or(-1.0, |t| t as f32),
+        reverse: s.reverse,
+        cut_in: i.cut_in,
         level: i.level,
         fader: i.fader,
         tempo_value: s.tempo_fader,
@@ -1597,6 +1618,9 @@ impl Lane {
             counter_mode: f.counter_mode,
             loop_beats: f.loop_beats,
             slip: f.slip,
+            drop_at: f.drop_at,
+            reverse: f.reverse,
+            cut_in: f.cut_in,
             level: f.level,
             fader: f.fader,
             waveform: self.waveform.clone(),
@@ -1680,6 +1704,9 @@ impl DeckViews {
                 labels: &[],
                 sampler_slots: &[],
                 memory: &[],
+                triggers: &[],
+                phrases: &[],
+                drop_beat: None,
             };
             let rows = pads::pad_views(&s, &Default::default(), &[], &ctx);
             lane.pads.sync_eq(rows.clone());
@@ -1827,6 +1854,9 @@ pub(crate) fn project(app: &App, state: &EngineState) {
             labels: meta.map(|m| m.labels.as_slice()).unwrap_or(&[]),
             sampler_slots: &sampler_slots,
             memory: &memory,
+            triggers: meta.map(|m| m.triggers.as_slice()).unwrap_or(&[]),
+            phrases: meta.map(|m| m.phrases.as_slice()).unwrap_or(&[]),
+            drop_beat: meta.and_then(|m| m.drop_beat()),
         };
         let mut rows = pads::pad_views(s, &state.channels[i], &state.sampler, &ctx);
         if d.pad_mode[i] == PadMode::Lighting {
@@ -1835,7 +1865,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
         if d.pad_mode[i] == PadMode::PatternRecall {
             crate::sampler::seq_pads(app, state, &mut rows);
         }
-        if d.pad_mode[i] == PadMode::HotCue
+        if matches!(d.pad_mode[i], PadMode::HotCue | PadMode::CueEdit)
             && let Some(m) = meta
         {
             // Hot cue pads in their stored colours.
@@ -1844,6 +1874,14 @@ pub(crate) fn project(app: &App, state: &EngineState) {
                 if let Some(c) = m.cues.iter().find(|c| c.slot == bank as i32 + r.index) {
                     r.tone = c.tone;
                 }
+            }
+        }
+        // CUE EDIT: the pad of the cue in the editor is lit.
+        if d.pad_mode[i] == PadMode::CueEdit
+            && let Some(e) = crate::deck_craft::edited_slot(app, i)
+        {
+            for r in rows.iter_mut() {
+                r.lit = s.hot_cue_bank * od_engine::HOT_CUES + r.index as usize == e;
             }
         }
         let pad_param = pads::param_label(s, &ctx);
@@ -1858,6 +1896,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
                 loading,
                 level: state.channels[i].meter.peak,
                 fader: state.channels[i].fader,
+                cut_in: state.channels[i].cut_in,
                 quantize: state.quantize,
                 stems_busy: stem_busy,
                 stems_queued: stem_queued,
@@ -2058,6 +2097,36 @@ pub(crate) fn persist_cue_events(app: &App, events: &[od_engine::Event]) {
 }
 
 /// Rebuilds the cue marks and pad labels of every deck showing `track`.
+pub(crate) fn refresh_cues(app: &App, track: TrackId) {
+    refresh_deck_cues(app, track);
+}
+
+/// New phrases (and drop) of `track` on every deck that shows it.
+pub(crate) fn set_track_phrases(app: &App, track: TrackId, drop: Option<f64>, phrases: Vec<od_core::Phrase>) {
+    let duration = app.state.borrow().lib.track(track).map(|t| t.duration).unwrap_or(0.0);
+    let mut d = app.decks.borrow_mut();
+    for i in 0..DECKS {
+        if let Some(m) = d.loaded[i].as_mut().filter(|m| m.id == track) {
+            m.drop = drop;
+            m.phrase_marks = phrase_marks(&phrases, &m.grid, duration);
+            m.phrases = phrases.clone();
+            d.views.lanes[i].track = None;
+        }
+    }
+}
+
+/// How each hot cue's pad plays it, by library index.
+fn hot_triggers(cues: &[od_core::Cue]) -> Vec<od_core::CueTrigger> {
+    (0..od_engine::HOT_CUE_BANKS * od_engine::HOT_CUES)
+        .map(|s| {
+            cues.iter()
+                .find(|c| c.kind == CueKind::Hot(s as u8))
+                .map(|c| c.trigger)
+                .unwrap_or_default()
+        })
+        .collect()
+}
+
 fn refresh_deck_cues(app: &App, track: TrackId) {
     let cues = app.state.borrow().lib.cues(track).unwrap_or_default();
     let duration = app
@@ -2072,10 +2141,13 @@ fn refresh_deck_cues(app: &App, track: TrackId) {
         if let Some(m) = d.loaded[i].as_mut().filter(|m| m.id == track) {
             m.cues = cue_marks(&cues, duration, false);
             m.labels = hot_labels(&cues);
+            m.triggers = hot_triggers(&cues);
             // Force the lane to rebuild its per-track models.
             d.views.lanes[i].track = None;
         }
     }
+    drop(d);
+    crate::deck_craft::project(app);
 }
 
 /// Hot cue labels by library index, for every bank.
@@ -2161,6 +2233,9 @@ fn with_pads<R>(app: &App, d: usize, f: impl FnOnce(&DeckState, &pads::PadCtx) -
         labels: &labels,
         sampler_slots: &slots,
         memory: &memory,
+        triggers: dk.loaded(d).map(|m| m.triggers.as_slice()).unwrap_or(&[]),
+        phrases: dk.loaded(d).map(|m| m.phrases.as_slice()).unwrap_or(&[]),
+        drop_beat: dk.loaded(d).and_then(|m| m.drop_beat()),
     };
     f(&s, &ctx)
 }
@@ -2183,6 +2258,9 @@ pub(crate) fn pad_rows(app: &App, d: usize, state: &EngineState) -> Vec<PadView>
         labels,
         sampler_slots: &slots,
         memory: &memory,
+        triggers: dk.loaded(d).map(|m| m.triggers.as_slice()).unwrap_or(&[]),
+        phrases: dk.loaded(d).map(|m| m.phrases.as_slice()).unwrap_or(&[]),
+        drop_beat: dk.loaded(d).and_then(|m| m.drop_beat()),
     };
     pads::pad_views(&state.decks[d], &state.channels[d], &state.sampler, &ctx)
 }
@@ -2199,6 +2277,18 @@ pub(crate) fn pad(app: &App, d: usize, index: usize, pressed: bool) {
     match app.decks.borrow().pad_mode[d] {
         PadMode::Lighting => {
             crate::lighting::pad(app, index, pressed);
+            return;
+        }
+        PadMode::Phrase => {
+            if pressed {
+                crate::deck_craft::phrase_pad(app, d, index.min(7));
+            }
+            return;
+        }
+        PadMode::CueEdit => {
+            if pressed {
+                crate::deck_craft::select_pad(app, d, index.min(7));
+            }
             return;
         }
         PadMode::PatternRecall => {
@@ -2253,6 +2343,9 @@ pub(crate) fn set_pad_mode(app: &App, d: usize, mode: PadMode) {
         }
     }
     app.decks.borrow_mut().pad_mode[d] = mode;
+    if old != mode {
+        crate::deck_craft::pad_mode_changed(app, d, mode);
+    }
 }
 
 /// The ‹ › beside the pad mode: bank, page, jump size, key, slice length.
@@ -2261,7 +2354,7 @@ pub(crate) fn pad_param(app: &App, d: usize, delta: i32) {
     let s = deck_state(app, d).unwrap_or_default();
     let mode = app.decks.borrow().pad_mode[d];
     match mode {
-        PadMode::HotCue => engine::deck_cmd(
+        PadMode::HotCue | PadMode::CueEdit => engine::deck_cmd(
             app,
             d,
             DeckCommand::SetHotCueBank(pads::step_hot_cue_bank(s.hot_cue_bank, delta)),
@@ -2299,7 +2392,8 @@ pub(crate) fn pad_param(app: &App, d: usize, delta: i32) {
         | PadMode::Lighting
         | PadMode::TimedCensor
         | PadMode::PatternRecall
-        | PadMode::LoopRoll => {}
+        | PadMode::LoopRoll
+        | PadMode::Phrase => {}
     }
 }
 
@@ -3089,6 +3183,7 @@ mod tests {
             Some(od_engine::HotCue {
                 start: 12.5,
                 loop_end: None,
+                trigger: Default::default(),
             }),
         );
         let c = moved.iter().find(|c| c.kind == CueKind::Hot(2)).unwrap();
@@ -3099,6 +3194,7 @@ mod tests {
             Some(od_engine::HotCue {
                 start: 4.0,
                 loop_end: Some(6.0),
+                trigger: Default::default(),
             }),
         );
         let b = added.iter().find(|c| c.kind == CueKind::Hot(1)).unwrap();
@@ -3177,6 +3273,7 @@ mod tests {
                 loading: false,
                 level: 0.0,
                 fader: 1.0,
+                cut_in: false,
                 quantize: true,
                 stems_busy: None,
                 loop_size: 0.5,
@@ -3204,6 +3301,7 @@ mod tests {
                 loading: false,
                 level: 0.0,
                 fader: 1.0,
+                cut_in: false,
                 quantize: true,
                 stems_busy: None,
                 loop_size: 0.5,

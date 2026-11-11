@@ -207,6 +207,55 @@ fn hot_cue_quantize_set_and_trigger() {
     assert!(rig.state().decks[0].hot_cues[3].is_none());
 }
 
+/// Per-cue pad behaviour: LATCH plays on from a paused deck, GATE plays
+/// only while held (also while playing) and returns to the cue, MOMENTARY
+/// returns to where the track would have been.
+#[test]
+fn hot_cue_triggers_latch_gate_momentary() {
+    let press = |rig: &mut Rig, pressed: bool| rig.deck(0, DeckCommand::HotCue { slot: 0, pressed });
+    let mut rig = Rig::new(2);
+    rig.deck(0, DeckCommand::Load(ramp_track(7, 30.0, 120.0)));
+    rig.deck(0, DeckCommand::SetHotCueAt { slot: 0, start: 2.0, loop_end: None });
+    // LATCH from a paused deck: plays on after release.
+    rig.deck(0, DeckCommand::SetHotCueTrigger { slot: 0, trigger: od_core::CueTrigger::Latch });
+    rig.deck(0, DeckCommand::Seek { seconds: 8.0 });
+    press(&mut rig, true);
+    press(&mut rig, false);
+    rig.render(100);
+    let st = rig.state().decks[0];
+    assert!(st.playing, "latch plays on");
+    assert!(st.position > 2.0 && st.position < 3.0, "from the cue: {}", st.position);
+    assert_eq!(st.hot_cues[0].unwrap().trigger, od_core::CueTrigger::Latch);
+    // GATE while playing: plays from the cue while held, then stops on it.
+    rig.deck(0, DeckCommand::SetHotCueTrigger { slot: 0, trigger: od_core::CueTrigger::Gate });
+    rig.deck(0, DeckCommand::Seek { seconds: 12.0 });
+    press(&mut rig, true);
+    rig.render(100);
+    let st = rig.state().decks[0];
+    assert!(st.playing && st.position > 2.0 && st.position < 3.0, "gate plays from the cue: {}", st.position);
+    press(&mut rig, false);
+    rig.render(1);
+    let st = rig.state().decks[0];
+    assert!(!st.playing, "gate stops on release");
+    assert!((st.position - 2.0).abs() < 0.01, "and returns to the cue: {}", st.position);
+    // MOMENTARY while playing: back where the track would be.
+    rig.deck(0, DeckCommand::SetHotCueTrigger { slot: 0, trigger: od_core::CueTrigger::Momentary });
+    rig.deck(0, DeckCommand::Seek { seconds: 12.0 });
+    rig.deck(0, DeckCommand::Play);
+    rig.render(1);
+    press(&mut rig, true);
+    rig.render(200);
+    let held = rig.state().decks[0].position;
+    assert!(held > 2.0 && held < 4.0, "plays from the cue while held: {held}");
+    press(&mut rig, false);
+    rig.render(1);
+    let st = rig.state().decks[0];
+    assert!(st.playing);
+    // 201 blocks after 12 s.
+    let expect = 12.0 + 202.0 * BLOCK as f64 / SR as f64;
+    assert!((st.position - expect).abs() < 0.05, "returns to {expect}: {}", st.position);
+}
+
 #[test]
 fn loop_hot_cue_activates_loop() {
     let mut rig = Rig::new(2);
@@ -518,6 +567,34 @@ fn headphone_cue_mix() {
         (phones - 0.3 / 2f32.sqrt()).abs() < 0.01,
         "PFL in headphones: {phones}"
     );
+}
+
+/// Split cue: deck 1 cued with its fader down sounds only on the left of
+/// the headphones, deck 2 on air only on the right.
+#[test]
+fn split_cue_puts_cue_left_and_master_right() {
+    let mut rig = Rig::new(2);
+    rig.deck(0, DeckCommand::Load(sine_track(1, 10.0, 440.0, 0.3, 120.0)));
+    rig.deck(0, DeckCommand::Play);
+    rig.send(Command::Channel(0, ChannelCommand::SetFader(0.0)));
+    rig.send(Command::Channel(0, ChannelCommand::SetCue(true)));
+    rig.send(Command::Mixer(MixerCommand::SetSplitCue(true)));
+    rig.render(100);
+    rig.block(4800);
+    let left: Vec<f32> = rig.phones[..4800 * 2].iter().step_by(2).copied().collect();
+    let right: Vec<f32> = rig.phones[1..4800 * 2].iter().step_by(2).copied().collect();
+    assert!(rms(&left) > 0.1, "cue on the left: {}", rms(&left));
+    assert!(rms(&right) < 1e-6, "master silent on the right: {}", rms(&right));
+    assert!(rig.state().split_cue);
+    // Now the deck on air and nothing cued: only the right side sounds.
+    rig.send(Command::Channel(0, ChannelCommand::SetCue(false)));
+    rig.send(Command::Channel(0, ChannelCommand::SetFader(1.0)));
+    rig.render(100);
+    rig.block(4800);
+    let left: Vec<f32> = rig.phones[..4800 * 2].iter().step_by(2).copied().collect();
+    let right: Vec<f32> = rig.phones[1..4800 * 2].iter().step_by(2).copied().collect();
+    assert!(rms(&left) < 1e-6, "no cue: left silent: {}", rms(&left));
+    assert!(rms(&right) > 0.1, "master on the right: {}", rms(&right));
 }
 
 #[test]

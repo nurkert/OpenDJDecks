@@ -44,6 +44,10 @@ pub struct App {
     /// Loaded tracks, stems and the deck view models.
     pub(crate) decks: RefCell<decks::Decks>,
     pub(crate) mixer: mixer::MixerView,
+    /// The hot cue edit panel in Perform.
+    pub(crate) cue_edit: crate::deck_craft::CueEditState,
+    /// The planned set in Perform.
+    pub(crate) plan: crate::set_plan::PlanState,
     pub(crate) lane_drag: crate::lane_drag::LaneDragState,
     /// Tempo FX panel rows and tap tempo.
     pub(crate) fx: fx::FxRuntime,
@@ -127,6 +131,8 @@ impl App {
             engine: RefCell::new(engine::EngineHost::default()),
             decks: RefCell::new(decks::Decks::default()),
             mixer: mixer::MixerView::default(),
+            cue_edit: Default::default(),
+            plan: Default::default(),
             lane_drag: Default::default(),
             fx: fx::FxRuntime::default(),
             sampler: sampler::SamplerRuntime::default(),
@@ -151,6 +157,7 @@ impl App {
         crate::emergency::wire(&app);
         crate::queue::wire(&app);
         crate::dj_demo::run(&app);
+        crate::perform_demo::run(&app);
         recorder::wire(&app);
         if !app.state.borrow().config.headless {
             controller::start(&app);
@@ -159,6 +166,8 @@ impl App {
         deck_grid::wire(&app);
         shell::wire_window_chrome(&app);
         mixer::wire(&app);
+        crate::deck_craft::wire(&app);
+        crate::set_plan::wire(&app);
         fx::wire(&app);
         crate::key_mix::wire(&app);
         crate::lane_drag::wire(&app);

@@ -91,9 +91,16 @@ CREATE TABLE cue (
     label    TEXT    NOT NULL DEFAULT '',
     color    TEXT,
     source   TEXT    NOT NULL,
-    active   INTEGER NOT NULL DEFAULT 0   -- active loop (schema 3)
+    active   INTEGER NOT NULL DEFAULT 0,  -- active loop (schema 3)
+    trigger  TEXT                         -- hot cue pad behaviour (schema 5)
 );
 CREATE INDEX cue_track ON cue (track_id);
+
+-- The drop you marked on a track, in seconds (schema 5).
+CREATE TABLE drop_marker (
+    track_id INTEGER PRIMARY KEY REFERENCES track (id) ON DELETE CASCADE,
+    at       REAL    NOT NULL
+);
 
 -- Folders, playlists, smart playlists and sets form one tree.
 CREATE TABLE node (

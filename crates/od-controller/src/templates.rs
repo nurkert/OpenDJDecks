@@ -187,6 +187,9 @@ pub const ACTION_NAMES: &[&str] = &[
     "deck.load",
     "deck.censor",
     "deck.reverse",
+    "deck.cut_in",
+    "deck.phrase_jump",
+    "deck.drop_mark",
     "deck.needle_search",
     "deck.select",
     "deck.stem_level",
@@ -208,6 +211,8 @@ pub const ACTION_NAMES: &[&str] = &[
     "headphone_mix",
     "headphone_level",
     "master_cue",
+    "split_cue",
+    "crossfader_curve",
     "eq_swap",
     "tempo_fx.toggle",
     "tempo_fx.release",
@@ -453,6 +458,12 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
         "deck.load" => (Button, deck_press(DeckAction::Load)),
         "deck.censor" => (Button, deck_with(|v| Some(DeckAction::Censor(v.pressed())))),
         "deck.reverse" => (Button, deck_press(DeckAction::Reverse)),
+        "deck.cut_in" => (Button, deck_with(|v| Some(DeckAction::CutIn(v.pressed())))),
+        "deck.phrase_jump" => {
+            let forward = a.bool_or("forward", true)?;
+            (Button, deck_press(DeckAction::PhraseJump { forward }))
+        }
+        "deck.drop_mark" => (Button, deck_press(DeckAction::DropMark)),
         "deck.needle_search" => (
             Absolute,
             deck_with(|v| Some(DeckAction::NeedleSearch(v.unit()))),
@@ -561,6 +572,24 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
             Box::new(|_, v| Some(ControlAction::HeadphoneLevel(v.unit()))),
         ),
         "master_cue" => (Button, on_press(|_| ControlAction::MasterCue)),
+        "split_cue" => (Button, on_press(|_| ControlAction::SplitCue)),
+        "crossfader_curve" => {
+            let curve = match a.t.get("curve") {
+                None => None,
+                Some(Value::String(c))
+                    if ["constant_power", "linear", "cut"].contains(&c.as_str()) =>
+                {
+                    Some(c.clone())
+                }
+                Some(_) => {
+                    return Err(a.err("argument `curve` must be constant_power, linear or cut"));
+                }
+            };
+            (
+                Button,
+                on_press(move |_| ControlAction::CrossfaderCurve(curve.clone())),
+            )
+        }
         "fx_panic" => (Button, on_press(|_| ControlAction::FxPanic)),
         "eq_swap" => {
             let band = band_arg(&a)?;
@@ -887,6 +916,28 @@ mod tests {
             ),
             None
         );
+    }
+
+    #[test]
+    fn cut_in_phrase_jump_drop_split_and_curve_map() {
+        let t = Table::new();
+        assert!(parse_action("deck.cut_in", &t).is_ok());
+        let mut back = Table::new();
+        back.insert("forward".into(), Value::Boolean(false));
+        assert!(parse_action("deck.phrase_jump", &back).is_ok());
+        assert!(parse_action("deck.drop_mark", &t).is_ok());
+        assert!(parse_action("split_cue", &t).is_ok());
+        assert!(parse_action("crossfader_curve", &t).is_ok());
+        let mut cut = Table::new();
+        cut.insert("curve".into(), Value::String("cut".into()));
+        let t = parse_action("crossfader_curve", &cut).unwrap();
+        assert_eq!(
+            t.produce(None, InputValue::Button { pressed: true, velocity: 127 }),
+            Some(ControlAction::CrossfaderCurve(Some("cut".into())))
+        );
+        let mut bad = Table::new();
+        bad.insert("curve".into(), Value::String("steep".into()));
+        assert!(parse_action("crossfader_curve", &bad).is_err());
     }
 
     #[test]

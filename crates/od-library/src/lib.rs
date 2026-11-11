@@ -40,7 +40,7 @@ use std::cell::Cell;
 use std::path::{Path, PathBuf};
 
 /// Version 2 adds the `my_tag` table.
-pub const SCHEMA_VERSION: i64 = 4;
+pub const SCHEMA_VERSION: i64 = 5;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LibraryError {
@@ -206,6 +206,21 @@ impl Library {
         if has_confidence == 0 {
             tx.execute_batch("ALTER TABLE analysis ADD COLUMN confidence TEXT;")?;
         }
+        // Version 5: how a hot cue pad plays its cue, and the drop you marked.
+        let has_trigger: i64 = tx.query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('cue') WHERE name = 'trigger'",
+            [],
+            |r| r.get(0),
+        )?;
+        if has_trigger == 0 {
+            tx.execute_batch("ALTER TABLE cue ADD COLUMN trigger TEXT;")?;
+        }
+        tx.execute_batch(
+            "CREATE TABLE IF NOT EXISTS drop_marker (
+                track_id INTEGER PRIMARY KEY REFERENCES track (id) ON DELETE CASCADE,
+                at       REAL    NOT NULL
+             );",
+        )?;
         tx.execute(
             "UPDATE meta SET value = ?1 WHERE key = 'schema_version'",
             [SCHEMA_VERSION.to_string()],
@@ -378,9 +393,10 @@ mod tests {
             // A version 2 cue table has no `active` column.
             // Line ends as checked out (CRLF on Windows) normalised first.
             let old = include_str!("schema.sql").replace("\r\n", "\n").replace(
-                ",\n    active   INTEGER NOT NULL DEFAULT 0   -- active loop (schema 3)",
+                ",\n    active   INTEGER NOT NULL DEFAULT 0,  -- active loop (schema 3)\n    trigger  TEXT                         -- hot cue pad behaviour (schema 5)",
                 "",
             );
+            assert!(!old.contains("trigger  TEXT"));
             assert!(!old.contains("active   INTEGER"));
             conn.execute_batch(&old).unwrap();
             conn.execute(

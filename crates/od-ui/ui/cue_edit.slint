@@ -1,0 +1,218 @@
+// Roadmap 0.9.0 [31] [64]: hot cue edits without leaving Perform. The
+// CUE EDIT pad mode makes a deck's pads pick a hot cue; this panel beside
+// the list then renames, recolours, moves it to the playhead (or stores
+// it there), deletes it and sets how its pad plays it. The drop of the
+// track is marked here too.
+
+import { Theme } from "tokens.slint";
+import { Caps, PlateButton, Field, TooltipState, KeyFocus, TipArea } from "controls.slint";
+import { PadView } from "structs.slint";
+
+export global CueEditPerform {
+    // The deck whose cues are edited (1-based, 0 = closed).
+    in property <int> deck;
+    // The edited cue: pad 0..7 of the shown bank and its letter.
+    in property <int> slot;
+    in property <string> letter;
+    // It has a stored cue; its name, colour (index into palette, -1 = the
+    // pad's own) and how the pad plays it ("cue", "latch", "gate",
+    // "momentary").
+    in property <bool> set;
+    in property <string> name;
+    in property <int> color: -1;
+    in property <string> trigger: "cue";
+    in property <[color]> palette;
+    // The eight pads of the bank (letter, name, set, colour, badge).
+    in property <[PadView]> slots;
+    // The drop of the track.
+    in property <bool> has-drop;
+    in property <string> drop-text;
+    callback select(int);
+    callback rename(string);
+    callback recolor(int);
+    callback move-here();
+    callback delete();
+    callback set-trigger(string);
+    callback drop-mark();
+    callback done();
+}
+
+// One choice of the pad behaviour: filled bone when chosen (Selected).
+component TriggerChoice inherits Rectangle {
+    in property <string> id;
+    in property <string> label;
+    in property <string> tip;
+    property <bool> chosen: CueEditPerform.trigger == root.id;
+    accessible-role: button;
+    accessible-id: "cue-edit.trigger." + root.id;
+    accessible-checkable: true; accessible-checked: root.chosen;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tip);
+    accessible-description: root.tip;
+    accessible-enabled: CueEditPerform.set;
+    accessible-action-default => { CueEditPerform.set-trigger(root.id); }
+    min-width: 0px; horizontal-stretch: 1;
+    border-radius: Theme.r-control;
+    background: Theme.face(CueEditPerform.set, ta.pressed, ta.has-hover, root.chosen, false, Theme.attention);
+    animate background { duration: Theme.t-press; easing: Theme.ease; }
+    border-width: CueEditPerform.set || root.chosen ? 0px : Theme.hair;
+    border-color: Theme.rule;
+    Text {
+        text: root.label;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: Theme.ink(CueEditPerform.set, ta.pressed, ta.has-hover, root.chosen, false);
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    KeyFocus { enabled: CueEditPerform.set; activate => { CueEditPerform.set-trigger(root.id); } }
+    ta := TipArea {
+        tooltip: root.tip; enabled: CueEditPerform.set;
+        mouse-cursor: CueEditPerform.set ? pointer : default;
+        clicked => { CueEditPerform.set-trigger(root.id); }
+    }
+}
+
+export component CueEditPanel inherits Rectangle {
+    accessible-id: "cue-edit.panel"; accessible-role: groupbox;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    // Narrower in a small window, so the list keeps its room.
+    in property <bool> narrow;
+    width: root.narrow ? 300px : 400px;
+    // Never taller than the browser gives it: the rows scroll instead.
+    min-height: 0px;
+    preferred-height: 0px;
+    // Six rows of 28 px fit the browser of a 1440 × 900 window; a lower
+    // one scrolls.
+    Flickable {
+        x: 1px; width: parent.width - 1px; height: parent.height;
+        VerticalLayout {
+            padding: Theme.s3;
+            spacing: Theme.s1;
+            alignment: start;
+            HorizontalLayout {
+                spacing: Theme.s2;
+                height: 28px;
+                Caps {
+                    accessible-role: text; accessible-id: "cue-edit.title"; accessible-value: self.text;
+                    text: @tr("HOT CUE {} · DECK {}", CueEditPerform.letter, CueEditPerform.deck);
+                    color: Theme.deck-color(CueEditPerform.deck); vertical-alignment: center;
+                    min-width: 0px; horizontal-stretch: 1; overflow: elide;
+                }
+                Text {
+                    accessible-role: text; accessible-id: "cue-edit.state"; accessible-value: self.text;
+                    text: CueEditPerform.set ? "" : @tr("No cue yet");
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
+                    vertical-alignment: center; horizontal-stretch: 0;
+                }
+                PlateButton {
+                    accessible-id: "cue-edit.done";
+                    horizontal-stretch: 0; compact: true; label: @tr("DONE");
+                    tooltip: @tr("Back to the hot cue pads");
+                    clicked => { CueEditPerform.done(); }
+                }
+            }
+            // The eight pads: pick the cue to edit (the deck's pads do too).
+            HorizontalLayout {
+                spacing: Theme.key-gap;
+                height: 28px;
+                for p[i] in CueEditPerform.slots: Rectangle {
+                    property <color> tone: Theme.cue-tone(p.cue-slot, p.tone);
+                    accessible-role: button;
+                    accessible-id: "cue-edit.slot." + p.caption;
+                    accessible-checkable: true; accessible-checked: p.lit;
+                    accessible-label: TooltipState.name-for(self.accessible-id, @tr("HOT CUE {}", p.caption), @tr("Edit this hot cue"));
+                    accessible-action-default => { CueEditPerform.select(i); }
+                    min-width: 0px; horizontal-stretch: 1;
+                    border-radius: Theme.r-control;
+                    background: p.lit ? Theme.bone : sa.has-hover ? Theme.plate-raised : p.set ? Theme.plate : transparent;
+                    animate background { duration: Theme.t-press; easing: Theme.ease; }
+                    border-width: p.set || p.lit ? 0px : 1px;
+                    border-color: Theme.bone-3;
+                    Text {
+                        text: p.caption;
+                        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+                        color: p.lit ? Theme.ink-on : p.set ? Theme.bone : Theme.bone-3;
+                        horizontal-alignment: center; vertical-alignment: center;
+                    }
+                    // A stored cue: its colour along the bottom.
+                    if p.set: Rectangle { x: 3px; y: parent.height - 4px; width: parent.width - 6px; height: 2px; background: parent.tone; }
+                    KeyFocus { activate => { CueEditPerform.select(i); } }
+                    sa := TipArea { tooltip: @tr("Edit this hot cue"); mouse-cursor: pointer; clicked => { CueEditPerform.select(i); } }
+                }
+            }
+            // Name, position, delete.
+            HorizontalLayout {
+                spacing: Theme.key-gap;
+                height: 28px;
+                Field {
+                    accessible-role: text-input; accessible-id: "cue-edit.name";
+                    accessible-label: TooltipState.name-for(self.accessible-id, @tr("NAME"), "");
+                    horizontal-stretch: 1; min-width: 56px;
+                    enabled: CueEditPerform.set;
+                    text: CueEditPerform.name;
+                    placeholder: @tr("Name, then Return");
+                    accepted(t) => { CueEditPerform.rename(t); }
+                }
+                PlateButton {
+                    accessible-id: "cue-edit.move-here";
+                    horizontal-stretch: 0; compact: true; label: @tr("TO PLAYHEAD"); tone: Theme.live;
+                    tooltip: CueEditPerform.set ? @tr("Move the hot cue to the playhead (on the beat with quantize)") : @tr("Store the hot cue at the playhead (on the beat with quantize)");
+                    clicked => { CueEditPerform.move-here(); }
+                }
+                PlateButton {
+                    accessible-id: "cue-edit.delete";
+                    horizontal-stretch: 0; compact: true; label: @tr("DELETE"); tone: Theme.fault;
+                    enabled: CueEditPerform.set;
+                    tooltip: @tr("Delete the hot cue (undo brings it back)");
+                    clicked => { CueEditPerform.delete(); }
+                }
+            }
+            HorizontalLayout {
+                spacing: Theme.key-gap;
+                height: 28px;
+                for c[i] in CueEditPerform.palette: Rectangle {
+                    property <bool> chosen: CueEditPerform.color == i;
+                    accessible-role: button;
+                    accessible-id: "cue-edit.color." + (i + 1);
+                    accessible-checkable: true; accessible-checked: self.chosen;
+                    accessible-label: TooltipState.name-for(self.accessible-id, @tr("COLOUR {}", i + 1), @tr("Give the hot cue this colour"));
+                    accessible-enabled: CueEditPerform.set;
+                    accessible-action-default => { CueEditPerform.recolor(i); }
+                    min-width: 0px; horizontal-stretch: 1;
+                    border-radius: Theme.r-control;
+                    // Selected: the bone fill, the colour stays as a bar.
+                    background: self.chosen ? Theme.bone : ca.has-hover && CueEditPerform.set ? Theme.plate-raised : Theme.plate;
+                    animate background { duration: Theme.t-press; easing: Theme.ease; }
+                    Rectangle { x: 5px; y: 5px; width: parent.width - 10px; height: parent.height - 10px; border-radius: 2px; background: CueEditPerform.set ? c : c.with-alpha(0.35); }
+                    KeyFocus { enabled: CueEditPerform.set; activate => { CueEditPerform.recolor(i); } }
+                    ca := TipArea { tooltip: @tr("Give the hot cue this colour"); enabled: CueEditPerform.set; mouse-cursor: CueEditPerform.set ? pointer : default; clicked => { CueEditPerform.recolor(i); } }
+                }
+            }
+            // How the pad plays the cue.
+            HorizontalLayout {
+                spacing: Theme.key-gap;
+                height: 28px;
+                TriggerChoice { id: "cue"; label: @tr("CUE"); tip: @tr("As usual: jumps while playing; while paused it plays as long as it is held"); }
+                TriggerChoice { id: "latch"; label: @tr("LATCH"); tip: @tr("Latch: jumps and plays on, also from a paused deck"); }
+                TriggerChoice { id: "gate"; label: @tr("GATE"); tip: @tr("Gate: plays from the cue while held, then stops on the cue, also while playing"); }
+                TriggerChoice { id: "momentary"; label: @tr("MOMENTARY"); tip: @tr("Momentary: plays from the cue while held, then the track carries on where it would have been"); horizontal-stretch: 1.6; }
+            }
+            // The drop of the track.
+            HorizontalLayout {
+                spacing: Theme.s2;
+                height: 28px;
+                Text {
+                    accessible-role: text; accessible-id: "cue-edit.drop"; accessible-value: self.text;
+                    text: CueEditPerform.drop-text;
+                    font-family: Theme.family; font-size: Theme.control; color: CueEditPerform.has-drop ? Theme.bone : Theme.bone-3;
+                    vertical-alignment: center; horizontal-stretch: 1; min-width: 0px; overflow: elide;
+                }
+                PlateButton {
+                    accessible-id: "cue-edit.drop-mark";
+                    horizontal-stretch: 0; compact: true;
+                    label: CueEditPerform.has-drop ? @tr("MOVE OR CLEAR") : @tr("MARK DROP");
+                    tooltip: @tr("Mark the drop on the bar at the playhead; at the marked drop the key clears it. The phrases and the light show follow.");
+                    clicked => { CueEditPerform.drop-mark(); }
+                }
+            }
+        }
+    }
+}

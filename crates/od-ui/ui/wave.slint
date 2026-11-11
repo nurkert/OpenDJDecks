@@ -183,6 +183,21 @@ export component WaveLane inherits Rectangle {
         x: self.px; width: 1px; height: parent.height;
         background: Theme.bone.with-alpha(0.7);
     }
+    // The marked drop: a bone line with a DROP plate at its foot.
+    if root.motion.loaded && root.deck.drop-at >= 0: Rectangle {
+        property <length> px: root.gutter + (root.deck.drop-at - root.left-t) / root.motion.span * root.area;
+        accessible-role: image;
+        accessible-id: "wave.drop\{root.deck.deck}";
+        accessible-value: root.deck.drop-at;
+        visible: self.px >= root.gutter && self.px <= root.width;
+        x: self.px - 1px; width: 2px; height: parent.height;
+        background: Theme.bone;
+        Rectangle {
+            x: 2px; y: parent.height - 15px; width: drop-text.preferred-width + 8px; height: 14px;
+            border-radius: 2px; background: Theme.bone;
+            drop-text := Text { text: @tr("DROP"); font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; color: Theme.ink-on; horizontal-alignment: center; vertical-alignment: center; }
+        }
+    }
     // Hot cues (flag with the letter) and memory cues (triangle at the
     // bottom) where they fall in the visible span.
     for c[i] in root.deck.cues: CueMarker {

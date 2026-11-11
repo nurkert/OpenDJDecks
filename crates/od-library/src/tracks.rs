@@ -172,7 +172,7 @@ pub(crate) fn get_track(conn: &Connection, id: TrackId) -> Result<TrackRecord> {
 
 pub(crate) fn read_cues(conn: &Connection, id: TrackId) -> Result<Vec<Cue>> {
     let mut stmt = conn.prepare_cached(
-        "SELECT kind, slot, start, loop_end, label, color, source, active FROM cue
+        "SELECT kind, slot, start, loop_end, label, color, source, active, trigger FROM cue
          WHERE track_id = ?1 ORDER BY kind, slot, start",
     )?;
     let rows = stmt.query_map([id.0], |r| {
@@ -192,6 +192,11 @@ pub(crate) fn read_cues(conn: &Connection, id: TrackId) -> Result<Vec<Cue>> {
             color: color.as_deref().and_then(CueColor::from_hex),
             source: DataSource::parse(&source).unwrap_or(DataSource::Manual),
             active: r.get::<_, i64>(7)? != 0,
+            trigger: r
+                .get::<_, Option<String>>(8)?
+                .as_deref()
+                .and_then(od_core::CueTrigger::parse)
+                .unwrap_or_default(),
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -200,8 +205,8 @@ pub(crate) fn read_cues(conn: &Connection, id: TrackId) -> Result<Vec<Cue>> {
 pub(crate) fn write_cues(conn: &Connection, id: TrackId, cues: &[Cue]) -> Result<()> {
     conn.execute("DELETE FROM cue WHERE track_id = ?1", [id.0])?;
     let mut stmt = conn.prepare_cached(
-        "INSERT INTO cue (track_id, kind, slot, start, loop_end, label, color, source, active)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        "INSERT INTO cue (track_id, kind, slot, start, loop_end, label, color, source, active, trigger)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
     )?;
     for c in cues {
         let (kind, slot) = match c.kind {
@@ -217,9 +222,28 @@ pub(crate) fn write_cues(conn: &Connection, id: TrackId, cues: &[Cue]) -> Result
             c.label,
             c.color.map(|c| c.to_hex()),
             c.source.as_str(),
-            (c.active && c.loop_end.is_some()) as i64
+            (c.active && c.loop_end.is_some()) as i64,
+            (c.trigger != od_core::CueTrigger::Cue).then(|| c.trigger.as_str())
         ])?;
     }
+    Ok(())
+}
+
+/// The drop marked on a track, in seconds.
+pub(crate) fn read_drop(conn: &Connection, id: TrackId) -> Result<Option<f64>> {
+    Ok(conn
+        .query_row("SELECT at FROM drop_marker WHERE track_id = ?1", [id.0], |r| r.get(0))
+        .optional()?)
+}
+
+pub(crate) fn write_drop(conn: &Connection, id: TrackId, at: Option<f64>) -> Result<()> {
+    match at {
+        Some(t) => conn.execute(
+            "INSERT OR REPLACE INTO drop_marker (track_id, at) VALUES (?1, ?2)",
+            params![id.0, t.max(0.0)],
+        )?,
+        None => conn.execute("DELETE FROM drop_marker WHERE track_id = ?1", [id.0])?,
+    };
     Ok(())
 }
 
@@ -550,6 +574,18 @@ impl Library {
         read_cues(&self.conn, id)
     }
 
+    /// The drop you marked on the track (seconds), if any.
+    pub fn drop_marker(&self, id: TrackId) -> Result<Option<f64>> {
+        read_drop(&self.conn, id)
+    }
+
+    /// User edit: marks the drop at `at` seconds, or clears it (`None`).
+    /// [`Library::analysis`] then gives phrases with the drop in them.
+    pub fn set_drop_marker(&mut self, id: TrackId, at: Option<f64>) -> Result<()> {
+        let label = if at.is_some() { "Mark the drop" } else { "Clear the drop" };
+        self.edit(label, vec![EntityState::Drop { track: id, at }])
+    }
+
     pub fn beatgrid(&self, id: TrackId) -> Result<Option<Beatgrid>> {
         Ok(read_grid(&self.conn, id)?.map(|(g, _)| g))
     }
@@ -727,6 +763,13 @@ impl Library {
             a.energy = energy.map(|e| blob::decode_f32s(&e)).unwrap_or_default();
         }
         a.beatgrid = self.beatgrid(id)?.unwrap_or_default();
+        // The drop you marked is part of the phrases every reader sees.
+        if let Some(beat) = read_drop(&self.conn, id)?
+            .and_then(|t| a.beatgrid.nearest_beat(t))
+            .filter(|_| !a.phrases.is_empty())
+        {
+            a.phrases = od_core::mark_drop(&a.phrases, beat as u32);
+        }
         let key = read_key(&self.conn, id)?;
         a.key = key.map(|k| k.0);
         // A key or grid you set (or locked, or imported) is not a guess.
@@ -1060,5 +1103,20 @@ mod tests {
             cues.iter()
                 .any(|c| c.kind == CueKind::Hot(1) && c.source == DataSource::Imported)
         );
+    }
+
+    #[test]
+    fn drop_marker_and_cue_trigger_round_trip() {
+        let mut lib = Library::open_in_memory().unwrap();
+        let t = track(&mut lib, "Drop", Some(120.0), None);
+        let mut c = Cue::hot(0, 4.0);
+        c.trigger = od_core::CueTrigger::Gate;
+        lib.set_cues(t, vec![c]).unwrap();
+        assert_eq!(lib.cues(t).unwrap()[0].trigger, od_core::CueTrigger::Gate);
+        assert_eq!(lib.drop_marker(t).unwrap(), None);
+        lib.set_drop_marker(t, Some(32.0)).unwrap();
+        assert_eq!(lib.drop_marker(t).unwrap(), Some(32.0));
+        lib.undo().unwrap();
+        assert_eq!(lib.drop_marker(t).unwrap(), None, "undo clears the mark");
     }
 }

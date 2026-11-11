@@ -1301,6 +1301,14 @@ pub(crate) fn apply_all(app: &App) {
 }
 
 /// A deck or mixer setting: stored, then sent to the running engine.
+/// The crossfader curve from the mixer's curve key or a mapping.
+pub(crate) fn set_crossfader_curve(app: &App, curve: &str) {
+    let curve = curve.to_string();
+    change_engine(app, "mixer.crossfader-curve", move |s| {
+        s.mixer.crossfader_curve = curve.clone()
+    });
+}
+
 fn change_engine(app: &App, key: &str, f: impl Fn(&mut Settings)) {
     change(app, f);
     apply_engine_key(app, key);
@@ -1464,12 +1472,15 @@ fn choose(app: &App, key: &str, i: i32) {
         "mixer.fader-curve" => change_engine(app, key, |s| {
             s.mixer.fader_curve = FADER_CURVES.get(i).unwrap_or(&"smooth").to_string()
         }),
-        "mixer.crossfader-curve" => change_engine(app, key, |s| {
-            s.mixer.crossfader_curve = CROSSFADER_CURVES
-                .get(i)
-                .unwrap_or(&"constant_power")
-                .to_string()
-        }),
+        "mixer.crossfader-curve" => {
+            change_engine(app, key, |s| {
+                s.mixer.crossfader_curve = CROSSFADER_CURVES
+                    .get(i)
+                    .unwrap_or(&"constant_power")
+                    .to_string()
+            });
+            crate::mixer::show_curve(app);
+        }
         "learn.action" => {
             app.prefs.borrow_mut().midi.action =
                 i.min(od_controller::templates::ACTION_NAMES.len() - 1);

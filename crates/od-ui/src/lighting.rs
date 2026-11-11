@@ -45,6 +45,16 @@ pub struct TrackLight {
     pub energy: Vec<f32>,
 }
 
+/// The show reads `track`'s phrases again (after a marked drop).
+pub(crate) fn forget_track(app: &crate::app::App, track: od_core::TrackId) {
+    let mut rt = app.lighting.borrow_mut();
+    for s in rt.sent.iter_mut() {
+        if *s == Some(track) {
+            *s = None;
+        }
+    }
+}
+
 /// Show input for one deck (pure).
 pub fn deck_music(s: &DeckState, gain_to_master: f32, track: Option<&TrackLight>) -> DeckMusic {
     let beat = s.beat.max(0.0);

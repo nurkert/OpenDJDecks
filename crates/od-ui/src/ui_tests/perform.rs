@@ -560,11 +560,12 @@ fn bottom_panels_keep_the_status_band_in_the_window() {
                     failures.push(format!("{size:?} {panels:?}: waveform lane below 24 px"));
                 }
             }
-            // The panel opened last stays; closed ones are off in the toggles
-            // and the settings, and the status band says why.
-            let last = *panels.last().unwrap();
-            if !shown(last) {
-                failures.push(format!("{size:?} {panels:?}: the panel opened last (`{last}`) was closed"));
+            // [64] The sampler stays in view; without it the panel opened
+            // last stays. Closed ones are off in the toggles and the
+            // settings, and the status band says why.
+            let keep = if panels.contains(&"sampler") { "sampler" } else { *panels.last().unwrap() };
+            if !shown(keep) {
+                failures.push(format!("{size:?} {panels:?}: `{keep}` was closed"));
             }
             let st = ui.app.state.borrow().settings.perform.clone();
             if (st.sampler_panel, st.fx_panel, st.mix_preview_panel) != (w.get_sampler_panel(), w.get_fx_panel(), w.get_mix_preview_panel()) {

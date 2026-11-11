@@ -2,7 +2,7 @@
 title: The mixer
 description: Trim, EQ, channel FX, faders, crossfader, headphones and master, and the options for each.
 keywords: [mixer, eq, kill, bass swap, swap, clip, trim, gain, fader, crossfader, headphones, phones, cue, master, level, limiter, meter, vu, booth, mic, microphone, talkover, auto fader, stem button, auto gain]
-features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
+features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
 ---
 
 The mixer stands between the decks. Press **MIXER** in the top bar (`⌥⌘M`) to hide it when your controller does the job; the decks then meet in the middle.
@@ -29,7 +29,7 @@ The channel meters and the **MASTER** meter in the top bar hold their peak: a sh
 
 ![The mixer with one deck's LOW killed and a LOW swap waiting for the next bar](../img/mixer-bass-swap.png)
 
-The names **HI**, **MID** and **LOW** under the EQ knobs are kill keys: tap one to take that band out (it fills in yellow and reads **KILL**), tap it again to bring the band back. The knob stays where it is; when you release the kill, the band comes back at the knob's value. With the isolator EQ a killed band is silent; with the classic EQ it is at the knob's lowest setting (−26 dB).
+The names **HI**, **MID** and **LOW** under the EQ knobs are kill keys: tap one to take that band out (it fills in yellow and reads **KILL**), tap it again to bring the band back. The knob stays where it is; when you release the kill, the band comes back at the knob's value. With the isolator EQ a killed band is silent; with the classic EQ it is at the knob's lowest setting (−26 dB). With **STEM** on, the same keys mute the part their knob controls (vocals, instruments, drums) and read **KILL** while it is muted, so the kills stay under your fingers in every mode.
 
 The swap row under the channels (marked with two opposed arrows) exchanges one band between the two decks in the mix with one tap:
 
@@ -40,7 +40,7 @@ The key at the end of the row sets when the swap happens: **NOW** (at once), **B
 
 The swap acts on the two loudest playing decks. When only one deck plays, it swaps with the next deck that has a track loaded; with nothing playing, decks 1 and 2. With four decks, the row names the pair (for example **2/3**).
 
-A controller can do both: map `mixer.eq_kill` (with `band = "low"`, `"mid"` or `"high"`) to a button of a channel, and `eq_swap` (with a `band`) to any button; see [Controller mappings](controllers.md). No shipped controller mapping uses them yet, and they have not been tried on a hardware controller; they are tested in software only.
+A controller can do both: map `mixer.eq_kill` (with `band = "low"`, `"mid"` or `"high"`) to a button of a channel, and `eq_swap` (with a `band`) to any button; see [Controller mappings](controllers.md). The guided controller setup asks for the kill keys too (all three bands on the two-deck templates, HI and LOW on the battle template, LOW on four decks); skip the ones your controller does not have. The two shipped controller mappings do not use them, and they have not been tried on a hardware controller; they are tested in software only.
 
 ## Crossfader
 
@@ -48,11 +48,15 @@ Below the mixer, the crossfader blends between its sides. The small **1** / **2*
 
 **AUTO** beside the crossfader turns on Auto Fader: the crossfader also swaps the basses of the two sides and keeps the decks on it in tempo with the master.
 
-Curves live in **Preferences › Controller › Mixer**: the **Channel fader curve** (linear, smooth, sharp) and the **Crossfader curve** (constant power, linear, cut).
+The key right of the B side shows the **crossfader curve** as a small drawing: two arcs for constant power (smooth blends), two straight lines for linear, and two steep corners for cut (scratching: both sides full until the last few percent). Click it to step to the next curve. It is the same setting as the **Crossfader curve** in **Preferences › Controller › Mixer**, where the **Channel fader curve** (linear, smooth, sharp) also lives; a controller button can do it with `crossfader_curve`.
+
+**CUT IN** on a deck (see [Perform](perform-basics.md#reverse-and-cut-in)) lets a channel through as if the crossfader were open on its side, for as long as you hold it.
 
 ## Headphones and master
 
 **PHONES** has the **MIX** between cue and master and the **LEVEL**. Press **CUE** on a channel to listen to it. On a controller, the master cue button listens to the master.
+
+**SPLIT** (split cue) puts the cue in your left ear and the master in your right, both in mono, so you can hear both on one pair of headphones; **MIX** has no effect while it is on, **LEVEL** still does. A controller button can switch it with `split_cue`. It is tested with generated signals; it has not been tried at a gig.
 
 **MASTER** sets the output level with **−** and **+**, or the slider, and has a meter and a safety limiter that is always on. The record button and time sit next to it; see [Recording](recording.md). The booth output is set with the controller's booth knob.
 

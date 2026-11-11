@@ -2,7 +2,7 @@
 title: Die Grundlagen von Perform
 description: Decks, Layouts, Sync, Keylock, Tempo, Loops und Beat Jump und jeder Pad-Modus am Deck.
 keywords: [booth, booth-ansicht, zweiter bildschirm, entfernung, groß, phase, phasenanzeige, beatmatching, angleichen, üben, tempounterschied, synchron, perform, deck, decks, play, cue, sync, beat sync, master, keylock, tonart halten, master tempo, tempo, tempofader, pitch, bend, nudge, jog, jogwheel, vinyl, scratch, slip, quantisieren, quantize, beat jump, pads, pad modus, hot cue pad, key shift, key sync, tonarten passen, harmonisch mischen, passende tonart, slicer, vier decks, 4 decks, layout, vertikal, browse, wellenform, zoom, einfach, standard, voll, deck-layout, ausblenden, gruppen, gespeichertes layout, warteschlange, als nächstes, wunsch, wünsche, auto-play, automix, nicht spielen, nächsten laden]
-features: [perform-queue, perform-requests, perform-auto-play, deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
+features: [perform-queue, perform-requests, perform-auto-play, deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-cut-in, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-mode-phrase, pad-mode-cue-edit, deck-layout-platter, perform-set-plan, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
 ---
 
 Perform ist der Live-Modus: Decks, Mixer und Browser in einer Ansicht.
@@ -51,7 +51,7 @@ Beim Ziehen zeigt eine kleine Anzeige an der Abspielmarke den Versatz in Sekunde
 
 ![Perform in einem großen Fenster: der Plattenteller mittig mit seinen Tasten, SYNC, CUE und PLAY auf derselben Achse](../img/perform-large.png)
 
-Der Plattenteller steht mittig in den Reihen des Decks, mit **SLIP**, **QUANTIZE**, **KEYLOCK** und dem Tempobereich als ein Block an seiner inneren Seite. Ihre inneren Kanten folgen dem Ring mit einem Tastenabstand, und **SYNC**, **CUE** und **PLAY** stehen auf derselben Achse. In einem größeren Fenster wächst der Plattenteller bis zu einer Grenze und die Tasten mit ihm; übriger Platz geht nach oben und unten, nie zwischen die Tasten. Auf den Player-Screens im Club-Modus umschließen die Tasten ◀◀ / ◀ CALL und ▶▶ / CALL ▶ das Jogwheel auf dieselbe Weise.
+Der Plattenteller steht mittig in den Reihen des Decks, mit **REV**, **SLIP**, **QUANTIZE**, **KEYLOCK**, dem Tempobereich und **CUT IN** als ein Block an seiner inneren Seite. Ihre inneren Kanten folgen dem Ring mit einem Tastenabstand, und **SYNC**, **CUE** und **PLAY** stehen auf derselben Achse. In einem größeren Fenster wächst der Plattenteller bis zu einer Grenze und die Tasten mit ihm; übriger Platz geht nach oben und unten, nie zwischen die Tasten. Auf den Player-Screens im Club-Modus umschließen die Tasten ◀◀ / ◀ CALL und ▶▶ / CALL ▶ das Jogwheel auf dieselbe Weise.
 
 ## Regler, Fader und Pegel
 
@@ -93,11 +93,24 @@ Wie viel jedes Deck zeigt, bestimmst du. Wähle im Ansichtsmenü oben in Perform
 - **Standard** ist das Deck, wie es diese Seite beschreibt.
 - **Voll** zeigt alles, mit offenem Tempo-FX-Bereich.
 
-Unter **ZEIGEN** im selben Menü lassen sich ganze Gruppen aus- und wieder einblenden: **PADS**, **LOOPS**, **STEMS**, **FX** (der Tempo-FX-Bereich und seine Taste, die CH-FX-Regler), **MIXER** (die Mixerspalte, dasselbe wie **MIXER** in der oberen Leiste), **PHASE** (die Phasenleiste) und **SETUP-TASTEN** (SLIP, QUANTIZE, KEYLOCK, der Tempobereich, GRID, KEY SYNC, Key Shift und ½ / 2× an der BPM). Eine ausgeblendete Gruppe ist ganz weg, auch die Tastatur landet nicht mehr darauf. Der Pad-Modus bleibt bei den Pads.
+Unter **ZEIGEN** im selben Menü lassen sich ganze Gruppen aus- und wieder einblenden: **PADS**, **LOOPS**, **STEMS**, **FX** (der Tempo-FX-Bereich und seine Taste, die CH-FX-Regler), **MIXER** (die Mixerspalte, dasselbe wie **MIXER** in der oberen Leiste), **PHASE** (die Phasenleiste) und **SETUP-TASTEN** (REV, SLIP, QUANTIZE, KEYLOCK, der Tempobereich, CUT IN, GRID, KEY SYNC, Key Shift und ½ / 2× an der BPM) und **PLATTER** (der Plattenteller mit seinem Tastenblock: ausgeblendet nehmen die Pads seinen Platz, sie werden viel größer und zeigen die Cue-Namen ganz). Eine ausgeblendete Gruppe ist ganz weg, auch die Tastatur landet nicht mehr darauf. Der Pad-Modus bleibt bei den Pads.
 
 Um ein Layout zu behalten, tippe unter **GESPEICHERTE LAYOUTS** einen Namen ein und drücke **SPEICHERN**. Ein Druck auf den Namen holt es zurück, **×** löscht es. Ein gespeichertes Layout merkt sich das Deck-Layout, die ausgeblendeten Gruppen, die Mixerspalte und den Tempo-FX-Bereich und bleibt in deinen Einstellungen. Speichern unter einem vorhandenen Namen ersetzt es.
 
 Der Kiosk auf dem Raspberry Pi behält sein eigenes Deck und der Club-Modus seine Player-Ansichten, egal welches Layout gilt. Einfach und Voll wurden noch nicht auf einem Touchscreen ausprobiert.
+
+## Der Set-Plan
+
+![Perform mit dem Plan über der Liste: der laufende Track, der nächste mit seiner Notiz und wie weit das Set hinter dem Plan liegt](../img/perform-plan.png)
+
+Das zuletzt im Browser geöffnete Set ist dein Plan. In Perform folgt ihm eine Zeile über der Liste:
+
+- **PLAN** und der Name des Sets, dann **LÄUFT 4 / 10**: wo der Track, den du hörst, im Set steht.
+- **ALS NÄCHSTES** mit Titel, Artist, Tempo, Tonart und Länge des nächsten Tracks.
+- **NOTIZ**: die Übergangsnotiz, die du für den Wechsel vom laufenden zum nächsten Track geschrieben hast (siehe [Sets vorbereiten](preparing-sets.md#notizen-und-ersatz)).
+- Rechts, wo du stehst: **IM PLAN** bis zu einer Minute Abweichung, sonst **1:20 ZURÜCK** oder **0:45 VORAUS**, gerechnet ab **GEPLANTER START** des Sets und den Tracklängen, und **1 TRACK ZURÜCK**, wenn der Plan inzwischen eine andere Position erwartet. Ohne geplanten Start steht dort **KEIN GEPLANTER START**, und es zählen nur die Positionen.
+
+Die Linie davor folgt der Statusgrammatik: durchgezogen grün im Plan, gestrichelt gelb voraus oder zurück, halb ohne geplanten Start, rot durchgestrichen, wenn der laufende Track nicht im Set ist (**AUSSER PLAN**). **×** blendet die Zeile aus, bis du ein anderes Set öffnest. Der Plan ändert nicht, was läuft; er zeigt es nur. Ausprobiert mit der Demo-Bibliothek und der Uhr, nicht auf einem Gig.
 
 ## Tempo und Sync
 
@@ -149,7 +162,11 @@ Am Controller scratcht, bendet oder sucht das Jogwheel. Der Vinyl-Modus wird pro
 
 **SLIP** lässt dich loopen, cuen oder scratchen, während der Track im Hintergrund weiterläuft; lässt du los, ist er dort, wo er wäre.
 
-**Censor** gibt es am Controller und als Pad-Modus **CENSOR** (siehe unten): Das Deck spielt mit Slip rückwärts und läuft dann dort weiter, wo es wäre. Ein Controller kann ein Deck auch rückwärts spielen.
+**Censor** gibt es am Controller und als Pad-Modus **CENSOR** (siehe unten): Das Deck spielt mit Slip rückwärts und läuft dann dort weiter, wo es wäre. 
+
+### Reverse und Cut in
+
+**REV** über **SLIP** spielt das Deck rückwärts, bis du die Taste wieder drückst; mit **SLIP** kommt der Track dort zurück, wo er gewesen wäre. **CUT IN** unter dem Tempobereich lässt den Kanal des Decks zum Master durch, als stünde der Crossfader auf seiner Seite offen, solange du die Taste hältst: für Cuts und Scratch-Muster bei geschlossenem Crossfader. Der Kanalfader zählt weiter. Die beiden Tasten kommen in den Block des Plattentellers, wo sechs Tasten in seine Höhe passen (ein Fenster ab 1440 × 900); in niedrigeren Decks, etwa bei 1280 × 800, behält der Block seine vier Setup-Tasten, und REV und CUT IN gibt es nur am Controller. Am Controller: `deck.reverse` und `deck.cut_in`. Beides ist in der Software getestet, an einem echten Controller noch nicht ausprobiert.
 
 ## Loops und Beat Jump
 
@@ -177,5 +194,7 @@ Die sechzehn Pads links an jedem Deck ändern mit dem Modus ihre Bedeutung. Wäh
 | **PATTERN** | Sampler-Sequenzen speichern und abrufen |
 | **LIGHTING** | A–F Looks, G Strobe, H Flash, siehe [Lichtshow](light-show.md) |
 | **ROLL** | 1/32 bis 4 Beats rollen, solange gehalten; SICHERN behält ihn, siehe [Loop Roll](cues-and-loops.md#loop-roll-und-sichern) |
+| **PHRASE** | A eine Phrase zurück, B eine weiter, C zum markierten Drop, D markiert den Drop, E–H zum nächsten Build-up, Drop, Breakdown und Outro, siehe [Phrasen](phrases.md#phrasenspruenge-und-der-drop) |
+| **CUE-EDIT** | Ein Pad wählt den Hot Cue, der neben der Liste bearbeitet wird, siehe [Cues](cues-and-loops.md#hot-cues-in-perform-bearbeiten) |
 
 Die **GRID**-Taste neben dem Modus tauscht die Pads gegen das Grid- und Gain-Panel; siehe [Beatgrids](beatgrid.md#ein-grid-korrigieren-waehrend-der-track-laeuft).

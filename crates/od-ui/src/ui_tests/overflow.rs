@@ -939,6 +939,65 @@ fn main_states() -> Vec<State> {
             },
             teardown: Some(|u| super::dj_craft::fake_alert(u, "")),
         },
+        // [30] [31] [64] Block G: the cue panel of CUE EDIT with a named
+        // cue and long words, the PHRASE pads, the platter hidden (large
+        // pads), and the set plan with a long note.
+        State {
+            id: "perform.cue-edit panel",
+            setup: |u| {
+                perform(u, 2, "standard");
+                super::perform_craft::load(u, 0, 0);
+                crate::decks::set_pad_mode(&u.app, 0, od_controller::PadMode::CueEdit);
+                crate::engine::deck_cmd(&u.app, 0, od_engine::DeckCommand::Seek { seconds: 2.0 });
+                u.pump(100);
+                u.pump(1500);
+                crate::deck_craft::move_here(&u.app);
+                let g = slint::ComponentHandle::global::<crate::CueEditPerform>(&u.app.ui);
+                g.invoke_rename("The vocal that comes in after the long breakdown".into());
+                g.invoke_set_trigger("momentary".into());
+                g.invoke_drop_mark();
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                crate::decks::set_pad_mode(&u.app, 0, od_controller::PadMode::HotCue);
+                crate::decks::unload(&u.app, 0);
+                u.pump(200);
+            }),
+        },
+        State {
+            id: "perform.phrase pads, platter hidden",
+            setup: |u| {
+                perform(u, 2, "standard");
+                super::perform_craft::load(u, 0, 0);
+                crate::decks::set_pad_mode(&u.app, 0, od_controller::PadMode::Phrase);
+                crate::deck_layout::toggle_group(&u.app, "platter");
+                // The loading sweep is over before the audit looks.
+                u.pump(1500);
+            },
+            teardown: Some(|u| {
+                crate::decks::set_pad_mode(&u.app, 0, od_controller::PadMode::HotCue);
+                crate::deck_layout::toggle_group(&u.app, "platter");
+                crate::decks::unload(&u.app, 0);
+                u.pump(200);
+            }),
+        },
+        State {
+            id: "perform.set plan (note, behind)",
+            setup: |u| {
+                perform(u, 2, "standard");
+                super::perform_craft::plan_set(u, "00:00");
+                super::perform_craft::load(u, 0, 0);
+                crate::engine::deck_cmd(&u.app, 0, od_engine::DeckCommand::Play);
+                u.wait_until(5.0, |u| u.has("plan.line"));
+                u.pump(600);
+            },
+            teardown: Some(|u| {
+                crate::engine::deck_cmd(&u.app, 0, od_engine::DeckCommand::Pause);
+                u.app.plan.closed.set(true);
+                crate::decks::unload(&u.app, 0);
+                u.pump(600);
+            }),
+        },
         // [63] Tags on two tracks at once (MIXED, one undo step, do not
         // play); the filter bar with NOT PLAYED TONIGHT; the TONIGHT column.
         State {
