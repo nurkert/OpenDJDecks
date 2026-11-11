@@ -38,7 +38,7 @@ fn child_records_until_killed() {
     let mut rendered = 0u64;
     loop {
         // Real time: one 512-frame block every ~10.7 ms.
-        processor.process(512, &mut Outputs { master: &mut master, headphones: None, booth: None });
+        processor.process(512, &mut Outputs { master: &mut master, headphones: None, booth: None, decks: None });
         rendered += 512;
         let due = Duration::from_secs_f64(rendered as f64 / RATE as f64);
         if let Some(wait) = due.checked_sub(started.elapsed()) {

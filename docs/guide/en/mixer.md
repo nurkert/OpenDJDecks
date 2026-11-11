@@ -1,8 +1,8 @@
 ---
 title: The mixer
 description: Trim, EQ, channel FX, faders, crossfader, headphones and master, and the options for each.
-keywords: [mixer, eq, kill, bass swap, swap, clip, trim, gain, fader, crossfader, headphones, phones, cue, master, level, limiter, meter, vu, booth, mic, microphone, talkover, auto fader, stem button, auto gain]
-features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
+keywords: [mixer, external mixer, eq, kill, bass swap, swap, clip, trim, gain, fader, crossfader, headphones, phones, cue, master, level, limiter, meter, vu, booth, mic, microphone, talkover, auto fader, stem button, auto gain]
+features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-external-mode, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
 ---
 
 The mixer stands between the decks. Press **MIXER** in the top bar (`⌥⌘M`) to hide it when your controller does the job; the decks then meet in the middle.
@@ -56,7 +56,13 @@ The key right of the B side shows the **crossfader curve** as a small drawing: t
 
 **PHONES** has the **MIX** between cue and master and the **LEVEL**. Press **CUE** on a channel to listen to it. On a controller, the master cue button listens to the master.
 
-**SPLIT** (split cue) puts the cue in your left ear and the master in your right, both in mono, so you can hear both on one pair of headphones; **MIX** has no effect while it is on, **LEVEL** still does. A controller button can switch it with `split_cue`. It is tested with generated signals; it has not been tried at a gig.
+**SPLIT** (split cue) puts the cue in your left ear and the master in your right, both in mono, so you can hear both on one pair of headphones; **MIX** has no effect while it is on, **LEVEL** still does. A controller button can switch it with `split_cue`. It is tested with generated signals; it has not been tried at a gig. With only one stereo output, **Preferences › Audio › One stereo output** sends exactly this to outputs 1/2 ([Routing](preferences.md#routing)).
+
+## External mixer
+
+With **Preferences › Audio › Mixer: EXTERNAL**, each deck plays on its own outputs into an external mixer and the mixer in the app steps aside: the channel strips give way to a plate that says **EXTERNAL MIXER** and names each deck's outputs (for example deck 1 on **OUT 3/4**). Trim, EQ, faders, crossfader and channel **CUE** are then on the external mixer. See [Routing](preferences.md#routing).
+
+![The mixer column with an external mixer: deck 1 on 3/4, deck 2 on 7/8](../img/mixer-external.png)
 
 **MASTER** sets the output level with **−** and **+**, or the slider, and has a meter and a safety limiter that is always on. The record button and time sit next to it; see [Recording](recording.md). The booth output is set with the controller's booth knob.
 

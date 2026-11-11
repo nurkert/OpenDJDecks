@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 323 features; 317 in scope: 317 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 331 features; 325 in scope: 325 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -245,8 +245,9 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Auto gain toggle | DONE | `ChannelCommand::SetAutoGain`; Preferences > Controller > Mixer: auto gain on / off for every channel | 2 |  |
 | STEM button per mixer channel | DONE | STEM per mixer channel switches its HI / MID / LOW knobs to part isolation (vocals / inst / drums), centre = full level; the channel EQ stays as it was; (UX §1.3, §2.4) | 1 | P2 |
 | Knobs, faders and meters that feel physical: value arcs, centre marks, drag readouts, fader caps and detent, peak hold | DONE | `crates/od-ui/ui/controls.slint::Knob`, `crates/od-ui/ui/controls.slint::Fader`, `crates/od-ui/src/mixer.rs::channel_view`; Sizes unchanged at 1440 x 900 and 1280 x 800. Tried with the mouse only, not on a touch screen.; (Roadmap [46]) | 5 | P2 |
-| Split cue: the cue in mono on the left ear, the master in mono on the right | DONE | `MixerCommand::SetSplitCue`, `crates/od-ui/src/mixer.rs::toggle_split_cue`; SPLIT after the PHONES knobs (and `split_cue` in mappings); MIX has no effect while it is on, LEVEL does. Tested with generated signals; split cue on one interface with separate outputs is roadmap [67]; (Roadmap [30]) | 2 | P2 |
+| Split cue: the cue in mono on the left ear, the master in mono on the right | DONE | `MixerCommand::SetSplitCue`, `crates/od-ui/src/mixer.rs::toggle_split_cue`; SPLIT after the PHONES knobs (and `split_cue` in mappings); MIX has no effect while it is on, LEVEL does. Tested with generated signals; on a single stereo output see `audio-split-cue-one-output`; (Roadmap [30]) | 2 | P2 |
 | Crossfader curve on the mixer: a key that draws the curve and steps through constant power, linear and cut | DONE | `crates/od-ui/src/mixer.rs::set_crossfader_curve`, `crates/od-ui/ui/perform.slint::XfCurveKey`; Right of the B assign keys from 1000 px window width; the same setting as Preferences › Controller › Mixer, and `crossfader_curve` (optional `curve`) in mappings; (Roadmap [30]) | 2 | P3 |
+| External-mixer mode: each deck to its own outputs, the internal mixer bypassed, the mixer column says so | DONE | `MixerCommand::SetExternalMixer`, `crates/od-ui/ui/perform.slint::ExternalMixerPlate`; Each deck as it comes off the deck (stems, keylock, Stem FX), before trim, EQ, fader and crossfader. The master pair keeps the sampler and microphone, so the recorder records those only; the decks still count as on air for the tracklist. Not tried with a real external mixer; (Roadmap [67]) | 3 | P2 |
 
 ## 6. Effects
 
@@ -285,6 +286,9 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | STEMS column: stem state per track in the library | DONE | `crates/od-ui/src/stems_batch.rs::track_state`, `browser/columns.rs::COLUMNS`, `ui/table.slint::TrackLine`; Roadmap [60]. An optional column (column menu): READY with a solid green line when the stems are in the cache, QUEUED and the percent with a dashed sodium line while the batch works, FAILED struck; empty when not separated. One file check per track, remembered | 2 | P2 |
 | Stem state on each stem key and a warning when stems are missing where expected | DONE | `crates/od-ui/src/stem_mix.rs::key_state`, `crates/od-ui/src/decks.rs::stems_warning`, `ui/perform.slint::StemKey`; Roadmap [60]. The stem keys show the batch's QUEUED (dashed sodium line along each key), the separation as a progress fill, and NO STEMS with a sodium line when a track without stems comes in where stems were in use (the track it replaced had them, or another deck plays with them); the status line says so and how to fix it | 3 | P2 |
 | Solo a stem and keep only this stem | DONE | `crates/od-ui/src/stem_mix.rs::set_solo`, `crates/od-ui/src/stem_mix.rs::keep_only`, `DeckAction::StemSolo`; Roadmap [60]. Right click on a stem key solos it (the other parts quiet, SOLO on the strip) and a second right click brings the levels back as they were; ⇧-click keeps only this part for good. Mappings: `deck.stem_solo` (held) and `deck.stem_keep` | 3 | P2 |
+| Stem audition on the deck: CUE on the stem strip, the stem keys pick parts to hear on their own on the headphones while the master stays as it is | DONE | `DeckCommand::SetStemAudition`, `crates/od-ui/src/stem_mix.rs::toggle_audition`, `crates/od-ui/ui/perform.slint::StemStrip`; The auditioned stems play at full level (even when muted on the master) on the cue bus, after trim and auto gain, in place of the channel's CUE; with keylock through the part stretcher. Stem FX on the same deck takes the split first. On the full stem strip; compact decks have `deck.stem_cue` only. Not tried with a controller or at a gig; (Roadmap [66]) | 5 | P2 |
+| Stem audition in Prepare: the player's STEMS tool puts parts of the track on the headphones | DONE | `crates/od-ui/src/stem_mix.rs::project_player`, `crates/od-ui/ui/player.slint::PlayerStems`; The STEMS tab of the player: VOCAL, DRUMS, BASS, INST on the headphones while the preview plays, where the parts come from, and SEPARATE when there are none. Needs the track playing in the player; (Roadmap [66]) | 1 | P3 |
+| Your own stem files (a folder or names beside the track) as the track's parts, checked for rate and length | DONE | `crates/od-stems/src/own.rs::find_own_stems`, `crates/od-stems/src/own.rs::load_own_stems`, `crates/od-ui/src/decks.rs::note_own_stems`; A folder `<track>.stems` (or ` stems`, `_stems`, ` (stems)`) or files `<track> - vocals.wav` and the like; WAV, FLAC, AIFF; vocals, drums and bass needed, the track's sample rate, length within 0.5 s. They come before separated parts; OWN on the strip, the folder on the status line, the reason when they are not used. The fourth part stays the track minus the three (an other file is checked, not played). Tested with generated files only; (Roadmap [66]) | 5 | P2 |
 
 ## 8. Sampler
 
@@ -358,6 +362,10 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Guided setup for controllers without a mapping: move each core control when asked, save a shareable mapping | DONE | `crates/od-controller/src/guided.rs`, `crates/od-ui/src/controller_setup.rs`, `ui/controller_setup.slint`; Preferences › Controller › SET UP A CONTROLLER or View › Controller Setup. Built on MIDI learn; the matching on-screen control gets the guide outline. Ports without a mapping are opened only while the setup, MIDI learn or the monitor runs. Every captured entry is written with verify = true. Tested with simulated MIDI only; not run with a real unit.; (Roadmap [13]) | 4 | P2 |
 | Generic controller templates by class: two decks entry level, two decks battle style (CUT curve), four decks | DONE | `mappings/templates/two-deck-entry.toml`, `mappings/templates/two-deck-battle.toml`, `mappings/templates/four-deck.toml`; Templates name no model and hold no MIDI numbers; the guided setup fills them from the owner's unit. No new model mapping was derived from manuals, vendor software or other projects' files.; (Roadmap [13]) | 2 | P2 |
 | Preferences in the new design with live previews: waveform colours and calm waveform, deck colours and status lines (colour-blind, contrast), the interface scale and the deck layout | DONE | `crates/od-ui/ui/preferences.slint::LivePreview`, `crates/od-ui/src/preferences.rs::preview_waveform`; The waveform preview draws a made-up bar with the renderer of the app; the scale preview shows a reading at the chosen scale (the window itself follows the operating system's scale). Deck layout is chosen here as well as in View › Deck Layout.; (Roadmap [48]) | 1 | P3 |
+| Output routing: master and headphones on chosen output pairs, each deck on its own pair | DONE | `crates/od-audio-io/src/output.rs::OutputRouting`, `crates/od-ui/src/routing.rs::routing`; Preferences › Audio › ROUTING: master and headphones on 1/2 … 7/8, a pair per deck with the external mixer; a pair the device lacks or another route took is left out and named under NOW. Not tried with a real multi-output interface; (Roadmap [67]) | 6 | P2 |
+| Headphones on a second audio device | DONE | `crates/od-audio-io/src/output.rs::CueBridge`, `crates/od-audio-io/src/output.rs::start_cue`; The headphone bus goes from the main callback through a lock-free ring to the second device's stream, which drops or repeats one frame per callback to follow the clock drift (counted in the stats). Tested with the ring alone; not with two real devices; (Roadmap [67]) | 2 | P3 |
+| Split cue on one stereo output: headphones (cue) mono left, master mono right on 1/2 | DONE | `crates/od-audio-io/src/output.rs::OutputRouting::split_on_one`, `crates/od-ui/src/routing.rs::engine_commands`; Preferences › Audio › One stereo output: no separate master pair; the headphone pair on 1/2 carries the split cue, and SPLIT on the mixer turns on with it. Builds on SPLIT of [30]. Tested with generated signals, not with a Y-cable at a gig; (Roadmap [67]) | 3 | P2 |
+| MIDI clock out from the master deck: 24 pulses a beat, Start on its beat, Stop | DONE | `crates/od-controller/src/clock.rs::ClockModel`, `crates/od-controller/src/clock.rs::MidiClockOut`, `crates/od-ui/src/routing.rs::apply_clock`; Preferences › Audio › CLOCK. MIDI beat clock only (no network tempo protocol, no third-party SDK), on its own thread; the phase follows the master deck gently, a jump at once. Receiving clock is not built. Not tried with a real clock receiver; (Roadmap [67]) | 6 | P2 |
 
 ## 12. Shell, layouts and panels
 
@@ -432,13 +440,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 317 |
+| DONE | 325 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **323** |
+| **Total** | **331** |
 
 ## P1 gaps and implementation notes
 

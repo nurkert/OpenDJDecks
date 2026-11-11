@@ -462,12 +462,17 @@ fn connect_input(name: &str, tx: Sender<RawIn>) -> Result<MidiInputConnection<()
 }
 
 fn connect_output(name: &str) -> Result<MidiOutputConnection, String> {
+    connect_output_named(name, "opendjdecks-out")
+}
+
+/// Connects the MIDI output port `name` (exact) under the connection name
+/// `as_name`.
+pub(crate) fn connect_output_named(name: &str, as_name: &str) -> Result<MidiOutputConnection, String> {
     let mo = MidiOutput::new(CLIENT).map_err(|e| e.to_string())?;
     let port = mo
         .ports()
         .into_iter()
         .find(|p| mo.port_name(p).ok().as_deref() == Some(name))
         .ok_or("port vanished")?;
-    mo.connect(&port, "opendjdecks-out")
-        .map_err(|e| e.to_string())
+    mo.connect(&port, as_name).map_err(|e| e.to_string())
 }

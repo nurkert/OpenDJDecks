@@ -50,6 +50,12 @@ pub struct Outputs<'a> {
     /// Booth output (master bus × booth level, independent of the master
     /// level); `None` if not routed.
     pub booth: Option<&'a mut [f32]>,
+    /// Per-deck outputs ([67]): each deck as it plays (stems, keylock, Stem
+    /// FX; before trim, EQ, fader and crossfader), for an external mixer.
+    /// [`MAX_DECKS`] stereo pairs per frame: deck `d` of frame `i` at
+    /// `(i * MAX_DECKS + d) * 2`, so at least `frames * 2 * MAX_DECKS`
+    /// samples. `None` if not routed.
+    pub decks: Option<&'a mut [f32]>,
 }
 
 /// Non-real-time handle: send commands, read the state snapshot and events.
@@ -275,6 +281,8 @@ pub struct EngineProcessor {
     sampler_buf: Vec<f32>,
     input_buf: Vec<f32>,
     booth_buf: Vec<f32>,
+    /// The decks before the mixer, interleaved as [`Outputs::decks`].
+    deck_out_buf: Vec<f32>,
 
     quantize: bool,
     explicit_master: Option<usize>,
@@ -302,6 +310,7 @@ pub struct EngineProcessor {
     booth_gain: Smoothed,
     master_cue: bool,
     split_cue: bool,
+    external_mixer: bool,
     frames_total: u64,
     state: EngineState,
 }
@@ -362,6 +371,7 @@ impl EngineProcessor {
             sampler_buf: vec![0.0; block],
             input_buf: vec![0.0; block],
             booth_buf: vec![0.0; block],
+            deck_out_buf: vec![0.0; block * MAX_DECKS],
             quantize: true,
             explicit_master: None,
             master: None,
@@ -385,6 +395,7 @@ impl EngineProcessor {
             booth_gain: Smoothed::new(1.0, ramp),
             master_cue: false,
             split_cue: false,
+            external_mixer: false,
             frames_total: 0,
             state: EngineState {
                 sample_rate: sr,
@@ -414,6 +425,10 @@ impl EngineProcessor {
             }
             if let Some(b) = outputs.booth.as_deref_mut() {
                 b[done * 2..(done + n) * 2].copy_from_slice(&self.booth_buf[..n * 2]);
+            }
+            if let Some(d) = outputs.decks.as_deref_mut() {
+                let w = 2 * MAX_DECKS;
+                d[done * w..(done + n) * w].copy_from_slice(&self.deck_out_buf[..n * w]);
             }
             done += n;
         }
@@ -522,6 +537,7 @@ impl EngineProcessor {
                 MixerCommand::SetBoothLevel(l) => self.booth_level = l.clamp(0.0, 1.5),
                 MixerCommand::SetMasterCue(on) => self.master_cue = on,
                 MixerCommand::SetSplitCue(on) => self.split_cue = on,
+                MixerCommand::SetExternalMixer(on) => self.external_mixer = on,
                 MixerCommand::SetLimiter(on) => self.limiter_on = on,
                 MixerCommand::ResetClipIndicators => {
                     self.master_meter.reset_clip();
@@ -777,6 +793,19 @@ impl EngineProcessor {
             }
         }
 
+        // The decks before the mixer, for their own outputs.
+        {
+            let w = 2 * MAX_DECKS;
+            let outs = &mut self.deck_out_buf[..n * w];
+            outs.fill(0.0);
+            for (d, buf) in self.deck_bufs.iter().enumerate() {
+                for (f, s) in outs.chunks_exact_mut(w).zip(buf[..n * 2].chunks_exact(2)) {
+                    f[d * 2] = s[0];
+                    f[d * 2 + 1] = s[1];
+                }
+            }
+        }
+
         // Mixer.
         let len = n * 2;
         let master_buf = &mut self.master_buf[..len];
@@ -788,8 +817,26 @@ impl EngineProcessor {
         self.master_gain.set(master_lin);
         let block_s = n as f32 / sr as f32;
         let contrib_a = (-block_s / 0.25).exp();
+        let external = self.external_mixer;
         for (i, ch) in self.channels.iter_mut().enumerate() {
             let buf = &mut self.deck_bufs[i][..len];
+            // Stem audition: those stems on the cue, after trim / auto gain.
+            if let Some(part) = self.decks[i].audition_output(n) {
+                let g = ch.pre_gain.target();
+                for (c, s) in cue_buf.iter_mut().zip(part.iter()) {
+                    *c += *s * g;
+                }
+            }
+            if external {
+                // The external mixer has the deck: nothing reaches the
+                // master or the cue here. Its level still tells which deck
+                // is playing out loud.
+                let ms = buf.iter().map(|v| v * v).sum::<f32>() / len.max(1) as f32;
+                ch.contribution = ch.contribution * contrib_a + ms * (1.0 - contrib_a);
+                ch.gain_to_master = 1.0;
+                ch.update_gains(self.decks[i].auto_gain_db(), xf);
+                continue;
+            }
             let auto_gain = self.decks[i].auto_gain_db();
             ch.update_gains(auto_gain, xf);
             // Metronome of the preview: in the deck's own output.
@@ -809,7 +856,8 @@ impl EngineProcessor {
                 }
             }
             self.hold_fx[i].process(buf, &ch_clock);
-            if ch.cue {
+            // An audition takes the channel's place on the cue.
+            if ch.cue && self.decks[i].audition_live() == 0 {
                 for (c, s) in cue_buf.iter_mut().zip(buf.iter()) {
                     *c += *s;
                 }
@@ -962,7 +1010,12 @@ impl EngineProcessor {
             s.decks[i].start_on_beat = self.pending_start[i];
         }
         let mut audible = AudibleState::default();
-        let master_lin = level_gain(self.master_level);
+        // With an external mixer the master knob is not on the decks' way.
+        let master_lin = if self.external_mixer {
+            1.0
+        } else {
+            level_gain(self.master_level)
+        };
         let mut best: Option<(usize, f32)> = None;
         for (i, c) in self.channels.iter().enumerate() {
             s.channels[i] = c.state();
@@ -994,6 +1047,7 @@ impl EngineProcessor {
         s.booth_level = self.booth_level;
         s.master_cue = self.master_cue;
         s.split_cue = self.split_cue;
+        s.external_mixer = self.external_mixer;
         s.quantize = self.quantize;
         s.master_deck = self.master;
         s.master_bpm = self.master_bpm;

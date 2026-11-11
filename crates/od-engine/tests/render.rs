@@ -928,3 +928,83 @@ fn metronome_clicks_on_the_beats() {
     let out = rig.render(400);
     assert!(out.iter().any(|v| v.abs() > 1e-3), "click on the master");
 }
+
+/// [67] Each deck on its own pair: deck 1 only in pair 1, deck 2 only in
+/// pair 2, each as the deck plays (before the fader); with the external
+/// mixer on, nothing of the decks reaches the master or the cue.
+#[test]
+fn decks_on_their_own_pairs_and_the_external_mixer() {
+    let mut rig = Rig::new(4);
+    rig.deck(0, DeckCommand::Load(sine_track(1, 10.0, 440.0, 0.3, 120.0)));
+    rig.deck(1, DeckCommand::Load(sine_track(2, 10.0, 1000.0, 0.2, 120.0)));
+    rig.deck(0, DeckCommand::Play);
+    rig.deck(1, DeckCommand::Play);
+    // Deck 2's fader down: its own output does not care.
+    rig.send(Command::Channel(1, ChannelCommand::SetFader(0.0)));
+    rig.send(Command::Channel(0, ChannelCommand::SetCue(true)));
+    rig.render(100);
+    rig.block(4800);
+    let (d1, d2, d3) = (rig.deck_out(0, 4800), rig.deck_out(1, 4800), rig.deck_out(2, 4800));
+    assert!((rms(&d1) - 0.3 / 2f32.sqrt()).abs() < 0.01, "deck 1 on pair 1: {}", rms(&d1));
+    assert!((rms(&d2) - 0.2 / 2f32.sqrt()).abs() < 0.01, "deck 2 on pair 2: {}", rms(&d2));
+    assert!(rms(&d3) < 1e-9, "nothing on pair 3");
+    assert!((estimate_freq(&d1) - 440.0).abs() < 2.0);
+    assert!((estimate_freq(&d2) - 1000.0).abs() < 4.0);
+    // The internal mixer still runs: deck 1 on the master.
+    assert!(rms(&rig.master[..4800 * 2]) > 0.1);
+    assert!(!rig.state().external_mixer);
+
+    rig.send(Command::Mixer(MixerCommand::SetExternalMixer(true)));
+    rig.render(10);
+    rig.block(4800);
+    assert!(rig.state().external_mixer);
+    assert!(rms(&rig.master[..4800 * 2]) < 1e-9, "master bypassed");
+    assert!(rms(&rig.phones[..4800 * 2]) < 1e-9, "cue bypassed");
+    assert!((rms(&rig.deck_out(0, 4800)) - 0.3 / 2f32.sqrt()).abs() < 0.01);
+    assert!((rms(&rig.deck_out(1, 4800)) - 0.2 / 2f32.sqrt()).abs() < 0.01);
+    // The playing decks still count as heard (on air for the tracklist).
+    rig.render(200);
+    let st = rig.state();
+    assert!(st.audible.audible[0] && st.audible.audible[1]);
+    // Back to the internal mixer.
+    rig.send(Command::Mixer(MixerCommand::SetExternalMixer(false)));
+    rig.render(10);
+    rig.block(4800);
+    assert!(rms(&rig.master[..4800 * 2]) > 0.1);
+}
+
+/// [67] Split cue on one stereo interface: the headphone pair carries the
+/// cue in mono on the left and the master in mono on the right, so a
+/// single stereo output can serve both (the device layer routes it to 1/2;
+/// see od-audio-io).
+#[test]
+fn split_cue_for_one_stereo_output_is_mono_on_each_side() {
+    let mut rig = Rig::new(2);
+    // Deck 1: left-only signal on the cue (fader down); deck 2: right-only
+    // signal on air. Both sides must come out mono-summed.
+    let n = 10 * SR as usize;
+    let left_only: Vec<f32> = (0..n)
+        .flat_map(|i| [(std::f64::consts::TAU * 440.0 * i as f64 / SR as f64).sin() as f32 * 0.4, 0.0])
+        .collect();
+    let right_only: Vec<f32> = (0..n)
+        .flat_map(|i| [0.0, (std::f64::consts::TAU * 1000.0 * i as f64 / SR as f64).sin() as f32 * 0.4])
+        .collect();
+    rig.deck(0, DeckCommand::Load(track_from(1, left_only, 120.0, 0.0)));
+    rig.deck(1, DeckCommand::Load(track_from(2, right_only, 120.0, 0.0)));
+    rig.deck(0, DeckCommand::Play);
+    rig.deck(1, DeckCommand::Play);
+    rig.send(Command::Channel(0, ChannelCommand::SetFader(0.0)));
+    rig.send(Command::Channel(0, ChannelCommand::SetCue(true)));
+    rig.send(Command::Mixer(MixerCommand::SetSplitCue(true)));
+    rig.render(100);
+    rig.block(4800);
+    let left: Vec<f32> = rig.phones[..4800 * 2].iter().step_by(2).copied().collect();
+    let right: Vec<f32> = rig.phones[1..4800 * 2].iter().step_by(2).copied().collect();
+    // Mono sum of a one-sided 0.4 sine: 0.2 peak, RMS 0.141.
+    assert!((rms(&left) - 0.2 / 2f32.sqrt()).abs() < 0.01, "cue mono left: {}", rms(&left));
+    assert!((rms(&right) - 0.2 / 2f32.sqrt()).abs() < 0.01, "master mono right: {}", rms(&right));
+    let l2: Vec<f32> = left.iter().flat_map(|v| [*v, *v]).collect();
+    let r2: Vec<f32> = right.iter().flat_map(|v| [*v, *v]).collect();
+    assert!((estimate_freq(&l2) - 440.0).abs() < 2.0, "the cued deck on the left");
+    assert!((estimate_freq(&r2) - 1000.0).abs() < 4.0, "the master on the right");
+}

@@ -89,6 +89,7 @@ use od_engine::TrackData;
 
 mod cache;
 mod model;
+pub mod own;
 #[cfg(onnx)]
 mod separate;
 #[cfg(all(feature = "separation", not(onnx)))]
@@ -98,6 +99,7 @@ mod separate;
 mod worker;
 
 pub use cache::{FORMAT_VERSION, StemCache, StemFileInfo};
+pub use own::{OwnPart, OwnStemError, OwnStemSet, find_own_stems, load_own_stems};
 #[cfg(feature = "separation")]
 pub use model::{FreeSpace, fetch_model};
 pub use model::{
@@ -204,6 +206,17 @@ pub fn attach_cached_stems(
         return None;
     }
     Some(track.with_stems(od_engine::StemData::new(&stems, track.sample_rate)))
+}
+
+/// The second step of a load with your own stem files ([66]): `track` with
+/// the parts read from `set`, checked against the mix (see [`own`]).
+pub fn attach_own_stems(
+    set: &OwnStemSet,
+    track: &TrackData,
+    shape: MixShape,
+) -> Result<Arc<TrackData>, OwnStemError> {
+    let stems = load_own_stems(set, shape.sample_rate, shape.frames)?;
+    Ok(track.with_stems(od_engine::StemData::new(&stems, track.sample_rate)))
 }
 
 pub fn load_track_data(

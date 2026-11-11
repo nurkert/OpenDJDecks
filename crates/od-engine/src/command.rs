@@ -350,6 +350,13 @@ pub enum DeckCommand {
         stem: crate::stems::Stem,
         level: f32,
     },
+    /// Stem audition ([66]): the stems of the mask (bit =
+    /// [`crate::Stem::index`]) play on the headphone cue on their own, at
+    /// full level whatever their deck level; the deck's own output and the
+    /// master stay as they are. 0 = off. Needs stems; Stem FX on the same
+    /// deck takes precedence ([`crate::DeckState::stem_audition`] says what
+    /// is live).
+    SetStemAudition(u8),
 }
 
 /// Channel FX (one knob per channel, −1..=1; 0 = off).
@@ -474,6 +481,12 @@ pub enum MixerCommand {
     /// Split cue: the headphones carry the cue bus in mono on the left and
     /// the master in mono on the right (the headphone mix is set aside).
     SetSplitCue(bool),
+    /// External mixer ([67]): the internal mixer is bypassed. The decks
+    /// sound only on their own outputs ([`crate::Outputs::decks`], the deck
+    /// as it plays, before trim, EQ, fader and crossfader); the master bus
+    /// keeps the sampler and the microphone input, the cue bus the sampler
+    /// cue and stem auditions.
+    SetExternalMixer(bool),
     /// Master limiter + soft clip (default on).
     SetLimiter(bool),
     ResetClipIndicators,

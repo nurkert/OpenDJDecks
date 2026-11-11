@@ -7565,7 +7565,7 @@ source = "SPEC §12 layout"
 sizes = ["desktop", "laptop"]
 bands = ["prefs"]
 note = "Deviation: each page is one scrolling page with section headings instead of tabs; every page fits a screen, and prefs.search opens the page that holds a setting."
-features = ["prefs-window", "prefs-audio-device"]
+features = ["prefs-window", "prefs-audio-device", "audio-output-routing", "audio-split-cue-one-output", "midi-clock-out"]
 
 [[view.region]]
 id = "prefs.nav"
@@ -7592,10 +7592,12 @@ elements = [
   "prefs.audio.device",
   "prefs.audio.buffer",
   "prefs.audio.sample-rate",
+  "prefs.audio.split-one",
+  "prefs.audio.master-routing",
   "prefs.audio.headphone-routing",
   "prefs.reset",
 ]
-note = "fixed 'Reset to defaults' at the bottom left. Deviation: No master output routing choice: the master plays on outputs 1/2 of the chosen device; the headphones choice (prefs.audio.headphone-routing) picks outputs 3/4."
+note = "fixed 'Reset to defaults' at the bottom left. Roadmap [67]: below the device, buffer and rate, ROUTING holds one stereo output (split cue), the master and headphone pairs, the headphone device, the mixer (internal or external, with a pair per deck) and, under CLOCK, the MIDI clock out; NOW says what runs where."
 
 # ---- Preferences: Analysis ----
 [[view]]
@@ -8446,4 +8448,73 @@ elements = [
   "plan.next",
   "plan.standing",
   "plan.close",
+]
+
+# ---- Roadmap 0.9.0 block H ----
+[[view]]
+id = "perform.stem-cue"
+title = "Perform: CUE on the stem strip, the stem keys pick parts for the headphones"
+mode = "perform"
+source = "Roadmap [66]"
+sizes = ["desktop", "laptop"]
+bands = ["deck-row"]
+features = ["stems-cue-deck", "stems-own-files"]
+note = "The full stem strip: the caption (STEMS, OWN for the DJ's own files, SOLO, NO STEMS), CUE, then VOCAL DRUMS BASS INST. With CUE on, a filled key is on the headphones; the compact strip of small windows and four decks has no CUE (deck.stem_cue on a controller)"
+
+[[view.region]]
+id = "deck1.stem-strip"
+band = "deck-row"
+place = "deck 1, under the overview"
+order = "row"
+elements = [
+  "deck1.stem.caption",
+  "deck1.stem.cue",
+  "deck1.stem.vocal",
+  "deck1.stem.drums",
+  "deck1.stem.bass",
+  "deck1.stem.inst",
+]
+
+[[view]]
+id = "perform.external-mixer"
+title = "Perform: the mixer column with an external mixer"
+mode = "perform"
+source = "Roadmap [67]"
+sizes = ["desktop", "laptop"]
+bands = ["deck-row"]
+features = ["mixer-external-mode"]
+note = "In place of the channel strips (same width): EXTERNAL MIXER and each deck's outputs; the swap row and channel FX selector are not built"
+
+[[view.region]]
+id = "mixer.external-plate"
+band = "deck-row"
+place = "between the decks, where the channel strips stand"
+order = "column"
+elements = [
+  "mixer.external",
+  "mixer.external.deck1",
+  "mixer.external.deck2",
+]
+
+[[view]]
+id = "prepare.player-stems"
+title = "Prepare: the player's STEMS tool"
+mode = "prepare"
+source = "Roadmap [66]"
+sizes = ["desktop", "laptop"]
+bands = ["player"]
+features = ["stems-cue-player"]
+note = "The parts of the track playing in the player on the headphones, the source (SEPARATED, OWN FILES with the folder, NOT SEPARATED with SEPARATE)"
+
+[[view.region]]
+id = "player1.stems-tool"
+band = "player"
+place = "the player's tool row"
+order = "row"
+elements = [
+  "player1.stems.vocal",
+  "player1.stems.drums",
+  "player1.stems.bass",
+  "player1.stems.inst",
+  "player1.stems.source",
 ]

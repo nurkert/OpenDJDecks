@@ -196,6 +196,7 @@ pub const ACTION_NAMES: &[&str] = &[
     "deck.stem_mute",
     "deck.stem_solo",
     "deck.stem_keep",
+    "deck.stem_cue",
     "mixer.trim",
     "mixer.eq_high",
     "mixer.eq_mid",
@@ -511,6 +512,10 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
         "deck.stem_keep" => {
             let stem = stem_arg(&a)?;
             (Button, deck_press(DeckAction::StemKeepOnly { stem }))
+        }
+        "deck.stem_cue" => {
+            let stem = stem_arg(&a)?;
+            (Button, deck_press(DeckAction::StemCue { stem }))
         }
 
         "mixer.trim" => (Absolute, mixer_abs(MixerAction::Trim)),
@@ -1035,6 +1040,11 @@ mod tests {
             Some(ControlAction::Deck { deck: 0, action: DeckAction::StemKeepOnly { stem: StemPart::Vocals } })
         );
         assert!(parse_action("deck.stem_solo", &Table::new()).is_err());
+        let cue = parse_action("deck.stem_cue", &vocals).unwrap();
+        assert_eq!(
+            cue.produce(Some(0), press),
+            Some(ControlAction::Deck { deck: 0, action: DeckAction::StemCue { stem: StemPart::Vocals } })
+        );
         let panic = parse_action("fx_panic", &Table::new()).unwrap();
         assert_eq!(panic.produce(None, press), Some(ControlAction::FxPanic));
         let mut bars = Table::new();

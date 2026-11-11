@@ -296,6 +296,11 @@ pub enum DeckAction {
     StemKeepOnly {
         stem: StemPart,
     },
+    /// Stem audition ([66]): adds this part to the ones heard on their own
+    /// on the headphones, or takes it out; the master stays as it is.
+    StemCue {
+        stem: StemPart,
+    },
 }
 
 /// A separated part of a track (see `od_engine::Stem`).

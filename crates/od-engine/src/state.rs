@@ -104,6 +104,11 @@ pub struct DeckState {
     /// Target stem levels, indexed by [`crate::Stem::index`]
     /// (vocals, drums, bass, inst).
     pub stem_levels: [f32; 4],
+    /// Stems asked for on the headphone cue ([66], bit = [`crate::Stem::index`]).
+    pub stem_audition: u8,
+    /// What of it is heard: 0 when the track has no stems or Stem FX holds
+    /// the deck's split.
+    pub stem_audition_live: u8,
     /// The deck waits to start on this master-clock beat
     /// ([`crate::Command::StartOnBeat`]).
     pub start_on_beat: Option<f64>,
@@ -242,6 +247,8 @@ pub struct EngineState {
     pub master_cue: bool,
     /// Split cue: cue left, master right on the headphones.
     pub split_cue: bool,
+    /// External mixer mode ([`crate::MixerCommand::SetExternalMixer`]).
+    pub external_mixer: bool,
     pub quantize: bool,
     /// Current sync master deck.
     pub master_deck: Option<usize>,
@@ -286,6 +293,7 @@ impl Default for EngineState {
             booth_level: 1.0,
             master_cue: false,
             split_cue: false,
+            external_mixer: false,
             quantize: true,
             master_deck: None,
             master_bpm: 120.0,

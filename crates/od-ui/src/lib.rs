@@ -68,6 +68,7 @@ mod dj_demo;
 mod perform_demo;
 mod render;
 mod restore;
+mod routing;
 mod sampler;
 mod samples;
 mod set_plan;

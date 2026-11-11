@@ -439,3 +439,84 @@ fn stem_fx_without_parts_is_dry() {
     stem_fx(&mut rig, Stem::Vocals, true);
     assert_eq!(rig.render(200), dry.render(200));
 }
+
+/// Renders `blocks` blocks, collecting master and headphones.
+fn render_both(rig: &mut Rig, blocks: usize) -> (Vec<f32>, Vec<f32>) {
+    let (mut m, mut p) = (Vec::new(), Vec::new());
+    for _ in 0..blocks {
+        rig.block(BLOCK);
+        m.extend_from_slice(&rig.master[..BLOCK * 2]);
+        p.extend_from_slice(&rig.phones[..BLOCK * 2]);
+    }
+    (m, p)
+}
+
+const VOCALS: u8 = 1 << 0;
+const DRUMS: u8 = 1 << 1;
+
+/// [66] Stem audition: the vocals, muted on the master, play alone on the
+/// headphone cue; the master does not change by it. With and without
+/// keylock, and the channel's own CUE gives way to the audition.
+#[test]
+fn stem_audition_plays_on_the_cue_without_touching_the_master() {
+    for keylock in [false, true] {
+        let fr = |f: f64| if keylock { f } else { f * 1.04 };
+        let mut rig = playing_rig(keylock, 0.25);
+        // Headphones: cue only.
+        rig.send(Command::Mixer(MixerCommand::SetHeadphoneMix(0.0)));
+        rig.send(Command::Channel(0, ChannelCommand::SetCue(true)));
+        rig.deck(0, DeckCommand::SetStemLevel { stem: Stem::Vocals, level: 0.0 });
+        rig.render(800);
+        let (reference, _) = render_both(&mut rig, 400);
+        rig.deck(0, DeckCommand::SetStemAudition(VOCALS));
+        rig.render(400); // keylock re-primes both stretchers
+        let (master, phones) = render_both(&mut rig, 400);
+        let st = rig.state().decks[0];
+        assert_eq!((st.stem_audition, st.stem_audition_live), (VOCALS, VOCALS));
+        for f in [FV, FD, FO] {
+            let d = db(tone_level(&master, fr(f)), tone_level(&reference, fr(f)) + 1e-12);
+            assert!(
+                d.abs() < 0.5 || tone_level(&reference, fr(f)) < 1e-4,
+                "keylock {keylock}: the master changed at {f} Hz by {d:.2} dB"
+            );
+        }
+        assert!(
+            tone_level(&master, fr(FV)) < 1e-3,
+            "keylock {keylock}: the vocals stay muted on the master"
+        );
+        let v = tone_level(&phones, fr(FV));
+        assert!(v > 0.05, "keylock {keylock}: the vocals on the cue: {v}");
+        for f in [FD, FO] {
+            let d = db(tone_level(&phones, fr(f)), v);
+            assert!(d < -40.0, "keylock {keylock}: {f} Hz on the cue at {d:.1} dB");
+        }
+        // Two stems: vocals and drums, still not the inst.
+        rig.deck(0, DeckCommand::SetStemAudition(VOCALS | DRUMS));
+        rig.render(400);
+        let (_, phones) = render_both(&mut rig, 400);
+        assert!(tone_level(&phones, fr(FD)) > 0.05);
+        assert!(db(tone_level(&phones, fr(FO)), tone_level(&phones, fr(FV))) < -40.0);
+        // Off: the channel's CUE is back with the whole deck (vocals muted).
+        rig.deck(0, DeckCommand::SetStemAudition(0));
+        rig.render(400);
+        let (_, phones) = render_both(&mut rig, 400);
+        assert!(tone_level(&phones, fr(FO)) > 0.05, "CUE back");
+        assert!(tone_level(&phones, fr(FV)) < 1e-3);
+        assert!(phones.iter().all(|v| v.is_finite()));
+    }
+}
+
+/// [66] A track without stems has nothing to audition: the cue stays as
+/// it was, and the state says the audition is not live.
+#[test]
+fn stem_audition_without_parts_changes_nothing() {
+    let mut rig = Rig::new(2);
+    rig.deck(0, DeckCommand::Load(sine_track(1, 5.0, 440.0, 0.3, 120.0)));
+    rig.deck(0, DeckCommand::Play);
+    rig.send(Command::Channel(0, ChannelCommand::SetCue(true)));
+    rig.deck(0, DeckCommand::SetStemAudition(VOCALS));
+    let (_, phones) = render_both(&mut rig, 200);
+    assert!(rms(&phones[phones.len() / 2..]) > 0.1, "the channel CUE still sounds");
+    let st = rig.state().decks[0];
+    assert_eq!((st.stem_audition, st.stem_audition_live), (VOCALS, 0));
+}

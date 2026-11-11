@@ -1,8 +1,8 @@
 ---
 title: Preferences and keyboard shortcuts
 description: Audio devices, language and appearance, waveforms, deck defaults, every keyboard shortcut and how to rebind it.
-keywords: [preferences, settings, options, audio, output device, buffer, sample rate, language, german, english, theme, appearance, dark, light, colour blind, contrast, scale, zoom, waveform colour, shortcut, shortcuts, keyboard, key binding, keybindings, keys, tasten, belegen, rebind]
-features: [analysis-bpm-ranges, prefs-window, prefs-live-preview, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends, shell-motion-language, shell-keyboard-focus, shell-screen-reader-names, shell-no-hue-alone]
+keywords: [preferences, settings, options, audio, output device, buffer, sample rate, routing, outputs, external mixer, split cue, midi clock, clock sync, language, german, english, theme, appearance, dark, light, colour blind, contrast, scale, zoom, waveform colour, shortcut, shortcuts, keyboard, key binding, keybindings, keys, tasten, belegen, rebind]
+features: [audio-output-routing, audio-cue-device, audio-split-cue-one-output, mixer-external-mode, midi-clock-out, analysis-bpm-ranges, prefs-window, prefs-live-preview, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends, shell-motion-language, shell-keyboard-focus, shell-screen-reader-names, shell-no-hue-alone]
 ---
 
 Open **Preferences** with the gear in the top bar, or `⌘,` on the Mac and `Ctrl+,` on Windows and Linux. `Esc` closes the window. **FIND A SETTING** at the top searches all pages.
@@ -11,7 +11,22 @@ Open **Preferences** with the gear in the top bar, or `⌘,` on the Mac and `Ctr
 
 ## Audio
 
-**Output device** defaults to the controller's audio interface when one is connected. **Buffer size** runs from 64 to 1024 samples: lower reacts faster, higher is safer on a slow computer. **Headphones (cue)** can be automatic, outputs 3/4, or off. Audio settings apply the next time audio starts, marked **APPLIES AFTER RESTART**.
+**Output device** defaults to the controller's audio interface when one is connected. **Buffer size** runs from 64 to 1024 samples: lower reacts faster, higher is safer on a slow computer. Device, buffer and routing apply at once; a new **Sample rate** waits for the next start, marked **APPLIES AFTER RESTART**.
+
+### Routing
+
+- **Master** and **Headphones (cue)** pick the outputs of the device: **1/2**, **3/4**, **5/6** or **7/8** (headphones **AUTOMATIC** use 3/4 when the device has four outputs). An output pair can carry only one signal, and a pair the device does not have is left out; **Now** at the foot of the page says what runs where and what was left out.
+- **Headphone device** plays the headphones on a second audio device (its pair from **Headphones (cue)**). The two devices run on their own clocks; OpenDJDecks keeps the headphones in step by dropping or repeating a single sample frame now and then, which you may hear as a faint click on the headphones, never on the master.
+- **One stereo output** is split cue on a single stereo output, such as the headphone jack of a laptop: the headphones (cue) in mono on the left and the master in mono on the right of outputs 1/2, for a Y-cable to the speakers and your headphones. **SPLIT** on the mixer turns on with it.
+- **Mixer: EXTERNAL** hands the mixing to an external mixer: each deck plays on its own pair (**Deck 1 to** … **Deck 4 to**), as it comes off the deck, before trim, EQ, faders and crossfader. The mixer column in Perform then shows **EXTERNAL MIXER** and the output of each deck instead of the channel strips. The sampler and the microphone stay on the master pair, and the recorder records the master pair, so record on the external mixer.
+
+![Preferences › Audio with the external mixer: deck 1 on 3/4, deck 2 on 7/8, and the MIDI clock](../img/preferences-routing.png)
+
+### Clock
+
+**MIDI clock out** sends the tempo of the master deck to a MIDI output as MIDI beat clock (24 pulses a beat), with Start on its next beat and Stop when it stops, so drum machines, sequencers or a lighting desk follow the mix. Tempo changes are followed at once; a jump (a cue, a loop, another master deck) is followed on the next pulse. **Now** shows the port and the pulses sent. OpenDJDecks sends clock only; it does not follow an incoming clock.
+
+The routing is tested in the engine and the device layer with generated signals (each deck on its own pair, split cue in mono left and right, the headphones through the second-device ring) and the clock with a timing test; none of it has been tried with a real multi-output interface, an external mixer or a clock receiver.
 
 On Windows audio goes through WASAPI, on macOS through CoreAudio, and on Linux through ALSA, JACK or PipeWire, whichever you pick here.
 

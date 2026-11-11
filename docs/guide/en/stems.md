@@ -1,8 +1,8 @@
 ---
 title: Stems
 description: Split tracks into vocals, instruments, drums and bass on your own computer, and mute, level or add effects to each part.
-keywords: [stems, stem, separation, separate, split, vocals, vocal, acapella, instrumental, drums, bass, parts, stem fx, karaoke, mute, stem separation, solo, keep only, whole playlist, set, before the gig, stems column, queued]
-features: [stems-separation, stems-mute-ui, stems-levels, stems-batch-prepare, stems-model-download, stems-model-setup, stems-status-on-deck, stems-pi-playback, pad-mode-stems, analysis-vocal-position, stems-list-prepare, stems-library-column, stems-key-state, stems-solo]
+keywords: [stems, stem, separation, separate, split, vocals, vocal, acapella, instrumental, drums, bass, parts, stem fx, karaoke, mute, stem separation, solo, keep only, whole playlist, set, before the gig, stems column, queued, audition, pre-listen, headphones, cue, own stems, stem files, multitrack]
+features: [stems-separation, stems-mute-ui, stems-levels, stems-batch-prepare, stems-model-download, stems-model-setup, stems-status-on-deck, stems-pi-playback, pad-mode-stems, analysis-vocal-position, stems-list-prepare, stems-library-column, stems-key-state, stems-solo, stems-cue-deck, stems-cue-player, stems-own-files]
 ---
 
 OpenDJDecks can split a track into four stems: vocals, instruments, drums and bass. This happens on your own computer, in the background, and nothing leaves the machine. The first time, a model is downloaded once; after that it works offline.
@@ -42,7 +42,29 @@ Each deck has **VOCAL**, **INST**, **DRUMS** and **BASS** under the waveform.
 - ⇧-click a key to **keep only this** stem: the others are muted and stay muted, as if you had clicked each of them.
 - Turn the wheel over a key to set the part's level; the line under the key shows it.
 
-On a controller, `deck.stem_solo` solos a stem while the button is held and `deck.stem_keep` keeps only that stem ([Controller mappings](../../controller-mappings.md)). The solo and keep-only keys are tested in the app; they have not been tried on a hardware controller yet.
+On a controller, `deck.stem_solo` solos a stem while the button is held, `deck.stem_keep` keeps only that stem and `deck.stem_cue` puts it on the headphones ([Controller mappings](../../controller-mappings.md)). The solo and keep-only keys are tested in the app; they have not been tried on a hardware controller yet.
+
+## Hear stems on the headphones
+
+From version 0.9 you can pre-listen a single stem, or a few of them, in your headphones while the master plays on untouched.
+
+- **On the deck:** press **CUE** in front of the stem keys. The stem keys then pick what you hear on the headphones: a filled key is on the headphones, on its own and at full level, even when that stem is muted on the master. Press **CUE** again to go back to muting; the audition ends. While a deck auditions stems, its channel **CUE** on the mixer gives way to them. The **CUE** key is on the full stem strip; the compact decks of a small window and four decks leave it to a controller (`deck.stem_cue` with a `stem`, one press adds or takes out that stem).
+- **In Prepare:** the player has a **STEMS** tab. Play the track, then press **VOCAL**, **DRUMS**, **BASS** or **INST** to hear it on the headphones. The line beside the keys says where the stems come from (**SEPARATED** or **OWN FILES** with the folder), and **SEPARATE** asks for them when there are none.
+
+You need a headphone output for this ([Preferences › Audio](preferences.md#audio)); without one, the status line says so. Tested in the engine with generated parts (the master stays the same to the sample, the cue carries only the chosen stems) and through the app; not tried with a controller or at a gig.
+
+![Stem cue on deck 1: CUE on, VOCAL and BASS on the headphones, the strip says OWN](../img/stems-cue.png)
+
+## Your own stem files
+
+If you have stems for a track already (from a production, a remix pack or a store), OpenDJDecks uses them instead of separating. Put them next to the track, either
+
+- in a folder named after the track: `Night Drive.stems`, `Night Drive stems`, `Night Drive_stems` or `Night Drive (stems)`, with files named after their part (`vocals.wav`, `Drums.flac`, `03 bass.wav`); or
+- beside the track, starting with its name: `Night Drive - Vocals.wav`, `Night Drive_drums.flac`, `Night Drive (bass).aiff`.
+
+The part words are vocals (also vocal, vox, voice), drums (drum, percussion), bass, and other (inst, instrumental, music, melody). WAV, FLAC and AIFF are read. Vocals, drums and bass must all be there, at the track's sample rate and within half a second of its length (a little shorter or longer is padded or cut). The fourth stem stays the track minus the other three, as with separated stems, so an "other" file is checked but not played.
+
+When a deck loads such a track, its stems come from your files at once, the strip says **OWN** and the status line names the folder. Files that do not fit are left out with the reason on the status line (for example `drums is 4.0 s long, the track 9.0 s`), and the track falls back to separated stems, if there are any. Tested with generated files; not with stems from a real release.
 
 For hands-on mixing, press **STEM** on a mixer channel: **HI** becomes the vocals, **MID** the instruments and **LOW** the drums. The **STEMS** pad mode gives you the part mutes and stem effects on the pads.
 

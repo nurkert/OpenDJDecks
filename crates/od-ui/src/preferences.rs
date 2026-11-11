@@ -37,6 +37,8 @@ pub(crate) struct Prefs {
     pub message: String,
     /// Output devices offered on the Audio page (names).
     pub devices: Vec<String>,
+    /// MIDI outputs offered for the clock (names).
+    pub clock_ports: Vec<String>,
     /// MIDI monitor and learn (Controller page).
     pub midi: crate::midi_tools::MidiTools,
     /// Polls the MIDI monitor while it or learn runs.
@@ -55,6 +57,7 @@ impl Default for Prefs {
             selected: None,
             message: String::new(),
             devices: Vec::new(),
+            clock_ports: Vec::new(),
             midi: Default::default(),
             midi_timer: slint::Timer::default(),
         }
@@ -144,6 +147,7 @@ pub(crate) fn engine_settings(s: &Settings, decks: usize) -> Vec<Command> {
     }
     out.push(Command::SetQuantize(s.deck.quantize));
     out.extend(mixer_settings(s, decks));
+    out.extend(crate::routing::engine_commands(s));
     out
 }
 
@@ -191,6 +195,16 @@ fn apply_engine_key(app: &App, key: &str) {
     for c in all.into_iter().filter(wanted) {
         crate::engine::send(app, c);
     }
+}
+
+/// [67] The routing's engine side (external mixer, split cue) and the
+/// mixer column's view of it.
+fn apply_routing_engine(app: &App) {
+    let s = app.state.borrow().settings.clone();
+    for c in crate::routing::engine_commands(&s) {
+        crate::engine::send(app, c);
+    }
+    crate::routing::refresh_mixer(app);
 }
 
 /// Callbacks of the main window are wired in `shell`; the Preferences
@@ -301,6 +315,9 @@ pub(crate) fn refresh(app: &App) {
         })
         .unwrap_or_default();
     app.prefs.borrow_mut().devices = devices.clone();
+    let ports = crate::routing::midi_outputs();
+    app.prefs.borrow_mut().clock_ports = ports.clone();
+    let clock_line = crate::routing::clock_line();
     let st = app.state.borrow();
     let s = &st.settings;
     let started = app
@@ -352,9 +369,49 @@ pub(crate) fn refresh(app: &App) {
         ));
         w.set_rate(index_of(&SAMPLE_RATES, &s.audio.sample_rate));
         w.set_headphones(index_of(
-            &["auto", "34", "off"],
+            &["auto", "12", "34", "56", "78", "off"],
             &s.audio.headphones.as_str(),
         ));
+        // [67] Routing.
+        w.set_master_out(index_of(&["12", "34", "56", "78", "off"], &s.audio.master.as_str()));
+        w.set_split_one(s.audio.split_one);
+        let mut cue = vec![od_i18n::tr("The output device").to_string()];
+        cue.extend(devices.iter().cloned());
+        let mut cue_sel = devices
+            .iter()
+            .position(|d| *d == s.audio.cue_device)
+            .map(|i| i as i32 + 1)
+            .unwrap_or(0);
+        if !s.audio.cue_device.is_empty() && cue_sel == 0 {
+            cue.push(od_i18n::trf("{} (not connected)", &[&s.audio.cue_device]));
+            cue_sel = cue.len() as i32 - 1;
+        }
+        w.set_cue_devices(strings(cue));
+        w.set_cue_device(cue_sel);
+        w.set_external_mixer(crate::routing::external(&s.audio));
+        let decks = app.decks.borrow().deck_count.clamp(2, od_engine::MAX_DECKS);
+        w.set_deck_outs(model(
+            (0..decks)
+                .map(|d| {
+                    let code = s.audio.deck_outputs.get(d).map_or("off", |c| c.as_str());
+                    index_of(&["12", "34", "56", "78", "off"], &code)
+                })
+                .collect(),
+        ));
+        let mut clock = vec![od_i18n::tr("Off").to_string()];
+        clock.extend(ports.iter().cloned());
+        let mut clock_sel = ports
+            .iter()
+            .position(|p| *p == s.audio.clock_out)
+            .map(|i| i as i32 + 1)
+            .unwrap_or(0);
+        if !s.audio.clock_out.is_empty() && clock_sel == 0 {
+            clock.push(od_i18n::trf("{} (not connected)", &[&s.audio.clock_out]));
+            clock_sel = clock.len() as i32 - 1;
+        }
+        w.set_clock_ports(strings(clock));
+        w.set_clock_port(clock_sel);
+        w.set_clock_status(clock_line.clone().into());
         w.set_audio_status(engine_line.into());
         // Device, buffer and headphones apply at once; the engine's sample rate
         // is fixed while it runs.
@@ -980,11 +1037,18 @@ const PAGE_TERMS: &[(&str, &[&str])] = &[
             "latency",
             "sample rate",
             "headphone",
+            "routing",
+            "external mixer",
+            "split",
+            "midi clock",
+            "clock",
             "ausgang",
             "gerät",
             "puffer",
             "kopfhörer",
             "abtastrate",
+            "externes mischpult",
+            "takt",
         ],
     ),
     (
@@ -1350,8 +1414,58 @@ fn choose(app: &App, key: &str, i: i32) {
         }),
         "audio.headphones" => {
             change(app, |s| {
-                s.audio.headphones = ["auto", "34", "off"].get(i).unwrap_or(&"auto").to_string()
+                s.audio.headphones = ["auto", "12", "34", "56", "78", "off"]
+                    .get(i)
+                    .unwrap_or(&"auto")
+                    .to_string()
             });
+            crate::audio_health::apply_settings(app);
+        }
+        "audio.master" => {
+            change(app, |s| {
+                s.audio.master = ["12", "34", "56", "78", "off"].get(i).unwrap_or(&"12").to_string()
+            });
+            crate::audio_health::apply_settings(app);
+        }
+        "audio.cue-device" => {
+            let name = if i == 0 {
+                String::new()
+            } else {
+                app.prefs.borrow().devices.get(i - 1).cloned().unwrap_or_default()
+            };
+            if i > 0 && name.is_empty() {
+                return; // the "not connected" entry: keep it
+            }
+            change(app, |s| s.audio.cue_device = name.clone());
+            crate::audio_health::apply_settings(app);
+        }
+        "audio.mixer" => {
+            change(app, |s| s.audio.mixer = if i == 1 { "external" } else { "internal" }.into());
+            apply_routing_engine(app);
+            crate::audio_health::apply_settings(app);
+        }
+        "audio.clock" => {
+            let name = if i == 0 {
+                String::new()
+            } else {
+                app.prefs.borrow().clock_ports.get(i - 1).cloned().unwrap_or_default()
+            };
+            if i > 0 && name.is_empty() {
+                return;
+            }
+            change(app, |s| s.audio.clock_out = name.clone());
+            crate::routing::apply_clock(app);
+            refresh(app);
+        }
+        k if k.starts_with("audio.deck") => {
+            let Some(d) = k["audio.deck".len()..].parse::<usize>().ok().filter(|d| (1..=od_engine::MAX_DECKS).contains(d)) else {
+                return;
+            };
+            change(app, |s| {
+                s.audio.deck_outputs.resize(od_engine::MAX_DECKS, "off".into());
+                s.audio.deck_outputs[d - 1] = ["12", "34", "56", "78", "off"].get(i).unwrap_or(&"off").to_string();
+            });
+            crate::routing::refresh_mixer(app);
             crate::audio_health::apply_settings(app);
         }
         "view.language" => change(app, |s| {
@@ -1531,6 +1645,14 @@ fn flag(app: &App, key: &str, v: bool) {
         "analysis.auto" => change(app, |s| s.analysis.auto_analyse = v),
         "analysis.auto-cues" => change(app, |s| s.analysis.auto_cues = v),
         "rec.split" => change(app, |s| s.recording.auto_split = v),
+        "audio.split-one" => {
+            change(app, |s| s.audio.split_one = v);
+            if !v {
+                crate::engine::send(app, Command::Mixer(MixerCommand::SetSplitCue(false)));
+            }
+            apply_routing_engine(app);
+            crate::audio_health::apply_settings(app);
+        }
         "rec.silence-stop" => change(app, |s| s.recording.silence_stop = v),
         "rec.voice" => change(app, |s| s.recording.voice = v),
         "deck.quantize" => change_engine(app, key, |s| s.deck.quantize = v),
@@ -1904,8 +2026,8 @@ mod tests {
         let mut s = Settings::default();
         let cmds = engine_settings(&s, 4);
         // 5 per deck (with the remembered master tempo), quantize, 3 per
-        // channel, crossfader curve.
-        assert_eq!(cmds.len(), 5 * 4 + 1 + 4 * 3 + 1);
+        // channel, crossfader curve, the external mixer.
+        assert_eq!(cmds.len(), 5 * 4 + 1 + 4 * 3 + 1 + 1);
         // A deck's remembered switches win over the defaults.
         let mut m = s.clone();
         m.deck.decks[2].master_tempo = true;

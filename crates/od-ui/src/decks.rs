@@ -223,6 +223,9 @@ struct Prepared {
     stems_follow: bool,
     /// The load of this track failed (the deck stops showing it loading).
     failed: Option<TrackId>,
+    /// [66] The DJ's own stem files: their folder when they are in the
+    /// data, or why they were not used.
+    own: Option<Result<PathBuf, String>>,
 }
 
 impl Prepared {
@@ -242,6 +245,7 @@ impl Prepared {
             swap: None,
             stems_follow: false,
             failed: Some(track),
+            own: None,
         }
     }
 }
@@ -255,6 +259,8 @@ enum Swap {
     CachedStems,
     /// The cached parts did not fit the audio: separate them again.
     NoStems,
+    /// [66] The DJ's own stem files arrived right after a load.
+    OwnStems,
     /// Analysis (beatgrid, loudness) arrived after loading.
     Analysis,
 }
@@ -303,6 +309,10 @@ pub(crate) struct Decks {
     /// Stems were in use where this deck's track came in, and it has none
     /// yet: the stem keys warn until they arrive.
     pub stems_expected: [bool; DECKS],
+    /// [66] The strip's CUE key: the stem keys pick parts for the headphones.
+    pub stem_cue_mode: [bool; DECKS],
+    /// [66] The deck's parts come from the DJ's own files (their folder).
+    pub own_stems: [Option<std::path::PathBuf>; DECKS],
 }
 
 impl Decks {
@@ -389,6 +399,8 @@ impl Default for Decks {
             last_loop: [None; DECKS],
             stem_solo: [None; DECKS],
             stems_expected: [false; DECKS],
+            stem_cue_mode: [false; DECKS],
+            own_stems: Default::default(),
         }
     }
 }
@@ -644,6 +656,7 @@ pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Opti
             .any(|j| d.engine_data[j].as_ref().is_some_and(|t| t.has_stems()));
         d.stems_expected[deck] = deck != PREVIEW_DECK && crate::stem_mix::expected(replaced, others);
         d.stem_solo[deck] = None;
+        d.own_stems[deck] = None;
         d.loaded[deck] = None;
         d.engine_data[deck] = None;
         d.pending[deck] = Some(meta);
@@ -692,7 +705,10 @@ fn prepare_in_background(
                         return;
                     }
                 };
-            let stems_follow = cache.exists(&src.hash);
+            // [66] The DJ's own stem files come first, then cached parts.
+            let own_set = od_stems::find_own_stems(&src.path);
+            let cached = cache.exists(&src.hash);
+            let stems_follow = cached || own_set.is_some();
             let mix_for_transients = mix.clone();
             let _ = tx.send(Prepared {
                 deck,
@@ -702,11 +718,39 @@ fn prepare_in_background(
                 swap: None,
                 stems_follow,
                 failed: None,
+                own: None,
             });
             // Transients for the grid editor, from the samples just decoded.
             crate::transients::from_track_data(&src.hash, &mix_for_transients);
             drop(mix_for_transients);
-            if let Some(full) = stems_follow
+            let mut own_error = None;
+            if let Some(set) = own_set {
+                match od_stems::attach_own_stems(&set, &mix, shape) {
+                    Ok(full) => {
+                        let vocals = full
+                            .stems
+                            .as_ref()
+                            .map(|s| s.vocal_regions(rate))
+                            .unwrap_or_default();
+                        let _ = tx.send(Prepared {
+                            deck,
+                            data: full,
+                            vocals,
+                            play_from: None,
+                            swap: Some(Swap::OwnStems),
+                            stems_follow: false,
+                            failed: None,
+                            own: Some(Ok(set.folder)),
+                        });
+                        return;
+                    }
+                    Err(e) => {
+                        tracing::warn!(error = %e, "own stem files not used");
+                        own_error = Some(e.to_string());
+                    }
+                }
+            }
+            if let Some(full) = cached
                 .then(|| od_stems::attach_cached_stems(&cache, &mix, &src.hash, shape))
                 .flatten()
             {
@@ -723,9 +767,10 @@ fn prepare_in_background(
                     swap: Some(Swap::CachedStems),
                     stems_follow: false,
                     failed: None,
+                    own: own_error.map(Err),
                 });
             } else if stems_follow {
-                // The cache did not fit after all: separate again.
+                // Neither own files nor the cache fit after all: separate.
                 let _ = tx.send(Prepared {
                     deck,
                     data: mix,
@@ -734,9 +779,35 @@ fn prepare_in_background(
                     swap: Some(Swap::NoStems),
                     stems_follow: false,
                     failed: None,
+                    own: own_error.map(Err),
                 });
             }
             return;
+        }
+        // A reload (separated parts, new analysis): the own files still
+        // come first.
+        if let Some(set) = od_stems::find_own_stems(&src.path) {
+            let own = od_stems::load_mix(track, &src.path, rate, grid.clone(), &src.cues, src.gain)
+                .ok()
+                .and_then(|(mix, shape)| od_stems::attach_own_stems(&set, &mix, shape).ok());
+            if let Some(data) = own {
+                let vocals = data
+                    .stems
+                    .as_ref()
+                    .map(|s| s.vocal_regions(rate))
+                    .unwrap_or_default();
+                let _ = tx.send(Prepared {
+                    deck,
+                    data,
+                    vocals,
+                    play_from,
+                    swap,
+                    stems_follow: false,
+                    failed: None,
+                    own: Some(Ok(set.folder)),
+                });
+                return;
+            }
         }
         match od_stems::load_track_data(
             &cache,
@@ -762,6 +833,7 @@ fn prepare_in_background(
                     swap,
                     stems_follow: false,
                     failed: None,
+                    own: None,
                 });
             }
             Err(e) => tracing::warn!(error = %e, "track load failed"),
@@ -783,6 +855,9 @@ pub(crate) fn receive_prepared(app: &App) {
             engine::show_message(app);
             app.status(format!("Could not load {title}"));
             continue;
+        }
+        if pr.swap.is_some() && app.decks.borrow().loaded_id(deck) == Some(pr.data.id) {
+            note_own_stems(app, deck, pr.own.as_ref());
         }
         if pr.swap == Some(Swap::NoStems) {
             if deck != PREVIEW_DECK && app.decks.borrow().loaded_id(deck) == Some(pr.data.id) {
@@ -820,6 +895,9 @@ pub(crate) fn receive_prepared(app: &App) {
                 if why == Swap::Stems {
                     app.decks.borrow_mut().stems_expected[deck] = false;
                     app.status(format!("Stems ready on deck {}", deck + 1));
+                }
+                if why == Swap::OwnStems {
+                    app.decks.borrow_mut().stems_expected[deck] = false;
                 }
             }
             continue;
@@ -873,6 +951,45 @@ pub(crate) fn receive_prepared(app: &App) {
             app.status(format!("Loaded {title} on deck {}", deck + 1));
         }
     }
+}
+
+/// [66] Where the parts of the track on `deck` come from: the DJ's own
+/// files (said on the status line with their folder), or why they were not
+/// used.
+fn note_own_stems(app: &App, deck: usize, own: Option<&Result<PathBuf, String>>) {
+    let title = app
+        .decks
+        .borrow()
+        .loaded(deck)
+        .map(|m| m.title.clone())
+        .unwrap_or_default();
+    let name = if deck == PREVIEW_DECK {
+        od_i18n::tr("the player").to_string()
+    } else {
+        od_i18n::trf("deck {}", &[&(deck + 1)])
+    };
+    match own {
+        Some(Ok(folder)) => {
+            let shown = folder
+                .file_name()
+                .map(|f| f.to_string_lossy().to_string())
+                .unwrap_or_default();
+            app.decks.borrow_mut().own_stems[deck] = Some(folder.clone());
+            app.status(od_i18n::trf("Own stem files on {}: {}", &[&name, &shown]));
+        }
+        Some(Err(why)) => {
+            app.decks.borrow_mut().own_stems[deck] = None;
+            let why = od_i18n::translate_message(why);
+            app.status(od_i18n::trf("Own stem files for {} not used: {}", &[&title, &why]));
+        }
+        None => {}
+    }
+}
+
+/// Where the parts of the track on `deck` come from, for the views: the
+/// own files' folder, else `None` (separated, or no parts).
+pub(crate) fn own_stems_folder(app: &App, deck: usize) -> Option<PathBuf> {
+    app.decks.borrow().own_stems.get(deck).cloned().flatten()
 }
 
 /// The status line when a track without stems comes in where stems were in
@@ -1115,7 +1232,8 @@ pub(crate) fn request_loaded_stems(app: &App, deck: Option<usize>) {
     let wanted: Vec<(TrackId, TrackSource)> = {
         let d = app.decks.borrow();
         (0..DECKS)
-            .filter(|i| deck.is_none_or(|x| x == *i) && *i != PREVIEW_DECK)
+            // The player's deck only when asked for by name ([66]).
+            .filter(|i| deck.map_or(*i != PREVIEW_DECK, |x| x == *i))
             .filter(|i| d.engine_data[*i].as_ref().is_some_and(|t| !t.has_stems()))
             .filter_map(|i| d.loaded[i].as_ref().map(|m| (m.id, m.source.clone())))
             .collect()
@@ -1302,6 +1420,11 @@ pub(crate) struct DeckFields {
     pub stems_state: SharedString,
     pub stems_expected: bool,
     pub stem_solo: SharedString,
+    /// [66] Stem audition: CUE mode on the strip, the parts on the cue
+    /// (bit per [`od_engine::Stem::index`]), "own" for the DJ's own files.
+    pub stem_cue_mode: bool,
+    pub stem_cue: i32,
+    pub stem_source: SharedString,
 }
 
 /// What the projection needs besides the engine's deck state.
@@ -1330,6 +1453,9 @@ pub(crate) struct DeckInputs<'a> {
     pub stems_queued: bool,
     pub stems_expected: bool,
     pub stem_solo: Option<od_engine::Stem>,
+    pub stem_cue_mode: bool,
+    /// The parts come from the DJ's own files.
+    pub own_stems: bool,
 }
 
 /// The deck's bar counter in the chosen mode (falls back to counting up).
@@ -1523,6 +1649,9 @@ pub(crate) fn deck_fields(s: &DeckState, i: &DeckInputs) -> DeckFields {
             .map(crate::stem_mix::part_id)
             .unwrap_or_default()
             .into(),
+        stem_cue_mode: i.stem_cue_mode && s.stems_available,
+        stem_cue: if s.stems_available { s.stem_audition as i32 } else { 0 },
+        stem_source: if i.own_stems && s.stems_available { "own" } else { "" }.into(),
     }
 }
 
@@ -1674,6 +1803,9 @@ impl Lane {
             stems_state: f.stems_state,
             stems_expected: f.stems_expected,
             stem_solo: f.stem_solo,
+            stem_cue_mode: f.stem_cue_mode,
+            stem_cue: f.stem_cue,
+            stem_source: f.stem_source,
         }
     }
 }
@@ -1902,6 +2034,8 @@ pub(crate) fn project(app: &App, state: &EngineState) {
                 stems_queued: stem_queued,
                 stems_expected: d.stems_expected[i],
                 stem_solo: d.stem_solo[i].map(|x| x.stem),
+                stem_cue_mode: d.stem_cue_mode[i],
+                own_stems: d.own_stems[i].is_some(),
                 loop_size: d.loop_size[i],
                 bar_counter: &bar_mode,
                 pad_mode: d.pad_mode[i],
@@ -2868,6 +3002,7 @@ pub(crate) fn wire(app: &Rc<App>) {
             crate::stem_mix::keep_only(&a, idx(d), s);
         }
     }));
+    mix.on_stem_cue(handler!(app, |a, d: i32| crate::stem_mix::toggle_cue_mode(&a, idx(d))));
     ui.on_deck_seek(handler!(app, |a, d: i32, f: f32| engine::deck_cmd(
         &a,
         d as usize - 1,
@@ -2934,6 +3069,11 @@ pub(crate) fn wire(app: &Rc<App>) {
             "bass" => od_engine::Stem::Bass,
             _ => od_engine::Stem::Inst,
         };
+        // [66] CUE on the strip: the key picks the part for the headphones.
+        if a.decks.borrow().stem_cue_mode[d] {
+            crate::stem_mix::toggle_audition(&a, d, s);
+            return;
+        }
         // A click during a solo ends it first: the levels from before return.
         if a.decks.borrow().stem_solo[d].is_some() {
             crate::stem_mix::end_solo(&a, d);
@@ -3284,6 +3424,8 @@ mod tests {
                 stems_queued: false,
                 stems_expected: false,
                 stem_solo: None,
+                stem_cue_mode: false,
+                own_stems: false,
             },
         );
         assert_eq!(f.deck, 2);
@@ -3312,6 +3454,8 @@ mod tests {
                 stems_queued: false,
                 stems_expected: false,
                 stem_solo: None,
+                stem_cue_mode: false,
+                own_stems: false,
             },
         );
         assert_eq!(f, g);

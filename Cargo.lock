@@ -4355,6 +4355,7 @@ name = "od-controller"
 version = "0.8.0"
 dependencies = [
  "crossbeam-channel",
+ "libc",
  "midir",
  "od-core",
  "serde",

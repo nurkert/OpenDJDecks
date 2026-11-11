@@ -167,6 +167,13 @@ fn process_never_allocates() {
                 },
             ),
         ],
+        // [66] [67] Stem audition on the cue, then the external mixer.
+        vec![Command::Deck(0, DeckCommand::SetStemAudition(0b0011))],
+        vec![Command::Mixer(MixerCommand::SetExternalMixer(true))],
+        vec![
+            Command::Mixer(MixerCommand::SetExternalMixer(false)),
+            Command::Deck(0, DeckCommand::SetStemAudition(0)),
+        ],
         vec![
             Command::Deck(2, DeckCommand::SwapTrackData(swap_same)),
             Command::Deck(1, DeckCommand::SwapTrackData(swap_other)),
@@ -460,6 +467,7 @@ fn process_never_allocates() {
     let mut out_m = vec![0f32; 4096];
     let mut out_h = vec![0f32; 4096];
     let mut out_b = vec![0f32; 4096];
+    let mut out_d = vec![0f32; 4096 * 4];
     for cmds in script {
         for c in cmds {
             sender.send(c).unwrap();
@@ -472,6 +480,7 @@ fn process_never_allocates() {
                         master: &mut out_m[..BLOCK * 2],
                         headphones: Some(&mut out_h[..BLOCK * 2]),
                         booth: Some(&mut out_b[..BLOCK * 2]),
+                        decks: Some(&mut out_d[..BLOCK * 2 * MAX_DECKS]),
                     },
                 );
             }
@@ -492,6 +501,7 @@ fn process_never_allocates() {
                 master: &mut out_m[..154],
                 headphones: None,
                 booth: None,
+                decks: None,
             },
         );
         rig.proc.process(
@@ -500,6 +510,7 @@ fn process_never_allocates() {
                 master: &mut out_m[..3000],
                 headphones: None,
                 booth: None,
+                decks: None,
             },
         );
         ALLOCS.swap(0, Ordering::SeqCst)

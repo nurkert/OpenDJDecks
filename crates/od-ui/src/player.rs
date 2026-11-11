@@ -1187,6 +1187,7 @@ pub(crate) fn act(app: &App, what: &str) {
 
 /// The player's loop, quantize, jump size, zoom and time-left read-outs.
 pub(crate) fn project_controls(app: &App, state: Option<&od_engine::EngineState>) {
+    crate::stem_mix::project_player(app, state);
     let ui = &app.ui;
     let (loop_len, jump, zoom_span, remaining) = {
         let st = app.state.borrow();
@@ -1311,6 +1312,7 @@ fn edit_cues(app: &App, label: &str, f: impl FnOnce(&mut Vec<Cue>, f64)) {
 }
 
 pub(crate) fn wire(app: &Rc<App>) {
+    crate::stem_mix::wire_player(app);
     crate::phrase_edit::wire(app);
     crate::grid_edit::wire(app);
     crate::track_edit::wire(app);

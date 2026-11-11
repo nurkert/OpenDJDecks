@@ -117,6 +117,112 @@ pub(crate) fn end_solo(app: &App, d: usize) {
     }
 }
 
+/// [66] The audition mask with `stem` added or taken out.
+pub(crate) fn toggle_bit(mask: u8, stem: Stem) -> u8 {
+    mask ^ (1 << stem.index())
+}
+
+/// [66] The strip's CUE key: on, the stem keys pick parts to hear on their
+/// own on the headphones; off ends the audition (the master never changed).
+pub(crate) fn toggle_cue_mode(app: &App, d: usize) {
+    if d >= decks::DECKS || ready(app, d).is_none() {
+        return;
+    }
+    let on = !app.decks.borrow().stem_cue_mode[d];
+    app.decks.borrow_mut().stem_cue_mode[d] = on;
+    if on {
+        app.status(od_i18n::trf(
+            "Deck {}: pick the parts to hear on the headphones",
+            &[&(d + 1)],
+        ));
+    } else {
+        engine::deck_cmd(app, d, DeckCommand::SetStemAudition(0));
+    }
+}
+
+/// [66] Adds `stem` to the parts deck `d` plays on the headphones, or takes
+/// it out (the CUE key goes on with the first part).
+pub(crate) fn toggle_audition(app: &App, d: usize, stem: Stem) {
+    let Some(s) = ready(app, d) else { return };
+    let mask = toggle_bit(s.stem_audition, stem);
+    app.decks.borrow_mut().stem_cue_mode[d] = mask != 0 || app.decks.borrow().stem_cue_mode[d];
+    engine::deck_cmd(app, d, DeckCommand::SetStemAudition(mask));
+    let snap = engine::snapshot(app);
+    let routed = snap.is_some_and(|_| headphones_routed(app));
+    if mask != 0 && !routed {
+        app.status(od_i18n::tr(
+            "No headphone output: choose one in Preferences › Audio to hear the stem cue",
+        ));
+    }
+}
+
+/// [66] The player's STEMS tool: state, parts on the headphones, source.
+pub(crate) fn project_player(app: &App, state: Option<&od_engine::EngineState>) {
+    let d = decks::PREVIEW_DECK;
+    let current = app.state.borrow().player.current;
+    let on_deck = current.is_some() && app.decks.borrow().loaded_id(d) == current;
+    let s = state.map(|s| s.decks[d]).filter(|_| on_deck);
+    let separating = on_deck && app.decks.borrow().stems_pending(d);
+    let (st, cue) = match s {
+        Some(s) if s.stems_available => ("ready", s.stem_audition as i32),
+        Some(_) if separating => ("separating", 0),
+        Some(_) => ("none", 0),
+        None => ("", 0),
+    };
+    let source = match st {
+        "ready" => match decks::own_stems_folder(app, d) {
+            Some(f) => od_i18n::trf(
+                "OWN FILES · {}",
+                &[&f.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()],
+            ),
+            None => od_i18n::tr("SEPARATED").to_string(),
+        },
+        "separating" => od_i18n::tr("SEPARATING…").to_string(),
+        "none" => od_i18n::tr("NOT SEPARATED").to_string(),
+        _ if current.is_some() => od_i18n::tr("PLAY THE TRACK TO PICK ITS PARTS").to_string(),
+        _ => String::new(),
+    };
+    let g = slint::ComponentHandle::global::<crate::PlayerStems>(&app.ui);
+    if g.get_state() != st {
+        g.set_state(st.into());
+    }
+    if g.get_cue() != cue {
+        g.set_cue(cue);
+    }
+    if g.get_source() != source.as_str() {
+        g.set_source(source.into());
+    }
+}
+
+/// Wires the player's STEMS tool.
+pub(crate) fn wire_player(app: &std::rc::Rc<App>) {
+    let g = slint::ComponentHandle::global::<crate::PlayerStems>(&app.ui);
+    let w = std::rc::Rc::downgrade(app);
+    g.on_toggle(move |id| {
+        let Some(a) = w.upgrade() else { return };
+        let stem = match id.as_str() {
+            "vocal" => Stem::Vocals,
+            "drums" => Stem::Drums,
+            "bass" => Stem::Bass,
+            _ => Stem::Inst,
+        };
+        toggle_audition(&a, decks::PREVIEW_DECK, stem);
+    });
+    let w = std::rc::Rc::downgrade(app);
+    g.on_separate(move || {
+        if let Some(a) = w.upgrade() {
+            crate::stems_model::part_pressed(&a, decks::PREVIEW_DECK);
+        }
+    });
+}
+
+/// The running output has a headphone pair (or device).
+fn headphones_routed(app: &App) -> bool {
+    app.engine.borrow().host.as_ref().is_none_or(|h| {
+        h.is_virtual() || h.info().routing.headphones.is_some() || h.info().cue_device.is_some()
+    })
+}
+
 /// UI id of a part ("vocal", "drums", "bass", "inst").
 pub(crate) fn part_id(s: Stem) -> &'static str {
     match s {
@@ -228,6 +334,14 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn audition_bits() {
+        assert_eq!(toggle_bit(0, Stem::Vocals), 1);
+        assert_eq!(toggle_bit(1, Stem::Bass), 0b101);
+        assert_eq!(toggle_bit(0b101, Stem::Vocals), 0b100);
+        assert_eq!(toggle_bit(0, Stem::Inst), 8);
+    }
 
     #[test]
     fn solo_silences_the_others_and_comes_back() {
