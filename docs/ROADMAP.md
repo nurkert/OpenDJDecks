@@ -128,7 +128,38 @@ These need the real devices. They do not hold up any release: until one is confi
 - [x] **[37]** Unattended mode for a fixed venue. Done: **UNATTENDED** in SAFETY, behind the setup PIN (it cannot be turned on without one; clearing the PIN ends it). With the setup locked, SHOW and the Perform strip show the state and a PIN field instead of the controls, BLACKOUT stays; the lighting controller, OSC, the deck pads and the MCP live commands are ignored, the hold keys are let go and fog and lasers stay locked out whatever arms them, with every limit kept (tests). **START WITH THE APP** opens LIGHTING in SHOW with DMX OUT on at each start, and since everything is in `lighting.json` the show comes back locked after a restart (UI test). **CALM AFTER** 10 s to 5 min of silence fades the rig to the calm warm wash at 30 % in four seconds and back within a second when music returns. The app itself has to be started by the system (a login item); OpenDJDecks does not set that up. Tested with a simulated output; it has not run for days at a real venue.
 - [x] **[38]** Pixel mapping, only if real users ask for it. Deferred: nobody has asked for it yet, so nothing was built; it comes back when real users ask.
 
-## 0.10.0: connections and hardware
+## 0.10.0: CREATE, a small place to make sounds
+
+A fourth tab next to PREPARE, PERFORM and LIGHTING for the things DJs today do in a separate production program before a set. The main one is playing the next track's melody with a single note taken from the current one. CREATE also has a small drum machine and help with which notes fit. It is deliberately small: no timeline, no piano roll, no plug-ins, no mixing console. The order and scope come from 8 simulated DJ interviews held in November 2026 (club, open format, house producer, beginner, drum and bass, melodic techno, teacher, live hybrid); the concept is in [create.md](create.md).
+
+### Melody from one note
+
+- [ ] **[70]** The CREATE tab: MELODY, DRUMS and THEORY, a result bar, and a slim deck strip so the decks stay in view and keep playing.
+- [ ] **[71]** Pick one note on a track's waveform, hear it, and see its pitch as a note and cents, with a correction when the detection is wrong or unsure.
+- [ ] **[72]** Pitch the note to every note it needs with a clean start and tail, with a warning on large shifts and a hint to pick another source note.
+- [ ] **[73]** Key and scale from the analysis (the other deck's or the next track's key in one press), and the scale's notes on pads and on a keyboard strip, with snap to scale and octaves.
+- [ ] **[74]** An arrange strip of up to 32 steps on the master grid, played in or typed as note names, with move and delete.
+- [ ] **[75]** Render a new file (the original is never touched) at the chosen tempo with a beat grid and one hot cue per note, as single notes or in melody order, with a check of what club players can take.
+- [ ] **[76]** The result goes into a playlist, the library's CREATED list and onto registered sticks through the normal sync.
+
+### Playing it live
+
+- [ ] **[77]** A MELODY pad mode in Perform plays the notes on the deck pads, quantised and in sync, and the notes share the sampler's slots.
+- [ ] **[78]** Help with what fits: the scale and chords of a deck's key on the keyboard, a check of a typed melody, and plain-word hints that can be switched off.
+
+### Drum machine
+
+- [ ] **[79]** Built-in synthesised kits with pitch, decay and tone per pad, the same on every platform.
+- [ ] **[80]** 16 pads and a 16-step row with swing and half time, following the master tempo, sharing kits and samples with the sampler, and playable from Perform.
+- [ ] **[81]** Render a pattern as a bar-exact loop file with a hot cue per sound.
+
+### Finish
+
+- [ ] **[82]** Starter melodies and kits so the first screen is never empty, MIDI keyboard input for notes, and the CREATE guide, German text and media.
+
+Live coding stays out until real users ask for it. Whether rendered files with many hot cues play as intended on club players stays open until it has been tried on real players.
+
+## 0.11.0: connections and hardware
 
 - [ ] **[68]** Signed desktop builds, stated minimum requirements, and a low-CPU mode.
 - [ ] **[39]** Controller settings and jog displays, built only from USB captures on the owner's own device.
