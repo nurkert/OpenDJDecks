@@ -1567,6 +1567,7 @@ const DE: &[(&str, &str)] = &[
     ("PLAY THE TRACK TO PICK ITS PARTS", "TRACK ABSPIELEN, UM SEINE PARTS ZU WÄHLEN"),
     ("the player", "dem Player"),
     ("Eight-output interface", "Interface mit acht Ausgängen"),
+    ("Built-in output", "Eingebauter Ausgang"),
     ("Own stem files on {}: {}", "Eigene Stem-Dateien auf {}: {}"),
     ("Own stem files for {} not used: {}", "Eigene Stem-Dateien für {} nicht verwendet: {}"),
     ("parts missing: {}", "Parts fehlen: {}"),

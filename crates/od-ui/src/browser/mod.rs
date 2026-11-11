@@ -327,7 +327,8 @@ pub(crate) fn list_typed(app: &App, text: &str, modified: bool) -> bool {
 /// `collection` opens All tracks, `flow-pair:<i>` selects a set's transition, `search:<text>` searches,
 /// `filter-chips` sets a BPM range, `lists-collapsed` folds
 /// the lists column, `usb` opens the USB screen on the first stick and
-/// `prefs-view[:<y>]` opens Preferences › View scrolled to `y`.
+/// `prefs-view[:<y>]` opens Preferences › View scrolled to `y`, and
+/// `prefs-height:<h>` (after it) makes that window `h` points tall.
 fn demo(app: &Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let weak = Rc::downgrade(app);
@@ -372,6 +373,11 @@ fn demo(app: &Rc<App>) {
                 crate::preferences::open(&a);
                 let y = rest.trim_start_matches(':').parse().unwrap_or(0.0);
                 crate::preferences::demo_page(&a, "view", y);
+            }
+            if let Some(h) = part.strip_prefix("prefs-height:").and_then(|h| h.parse::<f32>().ok()) {
+                if let Some(w) = a.prefs.borrow().window.as_ref() {
+                    w.window().set_size(slint::LogicalSize::new(1440.0, h));
+                }
             }
         }
     });
