@@ -924,6 +924,8 @@ fn lighting_cmd(path: &std::path::Path, cmd: &LightCmd) -> anyhow::Result<()> {
                 address,
                 group: group.clone(),
                 invert_pan: *invert_pan,
+                place: None,
+                tune: Default::default(),
             })?;
             save(&rig)?;
             println!("patched {name} at U{} {address}", universe + 1);

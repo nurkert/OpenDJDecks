@@ -9,6 +9,14 @@
 //!   is steered (palettes, the phrase-to-look table, hold, release).
 //! * [`discovery`]: finding Art-Net nodes on the local network.
 //! * [`rig`]: editing a rig from outside the app and its live inbox.
+//! * [`stage`]: fixtures on a floor plan (left-to-right order for chases
+//!   and sweeps) and per-fixture tuning.
+//! * [`files`]: named rig and show files and venue profiles.
+//! * [`events`]: DJ events (a load, a drop, the crossfader at a side…)
+//!   as triggers for pads and cues.
+//! * [`listen`]: beat and energy from an audio input.
+//! * [`source`]: the music the show follows: the decks, an audio input or
+//!   another instance on the network.
 //! * [`safety`]: strobe and flash cap, level caps, fog and laser lockout,
 //!   applied to every frame before it is sent.
 //! * [`Lighting`]: patch + show + outputs, ticked by the app; output links
@@ -22,6 +30,11 @@ pub mod render;
 pub mod rig;
 pub mod safety;
 pub mod show;
+pub mod stage;
+pub mod files;
+pub mod events;
+pub mod listen;
+pub mod source;
 
 pub use fixture::{
     ChannelKind, Collision, FixtureDef, FixtureMode, FixtureRole, MAX_UNIVERSES, Patch, Patched,
@@ -35,6 +48,11 @@ pub use output::{Link, Opener, Output, OutputKind, TestLink, Universe, serial_po
 pub use render::{Look, render, render_fixture};
 pub use rig::{LiveCommand, add_fixture, add_fixtures, parse_output};
 pub use safety::{Arming, Limiter, SafetyLimits};
+pub use stage::{DimmerCurve, Placement, Tune};
+pub use files::{Bundle, FileKind, Files, InUse, VenueProfile};
+pub use events::{ActiveTrigger, DjEvent, Trigger, TriggerTarget};
+pub use listen::BeatFollower;
+pub use source::{External, MusicSource};
 pub use show::{
     Attr, DeckMusic, Effect, GroupSettings, LightCue, Mode, Momentary, Program, Show, ShowSettings,
     TrackCue, Wave, hsv, hue_for_key,
@@ -67,7 +85,82 @@ pub struct RigConfig {
     /// and when the app quits.
     #[serde(default)]
     pub failsafe: Failsafe,
+    /// The venue, rig and show files this came from (roadmap [35]).
+    #[serde(default)]
+    pub in_use: files::InUse,
+    /// The music the show follows (roadmaps [34], [36]).
+    #[serde(default)]
+    pub music: MusicSource,
+    /// A second controller for the lights, and OSC (roadmap [34]).
+    #[serde(default)]
+    pub remote: Remote,
+    /// Runs by itself at a fixed venue (roadmap [37]).
+    #[serde(default)]
+    pub unattended: Unattended,
 }
+
+/// OSC port the lighting listens on unless another is set.
+pub const OSC_PORT: u16 = 9300;
+
+/// A separate lighting operator (roadmap [34]): a MIDI controller of its
+/// own, and OSC in and out.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct Remote {
+    /// MIDI input (port name) that plays the lights with the lighting
+    /// layout ("" = none).
+    pub controller: String,
+    /// Listen for OSC (off by default).
+    pub osc_in: bool,
+    /// UDP port for OSC in.
+    pub osc_port: u16,
+    /// Send beat, phrase and energy to another instance over OSC.
+    pub send: bool,
+    /// Where to send them, "host:port".
+    pub send_to: String,
+}
+
+impl Default for Remote {
+    fn default() -> Self {
+        Self {
+            controller: String::new(),
+            osc_in: false,
+            osc_port: OSC_PORT,
+            send: false,
+            send_to: String::new(),
+        }
+    }
+}
+
+/// Unattended mode for a fixed venue (roadmap [37]).
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct Unattended {
+    /// The show runs by itself and is locked: the show controls, the
+    /// lighting controller and OSC are ignored, fog and lasers stay locked
+    /// out; the setup PIN takes it back.
+    pub enabled: bool,
+    /// On every start of the app the show starts by itself (the LIGHTING
+    /// view in SHOW, DMX out on).
+    pub autostart: bool,
+    /// Seconds of silence after which the rig fades to the calm look.
+    pub calm_after: f32,
+}
+
+impl Default for Unattended {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            autostart: true,
+            calm_after: 30.0,
+        }
+    }
+}
+
+/// Choices for [`Unattended::calm_after`], seconds.
+pub const CALM_AFTER: [f32; 5] = [10.0, 30.0, 60.0, 120.0, 300.0];
+/// Fade into the calm look, seconds.
+pub const CALM_FADE: f32 = 4.0;
 
 impl RigConfig {
     /// Reads a rig; a missing file is the empty default.
@@ -244,6 +337,21 @@ pub struct Lighting {
     /// Test hook: the next tick panics inside the show.
     #[doc(hidden)]
     pub inject_panic: bool,
+    /// The music followed: the decks, the audio input or the network.
+    pub source: MusicSource,
+    /// Music from the network (another instance, over OSC).
+    pub external: External,
+    /// Beat and energy of the audio input, while it is the source.
+    pub listener: Option<BeatFollower>,
+    /// Crossfader, −1..1 (for the crossfader events).
+    pub crossfader: Option<f32>,
+    /// Unattended mode.
+    pub unattended: Unattended,
+    /// Seconds without music, and how far the calm look has faded in.
+    silent: f32,
+    calm_mix: f32,
+    /// What the show followed last frame.
+    pub followed: Vec<DeckMusic>,
 }
 
 impl Lighting {
@@ -274,7 +382,25 @@ impl Lighting {
             clock: 0.0,
             faulted: false,
             inject_panic: false,
+            source: MusicSource::Decks,
+            external: External::default(),
+            listener: None,
+            crossfader: None,
+            unattended: Unattended::default(),
+            silent: 0.0,
+            calm_mix: 0.0,
+            followed: Vec::new(),
         }
+    }
+
+    /// Seconds the music has been silent (0 while it plays).
+    pub fn silent_for(&self) -> f32 {
+        self.silent
+    }
+
+    /// How far the calm look of unattended mode is in (0..1).
+    pub fn calm_mix(&self) -> f32 {
+        self.calm_mix
     }
 
     /// Sends `universe` through `kind`. A link that cannot be opened now is
@@ -358,6 +484,39 @@ impl Lighting {
     /// link is retried, and the rig shows the failsafe scene meanwhile.
     pub fn tick(&mut self, decks: &[DeckMusic], dt: f32) {
         self.clock += dt.max(0.0) as f64;
+        // The music followed: the decks, the audio input or the network.
+        let external = match self.source {
+            MusicSource::Decks => None,
+            MusicSource::Input => self.listener.as_ref().map(BeatFollower::music),
+            MusicSource::Network => self.external.advance(dt, source::NETWORK_TIMEOUT),
+        };
+        let decks = source::compose(self.source, decks, external);
+        self.followed.clone_from(&decks);
+        let decks = &decks[..];
+        // Unattended: a locked show. The keys are let go and fog and lasers
+        // stay locked out, whatever asks for them.
+        if self.unattended.enabled {
+            self.show.momentary = show::Momentary::default();
+            self.arming = Arming::default();
+        }
+        self.show.crossfader = if self.source == MusicSource::Decks {
+            self.crossfader
+        } else {
+            None
+        };
+        if source::audible(decks) {
+            self.silent = 0.0;
+        } else {
+            self.silent += dt.max(0.0);
+        }
+        let calm = self.unattended.enabled
+            && !self.show.settings.blackout
+            && self.silent >= self.unattended.calm_after.max(0.0);
+        self.calm_mix = if calm {
+            (self.calm_mix + dt / CALM_FADE).min(1.0)
+        } else {
+            (self.calm_mix - dt / RECOVER_FADE).max(0.0)
+        };
         let live = if self.faulted {
             self.looks.clone()
         } else {
@@ -372,6 +531,15 @@ impl Lighting {
                     self.clock - self.test_started,
                     self.test_step,
                 );
+            }
+            // Silence in unattended mode: the calm look.
+            if self.calm_mix > 0.0 && self.test.is_none() {
+                let calm = safe_looks(&self.patch);
+                looks = looks
+                    .iter()
+                    .zip(&calm)
+                    .map(|(a, b)| a.blend(b, self.calm_mix))
+                    .collect();
             }
             if let Some(look) = self.identify.and_then(|i| looks.get_mut(i)) {
                 let on = (self.clock * IDENTIFY_HZ as f64).fract() < 0.5;
@@ -524,14 +692,13 @@ mod tests {
             .unwrap();
         let mut patch = Patch::default();
         patch
-            .add(Patched {
-                name: "Par".into(),
-                def: FixtureDef::builtin("rgbw-par").unwrap(),
-                universe: 0,
-                address: 1,
-                group: "Wash".into(),
-                invert_pan: false,
-            })
+            .add(Patched::new(
+                "Par",
+                FixtureDef::builtin("rgbw-par").unwrap(),
+                0,
+                1,
+                "Wash",
+            ))
             .unwrap();
         let mut rig = Lighting::new(patch, Show::default());
         rig.add_output(
@@ -701,5 +868,100 @@ mod tests {
         rig.set_test(None);
         rig.tick(&[], 0.025);
         assert!(rig.looks[0].intensity < 0.5 || rig.show.settings.mode == Mode::Easy);
+    }
+
+    fn deck(playing: bool) -> DeckMusic {
+        DeckMusic {
+            track: Some(1),
+            playing,
+            bpm: 120.0,
+            weight: 1.0,
+            energy: 0.8,
+            ..Default::default()
+        }
+    }
+
+    /// [37] Unattended: silence fades the rig to the calm look after the
+    /// time set; music brings the show back.
+    #[test]
+    fn unattended_falls_back_to_the_calm_look_on_silence() {
+        let link = TestLink::default();
+        let mut rig = par_rig(&link, Failsafe::Hold);
+        rig.show.settings.easy_color = Some([0.0, 0.0, 1.0]);
+        rig.unattended = Unattended {
+            enabled: true,
+            autostart: true,
+            calm_after: 5.0,
+        };
+        for _ in 0..80 {
+            rig.tick(&[deck(true)], 0.025);
+        }
+        let show = rig.looks[0].color;
+        assert!(show[2] > 0.9 && show[0] < 0.1, "the blue show: {show:?}");
+        // Four seconds of silence: still the show.
+        for _ in 0..160 {
+            rig.tick(&[deck(false)], 0.025);
+        }
+        assert_eq!(rig.calm_mix(), 0.0);
+        // Past five seconds the calm look fades in over CALM_FADE.
+        for _ in 0..((1.0 + CALM_FADE) * 40.0) as usize + 4 {
+            rig.tick(&[deck(false)], 0.025);
+        }
+        assert_eq!(rig.calm_mix(), 1.0);
+        assert_eq!(rig.looks[0], safe_looks(&rig.patch)[0], "the calm warm wash");
+        // Music again: back to the show within a second.
+        for _ in 0..44 {
+            rig.tick(&[deck(true)], 0.025);
+        }
+        assert_eq!(rig.calm_mix(), 0.0);
+        assert!(rig.looks[0].color[2] > 0.9);
+        // Not unattended: silence keeps the show.
+        rig.unattended.enabled = false;
+        for _ in 0..400 {
+            rig.tick(&[deck(false)], 0.025);
+        }
+        assert_eq!(rig.calm_mix(), 0.0);
+    }
+
+    /// [36] A DJ event plays its pad for the beats set, then lets go.
+    #[test]
+    fn a_trigger_plays_its_pad_for_its_beats() {
+        let link = TestLink::default();
+        let mut rig = par_rig(&link, Failsafe::Hold);
+        let mut red = looks::PadLook::new(0, "Red");
+        red.groups.insert(
+            "Wash".into(),
+            show::GroupSettings {
+                program: Some(Program::Static),
+                color: Some([1.0, 0.0, 0.0]),
+                intensity: Some(1.0),
+                ..Default::default()
+            },
+        );
+        rig.show.settings.pads = vec![red];
+        rig.show.settings.easy_color = Some([0.0, 0.0, 1.0]);
+        rig.show.settings.triggers = vec![Trigger {
+            event: DjEvent::PlayStart,
+            target: TriggerTarget::Pad(0),
+            beats: 4.0,
+        }];
+        rig.tick(&[deck(false)], 0.025);
+        rig.tick(&[deck(true)], 0.025);
+        assert_eq!(rig.show.last_event(), Some(DjEvent::PlayStart));
+        assert!(rig.show.active_trigger().is_some());
+        for _ in 0..60 {
+            rig.tick(&[deck(true)], 0.025);
+        }
+        let c = rig.looks[0].color;
+        assert!(c[0] > 0.9 && c[2] < 0.1, "red while it plays: {c:?}");
+        // 4 beats at 120 BPM are two seconds.
+        for _ in 0..40 {
+            rig.tick(&[deck(true)], 0.025);
+        }
+        assert!(rig.show.active_trigger().is_none(), "let go after 4 beats");
+        for _ in 0..40 {
+            rig.tick(&[deck(true)], 0.025);
+        }
+        assert!(rig.looks[0].color[2] > 0.9, "back to the show");
     }
 }

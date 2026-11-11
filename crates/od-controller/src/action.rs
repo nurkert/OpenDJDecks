@@ -82,6 +82,10 @@ pub enum LightingAction {
     Release,
     /// AUTO keeps its current look (toggle).
     Hold,
+    /// Blackout on or off (OSC; the mapping action toggles).
+    Blackout(bool),
+    /// Taps the tempo for the lights when no deck plays.
+    Tap,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]

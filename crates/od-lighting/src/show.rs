@@ -20,6 +20,7 @@ use std::collections::HashMap;
 use od_core::{PhraseKind, PhraseMood};
 use serde::{Deserialize, Serialize};
 
+use crate::events::{self, ActiveTrigger, DjEvent, Trigger, TriggerTarget};
 use crate::fixture::{FixtureRole, Patch};
 use crate::looks::{self, AutoPick, AutoSettings, PadLook, PadState};
 use crate::render::Look;
@@ -43,6 +44,8 @@ pub struct DeckMusic {
     pub weight: f32,
     /// Base hue of the track, 0..1 (see [`hue_for_key`]).
     pub hue: f32,
+    /// Seconds left in the track, if known (for "track end near").
+    pub remaining: Option<f32>,
 }
 
 /// Movement / intensity pattern.
@@ -205,6 +208,9 @@ pub struct ShowSettings {
     /// How AUTO is steered: palette and phrase-to-look table.
     #[serde(default)]
     pub auto: AutoSettings,
+    /// DJ events tied to pads and cues (roadmap [36]).
+    #[serde(default)]
+    pub triggers: Vec<Trigger>,
 }
 
 impl ShowSettings {
@@ -229,12 +235,46 @@ pub struct LightCue {
     pub fade_beats: f32,
 }
 
-/// A cue fired when the track reaches a beat.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+/// A light cue stored with a track: fired when the track reaches a beat,
+/// it plays a cue of the stack or a pad (a look or a chase) over what runs
+/// until the next one.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct TrackCue {
+    /// Grid beat of the track (a bar starts every four).
     pub beat: u32,
-    /// Index into [`ShowSettings::cues`].
+    /// Index into [`ShowSettings::cues`] (when `pad` is `None`).
     pub cue: usize,
+    /// Plays this pad's look or chase instead of a cue of the stack.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pad: Option<u16>,
+    /// Its own name ("" = named after what it plays).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub name: String,
+    /// Fade into it, beats (`None`: the stack cue's own fade, one beat
+    /// for a pad).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fade_beats: Option<f32>,
+}
+
+impl TrackCue {
+    /// A cue of the stack at `beat`.
+    pub fn new(beat: u32, cue: usize) -> Self {
+        Self {
+            beat,
+            cue,
+            ..Default::default()
+        }
+    }
+
+    /// The fade into it, beats.
+    pub fn fade(&self, cues: &[LightCue]) -> f32 {
+        self.fade_beats
+            .unwrap_or_else(|| match self.pad {
+                Some(_) => 1.0,
+                None => cues.get(self.cue).map_or(0.0, |c| c.fade_beats),
+            })
+            .max(0.0)
+    }
 }
 
 impl Default for ShowSettings {
@@ -251,6 +291,7 @@ impl Default for ShowSettings {
             pads: Vec::new(),
             group_levels: HashMap::new(),
             auto: AutoSettings::default(),
+            triggers: Vec::new(),
         }
     }
 }
@@ -275,6 +316,8 @@ pub struct Show {
     pub pads: PadState,
     /// Cue in effect last frame.
     active_cue: Option<usize>,
+    /// Track cue in effect last frame: track and beat.
+    active_track: Option<(i64, u32)>,
     /// AUTO's pick for the dominant deck.
     current: Option<AutoPick>,
     /// The pick HOLD keeps.
@@ -289,6 +332,15 @@ pub struct Show {
     pub tap_bpm: Option<f64>,
     /// Free-running beat when no deck plays.
     free_beat: f64,
+    /// Crossfader position, −1..1, for the crossfader events.
+    pub crossfader: Option<f32>,
+    /// DJ events from frame to frame, the trigger they started, the last
+    /// event seen, and beats counted along the music (for trigger lengths).
+    detector: events::Detector,
+    trigger: Option<ActiveTrigger>,
+    trigger_shown: Option<TriggerTarget>,
+    last_event: Option<DjEvent>,
+    beats: f64,
 }
 
 impl Default for Show {
@@ -305,6 +357,7 @@ impl Show {
             manual_cue: None,
             pads: PadState::default(),
             active_cue: None,
+            active_track: None,
             current: None,
             held: None,
             top: None,
@@ -313,7 +366,23 @@ impl Show {
             fade_time: 1.0,
             tap_bpm: None,
             free_beat: 0.0,
+            crossfader: None,
+            detector: events::Detector::default(),
+            trigger: None,
+            trigger_shown: None,
+            last_event: None,
+            beats: 0.0,
         }
+    }
+
+    /// The trigger playing now (roadmap [36]).
+    pub fn active_trigger(&self) -> Option<ActiveTrigger> {
+        self.trigger
+    }
+
+    /// The last DJ event seen.
+    pub fn last_event(&self) -> Option<DjEvent> {
+        self.last_event
     }
 
     /// Music to follow when no deck plays: the tapped (or 120) BPM.
@@ -426,18 +495,62 @@ impl Show {
             }
         };
 
+        // The track cue the deck you hear has passed last: a pad (look or
+        // chase) in every mode, a cue of the stack over AUTO and EASY (PRO
+        // takes it as its cue).
+        let track_cue = dominant.and_then(|d| self.track_cue(d)).cloned();
+        if let Some(tc) = &track_cue {
+            let groups = match tc.pad {
+                Some(p) => looks::groups_at(&self.settings.pads, p, music.beat),
+                None if self.settings.mode != Mode::Pro => {
+                    self.settings.cues.get(tc.cue).map(|c| &c.groups)
+                }
+                None => None,
+            };
+            if let Some(groups) = groups {
+                overlay(patch, &music, &mut looks, groups);
+            }
+        }
+
+        // DJ events: a trigger tied to one starts (or a release ends the
+        // one that runs); a trigger with a length ends after its beats.
+        self.beats += dt.max(0.0) as f64 * music.bpm.max(1.0) / 60.0;
+        let fired = self.detector.detect(decks, self.crossfader);
+        if let Some(e) = fired.first() {
+            self.last_event = Some(*e);
+        }
+        if let Some(t) = events::pick(&self.settings.triggers, &fired) {
+            self.trigger = match t.target {
+                TriggerTarget::Release => None,
+                target => Some(ActiveTrigger {
+                    event: t.event,
+                    target,
+                    until: (t.beats > 0.0).then(|| self.beats + t.beats as f64),
+                }),
+            };
+        }
+        if self
+            .trigger
+            .is_some_and(|a| a.until.is_some_and(|u| self.beats >= u))
+        {
+            self.trigger = None;
+        }
+        if let Some(a) = self.trigger {
+            let groups = match a.target {
+                TriggerTarget::Pad(p) => looks::groups_at(&self.settings.pads, p, music.beat),
+                TriggerTarget::Cue(i) => self.settings.cues.get(i).map(|c| &c.groups),
+                TriggerTarget::Release => None,
+            };
+            if let Some(groups) = groups {
+                overlay(patch, &music, &mut looks, groups);
+            }
+        }
+
         // A pad over whatever runs: the groups its look sets.
         let top = self.pads.top();
         if let Some(groups) = top.and_then(|p| looks::groups_at(&self.settings.pads, p, music.beat))
         {
-            let over = rig(patch, &music, None, |g| {
-                groups.get(g).map(|s| choice(s, &music)).unwrap_or_default()
-            });
-            for ((look, o), f) in looks.iter_mut().zip(over).zip(&patch.fixtures) {
-                if groups.contains_key(&f.group) {
-                    *look = o;
-                }
-            }
+            overlay(patch, &music, &mut looks, groups);
         }
 
         // Phrase change of the dominant deck: crossfade over one bar.
@@ -473,6 +586,13 @@ impl Show {
             }
             self.top = top;
         }
+        // A trigger starting or ending fades over one beat.
+        let shown = self.trigger.map(|a| a.target);
+        if shown != self.trigger_shown {
+            self.fade = 1.0;
+            self.fade_time = beat_secs;
+            self.trigger_shown = shown;
+        }
         // Pro cue change: fade over the cue's beats.
         if self.settings.mode == Mode::Pro {
             let cue = self.cue_for(dominant.copied());
@@ -487,6 +607,23 @@ impl Show {
                 }
                 self.active_cue = cue;
             }
+        }
+        // A track cue fades in over its own beats.
+        let key = track_cue
+            .as_ref()
+            .zip(dominant.and_then(|d| d.track))
+            .map(|(c, t)| (t, c.beat));
+        if key != self.active_track {
+            if let Some(tc) = &track_cue {
+                let beats = tc.fade(&self.settings.cues);
+                if beats > 0.0 {
+                    self.fade = 1.0;
+                    self.fade_time = beats * beat_secs;
+                } else {
+                    self.fade = 0.0;
+                }
+            }
+            self.active_track = key;
         }
         if self.fade > 0.0 && self.previous.len() == looks.len() {
             let t = 1.0 - self.fade;
@@ -573,15 +710,27 @@ impl Show {
     /// the manually chosen one.
     fn cue_for(&self, deck: Option<DeckMusic>) -> Option<usize> {
         let from_track = deck.and_then(|d| {
-            let cues = self.settings.track_cues.get(&d.track?)?;
-            cues.iter()
-                .filter(|c| (c.beat as f64) <= d.beat)
-                .max_by_key(|c| c.beat)
-                .map(|c| c.cue)
+            let c = self.track_cue(&d)?;
+            if c.pad.is_some() { None } else { Some(c.cue) }
         });
         from_track
             .or(self.manual_cue)
             .filter(|&i| i < self.settings.cues.len())
+    }
+
+    /// The last track cue `deck` has passed.
+    fn track_cue(&self, d: &DeckMusic) -> Option<&TrackCue> {
+        self.settings
+            .track_cues
+            .get(&d.track?)?
+            .iter()
+            .filter(|c| (c.beat as f64) <= d.beat)
+            .max_by_key(|c| c.beat)
+    }
+
+    /// Track cue in effect last frame: the track and the cue's beat.
+    pub fn active_track_cue(&self) -> Option<(i64, u32)> {
+        self.active_track
     }
 
     /// Next cue in the stack.
@@ -631,6 +780,23 @@ impl Default for Choice {
     }
 }
 
+/// Puts the groups a look sets over `looks`; the other groups keep theirs.
+fn overlay(
+    patch: &Patch,
+    music: &DeckMusic,
+    looks: &mut [Look],
+    groups: &HashMap<String, GroupSettings>,
+) {
+    let over = rig(patch, music, None, |g| {
+        groups.get(g).map(|s| choice(s, music)).unwrap_or_default()
+    });
+    for ((look, o), f) in looks.iter_mut().zip(over).zip(&patch.fixtures) {
+        if groups.contains_key(&f.group) {
+            *look = o;
+        }
+    }
+}
+
 fn idle(patch: &Patch) -> Vec<Look> {
     patch
         .fixtures
@@ -658,29 +824,18 @@ fn rig(
     let fallback = auto
         .and_then(|a| a.color(music.mood, music.beat))
         .unwrap_or_else(|| palette(music.hue, music.mood, music.beat));
-    // Index of each fixture within its group, for effect phase spread.
-    let mut in_group: HashMap<&str, usize> = HashMap::new();
-    let group_index: Vec<usize> = patch
-        .fixtures
-        .iter()
-        .map(|f| {
-            let n = in_group.entry(f.group.as_str()).or_default();
-            *n += 1;
-            *n - 1
-        })
-        .collect();
-    // Index of each fixture among its role, for chases and fans.
+    // Place of each fixture from stage left within its group, for the
+    // phase spread of effects, and among its role, for chases and fans: a
+    // chase runs from left to right as the fixtures stand on the floor plan.
+    let f = &patch.fixtures;
+    let group_index = crate::stage::stage_rank(patch, |i, j| f[i].group == f[j].group);
+    let role_of: Vec<FixtureRole> = f.iter().map(|x| x.def.role()).collect();
+    let role_rank = crate::stage::stage_rank(patch, |i, j| role_of[i] == role_of[j]);
     let mut counts: HashMap<FixtureRole, usize> = HashMap::new();
-    let roles: Vec<(FixtureRole, usize)> = patch
-        .fixtures
-        .iter()
-        .map(|f| {
-            let role = f.def.role();
-            let n = counts.entry(role).or_default();
-            *n += 1;
-            (role, *n - 1)
-        })
-        .collect();
+    for r in &role_of {
+        *counts.entry(*r).or_default() += 1;
+    }
+    let roles: Vec<(FixtureRole, usize)> = role_of.iter().copied().zip(role_rank).collect();
     patch
         .fixtures
         .iter()
@@ -722,6 +877,10 @@ fn rig(
             }
             if let Some(e) = effect {
                 e.apply(&mut look, music.beat * speed as f64, gi);
+            }
+            // A bar turned to face the back: its cells run the other way.
+            if f.place.is_some_and(|p| p.reversed()) {
+                look.pixels.reverse();
             }
             look
         })
@@ -890,14 +1049,7 @@ mod tests {
                 "Bars"
             };
             patch
-                .add(Patched {
-                    name: format!("{kind} {i}"),
-                    def,
-                    universe: 0,
-                    address,
-                    group: group.into(),
-                    invert_pan: false,
-                })
+                .add(Patched::new(&format!("{kind} {i}"), def, 0, address, group))
                 .unwrap();
         }
         patch
@@ -1056,7 +1208,7 @@ mod tests {
         // A track cue at beat 32 takes over once the deck passes it.
         show.settings
             .track_cues
-            .insert(7, vec![TrackCue { beat: 32, cue: 1 }]);
+            .insert(7, vec![TrackCue::new(32, 1)]);
         let at = |beat| DeckMusic {
             track: Some(7),
             ..deck(PhraseKind::Verse, beat, 0.5)
@@ -1069,6 +1221,101 @@ mod tests {
             show.frame(&patch, &[at(33.0)], 0.02)[0].color,
             [0.0, 0.0, 1.0]
         );
+    }
+
+    #[test]
+    fn track_cues_play_pads_and_stack_cues_in_every_mode_with_a_fade() {
+        use crate::looks::PadLook;
+        let patch = rig_patch();
+        let mut green = PadLook::new(5, "Green");
+        green.groups.insert(
+            "Wash".into(),
+            GroupSettings {
+                program: Some(Program::Static),
+                color: Some([0.0, 1.0, 0.0]),
+                intensity: Some(1.0),
+                ..Default::default()
+            },
+        );
+        let mut settings = ShowSettings::default();
+        settings.pads = vec![green];
+        settings.cues = vec![LightCue {
+            name: "Blue".into(),
+            groups: HashMap::from([(
+                "Wash".to_string(),
+                GroupSettings {
+                    program: Some(Program::Static),
+                    color: Some([0.0, 0.0, 1.0]),
+                    ..Default::default()
+                },
+            )]),
+            fade_beats: 0.0,
+        }];
+        settings.track_cues.insert(
+            9,
+            vec![
+                TrackCue {
+                    pad: Some(5),
+                    name: "Drop".into(),
+                    fade_beats: Some(2.0),
+                    ..TrackCue::new(16, 0)
+                },
+                TrackCue::new(48, 0),
+            ],
+        );
+        let mut show = Show::new(settings);
+        let at = |beat| DeckMusic {
+            track: Some(9),
+            ..deck(PhraseKind::Verse, beat, 0.5)
+        };
+        // AUTO before the first cue: the track's own colours.
+        let before = show.frame(&patch, &[at(8.0)], 0.02);
+        assert_ne!(before[0].color, [0.0, 1.0, 0.0]);
+        assert_eq!(show.active_track_cue(), None);
+        // Past beat 16: the pad fades in over two beats (0.94 s at 128 BPM).
+        let first = show.frame(&patch, &[at(16.5)], 0.02);
+        assert_eq!(show.active_track_cue(), Some((9, 16)));
+        assert!(first[0].color[1] < 0.9, "still fading: {:?}", first[0].color);
+        let mut last = first;
+        for _ in 0..60 {
+            last = show.frame(&patch, &[at(17.0)], 0.02);
+        }
+        assert_eq!(last[0].color, [0.0, 1.0, 0.0]);
+        // The movers keep what runs underneath.
+        assert_eq!(last[2].color, before[2].color);
+        // Past beat 48: the stack cue, at once (its fade is 0), in AUTO too.
+        let blue = show.frame(&patch, &[at(49.0)], 0.02);
+        assert_eq!(blue[0].color, [0.0, 0.0, 1.0]);
+        assert_eq!(show.active_track_cue(), Some((9, 48)));
+        // Old rig files: a track cue is a beat and a stack cue.
+        let old: TrackCue = serde_json::from_str(r#"{"beat":32,"cue":1}"#).unwrap();
+        assert_eq!(old, TrackCue::new(32, 1));
+    }
+
+    #[test]
+    fn a_chase_runs_left_to_right_on_the_floor_plan() {
+        use crate::stage::Placement;
+        let mut patch = Patch::default();
+        let par = FixtureDef::builtin("rgbw-par").unwrap();
+        patch.add_many(&par, 3, Some(0), Some(1), "Par", "Wash").unwrap();
+        // Patched 0, 1, 2 but standing right, left, middle.
+        for (i, x) in [0.9, 0.1, 0.5].into_iter().enumerate() {
+            patch.fixtures[i].place = Some(Placement::new(x, 0.8));
+        }
+        let mut show = Show::new(ShowSettings {
+            mode: Mode::Easy,
+            easy_program: Program::Chase,
+            ..Default::default()
+        });
+        let lit = |show: &mut Show, beat: f64| -> usize {
+            let d = deck(PhraseKind::Verse, beat, 0.5);
+            let looks = show.frame(&patch, &[d], 0.02);
+            (0..3)
+                .max_by(|a, b| looks[*a].intensity.total_cmp(&looks[*b].intensity))
+                .unwrap()
+        };
+        let order: Vec<usize> = (0..3).map(|b| lit(&mut show, b as f64 + 0.1)).collect();
+        assert_eq!(order, vec![1, 2, 0], "left, middle, right");
     }
 
     #[test]
@@ -1138,14 +1385,7 @@ mod tests {
         let def = FixtureDef::builtin("fog").unwrap();
         let address = patch.next_free(0, 1).unwrap();
         patch
-            .add(Patched {
-                name: "Fog".into(),
-                def,
-                universe: 0,
-                address,
-                group: "FX".into(),
-                invert_pan: false,
-            })
+            .add(Patched::new("Fog", def, 0, address, "FX"))
             .unwrap();
         let mut show = Show::new(ShowSettings {
             mode: Mode::Easy,

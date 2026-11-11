@@ -158,7 +158,24 @@ pub fn layer_text(rt: &LightingRuntime, decks: &[DeckMusic]) -> (String, String)
             .map(|l| l.name.to_uppercase())
             .unwrap_or_default()
     };
-    match looks::layer(s.blackout, m.flash || m.strobe, &rt.pads, &s.pads) {
+    let layer = looks::layer(s.blackout, m.flash || m.strobe, &rt.pads, &s.pads);
+    // [36] A DJ event's trigger plays over HOLD and the base.
+    if let (Layer::Hold | Layer::Base, Some(t)) = (layer, rt.remote.trigger) {
+        let plays = match t.target {
+            od_lighting::TriggerTarget::Pad(p) => {
+                crate::lighting_stage::plays_short(s, crate::lighting_stage::Plays::Pad(p))
+            }
+            od_lighting::TriggerTarget::Cue(i) => {
+                crate::lighting_stage::plays_short(s, crate::lighting_stage::Plays::Cue(i))
+            }
+            od_lighting::TriggerTarget::Release => String::new(),
+        };
+        return (
+            "trigger".into(),
+            od_i18n::trf("TRIGGER · {} · {}", &[&crate::lighting_remote::event_label(t.event), &plays]),
+        );
+    }
+    match layer {
         Layer::Blackout => ("blackout".into(), od_i18n::tr("BLACKOUT").to_string()),
         Layer::Momentary => (
             "momentary".into(),

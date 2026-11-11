@@ -449,6 +449,22 @@ impl Mapping {
             .unwrap_or(&[])
     }
 
+    /// The mapping for a MIDI input port: the one assigned to the port by
+    /// name (a controller given to the lights, say), else the first whose
+    /// port names match.
+    pub fn for_port<'a>(
+        mappings: &'a [Arc<Mapping>],
+        assigned: &[(String, String)],
+        port: &str,
+    ) -> Option<&'a Arc<Mapping>> {
+        if let Some((_, id)) = assigned.iter().find(|(p, _)| p == port)
+            && let Some(m) = mappings.iter().find(|m| m.device().id == *id)
+        {
+            return Some(m);
+        }
+        mappings.iter().find(|m| m.matches_port(port))
+    }
+
     /// Does a MIDI port name match this mapping?
     pub fn matches_port(&self, port_name: &str) -> bool {
         let p = port_name.to_lowercase();

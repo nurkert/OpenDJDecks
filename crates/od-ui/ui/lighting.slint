@@ -118,6 +118,75 @@ export struct LightLookGroupRow {
     level: string,
 }
 
+// [32] A fixture on the floor plan (STAGE in SETUP).
+export struct LightPlaceRow {
+    name: string,
+    group: string,
+    // "wash" | "mover" | "bar" | "effect"
+    role: string,
+    // 0..1 across (stage left to right) and from the back to the front.
+    x: float,
+    y: float,
+    // Degrees clockwise, 0 = towards the audience.
+    rotation: float,
+    // Placed by hand (else the default spot for its role).
+    placed: bool,
+    color: color,
+    intensity: float,
+}
+
+// [32] The fixture open on the floor plan: place and programming.
+export struct LightTuneView {
+    name: string,
+    group: string,
+    rotation: string,
+    height: string,
+    pan-from: string,
+    pan-to: string,
+    tilt-from: string,
+    tilt-to: string,
+    invert-pan: bool,
+    invert-tilt: bool,
+    red: string,
+    green: string,
+    blue: string,
+    curve: string,
+    mover: bool,
+    placed: bool,
+}
+
+// [33] One light cue of the track: where, its name, what it plays, its fade.
+export struct LightCueRow {
+    bar: string,
+    name: string,
+    plays: string,
+    fade: string,
+    // In effect now.
+    active: bool,
+}
+
+// [35] A venue, rig or show file.
+export struct LightFileRow {
+    name: string,
+    // "RIG CLUB · SHOW FRIDAY · 3 PER SECOND", "4 FIXTURES · 1 OUTPUT", …
+    detail: string,
+    // In use now.
+    current: bool,
+}
+
+// [36] One DJ event and what it plays.
+export struct LightTriggerRow {
+    event: string,
+    // "NOTHING", "RELEASE", "PAD 1.3 RED WASH", "CUE 2 WARM", …
+    plays: string,
+    // "UNTIL NEXT", "8 BEATS", …
+    beats: string,
+    // Something is tied to it.
+    set: bool,
+    // Playing now.
+    active: bool,
+}
+
 export global Lighting {
     // The compact lighting strip inside Perform.
     in-out property <bool> panel;
@@ -170,15 +239,90 @@ export global Lighting {
     callback group-position-clear(int);
     callback import-ofl();
     callback detach();
-    // Lighting cues of the track you hear (Pro): title and rows.
-    in property <string> timeline-title;
-    in property <[string]> timeline;
-    callback timeline-add();
-    callback timeline-delete(int);
+    // [21] The view's two modes: "setup" (rig, patch, outputs, safety,
+    // files) or "show" (stage, pads, cues, AUTO, masters, keys).
+    in-out property <string> space: "setup";
+    // [33] The light cues of the track you hear (or the one in Prepare).
+    in property <string> cue-title;
+    in property <[LightCueRow]> cue-rows;
+    in property <bool> cue-can-add;
+    callback cue-add();
+    callback cue-move(int, int);
+    callback cue-rename(int, string);
+    callback cue-plays(int, int);
+    callback cue-fade(int, int);
+    callback cue-remove(int);
+    // [32] The floor plan.
+    in property <[LightPlaceRow]> places;
+    in-out property <int> selected-fixture: -1;
+    in property <LightTuneView> tune;
+    in-out property <bool> snap: true;
+    callback select-fixture(int);
+    callback place-fixture(int, float, float);
+    callback unplace-fixture(int);
+    callback rotate-fixture(int, int);
+    callback step-height(int, int);
+    callback set-group(int, string);
+    // Field: "pan-from" | "pan-to" | "tilt-from" | "tilt-to" | "red" |
+    // "green" | "blue" | "curve" | "invert-pan" | "invert-tilt".
+    callback step-tune(int, string, int);
+    // [35] Venue profiles, rigs and shows.
+    in property <string> files-kind: "venue";
+    callback choose-files-kind(string);
+    in property <[LightFileRow]> file-rows;
+    in property <string> venue;
+    in property <string> files-note;
+    callback file-load(int);
+    callback file-save(int);
+    callback file-save-as(string);
+    callback file-rename(int, string);
+    callback file-duplicate(int);
+    callback file-delete(int);
+    callback file-import();
+    callback file-export();
 
-    // Centre of the view: "stage" | "pads" | "patch" | "channels".
+    // [34] A separate lighting operator: a controller of its own (by its
+    // MIDI input), OSC in, and the music sent to another instance.
+    in property <[string]> midi-inputs;
+    in property <string> light-controller;
+    in property <string> light-controller-note;
+    callback refresh-midi();
+    // Index into `midi-inputs`, -1 = none.
+    callback use-controller(int);
+    in property <bool> osc-in;
+    in property <string> osc-port;
+    in property <string> osc-note;
+    callback set-osc-in(bool);
+    callback set-osc-port(string);
+    in property <bool> osc-send;
+    in property <string> osc-send-to;
+    in property <string> osc-send-note;
+    callback set-osc-send(bool, string);
+    // [36] The music the show follows: "decks" | "input" | "network", and
+    // what arrives from it; DJ events tied to pads and cues.
+    in property <string> source: "decks";
+    in property <string> source-text;
+    callback set-source(string);
+    in property <[LightTriggerRow]> triggers;
+    in property <string> last-event;
+    callback trigger-plays(int, int);
+    callback trigger-beats(int, int);
+    // [37] Unattended mode for a fixed venue.
+    in property <bool> unattended;
+    in property <bool> autostart;
+    in property <string> calm-after;
+    // The show runs unattended and the setup is locked: the show controls
+    // are locked too.
+    in property <bool> show-locked;
+    in property <string> unattended-text;
+    callback set-unattended(bool);
+    callback set-autostart(bool);
+    callback step-calm(int);
+
+    // Centre of the view: SETUP "stage" | "patch" | "channels", SHOW
+    // "stage" | "pads" | "cues" | "triggers".
     in-out property <string> centre: "stage";
-    // Setup panel: "rig" | "output" | "safety".
+    // Setup panel: "rig" | "output" | "safety" | "files" | "remote".
     in-out property <string> setup-tab: "rig";
     // Patch table.
     in property <[LightPatchRow]> patch-rows;
@@ -299,14 +443,6 @@ export global Lighting {
     callback guide(string);
 }
 
-component SectionTitle inherits HorizontalLayout {
-    in property <string> text;
-    // As tall as the keys beside it (DMX OUT, WINDOW): the caption and the
-    // keys share one centre line in all three panel headers.
-    height: 26px;
-    Caps { text: root.text; vertical-alignment: center; color: Theme.bone-2; }
-}
-
 // Colour chips; -1 is "from the track".
 component Swatches inherits HorizontalLayout {
     in property <int> current;
@@ -387,8 +523,9 @@ component Stage inherits Rectangle {
                 border-width: 1px; border-color: #33322F;
             }
         }
+        // Kept inside the stage at its edges.
         if !root.compact: Text {
-            x: cx - 60px; y: cy + (f.role == "bar" ? 10px : 24px); width: 120px;
+            x: clamp(cx - 60px, 0px, root.width - 120px); y: min(cy + (f.role == "bar" ? 10px : 24px), root.height - 15px); width: 120px; height: 15px;
             text: f.name;
             font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
             horizontal-alignment: center; overflow: elide;
@@ -416,6 +553,370 @@ component Body inherits Text {
     wrap: word-wrap;
     // Wraps to the width its column gives it and never asks for more.
     min-width: 0px; preferred-width: 0px;
+}
+
+// [32] The stage as an editor: every fixture on a top-down floor plan,
+// the audience at the bottom. Drag a fixture to move it (it snaps to the
+// grid while GRID is on); click it to open its place and programming
+// beside the plan. Positions drive the preview and the effects that run
+// across the stage (chases and sweeps go from left to right).
+component FloorPlan inherits Rectangle {
+    accessible-id: "lighting.plan"; accessible-role: image;
+    background: #0B0B0B;
+    border-width: 1px;
+    border-color: Theme.rule;
+    clip: true;
+    // The fixture being dragged and where it would land.
+    property <int> dragging: -1;
+    property <float> gx;
+    property <float> gy;
+    // Inner area (room for the captions).
+    property <length> pad: 22px;
+    property <length> iw: self.width - 2 * self.pad;
+    property <length> ih: self.height - 2 * self.pad;
+    pure function fx(v: float) -> length { return root.pad + root.iw * v; }
+    pure function fy(v: float) -> length { return root.pad + root.ih * v; }
+    pure function snapped(v: float) -> float { return Lighting.snap ? Math.round(clamp(v, 0, 1) * 20) / 20 : clamp(v, 0, 1); }
+
+    // The grid, every 1/20 of the stage (every fifth line a little stronger).
+    if Lighting.snap: Rectangle {
+        for i in 21: Rectangle {
+            x: root.fx(i / 20) ; y: root.pad; width: 1px; height: root.ih;
+            background: Math.mod(i, 5) == 0 ? #262624 : #181817;
+        }
+        for i in 21: Rectangle {
+            x: root.pad; y: root.fy(i / 20); width: root.iw; height: 1px;
+            background: Math.mod(i, 5) == 0 ? #262624 : #181817;
+        }
+    }
+    // The stage's front edge.
+    Rectangle { x: root.pad; y: root.fy(1); width: root.iw; height: 1px; background: Theme.rule-strong; }
+    Text {
+        x: root.pad; y: 2px; width: root.iw; height: root.pad - 4px;
+        text: @tr("BACK"); font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: Theme.bone-3; horizontal-alignment: center; vertical-alignment: center;
+    }
+    Text {
+        x: root.pad; y: root.height - root.pad + 2px; width: root.iw; height: root.pad - 4px;
+        text: @tr("AUDIENCE"); font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1px;
+        color: Theme.bone-3; horizontal-alignment: center; vertical-alignment: center;
+    }
+    // A click on the floor closes the fixture.
+    TouchArea { clicked => { Lighting.select-fixture(-1); } }
+    for f[i] in Lighting.places: Rectangle {
+        property <bool> moving: root.dragging == i;
+        property <length> cx: root.fx(self.moving ? root.gx : f.x);
+        property <length> cy: root.fy(self.moving ? root.gy : f.y);
+        property <bool> chosen: Lighting.selected-fixture == i;
+        property <length> sz: f.role == "bar" ? 44px : 24px;
+        accessible-id: "lighting.plan.fixture" + i; accessible-role: button;
+        accessible-value: f.name + " " + Math.round(f.x * 100) + " " + Math.round(f.y * 100) + " " + Math.round(f.rotation) + (self.chosen ? " selected" : "");
+        accessible-item-selectable: true; accessible-item-selected: self.chosen;
+        x: self.cx - 22px; y: self.cy - 22px; width: 44px; height: 44px;
+        Rectangle {
+            x: (parent.width - parent.sz) / 2; y: (parent.height - (f.role == "bar" ? 12px : 24px)) / 2;
+            width: parent.sz; height: f.role == "bar" ? 12px : 24px;
+            border-radius: f.role == "mover" ? 4px : f.role == "bar" ? 2px : 12px;
+            background: f.intensity > 0.02 ? f.color.with-alpha(0.35 + 0.65 * f.intensity) : #1C1C1B;
+            border-width: parent.chosen ? 2px : 1px;
+            border-color: parent.chosen ? Theme.attention : f.placed ? #6B6A64 : #4B4A46;
+        }
+        // Where it points: a line out of the symbol (0° = towards the audience).
+        Path {
+            x: 0; y: 0; width: 44px; height: 44px;
+            viewbox-width: 44; viewbox-height: 44;
+            stroke: parent.chosen ? Theme.attention : Theme.bone-3; stroke-width: 2px;
+            MoveTo { x: 22 - 8 * Math.sin(f.rotation * 1deg); y: 22 + 8 * Math.cos(f.rotation * 1deg); }
+            LineTo { x: 22 - 21 * Math.sin(f.rotation * 1deg); y: 22 + 21 * Math.cos(f.rotation * 1deg); }
+        }
+        grab := TouchArea {
+            mouse-cursor: root.dragging == i ? MouseCursor.grabbing : MouseCursor.grab;
+            pointer-event(ev) => {
+                if (ev.kind == PointerEventKind.down) {
+                    Lighting.select-fixture(i);
+                }
+                if (ev.kind == PointerEventKind.up && root.dragging == i) {
+                    Lighting.place-fixture(i, root.gx, root.gy);
+                    root.dragging = -1;
+                }
+            }
+            moved => {
+                if (self.pressed) {
+                    root.dragging = i;
+                    root.gx = root.snapped((self.absolute-position.x + self.mouse-x - root.absolute-position.x - root.pad) / root.iw);
+                    root.gy = root.snapped((self.absolute-position.y + self.mouse-y - root.absolute-position.y - root.pad) / root.ih);
+                }
+            }
+        }
+    }
+    // Names under the fixtures (over the symbols' neighbours, never under).
+    // Kept inside the plan at its edges.
+    for f[i] in Lighting.places: Text {
+        x: clamp(root.fx(root.dragging == i ? root.gx : f.x) - 50px, 0px, root.width - 100px);
+        y: min(root.fy(root.dragging == i ? root.gy : f.y) + 14px, root.height - 15px);
+        width: 100px; height: 15px;
+        text: f.name; font-family: Theme.family; font-size: Theme.label;
+        color: Lighting.selected-fixture == i ? Theme.bone : Theme.bone-3;
+        horizontal-alignment: center; overflow: elide;
+    }
+    if Lighting.places.length == 0: Text {
+        x: Theme.s2; width: parent.width - 2 * Theme.s2;
+        text: @tr("No fixtures patched yet. Add your lights on the left.");
+        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+}
+
+// A labelled stepper row of the fixture inspector.
+component TuneRow inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <string> a11y;
+    in property <string> tip;
+    in property <bool> lit;
+    in property <string> template: "+50 %";
+    callback step(int);
+    spacing: Theme.s2; height: 26px;
+    Text { text: root.label; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; min-width: 40px; }
+    Stepper {
+        accessible-id: root.a11y; accessible-role: spinbox; accessible-value: self.value;
+        a11y-prev: root.a11y + ".down"; a11y-next: root.a11y + ".up";
+        value: root.value; template: root.template; size: 26px; lit: root.lit;
+        tooltip: root.tip;
+        step(d) => { root.step(d); }
+    }
+}
+
+// [32] The fixture open on the floor plan: its place and its programming.
+component FixtureInspector inherits Flickable {
+    in property <int> index;
+    accessible-id: "lighting.plan.inspector"; accessible-role: groupbox;
+    property <LightTuneView> t: Lighting.tune;
+    content-height: max(col.min-height, col.preferred-height) + Theme.s3;
+    col := VerticalLayout {
+        width: root.width;
+        alignment: start;
+        spacing: Theme.s2;
+        Text { text: root.t.name; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone; overflow: elide; }
+        HorizontalLayout {
+            spacing: Theme.s2;
+            Caps { text: @tr("GROUP"); vertical-alignment: center; }
+            Field {
+                accessible-id: "lighting.fixture.group"; accessible-role: text-input;
+                text: root.t.group; horizontal-stretch: 1; enabled: !Lighting.locked;
+                accepted(v) => { Lighting.set-group(root.index, v); }
+            }
+        }
+        TuneRow {
+            label: @tr("TURN"); value: root.t.rotation; template: "315°"; a11y: "lighting.fixture.rotate";
+            tip: @tr("Which way it points, in steps of 15°: 0° towards the audience");
+            step(d) => { Lighting.rotate-fixture(root.index, d); }
+        }
+        TuneRow {
+            label: @tr("HEIGHT"); value: root.t.height; template: "10.5 m"; a11y: "lighting.fixture.height";
+            tip: @tr("How high it hangs");
+            step(d) => { Lighting.step-height(root.index, d); }
+        }
+        HorizontalLayout {
+            spacing: Theme.s1;
+            PlateButton {
+                accessible-id: "lighting.plan.snap"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: Lighting.snap;
+                compact: true; label: @tr("GRID"); active: Lighting.snap; tone: Theme.attention; horizontal-stretch: 1;
+                tooltip: @tr("Snap to the grid while dragging");
+                clicked => { Lighting.snap = !Lighting.snap; }
+            }
+            PlateButton {
+                accessible-id: "lighting.fixture.unplace"; accessible-role: button;
+                compact: true; label: @tr("DEFAULT SPOT"); enabled: root.t.placed && !Lighting.locked; horizontal-stretch: 1;
+                tooltip: @tr("Back to the spot for its kind (movers at the back, washes at the front)");
+                clicked => { Lighting.unplace-fixture(root.index); }
+            }
+        }
+        HLine { }
+        Caps { text: @tr("PROGRAMMING"); }
+        if root.t.mover: TuneRow {
+            label: @tr("PAN FROM"); value: root.t.pan-from; template: "100 %"; a11y: "lighting.fixture.pan-from";
+            tip: @tr("Where the pan travel starts that looks use"); lit: root.t.pan-from != "0 %";
+            step(d) => { Lighting.step-tune(root.index, "pan-from", d); }
+        }
+        if root.t.mover: TuneRow {
+            label: @tr("PAN TO"); value: root.t.pan-to; template: "100 %"; a11y: "lighting.fixture.pan-to";
+            tip: @tr("Where the pan travel ends that looks use"); lit: root.t.pan-to != "100 %";
+            step(d) => { Lighting.step-tune(root.index, "pan-to", d); }
+        }
+        if root.t.mover: TuneRow {
+            label: @tr("TILT FROM"); value: root.t.tilt-from; template: "100 %"; a11y: "lighting.fixture.tilt-from";
+            tip: @tr("Where the tilt travel starts that looks use"); lit: root.t.tilt-from != "0 %";
+            step(d) => { Lighting.step-tune(root.index, "tilt-from", d); }
+        }
+        if root.t.mover: TuneRow {
+            label: @tr("TILT TO"); value: root.t.tilt-to; template: "100 %"; a11y: "lighting.fixture.tilt-to";
+            tip: @tr("Where the tilt travel ends that looks use"); lit: root.t.tilt-to != "100 %";
+            step(d) => { Lighting.step-tune(root.index, "tilt-to", d); }
+        }
+        if root.t.mover: HorizontalLayout {
+            spacing: Theme.s1;
+            PlateButton {
+                accessible-id: "lighting.fixture.invert-pan"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: root.t.invert-pan;
+                compact: true; label: @tr("INVERT PAN"); active: root.t.invert-pan; tone: Theme.attention; horizontal-stretch: 1;
+                tooltip: @tr("Mirror pan, for a mover hung the other way round");
+                clicked => { Lighting.step-tune(root.index, "invert-pan", 1); }
+            }
+            PlateButton {
+                accessible-id: "lighting.fixture.invert-tilt"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: root.t.invert-tilt;
+                compact: true; label: @tr("INVERT TILT"); active: root.t.invert-tilt; tone: Theme.attention; horizontal-stretch: 1;
+                tooltip: @tr("Mirror tilt, for a mover hung upside down");
+                clicked => { Lighting.step-tune(root.index, "invert-tilt", 1); }
+            }
+        }
+        TuneRow {
+            label: @tr("RED"); value: root.t.red; a11y: "lighting.fixture.red"; lit: root.t.red != "0 %";
+            tip: @tr("Colour calibration: more or less red, so fixtures of different makes match");
+            step(d) => { Lighting.step-tune(root.index, "red", d); }
+        }
+        TuneRow {
+            label: @tr("GREEN"); value: root.t.green; a11y: "lighting.fixture.green"; lit: root.t.green != "0 %";
+            tip: @tr("Colour calibration: more or less green");
+            step(d) => { Lighting.step-tune(root.index, "green", d); }
+        }
+        TuneRow {
+            label: @tr("BLUE"); value: root.t.blue; a11y: "lighting.fixture.blue"; lit: root.t.blue != "0 %";
+            tip: @tr("Colour calibration: more or less blue");
+            step(d) => { Lighting.step-tune(root.index, "blue", d); }
+        }
+        TuneRow {
+            label: @tr("DIMMER CURVE"); value: root.t.curve; template: "LINEAR"; a11y: "lighting.fixture.curve";
+            tip: @tr("How the light follows the level: LINEAR, SQUARE (darker low end), ROOT (brighter low end), SOFT");
+            step(d) => { Lighting.step-tune(root.index, "curve", d); }
+        }
+        Body { text: @tr("The safety limits still apply to every value."); color: Theme.bone-3; }
+    }
+}
+
+// [32] STAGE in SETUP: the floor plan and the open fixture.
+component StageEditor inherits HorizontalLayout {
+    spacing: Theme.s3;
+    FloorPlan { horizontal-stretch: 1; min-width: 160px; }
+    VerticalLayout {
+        width: 232px;
+        if Lighting.selected-fixture >= 0 && Lighting.selected-fixture < Lighting.places.length: FixtureInspector { index: Lighting.selected-fixture; vertical-stretch: 1; }
+        if Lighting.selected-fixture < 0 || Lighting.selected-fixture >= Lighting.places.length: VerticalLayout {
+            spacing: Theme.s2;
+            Caps { text: @tr("FLOOR PLAN"); }
+            Body { text: @tr("Drag a fixture to where it hangs; click it to turn it, set its height and group and tune it. Chases and sweeps run from left to right as placed."); color: Theme.bone-3; }
+            PlateButton {
+                accessible-id: "lighting.plan.snap"; accessible-role: button;
+                accessible-checkable: true; accessible-checked: Lighting.snap;
+                compact: true; label: @tr("GRID"); active: Lighting.snap; tone: Theme.attention;
+                tooltip: @tr("Snap to the grid while dragging");
+                clicked => { Lighting.snap = !Lighting.snap; }
+            }
+            Rectangle { vertical-stretch: 1; }
+        }
+    }
+}
+
+// [33] CUES in SHOW: the light cues of the track you hear, editable.
+component CueList inherits VerticalLayout {
+    spacing: Theme.s2;
+    HorizontalLayout {
+        height: 26px; spacing: Theme.s2;
+        Caps { text: @tr("TRACK"); vertical-alignment: center; }
+        Text {
+            accessible-id: "lighting.cues.track"; accessible-role: text; accessible-value: self.text;
+            text: Lighting.cue-title == "" ? @tr("Load or play a track to give it light cues.") : Lighting.cue-title;
+            font-family: Theme.family; font-size: Theme.control; color: Lighting.cue-title == "" ? Theme.bone-3 : Theme.bone;
+            vertical-alignment: center; overflow: elide; horizontal-stretch: 1;
+        }
+        PlateButton {
+            accessible-id: "lighting.cues.add"; accessible-role: button;
+            compact: true; label: @tr("CUE AT PLAYHEAD"); glyph: "plus"; enabled: Lighting.cue-can-add; horizontal-stretch: 0;
+            tooltip: @tr("A light cue at the bar you hear, playing the cue, pad or chase that runs now");
+            clicked => { Lighting.cue-add(); }
+        }
+    }
+    HorizontalLayout {
+        height: 18px; spacing: Theme.s2; padding-left: Theme.s3;
+        Caps { text: @tr("AT"); width: 110px; vertical-alignment: center; }
+        Caps { text: @tr("NAME"); horizontal-stretch: 1; vertical-alignment: center; min-width: 60px; }
+        Caps { text: @tr("PLAYS"); width: 230px; vertical-alignment: center; }
+        Caps { text: @tr("FADE"); width: 110px; vertical-alignment: center; }
+        Rectangle { width: 30px; }
+    }
+    HLine { }
+    if Lighting.cue-rows.length == 0: Body {
+        text: @tr("No light cues for this track yet. A light cue plays a cue of the stack, a pad or a chase from its bar on, every time the track plays. In Prepare they sit on a lane under the waveform, where you can drag them.");
+        color: Theme.bone-3;
+    }
+    if Lighting.cue-rows.length > 0: Flickable {
+        vertical-stretch: 1;
+        content-height: rows.preferred-height;
+        rows := VerticalLayout {
+            width: parent.width;
+            alignment: start;
+            for c[i] in Lighting.cue-rows: Rectangle {
+                accessible-id: "lighting.cues.row" + i; accessible-role: list-item;
+                accessible-value: c.bar + " " + c.name + " " + c.plays + " " + c.fade + (c.active ? " active" : "");
+                height: 34px;
+                HorizontalLayout {
+                    spacing: Theme.s2;
+                    // In effect now: the sodium tick.
+                    VerticalLayout { padding-top: Theme.s1; padding-bottom: Theme.s1; width: Theme.s3 - Theme.s2; VLine { tone: c.active ? Theme.attention : transparent; } }
+                    VerticalLayout {
+                        alignment: center;
+                        Stepper {
+                            accessible-id: "lighting.cues.row" + i + ".bar"; accessible-role: spinbox; accessible-value: self.value;
+                            a11y-prev: "lighting.cues.row" + i + ".earlier"; a11y-next: "lighting.cues.row" + i + ".later";
+                            width: 110px; size: 26px; value: c.bar; template: "BAR 000"; lit: c.active;
+                            tooltip: @tr("Move the cue a bar earlier or later");
+                            step(d) => { Lighting.cue-move(i, d); }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center; horizontal-stretch: 1; min-width: 60px;
+                        Field {
+                            accessible-id: "lighting.cues.row" + i + ".name"; accessible-role: text-input;
+                            height: 26px; text: c.name; placeholder: @tr("Name");
+                            accepted(t) => { Lighting.cue-rename(i, t); }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Stepper {
+                            accessible-id: "lighting.cues.row" + i + ".plays"; accessible-role: spinbox; accessible-value: self.value;
+                            a11y-prev: "lighting.cues.row" + i + ".plays.prev"; a11y-next: "lighting.cues.row" + i + ".plays.next";
+                            width: 230px; size: 26px; value: c.plays; template: "CHASE 4.8 MUSIC";
+                            tooltip: @tr("What the cue plays: a cue of the stack, a pad's look or a chase");
+                            step(d) => { Lighting.cue-plays(i, d); }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Stepper {
+                            accessible-id: "lighting.cues.row" + i + ".fade"; accessible-role: spinbox; accessible-value: self.value;
+                            a11y-prev: "lighting.cues.row" + i + ".fade.down"; a11y-next: "lighting.cues.row" + i + ".fade.up";
+                            width: 110px; size: 26px; value: c.fade; template: "16 BEATS";
+                            tooltip: @tr("Fade into the cue, in beats");
+                            step(d) => { Lighting.cue-fade(i, d); }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        PlateButton {
+                            accessible-id: "lighting.cues.row" + i + ".delete"; accessible-role: button;
+                            compact: true; glyph: "close"; width: 30px;
+                            tooltip: @tr("Remove this light cue");
+                            clicked => { Lighting.cue-remove(i); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if Lighting.cue-rows.length > 0: Body { text: @tr("Type a name and press Enter to rename. The cue starts at its bar each time the track plays, in every mode."); color: Theme.bone-3; }
 }
 
 // Setup is locked: the PIN opens it again.
@@ -796,7 +1297,12 @@ component OutputTab inherits Flickable {
     }
 }
 
-component SafetyTab inherits VerticalLayout {
+component SafetyTab inherits Flickable {
+    accessible-id: "lighting.safety"; accessible-role: groupbox;
+    content-height: max(col.min-height, col.preferred-height) + Theme.s5;
+    col := VerticalLayout {
+    width: root.width;
+    alignment: start;
     spacing: Theme.s2;
     Caps { text: @tr("STROBE AND FLASH CAP"); }
     HorizontalLayout {
@@ -878,11 +1384,435 @@ component SafetyTab inherits VerticalLayout {
         text: Lighting.pin-error;
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.fault;
     }
+    // [37] Unattended mode for a fixed venue, behind the PIN.
+    HLine { }
+    Caps { text: @tr("UNATTENDED"); }
+    PlateButton {
+        accessible-id: "lighting.unattended"; accessible-role: button;
+        accessible-checkable: true; accessible-checked: Lighting.unattended;
+        label: Lighting.unattended ? @tr("RUNS UNATTENDED") : @tr("RUN UNATTENDED"); active: Lighting.unattended; tone: Theme.live;
+        enabled: Lighting.pin-set || Lighting.unattended;
+        tooltip: @tr("For a fixed venue: the show runs by itself, locked behind the setup PIN");
+        clicked => { Lighting.set-unattended(!Lighting.unattended); }
+    }
+    HorizontalLayout {
+        spacing: Theme.s2;
+        VerticalLayout {
+            alignment: center;
+            LineToggle {
+                accessible-id: "lighting.unattended.autostart"; accessible-role: checkbox;
+                label: @tr("START WITH THE APP"); checked: Lighting.autostart;
+                tooltip: @tr("Each start of the app opens LIGHTING in SHOW with DMX OUT on");
+                toggled(on) => { Lighting.set-autostart(on); }
+            }
+        }
+        Rectangle { horizontal-stretch: 1; }
+    }
+    HorizontalLayout {
+        spacing: Theme.s2;
+        Caps { text: @tr("CALM AFTER"); vertical-alignment: center; }
+        Stepper {
+            accessible-id: "lighting.unattended.calm"; accessible-role: spinbox; accessible-value: self.value;
+            a11y-prev: "lighting.unattended.calm.down"; a11y-next: "lighting.unattended.calm.up";
+            value: Lighting.calm-after; template: "000 S"; size: 26px;
+            tooltip: @tr("Silence for this long fades the rig to a calm warm wash");
+            step(d) => { Lighting.step-calm(d); }
+        }
+        Rectangle { horizontal-stretch: 1; }
+    }
+    Body {
+        color: Theme.bone-3;
+        text: !Lighting.pin-set ? @tr("Set a setup PIN first: the PIN is what takes the show back.")
+            : @tr("The show follows the music and comes back by itself after a restart; on silence the rig fades to a calm warm wash. The keys, the lighting controller and OSC are locked, fog and lasers stay locked out, and every limit above holds. LOCK the setup when you leave.");
+    }
+    }
+}
+
+// [34] A separate lighting operator: a controller of its own, OSC in, and
+// the music sent to another instance on the local network.
+component RemoteTab inherits Flickable {
+    content-height: max(col.min-height, col.preferred-height) + Theme.s5;
+    col := VerticalLayout {
+        width: root.width;
+        alignment: start;
+        spacing: Theme.s2;
+        HorizontalLayout {
+            spacing: Theme.s2;
+            Caps { text: @tr("LIGHTING CONTROLLER"); vertical-alignment: center; horizontal-stretch: 1; }
+            PlateButton {
+                accessible-id: "lighting.remote.refresh"; accessible-role: button;
+                compact: true; label: @tr("REFRESH"); tooltip: @tr("Look for MIDI controllers again");
+                clicked => { Lighting.refresh-midi(); }
+            }
+        }
+        Body { color: Theme.bone-3; text: @tr("Give one controller to the lights: it plays them with the lighting layout (pads, pages, group masters, blackout, flash, strobe, fog) while another controller keeps the decks."); }
+        if Lighting.midi-inputs.length == 0: Body { text: @tr("No MIDI controller found. Plug it in and press REFRESH."); color: Theme.bone-3; }
+        for p[i] in Lighting.midi-inputs: Rectangle {
+            accessible-id: "lighting.remote.controller" + i; accessible-role: list-item;
+            accessible-value: p + (p == Lighting.light-controller ? " lights" : "");
+            height: 44px;
+            border-radius: Theme.r-control;
+            background: p == Lighting.light-controller ? Theme.plate : transparent;
+            Rectangle { x: 0; width: 3px; background: p == Lighting.light-controller ? Theme.attention : transparent; }
+            HorizontalLayout {
+                padding-left: Theme.s2; padding-right: Theme.s1; spacing: Theme.s2;
+                Text {
+                    text: p; font-family: Theme.family; font-size: Theme.control; color: Theme.bone;
+                    vertical-alignment: center; overflow: elide; horizontal-stretch: 1;
+                }
+                VerticalLayout {
+                    alignment: center;
+                    PlateButton {
+                        accessible-id: "lighting.remote.controller" + i + ".use"; accessible-role: button;
+                        compact: true; label: p == Lighting.light-controller ? @tr("GIVE BACK") : @tr("USE FOR LIGHTS");
+                        active: p == Lighting.light-controller; tone: Theme.attention;
+                        tooltip: p == Lighting.light-controller ? @tr("The controller goes back to its own mapping") : @tr("This controller plays the lights with the lighting layout");
+                        clicked => { Lighting.use-controller(p == Lighting.light-controller ? -1 : i); }
+                    }
+                }
+            }
+        }
+        if Lighting.light-controller != "": Caps {
+            accessible-id: "lighting.remote.controller-note"; accessible-role: text; accessible-value: self.text;
+            text: Lighting.light-controller-note; overflow: elide; color: Theme.bone-3;
+        }
+        HLine { }
+        HorizontalLayout {
+            spacing: Theme.s2;
+            Caps { text: @tr("OSC IN"); vertical-alignment: center; horizontal-stretch: 1; }
+            VerticalLayout {
+                horizontal-stretch: 0;
+                alignment: center;
+                LineToggle {
+                    accessible-id: "lighting.remote.osc-in"; accessible-role: checkbox;
+                    label: @tr("LISTEN"); checked: Lighting.osc-in;
+                    tooltip: @tr("Take lighting commands and music over OSC on the port below");
+                    toggled(on) => { Lighting.set-osc-in(on); }
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: Theme.s2;
+            Caps { text: @tr("UDP PORT"); vertical-alignment: center; }
+            Field {
+                accessible-id: "lighting.remote.osc-port"; accessible-role: text-input;
+                width: 90px; text: Lighting.osc-port; placeholder: "9300";
+                accepted(t) => { Lighting.set-osc-port(t); }
+            }
+            Rectangle { horizontal-stretch: 1; }
+        }
+        Caps {
+            accessible-id: "lighting.remote.osc-note"; accessible-role: text; accessible-value: self.text;
+            text: Lighting.osc-note; overflow: elide; color: Lighting.osc-in ? Theme.bone-2 : Theme.bone-3;
+        }
+        Body { color: Theme.bone-3; text: @tr("Off by default. While on, any device on the local network can play the lights: a tablet, a second computer, a show controller. The addresses are in the guide."); }
+        HLine { }
+        Caps { text: @tr("SEND THE MUSIC"); }
+        HorizontalLayout {
+            spacing: Theme.s2;
+            send := Field {
+                accessible-id: "lighting.remote.send-to"; accessible-role: text-input;
+                horizontal-stretch: 1; text: Lighting.osc-send-to; placeholder: "192.168.1.20:9300";
+            }
+            VerticalLayout {
+                horizontal-stretch: 0;
+                alignment: center;
+                LineToggle {
+                    accessible-id: "lighting.remote.send"; accessible-role: checkbox;
+                    label: @tr("SEND"); checked: Lighting.osc-send;
+                    tooltip: @tr("Send tempo, beat, phrase and energy to the address on the left");
+                    toggled(on) => { Lighting.set-osc-send(on, send.text); }
+                }
+            }
+        }
+        Caps {
+            accessible-id: "lighting.remote.send-note"; accessible-role: text; accessible-value: self.text;
+            text: Lighting.osc-send-note; overflow: elide; color: Theme.bone-3;
+        }
+        Body { color: Theme.bone-3; text: @tr("Sends the tempo, beat, phrase and energy of the deck you hear 20 times a second. On the other computer turn OSC IN on and choose MUSIC FROM NETWORK under SHOW › TRIGGERS."); }
+    }
+}
+
+// [36] DJ events as triggers, and the music the show follows.
+component TriggersCentre inherits VerticalLayout {
+    spacing: Theme.s2;
+    HorizontalLayout {
+        height: 26px; spacing: Theme.s2;
+        Caps { text: @tr("MUSIC FROM"); vertical-alignment: center; }
+        HorizontalLayout {
+            spacing: Theme.s1;
+            for m in [{ id: "decks", label: @tr("DECKS") }, { id: "input", label: @tr("AUDIO INPUT") }, { id: "network", label: @tr("NETWORK") }]: PlateButton {
+                accessible-id: "lighting.source." + m.id; accessible-role: tab;
+                compact: true; label: m.label; selected: Lighting.source == m.id; horizontal-stretch: 0;
+                tooltip: m.id == "decks" ? @tr("The show follows the decks of this app")
+                    : m.id == "input" ? @tr("The show follows an audio input (line-in or a microphone) by its beat and level")
+                    : @tr("The show follows another OpenDJDecks on the network (OSC IN under SETUP › REMOTE)");
+                clicked => { Lighting.set-source(m.id); }
+            }
+        }
+        Caps {
+            accessible-id: "lighting.source.text"; accessible-role: text; accessible-value: self.text;
+            text: Lighting.source-text; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; color: Theme.bone-2;
+        }
+    }
+    HLine { }
+    HorizontalLayout {
+        height: 26px; spacing: Theme.s2;
+        Caps { text: @tr("DJ EVENTS"); vertical-alignment: center; }
+        Caps {
+            accessible-id: "lighting.triggers.last"; accessible-role: text; accessible-value: self.text;
+            text: Lighting.last-event == "" ? "" : @tr("LAST: {}", Lighting.last-event);
+            overflow: elide; horizontal-stretch: 1; vertical-alignment: center; color: Theme.bone-3;
+        }
+    }
+    HorizontalLayout {
+        height: 18px; spacing: Theme.s2; padding-left: Theme.s3;
+        Caps { text: @tr("WHEN"); horizontal-stretch: 1; min-width: 60px; vertical-alignment: center; }
+        Caps { text: @tr("PLAYS"); width: 230px; vertical-alignment: center; }
+        Caps { text: @tr("FOR"); width: 130px; vertical-alignment: center; }
+    }
+    HLine { }
+    Flickable {
+        vertical-stretch: 1;
+        mouse-drag-pan-enabled: false;
+        content-height: rows.preferred-height;
+        rows := VerticalLayout {
+            width: parent.width;
+            alignment: start;
+            for t[i] in Lighting.triggers: Rectangle {
+                accessible-id: "lighting.triggers.row" + i; accessible-role: list-item;
+                accessible-value: t.event + " " + t.plays + " " + t.beats + (t.active ? " active" : "");
+                height: 34px;
+                HorizontalLayout {
+                    spacing: Theme.s2;
+                    // Playing now: the sodium tick.
+                    VerticalLayout { padding-top: Theme.s1; padding-bottom: Theme.s1; width: Theme.s3 - Theme.s2; VLine { tone: t.active ? Theme.attention : transparent; } }
+                    Text {
+                        text: t.event; font-family: Theme.family; font-size: Theme.control;
+                        font-weight: t.set ? Theme.weight-semi : Theme.weight-medium;
+                        color: t.set ? Theme.bone : Theme.bone-3;
+                        vertical-alignment: center; overflow: elide; horizontal-stretch: 1; min-width: 60px;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Stepper {
+                            accessible-id: "lighting.triggers.row" + i + ".plays"; accessible-role: spinbox; accessible-value: self.value;
+                            a11y-prev: "lighting.triggers.row" + i + ".plays.prev"; a11y-next: "lighting.triggers.row" + i + ".plays.next";
+                            width: 230px; size: 26px; value: t.plays; template: "CHASE 4.8 MUSIC"; lit: t.set;
+                            tooltip: @tr("What the event plays: nothing, RELEASE, a pad's look or chase, or a cue of the stack");
+                            step(d) => { Lighting.trigger-plays(i, d); }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Stepper {
+                            accessible-id: "lighting.triggers.row" + i + ".for"; accessible-role: spinbox; accessible-value: self.value;
+                            a11y-prev: "lighting.triggers.row" + i + ".for.down"; a11y-next: "lighting.triggers.row" + i + ".for.up";
+                            width: 130px; size: 26px; value: t.beats; template: "UNTIL NEXT"; enabled: t.set;
+                            tooltip: @tr("How long it plays, in beats, or until the next event");
+                            step(d) => { Lighting.trigger-beats(i, d); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Body { text: @tr("A DJ event plays a pad's look or chase or a cue of the stack over what runs, for the beats set or until the next event; RELEASE hands back. A drop or a breakdown wins over PHRASE CHANGES. Everything stays within the safety limits."); color: Theme.bone-3; }
+}
+
+// [37] SHOW while the show runs unattended: locked until the PIN.
+component UnattendedNote inherits VerticalLayout {
+    alignment: start;
+    spacing: Theme.s2;
+    HorizontalLayout {
+        height: 18px; spacing: Theme.s2;
+        VLine { tone: Theme.live; }
+        Caps { text: @tr("UNATTENDED"); color: Theme.attention; vertical-alignment: center; }
+    }
+    Text {
+        accessible-id: "lighting.unattended.state"; accessible-role: text; accessible-value: self.text;
+        text: Lighting.unattended-text; wrap: word-wrap;
+        font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone;
+    }
+    Body { text: @tr("The show runs by itself and follows the music; on silence it fades to a calm warm wash. The keys, the lighting controller and OSC are locked; BLACKOUT stays. The setup PIN takes over."); }
+    HorizontalLayout {
+        spacing: Theme.s2;
+        pin := Field {
+            accessible-id: "lighting.unattended.pin"; accessible-role: text-input;
+            input-type: InputType.password; placeholder: @tr("PIN"); horizontal-stretch: 1;
+            accepted(t) => { Lighting.unlock(t); self.text = ""; }
+        }
+        VerticalLayout {
+            horizontal-stretch: 0;
+            alignment: center;
+            PlateButton {
+                accessible-id: "lighting.unattended.unlock"; accessible-role: button;
+                compact: true; label: @tr("TAKE OVER"); tooltip: @tr("Open the show and the setup with the PIN");
+                clicked => { Lighting.unlock(pin.text); pin.text = ""; }
+            }
+        }
+    }
+    if Lighting.pin-error != "": Text {
+        text: Lighting.pin-error;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.fault;
+    }
+}
+
+// [35] Venue profiles, rigs and shows as named files: pick a venue on
+// arrival, save, rename, duplicate, delete; one file in and out.
+component FilesTab inherits Flickable {
+    property <int> chosen: -1;
+    property <bool> has: root.chosen >= 0 && root.chosen < Lighting.file-rows.length;
+    content-height: max(col.min-height, col.preferred-height) + Theme.s5;
+    col := VerticalLayout {
+        width: root.width;
+        alignment: start;
+        spacing: Theme.s2;
+        HorizontalLayout {
+            spacing: Theme.s1; height: 26px;
+            for k in [{ id: "venue", label: @tr("VENUES") }, { id: "rig", label: @tr("RIGS") }, { id: "show", label: @tr("SHOWS") }]: PlateButton {
+                accessible-id: "lighting.files." + k.id; accessible-role: tab;
+                compact: true; label: k.label; selected: Lighting.files-kind == k.id; horizontal-stretch: 1;
+                clicked => { Lighting.choose-files-kind(k.id); root.chosen = -1; }
+            }
+        }
+        Body {
+            color: Theme.bone-3;
+            text: Lighting.files-kind == "venue" ? @tr("A venue binds a rig to a show and the safety limits. Pick yours when you arrive and press LOAD.")
+                : Lighting.files-kind == "rig" ? @tr("A rig is the patch and the outputs.")
+                : @tr("A show is the looks, pads, chases, cue lists, the AUTO table and the palette.");
+        }
+        if Lighting.file-rows.length == 0: Body { text: @tr("Nothing saved yet. Type a name and press SAVE AS NEW."); color: Theme.bone-3; }
+        for r[i] in Lighting.file-rows: Rectangle {
+            accessible-id: "lighting.files.row" + i; accessible-role: list-item;
+            accessible-value: r.name + (r.current ? " in use" : "");
+            accessible-item-selectable: true; accessible-item-selected: root.chosen == i;
+            height: 40px;
+            border-radius: Theme.r-control;
+            background: root.chosen == i ? Theme.plate : row.has-hover ? Theme.plate-raised.with-alpha(0.4) : transparent;
+            // The chosen row carries the sodium selection tick.
+            Rectangle { x: 0; width: 3px; background: root.chosen == i ? Theme.attention : transparent; }
+            HorizontalLayout {
+                padding-left: Theme.s2; padding-right: Theme.s2; spacing: Theme.s2;
+                VerticalLayout {
+                    alignment: center; horizontal-stretch: 1; spacing: 0;
+                    Text { text: r.name; font-family: Theme.family; font-size: Theme.body; color: Theme.bone; overflow: elide; }
+                    Text { text: r.detail; font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3; overflow: elide; }
+                }
+                if r.current: VerticalLayout {
+                    alignment: center;
+                    HorizontalLayout {
+                        spacing: Theme.s1; height: 16px;
+                        VLine { tone: Theme.live; }
+                        Caps { text: @tr("IN USE"); vertical-alignment: center; color: Theme.bone-2; }
+                    }
+                }
+            }
+            row := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { root.chosen = i; }
+                double-clicked => { root.chosen = i; Lighting.file-load(i); }
+            }
+        }
+        HorizontalLayout {
+            spacing: Theme.s1;
+            PlateButton {
+                accessible-id: "lighting.files.load"; accessible-role: button;
+                compact: true; label: @tr("LOAD"); tone: Theme.live; enabled: root.has; horizontal-stretch: 1;
+                tooltip: Lighting.files-kind == "venue" ? @tr("Load the venue: its rig, its show and its safety limits") : @tr("Load it in place of the one in use");
+                clicked => { Lighting.file-load(root.chosen); }
+            }
+            PlateButton {
+                accessible-id: "lighting.files.save"; accessible-role: button;
+                compact: true; label: @tr("SAVE"); enabled: root.has; horizontal-stretch: 1;
+                tooltip: @tr("Save what runs now under this name");
+                clicked => { Lighting.file-save(root.chosen); }
+            }
+        }
+        HorizontalLayout {
+            spacing: Theme.s1;
+            PlateButton {
+                accessible-id: "lighting.files.duplicate"; accessible-role: button;
+                compact: true; label: @tr("DUPLICATE"); enabled: root.has; horizontal-stretch: 1;
+                tooltip: @tr("Make a copy under a new name");
+                clicked => { Lighting.file-duplicate(root.chosen); }
+            }
+            PlateButton {
+                accessible-id: "lighting.files.delete"; accessible-role: button;
+                compact: true; label: @tr("DELETE"); tone: Theme.fault; enabled: root.has; horizontal-stretch: 1;
+                tooltip: @tr("Delete this file (what runs now stays)");
+                clicked => { Lighting.file-delete(root.chosen); root.chosen = -1; }
+            }
+        }
+        name := Field {
+            accessible-id: "lighting.files.name"; accessible-role: text-input;
+            placeholder: @tr("Name");
+            accepted(t) => { Lighting.file-save-as(t); self.text = ""; }
+        }
+        HorizontalLayout {
+            spacing: Theme.s1;
+            PlateButton {
+                accessible-id: "lighting.files.rename"; accessible-role: button;
+                compact: true; label: @tr("RENAME"); enabled: root.has && name.text != ""; horizontal-stretch: 1;
+                tooltip: @tr("Give the chosen file the name typed above");
+                clicked => { Lighting.file-rename(root.chosen, name.text); name.text = ""; }
+            }
+            PlateButton {
+                accessible-id: "lighting.files.save-as"; accessible-role: button;
+                compact: true; label: @tr("SAVE AS NEW"); glyph: "plus"; enabled: name.text != ""; horizontal-stretch: 1;
+                tooltip: @tr("Save what runs now under the name typed above");
+                clicked => { Lighting.file-save-as(name.text); name.text = ""; }
+            }
+        }
+        if Lighting.files-note != "": Body { text: Lighting.files-note; color: Theme.bone-2; }
+        HLine { }
+        Caps { text: @tr("ONE FILE"); }
+        HorizontalLayout {
+            spacing: Theme.s1;
+            PlateButton {
+                accessible-id: "lighting.files.import"; accessible-role: button;
+                compact: true; label: @tr("IMPORT…"); horizontal-stretch: 1;
+                tooltip: @tr("Open a venue with its rig and show from one file");
+                clicked => { Lighting.file-import(); }
+            }
+            PlateButton {
+                accessible-id: "lighting.files.export"; accessible-role: button;
+                compact: true; label: @tr("EXPORT…"); horizontal-stretch: 1;
+                tooltip: @tr("Write the venue, rig and show in use to one file");
+                clicked => { Lighting.file-export(); }
+            }
+        }
+        Body { text: @tr("The files sit in the lighting folder next to the library."); color: Theme.bone-3; }
+    }
 }
 
 component SetupPanel inherits VerticalLayout {
     spacing: Theme.s2;
     padding: Theme.s3;
+    // The venue in use, and the files.
+    HorizontalLayout {
+        height: 26px; spacing: Theme.s2;
+        Caps { text: @tr("VENUE"); vertical-alignment: center; }
+        Text {
+            accessible-id: "lighting.venue"; accessible-role: text; accessible-value: self.text;
+            text: Lighting.venue == "" ? @tr("None") : Lighting.venue;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+            color: Lighting.venue == "" ? Theme.bone-3 : Theme.bone;
+            vertical-alignment: center; overflow: elide; horizontal-stretch: 1;
+        }
+        PlateButton {
+            accessible-id: "lighting.setup.remote"; accessible-role: tab;
+            compact: true; label: @tr("REMOTE"); selected: Lighting.setup-tab == "remote";
+            tooltip: @tr("A second controller for the lights, OSC in, and the music sent to another computer");
+            clicked => { Lighting.setup-tab = Lighting.setup-tab == "remote" ? "rig" : "remote"; }
+        }
+        PlateButton {
+            accessible-id: "lighting.setup.files"; accessible-role: tab;
+            compact: true; label: @tr("FILES"); selected: Lighting.setup-tab == "files";
+            tooltip: @tr("Venues, rigs and shows: load, save, rename, duplicate, import and export");
+            clicked => { Lighting.setup-tab = Lighting.setup-tab == "files" ? "rig" : "files"; }
+        }
+    }
     HorizontalLayout {
         height: 26px;
         spacing: Theme.s1;
@@ -900,8 +1830,10 @@ component SetupPanel inherits VerticalLayout {
     if Lighting.locked: LockedSetup { vertical-stretch: 0; }
     if !Lighting.locked && Lighting.setup-tab == "rig": RigTab { vertical-stretch: 0; }
     if !Lighting.locked && Lighting.setup-tab == "output": OutputTab { vertical-stretch: 1; }
-    if !Lighting.locked && Lighting.setup-tab == "safety": SafetyTab { vertical-stretch: 0; }
-    if Lighting.locked || Lighting.setup-tab != "output": Rectangle { vertical-stretch: 1; }
+    if !Lighting.locked && Lighting.setup-tab == "safety": SafetyTab { vertical-stretch: 1; }
+    if !Lighting.locked && Lighting.setup-tab == "files": FilesTab { vertical-stretch: 1; }
+    if !Lighting.locked && Lighting.setup-tab == "remote": RemoteTab { vertical-stretch: 1; }
+    if Lighting.locked || Lighting.setup-tab == "rig": Rectangle { vertical-stretch: 1; }
 }
 
 // Patch table: every fixture with its place. Collisions are kept and shown
@@ -1047,8 +1979,9 @@ component ChannelGrid inherits VerticalLayout {
                 y: parent.height - self.height; height: parent.height * v / 255;
                 background: Theme.bone-3.with-alpha(0.45);
             }
+            // The value where the cell is wide enough for three digits.
             Text {
-                text: v; font-family: Theme.family; font-size: Theme.label;
+                text: grid.cw >= 20px ? v : ""; font-family: Theme.family; font-size: Theme.label;
                 color: v > 0 ? Theme.bone : Theme.bone-3;
                 horizontal-alignment: center; vertical-alignment: center;
             }
@@ -1358,7 +2291,7 @@ component OrderChain inherits VerticalLayout {
     accessible-id: "lighting.order"; accessible-role: text; accessible-value: Lighting.layer;
     spacing: Theme.key-gap;
     for row in [[{ id: "blackout", label: @tr("BLACKOUT") }, { id: "momentary", label: @tr("FLASH / STROBE KEY") }, { id: "flash-pad", label: @tr("FLASH PAD") }],
-                [{ id: "latched", label: @tr("LATCHED PAD") }, { id: "hold", label: @tr("HOLD") }, { id: "base", label: @tr("AUTO") }]]: FlexboxLayout {
+                [{ id: "latched", label: @tr("LATCHED PAD") }, { id: "trigger", label: @tr("TRIGGER") }, { id: "hold", label: @tr("HOLD") }, { id: "base", label: @tr("AUTO") }]]: FlexboxLayout {
         // A row that does not fit (German, a narrow panel) wraps.
         spacing: Theme.s1;
         for item[i] in row: HorizontalLayout {
@@ -1430,256 +2363,255 @@ component AutoSection inherits VerticalLayout {
     }
 }
 
+// SHOW: what runs now and how it is played. Everything scrolls but the
+// BLACKOUT key, which stays large at the foot of the column.
 component ShowPanel inherits VerticalLayout {
     property <string> cue-name;
     spacing: Theme.s2;
     padding: Theme.s3;
+    padding-top: Theme.s2;
 
-    HorizontalLayout {
-        spacing: Theme.s2;
-        SectionTitle { text: @tr("SHOW"); horizontal-stretch: 1; }
-        LineToggle {
-            accessible-id: "lighting.enable"; accessible-role: checkbox;
-            label: @tr("DMX OUT"); checked: Lighting.enabled; tone: Theme.live;
-            tooltip: @tr("Send the show to the outputs");
-            toggled(on) => { Lighting.set-enabled(on); }
-        }
-    }
-    HorizontalLayout {
-        spacing: Theme.s1;
-        for m in [{ id: "auto", label: "AUTO" }, { id: "easy", label: "EASY" }, { id: "pro", label: "PRO" }]: PlateButton {
-            accessible-id: "lighting.mode." + m.id; accessible-role: tab;
-            label: m.label; selected: Lighting.mode == m.id; horizontal-stretch: 1;
-            tooltip: m.id == "auto" ? @tr("The show follows phrases, beat and the mix")
-                : m.id == "easy" ? @tr("One look for the whole rig, locked to the beat")
-                : @tr("Programs and colours per group, cue stack");
-            clicked => { Lighting.set-mode(m.id); }
-        }
-    }
-    HorizontalLayout {
-        spacing: Theme.s3;
-        height: 150px;
-        VerticalLayout {
-            spacing: Theme.key-gap;
-            // The fader centred over its caption.
-            HorizontalLayout {
-                alignment: center; vertical-stretch: 1;
-                Fader {
-                    accessible-id: "lighting.master"; accessible-role: slider; accessible-value: Math.round(Lighting.master * 100) + " %";
-                    value: Lighting.master; tone: Theme.attention; vertical-stretch: 1;
-                    tooltip: @tr("Master dimmer");
-                    changed(v) => { Lighting.set-master(v); }
-                }
-            }
-            Caps { text: @tr("MASTER"); horizontal-alignment: center; }
-        }
-        VerticalLayout {
-            spacing: Theme.s2; horizontal-stretch: 1;
-            PlateButton {
-                accessible-id: "lighting.blackout"; accessible-role: button;
-                label: @tr("BLACKOUT"); active: Lighting.blackout; tone: Theme.fault;
-                tooltip: @tr("All lights off");
-                clicked => { Lighting.set-blackout(!Lighting.blackout); }
-            }
-            HoldButton {
-                accessible-id: "lighting.flash"; accessible-role: button;
-                label: @tr("FLASH"); on: Lighting.flash; size: 34px; tone: Theme.bone;
-                tooltip: @tr("Full white while held");
-                pressed => { Lighting.flash-held(true); }
-                released => { Lighting.flash-held(false); }
-            }
-            HoldButton {
-                accessible-id: "lighting.strobe"; accessible-role: button;
-                label: @tr("STROBE"); on: Lighting.strobe; size: 34px;
-                tooltip: @tr("Strobe while held");
-                pressed => { Lighting.strobe-held(true); }
-                released => { Lighting.strobe-held(false); }
-            }
-            HorizontalLayout {
-                spacing: Theme.s2;
-                HoldButton {
-                    accessible-id: "lighting.fog"; accessible-role: button;
-                    label: @tr("FOG"); on: Lighting.fog; size: 30px; tone: Theme.attention; horizontal-stretch: 1;
-                    tooltip: Lighting.fog-armed ? @tr("Fog machines on while held") : @tr("Fog is locked out: arm it under SAFETY");
-                    pressed => { Lighting.fog-held(true); }
-                    released => { Lighting.fog-held(false); }
-                }
-                PlateButton {
-                    accessible-id: "lighting.tap"; accessible-role: button;
-                    label: Lighting.tap-bpm == "" ? @tr("TAP") : "TAP " + Lighting.tap-bpm; horizontal-stretch: 1;
-                    tooltip: @tr("Tap the tempo for the lights when no deck plays");
-                    clicked => { Lighting.tap(); }
-                }
-            }
-        }
-    }
-    HLine { }
-    // Who is in control now (see AutoSection for the order).
-    HorizontalLayout {
-        spacing: Theme.s2; height: 18px;
-        Caps { text: @tr("IN CONTROL"); vertical-alignment: center; }
-        Caps {
-            accessible-id: "lighting.layer"; accessible-role: text; accessible-value: Lighting.layer + " " + Lighting.layer-text;
-            text: Lighting.layer-text; overflow: elide; horizontal-stretch: 1; vertical-alignment: center;
-            color: Lighting.layer == "base" ? Theme.bone-2 : Lighting.layer == "blackout" ? Theme.fault : Theme.attention;
-        }
-    }
-    if Lighting.mode == "auto": Flickable {
-        accessible-id: "lighting.auto"; accessible-role: groupbox;
+    if Lighting.show-locked: UnattendedNote { vertical-stretch: 1; }
+    if !Lighting.show-locked: Flickable {
+        accessible-id: Lighting.mode == "auto" ? "lighting.auto" : "lighting.show.body"; accessible-role: groupbox;
         vertical-stretch: 1;
-        content-height: autos.preferred-height;
-        autos := VerticalLayout {
+        // The hold keys (FLASH, STROBE, FOG) act on the press, at once: no
+        // drag to scroll (the wheel and trackpad scroll).
+        mouse-drag-pan-enabled: false;
+        content-height: body.preferred-height;
+        body := VerticalLayout {
             width: parent.width;
             alignment: start;
-            AutoSection { }
-        }
-    }
-    if Lighting.mode == "easy": VerticalLayout {
-        spacing: Theme.s2;
-        Caps { text: @tr("LOOK"); }
-        ChoiceList {
-            accessible-id: "lighting.easy.program"; accessible-role: list;
-            items: Lighting.programs; current: Lighting.easy-program; columns: 2; cell-w: 140px;
-            chosen(i) => { Lighting.choose-easy-program(i); }
-        }
-        Caps { text: @tr("COLOUR"); }
-        Swatches { current: Lighting.easy-color; chosen(i) => { Lighting.choose-easy-color(i); } }
-    }
-    if Lighting.mode == "pro": VerticalLayout {
-        spacing: Theme.s2;
-        Caps { text: @tr("GROUPS"); }
-        for g[gi] in Lighting.groups: VerticalLayout {
-            spacing: Theme.key-gap;
-            Text { text: g.name; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; }
-            HorizontalLayout {
-                spacing: Theme.key-gap;
-                PlateButton {
-                    accessible-id: "lighting.pro.group" + gi + ".follow"; accessible-role: button;
-                    compact: true; label: @tr("MUSIC"); selected: g.program < 0;
-                    tooltip: @tr("Follow the music");
-                    clicked => { Lighting.group-program(gi, -1); }
-                }
-                for p[pi] in Lighting.programs: PlateButton {
-                    accessible-id: "lighting.pro.group" + gi + ".program" + pi; accessible-role: button;
-                    compact: true; label: p; selected: g.program == pi;
-                    clicked => { Lighting.group-program(gi, pi); }
-                }
-            }
-            Swatches { current: g.color; chosen(i) => { Lighting.group-color(gi, i); } }
-            HorizontalLayout {
-                spacing: Theme.s2;
-                PlateButton {
-                    accessible-id: "lighting.pro.group" + gi + ".effect"; accessible-role: button;
-                    compact: true; horizontal-stretch: 1;
-                    label: "FX: " + Lighting.effects[g.effect];
-                    tooltip: @tr("Attribute effect: click for the next one");
-                    clicked => { Lighting.group-effect(gi, Math.mod(g.effect + 1, Lighting.effects.length)); }
-                }
-                // Pan / tilt programmer: drag in the square; double-click frees it.
-                if g.has-movers: Rectangle {
-                    accessible-id: "lighting.pro.group" + gi + ".xy"; accessible-role: slider;
-                    width: 54px; height: 54px;
-                    background: Theme.plate; border-width: 1px; border-color: Theme.rule;
-                    Rectangle { x: parent.width / 2; width: 1px; background: Theme.rule; }
-                    Rectangle { y: parent.height / 2; height: 1px; background: Theme.rule; }
-                    if g.pan >= 0: Rectangle {
-                        x: g.pan * (parent.width - 8px); y: (1 - g.tilt) * (parent.height - 8px);
-                        width: 8px; height: 8px; border-radius: 4px; background: Theme.attention;
-                    }
-                    xy := TouchArea {
-                        mouse-cursor: crosshair;
-                        pointer-event(ev) => {
-                            if (ev.kind == PointerEventKind.down) {
-                                Lighting.group-position(gi, clamp(self.mouse-x / self.width, 0, 1), clamp(1 - self.mouse-y / self.height, 0, 1));
-                            }
-                        }
-                        moved => {
-                            if (self.pressed) {
-                                Lighting.group-position(gi, clamp(self.mouse-x / self.width, 0, 1), clamp(1 - self.mouse-y / self.height, 0, 1));
-                            }
-                        }
-                        double-clicked => { Lighting.group-position-clear(gi); }
-                    }
-                }
-            }
-        }
-        HLine { }
-        Caps { text: @tr("TRACK CUES"); }
-        Text { text: Lighting.timeline-title == "" ? @tr("Play a track to store lighting cues with it.") : Lighting.timeline-title; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; overflow: elide; }
-        for t[ti] in Lighting.timeline: Rectangle {
-            accessible-id: "lighting.timeline" + ti; accessible-role: list-item; accessible-value: t;
-            height: 22px;
-            HorizontalLayout {
-                padding-left: Theme.s2; spacing: Theme.s2;
-                Text { text: t; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
-                PlateButton { accessible-id: "lighting.timeline" + ti + ".delete"; accessible-role: button; compact: true; glyph: "close"; width: 30px; tooltip: @tr("Remove this track cue"); clicked => { Lighting.timeline-delete(ti); } }
-            }
-        }
-        PlateButton {
-            accessible-id: "lighting.timeline.add"; accessible-role: button;
-            compact: true; label: @tr("CUE AT PLAYHEAD"); enabled: Lighting.timeline-title != "" && Lighting.cues.length > 0;
-            tooltip: @tr("The current cue starts at this bar whenever the track plays");
-            clicked => { Lighting.timeline-add(); }
-        }
-        HLine { }
-        Caps { text: @tr("CUE STACK"); }
-        for c[ci] in Lighting.cues: Rectangle {
-            accessible-id: "lighting.cue" + ci; accessible-role: list-item; accessible-value: c;
-            height: 24px;
-            background: transparent;
-            Rectangle { x: 0; width: 2px; background: ci == Lighting.active-cue ? Theme.attention : transparent; }
-            HorizontalLayout {
-                padding-left: Theme.s2; spacing: Theme.s2;
-                Text { text: (ci + 1) + "  " + c; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; }
-                PlateButton { accessible-id: "lighting.cue" + ci + ".delete"; accessible-role: button; compact: true; glyph: "close"; tooltip: @tr("Delete this cue"); clicked => { Lighting.cue-delete(ci); } }
-            }
-        }
-        HorizontalLayout {
-            spacing: Theme.s1;
-            PlateButton { accessible-id: "lighting.cue.back"; accessible-role: button; label: @tr("BACK"); horizontal-stretch: 1; tooltip: @tr("Previous cue"); clicked => { Lighting.cue-back(); } }
-            PlateButton { accessible-id: "lighting.cue.go"; accessible-role: button; label: @tr("GO"); tone: Theme.live; horizontal-stretch: 1; tooltip: @tr("Next cue"); clicked => { Lighting.cue-go(); } }
-        }
-        HorizontalLayout {
             spacing: Theme.s2;
-            cue := Field { accessible-id: "lighting.cue.name"; accessible-role: text-input; placeholder: @tr("Cue name"); horizontal-stretch: 1; }
-            PlateButton {
-                accessible-id: "lighting.cue.store"; accessible-role: button;
-                compact: true; label: @tr("STORE"); tooltip: @tr("Store the group settings as a new cue");
-                clicked => { Lighting.cue-store(cue.text); cue.text = ""; }
+            HorizontalLayout {
+                spacing: Theme.s1;
+                for m in [{ id: "auto", label: "AUTO" }, { id: "easy", label: "EASY" }, { id: "pro", label: "PRO" }]: PlateButton {
+                    accessible-id: "lighting.mode." + m.id; accessible-role: tab;
+                    label: m.label; selected: Lighting.mode == m.id; horizontal-stretch: 1;
+                    tooltip: m.id == "auto" ? @tr("The show follows phrases, beat and the mix")
+                        : m.id == "easy" ? @tr("One look for the whole rig, locked to the beat")
+                        : @tr("Programs and colours per group, cue stack");
+                    clicked => { Lighting.set-mode(m.id); }
+                }
+                Rectangle { width: Theme.s2; }
+                VerticalLayout {
+                    alignment: center;
+                    LineToggle {
+                        accessible-id: "lighting.enable"; accessible-role: checkbox;
+                        label: @tr("DMX OUT"); checked: Lighting.enabled; tone: Theme.live;
+                        tooltip: @tr("Send the show to the outputs");
+                        toggled(on) => { Lighting.set-enabled(on); }
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: Theme.s3;
+                height: 128px;
+                VerticalLayout {
+                    spacing: Theme.key-gap;
+                    // The fader centred over its caption.
+                    HorizontalLayout {
+                        alignment: center; vertical-stretch: 1;
+                        Fader {
+                            accessible-id: "lighting.master"; accessible-role: slider; accessible-value: Math.round(Lighting.master * 100) + " %";
+                            value: Lighting.master; tone: Theme.attention; vertical-stretch: 1;
+                            tooltip: @tr("Master dimmer");
+                            changed(v) => { Lighting.set-master(v); }
+                        }
+                    }
+                    Caps { text: @tr("MASTER"); horizontal-alignment: center; }
+                }
+                VerticalLayout {
+                    spacing: Theme.s2; horizontal-stretch: 1;
+                    HoldButton {
+                        accessible-id: "lighting.flash"; accessible-role: button;
+                        label: @tr("FLASH"); on: Lighting.flash; size: 34px; tone: Theme.bone;
+                        tooltip: @tr("Full white while held");
+                        pressed => { Lighting.flash-held(true); }
+                        released => { Lighting.flash-held(false); }
+                    }
+                    HoldButton {
+                        accessible-id: "lighting.strobe"; accessible-role: button;
+                        label: @tr("STROBE"); on: Lighting.strobe; size: 34px;
+                        tooltip: @tr("Strobe while held");
+                        pressed => { Lighting.strobe-held(true); }
+                        released => { Lighting.strobe-held(false); }
+                    }
+                    HorizontalLayout {
+                        spacing: Theme.s2;
+                        HoldButton {
+                            accessible-id: "lighting.fog"; accessible-role: button;
+                            label: @tr("FOG"); on: Lighting.fog; size: 34px; tone: Theme.attention; horizontal-stretch: 1;
+                            tooltip: Lighting.fog-armed ? @tr("Fog machines on while held") : @tr("Fog is locked out: arm it under SAFETY");
+                            pressed => { Lighting.fog-held(true); }
+                            released => { Lighting.fog-held(false); }
+                        }
+                        PlateButton {
+                            accessible-id: "lighting.tap"; accessible-role: button;
+                            label: Lighting.tap-bpm == "" ? @tr("TAP") : "TAP " + Lighting.tap-bpm; horizontal-stretch: 1;
+                            tooltip: @tr("Tap the tempo for the lights when no deck plays");
+                            clicked => { Lighting.tap(); }
+                        }
+                    }
+                }
+            }
+            HLine { }
+            // Who is in control now (see AutoSection for the order).
+            HorizontalLayout {
+                spacing: Theme.s2; height: 18px;
+                Caps { text: @tr("IN CONTROL"); vertical-alignment: center; }
+                Caps {
+                    accessible-id: "lighting.layer"; accessible-role: text; accessible-value: Lighting.layer + " " + Lighting.layer-text;
+                    text: Lighting.layer-text; overflow: elide; horizontal-stretch: 1; vertical-alignment: center;
+                    color: Lighting.layer == "base" ? Theme.bone-2 : Lighting.layer == "blackout" ? Theme.fault : Theme.attention;
+                }
+            }
+            if Lighting.mode == "auto": AutoSection { }
+            if Lighting.mode == "easy": VerticalLayout {
+                spacing: Theme.s2;
+                Caps { text: @tr("LOOK"); }
+                ChoiceList {
+                    accessible-id: "lighting.easy.program"; accessible-role: list;
+                    items: Lighting.programs; current: Lighting.easy-program; columns: 2; cell-w: 140px;
+                    chosen(i) => { Lighting.choose-easy-program(i); }
+                }
+                Caps { text: @tr("COLOUR"); }
+                Swatches { current: Lighting.easy-color; chosen(i) => { Lighting.choose-easy-color(i); } }
+            }
+            if Lighting.mode == "pro": VerticalLayout {
+                spacing: Theme.s2;
+                Caps { text: @tr("GROUPS"); }
+                for g[gi] in Lighting.groups: VerticalLayout {
+                    spacing: Theme.key-gap;
+                    Text { text: g.name; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; }
+                    // The programs wrap to the column's width.
+                    FlexboxLayout {
+                        spacing: Theme.key-gap;
+                        PlateButton {
+                            accessible-id: "lighting.pro.group" + gi + ".follow"; accessible-role: button;
+                            compact: true; label: @tr("MUSIC"); selected: g.program < 0;
+                            tooltip: @tr("Follow the music");
+                            clicked => { Lighting.group-program(gi, -1); }
+                        }
+                        for p[pi] in Lighting.programs: PlateButton {
+                            accessible-id: "lighting.pro.group" + gi + ".program" + pi; accessible-role: button;
+                            compact: true; label: p; selected: g.program == pi;
+                            clicked => { Lighting.group-program(gi, pi); }
+                        }
+                    }
+                    Swatches { current: g.color; chosen(i) => { Lighting.group-color(gi, i); } }
+                    HorizontalLayout {
+                        spacing: Theme.s2;
+                        PlateButton {
+                            accessible-id: "lighting.pro.group" + gi + ".effect"; accessible-role: button;
+                            compact: true; horizontal-stretch: 1;
+                            label: "FX: " + Lighting.effects[g.effect];
+                            tooltip: @tr("Attribute effect: click for the next one");
+                            clicked => { Lighting.group-effect(gi, Math.mod(g.effect + 1, Lighting.effects.length)); }
+                        }
+                        // Pan / tilt programmer: drag in the square; double-click frees it.
+                        if g.has-movers: Rectangle {
+                            accessible-id: "lighting.pro.group" + gi + ".xy"; accessible-role: slider;
+                            width: 54px; height: 54px;
+                            background: Theme.plate; border-width: 1px; border-color: Theme.rule;
+                            Rectangle { x: parent.width / 2; width: 1px; background: Theme.rule; }
+                            Rectangle { y: parent.height / 2; height: 1px; background: Theme.rule; }
+                            if g.pan >= 0: Rectangle {
+                                x: g.pan * (parent.width - 8px); y: (1 - g.tilt) * (parent.height - 8px);
+                                width: 8px; height: 8px; border-radius: 4px; background: Theme.attention;
+                            }
+                            xy := TouchArea {
+                                mouse-cursor: crosshair;
+                                pointer-event(ev) => {
+                                    if (ev.kind == PointerEventKind.down) {
+                                        Lighting.group-position(gi, clamp(self.mouse-x / self.width, 0, 1), clamp(1 - self.mouse-y / self.height, 0, 1));
+                                    }
+                                }
+                                moved => {
+                                    if (self.pressed) {
+                                        Lighting.group-position(gi, clamp(self.mouse-x / self.width, 0, 1), clamp(1 - self.mouse-y / self.height, 0, 1));
+                                    }
+                                }
+                                double-clicked => { Lighting.group-position-clear(gi); }
+                            }
+                        }
+                    }
+                }
+                HLine { }
+                Caps { text: @tr("CUE STACK"); }
+                for c[ci] in Lighting.cues: Rectangle {
+                    accessible-id: "lighting.cue" + ci; accessible-role: list-item; accessible-value: c;
+                    height: 24px;
+                    background: transparent;
+                    Rectangle { x: 0; width: 2px; background: ci == Lighting.active-cue ? Theme.attention : transparent; }
+                    HorizontalLayout {
+                        padding-left: Theme.s2; spacing: Theme.s2;
+                        Text { text: (ci + 1) + "  " + c; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; }
+                        PlateButton { accessible-id: "lighting.cue" + ci + ".delete"; accessible-role: button; compact: true; glyph: "close"; tooltip: @tr("Delete this cue"); clicked => { Lighting.cue-delete(ci); } }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: Theme.s1;
+                    PlateButton { accessible-id: "lighting.cue.back"; accessible-role: button; label: @tr("BACK"); horizontal-stretch: 1; tooltip: @tr("Previous cue"); clicked => { Lighting.cue-back(); } }
+                    PlateButton { accessible-id: "lighting.cue.go"; accessible-role: button; label: @tr("GO"); tone: Theme.live; horizontal-stretch: 1; tooltip: @tr("Next cue"); clicked => { Lighting.cue-go(); } }
+                }
+                HorizontalLayout {
+                    spacing: Theme.s2;
+                    cue := Field { accessible-id: "lighting.cue.name"; accessible-role: text-input; placeholder: @tr("Cue name"); horizontal-stretch: 1; }
+                    PlateButton {
+                        accessible-id: "lighting.cue.store"; accessible-role: button;
+                        compact: true; label: @tr("STORE"); tooltip: @tr("Store the group settings as a new cue");
+                        clicked => { Lighting.cue-store(cue.text); cue.text = ""; }
+                    }
+                }
             }
         }
     }
-    if Lighting.mode != "auto": Rectangle { vertical-stretch: 1; }
+    // [21] The large BLACKOUT, always in view.
+    PlateButton {
+        accessible-id: "lighting.blackout"; accessible-role: button;
+        accessible-checkable: true; accessible-checked: Lighting.blackout;
+        height: 56px; label: @tr("BLACKOUT"); active: Lighting.blackout; tone: Theme.fault;
+        tooltip: @tr("All lights off, over everything else; press again to bring them back");
+        clicked => { Lighting.set-blackout(!Lighting.blackout); }
+    }
 }
 
 export component LightingView inherits Rectangle {
     in property <bool> detachable: true;
     accessible-id: "lighting.view"; accessible-role: groupbox;
     background: Theme.ground-band; border-radius: Theme.r-panel;
-    // Too narrow for setup, centre and show side by side (a small window or
-    // a large interface scale): one side column that shows SETUP or SHOW.
-    // Follows the width through a plain property, so it does not feed back
-    // into the layout.
-    property <bool> one-side;
-    init => { self.one-side = self.width < 1240px; }
-    changed width => { self.one-side = self.width < 1240px; }
-    property <string> side: "show";
+    // [21] Two modes, chosen at the top of the side column: SETUP (rig,
+    // patch, outputs, safety, files; the stage as a floor plan; the output
+    // test one key away) and SHOW (the stage, pads and cues; AUTO, the
+    // masters and keys; a large BLACKOUT). A narrow window gives the side
+    // column a little less room. Follows the width through a plain
+    // property, so it does not feed back into the layout.
+    property <bool> narrow;
+    init => { self.narrow = self.width < 1240px; }
+    changed width => { self.narrow = self.width < 1240px; }
+    property <bool> setup: Lighting.space == "setup";
     HorizontalLayout {
-        if !root.one-side: SetupPanel { width: 340px; }
-        if root.one-side: VerticalLayout {
-            width: 320px;
+        VerticalLayout {
+            width: root.narrow ? 320px : 340px;
             HorizontalLayout {
                 padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.s3;
                 spacing: Theme.s1;
                 for t in [{ id: "setup", label: @tr("SETUP") }, { id: "show", label: @tr("SHOW") }]: PlateButton {
-                    accessible-id: "lighting.side." + t.id; accessible-role: tab;
-                    compact: true; horizontal-stretch: 1;
-                    label: t.label; selected: root.side == t.id;
-                    clicked => { root.side = t.id; }
+                    accessible-id: "lighting.space." + t.id; accessible-role: tab;
+                    horizontal-stretch: 1;
+                    label: t.label; selected: Lighting.space == t.id;
+                    tooltip: t.id == "setup" ? @tr("Rig, patch, outputs, safety and files; the stage as a floor plan")
+                        : @tr("The stage, pads and light cues; AUTO, masters and the keys to play the show");
+                    clicked => {
+                        Lighting.space = t.id;
+                        if (t.id == "setup" && (Lighting.centre == "pads" || Lighting.centre == "cues" || Lighting.centre == "triggers")) { Lighting.centre = "stage"; }
+                        if (t.id == "show" && (Lighting.centre == "patch" || Lighting.centre == "channels")) { Lighting.centre = "stage"; }
+                    }
                 }
             }
-            if root.side == "setup": SetupPanel { vertical-stretch: 1; }
-            if root.side == "show": ShowPanel { vertical-stretch: 1; }
+            if root.setup: SetupPanel { vertical-stretch: 1; }
+            if !root.setup: ShowPanel { vertical-stretch: 1; }
         }
         VLine { }
         VerticalLayout {
@@ -1690,38 +2622,60 @@ export component LightingView inherits Rectangle {
                 spacing: Theme.s2;
                 HorizontalLayout {
                     spacing: Theme.s1;
-                    for c in [{ id: "stage", label: @tr("STAGE") }, { id: "pads", label: @tr("PADS") }, { id: "patch", label: @tr("PATCH") }, { id: "channels", label: @tr("CHANNELS") }]: PlateButton {
+                    for c in (root.setup
+                            ? [{ id: "stage", label: @tr("STAGE") }, { id: "patch", label: @tr("PATCH") }, { id: "channels", label: @tr("CHANNELS") }]
+                            : [{ id: "stage", label: @tr("STAGE") }, { id: "pads", label: @tr("PADS") }, { id: "cues", label: @tr("CUES") }, { id: "triggers", label: @tr("TRIGGERS") }]): PlateButton {
                         accessible-id: "lighting.centre." + c.id; accessible-role: tab;
-                        compact: true; label: c.label; selected: Lighting.centre == c.id;
+                        compact: true; label: c.label; selected: Lighting.centre == c.id; horizontal-stretch: 0;
+                        tooltip: c.id == "stage" && root.setup ? @tr("The floor plan: place, turn and tune the fixtures") : "";
                         clicked => { Lighting.centre = c.id; }
                     }
                 }
                 Rectangle { horizontal-stretch: 1; }
+                // The output test, one key away while setting up.
+                if root.setup: PlateButton {
+                    accessible-id: "lighting.test"; accessible-role: button;
+                    accessible-checkable: true; accessible-checked: Lighting.test != "";
+                    compact: true; label: @tr("TEST"); active: Lighting.test != ""; tone: Theme.attention; horizontal-stretch: 0;
+                    tooltip: Lighting.test == "" ? @tr("Output test: light each fixture in turn (other patterns under OUTPUT)") : @tr("Stop the output test and go back to the show");
+                    clicked => { Lighting.set-test(Lighting.test == "" ? "each" : ""); }
+                }
                 if root.detachable: PlateButton {
                     accessible-id: "lighting.detach"; accessible-role: button;
-                    compact: true; label: @tr("WINDOW"); tooltip: @tr("Open the lighting in its own window (second screen)");
+                    compact: true; label: @tr("WINDOW"); horizontal-stretch: 0; tooltip: @tr("Open the lighting in its own window (second screen)");
                     clicked => { Lighting.detach(); }
                 }
-                Caps {
+                if !root.setup: Caps {
                     accessible-id: "lighting.status"; accessible-role: text; accessible-value: self.text;
                     overflow: elide;
                     text: Lighting.layer-text; color: Lighting.layer == "blackout" ? Theme.fault : Theme.attention; vertical-alignment: center;
                 }
             }
-            if Lighting.centre == "stage": Stage { vertical-stretch: 1; accessible-id: "lighting.stage"; accessible-role: image; }
-            if Lighting.centre == "pads": PadsCentre { vertical-stretch: 1; }
-            // The patch table keeps its columns: a narrow centre scrolls it
-            // sideways (the wheel with ⇧, or the trackpad).
-            if Lighting.centre == "patch": Flickable {
+            if !root.setup && Lighting.centre == "stage": Stage { vertical-stretch: 1; accessible-id: "lighting.stage"; accessible-role: image; }
+            if root.setup && Lighting.centre == "stage": StageEditor { vertical-stretch: 1; }
+            if !root.setup && Lighting.centre == "pads": PadsCentre { vertical-stretch: 1; }
+            // The cue list and the patch table keep their columns: a narrow
+            // centre scrolls them sideways (the wheel with ⇧, or the trackpad).
+            if !root.setup && Lighting.centre == "cues": Flickable {
+                vertical-stretch: 1;
+                mouse-drag-pan-enabled: false;
+                content-width: max(self.width, cues.min-width);
+                cues := CueList { width: parent.content-width; height: parent.height; }
+            }
+            if !root.setup && Lighting.centre == "triggers": Flickable {
+                vertical-stretch: 1;
+                mouse-drag-pan-enabled: false;
+                content-width: max(self.width, triggers.min-width);
+                triggers := TriggersCentre { width: parent.content-width; height: parent.height; }
+            }
+            if root.setup && Lighting.centre == "patch": Flickable {
                 vertical-stretch: 1;
                 mouse-drag-pan-enabled: false;
                 content-width: max(self.width, patch.min-width);
                 patch := PatchTable { width: parent.content-width; height: parent.height; }
             }
-            if Lighting.centre == "channels": ChannelGrid { vertical-stretch: 1; }
+            if root.setup && Lighting.centre == "channels": ChannelGrid { vertical-stretch: 1; }
         }
-        if !root.one-side: VLine { }
-        if !root.one-side: ShowPanel { width: 340px; }
     }
 }
 
@@ -1752,7 +2706,29 @@ export component LightingPanel inherits Rectangle {
     HorizontalLayout {
         padding: Theme.s2; spacing: Theme.s3;
         if root.roomy: Stage { compact: true; width: 220px; accessible-id: "lighting.strip.stage"; accessible-role: image; }
-        VerticalLayout {
+        // [37] Unattended: the show is locked; BLACKOUT stays.
+        if Lighting.show-locked: VerticalLayout {
+            horizontal-stretch: 1; alignment: center; spacing: Theme.s2;
+            HorizontalLayout {
+                height: 18px; spacing: Theme.s2;
+                VLine { tone: Theme.live; }
+                Caps { text: @tr("UNATTENDED"); color: Theme.attention; vertical-alignment: center; }
+                Caps {
+                    accessible-id: "lighting.strip.unattended"; accessible-role: text; accessible-value: self.text;
+                    text: Lighting.unattended-text; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; color: Theme.bone-2;
+                }
+            }
+            Body { text: @tr("The show runs by itself. The setup PIN under LIGHTING takes over."); color: Theme.bone-3; }
+        }
+        if Lighting.show-locked: VerticalLayout {
+            width: 160px; alignment: center;
+            PlateButton {
+                accessible-id: "lighting.strip.blackout"; accessible-role: button;
+                tall: true; label: @tr("BLACKOUT"); active: Lighting.blackout; tone: Theme.fault;
+                clicked => { Lighting.set-blackout(!Lighting.blackout); }
+            }
+        }
+        if !Lighting.show-locked: VerticalLayout {
             horizontal-stretch: 1; min-width: 4 * 80px;
             spacing: Theme.s1;
             HorizontalLayout {
@@ -1763,7 +2739,7 @@ export component LightingPanel inherits Rectangle {
             }
             PadGrid { prefix: "lighting.strip.pad"; vertical-stretch: 1; min-height: 2 * 44px + 4px; }
         }
-        if !root.narrow: VerticalLayout {
+        if !root.narrow && !Lighting.show-locked: VerticalLayout {
             spacing: Theme.key-gap;
             HorizontalLayout {
                 vertical-stretch: 1; spacing: Theme.s1;
@@ -1783,7 +2759,7 @@ export component LightingPanel inherits Rectangle {
                 GroupMasters { prefix: "lighting.strip.group"; fader-w: 44px; }
             }
         }
-        VerticalLayout {
+        if !Lighting.show-locked: VerticalLayout {
             width: 300px; spacing: Theme.s1;
             HorizontalLayout {
                 spacing: Theme.key-gap;

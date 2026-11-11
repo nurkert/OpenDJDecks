@@ -12,13 +12,21 @@ fn lighting_view_patches_and_controls_the_show() {
     ui.click("topbar.mode.lighting");
     ui.pump(200);
     assert_eq!(ui.app.ui.get_mode(), "lighting");
-    assert!(ui.has("lighting.stage"));
+    // [21] An empty rig opens on SETUP, with the floor plan.
+    assert!(ui.has("lighting.plan"));
+    assert!(ui.has("lighting.test"), "the output test one key away");
+    assert!(!ui.has("lighting.blackout"), "no show keys in SETUP");
 
     ui.click("lighting.rig.name");
     ui.type_text("Front");
     ui.click("lighting.rig.add");
     ui.pump(100);
+    assert!(ui.has("lighting.plan.fixture0"), "placed on the floor plan");
+    ui.click("lighting.space.show");
+    ui.pump(100);
     assert!(ui.has("lighting.stage.fixture0"), "drawn on the stage");
+    assert!(!ui.has("lighting.rig.add"), "no setup in SHOW");
+    ui.click("lighting.space.setup");
     ui.click("lighting.centre.patch");
     assert!(
         ui.wait_until(2.0, |u| u.has("lighting.patch.row0")),
@@ -30,8 +38,11 @@ fn lighting_view_patches_and_controls_the_show() {
         assert_eq!(rt.config.patch.fixtures[0].name, "Front");
     }
 
+    ui.click("lighting.space.show");
     ui.click("lighting.mode.easy");
     ui.click("lighting.blackout");
+    ui.click("lighting.space.setup");
+    ui.click("lighting.centre.patch");
     ui.click("lighting.setup.output");
     ui.pump(100);
     ui.click("lighting.output.sacn");
@@ -242,6 +253,7 @@ fn safety_tab_and_setup_pin() {
     assert!(!ui.has("lighting.safety.strobe") && !ui.has("lighting.rig.add"));
     // Locked: setup edits are ignored, the show stays free.
     ui.app.ui.global::<crate::Lighting>().invoke_step_strobe(5);
+    ui.click("lighting.space.show");
     ui.click("lighting.blackout");
     ui.pump(100);
     {
@@ -249,6 +261,7 @@ fn safety_tab_and_setup_pin() {
         assert_eq!(rt.config.safety.strobe_hz, 2.0);
         assert!(rt.config.settings.blackout);
     }
+    ui.click("lighting.space.setup");
     type_into(&ui, "lighting.pin.entry", "1111");
     assert!(ui.wait_until(
         2.0,
@@ -407,8 +420,11 @@ fn lighting_pro_effect_xy_and_fog() {
         "Movers",
     )
     .unwrap();
+    ui.click("lighting.space.show");
     ui.click("lighting.mode.pro");
     ui.pump(200);
+    let fx = ui.scroll_into_view("lighting.show.body", |u| u.find("lighting.pro.group0.xy"));
+    assert!(fx.is_some(), "the group's programmer in view");
     ui.click("lighting.pro.group0.effect");
     ui.pump(100);
     assert_eq!(
@@ -431,6 +447,9 @@ fn lighting_pro_effect_xy_and_fog() {
             g.tilt
         );
     }
+    // Back to the top of the column, where the keys are.
+    ui.scroll("lighting.show.body", 2000.0);
+    ui.pump(200);
     let fog = Rect::of(&ui.get("lighting.fog")).centre();
     ui.press_at(fog, slint::platform::PointerEventButton::Left);
     ui.pump(50);
@@ -514,6 +533,7 @@ fn lighting_detaches_into_its_own_window() {
     let ui = Ui::open((1440, 900));
     ui.click("topbar.mode.lighting");
     ui.pump(100);
+    ui.click("lighting.space.show");
     ui.click("lighting.detach");
     ui.pump(100);
     let w = ui
@@ -597,12 +617,14 @@ fn lighting_track_cue_timeline() {
         ui.wait_until(30.0, |u| slint::ComponentHandle::global::<crate::Lighting>(
             &u.app.ui
         )
-        .get_timeline_title()
+        .get_cue_title()
             == title.as_str()),
         "focused track"
     );
+    ui.click("lighting.space.show");
+    ui.click("lighting.centre.cues");
     ui.pump(200);
-    ui.click("lighting.timeline.add");
+    ui.click("lighting.cues.add");
     ui.pump(100);
     let cues = ui
         .app
@@ -616,8 +638,8 @@ fn lighting_track_cue_timeline() {
         .unwrap_or_default();
     assert_eq!(cues.len(), 1);
     assert_eq!(cues[0].beat % 4, 0, "on a bar");
-    assert!(ui.has("lighting.timeline0"));
-    ui.click("lighting.timeline0.delete");
+    assert!(ui.has("lighting.cues.row0"));
+    ui.click("lighting.cues.row0.delete");
     ui.pump(100);
     assert!(
         ui.app

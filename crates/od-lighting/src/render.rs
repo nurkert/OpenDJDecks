@@ -70,11 +70,14 @@ fn byte(v: f32) -> u8 {
 /// Writes `look` for `fixture` into its universe.
 pub fn render_fixture(fixture: &Patched, look: &Look, universe: &mut Universe) {
     let def = &fixture.def;
+    let tune = &fixture.tune;
     let has_dimmer = def.has(ChannelKind::Dimmer);
     let has_white = def.has(ChannelKind::White);
-    // Without a dimmer channel the intensity scales the colour.
-    let scale = if has_dimmer { 1.0 } else { look.intensity };
-    let mut rgb = look.color.map(|c| c * scale);
+    // The fixture's dimmer curve, then: without a dimmer channel the
+    // intensity scales the colour.
+    let intensity = tune.curve.apply(look.intensity);
+    let scale = if has_dimmer { 1.0 } else { intensity };
+    let mut rgb = tune.color(look.color).map(|c| c * scale);
     let mut white = 0.0;
     if has_white {
         white = rgb.iter().copied().fold(f32::MAX, f32::min).max(0.0);
@@ -85,18 +88,15 @@ pub fn render_fixture(fixture: &Patched, look: &Look, universe: &mut Universe) {
     } else {
         look.pan
     };
-    let pan16 = (pan.clamp(0.0, 1.0) * 65535.0).round() as u16;
-    let tilt16 = (look.tilt.clamp(0.0, 1.0) * 65535.0).round() as u16;
+    let pan16 = (tune.pan(pan) * 65535.0).round() as u16;
+    let tilt16 = (tune.tilt(look.tilt) * 65535.0).round() as u16;
     let pixels = def.pixels() as usize;
     let pixel = |n: u8| -> [f32; 3] {
         if look.pixels.is_empty() {
-            look.color.map(|c| c * scale)
+            tune.color(look.color).map(|c| c * scale)
         } else {
             let i = (n as usize * look.pixels.len()) / pixels.max(1);
-            look.pixels
-                .get(i)
-                .copied()
-                .unwrap_or([0.0; 3])
+            tune.color(look.pixels.get(i).copied().unwrap_or([0.0; 3]))
                 .map(|c| c * scale)
         }
     };
@@ -106,7 +106,7 @@ pub fn render_fixture(fixture: &Patched, look: &Look, universe: &mut Universe) {
             break;
         }
         universe[slot] = match *kind {
-            ChannelKind::Dimmer => byte(look.intensity),
+            ChannelKind::Dimmer => byte(intensity),
             ChannelKind::Red => byte(rgb[0]),
             ChannelKind::Green => byte(rgb[1]),
             ChannelKind::Blue => byte(rgb[2]),
@@ -156,14 +156,7 @@ mod tests {
     use crate::fixture::FixtureDef;
 
     fn patched(kind: &str, address: u16) -> Patched {
-        Patched {
-            name: kind.into(),
-            def: FixtureDef::builtin(kind).unwrap(),
-            universe: 0,
-            address,
-            group: "G".into(),
-            invert_pan: false,
-        }
+        Patched::new(kind, FixtureDef::builtin(kind).unwrap(), 0, address, "G")
     }
 
     #[test]
@@ -221,6 +214,33 @@ mod tests {
         render_fixture(&patched("light-bar-8", 1), &look, &mut u);
         assert_eq!(&u[2..5], &[255, 0, 0]); // cell 0
         assert_eq!(&u[23..26], &[0, 0, 255]); // cell 7
+    }
+
+    #[test]
+    fn tune_maps_pan_tilt_colour_and_dimmer() {
+        use crate::stage::{DimmerCurve, Tune};
+        let mut u = [0u8; 512];
+        let look = Look {
+            intensity: 0.5,
+            color: [1.0, 1.0, 1.0],
+            pan: 1.0,
+            tilt: 1.0,
+            ..Look::default()
+        };
+        let mut mover = patched("moving-head", 1);
+        mover.tune = Tune {
+            pan: [0.0, 0.5],
+            invert_tilt: true,
+            color: [0.0, -0.5, -0.5],
+            curve: DimmerCurve::Square,
+            ..Tune::default()
+        };
+        render_fixture(&mover, &look, &mut u);
+        assert_eq!(u16::from_be_bytes([u[0], u[1]]), 32768, "pan range");
+        assert_eq!(u16::from_be_bytes([u[2], u[3]]), 0, "tilt inverted");
+        assert_eq!(u[5], 64, "dimmer curve: 0.5² of full");
+        // Colour calibration: green and blue halved; white takes the common part.
+        assert_eq!(&u[7..11], &[128, 0, 0, 128]);
     }
 
     #[test]

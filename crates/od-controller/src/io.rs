@@ -109,6 +109,8 @@ pub struct ControllerManager {
     /// switched at run time, the next scan follows at once.
     unmapped: Arc<AtomicBool>,
     rescan_now: Arc<AtomicBool>,
+    /// Ports given a mapping by hand: (port name, mapping id).
+    assigned: Arc<Mutex<Vec<(String, String)>>>,
     thread: Option<JoinHandle<()>>,
 }
 
@@ -122,11 +124,12 @@ impl ControllerManager {
         let stop = Arc::new(AtomicBool::new(false));
         let unmapped = Arc::new(AtomicBool::new(config.monitor_unmapped_ports));
         let rescan_now = Arc::new(AtomicBool::new(false));
+        let assigned = Arc::new(Mutex::new(Vec::new()));
         let thread = {
             let monitor = monitor.clone();
             let learn = learn.clone();
             let stop = stop.clone();
-            let flags = (unmapped.clone(), rescan_now.clone());
+            let flags = (unmapped.clone(), rescan_now.clone(), assigned.clone());
             std::thread::Builder::new()
                 .name("od-controller".into())
                 .spawn(move || {
@@ -143,8 +146,30 @@ impl ControllerManager {
             stop,
             unmapped,
             rescan_now,
+            assigned,
             thread: Some(thread),
         }
+    }
+
+    /// Gives the MIDI input `port` the mapping `mapping` (by id), or back
+    /// to the mapping that matches it by name (`None`). A port already
+    /// open is opened again with its new mapping. Used to give one
+    /// controller to the lights while another drives the decks.
+    pub fn assign(&self, port: &str, mapping: Option<&str>) {
+        let mut a = self.assigned.lock().unwrap();
+        let before = a.clone();
+        a.retain(|(p, _)| p != port);
+        if let Some(id) = mapping.filter(|_| !port.is_empty()) {
+            a.push((port.to_string(), id.to_string()));
+        }
+        if *a != before {
+            self.rescan_now.store(true, Ordering::Relaxed);
+        }
+    }
+
+    /// The ports given a mapping by hand.
+    pub fn assigned(&self) -> Vec<(String, String)> {
+        self.assigned.lock().unwrap().clone()
     }
 
     /// Opens (or closes again) the MIDI inputs that no mapping knows, so
@@ -207,7 +232,11 @@ fn run(
     monitor: MidiMonitor,
     learn: Arc<Mutex<Option<LearnSession>>>,
     stop: Arc<AtomicBool>,
-    (unmapped, rescan_now): (Arc<AtomicBool>, Arc<AtomicBool>),
+    (unmapped, rescan_now, assigned): (
+        Arc<AtomicBool>,
+        Arc<AtomicBool>,
+        Arc<Mutex<Vec<(String, String)>>>,
+    ),
 ) {
     let (raw_tx, raw_rx) = crossbeam_channel::unbounded::<RawIn>();
     let mut conns: HashMap<String, Connected> = HashMap::new();
@@ -223,7 +252,16 @@ fn run(
             if !open_unmapped {
                 conns.retain(|_, c| c.session.is_some());
             }
-            rescan(&mappings, open_unmapped, &mut conns, &raw_tx, &events, &monitor);
+            let assigned = assigned.lock().unwrap().clone();
+            rescan(
+                &mappings,
+                &assigned,
+                open_unmapped,
+                &mut conns,
+                &raw_tx,
+                &events,
+                &monitor,
+            );
         }
 
         // Input.
@@ -300,8 +338,10 @@ fn run(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn rescan(
     mappings: &[Arc<Mapping>],
+    assigned: &[(String, String)],
     open_unmapped: bool,
     conns: &mut HashMap<String, Connected>,
     raw_tx: &Sender<RawIn>,
@@ -317,11 +357,15 @@ fn rescan(
             return;
         }
     };
-    // Unplugged ports.
+    // Unplugged ports, and ports whose mapping changed (assigned to the
+    // lights or given back): they are opened again below.
     let gone: Vec<String> = conns
-        .keys()
-        .filter(|p| !ports.inputs.contains(p))
-        .cloned()
+        .iter()
+        .filter(|(p, c)| {
+            let want = Mapping::for_port(mappings, assigned, p).map(|m| m.device().id.as_str());
+            !ports.inputs.contains(p) || want.unwrap_or("") != c.device
+        })
+        .map(|(p, _)| p.clone())
         .collect();
     for p in gone {
         if let Some(c) = conns.remove(&p) {
@@ -340,7 +384,7 @@ fn rescan(
         if conns.contains_key(name) {
             continue;
         }
-        let mapping = mappings.iter().find(|m| m.matches_port(name)).cloned();
+        let mapping = Mapping::for_port(mappings, assigned, name).cloned();
         if mapping.is_none() && !open_unmapped {
             continue;
         }

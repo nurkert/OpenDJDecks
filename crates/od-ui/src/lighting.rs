@@ -74,6 +74,52 @@ pub fn deck_music(s: &DeckState, gain_to_master: f32, track: Option<&TrackLight>
             .and_then(|t| t.key)
             .map(|k| hue_for_key(k.camelot_number()))
             .unwrap_or(0.6),
+        remaining: (s.track.is_some() && s.duration > 0.0)
+            .then(|| (s.duration - s.position).max(0.0) as f32),
+    }
+}
+
+/// The music another instance receives over OSC: the deck you hear most
+/// (roadmap [34]).
+pub fn music_message(decks: &[DeckMusic]) -> od_controller::osc::MusicMessage {
+    let d = decks
+        .iter()
+        .filter(|d| d.playing && d.weight > 0.01)
+        .max_by(|a, b| a.weight.total_cmp(&b.weight));
+    match d {
+        Some(d) => od_controller::osc::MusicMessage {
+            bpm: d.bpm,
+            beat: d.beat,
+            playing: true,
+            energy: d.energy,
+            phrase: d.phrase,
+            hue: d.hue,
+            remaining: d.remaining,
+        },
+        None => od_controller::osc::MusicMessage {
+            bpm: 120.0,
+            playing: false,
+            energy: 0.0,
+            hue: 0.6,
+            ..Default::default()
+        },
+    }
+}
+
+/// What the show follows for music received over OSC.
+pub fn network_music(m: &od_controller::osc::MusicMessage) -> DeckMusic {
+    DeckMusic {
+        track: None,
+        playing: m.playing,
+        bpm: m.bpm,
+        beat: m.beat,
+        phrase: m.phrase,
+        mood: None,
+        phrase_progress: 0.0,
+        energy: m.energy,
+        weight: if m.playing { 1.0 } else { 0.0 },
+        hue: m.hue,
+        remaining: m.remaining,
     }
 }
 
@@ -104,6 +150,20 @@ pub struct Snapshot {
     /// AUTO's pick for the deck you hear most, and the one HOLD keeps.
     pub pick: Option<od_lighting::AutoPick>,
     pub held: Option<od_lighting::AutoPick>,
+    /// Light cue of a track in effect: track and beat.
+    pub track_cue: Option<(i64, u32)>,
+    /// [36] The trigger playing and the last DJ event seen.
+    pub trigger: Option<od_lighting::ActiveTrigger>,
+    pub last_event: Option<od_lighting::DjEvent>,
+    /// [36] [34] What the show follows from outside the decks: playing,
+    /// tempo, level of the input (dBFS).
+    pub outside: Option<(bool, f64)>,
+    pub input_db: f32,
+    /// [37] Seconds of silence and how far the calm look is in.
+    pub silent: f32,
+    pub calm: f32,
+    /// [34] Music messages sent to another instance.
+    pub sent: u64,
 }
 
 enum Msg {
@@ -123,6 +183,11 @@ enum Msg {
     Pads(od_lighting::PadState),
     Test(Option<od_lighting::TestPattern>),
     Opener(od_lighting::Opener),
+    Source(od_lighting::MusicSource),
+    External(DeckMusic),
+    Listen(Option<(rtrb::Consumer<f32>, u16, u32)>),
+    SendTo(Option<od_controller::osc::OscSender>),
+    Unattended(od_lighting::Unattended),
     Stop,
 }
 
@@ -212,6 +277,30 @@ impl Runner {
         let _ = self.tx.send(Msg::Opener(opener));
     }
 
+    /// The music followed: the decks, the audio input or the network.
+    pub fn source(&self, s: od_lighting::MusicSource) {
+        let _ = self.tx.send(Msg::Source(s));
+    }
+
+    /// Music received from another instance.
+    pub fn external(&self, m: DeckMusic) {
+        let _ = self.tx.send(Msg::External(m));
+    }
+
+    /// Audio input samples (interleaved, channels, sample rate), or none.
+    pub fn listen(&self, ring: Option<(rtrb::Consumer<f32>, u16, u32)>) {
+        let _ = self.tx.send(Msg::Listen(ring));
+    }
+
+    /// Sends the music to another instance, or stops.
+    pub fn send_to(&self, sender: Option<od_controller::osc::OscSender>) {
+        let _ = self.tx.send(Msg::SendTo(sender));
+    }
+
+    pub fn unattended(&self, u: od_lighting::Unattended) {
+        let _ = self.tx.send(Msg::Unattended(u));
+    }
+
     pub fn active_cue(&self) -> Option<usize> {
         self.snapshot.lock().ok().and_then(|s| s.cue)
     }
@@ -226,6 +315,10 @@ impl Drop for Runner {
 fn run(rx: Receiver<Msg>, mut rig: Lighting, snapshot: Arc<Mutex<Snapshot>>) {
     let frame = Duration::from_secs(1) / FPS;
     let mut state = EngineState::default();
+    let mut ring: Option<(rtrb::Consumer<f32>, u16)> = None;
+    let mut sender: Option<od_controller::osc::OscSender> = None;
+    let mut sent = 0u64;
+    let mut frames = 0u64;
     let mut tracks: Vec<Option<TrackLight>> = vec![None; MAX_DECKS];
     let mut last = Instant::now();
     let mut next = Instant::now();
@@ -252,6 +345,23 @@ fn run(rx: Receiver<Msg>, mut rig: Lighting, snapshot: Arc<Mutex<Snapshot>>) {
             Ok(Msg::Pads(p)) => rig.show.pads = p,
             Ok(Msg::Test(t)) => rig.set_test(t),
             Ok(Msg::Opener(o)) => rig.set_opener(o),
+            Ok(Msg::Source(src)) => {
+                rig.source = src;
+                rig.external.clear();
+            }
+            Ok(Msg::External(m)) => rig.external.set(m),
+            Ok(Msg::Listen(r)) => match r {
+                Some((consumer, channels, rate)) => {
+                    rig.listener = Some(od_lighting::BeatFollower::new(rate));
+                    ring = Some((consumer, channels));
+                }
+                None => {
+                    rig.listener = None;
+                    ring = None;
+                }
+            },
+            Ok(Msg::SendTo(s)) => sender = s,
+            Ok(Msg::Unattended(u)) => rig.unattended = u,
             // Quitting: the failsafe choice decides the last frame.
             Ok(Msg::Stop) | Err(mpsc::RecvTimeoutError::Disconnected) => {
                 rig.shutdown();
@@ -269,7 +379,29 @@ fn run(rx: Receiver<Msg>, mut rig: Lighting, snapshot: Arc<Mutex<Snapshot>>) {
         if next < now {
             next = now + frame;
         }
-        rig.tick_guarded(&music(&state, &tracks), dt);
+        // The audio input: what arrived since the last frame.
+        if let (Some((consumer, channels)), Some(follower)) = (ring.as_mut(), rig.listener.as_mut()) {
+            let n = consumer.slots();
+            if n > 0
+                && let Ok(chunk) = consumer.read_chunk(n)
+            {
+                let (a, b) = chunk.as_slices();
+                follower.feed_interleaved(a, *channels as usize);
+                follower.feed_interleaved(b, *channels as usize);
+                chunk.commit_all();
+            }
+        }
+        rig.crossfader = Some(state.crossfader);
+        let decks = music(&state, &tracks);
+        rig.tick_guarded(&decks, dt);
+        // [34] The music for another instance, 20 times a second.
+        frames += 1;
+        if let Some(tx) = sender.as_ref()
+            && frames % 2 == 0
+            && tx.send(&music_message(&decks).to_osc()).is_ok()
+        {
+            sent += 1;
+        }
         if let Ok(mut s) = snapshot.lock() {
             s.looks.clone_from(&rig.looks);
             s.universes.clone_from(&rig.frame);
@@ -278,6 +410,21 @@ fn run(rx: Receiver<Msg>, mut rig: Lighting, snapshot: Arc<Mutex<Snapshot>>) {
             s.faulted = rig.faulted;
             s.pick = rig.show.current_pick();
             s.held = rig.show.held_pick();
+            s.track_cue = rig.show.active_track_cue();
+            s.trigger = rig.show.active_trigger();
+            s.last_event = rig.show.last_event();
+            s.outside = match rig.source {
+                od_lighting::MusicSource::Decks => None,
+                _ => Some(
+                    rig.followed
+                        .first()
+                        .map_or((false, 0.0), |d| (d.playing, d.bpm)),
+                ),
+            };
+            s.input_db = rig.listener.as_ref().map_or(-100.0, |l| l.level_db);
+            s.silent = rig.silent_for();
+            s.calm = rig.calm_mix();
+            s.sent = sent;
         }
     }
 }
@@ -355,34 +502,24 @@ pub fn rig_path(library: &std::path::Path) -> PathBuf {
     od_lighting::rig::rig_path(library)
 }
 
-/// Stage position of each fixture: movers on the top truss, bars and
-/// effects in the middle, washes at the front.
+/// Stage position of each fixture: where it stands on the floor plan, or
+/// the default spot of its kind (movers on the top truss, bars and effects
+/// in the middle, washes at the front).
 pub fn stage_positions(patch: &Patch) -> Vec<(f32, f32)> {
-    let row = |r: FixtureRole| match r {
-        FixtureRole::Mover => 0,
-        FixtureRole::Bar | FixtureRole::Effect => 1,
-        FixtureRole::Wash => 2,
-    };
-    let mut counts = [0usize; 3];
-    for f in &patch.fixtures {
-        counts[row(f.def.role())] += 1;
-    }
-    let mut seen = [0usize; 3];
-    patch
-        .fixtures
-        .iter()
-        .map(|f| {
-            let r = row(f.def.role());
-            let i = seen[r];
-            seen[r] += 1;
-            ((i as f32 + 0.5) / counts[r] as f32, [0.18, 0.5, 0.82][r])
-        })
-        .collect()
+    od_lighting::stage::positions(patch)
 }
 
 pub(crate) fn rgb(c: [f32; 3]) -> Color {
     let b = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
     Color::from_rgb_u8(b(c[0]), b(c[1]), b(c[2]))
+}
+
+/// Where a mover's beam goes from the fixture on the stage preview: pan
+/// across, tilt towards the audience, turned with the fixture.
+fn beam(f: &Patched, pan: f32, tilt: f32) -> (f32, f32) {
+    let (dx, dy) = ((pan - 0.5) * 0.7, 0.25 + 0.5 * tilt);
+    let r = f.place.map_or(0.0, |p| p.rotation).to_radians();
+    (dx * r.cos() - dy * r.sin(), dx * r.sin() + dy * r.cos())
 }
 
 /// View rows for the stage and rig list (pure).
@@ -431,8 +568,9 @@ pub fn fixture_views(patch: &Patch, looks: &[Look]) -> Vec<LightFixtureView> {
                 y,
                 color: rgb(look.color),
                 intensity: look.intensity.clamp(0.0, 1.0),
-                beam_x: (x + (pan - 0.5) * 0.7).clamp(0.0, 1.0),
-                beam_y: (y + 0.25 + 0.5 * look.tilt).clamp(0.0, 1.0),
+                // The beam turned with the fixture (0° towards the audience).
+                beam_x: (x + beam(f, pan, look.tilt).0).clamp(0.0, 1.0),
+                beam_y: (y + beam(f, pan, look.tilt).1).clamp(0.0, 1.0),
                 strobe: look.strobe > 0.0,
                 cells: ModelRc::new(VecModel::from(cell_colors)),
             }
@@ -490,7 +628,7 @@ pub struct LightingRuntime {
     tracks: Vec<Option<TrackLight>>,
     fixtures: Rows<LightFixtureView>,
     /// The track you hear and its playhead beat (for track cues).
-    focus: Option<(od_core::TrackId, f64, String)>,
+    pub(crate) focus: Option<(od_core::TrackId, f64, String)>,
     /// Modification time of `lighting.json` as last read or written here;
     /// another time means another program (the MCP server) changed it.
     seen: Option<std::time::SystemTime>,
@@ -541,14 +679,41 @@ pub struct LightingRuntime {
     /// Test pattern running.
     pub test: Option<od_lighting::TestPattern>,
     pub guide: crate::lighting_pads::Guide,
+    /// [32] Fixture open on the floor plan.
+    pub selected: Option<usize>,
+    pub(crate) place_rows: Rows<crate::LightPlaceRow>,
+    /// [33] The cue list, the Prepare lane, and the light cue in effect.
+    pub(crate) cue_rows: Rows<crate::LightCueRow>,
+    pub(crate) lane_rows: Rows<crate::LightCueMark>,
+    pub track_cue: Option<(i64, u32)>,
+    /// [35] Venue, rig and show files, the kind shown, the last result.
+    pub files: od_lighting::Files,
+    pub files_kind: od_lighting::FileKind,
+    pub(crate) file_rows: Rows<crate::LightFileRow>,
+    pub files_note: String,
+    /// What the file rows were read for (`None`: read them again).
+    pub(crate) files_seen: Option<(od_lighting::FileKind, od_lighting::InUse)>,
+    /// [34] [36] [37] OSC, the audio input, triggers, unattended mode.
+    pub remote: crate::lighting_remote::Remote,
 }
 
 impl LightingRuntime {
     pub fn load(path: PathBuf) -> Self {
-        let config = RigConfig::load(&path).unwrap_or_else(|e| {
+        let mut config = RigConfig::load(&path).unwrap_or_else(|e| {
             tracing::warn!("lighting rig {}: {e}", path.display());
             RigConfig::default()
         });
+        // [35] A rig from before named files becomes the Default venue.
+        let files = od_lighting::Files::beside(&path);
+        match files.migrate(&mut config) {
+            Ok(true) => {
+                if let Err(e) = config.save(&path) {
+                    tracing::warn!("saving lighting rig: {e}");
+                }
+            }
+            Ok(false) => {}
+            Err(e) => tracing::warn!("lighting files {}: {e}", files.dir().display()),
+        }
         let runner = Runner::start(config.patch.clone(), config.settings.clone());
         let seen = modified(&path);
         let rt = Self {
@@ -593,6 +758,17 @@ impl LightingRuntime {
             poll_targets: Vec::new(),
             test: None,
             guide: Default::default(),
+            selected: None,
+            place_rows: Rows::default(),
+            cue_rows: Rows::default(),
+            lane_rows: Rows::default(),
+            track_cue: None,
+            files,
+            files_kind: od_lighting::FileKind::Venue,
+            file_rows: Rows::default(),
+            files_note: String::new(),
+            files_seen: None,
+            remote: Default::default(),
         };
         rt.push();
         rt.apply_outputs();
@@ -620,6 +796,11 @@ impl LightingRuntime {
         self.apply_outputs();
     }
 
+    /// Opens the outputs again (a rig or venue was loaded).
+    pub(crate) fn reapply_outputs(&self) {
+        self.apply_outputs();
+    }
+
     fn apply_outputs(&self) {
         self.runner.clear_outputs();
         if self.config.enabled {
@@ -644,6 +825,12 @@ impl LightingRuntime {
         {
             self.identify = None;
         }
+        if self
+            .selected
+            .is_some_and(|i| i >= self.config.patch.fixtures.len())
+        {
+            self.selected = None;
+        }
         self.push();
         self.save();
     }
@@ -654,6 +841,8 @@ impl LightingRuntime {
 pub(crate) fn refresh(app: &App) {
     refresh_main(app);
     crate::lighting_pads::sync(app);
+    crate::lighting_stage::sync(app);
+    crate::lighting_remote::sync(app);
 }
 
 fn refresh_main(app: &App) {
@@ -703,7 +892,6 @@ fn refresh_main(app: &App) {
             format!("U{} → {to}", u + 1)
         })
         .collect();
-    let (timeline_title, timeline) = timeline_rows(&rt);
     let patch = &rt.config.patch;
     let has_fog = patch.fixtures.iter().any(|f| f.def.is_fog());
     let has_laser = patch.fixtures.iter().any(|f| f.def.is_laser());
@@ -720,7 +908,6 @@ fn refresh_main(app: &App) {
         .map(|u| SharedString::from(format!("U{}", u + 1)))
         .collect();
     let universes = ModelRc::new(VecModel::from(universes));
-    let timeline = ModelRc::new(VecModel::from(timeline));
     let output_text: SharedString = if outputs.is_empty() {
         "No output set".into()
     } else {
@@ -753,8 +940,6 @@ fn refresh_main(app: &App) {
         g.set_cues(cues.clone());
         g.set_output_text(output_text.clone());
         g.set_rig_path(rt.path.display().to_string().into());
-        g.set_timeline_title(timeline_title.clone());
-        g.set_timeline(timeline.clone());
         g.set_strobe_hz(rt.config.safety.strobe_cap());
         g.set_fog_armed(rt.arming.fog);
         g.set_laser_armed(rt.arming.laser);
@@ -926,24 +1111,6 @@ fn refresh_link(app: &App) {
     }
 }
 
-/// Title and rows ("BAR 17 → Drop") of the focused track's lighting cues.
-fn timeline_rows(rt: &LightingRuntime) -> (SharedString, Vec<SharedString>) {
-    let Some((id, _, title)) = &rt.focus else {
-        return (SharedString::new(), Vec::new());
-    };
-    let s = &rt.config.settings;
-    let mut cues = s.track_cues.get(&id.0).cloned().unwrap_or_default();
-    cues.sort_by_key(|c| c.beat);
-    let rows = cues
-        .iter()
-        .map(|c| {
-            let name = s.cues.get(c.cue).map(|x| x.name.as_str()).unwrap_or("?");
-            SharedString::from(format!("BAR {} → {name}", c.beat / 4 + 1))
-        })
-        .collect();
-    (title.clone().into(), rows)
-}
-
 /// Runs `f` on the Lighting state of the main window and, when it is open,
 /// the detached LIGHTING window.
 pub(crate) fn each(app: &App, f: impl Fn(&crate::Lighting<'_>)) {
@@ -967,6 +1134,12 @@ pub(crate) fn detach(app: &Rc<App>) {
         crate::shell::apply_theme(&w.global::<crate::Theme>(), &st.settings, st.config.lite);
     }
     wire_global(app, &w.global::<crate::Lighting>());
+    {
+        // The same mode and centre as the main window.
+        let (main, g) = (app.ui.global::<crate::Lighting>(), w.global::<crate::Lighting>());
+        g.set_space(main.get_space());
+        g.set_centre(main.get_centre());
+    }
     crate::shell::wire_tooltips(app, &w.global::<crate::TooltipState>());
     let _ = w.show();
     *app.lighting_window.borrow_mut() = Some(w);
@@ -984,6 +1157,14 @@ pub(crate) fn edit(app: &App, f: impl FnOnce(&mut LightingRuntime)) {
 
 pub(crate) fn wire(app: &Rc<App>) {
     wire_global(app, &app.ui.global::<crate::Lighting>());
+    crate::lighting_stage::wire_lane(app);
+    // [21] A rig that is set up opens on SHOW; an empty one on SETUP.
+    if !app.lighting.borrow().config.patch.fixtures.is_empty() {
+        app.ui.global::<crate::Lighting>().set_space("show".into());
+    }
+    // [34] [36] [37] OSC, the music source, the lighting controller.
+    crate::lighting_remote::refresh_midi(app);
+    crate::lighting_remote::apply(app);
     refresh(app);
     demo(app);
 }
@@ -996,7 +1177,14 @@ pub(crate) fn wire(app: &Rc<App>) {
 /// group masters), `light-edit` (PADS with a look open in the editor),
 /// `light-auto` (a palette, a pad in the phrase table, HOLD), `light-connect`
 /// (ports, a fake Art-Net node at 192.0.2.10 found on the loopback address,
-/// the COLOURS test pattern) and `light-guide` (the guided setup at its second step).
+/// the COLOURS test pattern) and `light-guide` (the guided setup at its second step);
+/// [21]–[35]: `light-plan` (the floor plan with placed, turned fixtures and
+/// a mover open), `light-files` (two venues saved, FILES open), `light-cues`
+/// (CUES with light cues on the track of deck 1) and `light-lane` (Prepare
+/// with light cues on the lane of the first row's track); [34]–[37]:
+/// `light-remote` (REMOTE with a controller given to the lights and OSC
+/// in), `light-triggers` (TRIGGERS with DJ events tied to pads) and
+/// `light-unattended` (SHOW locked while the show runs unattended).
 fn demo(app: &Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -1005,8 +1193,48 @@ fn demo(app: &Rc<App>) {
     }
     let has = |p: &str| parts.iter().any(|x| x == p);
     let g = app.ui.global::<crate::Lighting>();
+    // SETUP or SHOW, by what the picture shows.
+    let setup = ["light-patch", "light-lost", "light-safety", "light-channels", "light-connect", "light-guide", "light-plan", "light-files", "light-remote"];
+    g.set_space(if setup.iter().any(|p| has(p)) { "setup" } else { "show" }.into());
     {
         let mut rt = app.lighting.borrow_mut();
+        if has("light-plan") {
+            let n = rt.config.patch.fixtures.len();
+            for (i, (x, y, r)) in [(0.12, 0.8, 30.0), (0.88, 0.8, 330.0), (0.3, 0.15, 0.0), (0.7, 0.15, 0.0)].into_iter().enumerate().take(n) {
+                let p = rt.config.patch.fixtures[i].place.get_or_insert(od_lighting::Placement::new(x, y));
+                p.rotate(r);
+            }
+            if let Some(m) = rt.config.patch.fixtures.iter().position(|f| f.def.role() == FixtureRole::Mover) {
+                let t = &mut rt.config.patch.fixtures[m].tune;
+                t.pan = [0.15, 0.85];
+                t.invert_tilt = true;
+                t.color = [0.0, -0.1, 0.05];
+                t.curve = od_lighting::DimmerCurve::Square;
+                rt.selected = Some(m);
+            }
+            g.set_centre("stage".into());
+        }
+        if has("light-files") {
+            let files = rt.files.clone();
+            let _ = files.save(od_lighting::FileKind::Venue, "Harbour Club", &mut rt.config);
+            let mut other = rt.config.clone();
+            other.patch.fixtures.truncate(2);
+            let _ = files.save(od_lighting::FileKind::Venue, "Summer Terrace", &mut other);
+            rt.files_seen = None;
+            g.set_setup_tab("files".into());
+        }
+        if has("light-cues") || has("light-lane") {
+            demo_looks(&mut rt);
+            rt.pads.latched = None;
+            rt.config.settings.cues = vec![LightCue {
+                name: "Warm build".into(),
+                groups: Default::default(),
+                fade_beats: 4.0,
+            }];
+            if has("light-cues") {
+                g.set_centre("cues".into());
+            }
+        }
         if has("light-patch") {
             let _ = od_lighting::add_fixtures(&mut rt.config.patch, 2, 4, Some(0), Some(60), "Back", "Wash");
             if let Some(i) = rt.config.patch.fixtures.iter().position(|f| f.def.role() == FixtureRole::Bar) {
@@ -1093,13 +1321,92 @@ fn demo(app: &Rc<App>) {
                 ..Default::default()
             };
         }
+        if has("light-remote") {
+            rt.remote.midi_inputs = vec!["DJ Controller MIDI 1".into(), "Pad Controller MIDI 1".into()];
+            rt.remote.midi_fixed = true;
+            rt.config.remote.controller = "Pad Controller MIDI 1".into();
+            rt.config.remote.osc_in = true;
+            rt.remote.loopback_only = true;
+            rt.config.remote.send_to = "192.168.1.20:9300".into();
+            g.set_setup_tab("remote".into());
+        }
+        if has("light-triggers") {
+            use od_lighting::{DjEvent as E, Trigger, TriggerTarget as T};
+            demo_looks(&mut rt);
+            rt.pads.latched = None;
+            rt.config.settings.cues = vec![LightCue {
+                name: "Warm build".into(),
+                groups: Default::default(),
+                fade_beats: 4.0,
+            }];
+            let t = |event, target, beats| Trigger { event, target, beats };
+            rt.config.settings.triggers = vec![
+                t(E::Load, T::Pad(2), 8.0),
+                t(E::PlayStart, T::Pad(0), 16.0),
+                t(E::Drop, T::Pad(4), 32.0),
+                t(E::Breakdown, T::Pad(2), 0.0),
+                t(E::CrossfaderRight, T::Release, 0.0),
+                t(E::EndNear, T::Cue(0), 0.0),
+            ];
+            g.set_centre("triggers".into());
+        }
+        if has("light-unattended") {
+            demo_looks(&mut rt);
+            rt.pads.latched = None;
+            rt.config.safety.pin = "2468".into();
+            rt.unlocked = false;
+            rt.config.unattended.enabled = true;
+            rt.config.enabled = true;
+        }
         rt.runner.pads(rt.pads.clone());
         rt.push();
         rt.apply_outputs();
     }
+    if has("light-remote") || has("light-unattended") {
+        crate::lighting_remote::apply(app);
+    }
     refresh(app);
     if has("light-connect") || has("light-guide") {
         crate::lighting_pads::find_nodes(app);
+    }
+    if has("light-cues") || has("light-lane") {
+        // Once the decks are loaded: light cues on deck 1's track (CUES) or
+        // on the first row's track in Prepare (the lane).
+        let lane = has("light-lane");
+        let weak = Rc::downgrade(app);
+        slint::Timer::single_shot(Duration::from_secs(6), move || {
+            let Some(a) = weak.upgrade() else { return };
+            if lane {
+                a.ui.invoke_row_clicked(0, false, false);
+            }
+            let id = if lane {
+                a.state.borrow().player.current
+            } else {
+                a.lighting.borrow().focus.as_ref().map(|f| f.0)
+            };
+            let Some(id) = id else { return };
+            {
+                let mut rt = a.lighting.borrow_mut();
+                let cue = |beat, pad: Option<u16>, name: &str, fade| od_lighting::TrackCue {
+                    pad,
+                    name: name.into(),
+                    fade_beats: fade,
+                    ..od_lighting::TrackCue::new(beat, 0)
+                };
+                rt.config.settings.track_cues.insert(
+                    id.0,
+                    vec![
+                        cue(0, Some(2), "Warm room", None),
+                        cue(64, None, "", None),
+                        cue(128, Some(4), "Drop", Some(0.0)),
+                        cue(192, Some(1), "Breakdown", Some(8.0)),
+                    ],
+                );
+                rt.push();
+            }
+            refresh(&a);
+            crate::player::refresh_detail(&a);
+        });
     }
 }
 
@@ -1155,7 +1462,9 @@ fn wire_global(app: &Rc<App>, g: &crate::Lighting<'_>) {
         g.set_link_text(rt.link.1.as_str().into());
     }
     wire_setup(app, g);
+    crate::lighting_remote::wire(app, g);
     crate::lighting_pads::wire(app, g);
+    crate::lighting_stage::wire(app, g);
     g.set_programs(ModelRc::new(VecModel::from(
         Program::ALL
             .iter()
@@ -1320,37 +1629,6 @@ fn wire_global(app: &Rc<App>, g: &crate::Lighting<'_>) {
             groups: s.groups.clone(),
             fade_beats: 4.0,
         });
-    })));
-    g.on_timeline_add(handler!(app, |a| {
-        let cue = app_active_cue(&a);
-        edit(&a, |rt| {
-            let Some((id, beat, _)) = rt.focus.clone() else {
-                return;
-            };
-            if rt.config.settings.cues.is_empty() {
-                return;
-            }
-            // On the bar: the cue starts where the bar the playhead is in starts.
-            let bar = (beat.max(0.0) / 4.0).floor() as u32 * 4;
-            let list = rt.config.settings.track_cues.entry(id.0).or_default();
-            list.retain(|c| c.beat != bar);
-            list.push(od_lighting::TrackCue {
-                beat: bar,
-                cue: cue.min(rt.config.settings.cues.len() - 1),
-            });
-            list.sort_by_key(|c| c.beat);
-        })
-    }));
-    g.on_timeline_delete(handler!(app, |a, i: i32| edit(&a, |rt| {
-        let Some((id, _, _)) = rt.focus.clone() else {
-            return;
-        };
-        if let Some(list) = rt.config.settings.track_cues.get_mut(&id.0) {
-            list.sort_by_key(|c| c.beat);
-            if (i as usize) < list.len() {
-                list.remove(i as usize);
-            }
-        }
     })));
     g.on_cue_delete(handler!(app, |a, i: i32| edit(&a, |rt| {
         if (i as usize) < rt.config.settings.cues.len() {
@@ -1587,7 +1865,10 @@ fn wire_setup(app: &Rc<App>, g: &crate::Lighting<'_>) {
             rt.config.safety.pin = pin;
             rt.unlocked = true;
             rt.pin_error.clear();
+            // [37] Unattended mode needs the PIN.
+            crate::lighting_remote::check_pin(rt);
         });
+        crate::lighting_remote::apply(&a);
         a.status(if cleared {
             od_i18n::tr("Lighting: setup PIN removed")
         } else {
@@ -1650,6 +1931,10 @@ thread_local! {
 /// A Lighting pad (controller or screen): A–F pick the easy look, G / H
 /// strobe and flash while held.
 pub(crate) fn pad(app: &App, index: usize, pressed: bool) {
+    // [37] Unattended: the show is locked.
+    if crate::lighting_remote::show_locked(&app.lighting.borrow()) {
+        return;
+    }
     // Own looks of the current page come first.
     if crate::lighting_pads::deck_pad(app, index, pressed) {
         return;
@@ -1665,15 +1950,16 @@ pub(crate) fn pad(app: &App, index: usize, pressed: bool) {
     }
 }
 
-/// The cue the stack shows as current (0 when none).
-fn app_active_cue(app: &App) -> usize {
-    app.ui.global::<crate::Lighting>().get_active_cue().max(0) as usize
-}
-
 /// A mapped controller / MIDI input for the light show.
 pub(crate) fn controller(app: &App, a: od_controller::action::LightingAction) {
     use od_controller::action::LightingAction as L;
+    // [37] Unattended: the lighting controller and OSC are locked.
+    if crate::lighting_remote::show_locked(&app.lighting.borrow()) {
+        return;
+    }
     match a {
+        L::Blackout(on) => edit(app, |rt| rt.config.settings.blackout = on),
+        L::Tap => tap(app),
         L::Look(i) => pad(app, i as usize, true),
         L::Strobe(on) => momentary(app, |m| m.strobe = on),
         L::Flash(on) => momentary(app, |m| m.flash = on),
@@ -1753,6 +2039,8 @@ pub fn import_ofl(patch: &mut Patch, path: &std::path::Path) -> Result<usize, od
         address,
         group,
         invert_pan: false,
+        place: None,
+        tune: Default::default(),
     })
 }
 
@@ -1802,6 +2090,9 @@ pub(crate) fn poll_remote(app: &App) {
 pub(crate) fn live(app: &App, cmd: od_lighting::LiveCommand) {
     use od_controller::action::LightingAction as L;
     use od_lighting::LiveCommand as C;
+    if crate::lighting_remote::show_locked(&app.lighting.borrow()) {
+        return;
+    }
     match cmd {
         C::CueGo => controller(app, L::CueGo),
         C::CueBack => controller(app, L::CueBack),
@@ -1834,6 +2125,7 @@ fn tap(app: &App) {
 /// Per engine frame: feeds the show and, in LIGHTING mode, the preview.
 pub(crate) fn frame(app: &App, state: Option<&EngineState>) {
     refresh_link(app);
+    crate::lighting_remote::poll(app);
     crate::lighting_pads::poll(app);
     let Some(state) = state else {
         if app.ui.get_mode() == "lighting" {
@@ -1930,9 +2222,22 @@ fn refresh_stage(app: &App, decks: &[DeckMusic]) {
     let s = &rt.config.settings;
     let status: SharedString = status_text(s.mode, decks, &s.auto, &s.pads).into();
     let cue = rt.runner.active_cue();
-    let held = rt.runner.snapshot.lock().ok().and_then(|s| s.held);
+    let (held, track_cue) = rt
+        .runner
+        .snapshot
+        .lock()
+        .ok()
+        .map_or((None, None), |s| (s.held, s.track_cue));
+    let snap = rt.runner.snapshot.lock().map(|s| s.clone()).unwrap_or_default();
     drop(rt);
-    app.lighting.borrow_mut().held = held;
+    {
+        let mut rt = app.lighting.borrow_mut();
+        rt.held = held;
+        rt.track_cue = track_cue;
+        crate::lighting_remote::take_snapshot(&mut rt, &snap);
+    }
+    crate::lighting_remote::sync_live(app);
+    crate::lighting_stage::sync_live(app);
     each(app, |g| {
         g.set_status(status.clone());
         if let Some(c) = cue {
@@ -2054,14 +2359,13 @@ mod tests {
     fn runner_renders_frames_on_its_own_thread() {
         let mut patch = Patch::default();
         patch
-            .add(od_lighting::Patched {
-                name: "Par".into(),
-                def: od_lighting::FixtureDef::builtin("rgb-par").unwrap(),
-                universe: 0,
-                address: 1,
-                group: "Wash".into(),
-                invert_pan: false,
-            })
+            .add(od_lighting::Patched::new(
+                "Par",
+                od_lighting::FixtureDef::builtin("rgb-par").unwrap(),
+                0,
+                1,
+                "Wash",
+            ))
             .unwrap();
         let runner = Runner::start(patch, ShowSettings::default());
         let mut state = EngineState::default();

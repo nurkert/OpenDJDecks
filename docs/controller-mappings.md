@@ -228,6 +228,7 @@ release.
 | `lighting.group_master` | absolute | `group` (1 = the first group in the patch) | `GroupMaster { group, level }` |
 | `lighting.release` | press | | hands the show back to AUTO: the latched pad and HOLD end |
 | `lighting.hold` | press | | AUTO keeps its current look (toggle) |
+| `lighting.tap` | press | | taps the tempo for the lights when no deck plays |
 | `ignore` | any | | `ControlAction::Ignored` (known control without a function) |
 
 In the application (`crates/od-ui/src/controller.rs`) every action above
@@ -333,6 +334,24 @@ the crossfader.
 
 While the guided setup, MIDI learn or the monitor runs, the app opens MIDI
 inputs that no mapping matches too (`ControllerManager::set_open_unmapped`).
+
+## The lighting layout
+
+`mappings/lighting/lighting-operator.toml` is the default layout for a
+second controller that plays only the lights (roadmap [34]). It is built
+from OpenDJDecks' own `lighting.*` actions on generic MIDI numbers of
+channel 1 (notes 36–62, controllers 20–28; the table is in the light-show
+guide) and comes from no other product's chart or manual. Its
+`port_names` is empty, so it never matches a port by itself: LIGHTING ›
+SETUP › REMOTE gives a connected MIDI input to it
+(`ControllerManager::assign`, `Mapping::for_port`), and that port is opened
+again with this layout while every other port keeps the mapping that
+matches its name. `cargo test -p od-controller` checks that it holds only
+lighting actions, binds every address once and matches no port.
+
+The same actions reach the lights over OSC (`od_controller::osc`, off by
+default, a UDP port set in REMOTE): `/opendjdecks/light/...` mirrors them
+and `/opendjdecks/music` carries the music one instance sends another.
 
 ## Authoring workflow
 

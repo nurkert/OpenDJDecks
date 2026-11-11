@@ -371,6 +371,28 @@ pub struct Patched {
     /// Mirror pan (for movers hung on the opposite side).
     #[serde(default)]
     pub invert_pan: bool,
+    /// Place on the floor plan (`None`: the default spot for its role).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub place: Option<crate::stage::Placement>,
+    /// Pan / tilt range, colour calibration and dimmer curve.
+    #[serde(default, skip_serializing_if = "crate::stage::Tune::is_default")]
+    pub tune: crate::stage::Tune,
+}
+
+impl Patched {
+    /// A fixture at `universe`.`address`, unplaced and untuned.
+    pub fn new(name: &str, def: FixtureDef, universe: u16, address: u16, group: &str) -> Self {
+        Self {
+            name: name.into(),
+            def,
+            universe,
+            address,
+            group: group.into(),
+            invert_pan: false,
+            place: None,
+            tune: Default::default(),
+        }
+    }
 }
 
 /// Universes the patch can use.
@@ -563,6 +585,8 @@ impl Patch {
                 address: start + n * len,
                 group: group.to_string(),
                 invert_pan: false,
+                place: None,
+                tune: Default::default(),
             });
         }
         Ok(first..self.fixtures.len())
@@ -665,14 +689,7 @@ mod tests {
     fn patch_rejects_overlaps_and_finds_space() {
         let mut patch = Patch::default();
         let par = FixtureDef::builtin("rgbw-par").unwrap();
-        let fixture = |name: &str, address| Patched {
-            name: name.into(),
-            def: par.clone(),
-            universe: 0,
-            address,
-            group: "Wash".into(),
-            invert_pan: false,
-        };
+        let fixture = |name: &str, address| Patched::new(name, par.clone(), 0, address, "Wash");
         patch.add(fixture("A", 1)).unwrap();
         assert!(patch.add(fixture("B", 6)).is_err());
         assert!(patch.add(fixture("C", 510)).is_err());

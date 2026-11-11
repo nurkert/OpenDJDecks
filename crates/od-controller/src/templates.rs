@@ -253,6 +253,7 @@ pub const ACTION_NAMES: &[&str] = &[
     "lighting.group_master",
     "lighting.release",
     "lighting.hold",
+    "lighting.tap",
 ];
 
 /// Actions whose number argument MIDI learn fills in from its "Number"
@@ -794,6 +795,10 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
         "lighting.hold" => (
             Button,
             on_press(|_| ControlAction::Lighting(LightingAction::Hold)),
+        ),
+        "lighting.tap" => (
+            Button,
+            on_press(|_| ControlAction::Lighting(LightingAction::Tap)),
         ),
         _ => return Err(MappingError::UnknownAction(name.to_string())),
     };
