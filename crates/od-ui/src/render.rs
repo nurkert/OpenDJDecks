@@ -199,6 +199,12 @@ pub fn phrase_rgb(kind: PhraseKind) -> [u8; 3] {
     }
 }
 
+/// The phrase kind's initial, shown where its name does not fit or when
+/// the phrase bar shows colours only: the kind never rests on hue alone.
+pub fn phrase_short(kind: PhraseKind) -> &'static str {
+    &phrase_label(kind)[..1]
+}
+
 /// Label of a phrase kind as shown on the phrase bar.
 pub fn phrase_label(kind: PhraseKind) -> &'static str {
     match kind {
@@ -883,6 +889,18 @@ pub fn artwork_pixels(data: &[u8], size: u32) -> Option<SharedPixelBuffer<Rgba8P
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Phrase kinds never rest on hue alone: each has its own initial.
+    #[test]
+    fn phrase_initials_are_distinct() {
+        use od_core::PhraseKind as K;
+        let kinds = [K::Intro, K::Verse, K::Chorus, K::Bridge, K::Up, K::Down, K::Outro];
+        let mut seen = std::collections::HashSet::new();
+        for k in kinds {
+            assert!(seen.insert(phrase_short(k)), "{k:?}");
+            assert!(phrase_label(k).starts_with(phrase_short(k)));
+        }
+    }
 
     #[test]
     fn renders_sizes() {

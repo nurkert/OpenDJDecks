@@ -29,7 +29,7 @@ fn load(ui: &Ui, deck: usize, t: usize) {
 /// Every element labelled `label` (part labels such as `knob.arc` are
 /// outside the view scopes, so they are looked up directly).
 fn all(ui: &Ui, label: &str) -> Vec<Rect> {
-    i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui.app.ui, label)
+    super::harness::find_all(&ui.app.ui, label)
         .map(|e| Rect::of(&e))
         .collect()
 }

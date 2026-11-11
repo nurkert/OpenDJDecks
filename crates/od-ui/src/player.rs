@@ -386,6 +386,7 @@ pub(crate) fn phrase_marks(
                 pos: (at(p.start_beat) / duration) as f32,
                 end: (at(p.end_beat) / duration).min(1.0) as f32,
                 label: render::phrase_label(p.kind).into(),
+                short: render::phrase_short(p.kind).into(),
                 tone: slint::Color::from_rgb_u8(r, g, b),
                 unsure: p.is_unsure(),
                 sure: crate::key_mix::unsure_text(p.confidence).into(),

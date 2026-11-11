@@ -52,7 +52,7 @@ pub(crate) fn snapped_children(root: &ElementHandle) -> Vec<String> {
             .find_map(|k| {
                 nodes[k]
                     .e
-                    .accessible_label()
+                    .accessible_id().filter(|s| !s.is_empty()).or_else(|| nodes[k].e.accessible_label())
                     .filter(|s| !s.is_empty())
                     .map(|s| s.to_string())
             })

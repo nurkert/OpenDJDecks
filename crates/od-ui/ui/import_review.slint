@@ -4,7 +4,7 @@
 
 import { Theme } from "tokens.slint";
 import { HLine } from "lines.slint";
-import { Caps, PlateButton } from "controls.slint";
+import { Caps, PlateButton, KeyFocus, TooltipState } from "controls.slint";
 
 // One count: in the preview `after` is what the file brings, in the result
 // the library before and after.
@@ -56,7 +56,7 @@ export component ImportReviewDialog inherits Rectangle {
             padding: Theme.s5;
             spacing: Theme.s3;
             Caps {
-                accessible-role: text; accessible-label: "app.import-review.title"; accessible-value: self.text;
+                accessible-role: text; accessible-id: "app.import-review.title"; accessible-value: self.text;
                 text: ImportReview.stage == "preview" ? @tr("BEFORE YOU IMPORT — NOTHING IS WRITTEN YET")
                     : ImportReview.stage == "running" ? @tr("IMPORTING…")
                     : ImportReview.stage == "undone" ? @tr("IMPORT UNDONE")
@@ -65,7 +65,7 @@ export component ImportReviewDialog inherits Rectangle {
             HorizontalLayout {
                 spacing: Theme.s3;
                 Text {
-                    accessible-role: text; accessible-label: "app.import-review.file"; accessible-value: self.text;
+                    accessible-role: text; accessible-id: "app.import-review.file"; accessible-value: self.text;
                     horizontal-stretch: 1;
                     text: ImportReview.file;
                     overflow: elide;
@@ -83,7 +83,7 @@ export component ImportReviewDialog inherits Rectangle {
             }
             for c in ImportReview.counts: HorizontalLayout {
                 accessible-role: text;
-                accessible-label: "app.import-review.count";
+                accessible-id: "app.import-review.count";
                 accessible-value: c.label + " " + c.before + " " + c.after;
                 height: 22px;
                 Text { horizontal-stretch: 1; text: c.label; vertical-alignment: center; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2; }
@@ -91,7 +91,7 @@ export component ImportReviewDialog inherits Rectangle {
                 Text { width: 90px; text: c.after; horizontal-alignment: right; vertical-alignment: center; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: c.changed ? Theme.live : Theme.bone; }
             }
             if ImportReview.note != "": Text {
-                accessible-role: text; accessible-label: "app.import-review.note"; accessible-value: self.text;
+                accessible-role: text; accessible-id: "app.import-review.note"; accessible-value: self.text;
                 text: ImportReview.note; wrap: word-wrap;
                 font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
             }
@@ -99,7 +99,7 @@ export component ImportReviewDialog inherits Rectangle {
             if ImportReview.stage != "undone": HorizontalLayout {
                 height: 18px;
                 Caps {
-                    accessible-role: text; accessible-label: "app.import-review.left-out-title"; accessible-value: self.text;
+                    accessible-role: text; accessible-id: "app.import-review.left-out-title"; accessible-value: self.text;
                     text: ImportReview.left-out.length == 0 ? @tr("EVERYTHING IN THE FILE CARRIES OVER")
                         : ImportReview.stage == "preview" ? @tr("WILL NOT CARRY OVER ({})", ImportReview.left-out.length + ImportReview.left-out-more)
                         : @tr("DID NOT TRANSFER ({})", ImportReview.left-out.length + ImportReview.left-out-more);
@@ -118,7 +118,7 @@ export component ImportReviewDialog inherits Rectangle {
                         padding-left: Theme.s2; padding-right: Theme.s2;
                         for r in ImportReview.left-out: HorizontalLayout {
                             accessible-role: text;
-                            accessible-label: "app.import-review.left-out";
+                            accessible-id: "app.import-review.left-out";
                             accessible-value: r.item + " — " + r.reason;
                             height: 26px; spacing: Theme.s3;
                             Text { horizontal-stretch: 1; text: r.item; overflow: elide; vertical-alignment: center; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; }
@@ -133,17 +133,17 @@ export component ImportReviewDialog inherits Rectangle {
                 }
             }
             if ImportReview.error != "": Text {
-                accessible-role: text; accessible-label: "app.import-review.error"; accessible-value: self.text;
+                accessible-role: text; accessible-id: "app.import-review.error"; accessible-value: self.text;
                 text: ImportReview.error; wrap: word-wrap;
                 font-family: Theme.family; font-size: Theme.control; color: Theme.fault;
             }
             HorizontalLayout {
                 spacing: Theme.s2;
                 alignment: end;
-                if ImportReview.stage == "preview": PlateButton { accessible-label: "app.import-review.cancel"; accessible-role: button; compact: true; label: @tr("CANCEL"); clicked => { ImportReview.cancel(); } }
-                if ImportReview.stage == "preview": PlateButton { accessible-label: "app.import-review.run"; accessible-role: button; compact: true; label: @tr("IMPORT"); tone: Theme.live; tooltip: @tr("Import what is listed above. Undo stays possible afterwards."); clicked => { ImportReview.run(); } }
-                if ImportReview.stage == "done": PlateButton { accessible-label: "app.import-review.undo"; accessible-role: button; compact: true; label: @tr("UNDO IMPORT"); tooltip: @tr("Put the library back exactly as it was before this import"); clicked => { ImportReview.undo(); } }
-                if ImportReview.stage == "done" || ImportReview.stage == "undone": PlateButton { accessible-label: "app.import-review.close"; accessible-role: button; compact: true; label: @tr("DONE"); tone: Theme.live; clicked => { ImportReview.close(); } }
+                if ImportReview.stage == "preview": PlateButton { accessible-id: "app.import-review.cancel"; accessible-role: button; compact: true; label: @tr("CANCEL"); clicked => { ImportReview.cancel(); } }
+                if ImportReview.stage == "preview": PlateButton { accessible-id: "app.import-review.run"; accessible-role: button; compact: true; label: @tr("IMPORT"); tone: Theme.live; tooltip: @tr("Import what is listed above. Undo stays possible afterwards."); clicked => { ImportReview.run(); } }
+                if ImportReview.stage == "done": PlateButton { accessible-id: "app.import-review.undo"; accessible-role: button; compact: true; label: @tr("UNDO IMPORT"); tooltip: @tr("Put the library back exactly as it was before this import"); clicked => { ImportReview.undo(); } }
+                if ImportReview.stage == "done" || ImportReview.stage == "undone": PlateButton { accessible-id: "app.import-review.close"; accessible-role: button; compact: true; label: @tr("DONE"); tone: Theme.live; clicked => { ImportReview.close(); } }
             }
         }
     }

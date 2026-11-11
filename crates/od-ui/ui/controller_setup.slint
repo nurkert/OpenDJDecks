@@ -6,11 +6,11 @@
 
 import { Theme } from "tokens.slint";
 import { ProgressLine } from "lines.slint";
-import { Caps, PlateButton, Field, ControllerSetup } from "controls.slint";
+import { Caps, PlateButton, Field, ControllerSetup, KeyFocus, TooltipState } from "controls.slint";
 
 export component ControllerSetupBar inherits Rectangle {
     accessible-role: groupbox;
-    accessible-label: "app.controller-setup";
+    accessible-id: "app.controller-setup";
     accessible-value: ControllerSetup.stage;
     height: 64px;
     background: Theme.ground-band; border-radius: Theme.r-panel;
@@ -48,12 +48,12 @@ export component ControllerSetupBar inherits Rectangle {
             min-width: 150px;
             Caps { text: @tr("CONTROLLER SETUP"); }
             if ControllerSetup.stage == "learn": Text {
-                accessible-role: text; accessible-label: "app.controller-setup.step"; accessible-value: (ControllerSetup.index + 1) + "/" + ControllerSetup.total;
+                accessible-role: text; accessible-id: "app.controller-setup.step"; accessible-value: (ControllerSetup.index + 1) + "/" + ControllerSetup.total;
                 text: @tr("Control {} of {}", ControllerSetup.index + 1, ControllerSetup.total);
                 font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2;
             }
             if ControllerSetup.stage == "learn": ProgressLine {
-                accessible-role: progress-indicator; accessible-label: "app.controller-setup.progress";
+                accessible-role: progress-indicator; accessible-id: "app.controller-setup.progress";
                 accessible-value: ControllerSetup.learned;
                 width: 150px;
                 progress: ControllerSetup.total > 0 ? ControllerSetup.index / ControllerSetup.total : 0;
@@ -63,7 +63,7 @@ export component ControllerSetupBar inherits Rectangle {
 
         // ── 1. Which kind of controller ──
         if ControllerSetup.stage == "class": Text {
-            accessible-role: text; accessible-label: "app.controller-setup.prompt"; accessible-value: self.text;
+            accessible-role: text; accessible-id: "app.controller-setup.prompt"; accessible-value: self.text;
             horizontal-stretch: 1; min-width: 120px;
             vertical-alignment: center; wrap: word-wrap; overflow: elide;
             font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
@@ -77,7 +77,7 @@ export component ControllerSetupBar inherits Rectangle {
             for c[i] in ControllerSetup.classes: VerticalLayout {
                 alignment: center;
                 PlateButton {
-                    accessible-role: button; accessible-label: "app.controller-setup.class.slot\{i + 1}";
+                    accessible-role: button; accessible-id: "app.controller-setup.class.slot\{i + 1}";
                     accessible-checkable: true; accessible-checked: ControllerSetup.class-index == i;
                     compact: true; label: c; selected: ControllerSetup.class-index == i;
                     clicked => { ControllerSetup.choose(i); }
@@ -87,7 +87,7 @@ export component ControllerSetupBar inherits Rectangle {
         if ControllerSetup.stage == "class": VerticalLayout {
             alignment: center;
             PlateButton {
-                accessible-role: button; accessible-label: "app.controller-setup.start";
+                accessible-role: button; accessible-id: "app.controller-setup.start";
                 compact: true; label: @tr("START"); tone: Theme.live; active: true;
                 tooltip: @tr("Ask for the controls one by one");
                 clicked => { ControllerSetup.start(); }
@@ -100,13 +100,13 @@ export component ControllerSetupBar inherits Rectangle {
             alignment: center;
             spacing: Theme.key-gap;
             Text {
-                accessible-role: text; accessible-label: "app.controller-setup.prompt"; accessible-value: self.text;
+                accessible-role: text; accessible-id: "app.controller-setup.prompt"; accessible-value: self.text;
                 text: root.prompt;
                 font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone;
                 overflow: elide;
             }
             Text {
-                accessible-role: text; accessible-label: "app.controller-setup.heard"; accessible-value: ControllerSetup.heard;
+                accessible-role: text; accessible-id: "app.controller-setup.heard"; accessible-value: ControllerSetup.heard;
                 text: ControllerSetup.taken != "" ? @tr("That control is already used for control {}. Move another one, or SKIP.", ControllerSetup.taken)
                     : ControllerSetup.heard != "" ? @tr("Heard: {}", ControllerSetup.heard)
                     : ControllerSetup.expect == "button" ? @tr("Waiting for a press …")
@@ -121,19 +121,19 @@ export component ControllerSetupBar inherits Rectangle {
             alignment: center;
             spacing: Theme.key-gap;
             VerticalLayout { alignment: center; PlateButton {
-                accessible-role: button; accessible-label: "app.controller-setup.back";
+                accessible-role: button; accessible-id: "app.controller-setup.back";
                 compact: true; label: @tr("BACK"); enabled: ControllerSetup.index > 0;
                 tooltip: @tr("Back one control, to learn it again");
                 clicked => { ControllerSetup.back(); }
             } }
             VerticalLayout { alignment: center; PlateButton {
-                accessible-role: button; accessible-label: "app.controller-setup.again";
+                accessible-role: button; accessible-id: "app.controller-setup.again";
                 compact: true; label: @tr("AGAIN");
                 tooltip: @tr("Forget what arrived for this control and listen again");
                 clicked => { ControllerSetup.retry(); }
             } }
             VerticalLayout { alignment: center; PlateButton {
-                accessible-role: button; accessible-label: "app.controller-setup.skip";
+                accessible-role: button; accessible-id: "app.controller-setup.skip";
                 compact: true; label: @tr("SKIP");
                 tooltip: @tr("The controller has no such control: go on without it");
                 clicked => { ControllerSetup.skip(); }
@@ -142,7 +142,7 @@ export component ControllerSetupBar inherits Rectangle {
 
         // ── 3. Save ──
         if ControllerSetup.stage == "done" && ControllerSetup.saved-path == "": Text {
-            accessible-role: text; accessible-label: "app.controller-setup.prompt"; accessible-value: self.text;
+            accessible-role: text; accessible-id: "app.controller-setup.prompt"; accessible-value: self.text;
             horizontal-stretch: 1; min-width: 120px;
             vertical-alignment: center; wrap: word-wrap; overflow: elide;
             font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
@@ -155,7 +155,7 @@ export component ControllerSetupBar inherits Rectangle {
             VerticalLayout {
                 alignment: center;
                 name := Field {
-                    accessible-role: text-input; accessible-label: "app.controller-setup.name";
+                    accessible-role: text-input; accessible-id: "app.controller-setup.name";
                     width: 200px;
                     text: ControllerSetup.port;
                     placeholder: @tr("CONTROLLER NAME");
@@ -165,7 +165,7 @@ export component ControllerSetupBar inherits Rectangle {
             VerticalLayout {
                 alignment: center;
                 PlateButton {
-                    accessible-role: button; accessible-label: "app.controller-setup.save";
+                    accessible-role: button; accessible-id: "app.controller-setup.save";
                     compact: true; label: @tr("SAVE MAPPING"); tone: Theme.live; active: ControllerSetup.learned > 0;
                     enabled: ControllerSetup.learned > 0;
                     tooltip: @tr("Write the mapping file and use it from the next start");
@@ -174,7 +174,7 @@ export component ControllerSetupBar inherits Rectangle {
             }
         }
         if ControllerSetup.stage == "done" && ControllerSetup.saved-path != "": Text {
-            accessible-role: text; accessible-label: "app.controller-setup.saved"; accessible-value: ControllerSetup.saved-path;
+            accessible-role: text; accessible-id: "app.controller-setup.saved"; accessible-value: ControllerSetup.saved-path;
             horizontal-stretch: 1; min-width: 120px;
             vertical-alignment: center; wrap: word-wrap; overflow: elide;
             font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
@@ -185,7 +185,7 @@ export component ControllerSetupBar inherits Rectangle {
             alignment: center;
             horizontal-stretch: 0;
             PlateButton {
-                accessible-role: button; accessible-label: "app.controller-setup.close";
+                accessible-role: button; accessible-id: "app.controller-setup.close";
                 compact: true; label: ControllerSetup.saved-path != "" ? @tr("DONE") : @tr("CLOSE");
                 tooltip: @tr("Close the setup; nothing is saved unless you saved it");
                 clicked => { ControllerSetup.close(); }

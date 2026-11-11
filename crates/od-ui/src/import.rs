@@ -1018,6 +1018,11 @@ pub(crate) fn wire_native_drop(app: &std::rc::Rc<App>) {
                     );
                 }
             }
+            WindowEvent::Touch(_) => {
+                if let Some(a) = weak.upgrade() {
+                    crate::touch::touched(&a);
+                }
+            }
             WindowEvent::HoveredFileCancelled => {
                 hovered.set(0);
                 follow.stop();

@@ -167,6 +167,8 @@ impl App {
         stems_model::wire(&app);
         crate::lighting::wire(&app);
         crate::club::wire(&app);
+        crate::help::wire(&app);
+        crate::touch::wire(&app);
         crate::mic::wire(&app);
         crate::first_start::wire(&app);
         crate::controller_setup::wire(&app);

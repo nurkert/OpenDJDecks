@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 282 features; 276 in scope: 276 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 288 features; 282 in scope: 282 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -200,6 +200,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Calm waveform option: crisp playhead, faint beat lines, softer colours | DONE | `crates/od-ui/src/render.rs::beat_mark`, `crates/od-ui/ui/wave.slint::WaveLane`; Preferences > View > Calm waveform, off by default.; (Roadmap [50]) | 2 | P3 |
 | Waveform zone: view keys in one column, the playhead on the window's centre (the mixer's axis) | DONE | `crates/od-ui/ui/perform.slint::WaveZoneColumn`, `crates/od-ui/ui/wave.slint::WaveLane`; Short zones move the height keys behind a ⋯ key. Vertical lanes, Club and the booth keep their own centre.; (Roadmap [50]) | 2 | P3 |
 | Drag a waveform lane: scrub a paused deck, nudge a playing one | DONE | `crates/od-ui/src/lane_drag.rs`; Scrubbing is silent. The nudge uses the engine's pitch bend; SLIP return is computed from the tempo at the start of the drag. Tried with a mouse only.; (Roadmap [50]) | 5 | P2 |
+| Compact decks of a small window carry pads and loops and share the height with the mixer | DONE | `crates/od-ui/ui/perform.slint::KioskDeck`; (Roadmap [24]) | 1 | P3 |
 
 ## 5. Mixer
 
@@ -356,6 +357,11 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Keyboard shortcuts for layouts and a View menu | DONE | `crates/od-ui/ui/app.slint::MenuBar`; View menu (modes, Prepare layout, info / similar / Tags / filter panels, sections) and keys ⌥⌘4 / ⌥⌘5 (layouts), ⌥⌘I / ⌥⌘E / ⌥⌘G (panels); the menu bar is native on macOS, elsewhere its actions are reached by the keys; (UX §1.9, §4 P3.7) | 3 |  |
 | Perform view menu (2 / 4 decks, horizontal / vertical, Browse) | DONE | `ui/topbar.slint::ViewMenu`, `decks.rs::set_perform_view`; One menu in the top bar with a picture per view; the deck count is kept across starts | 1 | P2 |
 | Motion language: four named timings and one curve, reduced motion, audio-linked visuals unsmoothed | DONE | `crates/od-ui/ui/tokens.slint::Theme`, `DESIGN.md`; Press 90 ms, toggle 140 ms, panel 180 ms, mode change 240 ms on one curve; all 0 ms with Reduce motion, which starts off because Slint does not report the system setting. Meters, waveforms, playheads and the phase meter never animate.; (Roadmap [45]) | 2 | P2 |
+| Help overlay: every control on screen named with its shortcut, also on touch | DONE | `crates/od-ui/src/help.rs::lay_out`, `crates/od-ui/ui/help.slint::HelpOverlay`; F12, ? where no shortcut takes it, or the ? key in the top bar. Names and texts come from the controls' spoken names and tooltips.; (Roadmap [23]) | 4 | P2 |
+| Touch layout beyond the kiosk: decks, mixer, pads, FX, browser and lighting at 44 px | DONE | `crates/od-ui/src/touch.rs::touched`, `crates/od-ui/ui/perform.slint::KioskDeck`; Preferences > View > Touch; offered once when a touch arrives (winit touch events). Not tried on a real touch screen.; (Roadmap [24]) | 2 | P2 |
+| Every control reached by Tab, with the focus ring; arrows turn knobs and move faders | DONE | `crates/od-ui/ui/controls.slint::KeyFocus`; (Roadmap [25]) | 1 | P2 |
+| Readable screen reader names and descriptions (tooltip with shortcut); test ids apart | DONE | `crates/od-ui/src/a11y.rs::name_for`; Not tried with a real screen reader.; (Roadmap [25]) | 2 | P2 |
+| No state carried by hue alone: line forms, words and initials beside every colour | DONE | `crates/od-ui/src/render.rs::phrase_short`; (Roadmap [25]) | 1 | P3 |
 
 ## 13. DMX lighting
 
@@ -391,13 +397,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 276 |
+| DONE | 282 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **282** |
+| **Total** | **288** |
 
 ## P1 gaps and implementation notes
 

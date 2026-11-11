@@ -14,6 +14,7 @@
 
 slint::include_modules!();
 
+mod a11y;
 mod app;
 mod audio_health;
 mod appearance;
@@ -37,6 +38,7 @@ mod gig;
 mod gig_check;
 mod stick_check;
 mod grid_edit;
+mod help;
 mod import;
 mod keep_awake;
 mod key_mix;
@@ -68,6 +70,7 @@ mod state;
 mod stem_mix;
 mod stems_batch;
 mod stems_model;
+mod touch;
 mod track_edit;
 mod transients;
 mod update;

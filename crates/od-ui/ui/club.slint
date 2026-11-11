@@ -12,7 +12,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Fader, Jog, TipArea, PopupPlace, Glyph, ConcaveKey } from "controls.slint";
+import { Caps, PlateButton, Fader, Jog, TipArea, TooltipState, PopupPlace, Glyph, ConcaveKey, KeyFocus } from "controls.slint";
 import { DeckView, LaneMotion, PadView, DeckTime } from "structs.slint";
 import { WaveLane } from "wave.slint";
 
@@ -61,6 +61,10 @@ export global Club {
 // line along the top when lit. A key clicks; a hold key also reports press
 // and release (search, CUE preview).
 component Key inherits Rectangle {
+    // The spoken name (readable, translated; the test id is `accessible-id`).
+    accessible-role: button;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-description: root.tooltip;
     in property <string> label;
     in property <string> tooltip;
     in property <bool> on;
@@ -170,7 +174,7 @@ component DisplayValue inherits VerticalLayout {
     alignment: center;
     GroupCaption { text: root.caption; horizontal-alignment: root.align; }
     Text {
-        accessible-role: text; accessible-label: root.value-label; accessible-value: root.value;
+        accessible-role: text; accessible-id: root.value-label; accessible-value: root.value;
         min-width: probe.preferred-width;
         text: root.value == "" ? "—" : root.value;
         font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; color: Theme.bone;
@@ -258,7 +262,7 @@ export component ClubPlayer inherits Rectangle {
     // Too narrow for the display on one line: the read-outs move below it.
     property <bool> tight: PopupPlace.window-width < 1200px;
     accessible-role: groupbox;
-    accessible-label: "deck\{root.n}.club";
+    accessible-id: "deck\{root.n}.club";
     background: Theme.ground-band; border-radius: Theme.r-panel;
     clip: true;
 
@@ -288,7 +292,7 @@ export component ClubPlayer inherits Rectangle {
             VerticalLayout {
                 alignment: center;
                 Key {
-                    accessible-label: "deck\{root.n}.club.browse"; accessible-role: button;
+                    accessible-id: "deck\{root.n}.club.browse"; accessible-role: button;
                     key-h: 30px; label: @tr("BROWSE"); on: Club.browse-deck == root.n;
                     tooltip: @tr("Browse the source and load a track, as on the player");
                     clicked => { Club.browse(root.n); }
@@ -317,7 +321,7 @@ export component ClubPlayer inherits Rectangle {
         }
         BeatPosition {
             accessible-role: progress-indicator;
-            accessible-label: "club\{root.n}.beat-position";
+            accessible-id: "club\{root.n}.beat-position";
             accessible-value: Club.beat-in-bar[root.n - 1];
             beat: root.deck.loaded ? Club.beat-in-bar[root.n - 1] : 0;
             tone: root.tone;
@@ -326,7 +330,7 @@ export component ClubPlayer inherits Rectangle {
             other: Club.beat-in-bar[root.n - 1 + (Math.mod(root.n, 2) == 1 ? 1 : -1)];
         }
         Rectangle {
-            accessible-role: slider; accessible-label: "deck\{root.n}.club.overview"; accessible-value: root.deck.progress;
+            accessible-role: slider; accessible-id: "deck\{root.n}.club.overview"; accessible-value: root.deck.progress;
             // Short: still room for the 26 px LOAD SELECTED key.
             height: root.short ? 26px : 30px;
             clip: true;
@@ -342,7 +346,7 @@ export component ClubPlayer inherits Rectangle {
             TouchArea { mouse-cursor: crosshair; clicked => { root.seek(clamp(self.mouse-x / self.width, 0, 1)); } }
             if !root.deck.loaded && !root.deck.loading: HorizontalLayout {
                 alignment: center;
-                VerticalLayout { alignment: center; PlateButton { accessible-label: "deck\{root.n}.club.load"; accessible-role: button; compact: true; label: @tr("LOAD SELECTED"); tone: root.tone; clicked => { root.load(); } } }
+                VerticalLayout { alignment: center; PlateButton { accessible-id: "deck\{root.n}.club.load"; accessible-role: button; compact: true; label: @tr("LOAD SELECTED"); tone: root.tone; clicked => { root.load(); } } }
             }
         }
         // ── Controls on one five-row grid ──
@@ -358,20 +362,20 @@ export component ClubPlayer inherits Rectangle {
                 ClubRow {
                     base: root.base;
                     property <length> half: (self.width - root.kgap) / 2;
-                    Key { accessible-label: "deck\{root.n}.club.loop-in"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: @tr("IN"); tooltip: @tr("Loop in"); on: root.deck.looping; clicked => { Club.action(root.n, "loop.in"); } }
-                    Key { accessible-label: "deck\{root.n}.club.loop-out"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: @tr("OUT"); tooltip: @tr("Loop out"); on: root.deck.looping; clicked => { Club.action(root.n, "loop.out"); } }
+                    Key { accessible-id: "deck\{root.n}.club.loop-in"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: @tr("IN"); tooltip: @tr("Loop in"); on: root.deck.looping; clicked => { Club.action(root.n, "loop.in"); } }
+                    Key { accessible-id: "deck\{root.n}.club.loop-out"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: @tr("OUT"); tooltip: @tr("Loop out"); on: root.deck.looping; clicked => { Club.action(root.n, "loop.out"); } }
                 }
                 ClubRow {
                     base: root.base;
                     property <length> half: (self.width - root.kgap) / 2;
-                    Key { accessible-label: "deck\{root.n}.club.reloop"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: @tr("RELOOP"); tooltip: @tr("Reloop / exit the loop"); clicked => { Club.action(root.n, "loop.exit"); } }
-                    Key { accessible-label: "deck\{root.n}.club.loop-4"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: @tr("4 BEAT"); tooltip: @tr("Four-beat loop"); clicked => { Club.action(root.n, "loop.4"); } }
+                    Key { accessible-id: "deck\{root.n}.club.reloop"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: @tr("RELOOP"); tooltip: @tr("Reloop / exit the loop"); clicked => { Club.action(root.n, "loop.exit"); } }
+                    Key { accessible-id: "deck\{root.n}.club.loop-4"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: @tr("4 BEAT"); tooltip: @tr("Four-beat loop"); clicked => { Club.action(root.n, "loop.4"); } }
                 }
                 ClubRow {
                     base: root.base;
                     property <length> half: (self.width - root.kgap) / 2;
-                    Key { accessible-label: "deck\{root.n}.club.jump-back"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: "◀ " + root.deck.jump-size; tooltip: @tr("Beat jump back"); clicked => { Club.action(root.n, "jump.back"); } }
-                    Key { accessible-label: "deck\{root.n}.club.jump-fwd"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: root.deck.jump-size + " ▶"; tooltip: @tr("Beat jump forward"); clicked => { Club.action(root.n, "jump.fwd"); } }
+                    Key { accessible-id: "deck\{root.n}.club.jump-back"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: "◀ " + root.deck.jump-size; tooltip: @tr("Beat jump back"); clicked => { Club.action(root.n, "jump.back"); } }
+                    Key { accessible-id: "deck\{root.n}.club.jump-fwd"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: root.deck.jump-size + " ▶"; tooltip: @tr("Beat jump forward"); clicked => { Club.action(root.n, "jump.fwd"); } }
                 }
                 // CUE and PLAY side by side, bottom left, as large as the
                 // two rows allow.
@@ -380,13 +384,13 @@ export component ClubPlayer inherits Rectangle {
                     property <length> half: (self.width - root.kgap) / 2;
                     property <length> d: min(self.half, self.height);
                     BigButton {
-                        accessible-label: "deck\{root.n}.club.cue"; accessible-role: button;
+                        accessible-id: "deck\{root.n}.club.cue"; accessible-role: button;
                         size: parent.d; x: (parent.half - parent.d) / 2; y: (parent.height - parent.d) / 2;
                         kind: "cue"; tone: Theme.attention; lit: root.deck.loaded && !root.deck.playing;
                         pressed(down) => { Club.cue(root.n, down); }
                     }
                     BigButton {
-                        accessible-label: "deck\{root.n}.club.play"; accessible-role: button;
+                        accessible-id: "deck\{root.n}.club.play"; accessible-role: button;
                         size: parent.d; x: parent.half + root.kgap + (parent.half - parent.d) / 2; y: (parent.height - parent.d) / 2;
                         kind: "play"; tone: Theme.live; lit: root.deck.playing;
                         pressed(down) => { if (down) { Club.action(root.n, "play"); } }
@@ -422,7 +426,7 @@ export component ClubPlayer inherits Rectangle {
                     }
                     Jog {
                         hero-from: 190px;
-                        accessible-label: "deck\{root.n}.club.jog"; accessible-role: image;
+                        accessible-id: "deck\{root.n}.club.jog"; accessible-role: image;
                         size: max(0px, parent.d - 10px);
                         x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
                         angle: root.deck.jog-angle; progress: root.deck.progress; playing: root.deck.playing; loaded: root.deck.loaded;
@@ -432,28 +436,28 @@ export component ClubPlayer inherits Rectangle {
                         sub-text: root.deck.phrase;
                     }
                     ConcaveKey {
-                        accessible-label: "deck\{root.n}.club.search-back"; accessible-role: button;
+                        accessible-id: "deck\{root.n}.club.search-back"; accessible-role: button;
                         x: 0; y: 0; width: parent.kw; height: parent.kh;
                         inner-right: true; cy: parent.height / 2; arc-r: parent.arc; gap: root.kgap;
                         label: root.tight ? "«" : "◀◀"; tooltip: @tr("Search back while held");
                         held(down) => { Club.search(root.n, down ? -4 : 0); }
                     }
                     ConcaveKey {
-                        accessible-label: "deck\{root.n}.club.call-prev"; accessible-role: button;
+                        accessible-id: "deck\{root.n}.club.call-prev"; accessible-role: button;
                         x: 0; y: parent.kh + root.kgap; width: parent.kw; height: parent.kh;
                         inner-right: true; cy: parent.height / 2 - self.y; arc-r: parent.arc; gap: root.kgap;
                         label: root.tight ? "◀" : "◀ CALL"; tooltip: @tr("Previous memory cue");
                         clicked => { Club.action(root.n, "memory.prev"); }
                     }
                     ConcaveKey {
-                        accessible-label: "deck\{root.n}.club.search-fwd"; accessible-role: button;
+                        accessible-id: "deck\{root.n}.club.search-fwd"; accessible-role: button;
                         x: parent.rx; y: 0; width: parent.kw; height: parent.kh;
                         inner-right: false; cy: parent.height / 2; arc-r: parent.arc; gap: root.kgap;
                         label: root.tight ? "»" : "▶▶"; tooltip: @tr("Search forward while held");
                         held(down) => { Club.search(root.n, down ? 4 : 0); }
                     }
                     ConcaveKey {
-                        accessible-label: "deck\{root.n}.club.call-next"; accessible-role: button;
+                        accessible-id: "deck\{root.n}.club.call-next"; accessible-role: button;
                         x: parent.rx; y: parent.kh + root.kgap; width: parent.kw; height: parent.kh;
                         inner-right: false; cy: parent.height / 2 - self.y; arc-r: parent.arc; gap: root.kgap;
                         label: root.tight ? "▶" : "CALL ▶"; tooltip: @tr("Next memory cue");
@@ -466,8 +470,8 @@ export component ClubPlayer inherits Rectangle {
                 ClubRow {
                     base: root.base;
                     property <length> half: (self.width - root.kgap) / 2;
-                    Key { accessible-label: "deck\{root.n}.club.tempo-range"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: root.deck.tempo-range; tooltip: @tr("Tempo range"); clicked => { Club.tempo-range(root.n); } }
-                    Key { accessible-label: "deck\{root.n}.club.keylock"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: "KEYLOCK"; tooltip: @tr("Keylock: the key stays when the tempo changes"); on: root.deck.keylock; tone: Theme.live; clicked => { Club.action(root.n, "keylock"); } }
+                    Key { accessible-id: "deck\{root.n}.club.tempo-range"; accessible-role: button; x: 0; width: parent.half; key-h: parent.height; label: root.deck.tempo-range; tooltip: @tr("Tempo range"); clicked => { Club.tempo-range(root.n); } }
+                    Key { accessible-id: "deck\{root.n}.club.keylock"; accessible-role: button; x: parent.half + root.kgap; width: parent.half; key-h: parent.height; label: "KEYLOCK"; tooltip: @tr("Keylock: the key stays when the tempo changes"); on: root.deck.keylock; tone: Theme.live; clicked => { Club.action(root.n, "keylock"); } }
                 }
                 // The tempo fader in a framed slot over rows 2–5, with its
                 // scale: − (slower) at the top, 0 in the middle, + below.
@@ -486,7 +490,7 @@ export component ClubPlayer inherits Rectangle {
                         }
                     }
                     Fader {
-                        accessible-label: "deck\{root.n}.club.tempo"; accessible-role: slider; accessible-value: root.deck.tempo;
+                        accessible-id: "deck\{root.n}.club.tempo"; accessible-role: slider; accessible-value: root.deck.tempo;
                         x: parent.cx - self.width / 2; y: 6px; height: parent.height - 12px;
                         tone: root.tone;
                         value: (1 - root.deck.tempo-value) / 2;
@@ -502,12 +506,12 @@ export component ClubPlayer inherits Rectangle {
     if Club.browse-deck == root.n: Rectangle {
         x: 0; y: 56px; width: parent.width; height: parent.height - 56px;
         background: Theme.ground-band;
-        accessible-role: list; accessible-label: "deck\{root.n}.club.browse-list";
+        accessible-role: list; accessible-id: "deck\{root.n}.club.browse-list";
         VerticalLayout {
             padding: Theme.s2; spacing: Theme.s1;
             HorizontalLayout {
                 height: 28px; spacing: Theme.s2;
-                Key { accessible-label: "deck\{root.n}.club.browse-back"; accessible-role: button; label: @tr("BACK"); clicked => { Club.browse-back(); } }
+                Key { accessible-id: "deck\{root.n}.club.browse-back"; accessible-role: button; label: @tr("BACK"); clicked => { Club.browse-back(); } }
                 Caps { text: Club.browse-title; vertical-alignment: center; color: Theme.attention; overflow: elide; }
             }
             Flickable {
@@ -515,7 +519,7 @@ export component ClubPlayer inherits Rectangle {
                 VerticalLayout {
                     alignment: start;
                     for it[i] in Club.browse-items: Rectangle {
-                        accessible-role: list-item; accessible-label: "deck\{root.n}.club.browse-row\{i}"; accessible-value: it.title;
+                        accessible-role: list-item; accessible-id: "deck\{root.n}.club.browse-row\{i}"; accessible-value: it.title;
                         height: 30px;
                         background: ta.has-hover ? Theme.plate-raised : transparent;
                         HorizontalLayout {
@@ -535,7 +539,7 @@ export component ClubPlayer inherits Rectangle {
 
 // The guided checklist over the decks.
 export component ClubSteps inherits Rectangle {
-    accessible-role: list; accessible-label: "app.club.steps";
+    accessible-role: list; accessible-id: "app.club.steps";
     // One 30 px line; a narrow window wraps the steps onto more lines.
     height: Club.show-steps ? max(30px, lay.preferred-height) : 0px;
     visible: Club.show-steps;
@@ -568,7 +572,7 @@ export component ClubSteps inherits Rectangle {
             VerticalLayout {
                 height: 30px; alignment: center;
                 PlateButton {
-                    accessible-label: "app.club.steps-hide"; accessible-role: button;
+                    accessible-id: "app.club.steps-hide"; accessible-role: button;
                     compact: true; glyph: "close"; width: 30px; tooltip: @tr("Hide the checklist");
                     clicked => { Club.show-steps = false; }
                 }

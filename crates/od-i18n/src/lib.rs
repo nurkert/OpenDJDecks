@@ -1388,6 +1388,15 @@ const DE: &[(&str, &str)] = &[
     ("TEMPO ±{} %", "TEMPO ±{} %"),
     ("KEY FITS", "TONART PASST"),
     ("RATING ≥ {}", "BEWERTUNG ≥ {}"),
+    // Spoken names of controls (od-ui a11y) and the help overlay.
+    ("Player {}", "Player {}"),
+    ("Channel {}", "Kanal {}"),
+    ("FX {}", "FX {}"),
+    ("{}: {}", "{}: {}"),
+    (
+        "Help: name every control on screen",
+        "Hilfe: jedes Bedienelement auf dem Bildschirm benennen",
+    ),
 ];
 
 /// Whether `english` has a German translation (independent of the

@@ -5,7 +5,7 @@
 // named IN SYNC only when tempo and phase both match.
 
 import { Theme } from "tokens.slint";
-import { Caps, Toggle } from "controls.slint";
+import { Caps, Toggle, KeyFocus, TooltipState } from "controls.slint";
 
 export struct PhaseRow {
     deck: int,
@@ -30,7 +30,7 @@ export global PhaseMeter {
 component PhaseRuler inherits Rectangle {
     in property <PhaseRow> reading;
     accessible-role: progress-indicator;
-    accessible-label: "wave.phase.deck\{root.reading.deck}";
+    accessible-id: "wave.phase.deck\{root.reading.deck}";
     accessible-value: (root.reading.in-sync ? "in sync" : root.reading.ms) + " " + root.reading.tempo;
     min-width: 160px;
     horizontal-stretch: 1;
@@ -89,7 +89,7 @@ component PhaseRuler inherits Rectangle {
 // the practice switch.
 export component PhaseStrip inherits Rectangle {
     accessible-role: groupbox;
-    accessible-label: "wave.phase";
+    accessible-id: "wave.phase";
     accessible-value: PhaseMeter.reference;
     height: 26px;
     background: Theme.ground-band; border-radius: Theme.r-panel;
@@ -114,7 +114,7 @@ export component PhaseStrip inherits Rectangle {
             alignment: center; horizontal-stretch: 0;
             Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: PhaseMeter.practice;
-                accessible-label: "wave.phase.practice";
+                accessible-id: "wave.phase.practice";
                 size: 22px; label: @tr("PRACTICE"); on: PhaseMeter.practice; tone: Theme.attention;
                 tooltip: PhaseMeter.practice ? @tr("Practice on: SYNC is off. Click to allow SYNC again") : @tr("Practise beatmatching by ear and eye: SYNC goes off and stays off");
                 clicked => { PhaseMeter.toggle-practice(); }

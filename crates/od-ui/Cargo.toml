@@ -25,6 +25,9 @@ od-format-clubusb.workspace = true
 # unstable-winit-030: files dropped from Finder / the file manager (winit
 # window events) until the winit backend delivers OS drops to `DropArea`.
 slint = { version = "1.18", features = ["unstable-winit-030"] }
+# The help overlay walks the window's element tree for the controls on
+# screen, their names and places (must match the slint version).
+i-slint-core = "=1.18.1"
 anyhow.workspace = true
 tracing.workspace = true
 crossbeam-channel.workspace = true
@@ -60,8 +63,6 @@ windows-sys = { version = "0.61", features = ["Win32_System_Power"] }
 tempfile.workspace = true
 # Headless UI tests: the Slint testing backend (must match the slint version).
 i-slint-backend-testing = "=1.18.1"
-# Delivers simulated OS drag-and-drop events to the window (file drops).
-i-slint-core = "=1.18.1"
 od-parity = { path = "../od-parity" }
 sha2 = "0.10"
 

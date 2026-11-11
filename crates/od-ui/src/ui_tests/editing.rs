@@ -83,7 +83,7 @@ fn prefs(ui: &Ui) -> crate::PreferencesWindow {
 }
 
 fn prefs_el(w: &crate::PreferencesWindow, label: &str) -> ElementHandle {
-    ElementHandle::find_by_accessible_label(w, label)
+    super::harness::find_all(w, label)
         .next()
         .unwrap_or_else(|| panic!("no `{label}` in Preferences"))
 }

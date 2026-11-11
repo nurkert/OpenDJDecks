@@ -8,7 +8,7 @@ export { LaneDrag } from "wave.slint";
 export { PopupPlace }
 export { DeckTime, GridEdit, DeckGrid, DeckGridView, DeckMix, AnalysisSure } from "structs.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
-import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark, ControllerSetup } from "controls.slint";
+import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark, ControllerSetup, KeyFocus, FocusRing } from "controls.slint";
 import { FirstStartBar } from "first_start.slint";
 import { ControllerSetupBar } from "controller_setup.slint";
 export { ControllerSetup }
@@ -20,6 +20,10 @@ import { AudioHealth, GigCheck, GigCheckRow, AudioStatusLine, DeviceLostBar, Gig
 export { AudioHealth, GigCheck, GigCheckRow, Restore, PerformLock }
 export { FirstStart }
 import { TooltipLayer } from "tooltip.slint";
+import { Help, HelpItem, HelpOverlay } from "help.slint";
+import { TouchLayout, TouchOfferBar } from "touch.slint";
+export { TouchLayout }
+export { Help, HelpItem }
 import { Sidebar, RailItem } from "sidebar.slint";
 import { TopBar, Gig } from "topbar.slint";
 export { Gig }
@@ -647,6 +651,8 @@ export component AppWindow inherits Window {
     }
 
     forward-focus: keys;
+    // The keys back to the window (the help overlay opening).
+    public function focus-keys() { keys.focus(); }
     // The charcoal continuum behind everything (plain paper in light mode).
     if !Theme.light: Image { width: root.width; height: root.height; source: root.ground-texture; image-fit: fill; }
     keys := FocusScope {
@@ -719,6 +725,7 @@ export component AppWindow inherits Window {
                     toggle-recording => { root.toggle-recording(); }
                     undo => { root.undo(); }
                 }
+                if TouchLayout.offer: TouchOfferBar { }
                 if root.update-state != "": UpdateBar {
                     state: root.update-state;
                     text: root.update-text;
@@ -872,7 +879,8 @@ export component AppWindow inherits Window {
                     tight: root.small-screen;
                     short: root.short-screen;
                     crowd: root.perform-crowd;
-                    touch-size: root.kiosk;
+                    touch-size: root.kiosk || Theme.touch-mode;
+                    kiosk: root.kiosk;
                     show-mixer: !root.small-screen && root.mixer-panel;
                     recording: root.recording;
                     recording-time: root.recording-time;
@@ -918,8 +926,10 @@ export component AppWindow inherits Window {
                 }
                 // Recording bar under the player (top bar REC).
                 if root.mode == "prepare" && root.rec-panel && !root.kiosk: RecBar { }
-                if !root.kiosk && !(root.mode == "prepare" && root.prepare-layout == "browser"): Splitter {
-                    accessible-label: "browser.upper-splitter"; accessible-role: slider;
+                // Touch: the panes keep their sizes (a 7 px grip is no target).
+                if !root.kiosk && !Theme.touch-mode && !(root.mode == "prepare" && root.prepare-layout == "browser"): Splitter {
+                    accessible-id: "browser.upper-splitter"; accessible-role: slider;
+                    accessible-label: TooltipState.name-for(self.accessible-id, @tr("BROWSER HEIGHT"), "");
                     horizontal: true;
                     tooltip: @tr("Drag to resize, double-click to reset");
                     dragged(d) => { root.upper-height = clamp(upper.height + d, upper.min-height, root.height - 260px); }
@@ -943,7 +953,7 @@ export component AppWindow inherits Window {
                         // the panel takes the lists' place (closing it brings
                         // them back).
                         visible: !root.lists-yield;
-                        accessible-label: "browser.lists"; accessible-role: groupbox;
+                        accessible-id: "browser.lists"; accessible-role: groupbox;
                         // Never narrower than its content (a saved width or a
                         // narrow window cannot squeeze it either).
                         width: root.lists-yield ? 0px : root.kiosk ? 190px : root.lists-collapsed ? self.content-min : max(self.content-min, root.list-tight ? min(root.sidebar-width, 240px) : root.sidebar-width);
@@ -991,8 +1001,9 @@ export component AppWindow inherits Window {
                         browse-focus: root.browse-focus == "tree";
                         open-sampler => { root.menu-action("browser.source.sampler"); }
                     }
-                    if !root.lists-yield && !root.lists-collapsed: Splitter {
-                        accessible-label: "browser.splitter"; accessible-role: slider;
+                    if !root.lists-yield && !root.lists-collapsed && !Theme.touch-mode: Splitter {
+                        accessible-id: "browser.splitter"; accessible-role: slider;
+                        accessible-label: TooltipState.name-for(self.accessible-id, @tr("LISTS WIDTH"), "");
                         thickness: Theme.target;
                         horizontal: false;
                         tooltip: @tr("Drag to resize, double-click to reset");
@@ -1019,15 +1030,18 @@ export component AppWindow inherits Window {
                         // List header: title, count, search and list actions.
                         if root.section == "library": HorizontalLayout {
                             spacing: root.kiosk ? Theme.s2 : Theme.s3;
-                            height: root.kiosk ? 44px : 28px;
+                            height: root.kiosk || Theme.touch-mode ? 44px : 28px;
+                            // Gives way to the list keys on a narrow window (info
+                            // panel open, moved files to find).
+                            Rectangle {
+                            min-width: root.kiosk ? 60px : 120px;
+                            max-width: min(title.preferred-width + 8px, root.kiosk ? 120px : 360px);
+                            horizontal-stretch: 0;
                             title := TextInput {
-                                accessible-label: "browser.list-title"; accessible-role: text-input;
+                                accessible-id: "browser.list-title"; accessible-role: text-input;
+                                accessible-label: @tr("List name");
                                 accessible-value: self.text; accessible-read-only: self.read-only;
-                                // Gives way to the list keys on a narrow window (info
-                                // panel open, moved files to find).
-                                min-width: root.kiosk ? 60px : 120px;
-                                max-width: min(self.preferred-width + 8px, root.kiosk ? 120px : 360px);
-                                horizontal-stretch: 0;
+                                width: parent.width; height: parent.height;
                                 text: root.node-title;
                                 read-only: root.node-kind == "all" || root.node-kind == "explorer" || root.node-kind == "similar" || root.node-kind == "history" || root.node-kind == "taglist" || root.node-kind == "auto" || root.read-only;
                                 font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
@@ -1036,15 +1050,17 @@ export component AppWindow inherits Window {
                                 single-line: true;
                                 accepted => { root.rename-node(self.text); keys.focus(); }
                             }
+                            FocusRing { show: title.has-focus; }
+                            }
                             // The kiosk shows the list summary in the status band only.
-                            if !root.kiosk: Caps { accessible-label: "browser.list-sub"; accessible-role: text; accessible-value: root.node-sub; text: root.node-sub; vertical-alignment: center; min-width: 0px; overflow: elide; }
+                            if !root.kiosk: Caps { accessible-id: "browser.list-sub"; accessible-role: text; accessible-value: root.node-sub; text: root.node-sub; vertical-alignment: center; min-width: 0px; overflow: elide; }
                             Rectangle { horizontal-stretch: 1; }
-                            if root.node-kind == "all" && root.missing-count > 0 && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.find-moved"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("{} MOVED", root.missing-count); tone: Theme.fault; tooltip: @tr("Search a folder for tracks whose files have moved"); command: "browser.find.moved"; clicked => { root.find-moved-files(); } } }
-                            if root.node-kind == "all" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.add-music"; accessible-role: button; horizontal-stretch: 0; compact: true; label: root.list-tight ? "" : @tr("ADD MUSIC"); glyph: "plus"; tone: Theme.live; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } } }
+                            if root.node-kind == "all" && root.missing-count > 0 && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-id: "browser.find-moved"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("{} MOVED", root.missing-count); tone: Theme.fault; tooltip: @tr("Search a folder for tracks whose files have moved"); command: "browser.find.moved"; clicked => { root.find-moved-files(); } } }
+                            if root.node-kind == "all" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-id: "browser.add-music"; accessible-role: button; horizontal-stretch: 0; compact: true; label: root.list-tight ? "" : @tr("ADD MUSIC"); glyph: "plus"; tone: Theme.live; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } } }
                             if root.node-kind == "explorer" && !root.kiosk: VerticalLayout {
                                 horizontal-stretch: 0; alignment: center;
                                 LineToggle {
-                                    accessible-label: "browser.recursive"; accessible-role: checkbox;
+                                    accessible-id: "browser.recursive"; accessible-role: checkbox;
                                     accessible-checkable: true; accessible-checked: self.checked;
                                     horizontal-stretch: 0;
                                     label: @tr("Include subfolders");
@@ -1058,7 +1074,7 @@ export component AppWindow inherits Window {
                                 for d[i] in ["master", "1", "2", "3", "4"]: VerticalLayout {
                                     alignment: center;
                                     PlateButton {
-                                        accessible-label: i == 0 ? "browser.similar.master" : "browser.similar.deck\{i}"; accessible-role: button;
+                                        accessible-id: i == 0 ? "browser.similar.master" : "browser.similar.deck\{i}"; accessible-role: button;
                                         accessible-checkable: true; accessible-checked: root.similar-source == d;
                                         horizontal-stretch: 0; compact: true;
                                         label: i == 0 ? @tr("MASTER") : d;
@@ -1068,15 +1084,15 @@ export component AppWindow inherits Window {
                                     }
                                 }
                             }
-                            if root.node-kind == "duplicates" && !root.kiosk: Caps { accessible-label: "browser.duplicates.groups"; accessible-role: text; accessible-value: root.duplicate-groups; text: @tr("{} GROUPS", root.duplicate-groups); vertical-alignment: center; }
-                            if root.node-kind == "duplicates" && !root.kiosk && root.has-selection: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.duplicates.remove"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("REMOVE SELECTED"); tone: Theme.fault; tooltip: @tr("Remove the selected tracks from the collection (the files stay on disk)"); clicked => { root.duplicates-action("remove-selected"); } } }
-                            if root.node-kind == "duplicates" && !root.kiosk && root.duplicate-groups > 0: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.duplicates.keep-first"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("KEEP ONE OF EACH"); tone: Theme.fault; tooltip: @tr("Remove every copy but the oldest of each group from the collection (the files stay on disk)"); clicked => { root.duplicates-action("keep-first"); } } }
-                            if root.node-kind == "taglist" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.tag-list.save"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("SAVE AS PLAYLIST"); tone: Theme.live; tooltip: @tr("Make a playlist of the tag list"); clicked => { root.tag-list-action("save"); } } }
-                            if root.node-kind == "taglist" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.tag-list.clear"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("CLEAR"); tone: Theme.fault; tooltip: @tr("Empty the tag list"); clicked => { root.tag-list-action("clear"); } } }
-                            if root.node-kind != "all" && root.node-kind != "stick" && root.node-kind != "explorer" && root.node-kind != "similar" && root.node-kind != "history" && root.node-kind != "taglist" && root.node-kind != "auto" && !root.read-only && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-label: "browser.delete-list"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("DELETE"); tone: Theme.fault; enabled: !PerformLock.locked; tooltip: PerformLock.locked ? @tr("Locked for the set: nothing is deleted") : @tr("Delete the open list"); command: "browser.delete.list"; clicked => { root.delete-node(); } } }
+                            if root.node-kind == "duplicates" && !root.kiosk: Caps { accessible-id: "browser.duplicates.groups"; accessible-role: text; accessible-value: root.duplicate-groups; text: @tr("{} GROUPS", root.duplicate-groups); vertical-alignment: center; }
+                            if root.node-kind == "duplicates" && !root.kiosk && root.has-selection: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-id: "browser.duplicates.remove"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("REMOVE SELECTED"); tone: Theme.fault; tooltip: @tr("Remove the selected tracks from the collection (the files stay on disk)"); clicked => { root.duplicates-action("remove-selected"); } } }
+                            if root.node-kind == "duplicates" && !root.kiosk && root.duplicate-groups > 0: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-id: "browser.duplicates.keep-first"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("KEEP ONE OF EACH"); tone: Theme.fault; tooltip: @tr("Remove every copy but the oldest of each group from the collection (the files stay on disk)"); clicked => { root.duplicates-action("keep-first"); } } }
+                            if root.node-kind == "taglist" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-id: "browser.tag-list.save"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("SAVE AS PLAYLIST"); tone: Theme.live; tooltip: @tr("Make a playlist of the tag list"); clicked => { root.tag-list-action("save"); } } }
+                            if root.node-kind == "taglist" && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-id: "browser.tag-list.clear"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("CLEAR"); tone: Theme.fault; tooltip: @tr("Empty the tag list"); clicked => { root.tag-list-action("clear"); } } }
+                            if root.node-kind != "all" && root.node-kind != "stick" && root.node-kind != "explorer" && root.node-kind != "similar" && root.node-kind != "history" && root.node-kind != "taglist" && root.node-kind != "auto" && !root.read-only && !root.kiosk: VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton { accessible-id: "browser.delete-list"; accessible-role: button; horizontal-stretch: 0; compact: true; label: @tr("DELETE"); tone: Theme.fault; enabled: !PerformLock.locked; tooltip: PerformLock.locked ? @tr("Locked for the set: nothing is deleted") : @tr("Delete the open list"); command: "browser.delete.list"; clicked => { root.delete-node(); } } }
                             // Load target of a double-click (Perform): the free deck or a fixed one.
                             VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton {
-                                accessible-label: "browser.target"; accessible-role: button;
+                                accessible-id: "browser.target"; accessible-role: button;
                                 accessible-value: root.load-target == 0 ? "auto" : root.load-target;
                                 horizontal-stretch: 0; compact: !root.kiosk; tall: root.kiosk;
                                 enabled: root.mode == "perform";
@@ -1087,7 +1103,7 @@ export component AppWindow inherits Window {
                             } }
                             // Row density of the list (Preferences > View > Line spacing).
                             VerticalLayout { horizontal-stretch: 0; alignment: center; PlateButton {
-                                accessible-label: "browser.density"; accessible-role: button;
+                                accessible-id: "browser.density"; accessible-role: button;
                                 accessible-value: root.density;
                                 horizontal-stretch: 0; compact: !root.kiosk; tall: root.kiosk;
                                 // The touch screen keeps its 44 px rows.
@@ -1097,7 +1113,7 @@ export component AppWindow inherits Window {
                                 clicked => { root.cycle-density(); }
                             } }
                             if !root.search-row: Field {
-                                accessible-label: "browser.search"; accessible-role: text-input;
+                                accessible-id: "browser.search"; accessible-role: text-input;
                                 accessible-value: self.text; accessible-placeholder-text: self.placeholder;
                                 property <int> focus-request: root.search-focus;
                                 changed focus-request => { self.focus-end(); }
@@ -1107,7 +1123,7 @@ export component AppWindow inherits Window {
                                 cancelled => { list-keys.focus(); }
                                 min-width: 120px; preferred-width: 260px; max-width: 260px;
                                 horizontal-stretch: 1;
-                                height: root.kiosk ? 44px : 28px;
+                                height: root.kiosk || Theme.touch-mode ? 44px : 28px;
                                 placeholder: @tr("SEARCH  ⌘F");
                                 text <=> root.search-text;
                                 edited(t) => { root.search(t); }
@@ -1116,7 +1132,7 @@ export component AppWindow inherits Window {
                         // A narrow list: the search on a line of its own.
                         if root.section == "library" && root.search-row: HorizontalLayout {
                             Field {
-                                accessible-label: "browser.search"; accessible-role: text-input;
+                                accessible-id: "browser.search"; accessible-role: text-input;
                                 accessible-value: self.text; accessible-placeholder-text: self.placeholder;
                                 property <int> focus-request: root.search-focus;
                                 changed focus-request => { self.focus-end(); }
@@ -1126,7 +1142,7 @@ export component AppWindow inherits Window {
                                 cancelled => { list-keys.focus(); }
                                 min-width: 120px; preferred-width: 260px; max-width: 100000px;
                                 horizontal-stretch: 1;
-                                height: root.kiosk ? 44px : 32px;
+                                height: root.kiosk || Theme.touch-mode ? 44px : 32px;
                                 placeholder: @tr("SEARCH  ⌘F");
                                 text <=> root.search-text;
                                 edited(t) => { root.search(t); }
@@ -1148,7 +1164,7 @@ export component AppWindow inherits Window {
                             height: 44px;
                             alignment: start;
                             for d[i] in ["master", "1", "2", "3", "4"]: PlateButton {
-                                accessible-label: i == 0 ? "browser.similar.master" : "browser.similar.deck\{i}"; accessible-role: button;
+                                accessible-id: i == 0 ? "browser.similar.master" : "browser.similar.deck\{i}"; accessible-role: button;
                                 accessible-checkable: true; accessible-checked: root.similar-source == d;
                                 horizontal-stretch: 0; tall: true;
                                 label: i == 0 ? @tr("MASTER") : d;
@@ -1160,14 +1176,14 @@ export component AppWindow inherits Window {
                         if root.section == "library" && root.node-kind == "smart": VerticalLayout {
                             spacing: Theme.s1;
                             Field {
-                                accessible-label: "browser.smart-rule"; accessible-role: text-input; accessible-value: self.text;
+                                accessible-id: "browser.smart-rule"; accessible-role: text-input; accessible-value: self.text;
                                 placeholder: @tr("RULES, E.G.  bpm 120-126, key 8A~, genre house, rating >= 3, added < 30d");
                                 text: root.smart-rule-text;
                                 tone: Theme.w436;
                                 accepted(t) => { root.set-smart-rule(t); }
                             }
                             if root.smart-rule-error != "": Text {
-                                accessible-label: "browser.smart-rule-error"; accessible-role: text; accessible-value: self.text;
+                                accessible-id: "browser.smart-rule-error"; accessible-role: text; accessible-value: self.text;
                                 text: root.smart-rule-error;
                                 font-family: Theme.family; font-size: Theme.control; color: Theme.fault;
                             }
@@ -1187,7 +1203,7 @@ export component AppWindow inherits Window {
                             spacing: Theme.s2;
                             height: 32px;
                             Field {
-                                accessible-label: "browser.set.planned-start"; accessible-role: text-input; accessible-value: self.text;
+                                accessible-id: "browser.set.planned-start"; accessible-role: text-input; accessible-value: self.text;
                                 width: 200px;
                                 placeholder: @tr("PLANNED START, E.G. 23:30");
                                 text: root.set-planned-start;
@@ -1195,27 +1211,27 @@ export component AppWindow inherits Window {
                                 accepted(t) => { root.save-planned-start(t); }
                             }
                             if root.flow-selected >= 0: Caps {
-                                accessible-label: "browser.set.backups"; accessible-role: text; accessible-value: root.set-backups-text;
+                                accessible-id: "browser.set.backups"; accessible-role: text; accessible-value: root.set-backups-text;
                                 horizontal-stretch: 1;
                                 text: root.set-backups-text == "" ? @tr("NO BACKUP TRACKS FOR THIS POSITION") : @tr("BACKUPS: {}", root.set-backups-text);
                                 vertical-alignment: center; overflow: elide;
                             }
                             if root.flow-selected < 0: Rectangle { horizontal-stretch: 1; }
                             if root.flow-selected >= 0: PlateButton {
-                                accessible-label: "browser.set.backups-from-tag-list"; accessible-role: button;
+                                accessible-id: "browser.set.backups-from-tag-list"; accessible-role: button;
                                 horizontal-stretch: 0; compact: true; label: @tr("BACKUPS FROM TAG LIST"); tone: Theme.attention;
                                 tooltip: @tr("The tracks of the tag list become the backups of the selected position");
                                 clicked => { root.backups-action("from-tag-list"); }
                             }
                             if root.flow-selected >= 0 && root.set-backups-text != "": PlateButton {
-                                accessible-label: "browser.set.backups-clear"; accessible-role: button;
+                                accessible-id: "browser.set.backups-clear"; accessible-role: button;
                                 horizontal-stretch: 0; compact: true; label: @tr("CLEAR"); tone: Theme.fault;
                                 tooltip: @tr("Remove the backup tracks of the selected position");
                                 clicked => { root.backups-action("clear"); }
                             }
                         }
                         if root.section == "library" && root.node-kind == "set" && root.flow-selected >= 0 && root.mode == "prepare": Field {
-                            accessible-label: "browser.transition-note"; accessible-role: text-input; accessible-value: self.text;
+                            accessible-id: "browser.transition-note"; accessible-role: text-input; accessible-value: self.text;
                             placeholder: @tr("TRANSITION NOTE FOR THE SELECTED POSITION — ENTER TO SAVE");
                             text: root.transition-note;
                             tone: Theme.attention;
@@ -1234,7 +1250,7 @@ export component AppWindow inherits Window {
                         // A layout, so the table's minimum height still reaches the band.
                         VerticalLayout {
                         if root.section == "library": TrackTable {
-                            accessible-label: "browser.list"; accessible-role: table;
+                            accessible-id: "browser.list"; accessible-role: table;
                             accessible-value: list-keys.has-focus ? "focused" : "";
                             guide: "browser.list";
                             vertical-stretch: 1;
@@ -1297,9 +1313,9 @@ export component AppWindow inherits Window {
                         if root.section == "library" && root.node-kind == "all" && root.tracks.length == 0 && root.search-text == "" && !root.filter.active: HorizontalLayout {
                             alignment: center;
                             spacing: Theme.s3;
-                            PlateButton { accessible-label: "browser.empty.add-music"; accessible-role: button; label: @tr("ADD MUSIC FOLDER"); tone: Theme.live; guide: "browser.empty.add-music"; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } }
-                            PlateButton { accessible-label: "browser.empty.import-library"; accessible-role: button; label: @tr("IMPORT LIBRARY"); tone: Theme.w486; tooltip: @tr("Import a library XML file (rekordbox-compatible)"); command: "library.import.xml"; clicked => { root.menu-action("library.import.xml"); } }
-                            PlateButton { accessible-label: "browser.empty.gig-preset"; accessible-role: button; accessible-checkable: true; accessible-checked: Gig.active; label: @tr("GIG PRESET"); selected: Gig.active; tooltip: @tr("High contrast, the colour-blind palette and a larger interface in one click (also GIG in the top bar)"); clicked => { Gig.act("toggle"); } }
+                            PlateButton { accessible-id: "browser.empty.add-music"; accessible-role: button; label: @tr("ADD MUSIC FOLDER"); tone: Theme.live; guide: "browser.empty.add-music"; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } }
+                            PlateButton { accessible-id: "browser.empty.import-library"; accessible-role: button; label: @tr("IMPORT LIBRARY"); tone: Theme.w486; tooltip: @tr("Import a library XML file (rekordbox-compatible)"); command: "library.import.xml"; clicked => { root.menu-action("library.import.xml"); } }
+                            PlateButton { accessible-id: "browser.empty.gig-preset"; accessible-role: button; accessible-checkable: true; accessible-checked: Gig.active; label: @tr("GIG PRESET"); selected: Gig.active; tooltip: @tr("High contrast, the colour-blind palette and a larger interface in one click (also GIG in the top bar)"); clicked => { Gig.act("toggle"); } }
                         }
 
                         // ── Devices section ──
@@ -1325,8 +1341,8 @@ export component AppWindow inherits Window {
                                 if root.devices.length > 0: FlexboxLayout {
                                     spacing-horizontal: Theme.s4; spacing-vertical: Theme.s1;
                                     alignment: start;
-                                    PlateButton { accessible-role: button; accessible-label: "devices.sync-all"; compact: true; label: @tr("SYNC ALL STICKS"); tone: Theme.live; tooltip: @tr("Sync every plugged-in stick at the same time"); clicked => { root.sync-all-devices(); } }
-                                    LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-label: "devices.eject-when-done"; label: @tr("Eject when done"); tooltip: @tr("Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"); checked: root.eject-when-done; toggled(v) => { root.set-eject-when-done(v); } }
+                                    PlateButton { accessible-role: button; accessible-id: "devices.sync-all"; compact: true; label: @tr("SYNC ALL STICKS"); tone: Theme.live; tooltip: @tr("Sync every plugged-in stick at the same time"); clicked => { root.sync-all-devices(); } }
+                                    LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-id: "devices.eject-when-done"; label: @tr("Eject when done"); tooltip: @tr("Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"); checked: root.eject-when-done; toggled(v) => { root.set-eject-when-done(v); } }
                                     
                                 }
                                 for d in root.devices: DeviceLine {
@@ -1354,7 +1370,7 @@ export component AppWindow inherits Window {
                                     LineToggle { label: @tr("Club player USB (export.pdb)"); tooltip: @tr("Also write the database Club players read (compatible with Pioneer DJ players)"); checked: root.device-club-usb; toggled(v) => { root.set-device-formats(v, root.device-opendjdecks, root.device-club-compat); } }
                                     LineToggle { label: @tr("OpenDJDecks"); tooltip: @tr("Write the OpenDJDecks library for other OpenDJDecks setups"); checked: root.device-opendjdecks; toggled(v) => { root.set-device-formats(root.device-club-usb, v, root.device-club-compat); } }
                                 }
-                                if root.device-club-usb: LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-label: "devices.club-usb-compat"; label: @tr("Maximum compatibility (WAV for older club players)"); tooltip: @tr("Writes FLAC and M4A/AAC/ALAC tracks to this stick as 16-bit WAV. Your original files stay as they are."); checked: root.device-club-compat; toggled(v) => { root.set-device-formats(root.device-club-usb, root.device-opendjdecks, v); } }
+                                if root.device-club-usb: LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-id: "devices.club-usb-compat"; label: @tr("Maximum compatibility (WAV for older club players)"); tooltip: @tr("Writes FLAC and M4A/AAC/ALAC tracks to this stick as 16-bit WAV. Your original files stay as they are."); checked: root.device-club-compat; toggled(v) => { root.set-device-formats(root.device-club-usb, root.device-opendjdecks, v); } }
                                 if StickCheck.visible: StickCheckPanel { vertical-stretch: 1; }
                                 if !StickCheck.visible: Caps { text: @tr("CONTENT — LISTS ON THIS STICK"); }
                                 if !StickCheck.visible: Rectangle {
@@ -1386,7 +1402,7 @@ export component AppWindow inherits Window {
                                 }
                                 HorizontalLayout {
                                     spacing: Theme.s2;
-                                    PlateButton { accessible-role: button; accessible-label: "devices.check"; compact: true; label: @tr("CHECK STICK"); tone: Theme.attention; tooltip: @tr("Read the stick back and compare every track, cue, grid and playlist with the library"); clicked => { StickCheck.run(root.device-selected); } }
+                                    PlateButton { accessible-role: button; accessible-id: "devices.check"; compact: true; label: @tr("CHECK STICK"); tone: Theme.attention; tooltip: @tr("Read the stick back and compare every track, cue, grid and playlist with the library"); clicked => { StickCheck.run(root.device-selected); } }
                                     PlateButton { compact: true; label: @tr("REBUILD STICK"); tone: Theme.attention; tooltip: @tr("Write the whole stick again from the library"); clicked => { root.rebuild-device(root.device-selected); } }
                                     PlateButton { compact: true; label: @tr("FORGET"); tone: Theme.fault; tooltip: @tr("Stop keeping this stick in sync"); clicked => { root.forget-device(root.device-selected); } }
                                 }
@@ -1435,7 +1451,7 @@ export component AppWindow inherits Window {
                         open-list => { root.suggestion-open(); }
                     }
                     if root.info-open && root.section == "library": InfoPanel {
-                        accessible-label: "info.panel"; accessible-role: groupbox;
+                        accessible-id: "info.panel"; accessible-role: groupbox;
                         info: root.track-info;
                         edit(f, v) => { root.info-edit(f, v); }
                     }
@@ -1450,37 +1466,37 @@ export component AppWindow inherits Window {
                             spacing: 0px;
                             // Kiosk browse screen: back to the decks.
                             if root.kiosk && root.browser-open && PerformLayout.layout != "browse": RailItem {
-                                accessible-label: "browser.decks"; label: @tr("DECKS"); icon: "decks"; iconic: true; tone: Theme.w486;
+                                accessible-id: "browser.decks"; label: @tr("DECKS"); icon: "decks"; iconic: true; tone: Theme.w486;
                                 tooltip: @tr("Back to the decks");
                                 clicked => { root.browser-open = false; }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.user-tag"; label: @tr("TAGS"); icon: "tag"; iconic: root.kiosk || root.list-tight; tone: Theme.w436;
+                                accessible-id: "browser.panel.user-tag"; label: @tr("TAGS"); icon: "tag"; iconic: root.kiosk || root.list-tight; tone: Theme.w436;
                                 current: root.user-tag-open;
                                 tooltip: @tr("Tags: tag the selected tracks with your own categories");
                                 clicked => { root.user-tag-open = !root.user-tag-open; root.panels-changed(); }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.similar"; label: @tr("SIMILAR"); icon: "similar"; iconic: root.kiosk || root.list-tight; tone: Theme.w546;
+                                accessible-id: "browser.panel.similar"; label: @tr("SIMILAR"); icon: "similar"; iconic: root.kiosk || root.list-tight; tone: Theme.w546;
                                 current: root.similar-open;
                                 tooltip: @tr("Similar: tracks that fit after the selected one");
                                 clicked => { root.similar-open = !root.similar-open; root.panels-changed(); }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.sampler"; label: @tr("SAMPLER"); icon: "pads"; iconic: root.kiosk || root.list-tight; tone: Theme.w656;
+                                accessible-id: "browser.panel.sampler"; label: @tr("SAMPLER"); icon: "pads"; iconic: root.kiosk || root.list-tight; tone: Theme.w656;
                                 current: root.sampler-panel && root.mode == "perform";
                                 enabled: root.mode == "perform";
                                 tooltip: root.mode == "perform" ? @tr("Show or hide the sampler panel") : @tr("The sampler panel is part of Perform");
                                 clicked => { root.toggle-sampler-panel(); }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.info"; label: "INFO"; icon: "info"; iconic: root.kiosk || root.list-tight; tone: Theme.w486;
+                                accessible-id: "browser.panel.info"; label: "INFO"; icon: "info"; iconic: root.kiosk || root.list-tight; tone: Theme.w486;
                                 current: root.info-open;
                                 tooltip: @tr("Info: the tags and file details of the selected track");
                                 clicked => { root.info-open = !root.info-open; }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.sub-browser"; label: @tr("SUB BROWSER"); icon: "split"; iconic: root.kiosk || root.list-tight; tone: Theme.attention;
+                                accessible-id: "browser.panel.sub-browser"; label: @tr("SUB BROWSER"); icon: "split"; iconic: root.kiosk || root.list-tight; tone: Theme.attention;
                                 current: root.sub-browser-open;
                                 tooltip: @tr("Sub browser: a second tree and list under this one, to drag tracks between lists");
                                 command: "view.panel.sub-browser";
@@ -1501,25 +1517,25 @@ export component AppWindow inherits Window {
                         padding-right: Theme.s4;
                         spacing: Theme.s4;
                         if root.analysis-progress > 0 && root.analysis-progress < 1: ProgressLine {
-                            accessible-label: "status.progress"; accessible-role: progress-indicator;
+                            accessible-id: "status.progress"; accessible-role: progress-indicator;
                             accessible-value: round(root.analysis-progress * 100) + "%";
                             accessible-value-minimum: 0; accessible-value-maximum: 1;
                             width: 120px; y: 12px; height: 2px;
                             progress: root.analysis-progress; tone: Theme.attention;
                         }
                         Caps {
-                            accessible-label: "status.activity"; accessible-role: text; accessible-value: root.analysis-text;
+                            accessible-id: "status.activity"; accessible-role: text; accessible-value: root.analysis-text;
                             text: root.analysis-text; vertical-alignment: center;
                         }
                         Text {
-                            accessible-label: "status.message"; accessible-role: text; accessible-value: root.status-text;
+                            accessible-id: "status.message"; accessible-role: text; accessible-value: root.status-text;
                             horizontal-stretch: 1;
                             text: root.status-text;
                             font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
                             vertical-alignment: center; overflow: elide;
                         }
                         Caps {
-                            accessible-label: "status.summary"; accessible-role: text; accessible-value: root.list-summary;
+                            accessible-id: "status.summary"; accessible-role: text; accessible-value: root.list-summary;
                             horizontal-stretch: 0;
                             text: root.list-summary; vertical-alignment: center;
                         }
@@ -1570,7 +1586,7 @@ export component AppWindow inherits Window {
         }
     }
     if file-drop.has-drag || root.file-drag: drop-hint := Rectangle {
-        accessible-label: "browser.drop-files"; accessible-role: text;
+        accessible-id: "browser.drop-files"; accessible-role: text;
         accessible-value: self.hint;
         property <string> hint: root.mode == "perform" ? @tr("Drop on a deck to load, anywhere else to add to the collection") : @tr("Drop on a player to open, on a list to add to it, anywhere else to add to the collection and the open list");
         border-width: 2px; border-color: Theme.live;
@@ -1608,7 +1624,7 @@ export component AppWindow inherits Window {
                     spacing: Theme.s3;
                     Text {
                         accessible-role: text;
-                        accessible-label: "import.encrypted.file";
+                        accessible-id: "import.encrypted.file";
                         accessible-value: self.text;
                         horizontal-stretch: 1;
                         vertical-alignment: center;
@@ -1616,13 +1632,13 @@ export component AppWindow inherits Window {
                         font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
                         overflow: elide;
                     }
-                    PlateButton { accessible-label: "import.encrypted.choose"; accessible-role: button; compact: true; label: @tr("CHOOSE FILE"); tooltip: @tr("Pick the library database file. Nothing is searched for on this computer."); clicked => { root.pick-encrypted-import-file(); } }
+                    PlateButton { accessible-id: "import.encrypted.choose"; accessible-role: button; compact: true; label: @tr("CHOOSE FILE"); tooltip: @tr("Pick the library database file. Nothing is searched for on this computer."); clicked => { root.pick-encrypted-import-file(); } }
                 }
                 Caps { text: @tr("ADVANCED"); }
                 // No accessible-value here: the key stays out of the accessibility tree.
                 Field {
                     accessible-role: text-input;
-                    accessible-label: "import.encrypted.key";
+                    accessible-id: "import.encrypted.key";
                     placeholder: @tr("KEY FOR THIS LIBRARY");
                     input-type: InputType.password;
                     text <=> root.encrypted-import-key;
@@ -1636,7 +1652,7 @@ export component AppWindow inherits Window {
                 }
                 if root.encrypted-import-error != "": Text {
                     accessible-role: text;
-                    accessible-label: "import.encrypted.error";
+                    accessible-id: "import.encrypted.error";
                     accessible-value: self.text;
                     text: root.encrypted-import-error;
                     font-family: Theme.family; font-size: Theme.control; color: Theme.fault;
@@ -1645,8 +1661,8 @@ export component AppWindow inherits Window {
                 HorizontalLayout {
                     spacing: Theme.s2;
                     alignment: end;
-                    PlateButton { accessible-label: "import.encrypted.cancel"; accessible-role: button; compact: true; label: @tr("CANCEL"); clicked => { root.cancel-encrypted-import(); } }
-                    PlateButton { accessible-label: "import.encrypted.run"; accessible-role: button; compact: true; enabled: !root.encrypted-import-busy; label: @tr("IMPORT"); tone: Theme.live; clicked => { root.run-encrypted-import(); } }
+                    PlateButton { accessible-id: "import.encrypted.cancel"; accessible-role: button; compact: true; label: @tr("CANCEL"); clicked => { root.cancel-encrypted-import(); } }
+                    PlateButton { accessible-id: "import.encrypted.run"; accessible-role: button; compact: true; enabled: !root.encrypted-import-busy; label: @tr("IMPORT"); tone: Theme.live; clicked => { root.run-encrypted-import(); } }
                 }
             }
         }
@@ -1665,5 +1681,7 @@ export component AppWindow inherits Window {
         size-mb: root.stems-model-size;
         act(what) => { root.stems-model-action(what); }
     }
+    // Help (F12, ?, or the ? key in the top bar): every control named.
+    if Help.on: HelpOverlay { width: 100%; height: 100%; }
     TooltipLayer { }
 }

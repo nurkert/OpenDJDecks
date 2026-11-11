@@ -93,7 +93,7 @@ pub fn is_valid_label(label: &str) -> bool {
     })
 }
 
-/// Literal `accessible-label: "…"` values in the UI sources (Slint and
+/// Literal `accessible-id: "…"` (and older `accessible-label`) values in the UI sources (Slint and
 /// Rust under `crates/od-ui`). Labels built at run time from expressions
 /// are not seen; this is a progress indicator, the view test is the gate.
 pub fn labels_in_ui_sources(root: &Path) -> BTreeSet<String> {
@@ -115,9 +115,10 @@ pub fn labels_in_ui_sources(root: &Path) -> BTreeSet<String> {
             let Ok(text) = std::fs::read_to_string(&path) else {
                 continue;
             };
+            for key in ["accessible-id", "accessible-label"] {
             let mut rest = text.as_str();
-            while let Some(pos) = rest.find("accessible-label") {
-                rest = &rest[pos + "accessible-label".len()..];
+            while let Some(pos) = rest.find(key) {
+                rest = &rest[pos + key.len()..];
                 let after = rest.trim_start();
                 let Some(after) = after.strip_prefix(':') else {
                     continue;
@@ -131,6 +132,7 @@ pub fn labels_in_ui_sources(root: &Path) -> BTreeSet<String> {
                         }
                     }
                 }
+            }
             }
         }
     }

@@ -249,6 +249,17 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
                 .ok_or("no column header to right-click")?;
             ui.right_click_el(&header);
         }
+        "overlay.help" => {
+            perform(2);
+            ui.pump(200);
+            crate::help::toggle(&ui.app);
+            ui.pump(200);
+        }
+        "perform.touch" => {
+            perform(2);
+            super::touch::touch_on(ui, true);
+            ui.pump(300);
+        }
         "perform.mixer-off" => {
             perform(2);
             if w.get_mixer_panel() {

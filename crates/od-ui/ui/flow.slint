@@ -6,7 +6,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps } from "controls.slint";
+import { Caps, KeyFocus, TooltipState } from "controls.slint";
 import { TipArea } from "tooltip.slint";
 import { FlowPoint, FlowWarning } from "structs.slint";
 
@@ -44,7 +44,7 @@ export component SetFlow inherits Rectangle {
     callback select(int);
     callback select-pair(int);
     accessible-role: groupbox;
-    accessible-label: "browser.flow";
+    accessible-id: "browser.flow";
     accessible-value: root.warnings.length;
     height: 178px;
 
@@ -129,7 +129,7 @@ export component SetFlow inherits Rectangle {
             // Clear of the transition markers on both edges.
             x: parent.width > 40px ? 12px : 0px; width: parent.width > 40px ? parent.width - 24px : parent.width;
             accessible-role: button;
-            accessible-label: "browser.flow.point\{i}";
+            accessible-id: "browser.flow.point\{i}";
             accessible-value: p.title;
             tooltip: p.pos + "  ·  " + p.title;
             mouse-cursor: pointer;
@@ -177,7 +177,7 @@ export component SetFlow inherits Rectangle {
         }
         TipArea {
             accessible-role: button;
-            accessible-label: "browser.flow.transition\{i}";
+            accessible-id: "browser.flow.transition\{i}";
             accessible-value: p.reason != "" ? p.reason : p.fit;
             tooltip: p.detail;
             mouse-cursor: pointer;
@@ -195,12 +195,12 @@ export component SetFlow inherits Rectangle {
             alignment: start;
             height: 24px;
             if root.warnings.length == 0 && root.points.length > 1: Caps {
-                accessible-role: text; accessible-label: "browser.flow.no-warnings"; accessible-value: self.text;
+                accessible-role: text; accessible-id: "browser.flow.no-warnings"; accessible-value: self.text;
                 text: @tr("NO WARNINGS: EVERY TRANSITION WITHIN 6 % TEMPO, NO KEY CLASH, NO ENERGY DROP");
                 vertical-alignment: center;
             }
             for w[j] in root.warnings: WarningChip {
-                accessible-label: "browser.flow.warning\{j}";
+                accessible-id: "browser.flow.warning\{j}";
                 text: w.text;
                 current: w.index == root.pair;
                 clicked => { root.select-pair(w.index); }

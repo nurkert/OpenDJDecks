@@ -4,7 +4,7 @@
 // dialog, because nothing may interrupt a set.
 
 import { Theme } from "tokens.slint";
-import { Caps, PlateButton, TipArea } from "controls.slint";
+import { Caps, PlateButton, TipArea, KeyFocus, TooltipState } from "controls.slint";
 import { VLine } from "lines.slint";
 
 // Audio output health, set from Rust (audio_health.rs).
@@ -52,7 +52,7 @@ component ResultLine inherits VLine {
 // so far. Always there; the line says the state at a glance.
 export component AudioStatusLine inherits HorizontalLayout {
     accessible-role: text;
-    accessible-label: "status.audio";
+    accessible-id: "status.audio";
     accessible-value: AudioHealth.state + " " + AudioHealth.device + " " + AudioHealth.latency + " " + AudioHealth.dropouts;
     spacing: Theme.s2;
     property <string> state: AudioHealth.state;
@@ -90,7 +90,7 @@ export component AudioStatusLine inherits HorizontalLayout {
 // The device is gone: a band that cannot be missed, with the way out.
 export component DeviceLostBar inherits Rectangle {
     accessible-role: groupbox;
-    accessible-label: "app.audio-lost";
+    accessible-id: "app.audio-lost";
     accessible-value: AudioHealth.lost-device;
     height: max(56px, body.preferred-height + 2 * Theme.s3);
     background: Theme.ground-band; border-radius: Theme.r-panel;
@@ -123,7 +123,7 @@ export component DeviceLostBar inherits Rectangle {
         if AudioHealth.fallback != "": VerticalLayout {
             alignment: center; horizontal-stretch: 0;
             PlateButton {
-                accessible-role: button; accessible-label: "app.audio-lost.switch";
+                accessible-role: button; accessible-id: "app.audio-lost.switch";
                 label: @tr("SWITCH OUTPUT"); tone: Theme.live; active: true;
                 tooltip: @tr("Go on on {}", AudioHealth.fallback);
                 clicked => { AudioHealth.use-fallback(); }
@@ -132,7 +132,7 @@ export component DeviceLostBar inherits Rectangle {
         VerticalLayout {
             alignment: center; horizontal-stretch: 0;
             PlateButton {
-                accessible-role: button; accessible-label: "app.audio-lost.retry";
+                accessible-role: button; accessible-id: "app.audio-lost.retry";
                 label: @tr("TRY AGAIN");
                 tooltip: @tr("Open {} again", AudioHealth.lost-device);
                 clicked => { AudioHealth.retry(); }
@@ -145,7 +145,7 @@ export component DeviceLostBar inherits Rectangle {
 component CheckItem inherits HorizontalLayout {
     in property <GigCheckRow> check;
     accessible-role: text;
-    accessible-label: "app.gig-check." + root.check.id;
+    accessible-id: "app.gig-check." + root.check.id;
     accessible-value: root.check.state + ": " + root.check.detail;
     spacing: Theme.s2;
     VerticalLayout {
@@ -175,7 +175,7 @@ component CheckItem inherits HorizontalLayout {
 // the summary, again and close on the right.
 export component GigCheckBar inherits Rectangle {
     accessible-role: groupbox;
-    accessible-label: "app.gig-check";
+    accessible-id: "app.gig-check";
     accessible-value: GigCheck.result;
     // One 56 px line; a narrow window wraps the checks onto more lines.
     height: max(56px, checks.preferred-height);
@@ -202,7 +202,7 @@ export component GigCheckBar inherits Rectangle {
         VerticalLayout {
             alignment: center; horizontal-stretch: 0;
             PlateButton {
-                accessible-role: button; accessible-label: "app.gig-check.again";
+                accessible-role: button; accessible-id: "app.gig-check.again";
                 compact: true; label: @tr("CHECK AGAIN");
                 tooltip: @tr("Look at outputs, controller, disk space and track files again");
                 clicked => { GigCheck.run(); }
@@ -211,7 +211,7 @@ export component GigCheckBar inherits Rectangle {
         VerticalLayout {
             alignment: center; horizontal-stretch: 0;
             PlateButton {
-                accessible-role: button; accessible-label: "app.gig-check.close";
+                accessible-role: button; accessible-id: "app.gig-check.close";
                 compact: true; label: @tr("CLOSE");
                 clicked => { GigCheck.close(); }
             }
@@ -237,7 +237,7 @@ export global Restore {
 // covers a control and goes as soon as you choose.
 export component RestoreBar inherits Rectangle {
     accessible-role: groupbox;
-    accessible-label: "app.restore";
+    accessible-id: "app.restore";
     accessible-value: Restore.summary + (Restore.recording != "" ? " | " + Restore.recording : "");
     height: max(56px, body.preferred-height + 2 * Theme.s3);
     background: Theme.ground-band; border-radius: Theme.r-panel;
@@ -271,7 +271,7 @@ export component RestoreBar inherits Rectangle {
         if Restore.has-decks: VerticalLayout {
             alignment: center; horizontal-stretch: 0;
             PlateButton {
-                accessible-role: button; accessible-label: "app.restore.restore";
+                accessible-role: button; accessible-id: "app.restore.restore";
                 label: @tr("RESTORE DECKS"); tone: Theme.live; active: true;
                 tooltip: @tr("Load the tracks back where they were, with tempo, loops and mixer; the decks wait for PLAY");
                 clicked => { Restore.restore(); }
@@ -280,7 +280,7 @@ export component RestoreBar inherits Rectangle {
         VerticalLayout {
             alignment: center; horizontal-stretch: 0;
             PlateButton {
-                accessible-role: button; accessible-label: "app.restore.dismiss";
+                accessible-role: button; accessible-id: "app.restore.dismiss";
                 label: Restore.has-decks ? @tr("START EMPTY") : @tr("OK");
                 clicked => { Restore.dismiss(); }
             }
@@ -302,14 +302,15 @@ export global PerformLock {
 // Top bar, status zone: LOCK at rest, LOCKED filled in sodium while on
 // (the legend sodium already has for a locked grid).
 export component LockKey inherits Rectangle {
+    accessible-label: TooltipState.name-for(self.accessible-id, PerformLock.locked ? @tr("LOCKED") : @tr("LOCK"), t.tooltip);
     in property <bool> narrow;
     accessible-role: checkbox;
-    accessible-label: "topbar.lock";
+    accessible-id: "topbar.lock";
     accessible-checkable: true;
     accessible-checked: PerformLock.locked;
     accessible-value: PerformLock.playing ? "playing" : "idle";
     // Narrow bar: a padlock instead of the word, so live values keep room.
-    width: root.narrow ? 20px : l.preferred-width + 24px;
+    width: max(Theme.touch-min, root.narrow ? 20px : l.preferred-width + 24px);
     Rectangle {
         y: Theme.s2; height: parent.height - 2 * Theme.s2;
         border-radius: Theme.r-control;
@@ -341,4 +342,5 @@ export component LockKey inherits Rectangle {
         mouse-cursor: pointer;
         clicked => { PerformLock.toggle(); }
     }
+    KeyFocus { activate => { PerformLock.toggle(); } }
 }

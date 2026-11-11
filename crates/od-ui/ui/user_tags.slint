@@ -4,7 +4,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, Field, PlateButton, TipArea } from "controls.slint";
+import { Caps, Field, PlateButton, TipArea, KeyFocus, TooltipState } from "controls.slint";
 import { UserTagChip, SuggestionRow } from "structs.slint";
 
 export component UserTagPanel inherits Rectangle {
@@ -15,7 +15,7 @@ export component UserTagPanel inherits Rectangle {
     callback toggle(string, string);
     // "Category: Value" typed into the field.
     callback add(string);
-    accessible-label: "user_tag.panel"; accessible-role: groupbox;
+    accessible-id: "user_tag.panel"; accessible-role: groupbox;
     background: Theme.ground-band; border-radius: Theme.r-panel;
     width: 260px;
     Flickable {
@@ -30,7 +30,7 @@ export component UserTagPanel inherits Rectangle {
                 font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; wrap: word-wrap;
             }
             if !root.read-only: Field {
-                accessible-label: "user_tag.add"; accessible-role: text-input; accessible-value: self.text;
+                accessible-id: "user_tag.add"; accessible-role: text-input; accessible-value: self.text;
                 height: 28px;
                 placeholder: @tr("CATEGORY: VALUE — RETURN");
                 tone: Theme.w436;
@@ -44,7 +44,7 @@ export component UserTagPanel inherits Rectangle {
                 spacing: Theme.key-gap;
                 if c.first: Caps { text: c.category; font-size: Theme.label; }
                 Rectangle {
-                    accessible-label: "user_tag.value\{i}"; accessible-role: checkbox;
+                    accessible-id: "user_tag.value\{i}"; accessible-role: checkbox;
                     accessible-value: c.category + ": " + c.value;
                     accessible-checkable: true; accessible-checked: c.on;
                     height: 26px;
@@ -83,7 +83,7 @@ export component SuggestionPanel inherits Rectangle {
     callback activated(int);
     // Open the suggestions as the Similar tracks list.
     callback open-list();
-    accessible-label: "similar.panel"; accessible-role: groupbox;
+    accessible-id: "similar.panel"; accessible-role: groupbox;
     background: Theme.ground-band; border-radius: Theme.r-panel;
     width: 280px;
     VerticalLayout {
@@ -104,7 +104,7 @@ export component SuggestionPanel inherits Rectangle {
             VerticalLayout {
                 alignment: start;
                 for r[i] in root.rows: Rectangle {
-                    accessible-label: "similar.row\{i}"; accessible-role: list-item; accessible-value: r.title;
+                    accessible-id: "similar.row\{i}"; accessible-role: list-item; accessible-value: r.title;
                     height: 40px;
                     background: t.has-hover ? Theme.plate : transparent;
                     VLine { x: 2px; y: 8px; height: parent.height - 16px; weight: 1px; tone: Theme.w546; }
@@ -132,7 +132,7 @@ export component SuggestionPanel inherits Rectangle {
             }
         }
         if root.reference != "": PlateButton {
-            accessible-label: "similar.open-list"; accessible-role: button;
+            accessible-id: "similar.open-list"; accessible-role: button;
             compact: true;
             label: @tr("SHOW AS LIST");
             tone: Theme.w546;

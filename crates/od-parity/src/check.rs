@@ -594,7 +594,7 @@ pub fn render(r: &Report, strict: bool) -> String {
     let _ = writeln!(
         s,
         "- {} views, {} distinct required labels; {} of them ({} %) appear literally as \
-         `accessible-label` in `crates/od-ui` (static scan; the headless view test is the gate).",
+         `accessible-id` in `crates/od-ui` (static scan; the headless view test is the gate).",
         r.views,
         r.view_labels,
         r.labels_in_ui,

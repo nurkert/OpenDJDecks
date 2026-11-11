@@ -967,6 +967,7 @@ pub(crate) fn detach(app: &Rc<App>) {
         crate::shell::apply_theme(&w.global::<crate::Theme>(), &st.settings, st.config.lite);
     }
     wire_global(app, &w.global::<crate::Lighting>());
+    crate::shell::wire_tooltips(app, &w.global::<crate::TooltipState>());
     let _ = w.show();
     *app.lighting_window.borrow_mut() = Some(w);
     refresh(app);

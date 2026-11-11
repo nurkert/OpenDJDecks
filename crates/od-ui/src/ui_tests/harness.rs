@@ -365,7 +365,7 @@ impl Ui {
     // ----- lookup ------------------------------------------------------
 
     pub fn find(&self, label: &str) -> Option<ElementHandle> {
-        ElementHandle::find_by_accessible_label(&self.app.ui, label).next()
+        find_all(&self.app.ui, label).next()
     }
 
     pub fn get(&self, label: &str) -> ElementHandle {
@@ -426,7 +426,7 @@ impl Ui {
             .find("browser.tree")
             .map(|tree| {
                 tree.query_descendants()
-                    .match_predicate(move |e| e.accessible_label().is_some_and(|l| l == t))
+                    .match_predicate(move |e| id_of(e).is_some_and(|l| l == t))
                     .find_all()
             })
             .unwrap_or_default()
@@ -645,6 +645,31 @@ impl Ui {
     }
 }
 
+/// The test id of an element: its `accessible-id` (the convention label of
+/// docs/parity.md), or for elements without one their accessible name.
+pub(crate) fn id_of(e: &ElementHandle) -> Option<slint::SharedString> {
+    e.accessible_id()
+        .filter(|i| !i.is_empty())
+        .or_else(|| e.accessible_label())
+}
+
+/// Elements of `root` whose `accessible-id` is `label`, or (menu items,
+/// texts) whose accessible name is: in tree order.
+pub(crate) fn find_all(
+    root: &impl i_slint_backend_testing::ElementRoot,
+    label: &str,
+) -> impl Iterator<Item = ElementHandle> {
+    let l = label.to_string();
+    root.root_element()
+        .query_descendants()
+        .match_predicate(move |e| {
+            e.accessible_id().is_some_and(|i| i == l.as_str())
+                || e.accessible_label().is_some_and(|i| i == l.as_str())
+        })
+        .find_all()
+        .into_iter()
+}
+
 /// Labelled elements of any component (main window, Preferences window).
 pub(crate) fn labelled_in(
     root: &impl i_slint_backend_testing::ElementRoot,
@@ -654,12 +679,11 @@ pub(crate) fn labelled_in(
         .root_element()
         .query_descendants()
         .match_predicate(|e| {
-            e.accessible_label()
-                .is_some_and(|l| od_parity::labels::is_valid_label(&l))
+            id_of(e).is_some_and(|l| od_parity::labels::is_valid_label(&l))
         })
         .find_all();
     for e in found {
-        if let Some(l) = e.accessible_label() {
+        if let Some(l) = id_of(&e) {
             out.entry(l.to_string()).or_default().push(e);
         }
     }

@@ -388,6 +388,20 @@ Nothing here is a dialog: nothing may interrupt a set.
 - The crossfader is a single 2px bone line on a strong-rule ruler between A and B.
 - **Layouts:** Simple, Standard and Full. Simple is a calm deck of about 25 controls on larger rows (34px base): pads A–D | E–H, a loop column (size, ½ / 2×, LOOP, jump − / +), SYNC / CUE / PLAY as on the full deck, the tempo fader; no platter and no setup tier, the header keeps the hero readouts. Groups (pads, loops, stems, effects, mixer, phase strip, setup keys) are hidden whole and then not built, never left in place invisible. The view menu holds the layout as a segmented control, the groups as on-keys and the saved layouts as rows with a hairline ×.
 
+### Help overlay
+- `F12`, `?` or the **?** key in the top bar's tool group. The window dims a little (ground at 45 %); every operable control gets a hairline bone-3 outline and a numbered callout: a bone plate with ground ink in Label 600, 16 px high, straddling the control's top-left corner (another corner, inside, beside it with a 1 px leader line where that is taken). Callouts never overlap each other, the list or another control's middle.
+- The list is a dialog-like plate (overlay radius, the one soft shadow) at the side with fewer controls under it: Heading "Help", the count in Label caps, a side key and **CLOSE**; the explained control on a band-charcoal well (number in sodium, name in Body 600, KEY in Label caps, the tooltip in Control); then the rows (number, name in Body, shortcut in Label caps). The selected control: sodium outline and callout, and the sodium selection tick on its row.
+- The names are the controls' spoken names and the texts their tooltips; nothing is written twice.
+
+### Touch layout
+- **Preferences › View › Touch** (offered once by a band like the update band, with the doubled sodium line, when a touch arrives). Every control of Perform and Lighting at least 44 px: the touch decks (header, part keys, transport, pads A–D over E–H, the loop row, the deck's own lane in the rest of the column), knob and legend side by side in the mixer, FX units stacked, 44 px rows, no splitters. Narrower than about 1060 px the mixer is left to the controller. Prepare keeps its desktop keys.
+- A small window's compact decks use the same deck at desktop sizes: pads and loops centred in the height the mixer leaves (the Centred Group Rule).
+
+### Accessibility
+- Every control is a Tab stop showing the focus ring; Return or Space presses, arrows turn knobs and move faders in twentieths.
+- Spoken names are readable and translated (the keymap title, the legend or the tooltip's first clause, with deck, channel or unit); test ids live in `accessible-id` and are never spoken.
+- The Second Channel Rule holds for phrases too: a phrase block shows its initial where its name does not fit.
+
 ### Preferences
 - Categories on a band-charcoal column on the left, the current one filled bone. Each section of a page starts on a band of band charcoal with its Heading; choices are segmented plates with a filled current value; switches are filled tracks.
 - **Preview** (View page, top): a band-charcoal panel with the waveform as the renderer draws it (with the calm playhead when calm is on), the four deck lines with their numerals and the three status line forms, a reading at the chosen scale and a plan of the deck layout. It uses the live tokens, so palette and contrast show at once.

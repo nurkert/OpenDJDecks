@@ -4,7 +4,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine, ProgressLine } from "lines.slint";
-import { PlateButton } from "controls.slint";
+import { PlateButton, KeyFocus, TooltipState } from "controls.slint";
 
 export component StemsModelBar inherits Rectangle {
     // "offer" | "downloading" | "error"
@@ -18,7 +18,7 @@ export component StemsModelBar inherits Rectangle {
     height: 34px;
     background: Theme.ground-band;
     accessible-role: groupbox;
-    accessible-label: "app.stems";
+    accessible-id: "app.stems";
     accessible-value: root.text;
 
     HLine { y: parent.height - self.height; width: parent.width; tone: Theme.rule; }
@@ -38,12 +38,12 @@ export component StemsModelBar inherits Rectangle {
             vertical-alignment: center;
             overflow: elide;
         }
-        if root.state == "offer": PlateButton { accessible-label: "app.stems.download"; accessible-role: button; compact: true; label: @tr("DOWNLOAD NOW"); tone: Theme.attention; clicked => { root.act("download"); } }
-        if root.state == "offer": PlateButton { accessible-label: "app.stems.later"; accessible-role: button; compact: true; label: @tr("NOT NOW"); clicked => { root.act("later"); } }
-        if root.state == "downloading": PlateButton { accessible-label: "app.stems.cancel"; accessible-role: button; compact: true; label: @tr("CANCEL"); clicked => { root.act("cancel"); } }
-        if root.state == "error": PlateButton { accessible-label: "app.stems.retry"; accessible-role: button; compact: true; label: @tr("RETRY"); tone: Theme.attention; clicked => { root.act("retry"); } }
-        if root.state == "error": PlateButton { accessible-label: "app.stems.help"; accessible-role: button; compact: true; label: @tr("HELP"); clicked => { root.act("help"); } }
-        if root.state == "error": PlateButton { accessible-label: "app.stems.close"; accessible-role: button; compact: true; label: @tr("CLOSE"); clicked => { root.act("close"); } }
+        if root.state == "offer": PlateButton { accessible-id: "app.stems.download"; accessible-role: button; compact: true; label: @tr("DOWNLOAD NOW"); tone: Theme.attention; clicked => { root.act("download"); } }
+        if root.state == "offer": PlateButton { accessible-id: "app.stems.later"; accessible-role: button; compact: true; label: @tr("NOT NOW"); clicked => { root.act("later"); } }
+        if root.state == "downloading": PlateButton { accessible-id: "app.stems.cancel"; accessible-role: button; compact: true; label: @tr("CANCEL"); clicked => { root.act("cancel"); } }
+        if root.state == "error": PlateButton { accessible-id: "app.stems.retry"; accessible-role: button; compact: true; label: @tr("RETRY"); tone: Theme.attention; clicked => { root.act("retry"); } }
+        if root.state == "error": PlateButton { accessible-id: "app.stems.help"; accessible-role: button; compact: true; label: @tr("HELP"); clicked => { root.act("help"); } }
+        if root.state == "error": PlateButton { accessible-id: "app.stems.close"; accessible-role: button; compact: true; label: @tr("CLOSE"); clicked => { root.act("close"); } }
     }
 }
 
@@ -58,7 +58,7 @@ export component StemsModelPrompt inherits Rectangle {
 
     background: #00000099;
     accessible-role: groupbox;
-    accessible-label: "app.stems.prompt";
+    accessible-id: "app.stems.prompt";
     TouchArea { }
 
     Rectangle {
@@ -80,7 +80,7 @@ export component StemsModelPrompt inherits Rectangle {
                 wrap: word-wrap;
             }
             Text {
-                accessible-label: "app.stems.prompt.text";
+                accessible-id: "app.stems.prompt.text";
                 accessible-value: self.text;
                 text: @tr("To split tracks into vocals, instruments, drums and bass, OpenDJDecks needs a separation model of {} MB. It is downloaded once; after that stems work without internet. Your music stays on this computer.", root.size-mb);
                 font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
@@ -89,8 +89,8 @@ export component StemsModelPrompt inherits Rectangle {
             FlexboxLayout {
                 spacing: Theme.s2;
                 alignment: end;
-                PlateButton { accessible-label: "app.stems.prompt.later"; accessible-role: button; compact: true; label: @tr("NOT NOW"); clicked => { root.act("later"); } }
-                PlateButton { accessible-label: "app.stems.prompt.download"; accessible-role: button; compact: true; active: true; tone: Theme.attention; label: @tr("DOWNLOAD NOW"); clicked => { root.act("download"); } }
+                PlateButton { accessible-id: "app.stems.prompt.later"; accessible-role: button; compact: true; label: @tr("NOT NOW"); clicked => { root.act("later"); } }
+                PlateButton { accessible-id: "app.stems.prompt.download"; accessible-role: button; compact: true; active: true; tone: Theme.attention; label: @tr("DOWNLOAD NOW"); clicked => { root.act("download"); } }
             }
         }
     }

@@ -27,7 +27,7 @@ pub(super) fn prefs(ui: &Ui, page: &str) -> crate::PreferencesWindow {
 }
 
 pub(super) fn prefs_el(w: &crate::PreferencesWindow, label: &str) -> ElementHandle {
-    ElementHandle::find_by_accessible_label(w, label)
+    super::harness::find_all(w, label)
         .next()
         .unwrap_or_else(|| panic!("no `{label}` in Preferences"))
 }
@@ -80,7 +80,7 @@ fn waveform_band_colours_can_be_chosen() {
     let ui = Ui::open((1440, 900));
     let w = prefs(&ui, "view");
     assert!(
-        ElementHandle::find_by_accessible_label(&w, "prefs.view.waveform-low.3")
+        super::harness::find_all(&w, "prefs.view.waveform-low.3")
             .next()
             .is_none(),
         "the colour rows start folded away"

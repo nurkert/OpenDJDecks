@@ -1,0 +1,261 @@
+// Help overlay (roadmap [23]): over the current view, every visible
+// control gets a numbered callout, and a list beside it names each one
+// with its shortcut. The names and texts are the controls' own spoken
+// names and tooltips (Rust collects them from the element tree), so they
+// stay in sync. A click or tap on a control explains it instead of
+// pressing it; F12, ? or Esc close the overlay.
+
+import { Theme } from "tokens.slint";
+import { Caps, PlateButton, FocusRing } from "controls.slint";
+
+export struct HelpItem {
+    n: int,
+    name: string,
+    keys: string,
+    tip: string,
+    // The control, in window coordinates.
+    x: length,
+    y: length,
+    w: length,
+    h: length,
+    // Its numbered callout (no callout where none fits without overlap).
+    badge: bool,
+    bx: length,
+    by: length,
+    bw: length,
+}
+
+export global Help {
+    in property <bool> on;
+    in property <[HelpItem]> items;
+    // Index into `items`, -1 for none.
+    in-out property <int> selected: -1;
+    // The list sits on the left (the pointer or the control is on the right).
+    in-out property <bool> panel-left;
+    // A click or tap at a window position: the control there is explained.
+    callback pick(length, length);
+    callback close();
+    // The ? key in the top bar (touch screens have no F12).
+    callback toggle();
+    // The list to the other side (the callouts are laid out again).
+    callback side();
+    // Where the overlay starts in the window (under a menu bar that is part
+    // of the window): the items are in window coordinates.
+    in property <length> origin-x;
+    in property <length> origin-y;
+    // Up / down in the list (keyboard).
+    callback step(int);
+}
+
+// The badge size is fixed so Rust can lay the callouts out without overlap.
+component Callout inherits Rectangle {
+    in property <HelpItem> it;
+    in property <bool> current;
+    x: root.it.bx - Help.origin-x; y: root.it.by - Help.origin-y; width: root.it.bw; height: 16px;
+    border-radius: 3px;
+    background: root.current ? Theme.attention : Theme.bone;
+    Text {
+        text: root.it.n;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi;
+        color: Theme.ground;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+}
+
+component HelpRow inherits Rectangle {
+    in property <HelpItem> it;
+    in property <bool> current;
+    callback clicked();
+    accessible-role: list-item;
+    accessible-label: root.it.name;
+    accessible-description: root.it.tip;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.current;
+    height: Theme.touch ? 44px : 28px;
+    background: root.current ? Theme.plate-raised : ta.has-hover ? Theme.plate-raised : transparent;
+    border-radius: Theme.r-control;
+    // The selected row: the sodium tick of a selection.
+    if root.current: Rectangle { x: 0; y: (parent.height - 2px) / 2; width: 8px; height: 2px; background: Theme.attention; }
+    HorizontalLayout {
+        padding-left: Theme.s3; padding-right: Theme.s2;
+        spacing: Theme.s2;
+        Text {
+            width: 30px;
+            text: root.it.n;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+            color: Theme.bone-3;
+            horizontal-alignment: right; vertical-alignment: center;
+        }
+        Text {
+            text: root.it.name;
+            font-family: Theme.family; font-size: Theme.body;
+            color: root.current ? Theme.bone : Theme.bone-2;
+            vertical-alignment: center; overflow: elide;
+            horizontal-stretch: 1;
+        }
+        if root.it.keys != "": Text {
+            text: root.it.keys;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1px;
+            color: Theme.bone-2;
+            vertical-alignment: center;
+            horizontal-stretch: 0;
+            max-width: 110px; overflow: elide;
+        }
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+export component HelpOverlay inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-id: "app.help";
+    accessible-label: @tr("Help");
+    // The list's width; narrower windows give it less.
+    property <length> panel-w: min(340px, max(240px, root.width * 0.3));
+    property <bool> has-sel: Help.selected >= 0 && Help.selected < Help.items.length;
+    property <HelpItem> sel: root.has-sel ? Help.items[Help.selected] : { n: 0 };
+    // The list follows the selection (a control picked on screen).
+    property <int> sel-i: Help.selected;
+    property <length> row-h: Theme.touch ? 44px : 28px;
+    changed sel-i => {
+        if (root.sel-i >= 0) {
+            flick.content-y = -clamp(root.sel-i * root.row-h - flick.height / 2, 0, max(0px, rows.preferred-height - flick.height));
+        }
+    }
+    // Everything under the overlay stays visible, a little darker.
+    background: Theme.ground.with-alpha(0.45);
+    // A click or tap explains the control under it.
+    TouchArea {
+        clicked => { Help.pick(self.mouse-x + Help.origin-x, self.mouse-y + Help.origin-y); }
+        scroll-event(e) => { accept }
+    }
+    // Every control's outline, the selected one in sodium.
+    for it[i] in Help.items: Rectangle {
+        // Kept inside the overlay (a control partly scrolled away).
+        x: max(0px, it.x - Help.origin-x - 1px); y: max(0px, it.y - Help.origin-y - 1px);
+        width: max(0px, min(root.width, it.x - Help.origin-x + it.w + 1px) - self.x);
+        height: max(0px, min(root.height, it.y - Help.origin-y + it.h + 1px) - self.y);
+        border-radius: Theme.r-control;
+        border-width: i == Help.selected ? 2px : 1px;
+        border-color: i == Help.selected ? Theme.attention : Theme.bone-3.with-alpha(0.7);
+    }
+    // A callout away from its control: a leader line to the control's edge.
+    for it[i] in Help.items: Path {
+        property <bool> away: it.badge && (it.bx + it.bw < it.x || it.bx > it.x + it.w || it.by + 16px < it.y || it.by > it.y + it.h);
+        visible: self.away;
+        width: root.width; height: root.height;
+        viewbox-width: root.width / 1px; viewbox-height: root.height / 1px;
+        stroke: i == Help.selected ? Theme.attention : Theme.bone-2;
+        stroke-width: 1px;
+        commands: !self.away ? "" : "M " + ((it.bx + it.bw / 2 - Help.origin-x) / 1px) + " " + ((it.by + 8px - Help.origin-y) / 1px)
+            + " L " + ((clamp(it.bx + it.bw / 2, it.x, it.x + it.w) - Help.origin-x) / 1px) + " " + ((clamp(it.by + 8px, it.y, it.y + it.h) - Help.origin-y) / 1px);
+    }
+    for it[i] in Help.items: Callout {
+        visible: it.badge;
+        it: it;
+        current: i == Help.selected;
+    }
+    // The list: a panel at one side.
+    panel := Rectangle {
+        x: Help.panel-left ? Theme.s2 : root.width - root.panel-w - Theme.s2;
+        y: Theme.s2; width: root.panel-w; height: root.height - 2 * Theme.s2;
+        background: Theme.plate;
+        border-radius: Theme.r-overlay;
+        drop-shadow-blur: 48px; drop-shadow-offset-y: 16px; drop-shadow-color: #00000080;
+        // Clicks in the panel stay in the panel.
+        TouchArea { }
+        VerticalLayout {
+            padding: Theme.s3;
+            spacing: Theme.s2;
+            HorizontalLayout {
+                spacing: Theme.s2;
+                Text {
+                    text: @tr("Help");
+                    font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+                    color: Theme.bone;
+                    vertical-alignment: center;
+                }
+                Caps {
+                    accessible-role: text; accessible-id: "app.help.count"; accessible-value: Help.items.length;
+                    text: @tr("{} CONTROLS", Help.items.length);
+                    vertical-alignment: center; horizontal-stretch: 1;
+                    overflow: elide;
+                }
+                PlateButton {
+                    accessible-id: "app.help.side";
+                    compact: !Theme.touch; tall: Theme.touch;
+                    glyph: Help.panel-left ? "next" : "prev";
+                    tooltip: @tr("Move the list to the other side");
+                    clicked => { Help.side(); }
+                }
+                PlateButton {
+                    accessible-id: "app.help.close";
+                    compact: !Theme.touch; tall: Theme.touch;
+                    label: @tr("CLOSE");
+                    tooltip: @tr("Close the help (F12, ? or Esc)");
+                    clicked => { Help.close(); }
+                }
+            }
+            // The selected control, explained.
+            Rectangle {
+                accessible-role: text; accessible-id: "app.help.detail";
+                accessible-value: root.sel.name;
+                height: detail.preferred-height;
+                background: Theme.ground-band;
+                border-radius: Theme.r-control;
+                detail := VerticalLayout {
+                    padding: Theme.s3;
+                    spacing: Theme.s1;
+                    if !root.has-sel: Text {
+                        text: Theme.touch ? @tr("Tap a control to see what it does. The numbers match the list.") : @tr("Click a control to see what it does. The numbers match the list.");
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
+                        wrap: word-wrap;
+                    }
+                    if root.has-sel: HorizontalLayout {
+                        spacing: Theme.s2;
+                        Text {
+                            text: root.sel.n;
+                            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
+                            color: Theme.attention; vertical-alignment: center;
+                            horizontal-stretch: 0;
+                        }
+                        Text {
+                            accessible-role: text; accessible-id: "app.help.name"; accessible-value: self.text;
+                            text: root.sel.name;
+                            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
+                            color: Theme.bone; wrap: word-wrap;
+                            horizontal-stretch: 1;
+                        }
+                    }
+                    if root.has-sel && root.sel.keys != "": Caps {
+                        accessible-role: text; accessible-id: "app.help.keys"; accessible-value: root.sel.keys;
+                        text: @tr("KEY  {}", root.sel.keys);
+                        color: Theme.bone-2;
+                        wrap: word-wrap;
+                    }
+                    if root.has-sel && root.sel.tip != "": Text {
+                        accessible-role: text; accessible-id: "app.help.tip"; accessible-value: self.text;
+                        text: root.sel.tip;
+                        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+            flick := Flickable {
+                accessible-role: list;
+                accessible-id: "app.help.list";
+                accessible-label: @tr("Controls on screen");
+                vertical-stretch: 1;
+                content-height: rows.preferred-height;
+                rows := VerticalLayout {
+                    alignment: start;
+                    spacing: 0;
+                    for it[i] in Help.items: HelpRow {
+                        it: it;
+                        current: i == Help.selected;
+                        clicked => { Help.selected = i; }
+                    }
+                }
+            }
+        }
+    }
+}

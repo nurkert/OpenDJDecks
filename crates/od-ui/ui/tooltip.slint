@@ -28,6 +28,14 @@ export global TooltipState {
 
     // The current binding of a keymap action ("" when unbound), set by Rust.
     pure callback shortcut-for(string) -> string;
+    // The spoken name of a control (`accessible-label`) from its test id,
+    // legend and tooltip, set by Rust: the keymap title when the id is an
+    // action ("Deck 1: Play or pause"), else the legend or the tooltip's
+    // first clause, with the deck, channel or unit it belongs to.
+    pure callback name-for(string, string, string) -> string;
+    // The accessible description: the tooltip and, when the keymap action
+    // `command` is bound, its shortcut in brackets ("Undo [⌘Z]").
+    pure callback describe(string, string) -> string;
 
     // A pointer entered an area; returns the id the area leaves with.
     public function enter(text: string, command: string, x: length, y: length) -> int {

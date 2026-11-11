@@ -4308,3 +4308,83 @@ tests = [
 ]
 evidence = ["crates/od-ui/ui/filter.slint::FilterChips", "crates/od-ui/src/browser/filter.rs::chips"]
 spec = "Roadmap [26]"
+
+[[feature]]
+id = "shell-help-overlay"
+area = "shell"
+name = "Help overlay: every control on screen named with its shortcut, also on touch"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::help_overlay::f12_names_every_control_without_overlapping_callouts",
+  "od-ui::ui_tests::help_overlay::a_click_explains_instead_of_pressing",
+  "od-ui::ui_tests::help_overlay::question_mark_in_prepare_and_the_help_key_on_touch",
+  "od-ui::help::tests::callouts_never_overlap",
+]
+evidence = ["crates/od-ui/src/help.rs::lay_out", "crates/od-ui/ui/help.slint::HelpOverlay"]
+spec = "Roadmap [23]"
+note = "F12, ? where no shortcut takes it, or the ? key in the top bar. Names and texts come from the controls' spoken names and tooltips."
+
+[[feature]]
+id = "shell-touch-layout"
+area = "shell"
+name = "Touch layout beyond the kiosk: decks, mixer, pads, FX, browser and lighting at 44 px"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::touch::touch_layout_gives_every_control_44_px",
+  "od-ui::ui_tests::touch::a_touch_offers_the_touch_layout_once",
+]
+evidence = ["crates/od-ui/src/touch.rs::touched", "crates/od-ui/ui/perform.slint::KioskDeck"]
+spec = "Roadmap [24]"
+note = "Preferences > View > Touch; offered once when a touch arrives (winit touch events). Not tried on a real touch screen."
+
+[[feature]]
+id = "shell-compact-decks-fill"
+area = "deck"
+name = "Compact decks of a small window carry pads and loops and share the height with the mixer"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = ["od-ui::ui_tests::overflow::overflow_views_en"]
+evidence = ["crates/od-ui/ui/perform.slint::KioskDeck"]
+spec = "Roadmap [24]"
+
+[[feature]]
+id = "shell-keyboard-focus"
+area = "shell"
+name = "Every control reached by Tab, with the focus ring; arrows turn knobs and move faders"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = ["od-ui::ui_tests::access::tab_reaches_every_control_with_a_visible_ring"]
+evidence = ["crates/od-ui/ui/controls.slint::KeyFocus"]
+spec = "Roadmap [25]"
+
+[[feature]]
+id = "shell-screen-reader-names"
+area = "shell"
+name = "Readable screen reader names and descriptions (tooltip with shortcut); test ids apart"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::access::every_control_has_a_readable_name",
+  "od-ui::a11y::tests::names_are_readable",
+]
+evidence = ["crates/od-ui/src/a11y.rs::name_for"]
+spec = "Roadmap [25]"
+note = "Not tried with a real screen reader."
+
+[[feature]]
+id = "shell-no-hue-alone"
+area = "shell"
+name = "No state carried by hue alone: line forms, words and initials beside every colour"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = ["od-ui::render::tests::phrase_initials_are_distinct"]
+evidence = ["crates/od-ui/src/render.rs::phrase_short"]
+spec = "Roadmap [25]"

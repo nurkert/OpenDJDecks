@@ -7,7 +7,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, Field, LineToggle, Fader, HoldButton, Stepper } from "controls.slint";
+import { Caps, PlateButton, Field, LineToggle, Fader, HoldButton, Stepper, KeyFocus, TooltipState } from "controls.slint";
 import { ChoiceList } from "fx.slint";
 
 export struct LightFixtureView {
@@ -318,7 +318,7 @@ component Swatches inherits HorizontalLayout {
     spacing: Theme.s1;
     height: root.chip;
     Rectangle {
-        accessible-label: root.a11y + ".track"; accessible-role: button;
+        accessible-id: root.a11y + ".track"; accessible-role: button;
         width: 40px;
         border-radius: Theme.r-control;
         background: root.current == -1 ? Theme.bone : Theme.plate;
@@ -326,7 +326,7 @@ component Swatches inherits HorizontalLayout {
         TouchArea { mouse-cursor: pointer; clicked => { root.chosen(-1); } }
     }
     for c[i] in Lighting.swatches: Rectangle {
-        accessible-label: root.a11y + i; accessible-role: button;
+        accessible-id: root.a11y + i; accessible-role: button;
         width: root.chip;
         background: c;
         border-width: root.current == i ? 2px : 1px;
@@ -356,7 +356,7 @@ component Stage inherits Rectangle {
         property <float> lit: f.strobe && !root.blink ? 0 : f.intensity;
         property <length> cx: root.width * f.x;
         property <length> cy: root.height * f.y;
-        accessible-label: "lighting.stage.fixture" + i; accessible-role: text;
+        accessible-id: "lighting.stage.fixture" + i; accessible-role: text;
         accessible-value: f.name;
         x: 0; y: 0; width: root.width; height: root.height;
 
@@ -426,7 +426,7 @@ component LockedSetup inherits VerticalLayout {
     HorizontalLayout {
         spacing: Theme.s2;
         pin := Field {
-            accessible-label: "lighting.pin.entry"; accessible-role: text-input;
+            accessible-id: "lighting.pin.entry"; accessible-role: text-input;
             input-type: InputType.password; placeholder: @tr("PIN"); horizontal-stretch: 1;
             accepted(t) => { Lighting.unlock(t); self.text = ""; }
         }
@@ -434,7 +434,7 @@ component LockedSetup inherits VerticalLayout {
             horizontal-stretch: 0;
             alignment: center;
             PlateButton {
-                accessible-label: "lighting.pin.unlock"; accessible-role: button;
+                accessible-id: "lighting.pin.unlock"; accessible-role: button;
                 compact: true; label: @tr("UNLOCK"); tooltip: @tr("Open the setup with the PIN");
                 clicked => { Lighting.unlock(pin.text); pin.text = ""; }
             }
@@ -451,36 +451,36 @@ component RigTab inherits VerticalLayout {
     spacing: Theme.s2;
     Caps { text: @tr("ADD FIXTURES"); }
     ChoiceList {
-        accessible-label: "lighting.rig.type"; accessible-role: list;
+        accessible-id: "lighting.rig.type"; accessible-role: list;
         items: Lighting.fixture-types; current: root.type-index; columns: 2; cell-w: 150px; cell-h: 24px;
         chosen(i) => { root.type-index = i; }
     }
     HorizontalLayout {
         spacing: Theme.s2;
-        name := Field { accessible-label: "lighting.rig.name"; accessible-role: text-input; placeholder: @tr("Name"); horizontal-stretch: 1; }
-        group := Field { accessible-label: "lighting.rig.group"; accessible-role: text-input; placeholder: @tr("Group"); width: 110px; }
+        name := Field { accessible-id: "lighting.rig.name"; accessible-role: text-input; placeholder: @tr("Name"); horizontal-stretch: 1; }
+        group := Field { accessible-id: "lighting.rig.group"; accessible-role: text-input; placeholder: @tr("Group"); width: 110px; }
     }
     HorizontalLayout {
         spacing: Theme.s2;
         VerticalLayout {
             spacing: Theme.key-gap;
             Caps { text: @tr("COUNT"); }
-            count := Field { accessible-label: "lighting.rig.count"; accessible-role: text-input; placeholder: "1"; width: 56px; }
+            count := Field { accessible-id: "lighting.rig.count"; accessible-role: text-input; placeholder: "1"; width: 56px; }
         }
         VerticalLayout {
             spacing: Theme.key-gap;
             Caps { text: @tr("UNIVERSE"); }
-            universe := Field { accessible-label: "lighting.rig.universe"; accessible-role: text-input; placeholder: @tr("free"); width: 66px; }
+            universe := Field { accessible-id: "lighting.rig.universe"; accessible-role: text-input; placeholder: @tr("free"); width: 66px; }
         }
         VerticalLayout {
             spacing: Theme.key-gap;
             Caps { text: @tr("START"); }
-            start := Field { accessible-label: "lighting.rig.start"; accessible-role: text-input; placeholder: @tr("free"); width: 66px; }
+            start := Field { accessible-id: "lighting.rig.start"; accessible-role: text-input; placeholder: @tr("free"); width: 66px; }
         }
         VerticalLayout {
             alignment: end;
             PlateButton {
-                accessible-label: "lighting.rig.add"; accessible-role: button;
+                accessible-id: "lighting.rig.add"; accessible-role: button;
                 label: @tr("ADD"); glyph: "plus"; tone: Theme.live;
                 tooltip: @tr("Patch the fixtures one after another from the start address (empty: the first free addresses)");
                 clicked => {
@@ -493,7 +493,7 @@ component RigTab inherits VerticalLayout {
     Body { text: @tr("Change universe, address, mode and channel count in the patch table in the middle."); color: Theme.bone-3; }
     HLine { }
     PlateButton {
-        accessible-label: "lighting.rig.import-ofl"; accessible-role: button;
+        accessible-id: "lighting.rig.import-ofl"; accessible-role: button;
         compact: true; label: @tr("IMPORT FIXTURE FILE…");
         tooltip: @tr("Patch a fixture from an Open Fixture Library file (.json)");
         clicked => { Lighting.import-ofl(); }
@@ -508,7 +508,7 @@ component UseList inherits VerticalLayout {
     callback used(int);
     spacing: Theme.key-gap;
     for t[i] in root.items: Rectangle {
-        accessible-label: root.a11y + i; accessible-role: list-item; accessible-value: t;
+        accessible-id: root.a11y + i; accessible-role: list-item; accessible-value: t;
         height: 30px;
         background: Theme.plate.with-alpha(0.5);
         border-radius: Theme.r-control;
@@ -518,7 +518,7 @@ component UseList inherits VerticalLayout {
             VerticalLayout {
                 alignment: center; horizontal-stretch: 0;
                 PlateButton {
-                    accessible-label: root.a11y + i + ".use"; accessible-role: button;
+                    accessible-id: root.a11y + i + ".use"; accessible-role: button;
                     compact: true; label: root.use-label;
                     clicked => { root.used(i); }
                 }
@@ -534,12 +534,12 @@ component ConnectGuide inherits VerticalLayout {
     HorizontalLayout {
         spacing: Theme.s2; height: 26px;
         Caps {
-            accessible-label: "lighting.guide.step"; accessible-role: text; accessible-value: Lighting.guide-step;
+            accessible-id: "lighting.guide.step"; accessible-role: text; accessible-value: Lighting.guide-step;
             text: Lighting.guide-step >= 5 ? @tr("CONNECTION SET UP") : @tr("CONNECT · STEP {} OF 4", Lighting.guide-step);
             color: Theme.attention; vertical-alignment: center; horizontal-stretch: 1;
         }
         PlateButton {
-            accessible-label: "lighting.guide.close"; accessible-role: button;
+            accessible-id: "lighting.guide.close"; accessible-role: button;
             compact: true; glyph: "close"; width: 30px; tooltip: @tr("Close the guided setup");
             clicked => { Lighting.guide("close"); }
         }
@@ -558,7 +558,7 @@ component ConnectGuide inherits VerticalLayout {
                   { id: "usb", label: @tr("USB-DMX INTERFACE"), hint: @tr("A cable from a USB port to the first fixture") }]: VerticalLayout {
             spacing: Theme.key-gap;
             PlateButton {
-                accessible-label: "lighting.guide." + k.id; accessible-role: button;
+                accessible-id: "lighting.guide." + k.id; accessible-role: button;
                 tall: true; label: k.label; selected: Lighting.guide-kind == k.id;
                 clicked => { Lighting.guide("kind:" + k.id); }
             }
@@ -571,7 +571,7 @@ component ConnectGuide inherits VerticalLayout {
         HorizontalLayout {
             spacing: Theme.s2;
             PlateButton {
-                accessible-label: "lighting.guide.find"; accessible-role: button;
+                accessible-id: "lighting.guide.find"; accessible-role: button;
                 label: Lighting.finding ? @tr("LOOKING…") : @tr("FIND NODES"); enabled: !Lighting.finding;
                 clicked => { Lighting.find-nodes(); }
             }
@@ -580,15 +580,15 @@ component ConnectGuide inherits VerticalLayout {
         UseList { a11y: "lighting.guide.node"; items: Lighting.nodes; use-label: @tr("CHOOSE"); used(i) => { Lighting.guide("node:" + i); } }
         HorizontalLayout {
             spacing: Theme.s2;
-            addr := Field { accessible-label: "lighting.guide.address"; accessible-role: text-input; placeholder: @tr("or type its address"); horizontal-stretch: 1; accepted(t) => { Lighting.guide("target:" + t); } }
-            VerticalLayout { alignment: center; horizontal-stretch: 0; PlateButton { accessible-label: "lighting.guide.address.use"; accessible-role: button; compact: true; label: @tr("CHOOSE"); clicked => { Lighting.guide("target:" + addr.text); } } }
+            addr := Field { accessible-id: "lighting.guide.address"; accessible-role: text-input; placeholder: @tr("or type its address"); horizontal-stretch: 1; accepted(t) => { Lighting.guide("target:" + t); } }
+            VerticalLayout { alignment: center; horizontal-stretch: 0; PlateButton { accessible-id: "lighting.guide.address.use"; accessible-role: button; compact: true; label: @tr("CHOOSE"); clicked => { Lighting.guide("target:" + addr.text); } } }
         }
     }
     if Lighting.guide-step == 2 && Lighting.guide-kind == "usb": VerticalLayout {
         spacing: Theme.s2;
         Body { text: @tr("Plug the interface in, then choose its port. Not listed? Plug it in again and press REFRESH."); color: Theme.bone; }
         HorizontalLayout {
-            PlateButton { accessible-label: "lighting.guide.refresh"; accessible-role: button; compact: true; label: @tr("REFRESH"); clicked => { Lighting.refresh-ports(); } }
+            PlateButton { accessible-id: "lighting.guide.refresh"; accessible-role: button; compact: true; label: @tr("REFRESH"); clicked => { Lighting.refresh-ports(); } }
             Rectangle { horizontal-stretch: 1; }
         }
         if Lighting.ports.length == 0: Body { text: @tr("No serial port found."); color: Theme.bone-3; }
@@ -603,7 +603,7 @@ component ConnectGuide inherits VerticalLayout {
         Body { text: @tr("Which universe goes there? The patch table shows your fixtures' universe; a small rig is universe 1."); color: Theme.bone; }
         HorizontalLayout {
             Stepper {
-                accessible-label: "lighting.guide.universe"; accessible-role: spinbox; accessible-value: self.value;
+                accessible-id: "lighting.guide.universe"; accessible-role: spinbox; accessible-value: self.value;
                 a11y-prev: "lighting.guide.universe.down"; a11y-next: "lighting.guide.universe.up";
                 value: @tr("UNIVERSE {}", Lighting.guide-universe); template: "UNIVERSE 000"; size: 32px; lit: true;
                 step(d) => { Lighting.guide("universe:" + d); }
@@ -614,35 +614,35 @@ component ConnectGuide inherits VerticalLayout {
     if Lighting.guide-step == 4: VerticalLayout {
         spacing: Theme.s2;
         Body { text: @tr("The test pattern lights your fixtures one after another, within the safety limits. Do your lights follow it?"); color: Theme.bone; }
-        PlateButton { accessible-label: "lighting.guide.works"; accessible-role: button; tall: true; label: @tr("YES, THEY FOLLOW"); tone: Theme.live; active: true; clicked => { Lighting.guide("works"); } }
-        PlateButton { accessible-label: "lighting.guide.fails"; accessible-role: button; tall: true; label: @tr("NOTHING HAPPENS"); clicked => { Lighting.guide("fails"); } }
+        PlateButton { accessible-id: "lighting.guide.works"; accessible-role: button; tall: true; label: @tr("YES, THEY FOLLOW"); tone: Theme.live; active: true; clicked => { Lighting.guide("works"); } }
+        PlateButton { accessible-id: "lighting.guide.fails"; accessible-role: button; tall: true; label: @tr("NOTHING HAPPENS"); clicked => { Lighting.guide("fails"); } }
     }
     if Lighting.guide-step >= 5: Body { text: @tr("DMX OUT is on and the test pattern has stopped. Patch your fixtures in RIG if you have not yet."); color: Theme.bone; }
     if Lighting.guide-target != "" && Lighting.guide-step >= 2: Caps {
-        accessible-label: "lighting.guide.target"; accessible-role: text; accessible-value: self.text;
+        accessible-id: "lighting.guide.target"; accessible-role: text; accessible-value: self.text;
         text: @tr("TO {}", Lighting.guide-target); overflow: elide; color: Theme.bone-2;
     }
-    if Lighting.guide-note != "": Body { accessible-label: "lighting.guide.note"; accessible-role: text; accessible-value: self.text; text: Lighting.guide-note; color: Theme.attention; }
+    if Lighting.guide-note != "": Body { accessible-id: "lighting.guide.note"; accessible-role: text; accessible-value: self.text; text: Lighting.guide-note; color: Theme.attention; }
     HorizontalLayout {
         spacing: Theme.s1;
         if Lighting.guide-step >= 2 && Lighting.guide-step <= 4: PlateButton {
-            accessible-label: "lighting.guide.back"; accessible-role: button;
+            accessible-id: "lighting.guide.back"; accessible-role: button;
             label: @tr("BACK"); horizontal-stretch: 1;
             clicked => { Lighting.guide("back"); }
         }
         if Lighting.guide-step == 2: PlateButton {
-            accessible-label: "lighting.guide.next"; accessible-role: button;
+            accessible-id: "lighting.guide.next"; accessible-role: button;
             label: @tr("NEXT"); tone: Theme.live; active: Lighting.guide-target != ""; enabled: Lighting.guide-target != "";
             horizontal-stretch: 1;
             clicked => { Lighting.guide("next"); }
         }
         if Lighting.guide-step == 3: PlateButton {
-            accessible-label: "lighting.guide.apply"; accessible-role: button;
+            accessible-id: "lighting.guide.apply"; accessible-role: button;
             label: @tr("SET AND TEST"); tone: Theme.live; active: true; horizontal-stretch: 1;
             clicked => { Lighting.guide("apply"); }
         }
         if Lighting.guide-step >= 5: PlateButton {
-            accessible-label: "lighting.guide.done"; accessible-role: button;
+            accessible-id: "lighting.guide.done"; accessible-role: button;
             label: @tr("CLOSE"); horizontal-stretch: 1;
             clicked => { Lighting.guide("close"); }
         }
@@ -666,7 +666,7 @@ component OutputTab inherits Flickable {
                 spacing: Theme.s2;
                 Caps { text: @tr("OUTPUTS"); vertical-alignment: center; horizontal-stretch: 1; }
                 PlateButton {
-                    accessible-label: "lighting.guide.open"; accessible-role: button;
+                    accessible-id: "lighting.guide.open"; accessible-role: button;
                     compact: true; label: @tr("GUIDED SETUP"); tone: Theme.live;
                     tooltip: @tr("Connect an interface step by step, with a test at the end");
                     clicked => { Lighting.guide("open"); }
@@ -674,7 +674,7 @@ component OutputTab inherits Flickable {
             }
             if Lighting.outputs.length == 0: Body { text: @tr("No output set. The show runs in the preview only."); color: Theme.bone-3; }
             for o[i] in Lighting.outputs: Rectangle {
-                accessible-label: "lighting.output.row" + i; accessible-role: list-item;
+                accessible-id: "lighting.output.row" + i; accessible-role: list-item;
                 accessible-value: o.universe + " " + o.state + " " + o.detail;
                 height: 44px;
                 HorizontalLayout {
@@ -696,7 +696,7 @@ component OutputTab inherits Flickable {
                     VerticalLayout {
                         alignment: center;
                         PlateButton {
-                            accessible-label: "lighting.output.remove" + i; accessible-role: button;
+                            accessible-id: "lighting.output.remove" + i; accessible-role: button;
                             compact: true; glyph: "close"; width: 30px; tooltip: @tr("Remove this output");
                             clicked => { Lighting.remove-output(i); }
                         }
@@ -708,7 +708,7 @@ component OutputTab inherits Flickable {
             HorizontalLayout {
                 spacing: Theme.s1;
                 for k[i] in [{ id: "artnet", label: "ART-NET" }, { id: "sacn", label: "SACN" }, { id: "enttec", label: "USB-DMX" }]: PlateButton {
-                    accessible-label: "lighting.output." + k.id; accessible-role: tab;
+                    accessible-id: "lighting.output." + k.id; accessible-role: tab;
                     compact: true; label: k.label; selected: root.output-kind == k.id; horizontal-stretch: 1;
                     tooltip: @tr("Choose how the universe leaves the computer");
                     clicked => { root.output-kind = k.id; if (k.id == "enttec") { Lighting.refresh-ports(); } }
@@ -716,9 +716,9 @@ component OutputTab inherits Flickable {
             }
             HorizontalLayout {
                 spacing: Theme.s2;
-                universe := Field { accessible-label: "lighting.output.universe"; accessible-role: text-input; placeholder: "U 1"; width: 56px; }
+                universe := Field { accessible-id: "lighting.output.universe"; accessible-role: text-input; placeholder: "U 1"; width: 56px; }
                 target := Field {
-                    accessible-label: "lighting.output.target"; accessible-role: text-input;
+                    accessible-id: "lighting.output.target"; accessible-role: text-input;
                     horizontal-stretch: 1;
                     placeholder: root.output-kind == "artnet" ? "2.0.0.10:6454" : root.output-kind == "sacn" ? "1" : "/dev/cu.usbserial";
                 }
@@ -726,7 +726,7 @@ component OutputTab inherits Flickable {
                     horizontal-stretch: 0;
                     alignment: center;
                     PlateButton {
-                        accessible-label: "lighting.output.apply"; accessible-role: button;
+                        accessible-id: "lighting.output.apply"; accessible-role: button;
                         compact: true; label: @tr("SET"); tooltip: @tr("Send this universe to the output");
                         clicked => { Lighting.set-output(root.output-kind, target.text, universe.text); }
                     }
@@ -737,12 +737,12 @@ component OutputTab inherits Flickable {
                 HorizontalLayout {
                     spacing: Theme.s2;
                     PlateButton {
-                        accessible-label: "lighting.output.find"; accessible-role: button;
+                        accessible-id: "lighting.output.find"; accessible-role: button;
                         compact: true; label: Lighting.finding ? @tr("LOOKING…") : @tr("FIND NODES"); enabled: !Lighting.finding;
                         tooltip: @tr("Ask the local network which Art-Net nodes are there");
                         clicked => { Lighting.find-nodes(); }
                     }
-                    Caps { accessible-label: "lighting.output.find-text"; accessible-role: text; accessible-value: self.text; text: Lighting.find-text; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; color: Theme.bone-3; }
+                    Caps { accessible-id: "lighting.output.find-text"; accessible-role: text; accessible-value: self.text; text: Lighting.find-text; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; color: Theme.bone-3; }
                 }
                 UseList { a11y: "lighting.output.node"; items: Lighting.nodes; use-label: @tr("USE"); used(i) => { Lighting.use-node(i, universe.text); } }
             }
@@ -752,7 +752,7 @@ component OutputTab inherits Flickable {
                     spacing: Theme.s2;
                     Caps { text: @tr("PORTS"); vertical-alignment: center; horizontal-stretch: 1; }
                     PlateButton {
-                        accessible-label: "lighting.output.refresh"; accessible-role: button;
+                        accessible-id: "lighting.output.refresh"; accessible-role: button;
                         compact: true; label: @tr("REFRESH"); tooltip: @tr("Look for USB serial ports again");
                         clicked => { Lighting.refresh-ports(); }
                     }
@@ -766,7 +766,7 @@ component OutputTab inherits Flickable {
             HorizontalLayout {
                 spacing: Theme.s1;
                 for t in [{ id: "", label: @tr("OFF") }, { id: "each", label: @tr("EACH") }, { id: "colours", label: @tr("COLOURS") }, { id: "full", label: @tr("FULL") }]: PlateButton {
-                    accessible-label: "lighting.test." + (t.id == "" ? "off" : t.id); accessible-role: tab;
+                    accessible-id: "lighting.test." + (t.id == "" ? "off" : t.id); accessible-role: tab;
                     compact: true; label: t.label; selected: Lighting.test == t.id; horizontal-stretch: 1;
                     clicked => { Lighting.set-test(t.id); }
                 }
@@ -781,7 +781,7 @@ component OutputTab inherits Flickable {
             HorizontalLayout {
                 spacing: Theme.s1;
                 for f in [{ id: "hold", label: @tr("HOLD") }, { id: "safe", label: @tr("SAFE SCENE") }, { id: "blackout", label: @tr("BLACKOUT") }]: PlateButton {
-                    accessible-label: "lighting.failsafe." + f.id; accessible-role: tab;
+                    accessible-id: "lighting.failsafe." + f.id; accessible-role: tab;
                     compact: true; label: f.label; selected: Lighting.failsafe == f.id; horizontal-stretch: 1;
                     clicked => { Lighting.set-failsafe(f.id); }
                 }
@@ -802,7 +802,7 @@ component SafetyTab inherits VerticalLayout {
     HorizontalLayout {
         spacing: Theme.s2;
         Stepper {
-            accessible-label: "lighting.safety.strobe"; accessible-role: spinbox;
+            accessible-id: "lighting.safety.strobe"; accessible-role: spinbox;
             accessible-value: self.value;
             a11y-prev: "lighting.safety.strobe.down"; a11y-next: "lighting.safety.strobe.up";
             value: Lighting.strobe-hz <= 0 ? @tr("NO STROBE") : @tr("{} PER SECOND", Lighting.strobe-hz);
@@ -818,7 +818,7 @@ component SafetyTab inherits VerticalLayout {
     HorizontalLayout {
         spacing: Theme.s2;
         PlateButton {
-            accessible-label: "lighting.safety.fog"; accessible-role: button;
+            accessible-id: "lighting.safety.fog"; accessible-role: button;
             accessible-checkable: true; accessible-checked: Lighting.fog-armed;
             label: Lighting.fog-armed ? @tr("FOG ARMED") : @tr("ARM FOG"); active: Lighting.fog-armed; tone: Theme.attention;
             horizontal-stretch: 1;
@@ -826,7 +826,7 @@ component SafetyTab inherits VerticalLayout {
             clicked => { Lighting.arm-fog(!Lighting.fog-armed); }
         }
         PlateButton {
-            accessible-label: "lighting.safety.laser"; accessible-role: button;
+            accessible-id: "lighting.safety.laser"; accessible-role: button;
             accessible-checkable: true; accessible-checked: Lighting.laser-armed;
             label: Lighting.laser-armed ? @tr("LASERS ARMED") : @tr("ARM LASERS"); active: Lighting.laser-armed; tone: Theme.fault;
             horizontal-stretch: 1;
@@ -846,7 +846,7 @@ component SafetyTab inherits VerticalLayout {
         spacing: Theme.s2; height: 26px;
         Text { text: c.name; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
         Stepper {
-            accessible-label: "lighting.safety.cap" + i; accessible-role: spinbox;
+            accessible-id: "lighting.safety.cap" + i; accessible-role: spinbox;
             accessible-value: self.value;
             a11y-prev: "lighting.safety.cap" + i + ".down"; a11y-next: "lighting.safety.cap" + i + ".up";
             value: Math.round(c.cap * 100) + " %"; template: "100 %"; size: 26px; lit: c.cap < 1;
@@ -859,7 +859,7 @@ component SafetyTab inherits VerticalLayout {
     HorizontalLayout {
         spacing: Theme.s2;
         newpin := Field {
-            accessible-label: "lighting.pin.new"; accessible-role: text-input;
+            accessible-id: "lighting.pin.new"; accessible-role: text-input;
             input-type: InputType.password; placeholder: Lighting.pin-set ? @tr("New PIN (empty clears it)") : @tr("4 to 8 digits");
             horizontal-stretch: 1;
         }
@@ -867,7 +867,7 @@ component SafetyTab inherits VerticalLayout {
             horizontal-stretch: 0;
             alignment: center;
             PlateButton {
-                accessible-label: "lighting.pin.set"; accessible-role: button;
+                accessible-id: "lighting.pin.set"; accessible-role: button;
                 compact: true; label: Lighting.pin-set && newpin.text == "" ? @tr("CLEAR") : @tr("SET");
                 tooltip: @tr("With a PIN, guests can play the show but not change the setup");
                 clicked => { Lighting.set-pin(newpin.text); newpin.text = ""; }
@@ -887,12 +887,12 @@ component SetupPanel inherits VerticalLayout {
         height: 26px;
         spacing: Theme.s1;
         for t in [{ id: "rig", label: @tr("RIG") }, { id: "output", label: @tr("OUTPUT") }, { id: "safety", label: @tr("SAFETY") }]: PlateButton {
-            accessible-label: "lighting.setup." + t.id; accessible-role: tab;
+            accessible-id: "lighting.setup." + t.id; accessible-role: tab;
             compact: true; label: t.label; selected: Lighting.setup-tab == t.id; horizontal-stretch: 1;
             clicked => { Lighting.setup-tab = t.id; }
         }
         if Lighting.pin-set && !Lighting.locked: PlateButton {
-            accessible-label: "lighting.pin.lock"; accessible-role: button;
+            accessible-id: "lighting.pin.lock"; accessible-role: button;
             compact: true; label: @tr("LOCK"); tooltip: @tr("Lock the setup with the PIN");
             clicked => { Lighting.lock(); }
         }
@@ -932,7 +932,7 @@ component PatchTable inherits VerticalLayout {
             width: parent.width;
             alignment: start;
             for r[i] in Lighting.patch-rows: Rectangle {
-                accessible-label: "lighting.patch.row" + i; accessible-role: list-item;
+                accessible-id: "lighting.patch.row" + i; accessible-role: list-item;
                 accessible-value: r.name + " " + r.universe + "." + r.address + " " + r.clash;
                 height: 32px;
                 background: ta.has-hover ? Theme.plate-raised.with-alpha(0.4) : transparent;
@@ -948,7 +948,7 @@ component PatchTable inherits VerticalLayout {
                     VerticalLayout {
                         alignment: center;
                         Field {
-                            accessible-label: "lighting.patch.universe" + i; accessible-role: text-input;
+                            accessible-id: "lighting.patch.universe" + i; accessible-role: text-input;
                             width: 50px; height: 26px; text: r.universe; enabled: !Lighting.locked;
                             accepted(t) => { Lighting.patch-universe(i, t); }
                         }
@@ -956,7 +956,7 @@ component PatchTable inherits VerticalLayout {
                     VerticalLayout {
                         alignment: center;
                         Field {
-                            accessible-label: "lighting.patch.address" + i; accessible-role: text-input;
+                            accessible-id: "lighting.patch.address" + i; accessible-role: text-input;
                             width: 62px; height: 26px; text: r.address; enabled: !Lighting.locked;
                             accepted(t) => { Lighting.patch-address(i, t); }
                         }
@@ -964,7 +964,7 @@ component PatchTable inherits VerticalLayout {
                     VerticalLayout {
                         alignment: center;
                         Stepper {
-                            accessible-label: "lighting.patch.mode" + i; accessible-role: spinbox; accessible-value: r.mode;
+                            accessible-id: "lighting.patch.mode" + i; accessible-role: spinbox; accessible-value: r.mode;
                             a11y-prev: "lighting.patch.mode" + i + ".prev"; a11y-next: "lighting.patch.mode" + i + ".next";
                             width: 120px; size: 26px; value: r.mode; template: "Custom"; enabled: !Lighting.locked;
                             tooltip: @tr("DMX mode of the fixture");
@@ -974,13 +974,13 @@ component PatchTable inherits VerticalLayout {
                     VerticalLayout {
                         alignment: center;
                         Field {
-                            accessible-label: "lighting.patch.channels" + i; accessible-role: text-input;
+                            accessible-id: "lighting.patch.channels" + i; accessible-role: text-input;
                             width: 50px; height: 26px; text: r.channels; enabled: !Lighting.locked;
                             accepted(t) => { Lighting.patch-channels(i, t); }
                         }
                     }
                     Text {
-                        accessible-label: "lighting.patch.clash" + i; accessible-role: text; accessible-value: self.text;
+                        accessible-id: "lighting.patch.clash" + i; accessible-role: text; accessible-value: self.text;
                         width: 130px; text: r.clash != "" ? r.clash : r.hazard == "fog" ? @tr("FOG · LOCKOUT") : r.hazard == "laser" ? @tr("LASER · LOCKOUT") : "";
                         font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: Theme.tracking-index;
                         color: r.clash != "" ? Theme.fault : Theme.bone-3; vertical-alignment: center; overflow: elide;
@@ -988,7 +988,7 @@ component PatchTable inherits VerticalLayout {
                     VerticalLayout {
                         alignment: center;
                         PlateButton {
-                            accessible-label: "lighting.patch.identify" + i; accessible-role: button;
+                            accessible-id: "lighting.patch.identify" + i; accessible-role: button;
                             accessible-checkable: true; accessible-checked: r.identify;
                             compact: true; label: "ID"; width: 30px; active: r.identify; tone: Theme.attention;
                             tooltip: @tr("Identify: blink this fixture");
@@ -998,7 +998,7 @@ component PatchTable inherits VerticalLayout {
                     VerticalLayout {
                         alignment: center;
                         PlateButton {
-                            accessible-label: "lighting.patch.remove" + i; accessible-role: button;
+                            accessible-id: "lighting.patch.remove" + i; accessible-role: button;
                             compact: true; glyph: "close"; width: 30px; enabled: !Lighting.locked;
                             tooltip: @tr("Remove this fixture");
                             clicked => { Lighting.remove-fixture(i); }
@@ -1018,7 +1018,7 @@ component ChannelGrid inherits VerticalLayout {
     HorizontalLayout {
         spacing: Theme.s1; height: 26px;
         for u[i] in Lighting.universes: PlateButton {
-            accessible-label: "lighting.channels.universe" + i; accessible-role: tab;
+            accessible-id: "lighting.channels.universe" + i; accessible-role: tab;
             compact: true; label: u; selected: Lighting.channel-universe == i;
             clicked => { Lighting.choose-universe(i); }
         }
@@ -1028,7 +1028,7 @@ component ChannelGrid inherits VerticalLayout {
     if Lighting.universes.length == 0: Body { text: @tr("No fixtures patched yet. Add your lights on the left."); color: Theme.bone-3; }
     grid := Rectangle {
         vertical-stretch: 1;
-        accessible-label: "lighting.channels"; accessible-role: table;
+        accessible-id: "lighting.channels"; accessible-role: table;
         property <length> label-w: 30px;
         property <length> cw: (self.width - self.label-w) / 32;
         property <length> ch: min(self.height / 16, 34px);
@@ -1067,7 +1067,7 @@ component LightPad inherits Rectangle {
     property <bool> empty: root.pad.name == "";
     property <bool> lit: root.pad.on || (touch.pressed && !root.empty);
     accessible-role: button;
-    accessible-label: root.a11y;
+    accessible-id: root.a11y;
     accessible-value: root.pad.number + " " + root.pad.name + (root.pad.chase ? " chase" : "") + (root.pad.flash ? " flash" : " latch") + (root.pad.on ? " on" : "") + (root.pad.selected ? " selected" : "");
     border-radius: Theme.r-control;
     background: root.empty ? (touch.has-hover ? Theme.plate.with-alpha(0.5) : transparent)
@@ -1134,7 +1134,7 @@ component PageTabs inherits HorizontalLayout {
     in property <bool> tall;
     spacing: Theme.key-gap;
     for n in 4: PlateButton {
-        accessible-label: root.prefix + (n + 1); accessible-role: tab;
+        accessible-id: root.prefix + (n + 1); accessible-role: tab;
         label: n + 1; selected: Lighting.page == n; tall: root.tall; compact: !root.tall;
         width: root.tall ? 44px : 30px;
         tooltip: @tr("Page {} of the pads", n + 1);
@@ -1153,7 +1153,7 @@ component GroupMasters inherits HorizontalLayout {
         HorizontalLayout {
             alignment: center; vertical-stretch: 1;
             Fader {
-                accessible-label: root.prefix + i; accessible-role: slider; accessible-value: Math.round(m.level * 100) + " %";
+                accessible-id: root.prefix + i; accessible-role: slider; accessible-value: Math.round(m.level * 100) + " %";
                 width: root.fader-w; value: m.level; tone: Theme.bone;
                 tooltip: @tr("Level of the group {}", m.name);
                 changed(v) => { Lighting.group-master(i, v); }
@@ -1173,9 +1173,9 @@ component LookEditor inherits VerticalLayout {
         Caps { text: @tr("PAD {} IS EMPTY", Lighting.edit-number); }
         HorizontalLayout {
             spacing: Theme.s1;
-            PlateButton { accessible-label: "lighting.look.new"; accessible-role: button; compact: true; label: @tr("NEW LOOK"); glyph: "plus"; tone: Theme.live; tooltip: @tr("A look that sets the groups you choose"); clicked => { Lighting.pad-new(false); } }
-            PlateButton { accessible-label: "lighting.look.new-chase"; accessible-role: button; compact: true; label: @tr("NEW CHASE"); glyph: "plus"; tooltip: @tr("A chase that steps through looks on the beat"); clicked => { Lighting.pad-new(true); } }
-            PlateButton { accessible-label: "lighting.look.capture"; accessible-role: button; compact: true; label: @tr("FROM PRO"); tooltip: @tr("A look from the group settings of PRO mode"); clicked => { Lighting.pad-capture(); } }
+            PlateButton { accessible-id: "lighting.look.new"; accessible-role: button; compact: true; label: @tr("NEW LOOK"); glyph: "plus"; tone: Theme.live; tooltip: @tr("A look that sets the groups you choose"); clicked => { Lighting.pad-new(false); } }
+            PlateButton { accessible-id: "lighting.look.new-chase"; accessible-role: button; compact: true; label: @tr("NEW CHASE"); glyph: "plus"; tooltip: @tr("A chase that steps through looks on the beat"); clicked => { Lighting.pad-new(true); } }
+            PlateButton { accessible-id: "lighting.look.capture"; accessible-role: button; compact: true; label: @tr("FROM PRO"); tooltip: @tr("A look from the group settings of PRO mode"); clicked => { Lighting.pad-capture(); } }
             Rectangle { horizontal-stretch: 1; }
         }
     }
@@ -1185,7 +1185,7 @@ component LookEditor inherits VerticalLayout {
             spacing: Theme.s2;
             Caps { text: Lighting.edit-number; vertical-alignment: center; color: Theme.attention; }
             Field {
-                accessible-label: "lighting.look.name"; accessible-role: text-input;
+                accessible-id: "lighting.look.name"; accessible-role: text-input;
                 text: Lighting.edit-name; placeholder: @tr("Name"); horizontal-stretch: 1;
                 accepted(t) => { Lighting.pad-rename(t); }
             }
@@ -1193,13 +1193,13 @@ component LookEditor inherits VerticalLayout {
                 alignment: center; horizontal-stretch: 0;
                 HorizontalLayout {
                     spacing: Theme.key-gap;
-                    PlateButton { accessible-label: "lighting.look.latch"; accessible-role: tab; compact: true; horizontal-stretch: 0; label: @tr("LATCH"); selected: !Lighting.edit-flash; tooltip: @tr("On until pressed again or released"); clicked => { Lighting.pad-flash(false); } }
-                    PlateButton { accessible-label: "lighting.look.flash"; accessible-role: tab; compact: true; horizontal-stretch: 0; label: @tr("FLASH"); selected: Lighting.edit-flash; tooltip: @tr("On while held"); clicked => { Lighting.pad-flash(true); } }
+                    PlateButton { accessible-id: "lighting.look.latch"; accessible-role: tab; compact: true; horizontal-stretch: 0; label: @tr("LATCH"); selected: !Lighting.edit-flash; tooltip: @tr("On until pressed again or released"); clicked => { Lighting.pad-flash(false); } }
+                    PlateButton { accessible-id: "lighting.look.flash"; accessible-role: tab; compact: true; horizontal-stretch: 0; label: @tr("FLASH"); selected: Lighting.edit-flash; tooltip: @tr("On while held"); clicked => { Lighting.pad-flash(true); } }
                 }
             }
             VerticalLayout {
                 alignment: center; horizontal-stretch: 0;
-                PlateButton { accessible-label: "lighting.look.delete"; accessible-role: button; compact: true; glyph: "close"; width: 30px; tone: Theme.fault; tooltip: @tr("Delete this look"); clicked => { Lighting.pad-delete(); } }
+                PlateButton { accessible-id: "lighting.look.delete"; accessible-role: button; compact: true; glyph: "close"; width: 30px; tone: Theme.fault; tooltip: @tr("Delete this look"); clicked => { Lighting.pad-delete(); } }
             }
         }
         if !Lighting.edit-chase: Flickable {
@@ -1216,26 +1216,26 @@ component LookEditor inherits VerticalLayout {
                         height: 26px; spacing: Theme.s2;
                         VerticalLayout { padding-top: Theme.s1; padding-bottom: Theme.s1; VLine { tone: g.set ? Theme.live : Theme.rule-strong; form: g.set ? "solid" : "half"; } }
                         Text {
-                            accessible-label: "lighting.look.group" + gi; accessible-role: text; accessible-value: g.name + (g.set ? " set" : " underneath");
+                            accessible-id: "lighting.look.group" + gi; accessible-role: text; accessible-value: g.name + (g.set ? " set" : " underneath");
                             text: g.name; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
                             color: g.set ? Theme.bone : Theme.bone-3; vertical-alignment: center; overflow: elide; horizontal-stretch: 1;
                         }
                         Stepper {
-                            accessible-label: "lighting.look.group" + gi + ".program"; accessible-role: spinbox; accessible-value: self.value;
+                            accessible-id: "lighting.look.group" + gi + ".program"; accessible-role: spinbox; accessible-value: self.value;
                             a11y-prev: "lighting.look.group" + gi + ".program.prev"; a11y-next: "lighting.look.group" + gi + ".program.next";
                             value: g.program; template: "BREATHE"; size: 26px; lit: g.set;
                             tooltip: @tr("Program of the group in this look (— keeps what runs underneath)");
                             step(d) => { Lighting.pad-group-program(gi, d); }
                         }
                         Stepper {
-                            accessible-label: "lighting.look.group" + gi + ".level"; accessible-role: spinbox; accessible-value: self.value;
+                            accessible-id: "lighting.look.group" + gi + ".level"; accessible-role: spinbox; accessible-value: self.value;
                             a11y-prev: "lighting.look.group" + gi + ".level.down"; a11y-next: "lighting.look.group" + gi + ".level.up";
                             value: g.level; template: "100 %"; size: 26px; lit: g.set;
                             tooltip: @tr("Level of the group in this look");
                             step(d) => { Lighting.pad-group-level(gi, d); }
                         }
                         PlateButton {
-                            accessible-label: "lighting.look.group" + gi + ".clear"; accessible-role: button;
+                            accessible-id: "lighting.look.group" + gi + ".clear"; accessible-role: button;
                             compact: true; glyph: "close"; width: 26px; enabled: g.set;
                             tooltip: @tr("Leave this group to what runs underneath");
                             clicked => { Lighting.pad-group-clear(gi); }
@@ -1255,14 +1255,14 @@ component LookEditor inherits VerticalLayout {
                 spacing: Theme.s2;
                 Caps { text: @tr("STEPS"); vertical-alignment: center; horizontal-stretch: 1; }
                 Stepper {
-                    accessible-label: "lighting.look.step-beats"; accessible-role: spinbox; accessible-value: self.value;
+                    accessible-id: "lighting.look.step-beats"; accessible-role: spinbox; accessible-value: self.value;
                     a11y-prev: "lighting.look.step-beats.down"; a11y-next: "lighting.look.step-beats.up";
                     value: Lighting.edit-step-beats; template: "1/4 BEAT"; size: 26px; lit: true;
                     tooltip: @tr("How long each step lasts");
                     step(d) => { Lighting.pad-step-beats(d); }
                 }
                 PlateButton {
-                    accessible-label: "lighting.look.add-steps"; accessible-role: button;
+                    accessible-id: "lighting.look.add-steps"; accessible-role: button;
                     accessible-checkable: true; accessible-checked: Lighting.adding-steps;
                     compact: true; label: @tr("ADD STEPS"); armed: Lighting.adding-steps; tone: Theme.attention;
                     tooltip: @tr("Then click the looks to add, in order");
@@ -1274,12 +1274,12 @@ component LookEditor inherits VerticalLayout {
                 text: Lighting.adding-steps ? @tr("Click the looks to add, in order. ADD STEPS again ends it.") : @tr("A chase steps through looks on the beat of the music.");
             }
             for st[si] in Lighting.edit-steps: Rectangle {
-                accessible-label: "lighting.look.step" + si; accessible-role: list-item; accessible-value: st;
+                accessible-id: "lighting.look.step" + si; accessible-role: list-item; accessible-value: st;
                 height: 24px;
                 HorizontalLayout {
                     padding-left: Theme.s2; spacing: Theme.s2;
                     Text { text: (si + 1) + "  " + st; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
-                    PlateButton { accessible-label: "lighting.look.step" + si + ".remove"; accessible-role: button; compact: true; glyph: "close"; width: 26px; tooltip: @tr("Remove this step"); clicked => { Lighting.pad-step-remove(si); } }
+                    PlateButton { accessible-id: "lighting.look.step" + si + ".remove"; accessible-role: button; compact: true; glyph: "close"; width: 26px; tooltip: @tr("Remove this step"); clicked => { Lighting.pad-step-remove(si); } }
                 }
             }
         }
@@ -1299,7 +1299,7 @@ component PadsCentre inherits HorizontalLayout {
             PageTabs { prefix: "lighting.page"; }
             Rectangle { horizontal-stretch: 1; }
             PlateButton {
-                accessible-label: "lighting.pads.edit"; accessible-role: button;
+                accessible-id: "lighting.pads.edit"; accessible-role: button;
                 accessible-checkable: true; accessible-checked: Lighting.editing;
                 compact: true; horizontal-stretch: 0; label: @tr("EDIT"); active: Lighting.editing; tone: Theme.attention;
                 tooltip: Lighting.editing ? @tr("Back to playing the pads") : @tr("Click a pad to make or change its look");
@@ -1328,14 +1328,18 @@ component PadsCentre inherits HorizontalLayout {
 component PaletteList inherits Rectangle {
     in property <int> columns: 3;
     property <length> cw: (self.width - 2px) / root.columns;
-    height: Math.ceil(Lighting.palettes.length / root.columns) * 26px + 2px;
+    // Touch: 44 px rows.
+    property <length> rh: Theme.touch-mode ? 44px : 26px;
+    height: Math.ceil(Lighting.palettes.length / root.columns) * root.rh + 2px;
     background: Theme.plate; border-radius: Theme.r-control;
     for name[i] in Lighting.palettes: Rectangle {
-        accessible-label: "lighting.auto.palette" + i; accessible-role: tab; accessible-value: name;
+        accessible-id: "lighting.auto.palette" + i; accessible-role: tab; accessible-value: name;
+        accessible-label: TooltipState.name-for(self.accessible-id, name, "");
+        KeyFocus { activate => { Lighting.choose-palette(i); } }
         accessible-item-selectable: true; accessible-item-selected: i == Lighting.palette;
         x: 1px + Math.mod(i, root.columns) * root.cw;
-        y: 1px + Math.floor(i / root.columns) * 26px;
-        width: root.cw; height: 26px;
+        y: 1px + Math.floor(i / root.columns) * root.rh;
+        width: root.cw; height: root.rh;
         border-radius: Theme.r-control;
         background: i == Lighting.palette ? Theme.bone : ta.has-hover ? Theme.plate-raised : transparent;
         Text {
@@ -1351,7 +1355,7 @@ component PaletteList inherits Rectangle {
 // table, and the order of who wins.
 // The order of who wins, top first, with the layer in control lit.
 component OrderChain inherits VerticalLayout {
-    accessible-label: "lighting.order"; accessible-role: text; accessible-value: Lighting.layer;
+    accessible-id: "lighting.order"; accessible-role: text; accessible-value: Lighting.layer;
     spacing: Theme.key-gap;
     for row in [[{ id: "blackout", label: @tr("BLACKOUT") }, { id: "momentary", label: @tr("FLASH / STROBE KEY") }, { id: "flash-pad", label: @tr("FLASH PAD") }],
                 [{ id: "latched", label: @tr("LATCHED PAD") }, { id: "hold", label: @tr("HOLD") }, { id: "base", label: @tr("AUTO") }]]: FlexboxLayout {
@@ -1376,14 +1380,14 @@ component AutoSection inherits VerticalLayout {
     HorizontalLayout {
         spacing: Theme.s1;
         PlateButton {
-            accessible-label: "lighting.auto.hold"; accessible-role: button;
+            accessible-id: "lighting.auto.hold"; accessible-role: button;
             accessible-checkable: true; accessible-checked: Lighting.hold;
             label: @tr("HOLD"); active: Lighting.hold; tone: Theme.attention; horizontal-stretch: 1;
             tooltip: @tr("Keep AUTO's current look through phrase changes");
             clicked => { Lighting.set-hold(!Lighting.hold); }
         }
         PlateButton {
-            accessible-label: "lighting.auto.release"; accessible-role: button;
+            accessible-id: "lighting.auto.release"; accessible-role: button;
             label: @tr("RELEASE"); horizontal-stretch: 1;
             enabled: Lighting.layer == "latched" || Lighting.layer == "hold";
             tooltip: @tr("Hand back to AUTO: the latched pad and HOLD end, with a one-beat fade");
@@ -1395,7 +1399,7 @@ component AutoSection inherits VerticalLayout {
     if Lighting.palette == Lighting.palettes.length - 1: HorizontalLayout {
         spacing: Theme.s1; height: 22px;
         for c[i] in Lighting.swatches: Rectangle {
-            accessible-label: "lighting.auto.custom" + i; accessible-role: checkbox;
+            accessible-id: "lighting.auto.custom" + i; accessible-role: checkbox;
             accessible-checkable: true; accessible-checked: Lighting.custom-colors[i];
             width: 26px;
             background: c;
@@ -1412,7 +1416,7 @@ component AutoSection inherits VerticalLayout {
         VerticalLayout { padding-top: Theme.s1; padding-bottom: Theme.s1; VLine { tone: r.now ? Theme.attention : transparent; } }
         Text { text: r.label; width: 78px; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: r.now ? Theme.bone : Theme.bone-2; vertical-alignment: center; overflow: elide; }
         Stepper {
-            accessible-label: "lighting.auto.row" + ri; accessible-role: spinbox; accessible-value: self.value;
+            accessible-id: "lighting.auto.row" + ri; accessible-role: spinbox; accessible-value: self.value;
             a11y-prev: "lighting.auto.row" + ri + ".prev"; a11y-next: "lighting.auto.row" + ri + ".next";
             value: r.pick; template: "1.8 PEAK"; size: 26px; lit: r.now; horizontal-stretch: 1;
             tooltip: @tr("What AUTO plays for this phrase: a program or one of your pads");
@@ -1420,7 +1424,7 @@ component AutoSection inherits VerticalLayout {
         }
     }
     Body {
-        accessible-label: "lighting.auto.order"; accessible-role: text; accessible-value: self.text;
+        accessible-id: "lighting.auto.order"; accessible-role: text; accessible-value: self.text;
         color: Theme.bone-3;
         text: @tr("Who wins, from the top: BLACKOUT, the FLASH and STROBE keys, a flash pad while held, the latched pad, HOLD, then AUTO. A pad takes only the groups its look sets. RELEASE hands back to AUTO.");
     }
@@ -1435,7 +1439,7 @@ component ShowPanel inherits VerticalLayout {
         spacing: Theme.s2;
         SectionTitle { text: @tr("SHOW"); horizontal-stretch: 1; }
         LineToggle {
-            accessible-label: "lighting.enable"; accessible-role: checkbox;
+            accessible-id: "lighting.enable"; accessible-role: checkbox;
             label: @tr("DMX OUT"); checked: Lighting.enabled; tone: Theme.live;
             tooltip: @tr("Send the show to the outputs");
             toggled(on) => { Lighting.set-enabled(on); }
@@ -1444,7 +1448,7 @@ component ShowPanel inherits VerticalLayout {
     HorizontalLayout {
         spacing: Theme.s1;
         for m in [{ id: "auto", label: "AUTO" }, { id: "easy", label: "EASY" }, { id: "pro", label: "PRO" }]: PlateButton {
-            accessible-label: "lighting.mode." + m.id; accessible-role: tab;
+            accessible-id: "lighting.mode." + m.id; accessible-role: tab;
             label: m.label; selected: Lighting.mode == m.id; horizontal-stretch: 1;
             tooltip: m.id == "auto" ? @tr("The show follows phrases, beat and the mix")
                 : m.id == "easy" ? @tr("One look for the whole rig, locked to the beat")
@@ -1461,7 +1465,7 @@ component ShowPanel inherits VerticalLayout {
             HorizontalLayout {
                 alignment: center; vertical-stretch: 1;
                 Fader {
-                    accessible-label: "lighting.master"; accessible-role: slider; accessible-value: Math.round(Lighting.master * 100) + " %";
+                    accessible-id: "lighting.master"; accessible-role: slider; accessible-value: Math.round(Lighting.master * 100) + " %";
                     value: Lighting.master; tone: Theme.attention; vertical-stretch: 1;
                     tooltip: @tr("Master dimmer");
                     changed(v) => { Lighting.set-master(v); }
@@ -1472,20 +1476,20 @@ component ShowPanel inherits VerticalLayout {
         VerticalLayout {
             spacing: Theme.s2; horizontal-stretch: 1;
             PlateButton {
-                accessible-label: "lighting.blackout"; accessible-role: button;
+                accessible-id: "lighting.blackout"; accessible-role: button;
                 label: @tr("BLACKOUT"); active: Lighting.blackout; tone: Theme.fault;
                 tooltip: @tr("All lights off");
                 clicked => { Lighting.set-blackout(!Lighting.blackout); }
             }
             HoldButton {
-                accessible-label: "lighting.flash"; accessible-role: button;
+                accessible-id: "lighting.flash"; accessible-role: button;
                 label: @tr("FLASH"); on: Lighting.flash; size: 34px; tone: Theme.bone;
                 tooltip: @tr("Full white while held");
                 pressed => { Lighting.flash-held(true); }
                 released => { Lighting.flash-held(false); }
             }
             HoldButton {
-                accessible-label: "lighting.strobe"; accessible-role: button;
+                accessible-id: "lighting.strobe"; accessible-role: button;
                 label: @tr("STROBE"); on: Lighting.strobe; size: 34px;
                 tooltip: @tr("Strobe while held");
                 pressed => { Lighting.strobe-held(true); }
@@ -1494,14 +1498,14 @@ component ShowPanel inherits VerticalLayout {
             HorizontalLayout {
                 spacing: Theme.s2;
                 HoldButton {
-                    accessible-label: "lighting.fog"; accessible-role: button;
+                    accessible-id: "lighting.fog"; accessible-role: button;
                     label: @tr("FOG"); on: Lighting.fog; size: 30px; tone: Theme.attention; horizontal-stretch: 1;
                     tooltip: Lighting.fog-armed ? @tr("Fog machines on while held") : @tr("Fog is locked out: arm it under SAFETY");
                     pressed => { Lighting.fog-held(true); }
                     released => { Lighting.fog-held(false); }
                 }
                 PlateButton {
-                    accessible-label: "lighting.tap"; accessible-role: button;
+                    accessible-id: "lighting.tap"; accessible-role: button;
                     label: Lighting.tap-bpm == "" ? @tr("TAP") : "TAP " + Lighting.tap-bpm; horizontal-stretch: 1;
                     tooltip: @tr("Tap the tempo for the lights when no deck plays");
                     clicked => { Lighting.tap(); }
@@ -1515,13 +1519,13 @@ component ShowPanel inherits VerticalLayout {
         spacing: Theme.s2; height: 18px;
         Caps { text: @tr("IN CONTROL"); vertical-alignment: center; }
         Caps {
-            accessible-label: "lighting.layer"; accessible-role: text; accessible-value: Lighting.layer + " " + Lighting.layer-text;
+            accessible-id: "lighting.layer"; accessible-role: text; accessible-value: Lighting.layer + " " + Lighting.layer-text;
             text: Lighting.layer-text; overflow: elide; horizontal-stretch: 1; vertical-alignment: center;
             color: Lighting.layer == "base" ? Theme.bone-2 : Lighting.layer == "blackout" ? Theme.fault : Theme.attention;
         }
     }
     if Lighting.mode == "auto": Flickable {
-        accessible-label: "lighting.auto"; accessible-role: groupbox;
+        accessible-id: "lighting.auto"; accessible-role: groupbox;
         vertical-stretch: 1;
         content-height: autos.preferred-height;
         autos := VerticalLayout {
@@ -1534,7 +1538,7 @@ component ShowPanel inherits VerticalLayout {
         spacing: Theme.s2;
         Caps { text: @tr("LOOK"); }
         ChoiceList {
-            accessible-label: "lighting.easy.program"; accessible-role: list;
+            accessible-id: "lighting.easy.program"; accessible-role: list;
             items: Lighting.programs; current: Lighting.easy-program; columns: 2; cell-w: 140px;
             chosen(i) => { Lighting.choose-easy-program(i); }
         }
@@ -1550,13 +1554,13 @@ component ShowPanel inherits VerticalLayout {
             HorizontalLayout {
                 spacing: Theme.key-gap;
                 PlateButton {
-                    accessible-label: "lighting.pro.group" + gi + ".follow"; accessible-role: button;
+                    accessible-id: "lighting.pro.group" + gi + ".follow"; accessible-role: button;
                     compact: true; label: @tr("MUSIC"); selected: g.program < 0;
                     tooltip: @tr("Follow the music");
                     clicked => { Lighting.group-program(gi, -1); }
                 }
                 for p[pi] in Lighting.programs: PlateButton {
-                    accessible-label: "lighting.pro.group" + gi + ".program" + pi; accessible-role: button;
+                    accessible-id: "lighting.pro.group" + gi + ".program" + pi; accessible-role: button;
                     compact: true; label: p; selected: g.program == pi;
                     clicked => { Lighting.group-program(gi, pi); }
                 }
@@ -1565,7 +1569,7 @@ component ShowPanel inherits VerticalLayout {
             HorizontalLayout {
                 spacing: Theme.s2;
                 PlateButton {
-                    accessible-label: "lighting.pro.group" + gi + ".effect"; accessible-role: button;
+                    accessible-id: "lighting.pro.group" + gi + ".effect"; accessible-role: button;
                     compact: true; horizontal-stretch: 1;
                     label: "FX: " + Lighting.effects[g.effect];
                     tooltip: @tr("Attribute effect: click for the next one");
@@ -1573,7 +1577,7 @@ component ShowPanel inherits VerticalLayout {
                 }
                 // Pan / tilt programmer: drag in the square; double-click frees it.
                 if g.has-movers: Rectangle {
-                    accessible-label: "lighting.pro.group" + gi + ".xy"; accessible-role: slider;
+                    accessible-id: "lighting.pro.group" + gi + ".xy"; accessible-role: slider;
                     width: 54px; height: 54px;
                     background: Theme.plate; border-width: 1px; border-color: Theme.rule;
                     Rectangle { x: parent.width / 2; width: 1px; background: Theme.rule; }
@@ -1603,16 +1607,16 @@ component ShowPanel inherits VerticalLayout {
         Caps { text: @tr("TRACK CUES"); }
         Text { text: Lighting.timeline-title == "" ? @tr("Play a track to store lighting cues with it.") : Lighting.timeline-title; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; overflow: elide; }
         for t[ti] in Lighting.timeline: Rectangle {
-            accessible-label: "lighting.timeline" + ti; accessible-role: list-item; accessible-value: t;
+            accessible-id: "lighting.timeline" + ti; accessible-role: list-item; accessible-value: t;
             height: 22px;
             HorizontalLayout {
                 padding-left: Theme.s2; spacing: Theme.s2;
                 Text { text: t; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
-                PlateButton { accessible-label: "lighting.timeline" + ti + ".delete"; accessible-role: button; compact: true; glyph: "close"; width: 30px; tooltip: @tr("Remove this track cue"); clicked => { Lighting.timeline-delete(ti); } }
+                PlateButton { accessible-id: "lighting.timeline" + ti + ".delete"; accessible-role: button; compact: true; glyph: "close"; width: 30px; tooltip: @tr("Remove this track cue"); clicked => { Lighting.timeline-delete(ti); } }
             }
         }
         PlateButton {
-            accessible-label: "lighting.timeline.add"; accessible-role: button;
+            accessible-id: "lighting.timeline.add"; accessible-role: button;
             compact: true; label: @tr("CUE AT PLAYHEAD"); enabled: Lighting.timeline-title != "" && Lighting.cues.length > 0;
             tooltip: @tr("The current cue starts at this bar whenever the track plays");
             clicked => { Lighting.timeline-add(); }
@@ -1620,26 +1624,26 @@ component ShowPanel inherits VerticalLayout {
         HLine { }
         Caps { text: @tr("CUE STACK"); }
         for c[ci] in Lighting.cues: Rectangle {
-            accessible-label: "lighting.cue" + ci; accessible-role: list-item; accessible-value: c;
+            accessible-id: "lighting.cue" + ci; accessible-role: list-item; accessible-value: c;
             height: 24px;
             background: transparent;
             Rectangle { x: 0; width: 2px; background: ci == Lighting.active-cue ? Theme.attention : transparent; }
             HorizontalLayout {
                 padding-left: Theme.s2; spacing: Theme.s2;
                 Text { text: (ci + 1) + "  " + c; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; horizontal-stretch: 1; }
-                PlateButton { accessible-label: "lighting.cue" + ci + ".delete"; accessible-role: button; compact: true; glyph: "close"; tooltip: @tr("Delete this cue"); clicked => { Lighting.cue-delete(ci); } }
+                PlateButton { accessible-id: "lighting.cue" + ci + ".delete"; accessible-role: button; compact: true; glyph: "close"; tooltip: @tr("Delete this cue"); clicked => { Lighting.cue-delete(ci); } }
             }
         }
         HorizontalLayout {
             spacing: Theme.s1;
-            PlateButton { accessible-label: "lighting.cue.back"; accessible-role: button; label: @tr("BACK"); horizontal-stretch: 1; tooltip: @tr("Previous cue"); clicked => { Lighting.cue-back(); } }
-            PlateButton { accessible-label: "lighting.cue.go"; accessible-role: button; label: @tr("GO"); tone: Theme.live; horizontal-stretch: 1; tooltip: @tr("Next cue"); clicked => { Lighting.cue-go(); } }
+            PlateButton { accessible-id: "lighting.cue.back"; accessible-role: button; label: @tr("BACK"); horizontal-stretch: 1; tooltip: @tr("Previous cue"); clicked => { Lighting.cue-back(); } }
+            PlateButton { accessible-id: "lighting.cue.go"; accessible-role: button; label: @tr("GO"); tone: Theme.live; horizontal-stretch: 1; tooltip: @tr("Next cue"); clicked => { Lighting.cue-go(); } }
         }
         HorizontalLayout {
             spacing: Theme.s2;
-            cue := Field { accessible-label: "lighting.cue.name"; accessible-role: text-input; placeholder: @tr("Cue name"); horizontal-stretch: 1; }
+            cue := Field { accessible-id: "lighting.cue.name"; accessible-role: text-input; placeholder: @tr("Cue name"); horizontal-stretch: 1; }
             PlateButton {
-                accessible-label: "lighting.cue.store"; accessible-role: button;
+                accessible-id: "lighting.cue.store"; accessible-role: button;
                 compact: true; label: @tr("STORE"); tooltip: @tr("Store the group settings as a new cue");
                 clicked => { Lighting.cue-store(cue.text); cue.text = ""; }
             }
@@ -1650,7 +1654,7 @@ component ShowPanel inherits VerticalLayout {
 
 export component LightingView inherits Rectangle {
     in property <bool> detachable: true;
-    accessible-label: "lighting.view"; accessible-role: groupbox;
+    accessible-id: "lighting.view"; accessible-role: groupbox;
     background: Theme.ground-band; border-radius: Theme.r-panel;
     // Too narrow for setup, centre and show side by side (a small window or
     // a large interface scale): one side column that shows SETUP or SHOW.
@@ -1668,7 +1672,7 @@ export component LightingView inherits Rectangle {
                 padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.s3;
                 spacing: Theme.s1;
                 for t in [{ id: "setup", label: @tr("SETUP") }, { id: "show", label: @tr("SHOW") }]: PlateButton {
-                    accessible-label: "lighting.side." + t.id; accessible-role: tab;
+                    accessible-id: "lighting.side." + t.id; accessible-role: tab;
                     compact: true; horizontal-stretch: 1;
                     label: t.label; selected: root.side == t.id;
                     clicked => { root.side = t.id; }
@@ -1687,24 +1691,24 @@ export component LightingView inherits Rectangle {
                 HorizontalLayout {
                     spacing: Theme.s1;
                     for c in [{ id: "stage", label: @tr("STAGE") }, { id: "pads", label: @tr("PADS") }, { id: "patch", label: @tr("PATCH") }, { id: "channels", label: @tr("CHANNELS") }]: PlateButton {
-                        accessible-label: "lighting.centre." + c.id; accessible-role: tab;
+                        accessible-id: "lighting.centre." + c.id; accessible-role: tab;
                         compact: true; label: c.label; selected: Lighting.centre == c.id;
                         clicked => { Lighting.centre = c.id; }
                     }
                 }
                 Rectangle { horizontal-stretch: 1; }
                 if root.detachable: PlateButton {
-                    accessible-label: "lighting.detach"; accessible-role: button;
+                    accessible-id: "lighting.detach"; accessible-role: button;
                     compact: true; label: @tr("WINDOW"); tooltip: @tr("Open the lighting in its own window (second screen)");
                     clicked => { Lighting.detach(); }
                 }
                 Caps {
-                    accessible-label: "lighting.status"; accessible-role: text; accessible-value: self.text;
+                    accessible-id: "lighting.status"; accessible-role: text; accessible-value: self.text;
                     overflow: elide;
                     text: Lighting.layer-text; color: Lighting.layer == "blackout" ? Theme.fault : Theme.attention; vertical-alignment: center;
                 }
             }
-            if Lighting.centre == "stage": Stage { vertical-stretch: 1; accessible-label: "lighting.stage"; accessible-role: image; }
+            if Lighting.centre == "stage": Stage { vertical-stretch: 1; accessible-id: "lighting.stage"; accessible-role: image; }
             if Lighting.centre == "pads": PadsCentre { vertical-stretch: 1; }
             // The patch table keeps its columns: a narrow centre scrolls it
             // sideways (the wheel with ⇧, or the trackpad).
@@ -1723,7 +1727,7 @@ export component LightingView inherits Rectangle {
 
 // Compact output state: line, DMX, and what is wrong (Perform strip and top bar).
 export component LinkStatus inherits HorizontalLayout {
-    accessible-label: "lighting.link"; accessible-role: text;
+    accessible-id: "lighting.link"; accessible-role: text;
     accessible-value: Lighting.link + " " + Lighting.link-text;
     spacing: Theme.s2;
     VerticalLayout { padding-top: Theme.s1; padding-bottom: Theme.s1; LinkLine { state: Lighting.link == "fault" ? "lost" : Lighting.link; } }
@@ -1740,14 +1744,14 @@ export component LinkStatus inherits HorizontalLayout {
 // place, so the decks, waveforms and mixer keep their size. Every key and
 // pad is at least 44 px for touch; the stage preview shows from 1360 px.
 export component LightingPanel inherits Rectangle {
-    accessible-label: "lighting.strip"; accessible-role: groupbox;
+    accessible-id: "lighting.strip"; accessible-role: groupbox;
     background: Theme.ground-band; border-radius: Theme.r-panel;
     property <bool> roomy: root.width >= 1360px;
     // The kiosk and other narrow windows leave the faders out.
     property <bool> narrow: root.width < 1000px;
     HorizontalLayout {
         padding: Theme.s2; spacing: Theme.s3;
-        if root.roomy: Stage { compact: true; width: 220px; accessible-label: "lighting.strip.stage"; accessible-role: image; }
+        if root.roomy: Stage { compact: true; width: 220px; accessible-id: "lighting.strip.stage"; accessible-role: image; }
         VerticalLayout {
             horizontal-stretch: 1; min-width: 4 * 80px;
             spacing: Theme.s1;
@@ -1768,7 +1772,7 @@ export component LightingPanel inherits Rectangle {
                     HorizontalLayout {
                         alignment: center; vertical-stretch: 1;
                         Fader {
-                            accessible-label: "lighting.strip.master"; accessible-role: slider; accessible-value: Math.round(Lighting.master * 100) + " %";
+                            accessible-id: "lighting.strip.master"; accessible-role: slider; accessible-value: Math.round(Lighting.master * 100) + " %";
                             width: 44px; value: Lighting.master; tone: Theme.attention;
                             tooltip: @tr("Master dimmer");
                             changed(v) => { Lighting.set-master(v); }
@@ -1784,12 +1788,12 @@ export component LightingPanel inherits Rectangle {
             HorizontalLayout {
                 spacing: Theme.key-gap;
                 for m in [{ id: "auto", label: "AUTO" }, { id: "easy", label: "EASY" }, { id: "pro", label: "PRO" }]: PlateButton {
-                    accessible-label: "lighting.strip.mode." + m.id; accessible-role: tab;
+                    accessible-id: "lighting.strip.mode." + m.id; accessible-role: tab;
                     tall: true; label: m.label; selected: Lighting.mode == m.id; horizontal-stretch: 1;
                     clicked => { Lighting.set-mode(m.id); }
                 }
                 PlateButton {
-                    accessible-label: "lighting.strip.enable"; accessible-role: button;
+                    accessible-id: "lighting.strip.enable"; accessible-role: button;
                     accessible-checkable: true; accessible-checked: Lighting.enabled;
                     tall: true; label: @tr("DMX OUT"); active: Lighting.enabled; tone: Theme.live;
                     tooltip: @tr("Send the show to the outputs");
@@ -1799,14 +1803,14 @@ export component LightingPanel inherits Rectangle {
             HorizontalLayout {
                 spacing: Theme.key-gap;
                 PlateButton {
-                    accessible-label: "lighting.strip.hold"; accessible-role: button;
+                    accessible-id: "lighting.strip.hold"; accessible-role: button;
                     accessible-checkable: true; accessible-checked: Lighting.hold;
                     tall: true; label: @tr("HOLD"); active: Lighting.hold; tone: Theme.attention; horizontal-stretch: 1;
                     tooltip: @tr("Keep AUTO's current look through phrase changes");
                     clicked => { Lighting.set-hold(!Lighting.hold); }
                 }
                 PlateButton {
-                    accessible-label: "lighting.strip.release"; accessible-role: button;
+                    accessible-id: "lighting.strip.release"; accessible-role: button;
                     tall: true; label: @tr("RELEASE"); horizontal-stretch: 1;
                     enabled: Lighting.layer == "latched" || Lighting.layer == "hold";
                     tooltip: @tr("Hand back to AUTO: the latched pad and HOLD end");
@@ -1818,7 +1822,7 @@ export component LightingPanel inherits Rectangle {
                 spacing: Theme.s2; vertical-stretch: 1; min-height: 18px;
                 if Lighting.link == "lost" || Lighting.link == "fault": LinkStatus { horizontal-stretch: 1; }
                 if Lighting.link != "lost" && Lighting.link != "fault": Caps {
-                    accessible-label: "lighting.strip.layer"; accessible-role: text; accessible-value: Lighting.layer + " " + Lighting.layer-text;
+                    accessible-id: "lighting.strip.layer"; accessible-role: text; accessible-value: Lighting.layer + " " + Lighting.layer-text;
                     text: Lighting.layer-text; overflow: elide; horizontal-stretch: 1; vertical-alignment: center;
                     color: Lighting.layer == "base" ? Theme.bone-2 : Lighting.layer == "blackout" ? Theme.fault : Theme.attention;
                 }
@@ -1826,22 +1830,22 @@ export component LightingPanel inherits Rectangle {
             HorizontalLayout {
                 spacing: Theme.key-gap;
                 PlateButton {
-                    accessible-label: "lighting.strip.blackout"; accessible-role: button;
+                    accessible-id: "lighting.strip.blackout"; accessible-role: button;
                     tall: true; label: @tr("BLACKOUT"); active: Lighting.blackout; tone: Theme.fault; horizontal-stretch: 1;
                     clicked => { Lighting.set-blackout(!Lighting.blackout); }
                 }
                 HoldButton {
-                    accessible-label: "lighting.strip.flash"; accessible-role: button;
+                    accessible-id: "lighting.strip.flash"; accessible-role: button;
                     label: @tr("FLASH"); on: Lighting.flash; size: 44px; tone: Theme.bone; horizontal-stretch: 1;
                     pressed => { Lighting.flash-held(true); } released => { Lighting.flash-held(false); }
                 }
                 HoldButton {
-                    accessible-label: "lighting.strip.strobe"; accessible-role: button;
+                    accessible-id: "lighting.strip.strobe"; accessible-role: button;
                     label: @tr("STROBE"); on: Lighting.strobe; size: 44px; horizontal-stretch: 1;
                     pressed => { Lighting.strobe-held(true); } released => { Lighting.strobe-held(false); }
                 }
                 HoldButton {
-                    accessible-label: "lighting.strip.fog"; accessible-role: button;
+                    accessible-id: "lighting.strip.fog"; accessible-role: button;
                     label: @tr("FOG"); on: Lighting.fog; size: 44px; tone: Theme.attention; horizontal-stretch: 1;
                     tooltip: Lighting.fog-armed ? @tr("Fog machines on while held") : @tr("Fog is locked out: arm it under SAFETY");
                     pressed => { Lighting.fog-held(true); } released => { Lighting.fog-held(false); }
