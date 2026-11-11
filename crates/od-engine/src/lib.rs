@@ -17,7 +17,7 @@
 //! engine.deck(0, DeckCommand::Play).unwrap();
 //! let mut master = vec![0.0; 256];
 //! let mut phones = vec![0.0; 256];
-//! processor.process(128, &mut Outputs { master: &mut master, headphones: Some(&mut phones), booth: None });
+//! processor.process(128, &mut Outputs { master: &mut master, headphones: Some(&mut phones), booth: None, decks: None });
 //! println!("{:?}", engine.state().decks[0].position);
 //! ```
 //!

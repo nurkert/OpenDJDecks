@@ -220,6 +220,7 @@ fn spawn_audio(
                         master: &mut master,
                         headphones: Some(&mut phones),
                         booth: None,
+                        decks: None,
                     },
                 );
                 let end = Instant::now();

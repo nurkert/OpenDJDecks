@@ -549,6 +549,21 @@ component GridSessionKeys inherits VerticalLayout {
     }
 }
 
+// [66] The STEMS tool of the player: the parts of the track in the player
+// to hear on their own on the headphones (the master stays as it is), and
+// where the parts come from.
+export global PlayerStems {
+    // "ready", "separating", "none" (not separated), "" (the track is not
+    // on the player's deck yet: press play first).
+    in property <string> state;
+    // Parts on the headphones (bit per part: 1 vocal, 2 drums, 4 bass, 8 inst).
+    in property <int> cue;
+    // Where the parts come from, in words.
+    in property <string> source;
+    callback toggle(string);
+    callback separate();
+}
+
 export component PreparePlayer inherits Rectangle {
     // A narrow window (a small screen at a large interface scale): a
     // slimmer cue list and the read-outs that matter while preparing.
@@ -977,11 +992,12 @@ export component PreparePlayer inherits Rectangle {
                 if !(GridEdit.active && root.has-track): HorizontalLayout {
                     height: 30px;
                     spacing: Theme.key-gap;
-                    Tab { accessible-id: "player1.tab.cue-loop"; height: 30px; label: "CUE / LOOP"; current: root.tool-tab == "cue"; clicked => { root.tool-tab = "cue"; } }
-                    Tab { accessible-id: "player1.tab.grid"; height: 30px; label: @tr("GRID"); current: root.tool-tab == "grid"; clicked => { root.tool-tab = "grid"; } }
-                    Tab { accessible-id: "player1.tab.phrase"; height: 30px; label: @tr("PHRASE"); current: root.tool-tab == "phrase"; clicked => { root.tool-tab = "phrase"; } }
-                    Tab { accessible-id: "player1.tab.edit"; height: 30px; label: @tr("EDIT"); current: root.tool-tab == "edit"; clicked => { root.tool-tab = "edit"; } }
-                    Tab { accessible-id: "player1.tab.shift"; height: 30px; label: @tr("TEMPO / KEY"); current: root.tool-tab == "shift"; clicked => { root.tool-tab = "shift"; } }
+                    Tab { accessible-id: "player1.tab.cue-loop"; height: 30px; pad: root.narrow ? 12px : 24px; label: "CUE / LOOP"; current: root.tool-tab == "cue"; clicked => { root.tool-tab = "cue"; } }
+                    Tab { accessible-id: "player1.tab.grid"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("GRID"); current: root.tool-tab == "grid"; clicked => { root.tool-tab = "grid"; } }
+                    Tab { accessible-id: "player1.tab.phrase"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("PHRASE"); current: root.tool-tab == "phrase"; clicked => { root.tool-tab = "phrase"; } }
+                    Tab { accessible-id: "player1.tab.edit"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("EDIT"); current: root.tool-tab == "edit"; clicked => { root.tool-tab = "edit"; } }
+                    Tab { accessible-id: "player1.tab.shift"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("TEMPO / KEY"); current: root.tool-tab == "shift"; clicked => { root.tool-tab = "shift"; } }
+                    Tab { accessible-id: "player1.tab.stems"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("STEMS"); current: root.tool-tab == "stems"; clicked => { root.tool-tab = "stems"; } }
                     Rectangle { horizontal-stretch: 1; min-width: 16px; }
                     // Narrow: the loop is set with the CUE / LOOP keys below.
                     if !root.narrow: HorizontalLayout {
@@ -1147,6 +1163,41 @@ export component PreparePlayer inherits Rectangle {
                                 label: @tr("RESET"); tooltip: @tr("Back to the original tempo and key");
                                 enabled: root.shift-tempo != "0 %" || root.shift-key != "0";
                                 clicked => { root.act("shift-reset"); }
+                            }
+                        }
+                    }
+                    if root.tool-tab == "stems": VerticalLayout {
+                        horizontal-stretch: 1;
+                        // The keys centred on the 30 px line.
+                        alignment: center;
+                        HorizontalLayout {
+                            spacing: Theme.s1;
+                            Caps { text: @tr("ON THE HEADPHONES"); font-size: Theme.label; vertical-alignment: center; }
+                            Rectangle { width: Theme.s1; }
+                            for p in [{ id: "vocal", label: "VOCAL", bit: 1 }, { id: "drums", label: "DRUMS", bit: 2 }, { id: "bass", label: "BASS", bit: 4 }, { id: "inst", label: "INST", bit: 8 }]: Toggle {
+                                size: 30px; min-w: 56px;
+                                accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.on;
+                                accessible-id: "player1.stems." + p.id;
+                                label: p.label;
+                                on: Math.mod(Math.floor(PlayerStems.cue / p.bit), 2) == 1;
+                                tone: Theme.attention;
+                                enabled: root.has-track && PlayerStems.state == "ready";
+                                tooltip: @tr("Hear this part on its own on the headphones; the master stays as it is");
+                                clicked => { PlayerStems.toggle(p.id); }
+                            }
+                            Rectangle { width: Theme.s2; }
+                            Caps {
+                                accessible-role: text; accessible-id: "player1.stems.source"; accessible-value: self.text;
+                                horizontal-stretch: 1; min-width: 0;
+                                text: PlayerStems.source;
+                                font-size: Theme.control; vertical-alignment: center; overflow: elide;
+                            }
+                            if PlayerStems.state == "none": Toggle {
+                                size: 30px; accessible-role: button; accessible-id: "player1.stems.separate";
+                                label: @tr("SEPARATE"); tone: Theme.attention;
+                                tooltip: @tr("Separate the parts of this track");
+                                enabled: root.has-track && !root.read-only;
+                                clicked => { PlayerStems.separate(); }
                             }
                         }
                     }

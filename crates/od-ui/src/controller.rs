@@ -462,6 +462,10 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
             crate::stem_mix::keep_only(app, d, stem_of(stem));
             None
         }
+        DeckAction::StemCue { stem } => {
+            crate::stem_mix::toggle_audition(app, d, stem_of(stem));
+            None
+        }
         DeckAction::StemMuteToggle { stem } => {
             let st = stem_of(stem);
             Some(DeckCommand::SetStemLevel {

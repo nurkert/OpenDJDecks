@@ -10050,3 +10050,99 @@ msgstr "HOT CUE {} · DECK {}"
 msgctxt "CueEditPanel"
 msgid "No cue yet"
 msgstr "Noch kein Cue"
+
+msgctxt "StemKey"
+msgid "on the headphones"
+msgstr "auf dem Kopfhörer"
+
+msgctxt "StemKey"
+msgid "not on the headphones"
+msgstr "nicht auf dem Kopfhörer"
+
+msgctxt "StemKey"
+msgid "Filled = on the headphones on its own · click: add / remove this part (the master stays as it is)"
+msgstr "Gefüllt = allein auf dem Kopfhörer · Klick: diesen Part dazu / weg (der Master bleibt, wie er ist)"
+
+msgctxt "StemStrip"
+msgid "OWN"
+msgstr "EIGENE"
+
+msgctxt "StemStrip"
+msgid "Stem cue: the stem keys pick parts to hear on their own on the headphones; the master stays as it is"
+msgstr "Stem-Cue: Die Stem-Tasten wählen Parts, die allein auf dem Kopfhörer laufen; der Master bleibt, wie er ist"
+
+msgctxt "ExternalMixerPlate"
+msgid "EXTERNAL MIXER"
+msgstr "EXTERNES MISCHPULT"
+
+msgctxt "PreparePlayer"
+msgid "STEMS"
+msgstr "STEMS"
+
+msgctxt "PreparePlayer"
+msgid "ON THE HEADPHONES"
+msgstr "AUF DEM KOPFHÖRER"
+
+msgctxt "PreparePlayer"
+msgid "Hear this part on its own on the headphones; the master stays as it is"
+msgstr "Diesen Part allein auf dem Kopfhörer hören; der Master bleibt, wie er ist"
+
+msgctxt "PreparePlayer"
+msgid "SEPARATE"
+msgstr "TRENNEN"
+
+msgctxt "PreparePlayer"
+msgid "Separate the parts of this track"
+msgstr "Die Parts dieses Tracks trennen"
+
+msgctxt "PreferencesWindow"
+msgid "Routing"
+msgstr "Routing"
+
+msgctxt "PreferencesWindow"
+msgid "One stereo output"
+msgstr "Ein Stereo-Ausgang"
+
+msgctxt "PreferencesWindow"
+msgid "Split cue: headphones on the left, master on the right of 1/2"
+msgstr "Split Cue: Kopfhörer links, Master rechts auf 1/2"
+
+msgctxt "PreferencesWindow"
+msgid "Master"
+msgstr "Master"
+
+msgctxt "PreferencesWindow"
+msgid "Headphone device"
+msgstr "Kopfhörer-Gerät"
+
+msgctxt "PreferencesWindow"
+msgid "INTERNAL"
+msgstr "INTERN"
+
+msgctxt "PreferencesWindow"
+msgid "EXTERNAL"
+msgstr "EXTERN"
+
+msgctxt "PreferencesWindow"
+msgid "Deck {} to"
+msgstr "Deck {} auf"
+
+msgctxt "PreferencesWindow"
+msgid "External mixer: each deck plays on its own outputs as it comes off the deck, before trim, EQ and faders; the mixer in the app steps aside. The sampler and the microphone stay on the master outputs."
+msgstr "Externes Mischpult: Jedes Deck spielt auf eigenen Ausgängen, so wie es vom Deck kommt, vor Trim, EQ und Fadern; der Mixer der App tritt zur Seite. Sampler und Mikrofon bleiben auf den Master-Ausgängen."
+
+msgctxt "PreferencesWindow"
+msgid "A pair the device does not have is left out; Now says what runs where."
+msgstr "Ein Paar, das das Gerät nicht hat, bleibt weg; Jetzt sagt, was wo läuft."
+
+msgctxt "PreferencesWindow"
+msgid "Clock"
+msgstr "Takt"
+
+msgctxt "PreferencesWindow"
+msgid "MIDI clock out"
+msgstr "MIDI-Clock-Ausgang"
+
+msgctxt "PreferencesWindow"
+msgid "Sends the master deck's tempo as MIDI clock (24 pulses a beat), with start on its next beat and stop when it stops."
+msgstr "Sendet das Tempo des Master-Decks als MIDI-Clock (24 Pulse pro Schlag), mit Start auf seinem nächsten Schlag und Stopp, wenn es stoppt."

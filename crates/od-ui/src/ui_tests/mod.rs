@@ -39,6 +39,7 @@ pub(crate) mod harness;
 mod perform;
 mod prepare;
 mod remote;
+mod routing;
 mod waveform;
 mod session;
 mod stage;

@@ -193,7 +193,8 @@ fn gather(app: &App) -> Facts {
             Some(host) => AudioFact::Running {
                 device: host.info().device_name.clone(),
                 latency: crate::audio_health::latency(host).map(crate::audio_health::latency_text),
-                headphones: host.info().routing.headphones.is_some(),
+                headphones: host.info().routing.headphones.is_some()
+                    || host.info().cue_device.is_some(),
                 dropouts: 0,
             },
             None if !started => AudioFact::NotRunning(h.message.clone()),

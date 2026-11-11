@@ -691,6 +691,7 @@ mod tests {
                     master: &mut master,
                     headphones: None,
                     booth: None,
+                    decks: None,
                 },
             );
             if i % 50 == 49 {
@@ -742,7 +743,7 @@ mod tests {
                 phase += 440.0 * std::f32::consts::TAU / 48_000.0;
                 let _ = mic.push(phase.sin() * 0.3);
             }
-            proc.process(256, &mut Outputs { master: &mut master, headphones: None, booth: None });
+            proc.process(256, &mut Outputs { master: &mut master, headphones: None, booth: None, decks: None });
             if i == 400 {
                 let deadline = std::time::Instant::now() + Duration::from_secs(20);
                 while rec.elapsed() < 1.0 && std::time::Instant::now() < deadline {

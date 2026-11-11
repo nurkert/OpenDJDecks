@@ -14,7 +14,7 @@ fn test_tone_on_master_and_headphones_and_it_stops() {
     let mut phones = vec![0.0; 2048];
     let render = |p: &mut od_engine::EngineProcessor, m: &mut [f32], h: &mut [f32]| {
         for _ in 0..4 {
-            p.process(1024, &mut Outputs { master: m, headphones: Some(h), booth: None });
+            p.process(1024, &mut Outputs { master: m, headphones: Some(h), booth: None, decks: None });
         }
     };
     render(&mut processor, &mut master, &mut phones);

@@ -1,8 +1,8 @@
 ---
 title: Der Mixer
 description: Trim, EQ, Channel FX, Fader, Crossfader, Kopfhörer und Master und ihre Optionen.
-keywords: [mixer, eq, kill, bass swap, basswechsel, tauschen, clip, übersteuerung, trim, gain, fader, kanalfader, crossfader, kopfhörer, phones, cue, master, pegel, limiter, anzeige, vu, booth, mikrofon, mic, talkover, auto fader, stem taste, auto gain]
-features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
+keywords: [mixer, externes mischpult, eq, kill, bass swap, basswechsel, tauschen, clip, übersteuerung, trim, gain, fader, kanalfader, crossfader, kopfhörer, phones, cue, master, pegel, limiter, anzeige, vu, booth, mikrofon, mic, talkover, auto fader, stem taste, auto gain]
+features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-external-mode, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
 ---
 
 Der Mixer steht zwischen den Decks. Drücke **MIXER** in der oberen Leiste (`⌥⌘M`), um ihn auszublenden, wenn dein Controller das übernimmt; die Decks treffen sich dann in der Mitte.
@@ -56,7 +56,13 @@ Die Taste rechts neben der Seite B zeigt die **Crossfader-Kurve** als kleine Zei
 
 **KOPFHÖRER** hat den **MIX** zwischen Cue und Master und den **PEGEL**. Drücke **CUE** an einem Kanal, um ihn vorzuhören. Am Controller hört die Master-Cue-Taste den Master vor.
 
-**SPLIT** (Split Cue) legt den Cue auf dein linkes Ohr und den Master auf das rechte, beide in Mono, damit du beides auf einem Kopfhörer hörst; **MIX** wirkt dann nicht, **PEGEL** schon. Eine Controller-Taste schaltet es mit `split_cue`. Getestet ist es mit erzeugten Signalen, auf einem Gig noch nicht.
+**SPLIT** (Split Cue) legt den Cue auf dein linkes Ohr und den Master auf das rechte, beide in Mono, damit du beides auf einem Kopfhörer hörst; **MIX** wirkt dann nicht, **PEGEL** schon. Eine Controller-Taste schaltet es mit `split_cue`. Getestet ist es mit erzeugten Signalen, auf einem Gig noch nicht. Mit nur einem Stereo-Ausgang schickt **Einstellungen › Audio › Ein Stereo-Ausgang** genau das auf die Ausgänge 1/2 ([Routing](preferences.md#routing)).
+
+## Externes Mischpult
+
+Mit **Einstellungen › Audio › Mixer: EXTERN** spielt jedes Deck auf eigenen Ausgängen in ein externes Mischpult, und der Mixer der App tritt zur Seite: Statt der Kanalzüge steht eine Platte, die **EXTERNES MISCHPULT** sagt und die Ausgänge jedes Decks nennt (zum Beispiel Deck 1 auf **AUSG. 3/4**). Trim, EQ, Fader, Crossfader und Kanal-**CUE** liegen dann am externen Mischpult. Siehe [Routing](preferences.md#routing).
+
+![Die Mixer-Spalte mit externem Mischpult: Deck 1 auf 3/4, Deck 2 auf 7/8](../img/mixer-external.png)
 
 **MASTER** stellt den Ausgangspegel mit **−** und **+** oder dem Regler ein, hat eine Anzeige und einen Sicherheits-Limiter, der immer an ist. Daneben liegen die Aufnahmetaste und die Zeit; siehe [Aufnahme](recording.md). Den Booth-Ausgang stellst du mit dem Booth-Regler am Controller ein.
 

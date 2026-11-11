@@ -646,6 +646,16 @@ fn prepare(ui: &Ui, layout: &str) {
     ui.pump(200);
 }
 
+/// [66] A track of its own with separated parts (made once per fixture).
+fn stem_track(ui: &Ui) -> od_core::TrackId {
+    if let Some(t) = ui.fx.lib().tracks(od_library::SortKey::default(), false).unwrap().into_iter().find(|t| t.tags.title == "Audit Parts") {
+        return t.id;
+    }
+    let id = super::routing::own_track(&ui.fx, "Audit Parts", 577.0);
+    super::routing::with_stems(ui, id);
+    id
+}
+
 /// A set of the fixture's tracks with a tempo jump and a key clash (made
 /// once per fixture).
 fn flow_set(ui: &Ui) -> i32 {
@@ -997,6 +1007,52 @@ fn main_states() -> Vec<State> {
                 crate::decks::unload(&u.app, 0);
                 u.pump(600);
             }),
+        },
+        // [66] [67] Block H: the stem strip's CUE with two parts on the
+        // headphones and own stem files (OWN), the external mixer's plate in
+        // place of the strips, and the player's STEMS tool.
+        State {
+            id: "perform.stem cue (own parts, two on the headphones)",
+            setup: |u| {
+                perform(u, 2, "standard");
+                let id = stem_track(u);
+                crate::decks::load_track(&u.app, 0, id, None);
+                u.wait_until(60.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].stems_available));
+                u.app.decks.borrow_mut().own_stems[0] = Some(u.fx.root.join("music/Audit Parts.stems"));
+                crate::stem_mix::toggle_cue_mode(&u.app, 0);
+                crate::engine::deck_cmd(&u.app, 0, od_engine::DeckCommand::SetStemAudition(0b101));
+                u.pump(1500);
+            },
+            teardown: Some(|u| {
+                crate::stem_mix::toggle_cue_mode(&u.app, 0);
+                crate::decks::unload(&u.app, 0);
+                u.pump(200);
+            }),
+        },
+        State {
+            id: "perform.external mixer",
+            setup: |u| {
+                perform(u, 2, "standard");
+                u.app.state.borrow_mut().change_settings(|s| {
+                    s.audio.mixer = "external".into();
+                    s.audio.deck_outputs = vec!["34".into(), "78".into(), "off".into(), "off".into()];
+                });
+                crate::routing::refresh_mixer(&u.app);
+                u.pump(300);
+            },
+            teardown: Some(|u| {
+                u.app.state.borrow_mut().change_settings(|s| s.audio.mixer = "internal".into());
+                crate::routing::refresh_mixer(&u.app);
+                u.pump(200);
+            }),
+        },
+        State {
+            id: "prepare.player stems tool",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                click(u, "player1.tab.stems");
+            },
+            teardown: Some(|u| click(u, "player1.tab.cue-loop")),
         },
         // [63] Tags on two tracks at once (MIXED, one undo step, do not
         // play); the filter bar with NOT PLAYED TONIGHT; the TONIGHT column.
@@ -1688,6 +1744,14 @@ fn overflow_windows_run() {
                 ui.pump(300);
                 report.add(&format!("prefs.{page}"), &case, lang, audit(prefs.window()));
             }
+            // [67] The audio page with the external mixer's deck rows.
+            ui.app.state.borrow_mut().change_settings(|s| s.audio.mixer = "external".into());
+            crate::preferences::refresh(&ui.app);
+            prefs.set_page("audio".into());
+            ui.pump(300);
+            report.add("prefs.audio (external mixer)", &case, lang, audit(prefs.window()));
+            ui.app.state.borrow_mut().change_settings(|s| s.audio.mixer = "internal".into());
+            crate::preferences::refresh(&ui.app);
         }
         crate::commands::run(&ui.app, "view.booth");
         ui.pump(300);

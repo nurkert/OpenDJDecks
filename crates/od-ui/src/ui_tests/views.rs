@@ -162,6 +162,36 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             }
         }
         "perform.deck-craft" => perform(2),
+        // [66] [67] Block H.
+        "perform.stem-cue" | "perform.external-mixer" => {
+            if kiosk {
+                return Err("not part of the kiosk".into());
+            }
+            perform(2);
+            if id == "perform.stem-cue" {
+                let id = super::routing::own_track(&ui.fx, "View Parts", 587.0);
+                super::routing::with_stems(ui, id);
+                crate::decks::load_track(&ui.app, 0, id, None);
+                ui.wait_until(60.0, |u| {
+                    crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[0].stems_available)
+                });
+                crate::stem_mix::toggle_cue_mode(&ui.app, 0);
+                ui.wait_until(5.0, |u| u.find("deck1.stem.cue").is_some_and(|e| e.accessible_checked() == Some(true)));
+            } else {
+                ui.app.state.borrow_mut().change_settings(|s| s.audio.mixer = "external".into());
+                crate::routing::refresh_mixer(&ui.app);
+            }
+        }
+        "prepare.player-stems" => {
+            if kiosk {
+                return Err("Prepare is not part of the kiosk".into());
+            }
+            prepare_library();
+            w.invoke_row_clicked(0, false, false);
+            w.invoke_menu_action("view.layout.player".into());
+            ui.pump(200);
+            click_if("player1.tab.stems");
+        }
         "panel.cue-edit" | "perform.plan" => {
             if kiosk {
                 return Err("not part of the kiosk".into());

@@ -161,8 +161,24 @@ pub struct AudioSettings {
     pub buffer: u32,
     /// Sample rate in Hz; 0 = the device's default.
     pub sample_rate: u32,
-    /// "auto" (channels 3/4 when the device has them), "34" or "off".
+    /// "auto" (channels 3/4 when the device has them), "12", "34", "56",
+    /// "78" or "off".
     pub headphones: String,
+    /// [67] Outputs of the master: "12" (default), "34", "56", "78" or "off".
+    pub master: String,
+    /// Headphones on their own device (name; empty = the output device).
+    pub cue_device: String,
+    /// One stereo output for both: the cue in mono on the left, the master
+    /// in mono on the right of outputs 1/2 (split cue).
+    pub split_one: bool,
+    /// "internal" or "external" (each deck to its own pair, the mixer
+    /// bypassed).
+    pub mixer: String,
+    /// Each deck's pair with an external mixer ("off", "12", "34", "56",
+    /// "78"), decks 1–4.
+    pub deck_outputs: Vec<String>,
+    /// MIDI output port for the clock; empty = off.
+    pub clock_out: String,
 }
 
 /// What the gig preset replaced, restored when it is switched off.
@@ -469,6 +485,12 @@ impl Default for AudioSettings {
             buffer: 0,
             sample_rate: 0,
             headphones: "auto".into(),
+            master: "12".into(),
+            cue_device: String::new(),
+            split_one: false,
+            mixer: "internal".into(),
+            deck_outputs: vec!["12".into(), "34".into(), "56".into(), "78".into()],
+            clock_out: String::new(),
         }
     }
 }

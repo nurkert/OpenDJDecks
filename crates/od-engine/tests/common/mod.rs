@@ -59,6 +59,8 @@ pub struct Rig {
     pub master: Vec<f32>,
     pub phones: Vec<f32>,
     pub booth: Vec<f32>,
+    /// Per-deck outputs, `MAX_DECKS` pairs per frame.
+    pub decks: Vec<f32>,
 }
 
 impl Rig {
@@ -87,6 +89,7 @@ impl Rig {
             master: vec![0.0; 8192 * 2],
             phones: vec![0.0; 8192 * 2],
             booth: vec![0.0; 8192 * 2],
+            decks: vec![0.0; 8192 * 2 * MAX_DECKS],
         }
     }
 
@@ -104,6 +107,7 @@ impl Rig {
             master: &mut self.master[..frames * 2],
             headphones: Some(&mut self.phones[..frames * 2]),
             booth: Some(&mut self.booth[..frames * 2]),
+            decks: Some(&mut self.decks[..frames * 2 * MAX_DECKS]),
         };
         self.proc.process(frames, &mut out);
         &self.master[..frames * 2]
@@ -117,6 +121,14 @@ impl Rig {
             all.extend_from_slice(&b);
         }
         all
+    }
+
+    /// Deck `d`'s own output of the last block (interleaved stereo).
+    pub fn deck_out(&self, d: usize, frames: usize) -> Vec<f32> {
+        self.decks[..frames * 2 * MAX_DECKS]
+            .chunks_exact(2 * MAX_DECKS)
+            .flat_map(|f| [f[d * 2], f[d * 2 + 1]])
+            .collect()
     }
 
     pub fn state(&mut self) -> EngineState {

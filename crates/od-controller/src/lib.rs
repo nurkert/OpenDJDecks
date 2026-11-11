@@ -12,10 +12,12 @@
 //!   class templates in `mappings/templates/`.
 //! - `io` (feature `midi-io`): midir port discovery, hot-plug, threads, and
 //!   controllers assigned to the lights.
+//! - [`clock`]: MIDI clock out from the master deck (24 ppqn, Start, Stop).
 //! - [`osc`]: OSC for the lights: the address space, a UDP receiver and a
 //!   sender for the music.
 
 pub mod action;
+pub mod clock;
 pub mod device_module;
 pub mod feedback;
 pub mod guided;

@@ -158,6 +158,7 @@ impl App {
         crate::queue::wire(&app);
         crate::dj_demo::run(&app);
         crate::perform_demo::run(&app);
+        crate::routing::demo(&app);
         recorder::wire(&app);
         if !app.state.borrow().config.headless {
             controller::start(&app);

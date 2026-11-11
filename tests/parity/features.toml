@@ -4793,7 +4793,7 @@ tests = [
 ]
 evidence = ["MixerCommand::SetSplitCue", "crates/od-ui/src/mixer.rs::toggle_split_cue"]
 spec = "Roadmap [30]"
-note = "SPLIT after the PHONES knobs (and `split_cue` in mappings); MIX has no effect while it is on, LEVEL does. Tested with generated signals; split cue on one interface with separate outputs is roadmap [67]"
+note = "SPLIT after the PHONES knobs (and `split_cue` in mappings); MIX has no effect while it is on, LEVEL does. Tested with generated signals; on a single stereo output see `audio-split-cue-one-output`"
 
 [[feature]]
 id = "mixer-crossfader-curve-key"
@@ -4947,3 +4947,139 @@ tests = [
 evidence = ["crates/od-ui/src/set_plan.rs::tick", "crates/od-ui/ui/set_plan.slint::PlanLine"]
 spec = "Roadmap [65]"
 note = "The last set opened in the browser is the plan; the time needs the set's PLANNED START. Tried with the demo library and the clock, not at a gig"
+
+[[feature]]
+id = "stems-cue-deck"
+area = "stems"
+name = "Stem audition on the deck: CUE on the stem strip, the stem keys pick parts to hear on their own on the headphones while the master stays as it is"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::stems::stem_audition_plays_on_the_cue_without_touching_the_master",
+  "od-engine::stems::stem_audition_without_parts_changes_nothing",
+  "od-ui::ui_tests::routing::stem_cue_on_the_deck",
+  "od-ui::stem_mix::tests::audition_bits",
+  "od-controller::templates::tests::stem_and_fx_actions_map",
+]
+evidence = ["DeckCommand::SetStemAudition", "crates/od-ui/src/stem_mix.rs::toggle_audition", "crates/od-ui/ui/perform.slint::StemStrip"]
+spec = "Roadmap [66]"
+note = "The auditioned stems play at full level (even when muted on the master) on the cue bus, after trim and auto gain, in place of the channel's CUE; with keylock through the part stretcher. Stem FX on the same deck takes the split first. On the full stem strip; compact decks have `deck.stem_cue` only. Not tried with a controller or at a gig"
+
+[[feature]]
+id = "stems-cue-player"
+area = "stems"
+name = "Stem audition in Prepare: the player's STEMS tool puts parts of the track on the headphones"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::routing::player_stems_tool_in_prepare",
+]
+evidence = ["crates/od-ui/src/stem_mix.rs::project_player", "crates/od-ui/ui/player.slint::PlayerStems"]
+spec = "Roadmap [66]"
+note = "The STEMS tab of the player: VOCAL, DRUMS, BASS, INST on the headphones while the preview plays, where the parts come from, and SEPARATE when there are none. Needs the track playing in the player"
+
+[[feature]]
+id = "stems-own-files"
+area = "stems"
+name = "Your own stem files (a folder or names beside the track) as the track's parts, checked for rate and length"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-stems::own::tests::part_words",
+  "od-stems::own::tests::a_folder_named_after_the_track",
+  "od-stems::own::tests::files_beside_the_track",
+  "od-stems::own::tests::loading_checks_rate_and_length",
+  "od-ui::ui_tests::routing::own_stem_files_are_the_parts",
+]
+evidence = ["crates/od-stems/src/own.rs::find_own_stems", "crates/od-stems/src/own.rs::load_own_stems", "crates/od-ui/src/decks.rs::note_own_stems"]
+spec = "Roadmap [66]"
+note = "A folder `<track>.stems` (or ` stems`, `_stems`, ` (stems)`) or files `<track> - vocals.wav` and the like; WAV, FLAC, AIFF; vocals, drums and bass needed, the track's sample rate, length within 0.5 s. They come before separated parts; OWN on the strip, the folder on the status line, the reason when they are not used. The fourth part stays the track minus the three (an other file is checked, not played). Tested with generated files only"
+
+[[feature]]
+id = "audio-output-routing"
+area = "preferences"
+name = "Output routing: master and headphones on chosen output pairs, each deck on its own pair"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-audio-io::output::tests::routes_that_do_not_fit_are_dropped",
+  "od-audio-io::output::tests::each_deck_on_its_own_device_pair",
+  "od-engine::render::decks_on_their_own_pairs_and_the_external_mixer",
+  "od-ui::routing::tests::settings_to_routing",
+  "od-ui::routing::tests::the_summary_names_every_route",
+  "od-ui::ui_tests::routing::routing_external_mixer_and_split_in_preferences",
+]
+evidence = ["crates/od-audio-io/src/output.rs::OutputRouting", "crates/od-ui/src/routing.rs::routing"]
+spec = "Roadmap [67]"
+note = "Preferences › Audio › ROUTING: master and headphones on 1/2 … 7/8, a pair per deck with the external mixer; a pair the device lacks or another route took is left out and named under NOW. Not tried with a real multi-output interface"
+
+[[feature]]
+id = "audio-cue-device"
+area = "preferences"
+name = "Headphones on a second audio device"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-audio-io::output::tests::cue_bridge_follows_the_main_device",
+  "od-ui::routing::tests::settings_to_routing",
+]
+evidence = ["crates/od-audio-io/src/output.rs::CueBridge", "crates/od-audio-io/src/output.rs::start_cue"]
+spec = "Roadmap [67]"
+note = "The headphone bus goes from the main callback through a lock-free ring to the second device's stream, which drops or repeats one frame per callback to follow the clock drift (counted in the stats). Tested with the ring alone; not with two real devices"
+
+[[feature]]
+id = "audio-split-cue-one-output"
+area = "preferences"
+name = "Split cue on one stereo output: headphones (cue) mono left, master mono right on 1/2"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::render::split_cue_for_one_stereo_output_is_mono_on_each_side",
+  "od-audio-io::output::tests::split_cue_on_one_stereo_device",
+  "od-ui::ui_tests::routing::routing_external_mixer_and_split_in_preferences",
+]
+evidence = ["crates/od-audio-io/src/output.rs::OutputRouting::split_on_one", "crates/od-ui/src/routing.rs::engine_commands"]
+spec = "Roadmap [67]"
+note = "Preferences › Audio › One stereo output: no separate master pair; the headphone pair on 1/2 carries the split cue, and SPLIT on the mixer turns on with it. Builds on SPLIT of [30]. Tested with generated signals, not with a Y-cable at a gig"
+
+[[feature]]
+id = "mixer-external-mode"
+area = "mixer"
+name = "External-mixer mode: each deck to its own outputs, the internal mixer bypassed, the mixer column says so"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::render::decks_on_their_own_pairs_and_the_external_mixer",
+  "od-audio-io::output::tests::each_deck_on_its_own_device_pair",
+  "od-ui::ui_tests::routing::routing_external_mixer_and_split_in_preferences",
+]
+evidence = ["MixerCommand::SetExternalMixer", "crates/od-ui/ui/perform.slint::ExternalMixerPlate"]
+spec = "Roadmap [67]"
+note = "Each deck as it comes off the deck (stems, keylock, Stem FX), before trim, EQ, fader and crossfader. The master pair keeps the sampler and microphone, so the recorder records those only; the decks still count as on air for the tracklist. Not tried with a real external mixer"
+
+[[feature]]
+id = "midi-clock-out"
+area = "preferences"
+name = "MIDI clock out from the master deck: 24 pulses a beat, Start on its beat, Stop"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-controller::clock::tests::twenty_four_pulses_per_beat_and_start_on_a_beat",
+  "od-controller::clock::tests::follows_tempo_changes_and_stops",
+  "od-controller::clock::tests::noisy_reports_keep_the_pulses_even",
+  "od-controller::clock::tests::a_jump_is_followed_without_a_burst",
+  "od-controller::clock::tests::the_clock_thread_keeps_time",
+  "od-ui::ui_tests::routing::midi_clock_follows_the_master_deck",
+]
+evidence = ["crates/od-controller/src/clock.rs::ClockModel", "crates/od-controller/src/clock.rs::MidiClockOut", "crates/od-ui/src/routing.rs::apply_clock"]
+spec = "Roadmap [67]"
+note = "Preferences › Audio › CLOCK. MIDI beat clock only (no network tempo protocol, no third-party SDK), on its own thread; the phase follows the master deck gently, a jump at once. Receiving clock is not built. Not tried with a real clock receiver"
+

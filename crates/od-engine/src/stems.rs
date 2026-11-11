@@ -268,6 +268,42 @@ pub(crate) fn split_coefs(level: [f32; 4], part: Stem) -> ([f32; 4], [f32; 4]) {
     (coefs_of(main), coefs_of(alone))
 }
 
+/// What a deck splits off its normal output into its part buffer.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum PartSplit {
+    /// Stem FX: the part leaves the main output, goes through its unit and
+    /// comes back (main + part = the deck's normal output).
+    Fx(Stem),
+    /// Stem audition ([66]): the main output stays the deck as heard; the
+    /// part is the stems of the mask (bit = [`Stem::index`]) at full level,
+    /// for the headphone cue only.
+    Audition(u8),
+}
+
+impl PartSplit {
+    /// Coefficients of the main output and of the part.
+    #[inline(always)]
+    pub fn coefs(self, level: [f32; 4]) -> ([f32; 4], [f32; 4]) {
+        match self {
+            PartSplit::Fx(part) => split_coefs(level, part),
+            PartSplit::Audition(mask) => (coefs_of(level), audition_coefs(mask)),
+        }
+    }
+}
+
+/// Coefficients of the stems in `mask` (bit = [`Stem::index`]) at full
+/// level, the others silent.
+#[inline(always)]
+pub(crate) fn audition_coefs(mask: u8) -> [f32; 4] {
+    let mut level = [0.0; 4];
+    for (k, l) in level.iter_mut().enumerate() {
+        if mask & (1 << k) != 0 {
+            *l = 1.0;
+        }
+    }
+    coefs_of(level)
+}
+
 /// Mix frame `i` with stem levels applied; zero outside the track.
 #[inline(always)]
 pub(crate) fn frame_at(mix: &[f32], stems: &StemData, i: isize, c: &[f32; 4]) -> (f32, f32) {

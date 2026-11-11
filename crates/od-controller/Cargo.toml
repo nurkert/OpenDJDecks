@@ -21,6 +21,10 @@ tracing.workspace = true
 crossbeam-channel.workspace = true
 midir = { version = "0.11", optional = true }
 
+# The MIDI clock thread asks for interactive scheduling on macOS.
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"
+
 [[example]]
 name = "midi_monitor"
 required-features = ["midi-io"]

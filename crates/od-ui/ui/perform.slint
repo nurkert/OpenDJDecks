@@ -871,6 +871,9 @@ component StemKey inherits Rectangle {
     in property <string> state;
     in property <bool> expected;
     in property <bool> solo;
+    // [66] CUE mode: the key says whether its part is on the headphones.
+    in property <bool> cue-mode;
+    in property <bool> on-cue;
     callback toggle();
     callback set-level(float);
     width: root.key-width; height: root.size;
@@ -882,16 +885,18 @@ component StemKey inherits Rectangle {
         }
     }
     Toggle {
-        accessible-role: checkbox; accessible-checkable: true; accessible-checked: !root.muted && root.enabled;
+        accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.cue-mode ? root.on-cue : !root.muted && root.enabled;
         accessible-id: "deck\{root.deck}.stem.\{root.stem}";
-        accessible-description: root.busy ? @tr("separating") : root.state == "queued" ? @tr("queued") : !root.enabled ? @tr("not separated") : root.solo ? @tr("solo") : root.muted ? @tr("muted") : @tr("audible");
+        accessible-description: root.busy ? @tr("separating") : root.state == "queued" ? @tr("queued") : !root.enabled ? @tr("not separated") : root.cue-mode ? (root.on-cue ? @tr("on the headphones") : @tr("not on the headphones")) : root.solo ? @tr("solo") : root.muted ? @tr("muted") : @tr("audible");
         accessible-value: root.state;
-        size: root.size; width: root.key-width; label: root.label; on: root.enabled && root.muted; tone: Theme.attention; enabled: root.enabled;
+        // In CUE mode the fill says the part is on the headphones; the
+        // mutes show again when CUE is off.
+        size: root.size; width: root.key-width; label: root.label; on: root.enabled && (root.cue-mode ? root.on-cue : root.muted); tone: Theme.attention; enabled: root.enabled;
         // Solo: the soloed part is the selected one of the four (bone fill),
         // the others fill as muted.
-        selected: root.solo;
+        selected: root.solo && !root.cue-mode;
         shift-aware: true;
-        tooltip: @tr("Filled = muted · click: mute / unmute · right click: solo · ⇧-click: keep only this · wheel: level");
+        tooltip: root.cue-mode ? @tr("Filled = on the headphones on its own · click: add / remove this part (the master stays as it is)") : @tr("Filled = muted · click: mute / unmute · right click: solo · ⇧-click: keep only this · wheel: level");
         clicked => { root.toggle(); }
         alt-clicked => { DeckMix.stem-solo(root.deck, root.stem); }
         shift-clicked => { DeckMix.stem-keep(root.deck, root.stem); }
@@ -956,6 +961,7 @@ component StemStrip inherits HorizontalLayout {
         : root.deck.stems-state == "queued" ? @tr("QUEUED")
         : root.deck.stems-state == "none" && root.deck.stems-expected ? @tr("NO STEMS")
         : root.deck.stem-solo != "" ? @tr("SOLO")
+        : root.deck.stem-source == "own" ? @tr("OWN")
         : @tr("STEMS");
     property <color> caption-tone: root.deck.stems-expected && root.deck.stems-state == "none" ? Theme.attention : root.deck.stem-solo != "" ? Theme.bone : Theme.bone-3;
     spacing: Theme.s1;
@@ -969,10 +975,20 @@ component StemStrip inherits HorizontalLayout {
     if root.compact && root.busy: Caps { accessible-id: "deck\{root.deck.deck}.stem.caption"; accessible-role: text; accessible-value: self.text; text: root.caption; font-size: Theme.label; vertical-alignment: center; color: root.caption-tone; min-width: cp3.preferred-width; horizontal-alignment: root.mirror ? left : right;
         // The widest caption keeps its room, so the keys never move.
         cp3 := Caps { visible: false; text: @tr("NO STEMS"); font-size: Theme.label; } }
-    StemKey { deck: root.deck.deck; stem: "vocal"; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "vocal"; label: "VOCAL"; muted: root.deck.mute-vocal; level: root.deck.level-vocal; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 0); toggle => { root.stem("vocal"); } set-level(v) => { root.stem-level("vocal", v); } }
-    StemKey { deck: root.deck.deck; stem: "drums"; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "drums"; label: "DRUMS"; muted: root.deck.mute-drums; level: root.deck.level-drums; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 2); toggle => { root.stem("drums"); } set-level(v) => { root.stem-level("drums", v); } }
-    StemKey { deck: root.deck.deck; stem: "bass"; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "bass"; label: "BASS"; muted: root.deck.mute-bass; level: root.deck.level-bass; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 3); toggle => { root.stem("bass"); } set-level(v) => { root.stem-level("bass", v); } }
-    StemKey { deck: root.deck.deck; stem: "inst"; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "inst"; label: "INST"; muted: root.deck.mute-inst; level: root.deck.level-inst; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 1); toggle => { root.stem("inst"); } set-level(v) => { root.stem-level("inst", v); } }
+    // [66] CUE: the stem keys pick parts to hear alone on the headphones.
+    if !root.compact: Toggle {
+        accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.stem-cue-mode;
+        accessible-id: "deck\{root.deck.deck}.stem.cue";
+        size: 24px; width: 40px; label: "CUE"; label-size: Theme.label;
+        on: root.deck.stem-cue-mode; tone: Theme.attention;
+        enabled: root.deck.stems-state == "ready";
+        tooltip: @tr("Stem cue: the stem keys pick parts to hear on their own on the headphones; the master stays as it is");
+        clicked => { DeckMix.stem-cue(root.deck.deck); }
+    }
+    StemKey { deck: root.deck.deck; stem: "vocal"; cue-mode: root.deck.stem-cue-mode; on-cue: Math.mod(Math.floor(root.deck.stem-cue / 1), 2) == 1; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "vocal"; label: "VOCAL"; muted: root.deck.mute-vocal; level: root.deck.level-vocal; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 0); toggle => { root.stem("vocal"); } set-level(v) => { root.stem-level("vocal", v); } }
+    StemKey { deck: root.deck.deck; stem: "drums"; cue-mode: root.deck.stem-cue-mode; on-cue: Math.mod(Math.floor(root.deck.stem-cue / 2), 2) == 1; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "drums"; label: "DRUMS"; muted: root.deck.mute-drums; level: root.deck.level-drums; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 2); toggle => { root.stem("drums"); } set-level(v) => { root.stem-level("drums", v); } }
+    StemKey { deck: root.deck.deck; stem: "bass"; cue-mode: root.deck.stem-cue-mode; on-cue: Math.mod(Math.floor(root.deck.stem-cue / 4), 2) == 1; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "bass"; label: "BASS"; muted: root.deck.mute-bass; level: root.deck.level-bass; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 3); toggle => { root.stem("bass"); } set-level(v) => { root.stem-level("bass", v); } }
+    StemKey { deck: root.deck.deck; stem: "inst"; cue-mode: root.deck.stem-cue-mode; on-cue: Math.mod(Math.floor(root.deck.stem-cue / 8), 2) == 1; state: root.deck.stems-state; expected: root.deck.stems-expected; solo: root.deck.stem-solo == "inst"; label: "INST"; muted: root.deck.mute-inst; level: root.deck.level-inst; enabled: root.deck.stems-available; busy: root.busy; fill: StemFill.of(root.deck.split-progress, 1); toggle => { root.stem("inst"); } set-level(v) => { root.stem-level("inst", v); } }
     if root.mirror && !root.compact: Rectangle { horizontal-stretch: 1; }
 }
 
@@ -2131,6 +2147,50 @@ export global MixerParts {
     in property <string> xf-curve: "constant_power";
     in property <string> xf-curve-name: "CONSTANT POWER";
     callback cycle-xf-curve();
+    // [67] External mixer: the channel strips step aside for a plate that
+    // names each deck's outputs ("OUT 1/2", "OFF").
+    in property <bool> external;
+    in property <[string]> deck-routes;
+}
+
+// [67] In place of the channel strips while an external mixer has the
+// decks: the same width, a band plate naming where each deck plays.
+component ExternalMixerPlate inherits Rectangle {
+    in property <int> channels: 2;
+    in property <length> strip-width: 50px;
+    width: root.channels * root.strip-width + (root.channels - 1) * Theme.s2;
+    background: Theme.ground-band;
+    border-radius: Theme.r-control;
+    border-width: 1px;
+    border-color: Theme.rule-strong;
+    VerticalLayout {
+        padding: Theme.s2;
+        spacing: Theme.s2;
+        alignment: center;
+        Caps {
+            accessible-role: text; accessible-id: "mixer.external"; accessible-value: self.text;
+            text: @tr("EXTERNAL MIXER");
+            color: Theme.bone;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+        for i in root.channels: HorizontalLayout {
+            spacing: Theme.s1;
+            alignment: center;
+            Text {
+                text: i + 1;
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
+                color: Theme.deck-color(i + 1);
+                vertical-alignment: center;
+            }
+            Caps {
+                accessible-role: text; accessible-id: "mixer.external.deck\{i + 1}"; accessible-value: self.text;
+                text: i < MixerParts.deck-routes.length ? MixerParts.deck-routes[i] : "";
+                color: Theme.bone-2;
+                vertical-alignment: center;
+            }
+        }
+    }
 }
 
 // The crossfader curve key beside the crossfader: the curve drawn as two
@@ -2403,10 +2463,19 @@ export component MixerPanel inherits Rectangle {
     background: Theme.ground-band; border-radius: Theme.r-panel;
     // Hidden (mixer off, browse layout, kiosk): takes no height either.
     in property <bool> shown: true;
+    // [67] The heights the channel strips asked for, kept while an external
+    // mixer has the decks, so the plate in their place moves nothing.
+    property <length> strips-min: lay.min-height;
+    property <length> strips-pref: lay.preferred-height;
+    property <length> held-min: 0px;
+    property <length> held-pref: 0px;
+    changed strips-min => { if (!MixerParts.external) { root.held-min = root.strips-min; } }
+    changed strips-pref => { if (!MixerParts.external) { root.held-pref = root.strips-pref; } }
+    property <bool> hold: MixerParts.external && root.held-min > 0px;
     min-width: lay.min-width;
     preferred-width: lay.preferred-width;
-    min-height: root.shown ? lay.min-height : 0px;
-    preferred-height: root.shown ? lay.preferred-height : 0px;
+    min-height: !root.shown ? 0px : root.hold ? max(root.held-min, lay.min-height) : lay.min-height;
+    preferred-height: !root.shown ? 0px : root.hold ? max(root.held-pref, lay.preferred-height) : lay.preferred-height;
     lay := VerticalLayout {
         // The swap row uses part of the side padding, so the column keeps
         // the width of its strips.
@@ -2416,8 +2485,9 @@ export component MixerPanel inherits Rectangle {
             spacing: Theme.s2;
             padding-left: Theme.s1; padding-right: Theme.s1;
             alignment: center;
-            // Hidden: nothing is built (no element takes focus).
-            for c in root.shown ? root.channels : []: ChannelStrip {
+            // Hidden (or an external mixer has the decks): nothing is
+            // built (no element takes focus).
+            for c in root.shown && !MixerParts.external ? root.channels : []: ChannelStrip {
                 ch: c;
                 compact: root.compact;
                 roomy: root.roomy;
@@ -2427,9 +2497,14 @@ export component MixerPanel inherits Rectangle {
                 fader(v) => { root.fader(c.channel, v); }
                 cue => { root.cue(c.channel); }
             }
+            if root.shown && MixerParts.external: ExternalMixerPlate {
+                vertical-stretch: 1;
+                channels: root.channels.length;
+                strip-width: Theme.touch-mode ? 96px : root.roomy ? 56px : 50px;
+            }
         }
         // One-tap EQ swap between the pair of decks, on the timing beside.
-        if root.shown && root.channels.length >= 2: HorizontalLayout {
+        if root.shown && !MixerParts.external && root.channels.length >= 2: HorizontalLayout {
             spacing: Theme.key-gap;
             alignment: center;
             // Swap glyph (two opposed arrows); with four decks also the pair.
@@ -2470,7 +2545,7 @@ export component MixerPanel inherits Rectangle {
                 clicked => { MixerParts.cycle-swap-at(); }
             }
         }
-        if root.shown && DeckLayout.fx: HorizontalLayout {
+        if root.shown && !MixerParts.external && DeckLayout.fx: HorizontalLayout {
             padding-left: Theme.s1; padding-right: Theme.s1;
             ChannelFxSelector {
                 accessible-role: combobox;

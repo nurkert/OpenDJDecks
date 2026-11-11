@@ -194,6 +194,7 @@ release.
 | `deck.stem_mute` | press | `stem` | `StemMuteToggle { stem }` |
 | `deck.stem_solo` | momentary | `stem` | `StemSolo { stem, on }`: only this stem while held; the others come back as they were on release |
 | `deck.stem_keep` | press | `stem` | `StemKeepOnly { stem }`: the other stems muted, and they stay muted |
+| `deck.stem_cue` | press | `stem` | `StemCue { stem }`: adds the stem to the ones heard on their own on the headphones, or takes it out; the master stays as it is (stem audition) |
 | `mixer.trim`, `mixer.eq_high`, `mixer.eq_mid`, `mixer.eq_low`, `mixer.fader` | absolute | | `MixerAction::*` |
 | `mixer.channel_fx` | absolute | | `ChannelFx(-1..1)` |
 | `mixer.cue` | press | | `CueToggle` (headphone cue) |

@@ -114,17 +114,14 @@ fn start_engine(app: &App) -> bool {
     }
 }
 
-/// "Interface · 48000 Hz · headphones on 3/4".
+/// "Interface · 48000 Hz · master 1/2 · headphones 3/4" (and what else is
+/// routed where, [`crate::routing::summary`]).
 pub(crate) fn device_line(n: &od_audio_io::Negotiated) -> String {
     format!(
-        "{} · {} Hz{}",
+        "{} · {} Hz · {}",
         n.device_name,
         n.sample_rate,
-        if n.routing.headphones.is_some() {
-            " · headphones on 3/4"
-        } else {
-            ""
-        }
+        crate::routing::summary(n)
     )
 }
 
@@ -164,18 +161,11 @@ pub(crate) fn audio_config(
     a: &crate::settings::AudioSettings,
     lite: bool,
 ) -> od_audio_io::AudioConfig {
-    let routing = match a.headphones.as_str() {
-        "34" => Some(od_audio_io::OutputRouting {
-            master: [0, 1],
-            headphones: Some([2, 3]),
-        }),
-        "off" => Some(od_audio_io::OutputRouting {
-            master: [0, 1],
-            headphones: None,
-        }),
-        _ => None,
-    };
+    let routing = crate::routing::routing(a);
+    let cue = crate::routing::cue_device(a);
     od_audio_io::AudioConfig {
+        cue_pair: cue.as_ref().map_or(0, |c| c.1),
+        cue_device: cue.map(|c| c.0),
         device: (!a.device.is_empty()).then(|| a.device.clone()),
         buffer_frames: Some(if a.buffer > 0 {
             a.buffer
@@ -490,6 +480,7 @@ fn frame(app: &App) {
         return;
     };
     player::follow_preview(app, &state);
+    crate::routing::frame(&state);
     recorder::frame(app, &state);
     crate::queue::frame(app, &state);
     crate::restore::frame(app, &state);
@@ -571,6 +562,8 @@ pub(crate) fn start(app: &Rc<App>) {
             }
         });
     show_message(app);
+    crate::routing::refresh_mixer(app);
+    crate::routing::apply_clock(app);
 }
 
 #[cfg(test)]

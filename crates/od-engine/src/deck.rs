@@ -99,6 +99,9 @@ pub(crate) struct Deck {
     /// Stem FX: the part sent to a Tempo FX unit on its own (`None` = off),
     /// its stretcher (fed in lock-step with `stretcher`) and its output.
     fx_part: Option<crate::stems::Stem>,
+    /// Stem audition ([66]): stems (bit = `Stem::index`) sent to the cue on
+    /// their own; 0 = off. Stem FX takes the split first.
+    audition: u8,
     part_st: Option<Stretcher>,
     part_buf: Vec<f32>,
     /// Frame offset into `part_buf` of the segment being rendered.
@@ -255,6 +258,7 @@ impl Deck {
             gain_adjust_db: 0.0,
             stretcher,
             fx_part: None,
+            audition: 0,
             part_st,
             part_buf: vec![0.0; max_block * 2],
             part_off: 0,
@@ -410,22 +414,66 @@ impl Deck {
     /// together.
     pub(crate) fn set_fx_part(&mut self, part: Option<crate::stems::Stem>) {
         if self.fx_part != part {
+            let before = self.split();
             self.fx_part = part;
+            self.resplit(before);
+        }
+    }
+
+    /// Stem audition ([66]): the stems of `mask` (bit = `Stem::index`) go to
+    /// the headphone cue on their own, the deck's output stays as it is.
+    pub(crate) fn set_audition(&mut self, mask: u8) {
+        let mask = mask & 0x0F;
+        if self.audition != mask {
+            let before = self.split();
+            self.audition = mask;
+            self.resplit(before);
+        }
+    }
+
+    /// A changed split re-primes keylock so both stretchers start together.
+    fn resplit(&mut self, before: Option<crate::stems::PartSplit>) {
+        if self.split() != before {
             self.kl_active = false;
             self.kl_priming = false;
         }
     }
 
+    /// What is split off: Stem FX first, else the audition.
+    fn split(&self) -> Option<crate::stems::PartSplit> {
+        use crate::stems::PartSplit;
+        match (self.fx_part, self.audition) {
+            (Some(p), _) => Some(PartSplit::Fx(p)),
+            (None, 0) => None,
+            (None, m) => Some(PartSplit::Audition(m)),
+        }
+    }
+
+    /// The audition mask in effect (0 while Stem FX holds the split or the
+    /// track has no stems).
+    pub(crate) fn audition_live(&self) -> u8 {
+        let stems = self.track.as_ref().is_some_and(|t| t.stems.is_some());
+        match self.split() {
+            Some(crate::stems::PartSplit::Audition(m)) if stems => m,
+            _ => 0,
+        }
+    }
+
     /// The part split off for Stem FX in the last block, if any.
     pub(crate) fn part_output(&mut self, frames: usize) -> Option<&mut [f32]> {
-        let active =
-            self.fx_part.is_some() && self.track.as_ref().is_some_and(|t| t.stems.is_some());
+        let active = matches!(self.split(), Some(crate::stems::PartSplit::Fx(_)))
+            && self.track.as_ref().is_some_and(|t| t.stems.is_some());
         active.then(|| &mut self.part_buf[..frames * 2])
     }
 
+    /// The auditioned stems of the last block (cue only), if any.
+    pub(crate) fn audition_output(&self, frames: usize) -> Option<&[f32]> {
+        (self.audition_live() != 0).then(|| &self.part_buf[..frames * 2])
+    }
+
     /// Splitting in the keylock path (needs the part stretcher).
-    fn split_keylock(&self, track: &TrackData) -> Option<crate::stems::Stem> {
-        self.fx_part
+    fn split_keylock(&self, track: &TrackData) -> Option<crate::stems::PartSplit> {
+        self.split()
             .filter(|_| self.part_st.is_some() && track.stems.is_some())
     }
 
@@ -602,6 +650,7 @@ impl Deck {
                 DeckCommand::SetJogMode(m) => self.jog_mode = m,
                 DeckCommand::SetSlip(on) => self.slip = on,
                 DeckCommand::SetStemLevel { stem, level } => self.set_stem_level(stem, level),
+                DeckCommand::SetStemAudition(m) => self.set_audition(m),
                 // Never drop track data on the audio thread.
                 DeckCommand::SwapTrackData(t) => ctx.dispose_track(t),
                 _ => {}
@@ -612,6 +661,7 @@ impl Deck {
             DeckCommand::Load(track) => self.load(track, ctx),
             DeckCommand::SwapTrackData(track) => self.swap_track_data(track, ctx),
             DeckCommand::SetStemLevel { stem, level } => self.set_stem_level(stem, level),
+            DeckCommand::SetStemAudition(m) => self.set_audition(m),
             DeckCommand::Unload => {
                 if let Some(old) = self.track.take() {
                     ctx.dispose_track(old);
@@ -1655,7 +1705,7 @@ impl Deck {
 
     fn render_inner(&mut self, out: &mut [f32], frames: usize, ctx: &mut RtCtx) {
         let out = &mut out[..frames * 2];
-        if self.fx_part.is_some() {
+        if self.split().is_some() {
             self.part_buf[..frames * 2].fill(0.0);
         }
         if self.track.is_none() {
@@ -1778,7 +1828,7 @@ impl Deck {
             if let Some(st) = stems {
                 self.stem_feed.tick(&self.stem_target);
                 if let Some(part) = split {
-                    let (cm, cp) = crate::stems::split_coefs(self.stem_feed.level, part);
+                    let (cm, cp) = part.coefs(self.stem_feed.level);
                     (l[k], r[k]) = frame_at(&track.samples, st, p as isize, &cm);
                     (pl[k], pr[k]) = frame_at(&track.samples, st, p as isize, &cp);
                 } else {
@@ -1962,7 +2012,7 @@ impl Deck {
     fn render_resample(&mut self, out: &mut [f32], n: usize) {
         {
             let track = self.track.as_ref().unwrap();
-            let split = self.fx_part.is_some() && !self.part_suppress && track.stems.is_some();
+            let split = self.split().is_some() && !self.part_suppress && track.stems.is_some();
             if Self::stems_active(track, &mut self.stem_play, &self.stem_target) || split {
                 self.render_resample_stems(out, n);
                 return;
@@ -2028,15 +2078,15 @@ impl Deck {
         let loop_check = self.loop_active && self.loop_in.is_some() && self.loop_out.is_some();
         let (li, lo) = (self.loop_in.unwrap_or(0.0), self.loop_out.unwrap_or(0.0));
         let target = self.stem_target;
+        let split = self.split().filter(|_| !self.part_suppress);
         let ramp = &mut self.stem_play;
-        let split = self.fx_part.filter(|_| !self.part_suppress);
         let off = self.part_off;
         let part_buf = &mut self.part_buf;
         for (idx, f) in out.as_chunks_mut::<2>().0.iter_mut().take(n).enumerate() {
             ramp.tick(&target);
             let (c, cp) = match split {
                 Some(part) => {
-                    let (m, p) = crate::stems::split_coefs(ramp.level, part);
+                    let (m, p) = part.coefs(ramp.level);
                     (m, Some(p))
                 }
                 None => (ramp.coefs(), None),
@@ -2224,6 +2274,8 @@ impl Deck {
             at_end: self.at_end,
             stems_available: self.track.as_ref().is_some_and(|t| t.stems.is_some()),
             stem_levels: self.stem_target,
+            stem_audition: self.audition,
+            stem_audition_live: self.audition_live(),
             // Filled in by the engine (it holds the waiting starts).
             start_on_beat: None,
         }

@@ -424,6 +424,18 @@ export component PreferencesWindow inherits Window {
     in property <int> headphones;
     in property <string> audio-status;
     in property <bool> audio-pending;
+    // [67] Routing: master pair (1/2 … 7/8, off), the headphones' own
+    // device (0 = the output device), one stereo output for both, the
+    // external mixer with each deck's pair, the MIDI clock port (0 = off).
+    in property <int> master-out;
+    in property <[string]> cue-devices;
+    in property <int> cue-device;
+    in property <bool> split-one;
+    in property <bool> external-mixer;
+    in property <[int]> deck-outs;
+    in property <[string]> clock-ports;
+    in property <int> clock-port;
+    in property <string> clock-status;
 
     // View.
     in property <int> language;
@@ -647,13 +659,27 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Output device"); RadioList { accessible-id: "prefs.audio.device"; horizontal-stretch: 1; options: root.audio-devices; selected: root.audio-device; picked(i) => { root.choose("audio.device", i); } } }
                         Row { label: @tr("Buffer size"); Choice { name: @tr("Buffer size"); accessible-id: "prefs.audio.buffer"; options: root.buffer-options; selected: root.buffer; picked(i) => { root.choose("audio.buffer", i); } } }
                         Row { label: @tr("Sample rate"); Choice { name: @tr("Sample rate"); accessible-id: "prefs.audio.sample-rate"; options: root.rate-options; selected: root.rate; picked(i) => { root.choose("audio.rate", i); } } }
-                        Row {
-                            label: @tr("Headphones (cue)");
-                            Choice { name: @tr("Headphones (cue)"); accessible-id: "prefs.audio.headphone-routing"; options: [@tr("AUTOMATIC"), @tr("OUTPUTS 3/4"), @tr("OFF")]; selected: root.headphones; picked(i) => { root.choose("audio.headphones", i); } }
-                        }
                         Note { text: @tr("Automatic picks the controller's audio interface when it is connected, else the system output. Headphones play on outputs 3/4 when the device has four outputs."); }
+                        Heading { text: @tr("Routing"); }
+                        Row { label: @tr("One stereo output"); Switch { accessible-id: "prefs.audio.split-one"; label: @tr("Split cue: headphones on the left, master on the right of 1/2"); on: root.split-one; toggled(v) => { root.flag("audio.split-one", v); } } }
+                        if !root.split-one: Row { label: @tr("Master"); Choice { name: @tr("Master"); accessible-id: "prefs.audio.master-routing"; options: ["1/2", "3/4", "5/6", "7/8", @tr("OFF")]; selected: root.master-out; picked(i) => { root.choose("audio.master", i); } } }
+                        if !root.split-one: Row {
+                            label: @tr("Headphones (cue)");
+                            Choice { name: @tr("Headphones (cue)"); accessible-id: "prefs.audio.headphone-routing"; options: [@tr("AUTOMATIC"), "1/2", "3/4", "5/6", "7/8", @tr("OFF")]; selected: root.headphones; picked(i) => { root.choose("audio.headphones", i); } }
+                        }
+                        if !root.split-one: Row { label: @tr("Headphone device"); RadioList { accessible-id: "prefs.audio.cue-device"; horizontal-stretch: 1; options: root.cue-devices; selected: root.cue-device; picked(i) => { root.choose("audio.cue-device", i); } } }
+                        Row { label: @tr("Mixer"); Choice { name: @tr("Mixer"); accessible-id: "prefs.audio.mixer"; options: [@tr("INTERNAL"), @tr("EXTERNAL")]; selected: root.external-mixer ? 1 : 0; picked(i) => { root.choose("audio.mixer", i); } } }
+                        for out[i] in root.external-mixer ? root.deck-outs : []: Row {
+                            label: @tr("Deck {} to", i + 1);
+                            Choice { name: @tr("Deck {} to", i + 1); accessible-id: "prefs.audio.deck\{i + 1}-routing"; options: ["1/2", "3/4", "5/6", "7/8", @tr("OFF")]; selected: out; picked(k) => { root.choose("audio.deck\{i + 1}", k); } }
+                        }
+                        Note { text: root.external-mixer ? @tr("External mixer: each deck plays on its own outputs as it comes off the deck, before trim, EQ and faders; the mixer in the app steps aside. The sampler and the microphone stay on the master outputs.") : @tr("A pair the device does not have is left out; Now says what runs where."); }
+                        Heading { text: @tr("Clock"); }
+                        Row { label: @tr("MIDI clock out"); RadioList { accessible-id: "prefs.audio.clock-out"; horizontal-stretch: 1; options: root.clock-ports; selected: root.clock-port; picked(i) => { root.choose("audio.clock", i); } } }
+                        Note { text: @tr("Sends the master deck's tempo as MIDI clock (24 pulses a beat), with start on its next beat and stop when it stops."); }
                         Heading { text: @tr("Now"); }
-                        Text { text: root.audio-status; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2; wrap: word-wrap; }
+                        Text { accessible-role: AccessibleRole.text; accessible-id: "prefs.audio.status"; accessible-value: root.audio-status; text: root.audio-status; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2; wrap: word-wrap; }
+                        Text { accessible-role: AccessibleRole.text; accessible-id: "prefs.audio.clock-status"; accessible-value: root.clock-status; text: root.clock-status; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2; wrap: word-wrap; }
                     }
                 }
 
