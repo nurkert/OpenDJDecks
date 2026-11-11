@@ -2,12 +2,12 @@
 title: USB-Sticks und Sync
 description: Registriere einen Stick einmal. Danach erreicht ihn jede Änderung automatisch und schrittweise, bereit für OpenDJDecks auf einem anderen Rechner oder den Raspberry Pi.
 keywords: [usb, stick, sticks, usb stick, sync, synchronisieren, sychronisieren, export, exportieren, registrieren, auswerfen, neu schreiben, stick status, gerät, sync manager]
-features: [export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
+features: [export-stick-screen, export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
 ---
 
 Der Stick ist ein Spiegel deiner Bibliothek. Registriere ihn einmal mit den Listen, die darauf gehören, und jeder geänderte Cue, jede Playlist und jedes Grid ist innerhalb von Sekunden auf dem Stick, solange er steckt. Es gibt keinen Export-Schritt, an den du denken musst.
 
-![Das USB-Stick-Board mit einem registrierten Stick](../img/usb.png)
+![Das USB-Stick-Board: ein Stick mit Format-Abzeichen, Sync-Zustand und Tasten](../img/usb.png)
 
 ## Einen Stick registrieren
 
@@ -15,11 +15,21 @@ Der Stick ist ein Spiegel deiner Bibliothek. Registriere ihn einmal mit den List
 2. Wähle die Playlist, das Set oder den Ordner aus, der darauf soll.
 3. Drücke **MIT … REGISTRIEREN**. Der erste Sync schreibt alles einmal, danach nur Änderungen.
 
-Das Stick-Board zeigt seinen Zustand, was aussteht, und den Fortschritt.
+Das Stick-Board zeigt eine Zeile pro Stick:
 
-- **JETZT SYNCHRONISIEREN** (`⌘S`) synchronisiert sofort. Von selbst startet der Sync ohnehin wenige Sekunden nach jeder Änderung.
-- **STICK NEU SCHREIBEN** schreibt den ganzen Stick neu aus deiner Bibliothek.
+- seinen **Namen**, mit einem Abzeichen für jedes Format, das er trägt: **CLUB-USB** (mit **WAV**, wenn maximale Kompatibilität an ist) und **OPENDJDECKS**;
+- seinen **Sync-Zustand** in Worten neben seiner Linie: **SYNCHRON** (durchgezogen grün), **ÄNDERUNGEN OFFEN** (gestrichelt gelb), **SYNC LÄUFT 45 %** (die Linie füllt sich), **SYNC FEHLGESCHLAGEN** (durchgestrichen rot, mit dem Grund) oder **NICHT EINGESTECKT** (halbe Linie);
+- den freien Platz und rechts seine Tasten.
+
+Die Tasten eines eingesteckten Sticks:
+
+- **SYNC** (`⌘S`) synchronisiert sofort. Von selbst startet der Sync ohnehin wenige Sekunden nach jeder Änderung.
+- **PRÜFEN** liest den Stick zurück und vergleicht ihn mit deiner Bibliothek; siehe [Einen Stick vor dem Gig prüfen](#einen-stick-vor-dem-gig-pruefen).
 - **AUSWERFEN** (`⌘E`) wirft ihn sicher aus. Warte darauf, bevor du ihn ziehst.
+
+Ein Klick auf eine Zeile öffnet den Stick rechts, mit Name, Formaten und Listen. Dort:
+
+- **STICK NEU SCHREIBEN** schreibt den ganzen Stick neu aus deiner Bibliothek.
 - **VERGESSEN** beendet das Synchronisieren dieses Sticks.
 
 ## Alle Sticks auf einmal synchronisieren (ab Version 0.6)
@@ -76,7 +86,7 @@ Wähle den Stick unter **Geräte** und drücke **STICK PRÜFEN**. OpenDJDecks li
 - für jeden Track: Die Audiodatei ist da und lässt sich als Audio öffnen (**DATEI**), die Cues sind deine (**CUES**), das Beatgrid ist deins (**GRID**);
 - für den ganzen Stick: Jede Playlist enthält die Tracks der Bibliothek in deren Reihenfolge, die gewählten Formate sind da, und kein Sync wurde abgebrochen.
 
-Beide Formate werden zurückgelesen, wenn der Stick sie trägt: die OpenDJDecks-Bibliothek und der Club-Player-USB-Export. Jede Markierung nutzt die Linienformen aus der Stick-Liste: durchgezogen heißt wie in der Bibliothek, gestrichelt heißt seit dem letzten Sync geändert, durchgestrichen heißt fehlt oder nicht lesbar, halb heißt es gibt nichts zu vergleichen (ein Track ohne Cues). Probleme stehen oben. Die Prüfung endet mit **Bereit** oder **Nicht bereit**; eine gestrichelte Markierung oder eine abweichende Playlist verschwindet mit **JETZT SYNCHRONISIEREN**.
+Beide Formate werden zurückgelesen, wenn der Stick sie trägt: die OpenDJDecks-Bibliothek und der Club-Player-USB-Export. Jede Markierung nutzt die Linienformen aus der Stick-Liste: durchgezogen heißt wie in der Bibliothek, gestrichelt heißt seit dem letzten Sync geändert, durchgestrichen heißt fehlt oder nicht lesbar, halb heißt es gibt nichts zu vergleichen (ein Track ohne Cues). Probleme stehen oben. Die Prüfung endet mit **Bereit** oder **Nicht bereit**; eine gestrichelte Markierung oder eine abweichende Playlist verschwindet mit **SYNC**.
 
 ![Die Stick-Prüfung auf der Geräte-Seite](../img/stick-check.png)
 

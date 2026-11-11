@@ -5,10 +5,9 @@ use crate::app::App;
 use crate::models::model;
 use crate::settings::SortSpec;
 use crate::state::AppState;
-use crate::{FlowPoint, TrackRow, format, render, smart_text};
+use crate::{TrackRow, format, render, smart_text};
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use od_core::TrackId;
-use od_library::sets::Fit;
 use od_library::{NodeKind, SortKey, TrackRecord};
 use slint::{ComponentHandle, SharedString};
 use slint::{Rgba8Pixel, SharedPixelBuffer};
@@ -251,16 +250,6 @@ pub(crate) fn sort_rows_with<T: SortFields>(
     });
 }
 
-/// Whether a track matches a list-local search.
-fn matches_search(t: &TrackRecord, q: &str) -> bool {
-    format!(
-        "{} {} {} {}",
-        t.tags.title, t.tags.artist, t.tags.album, t.tags.genre
-    )
-    .to_lowercase()
-    .contains(q)
-}
-
 impl AppState {
     pub fn node_kind(&self) -> Option<NodeKind> {
         self.browser
@@ -319,16 +308,15 @@ impl AppState {
                 b.similar_track,
                 &b.auto.lists,
             ),
-            (None, None) if searching => self.src().search(&b.search, 5000).unwrap_or_default(),
             (None, None) => self
                 .src()
                 .tracks(sort_key(&b.sort).unwrap_or_default(), b.descending)
                 .unwrap_or_default(),
             (None, Some(n)) => self.src().node_tracks(n).unwrap_or_default(),
         };
-        if searching && (b.node.is_some() || b.special.is_some()) {
-            let q = b.search.to_lowercase();
-            rows.retain(|t| matches_search(t, &q));
+        let ranked = searching && b.search_ranked;
+        if searching {
+            super::fuzzy::filter_rank(&mut rows, &super::fuzzy::Query::new(&b.search), ranked);
         }
         if b.filter.active() {
             rows.retain(|t| {
@@ -346,7 +334,7 @@ impl AppState {
             && !searching
             && sort_key(&b.sort).is_some()
             && b.sort != "key";
-        if !sql_sorted || !then.is_empty() {
+        if !ranked && (!sql_sorted || !then.is_empty()) {
             let reference = b.match_ref.as_ref();
             let key_order = self.settings.key_order();
             sort_rows_with(&mut rows, &b.sort, b.descending, then, key_order, &|t: &TrackRecord| {
@@ -783,10 +771,15 @@ fn refresh_list(app: &App) {
     }
     if let (Some(n), Some(NodeKind::Set)) = (b.node, kind) {
         if let Ok(flow) = st.src().set_flow(n) {
-            ui.set_flow(model(flow_points(&flow, st.settings.key_notation())));
+            let c = super::flow::chart(&flow, st.settings.key_notation());
+            ui.set_flow(model(c.points));
+            ui.set_flow_warnings(model(c.warnings));
+            ui.set_flow_bpm_low(c.bpm_low.into());
+            ui.set_flow_bpm_high(c.bpm_high.into());
             ui.set_flow_total(format::time(flow.total_duration).into());
         }
         ui.set_flow_selected(b.flow_selected.map(|i| i as i32).unwrap_or(-1));
+        ui.set_flow_pair(b.flow_pair.map(|i| i as i32).unwrap_or(-1));
         let note = b
             .flow_selected
             .and_then(|i| entries.get(i))
@@ -825,62 +818,6 @@ fn similar_title(st: &AppState) -> String {
     match st.browser.similar_track.and_then(|t| st.lib.track(t).ok()) {
         Some(t) => od_i18n::trf("Fits after {}", &[&t.tags.title]),
         None => od_i18n::tr("Similar tracks").to_string(),
-    }
-}
-
-fn fit_name(f: Fit) -> &'static str {
-    match f {
-        Fit::Good => "good",
-        Fit::Ok => "ok",
-        Fit::Clash => "clash",
-        Fit::Unknown => "unknown",
-    }
-}
-
-/// Set flow points, energy scaled to the set so differences are visible.
-pub(crate) fn flow_points(
-    flow: &od_library::sets::SetFlow,
-    notation: od_core::KeyNotation,
-) -> Vec<FlowPoint> {
-    let mut pts: Vec<FlowPoint> = flow
-        .points
-        .iter()
-        .enumerate()
-        .map(|(i, p)| {
-            let tr = flow.transitions.get(i);
-            FlowPoint {
-                title: p.track.tags.title.clone().into(),
-                bpm: p.bpm.map(|b| format!("{b:.0}")).unwrap_or_default().into(),
-                key: p.key.map(|k| k.format(notation)).unwrap_or_default().into(),
-                energy: p.energy.unwrap_or(0.3),
-                start: format::time(p.start_offset).into(),
-                tempo_fit: tr.map(|t| fit_name(t.tempo_fit)).unwrap_or("none").into(),
-                key_fit: tr.map(|t| fit_name(t.key_fit)).unwrap_or("none").into(),
-                change: tr
-                    .and_then(|t| t.bpm_change_pct)
-                    .map(|p| format!("{p:+.1}%"))
-                    .unwrap_or_default()
-                    .into(),
-            }
-        })
-        .collect();
-    let mut energies: Vec<f32> = pts.iter().map(|p| p.energy).collect();
-    normalize_energy(&mut energies);
-    for (p, e) in pts.iter_mut().zip(energies) {
-        p.energy = e;
-    }
-    pts
-}
-
-/// Rescales energies to 0.15..1 across the set (unchanged when flat).
-pub(crate) fn normalize_energy(e: &mut [f32]) {
-    let (lo, hi) = e
-        .iter()
-        .fold((f32::MAX, f32::MIN), |(a, b), x| (a.min(*x), b.max(*x)));
-    if hi > lo {
-        for x in e.iter_mut() {
-            *x = 0.15 + 0.85 * (*x - lo) / (hi - lo);
-        }
     }
 }
 
@@ -1017,10 +954,11 @@ mod tests {
 
     #[test]
     fn energy_is_scaled_to_the_set() {
-        let mut e = [0.2, 0.4, 0.6];
+        use super::super::flow::normalize_energy;
+        let mut e = [0.2f32, 0.4, 0.6];
         normalize_energy(&mut e);
         assert!((e[0] - 0.15).abs() < 1e-6 && (e[2] - 1.0).abs() < 1e-6);
-        let mut flat = [0.3, 0.3];
+        let mut flat = [0.3f32, 0.3];
         normalize_energy(&mut flat);
         assert_eq!(flat, [0.3, 0.3]);
     }

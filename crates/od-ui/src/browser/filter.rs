@@ -69,6 +69,11 @@ impl Filter {
         match field {
             "bpm-min" => self.bpm_min = number(value),
             "bpm-max" => self.bpm_max = number(value),
+            // A chip clears the range at once.
+            "bpm" => {
+                self.bpm_min = None;
+                self.bpm_max = None;
+            }
             "pct" => self.bpm_pct = number(value),
             "key" => self.key_match = !value.is_empty(),
             "rating" => self.rating_min = value.trim().parse::<u8>().unwrap_or(0).min(5),
@@ -117,6 +122,31 @@ impl Filter {
     }
 
     /// The bar's view model.
+    /// The conditions set, as (field to clear, text) for the chips.
+    pub fn chips(&self) -> Vec<(&'static str, String)> {
+        let num = |x: f64| if x.fract() == 0.0 { format!("{x:.0}") } else { format!("{x}") };
+        let mut out = Vec::new();
+        match (self.bpm_min, self.bpm_max) {
+            (Some(a), Some(b)) => out.push(("bpm", format!("BPM {}–{}", num(a), num(b)))),
+            (Some(a), None) => out.push(("bpm", format!("BPM ≥ {}", num(a)))),
+            (None, Some(b)) => out.push(("bpm", format!("BPM ≤ {}", num(b)))),
+            (None, None) => {}
+        }
+        if let Some(p) = self.bpm_pct {
+            out.push(("pct", od_i18n::trf("TEMPO ±{} %", &[&num(p)])));
+        }
+        if self.key_match {
+            out.push(("key", od_i18n::tr("KEY FITS").to_string()));
+        }
+        if self.rating_min > 0 {
+            out.push(("rating", od_i18n::trf("RATING ≥ {}", &[&self.rating_min])));
+        }
+        if let Some(t) = &self.user_tag {
+            out.push(("user-tag", user_tag_text(t)));
+        }
+        out
+    }
+
     pub fn view(&self, reference: Option<&Reference>) -> crate::FilterView {
         let num = |v: Option<f64>| {
             v.map(|x| {
@@ -145,6 +175,13 @@ impl Filter {
                 .map(|r| r.label.clone())
                 .unwrap_or_default()
                 .into(),
+            chips: std::rc::Rc::new(slint::VecModel::from(
+                self.chips()
+                    .into_iter()
+                    .map(|(f, t)| crate::FilterChip { field: f.into(), text: t.into() })
+                    .collect::<Vec<_>>(),
+            ))
+            .into(),
         }
     }
 }
@@ -246,6 +283,26 @@ mod tests {
         t.key = key.and_then(MusicalKey::parse);
         t.tags.rating = rating;
         t
+    }
+
+    #[test]
+    fn active_conditions_become_removable_chips() {
+        let mut f = Filter::default();
+        assert!(f.chips().is_empty());
+        f.edit("bpm-min", "120");
+        f.edit("bpm-max", "126");
+        f.edit("rating", "3");
+        f.edit("key", "on");
+        f.edit("user-tag", "Genre: House");
+        let fields: Vec<&str> = f.chips().iter().map(|c| c.0).collect();
+        assert_eq!(fields, ["bpm", "key", "rating", "user-tag"]);
+        assert_eq!(f.chips()[0].1, "BPM 120–126");
+        for field in fields {
+            f.edit(field, "");
+        }
+        assert!(!f.active(), "every chip clears its condition");
+        f.edit("bpm-max", "130");
+        assert_eq!(f.chips()[0].1, "BPM ≤ 130");
     }
 
     #[test]

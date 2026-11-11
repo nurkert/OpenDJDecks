@@ -890,7 +890,7 @@ pub(crate) fn load_selected_into_free_deck(app: &App) {
         app.ui.set_browser_open(false);
     }
     if app.ui.get_mode() == "prepare" {
-        player::toggle_preview(app);
+        player::play_in_player(app);
         return;
     }
     let playing: Vec<bool> = match engine::snapshot(app) {

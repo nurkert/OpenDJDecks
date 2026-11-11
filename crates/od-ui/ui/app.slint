@@ -27,8 +27,9 @@ import { PreparePlayer } from "player.slint";
 import { TrackTable, TableStyle } from "table.slint";
 export { TableStyle }
 import { UserTagPanel, SuggestionPanel } from "user_tags.slint";
-import { ColumnView, ColumnChoice, FilterView, UserTagChip, SuggestionRow } from "structs.slint";
-export { ColumnView, ColumnChoice, FilterView, UserTagChip, SuggestionRow }
+import { ColumnView, ColumnChoice, FilterView, FilterChip, UserTagChip, SuggestionRow } from "structs.slint";
+export { ColumnView, ColumnChoice, FilterView, FilterChip, UserTagChip, SuggestionRow }
+import { FilterChips } from "filter.slint";
 import { DeviceLine, StickCheck, StickCheckRow, StickCheckPanel } from "devices.slint";
 export { StickCheck, StickCheckRow }
 import { ImportReview, ImportReviewDialog, ImportCountRow, ImportLeftOutRow } from "import_review.slint";
@@ -55,7 +56,7 @@ import { MixerParts, PerformLayout, DeckLayout } from "perform.slint";
 export { MixerParts, PerformLayout, DeckLayout }
 export { Lighting, LightFixtureView, LightGroupView, LightingWindow }
 import { PreferencesWindow, KeyRow } from "preferences.slint";
-import { VocalMark, TreeRow, TrackRow, CueMark, HotCueSlot, DeviceRow, VolumeRow, FlowPoint, DeckView, ChannelView, PhraseMark, ExplorerRow, LaneMotion, MenuTarget } from "structs.slint";
+import { VocalMark, TreeRow, TrackRow, CueMark, HotCueSlot, DeviceRow, VolumeRow, FlowPoint, FlowWarning, DeckView, ChannelView, PhraseMark, ExplorerRow, LaneMotion, MenuTarget } from "structs.slint";
 
 export { PreferencesWindow, KeyRow }
 // Perform panels (FX, sampler, pad modes).
@@ -69,7 +70,7 @@ export struct ProposalRow {
     kind: string,
 }
 
-export { Theme, TooltipState, TreeRow, TrackRow, CueMark, HotCueSlot, DeviceRow, VolumeRow, FlowPoint, DeckView, ChannelView, PhraseMark, ExplorerRow, LaneMotion, MenuTarget, TrackInfo }
+export { Theme, TooltipState, TreeRow, TrackRow, CueMark, HotCueSlot, DeviceRow, VolumeRow, FlowPoint, FlowWarning, DeckView, ChannelView, PhraseMark, ExplorerRow, LaneMotion, MenuTarget, TrackInfo }
 
 export struct NodeChoice {
     id: int,
@@ -136,6 +137,8 @@ export component AppWindow inherits Window {
     in property <string> sort-column: "date_added";
     in property <bool> sort-descending: true;
     in-out property <string> search-text;
+    // The lists column folded to its source rail (more room for the list).
+    in-out property <bool> lists-collapsed;
     in property <string> smart-rule-text;
     in property <string> smart-rule-error;
     in property <bool> has-selection;
@@ -181,6 +184,10 @@ export component AppWindow inherits Window {
     in property <[FlowPoint]> flow;
     in property <string> flow-total;
     in property <int> flow-selected: -1;
+    in property <int> flow-pair: -1;
+    in property <[FlowWarning]> flow-warnings;
+    in property <string> flow-bpm-low;
+    in property <string> flow-bpm-high;
     in property <string> transition-note;
     // Sets: planned start and the backup tracks of the selected position.
     in property <string> set-planned-start;
@@ -406,6 +413,11 @@ export component AppWindow inherits Window {
     callback delete-node();
     callback remove-selected();
     callback search(string);
+    // A key in the search field ("up", "down", "return").
+    callback search-key(string);
+    // A key typed while the list has the focus (text, ctrl, meta, alt):
+    // true when it started a search.
+    callback list-typed(string, bool, bool, bool) -> bool;
     callback set-smart-rule(string);
     callback sort(string);
     callback row-clicked(int, bool, bool);
@@ -482,6 +494,7 @@ export component AppWindow inherits Window {
     callback analyse-selected();
     callback toggle-preview();
     callback flow-select(int);
+    callback flow-select-pair(int);
     callback set-transition-note(string);
     callback sync-device(int);
     callback rebuild-device(int);
@@ -924,7 +937,6 @@ export component AppWindow inherits Window {
                     // The source rail needs its nine sources at the 24 px minimum;
                     // an open sub browser needs its own room as well.
                     min-height: max(root.kiosk ? 180px : 218px, browser-row.min-height);
-                    background: Theme.ground-band; border-radius: Theme.r-panel;
                     browser-row := HorizontalLayout {
                     lists := Sidebar {
                         // A narrow window with a panel open beside the list:
@@ -934,8 +946,10 @@ export component AppWindow inherits Window {
                         accessible-label: "browser.lists"; accessible-role: groupbox;
                         // Never narrower than its content (a saved width or a
                         // narrow window cannot squeeze it either).
-                        width: root.lists-yield ? 0px : root.kiosk ? 190px : max(self.content-min, root.list-tight ? min(root.sidebar-width, 240px) : root.sidebar-width);
+                        width: root.lists-yield ? 0px : root.kiosk ? 190px : root.lists-collapsed ? self.content-min : max(self.content-min, root.list-tight ? min(root.sidebar-width, 240px) : root.sidebar-width);
                         tight: root.list-tight;
+                        collapsed: root.lists-collapsed && !root.kiosk;
+                        toggle-collapsed => { root.lists-collapsed = !root.lists-collapsed; }
                         tree: root.tree;
                         selected-node: root.selected-node;
                         section: root.section;
@@ -977,7 +991,7 @@ export component AppWindow inherits Window {
                         browse-focus: root.browse-focus == "tree";
                         open-sampler => { root.menu-action("browser.source.sampler"); }
                     }
-                    if !root.lists-yield: Splitter {
+                    if !root.lists-yield && !root.lists-collapsed: Splitter {
                         accessible-label: "browser.splitter"; accessible-role: slider;
                         thickness: Theme.target;
                         horizontal: false;
@@ -988,17 +1002,24 @@ export component AppWindow inherits Window {
                         dragged(d) => { root.sidebar-width = clamp(lists.width + d, max(180px, lists.content-min), 480px); }
                         reset => { root.sidebar-width = 294px; }
                     }
+                    // The list on its own surface: lists, list, panels and
+                    // rails are separate areas with the ground between them.
+                    Rectangle {
+                    horizontal-stretch: 1;
+                    // The surface stops a key gap short of the panels, so the
+                    // ground shows between them (the list keeps its width).
+                    Rectangle { x: 0; y: 0; width: parent.width - Theme.key-gap; height: parent.height; background: Theme.ground-band; border-radius: Theme.r-panel; }
                     VerticalLayout {
                         horizontal-stretch: 1;
                         padding-left: Theme.s1;
-                        padding-right: Theme.s2;
+                        padding-right: Theme.s1 + Theme.key-gap;
                         padding-top: Theme.s2;
                         spacing: Theme.s2;
 
                         // List header: title, count, search and list actions.
                         if root.section == "library": HorizontalLayout {
                             spacing: root.kiosk ? Theme.s2 : Theme.s3;
-                            height: root.kiosk ? 44px : 32px;
+                            height: root.kiosk ? 44px : 28px;
                             title := TextInput {
                                 accessible-label: "browser.list-title"; accessible-role: text-input;
                                 accessible-value: self.text; accessible-read-only: self.read-only;
@@ -1061,7 +1082,7 @@ export component AppWindow inherits Window {
                                 enabled: root.mode == "perform";
                                 label: root.list-tight ? (root.load-target == 0 ? @tr("LOAD: FREE") : @tr("LOAD: {}", root.load-target)) : root.load-target == 0 ? @tr("LOAD TO: FREE DECK") : @tr("LOAD TO: DECK {}", root.load-target);
                                 active: root.load-target > 0; tone: Theme.deck-color(root.load-target);
-                                tooltip: root.mode == "perform" ? @tr("Where a double-click loads: the free deck or a fixed deck — click for the next") : @tr("In Prepare a double-click opens the track in the player");
+                                tooltip: root.mode == "perform" ? @tr("Where a double-click loads: the free deck or a fixed deck — click for the next") : @tr("In Prepare a double-click or Return plays the track in the player");
                                 clicked => { root.load-target = Math.mod(root.load-target + 1, max(2, root.decks.length) + 1); }
                             } }
                             // Row density of the list (Preferences > View > Line spacing).
@@ -1079,10 +1100,14 @@ export component AppWindow inherits Window {
                                 accessible-label: "browser.search"; accessible-role: text-input;
                                 accessible-value: self.text; accessible-placeholder-text: self.placeholder;
                                 property <int> focus-request: root.search-focus;
-                                changed focus-request => { self.focus-field(); }
+                                changed focus-request => { self.focus-end(); }
+                                nav-keys: true;
+                                nav(k) => { root.search-key(k); }
+                                accepted => { root.search-key("return"); if (root.mode == "perform") { keys.focus(); } else { list-keys.focus(); } }
+                                cancelled => { list-keys.focus(); }
                                 min-width: 120px; preferred-width: 260px; max-width: 260px;
                                 horizontal-stretch: 1;
-                                height: root.kiosk ? 44px : 32px;
+                                height: root.kiosk ? 44px : 28px;
                                 placeholder: @tr("SEARCH  ⌘F");
                                 text <=> root.search-text;
                                 edited(t) => { root.search(t); }
@@ -1094,13 +1119,27 @@ export component AppWindow inherits Window {
                                 accessible-label: "browser.search"; accessible-role: text-input;
                                 accessible-value: self.text; accessible-placeholder-text: self.placeholder;
                                 property <int> focus-request: root.search-focus;
-                                changed focus-request => { self.focus-field(); }
+                                changed focus-request => { self.focus-end(); }
+                                nav-keys: true;
+                                nav(k) => { root.search-key(k); }
+                                accepted => { root.search-key("return"); if (root.mode == "perform") { keys.focus(); } else { list-keys.focus(); } }
+                                cancelled => { list-keys.focus(); }
                                 min-width: 120px; preferred-width: 260px; max-width: 100000px;
                                 horizontal-stretch: 1;
                                 height: root.kiosk ? 44px : 32px;
                                 placeholder: @tr("SEARCH  ⌘F");
                                 text <=> root.search-text;
                                 edited(t) => { root.search(t); }
+                            }
+                        }
+                        // Active filters as removable chips (also with the bar closed).
+                        if root.section == "library" && root.filter.active: Flickable {
+                            height: 26px;
+                            content-width: max(self.width, chips.preferred-width);
+                            mouse-drag-pan-enabled: false;
+                            chips := FilterChips {
+                                filter: root.filter;
+                                edit(f, v) => { root.filter-edit(f, v); }
                             }
                         }
                         // Kiosk: the deck the similar list follows, on its own line.
@@ -1137,7 +1176,12 @@ export component AppWindow inherits Window {
                             points: root.flow;
                             total: root.flow-total;
                             selected: root.flow-selected;
+                            pair: root.flow-pair;
+                            warnings: root.flow-warnings;
+                            bpm-low: root.flow-bpm-low;
+                            bpm-high: root.flow-bpm-high;
                             select(i) => { root.flow-select(i); }
+                            select-pair(i) => { root.flow-select-pair(i); }
                         }
                         if root.section == "library" && root.node-kind == "set" && root.mode == "prepare" && !root.read-only: HorizontalLayout {
                             spacing: Theme.s2;
@@ -1177,8 +1221,21 @@ export component AppWindow inherits Window {
                             tone: Theme.attention;
                             accepted(t) => { root.set-transition-note(t); }
                         }
+                        // The list takes the keyboard after a click in it: a letter or a
+                        // digit starts a search, the other keys work as everywhere.
+                        list-keys := FocusScope {
+                            vertical-stretch: root.section == "library" ? 1 : 0;
+                            max-height: root.section == "library" ? 100000px : 0px;
+                            key-pressed(event) => {
+                                if (root.list-typed(event.text, event.modifiers.control, event.modifiers.meta, event.modifiers.alt)) { return accept; }
+                                if (event.text == Key.Escape) { keys.focus(); return accept; }
+                                reject
+                            }
+                        // A layout, so the table's minimum height still reaches the band.
+                        VerticalLayout {
                         if root.section == "library": TrackTable {
                             accessible-label: "browser.list"; accessible-role: table;
+                            accessible-value: list-keys.has-focus ? "focused" : "";
                             guide: "browser.list";
                             vertical-stretch: 1;
                             rows: root.tracks;
@@ -1186,7 +1243,9 @@ export component AppWindow inherits Window {
                             descending: root.sort-descending;
                             focus-row: root.focus-row;
                             show-position: root.node-kind == "playlist" || root.node-kind == "set";
-                            empty-text: root.node-kind == "all"
+                            empty-text: root.search-text != "" || root.filter.active
+                                ? @tr("No track matches the search or the filter.")
+                                : root.node-kind == "all"
                                 ? @tr("Your library is empty. Use ADD MUSIC to add a folder, or import a library XML file.")
                                 : root.node-kind == "explorer"
                                 ? @tr("No audio files in this folder.")
@@ -1200,8 +1259,8 @@ export component AppWindow inherits Window {
                                 ? @tr("No track matches the filter.")
                                 : @tr("No tracks here yet. Select tracks in All tracks and press + next to this list in the sidebar.");
                             sort(c) => { root.sort(c); }
-                            row-clicked(i, c, s) => { root.row-clicked(i, c, s); keys.focus(); }
-                            row-activated(i) => { root.row-activated(i); }
+                            row-clicked(i, c, s) => { root.row-clicked(i, c, s); list-keys.focus(); }
+                            row-activated(i) => { root.row-activated(i); if (root.mode == "perform") { keys.focus(); } }
                             row-dropped(i, t) => { root.row-dropped(i, t); }
                             row-rated(i, n) => { root.row-rated(i, n); }
                             row-menu(i, a) => { root.row-menu(i, a); }
@@ -1226,11 +1285,16 @@ export component AppWindow inherits Window {
                             toggle-filter => { root.toggle-filter(); }
                             filter-edit(f, v) => { root.filter-edit(f, v); }
                         }
+                        }
+                        // Focused: a 2 px bone line along the list's left edge
+                        // (the focus colour, used for nothing else).
+                        if list-keys.has-focus && root.section == "library": Rectangle { x: 0; y: 0; width: 2px; height: parent.height; background: Theme.focus; }
+                        }
                         if root.section == "library" && root.sub-browser-open: SubBrowserPane {
                             height: 210px;
                             tree-width: min(root.sidebar-width, 240px);
                         }
-                        if root.section == "library" && root.node-kind == "all" && root.tracks.length == 0: HorizontalLayout {
+                        if root.section == "library" && root.node-kind == "all" && root.tracks.length == 0 && root.search-text == "" && !root.filter.active: HorizontalLayout {
                             alignment: center;
                             spacing: Theme.s3;
                             PlateButton { accessible-label: "browser.empty.add-music"; accessible-role: button; label: @tr("ADD MUSIC FOLDER"); tone: Theme.live; guide: "browser.empty.add-music"; tooltip: @tr("Add a music folder"); command: "browser.add.music"; clicked => { root.import-folder(); } }
@@ -1244,18 +1308,26 @@ export component AppWindow inherits Window {
                             text: @tr("Registered sticks are kept in sync automatically while they are plugged in. Every change to a playlist, cue or beatgrid reaches the stick within seconds.");
                             wrap: word-wrap; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                         }
-                        if root.section == "devices": HorizontalLayout {
+                        // A narrow window scrolls the board sideways instead of
+                        // squeezing the sticks and their details over each other.
+                        if root.section == "devices": Flickable {
                             vertical-stretch: 1;
-                            spacing: Theme.s6;
+                            content-width: max(self.width, dev-row.min-width);
+                            mouse-drag-pan-enabled: false;
+                            dev-row := HorizontalLayout {
+                            width: max(parent.width, self.min-width);
+                            height: parent.height;
+                            spacing: Theme.s5;
                             VerticalLayout {
-                                width: 360px;
-                                spacing: Theme.s2;
-                                if root.devices.length > 0: HorizontalLayout {
-                                    spacing: Theme.s4;
-                                    height: 30px;
+                                min-width: 320px; preferred-width: 460px; max-width: 460px;
+                                horizontal-stretch: 0;
+                                spacing: Theme.s1;
+                                if root.devices.length > 0: FlexboxLayout {
+                                    spacing-horizontal: Theme.s4; spacing-vertical: Theme.s1;
+                                    alignment: start;
                                     PlateButton { accessible-role: button; accessible-label: "devices.sync-all"; compact: true; label: @tr("SYNC ALL STICKS"); tone: Theme.live; tooltip: @tr("Sync every plugged-in stick at the same time"); clicked => { root.sync-all-devices(); } }
                                     LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-label: "devices.eject-when-done"; label: @tr("Eject when done"); tooltip: @tr("Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"); checked: root.eject-when-done; toggled(v) => { root.set-eject-when-done(v); } }
-                                    Rectangle { horizontal-stretch: 1; }
+                                    
                                 }
                                 for d in root.devices: DeviceLine {
                                     device: d;
@@ -1264,6 +1336,7 @@ export component AppWindow inherits Window {
                                     sync => { root.sync-device(d.id); }
                                     eject => { root.eject-device(d.id); }
                                     open => { root.open-device(d.id); }
+                                    check => { root.open-device(d.id); StickCheck.run(d.id); }
                                 }
                                 Rectangle { vertical-stretch: 1; }
                             }
@@ -1313,7 +1386,6 @@ export component AppWindow inherits Window {
                                 }
                                 HorizontalLayout {
                                     spacing: Theme.s2;
-                                    PlateButton { compact: true; label: @tr("SYNC NOW"); tone: Theme.live; tooltip: @tr("Sync this stick now"); command: "devices.sync"; clicked => { root.sync-device(root.device-selected); } }
                                     PlateButton { accessible-role: button; accessible-label: "devices.check"; compact: true; label: @tr("CHECK STICK"); tone: Theme.attention; tooltip: @tr("Read the stick back and compare every track, cue, grid and playlist with the library"); clicked => { StickCheck.run(root.device-selected); } }
                                     PlateButton { compact: true; label: @tr("REBUILD STICK"); tone: Theme.attention; tooltip: @tr("Write the whole stick again from the library"); clicked => { root.rebuild-device(root.device-selected); } }
                                     PlateButton { compact: true; label: @tr("FORGET"); tone: Theme.fault; tooltip: @tr("Stop keeping this stick in sync"); clicked => { root.forget-device(root.device-selected); } }
@@ -1321,6 +1393,7 @@ export component AppWindow inherits Window {
                             }
                         }
 
+                        }
                         // ── Recordings section ──
                         if root.section == "recordings": SectionTitle { title: @tr("RECORDINGS"); sub: @tr("{} MIXES", root.recordings.length); }
                         if root.section == "recordings": RecPanel { }
@@ -1347,6 +1420,7 @@ export component AppWindow inherits Window {
                             Rectangle { vertical-stretch: 1; }
                         }
                     }
+                    }
                     if root.user-tag-open && root.section == "library": UserTagPanel {
                         chips: root.user-tag-chips;
                         selection-count: root.selection-count;
@@ -1366,45 +1440,47 @@ export component AppWindow inherits Window {
                         edit(f, v) => { root.info-edit(f, v); }
                     }
                     // Right panel strip: the panels beside the list.
-                    HorizontalLayout {
-                        VLine { weight: 1px; tone: Theme.rule; }
-                        VerticalLayout {
+                    Rectangle {
+                        background: Theme.ground-band; border-radius: Theme.r-panel;
+                        horizontal-stretch: 0;
+                        width: rail-col.width;
+                        rail-col := VerticalLayout {
                             width: root.kiosk || root.list-tight ? 44px : Theme.rail;
                             padding-top: root.kiosk ? 0px : Theme.s2;
                             spacing: 0px;
                             // Kiosk browse screen: back to the decks.
                             if root.kiosk && root.browser-open && PerformLayout.layout != "browse": RailItem {
-                                accessible-label: "browser.decks"; label: @tr("DECKS"); tone: Theme.w486;
+                                accessible-label: "browser.decks"; label: @tr("DECKS"); icon: "decks"; iconic: true; tone: Theme.w486;
                                 tooltip: @tr("Back to the decks");
                                 clicked => { root.browser-open = false; }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.user-tag"; label: @tr("TAGS"); tone: Theme.w436;
+                                accessible-label: "browser.panel.user-tag"; label: @tr("TAGS"); icon: "tag"; iconic: root.kiosk || root.list-tight; tone: Theme.w436;
                                 current: root.user-tag-open;
                                 tooltip: @tr("Tags: tag the selected tracks with your own categories");
                                 clicked => { root.user-tag-open = !root.user-tag-open; root.panels-changed(); }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.similar"; label: root.kiosk || root.list-tight ? @tr("SIM") : @tr("SIMILAR"); tone: Theme.w546;
+                                accessible-label: "browser.panel.similar"; label: @tr("SIMILAR"); icon: "similar"; iconic: root.kiosk || root.list-tight; tone: Theme.w546;
                                 current: root.similar-open;
                                 tooltip: @tr("Similar: tracks that fit after the selected one");
                                 clicked => { root.similar-open = !root.similar-open; root.panels-changed(); }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.sampler"; label: root.kiosk || root.list-tight ? @tr("SMPL") : @tr("SAMPLER"); tone: Theme.w656;
+                                accessible-label: "browser.panel.sampler"; label: @tr("SAMPLER"); icon: "pads"; iconic: root.kiosk || root.list-tight; tone: Theme.w656;
                                 current: root.sampler-panel && root.mode == "perform";
                                 enabled: root.mode == "perform";
                                 tooltip: root.mode == "perform" ? @tr("Show or hide the sampler panel") : @tr("The sampler panel is part of Perform");
                                 clicked => { root.toggle-sampler-panel(); }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.info"; label: "INFO"; tone: Theme.w486;
+                                accessible-label: "browser.panel.info"; label: "INFO"; icon: "info"; iconic: root.kiosk || root.list-tight; tone: Theme.w486;
                                 current: root.info-open;
                                 tooltip: @tr("Info: the tags and file details of the selected track");
                                 clicked => { root.info-open = !root.info-open; }
                             }
                             RailItem {
-                                accessible-label: "browser.panel.sub-browser"; label: root.kiosk || root.list-tight ? @tr("SUB") : @tr("SUB BROWSER"); tone: Theme.attention;
+                                accessible-label: "browser.panel.sub-browser"; label: @tr("SUB BROWSER"); icon: "split"; iconic: root.kiosk || root.list-tight; tone: Theme.attention;
                                 current: root.sub-browser-open;
                                 tooltip: @tr("Sub browser: a second tree and list under this one, to drag tracks between lists");
                                 command: "view.panel.sub-browser";

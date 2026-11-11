@@ -639,6 +639,42 @@ fn prepare(ui: &Ui, layout: &str) {
     ui.pump(200);
 }
 
+/// A set of the fixture's tracks with a tempo jump and a key clash (made
+/// once per fixture).
+fn flow_set(ui: &Ui) -> i32 {
+    let mut lib = ui.fx.lib();
+    if let Some(n) = lib.all_nodes().unwrap().into_iter().find(|n| n.name == "Flow audit") {
+        return n.id.0 as i32;
+    }
+    let ids: Vec<_> = ui.fx.tracks.iter().map(|t| t.0).collect();
+    for (id, (bpm, key)) in ids.iter().zip([(120.0, "8A"), (132.0, "3B"), (133.0, "3B")]) {
+        let d = lib.track(*id).unwrap().duration;
+        lib.set_beatgrid(*id, od_core::Beatgrid::constant(bpm, 0.0, 1, d)).unwrap();
+        lib.set_key(*id, od_core::MusicalKey::parse(key)).unwrap();
+    }
+    let set = lib.create_node(None, od_library::NodeKind::Set, "Flow audit").unwrap();
+    lib.add_to_node(set, &ids, None).unwrap();
+    drop(lib);
+    ui.app.refresh_library();
+    set.0 as i32
+}
+
+/// A registered stick that is not plugged in (its row, badges and state).
+fn usb_stick(ui: &Ui) {
+    let lib = ui.fx.lib();
+    if lib.devices().unwrap_or_default().is_empty() {
+        let mut lib = lib;
+        lib.register_device(
+            "uuid-overflow-audit",
+            "AUDIT STICK WITH A LONG NAME",
+            od_library::DeviceFormats { club_usb: true, opendjdecks: true, club_usb_compat: true, ..Default::default() },
+        )
+        .unwrap();
+        ui.app.device_manager.send(od_devices::Command::Refresh);
+        ui.wait_until(10.0, |u| !u.app.state.borrow().devices.statuses.is_empty());
+    }
+}
+
 fn click(ui: &Ui, label: &str) {
     if let Some(e) = ui.find(label) {
         e.mock_single_click(slint::platform::PointerEventButton::Left);
@@ -707,6 +743,50 @@ fn main_states() -> Vec<State> {
                     u.app.ui.invoke_menu_action("view.panel.rec".into());
                 }
             }),
+        },
+        State {
+            id: "prepare.set-flow (warnings, a transition selected)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                let set = flow_set(u);
+                u.app.ui.invoke_select_node(set);
+                u.pump(200);
+                u.app.ui.invoke_flow_select_pair(0);
+                u.pump(200);
+            },
+            teardown: None,
+        },
+        State {
+            id: "prepare.filter-chips, search and lists folded",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                let w = &u.app.ui;
+                w.invoke_filter_edit("bpm-min".into(), "100".into());
+                w.invoke_filter_edit("bpm-max".into(), "140".into());
+                w.invoke_filter_edit("rating".into(), "1".into());
+                w.invoke_filter_edit("key".into(), "1".into());
+                w.set_search_text("tune".into());
+                w.invoke_search("tune".into());
+                w.set_lists_collapsed(true);
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                let w = &u.app.ui;
+                w.invoke_filter_edit("clear".into(), "".into());
+                w.set_search_text("".into());
+                w.invoke_search("".into());
+                w.set_lists_collapsed(false);
+            }),
+        },
+        State {
+            id: "prepare.usb-sticks",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                usb_stick(u);
+                u.app.ui.invoke_select_section("devices".into());
+                u.pump(200);
+            },
+            teardown: Some(|u| u.app.ui.invoke_select_section("library".into())),
         },
         State { id: "perform.2.simple", setup: |u| perform(u, 2, "simple"), teardown: None },
         State { id: "perform.2.standard", setup: |u| perform(u, 2, "standard"), teardown: None },

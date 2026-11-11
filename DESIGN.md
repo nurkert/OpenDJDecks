@@ -323,6 +323,13 @@ Every interactive control uses exactly these states, in Perform, Prepare, Lighti
 - **Tree:** 26px rows indented 14px per level; kind marker lines left of the name (sticks solid green 2px, sets solid sodium 1px, smart lists dashed indigo 1px); a 1px strong-rule length bar under each list proportional to its playing time; counts right-aligned in bone-3. Selection is an 8px sodium tick at the left edge, never a fill.
 - **Top bar:** three zones with more space between them than inside them: modes as a segmented control with a filled current mode; panel toggles as one group of slimmer keys; status at the right. Live values have fixed widths and are never cut off. RECORD is an action, not a panel: an ash plate with a bone-3 dot at rest, filled deep red with a running timer while recording, with the section's panel switch joined to it. Editing actions (undo) appear only in Prepare. Under 1360px the brand drops to its rail mark so live values keep their room.
 
+### Browser Areas and Rails
+- Lists column, track list and panel strip each sit on their own band-charcoal surface with the ground between them (4px, or the splitter); the list header is 28px. The list surface stops a key gap short of the panels, so the gap costs the list no width.
+- **Rails:** the sources and panels are spelled out where the rail is wide. A narrow rail (a narrow window, a panel open, touch) shows a hairline sign instead (record, list lines, two rings, four pads, folder, stick, clock, microphone, bookmark; tag, two rings, four pads, i, two panes) with the word as its tooltip and accessible description. A word is never cut or abbreviated.
+- **Folding:** a 26px key with a chevron beside the list filter folds the lists column to its rail; folded, the same key sits at the foot of the rail, in room the sources leave.
+- **Filter chips:** every active condition is a chip over the list, filled sodium with ground ink and a hairline ×, after a FILTERED BY legend and before a CLEAR plate.
+- **Keyboard:** a click in the list gives it the keys; while it has them a 2px bone focus line runs along its left edge, letters and digits start the search, `Esc` hands the keys back.
+
 ### Track Table
 - No boxes, no zebra fills. Caps header with a bone sort label and hairline arrow, 1px rule beneath.
 - **Titles lead:** the title in bone at weight 500 (600 when selected); the artist and the figures BPM and TIME in bone 2; every other column recedes to bone 3, never fainter (4.5:1 on every surface, the selection fill included).
@@ -360,13 +367,15 @@ Nothing here is a dialog: nothing may interrupt a set.
 - **Booth window**: the deck's ranks (hero, heading, body, label) multiplied by one zoom that fits a 640 x 360 canvas to the window, so the scale stays five sizes relative to each other; nothing else in the app scales this way. The last tenth of a playing track turns its time sodium.
 
 ### Device Line (signature)
-- One stick, one line: 2px, inset 8px top and bottom, 64px rows (78px in the Devices section). In sync is solid green; pending is dashed sodium; error is struck with the detail text in deep red; unknown or unregistered is half-height.
+- One stick, one line: 2px, inset 8px top and bottom, 64px rows in the tree. In sync is solid green; pending is dashed sodium; error is struck with the detail text in deep red; unknown or unregistered is half-height.
+- **USB screen:** each stick is an 84px row in a ground well (the open one with the sodium tick and a hairline edge): the line, the name in Body 600 with a raised-ash badge in Label caps per format (CLUB USB, WAV, OPENDJDECKS), the sync state in words in Label caps 600 beside its detail (IN SYNC, CHANGES WAITING, SYNCING n %, SYNC FAILED in fault, NOT PLUGGED IN), the space, and SYNC / CHECK / EJECT as compact plates on the right.
 - **Syncing:** the dashed sodium line (60% alpha) fills solid green from the bottom by progress, animated over the mode timing. Motion off sets it to 0ms.
 - Name in Body at weight 600, detail in Label, capacity and formats in Label caps; compact SYNC / EJECT plates on the right.
 
 ### Set Flow
-- 150px. Each position is a vertical line whose height is the track's energy (min 6px, max 92px), bone-2 at 2px, or sodium at 3px when selected; BPM and key are written beside it.
-- Transitions between positions are 1px lines whose form is the fit: solid bone-3 good, dashed sodium caution, half unknown, struck deep red clash. A Label caps legend spells the code out.
+- A chart, 178px: a tempo axis on the left (lowest and highest BPM of the set in Label, bone 3), a strong-rule base line with a rule line on top and a dashed rule halfway. One column per position: its energy as a bar from the base line (strong rule, sodium when selected; scaled to the set), its tempo as a bone dot on a bone-2 1.5px line through the positions, and under the chart key (Control), BPM and position with start time (Label). A selected column, or both columns of a selected transition, sit on an ash plate.
+- Transitions are markers on the column boundaries (24px targets): 1px solid bone 3 fits, dashed sodium caution, half unknown; a warning is a 2px struck deep-red line with a fault dot at the top. A selected transition carries a sodium tick instead of the dot.
+- A transition warns on a tempo jump above 6 %, a key clash (the key relation of the decks) and a steep energy drop or jump. The warnings are listed under the chart as plates with a struck deep-red line and the reason in caps (`2 → 3  TEMPO +9.1 %`); a warning or a marker selects the pair. A Label caps legend spells out bar, line and line forms.
 
 ### Deck Panel and Mixer (Perform)
 - The deck's 2px line runs the full panel height on the left (doubled when master) beside its numeral in the deck colour.
@@ -378,6 +387,10 @@ Nothing here is a dialog: nothing may interrupt a set.
 - **Mixer:** per channel a knob column (TRIM, HI, MID, LOW, CH FX) beside the channel numeral, CUE toggle, a 4px level line (deep red at clip) and the channel fader. Knobs follow the control anatomy below; a changed knob's line takes its band wavelength; double-click resets. Every knob, its legend and the fader stand on the channel's axis; a legend sits right under its knob and the knob groups stand a little further apart. On HI, MID and LOW the legend is the kill key: a small plate with a hover state that fills in sodium and reads KILL while killed (TRIM and CH FX legends are plain text). The legend shows the value while the knob is held. Each meter holds its peak.
 - The crossfader is a single 2px bone line on a strong-rule ruler between A and B.
 - **Layouts:** Simple, Standard and Full. Simple is a calm deck of about 25 controls on larger rows (34px base): pads A–D | E–H, a loop column (size, ½ / 2×, LOOP, jump − / +), SYNC / CUE / PLAY as on the full deck, the tempo fader; no platter and no setup tier, the header keeps the hero readouts. Groups (pads, loops, stems, effects, mixer, phase strip, setup keys) are hidden whole and then not built, never left in place invisible. The view menu holds the layout as a segmented control, the groups as on-keys and the saved layouts as rows with a hairline ×.
+
+### Preferences
+- Categories on a band-charcoal column on the left, the current one filled bone. Each section of a page starts on a band of band charcoal with its Heading; choices are segmented plates with a filled current value; switches are filled tracks.
+- **Preview** (View page, top): a band-charcoal panel with the waveform as the renderer draws it (with the calm playhead when calm is on), the four deck lines with their numerals and the three status line forms, a reading at the chosen scale and a plan of the deck layout. It uses the live tokens, so palette and contrast show at once.
 
 ## Motion
 

@@ -1372,6 +1372,22 @@ const DE: &[(&str, &str)] = &[
     ("sACN multicast", "sACN-Multicast"),
     ("Not an address: {}", "Keine Adresse: {}"),
     ("Check, in this order: the fixtures are on and set to DMX; their universe and address match the patch table; the cable runs from the interface to the first fixture and on from there, with a terminator at the end if you have one; for a node, its universe matches and it is on this computer’s network. The OUTPUT line above the guide says if the link itself is lost.", "Prüfe der Reihe nach: Die Scheinwerfer sind an und auf DMX gestellt; Universum und Adresse stimmen mit der Patch-Tabelle überein; das Kabel führt vom Interface zum ersten Scheinwerfer und von dort weiter, am Ende mit einem Abschlusswiderstand, falls du einen hast; bei einem Node stimmt sein Universum und er ist im Netzwerk dieses Rechners. Ob die Verbindung selbst verloren ist, zeigt die Zeile unter AUSGANG."),
+    ("TEMPO {} %", "TEMPO {} %"),
+    ("KEY CLASH {} → {}", "TONART BEISST SICH {} → {}"),
+    ("ENERGY DROP", "ENERGIEABFALL"),
+    ("ENERGY JUMP", "ENERGIESPRUNG"),
+    ("key {} → {} fits", "Tonart {} → {} passt"),
+    ("key {} → {} changes the energy", "Tonart {} → {} ändert die Energie"),
+    ("key {} → {} clashes", "Tonart {} → {} beißt sich"),
+    ("energy drops", "Energie fällt ab"),
+    ("energy jumps", "Energie springt"),
+    ("Warning", "Warnung"),
+    ("Worth rehearsing", "Lohnt eine Probe"),
+    ("Not analysed", "Nicht analysiert"),
+    ("Fits", "Passt"),
+    ("TEMPO ±{} %", "TEMPO ±{} %"),
+    ("KEY FITS", "TONART PASST"),
+    ("RATING ≥ {}", "BEWERTUNG ≥ {}"),
 ];
 
 /// Whether `english` has a German translation (independent of the

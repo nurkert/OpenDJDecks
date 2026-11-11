@@ -2,12 +2,12 @@
 title: USB sticks and sync
 description: Register a stick once. From then on every change reaches it automatically and incrementally, ready for OpenDJDecks on another computer or the Raspberry Pi.
 keywords: [usb, stick, sticks, usb stick, sync, synchronise, export, export stick, register, eject, rebuild, stick status, device, sync manager]
-features: [export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
+features: [export-stick-screen, export-stick-check, export-sync-all, export-club-usb-compat, export-auto-sync, export-device-registry, export-play-from-stick, export-native-format, export-club-usb, export-club-usb-mysetting, cues-from-players, import-club-usb]
 ---
 
 The stick is a mirror of your library. Register it once with the lists that belong on it, and every changed cue, playlist or beatgrid reaches it within seconds, while it is plugged in. There is no export step to remember.
 
-![The USB stick board with a registered stick](../img/usb.png)
+![The USB stick board: a stick with its format badge, its sync state and its keys](../img/usb.png)
 
 ## Register a stick
 
@@ -15,11 +15,21 @@ The stick is a mirror of your library. Register it once with the lists that belo
 2. Select the playlist, set or folder that should go on it.
 3. Press **REGISTER WITH …**. The first sync writes everything once; afterwards only changes are written.
 
-The stick board shows its state, what is pending, and the progress of the sync.
+The stick board shows one row per stick:
 
-- **SYNC NOW** (`⌘S`) syncs at once. Syncing starts by itself anyway, a few seconds after any change.
-- **REBUILD STICK** writes the whole stick again from your library.
+- its **name**, with a badge for each format it carries: **CLUB USB** (with **WAV** when maximum compatibility is on) and **OPENDJDECKS**;
+- its **sync state** in words beside its line: **IN SYNC** (solid green), **CHANGES WAITING** (dashed yellow), **SYNCING 45 %** (the line fills up), **SYNC FAILED** (struck red, with the reason) or **NOT PLUGGED IN** (half line);
+- the free space, and its keys on the right.
+
+The keys of a stick that is plugged in:
+
+- **SYNC** (`⌘S`) syncs at once. Syncing starts by itself anyway, a few seconds after any change.
+- **CHECK** reads the stick back and compares it with your library; see [Check a stick before a gig](#check-a-stick-before-a-gig).
 - **EJECT** (`⌘E`) ejects it safely. Wait for that before you pull it out.
+
+Click a row to open the stick on the right, with its name, formats and lists. There:
+
+- **REBUILD STICK** writes the whole stick again from your library.
 - **FORGET** stops keeping that stick in sync.
 
 ## Sync all sticks at once (from version 0.6)
@@ -76,7 +86,7 @@ Select the stick under **Devices** and press **CHECK STICK**. OpenDJDecks reads 
 - for every track: the audio file is there and opens as audio (**FILE**), the cues are yours (**CUES**), the beatgrid is yours (**GRID**);
 - for the whole stick: every playlist holds the library's tracks in the library's order, the formats you chose are there, and no sync was cut off.
 
-Both formats are read back when the stick carries them: the OpenDJDecks library and the Club player USB export. Each mark uses the line forms you know from the stick list: solid means as in the library, dashed means changed since the last sync, struck means missing or unreadable, half means there is nothing to compare (a track without cues). Problems are listed first. The check ends with **Ready** or **Not ready**; a dashed mark or a playlist that differs goes away with **SYNC NOW**.
+Both formats are read back when the stick carries them: the OpenDJDecks library and the Club player USB export. Each mark uses the line forms you know from the stick list: solid means as in the library, dashed means changed since the last sync, struck means missing or unreadable, half means there is nothing to compare (a track without cues). Problems are listed first. The check ends with **Ready** or **Not ready**; a dashed mark or a playlist that differs goes away with **SYNC**.
 
 ![The stick check on the Devices page](../img/stick-check.png)
 

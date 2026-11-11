@@ -2,12 +2,12 @@
 title: Preparing a set
 description: A set is a playlist with a plan. See the flow of tempo, key and energy, add transition notes, keep backup tracks ready and plan the start time.
 keywords: [set, sets, set list, setlist, plan, planning, flow, transition, transitions, notes, backup, backups, order, energy, key, tempo, harmonic]
-features: [prepare-preview-shift, browser-sets-flow, browser-set-backups, shell-prepare-layouts]
+features: [prepare-preview-shift, browser-sets-flow, browser-set-flow-chart, browser-set-backups, shell-prepare-layouts]
 ---
 
 A set is an ordered list with extras for playing it live: it shows how tempo, key and energy move from track to track, and you can leave yourself notes for each transition.
 
-![A set with the flow of tempo, key and energy, and the transition markers](../img/set-flow.png)
+![A set as a chart of energy and tempo, with the transitions marked and two warnings named under it](../img/set-flow.png)
 
 ## Build a set
 
@@ -17,13 +17,22 @@ A set is an ordered list with extras for playing it live: it shows how tempo, ke
 
 ## Read the flow
 
-**SET FLOW** draws a line for each track: its height is the energy, with BPM and key below. Between two tracks a marker shows how well they connect:
+**SET FLOW** is a chart of the set from left to right, one column per track:
 
-- no extra mark: a good transition
-- **dashed**: caution, a tempo or key step worth rehearsing
-- **struck**: a clash
+- the **bar** is the track's energy, scaled to the set so the steps show;
+- the **line** with a dot on each track is the tempo, with the lowest and highest BPM of the set on the axis at the left;
+- under each column stand the key, the BPM, the position and the time it starts.
 
-Click a position to select it. Notes, backups and the track you hear all relate to the selected position.
+Between two tracks a marker shows how the transition fits:
+
+- **solid**: it fits;
+- **dashed**: worth rehearsing, a tempo step of more than 3 % or a key change that lifts or lowers the energy;
+- **half**: tempo or key is not known yet;
+- **struck** in red with a red dot at the top: a warning.
+
+A transition warns when the tempo jumps by more than 6 % (double and half time count as the same tempo), when the keys clash (the same rule as the key line on the decks, see [Perform basics](perform-basics.md)), or when the energy drops or jumps steeply. Each warning is listed under the chart with its reason, for example `2 → 3` **TEMPO +9.1 %** or `5 → 6` **KEY CLASH 12B → 6B**; **ENERGY DROP** and **ENERGY JUMP** name the energy steps. Without warnings the line under the chart says so. Hold the pointer over a marker to read the whole transition in a sentence.
+
+Click a warning or a marker to select the transition: both tracks are selected in the list, so you can hear them in turn, and the transition note belongs to it. Click a column to select one position. Notes, backups and the track you hear all relate to the selected position.
 
 ## Notes and backups
 

@@ -98,6 +98,12 @@ export struct ColumnChoice {
 }
 
 // The quick filter bar of the track list.
+// One active filter condition: the field `filter-edit` clears and its text.
+export struct FilterChip {
+    field: string,
+    text: string,
+}
+
 export struct FilterView {
     // Any condition set.
     active: bool,
@@ -113,7 +119,11 @@ export struct FilterView {
     bpm-pct: string,
     // The reference ("MASTER 124.0 · 8A"), "" when no deck plays.
     reference: string,
+    // Each condition set, as a removable chip.
+    chips: [FilterChip],
 }
+
+
 
 // A tag value in the Tags panel; `on` = every selected track has it.
 export struct UserTagChip {
@@ -187,6 +197,10 @@ export struct DeviceRow {
     space: string,
     formats: string,
     connected: bool,
+    // Formats as badges: Club player USB, its WAV option, OpenDJDecks.
+    club: bool,
+    compat: bool,
+    native: bool,
 }
 
 export struct VolumeRow {
@@ -197,14 +211,26 @@ export struct VolumeRow {
 
 export struct FlowPoint {
     title: string,
+    // Position in the set, from 1.
+    pos: string,
     bpm: string,
+    // Height on the chart's tempo axis, 0..1; -1 when unknown.
+    bpm-level: float,
     key: string,
     energy: float,
     start: string,
-    // Fit of the transition into the next track: "good" | "ok" | "clash" | "unknown" | "none"
-    tempo-fit: string,
-    key-fit: string,
-    change: string,
+    // The transition into the next track: "good" | "caution" | "warning" | "unknown" | "none".
+    fit: string,
+    // Why it warns, in caps ("TEMPO +8.1 %  ·  KEY CLASH 8A → 3B"), "" when it does not.
+    reason: string,
+    // The transition in a sentence (tooltip).
+    detail: string,
+}
+
+// A transition that warns: from position `index` to the next.
+export struct FlowWarning {
+    index: int,
+    text: string,
 }
 
 // Motion of one zoomed waveform lane. The UI extrapolates the playhead with

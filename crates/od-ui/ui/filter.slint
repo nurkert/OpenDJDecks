@@ -110,3 +110,51 @@ export component FilterBar inherits Rectangle {
         }
     }
 }
+
+// The active conditions as chips over the list ([26]): each names its
+// condition and a click on it (or its ×) removes it; CLEAR removes all.
+// Shown whether the filter bar is open or not, so a narrowed list is never
+// a surprise.
+export component FilterChips inherits HorizontalLayout {
+    in property <FilterView> filter;
+    callback edit(string, string);
+    accessible-role: list;
+    accessible-label: "browser.filter.chips";
+    accessible-item-count: root.filter.chips.length;
+    spacing: Theme.s1;
+    alignment: start;
+    height: 26px;
+    Caps { text: @tr("FILTERED BY"); vertical-alignment: center; }
+    Rectangle { width: Theme.s1; }
+    for c[i] in root.filter.chips: Rectangle {
+        accessible-role: button;
+        accessible-label: "browser.filter.chip\{i}";
+        accessible-value: c.text;
+        accessible-action-default => { root.edit(c.field, ""); }
+        y: 1px; height: 24px;
+        width: t.preferred-width + 34px;
+        border-radius: Theme.r-control;
+        // On: the condition is filled in sodium, its × lifts on hover.
+        background: Theme.attention;
+        t := Text {
+            x: 10px; height: parent.height;
+            text: c.text;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+            color: Theme.ink-on;
+            vertical-alignment: center;
+        }
+        Rectangle {
+            x: parent.width - 22px; y: 4px; width: 16px; height: 16px; border-radius: Theme.r-control;
+            background: ta.has-hover ? Theme.ground.with-alpha(0.25) : transparent;
+            Rectangle { x: 4px; y: 4px; width: 8px; height: 8px;
+                Path { width: 8px; height: 8px; viewbox-width: 10; viewbox-height: 10; stroke: Theme.ink-on; stroke-width: 1.5px; commands: "M 1 1 L 9 9 M 9 1 L 1 9"; }
+            }
+        }
+        ta := TipArea { tooltip: @tr("Remove this condition"); mouse-cursor: pointer; clicked => { root.edit(c.field, ""); } }
+    }
+    PlateButton {
+        accessible-label: "browser.filter.clear-all"; accessible-role: button;
+        compact: true; label: @tr("CLEAR"); tooltip: @tr("Remove every condition");
+        clicked => { root.edit("clear", ""); }
+    }
+}

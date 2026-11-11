@@ -4212,3 +4212,99 @@ tests = [
 evidence = ["crates/od-ui/ui/table.slint::TrackLine", "crates/od-ui/ui/sidebar.slint::Sidebar"]
 spec = "Roadmap [49]"
 note = "The lists column stops at its content width and clips, so it never draws over the table."
+
+[[feature]]
+id = "browser-set-flow-chart"
+area = "browser"
+name = "Set Flow as a chart: energy bars, a tempo line and key per track, transition markers with named warnings (tempo jump, key clash, energy drop or jump); a click selects the pair"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::browser::flow::tests::tempo_jumps_beyond_the_threshold_warn",
+  "od-ui::browser::flow::tests::key_clashes_follow_the_key_relation",
+  "od-ui::browser::flow::tests::energy_drops_and_jumps_warn",
+  "od-ui::browser::flow::tests::several_reasons_are_named_together",
+  "od-ui::ui_tests::browser_craft::set_flow_warns_with_reasons_and_selects_the_pair",
+]
+evidence = ["crates/od-ui/src/browser/flow.rs", "crates/od-ui/ui/flow.slint::SetFlow"]
+spec = "Roadmap [47]"
+note = "Warns above 6 % tempo change (half and double time count as the same tempo), on a key clash by the key relation of [62], and on an energy step of 0.4 of the set's range that is also a quarter of the louder track. Above 3 % tempo or a key that changes the energy is a caution (dashed). The energy thresholds were set on generated tracks and the demo library, not yet on real sets."
+
+[[feature]]
+id = "prefs-live-preview"
+area = "preferences"
+name = "Preferences in the new design with live previews: waveform colours and calm waveform, deck colours and status lines (colour-blind, contrast), the interface scale and the deck layout"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::browser_craft::preferences_preview_follows_the_settings",
+]
+evidence = ["crates/od-ui/ui/preferences.slint::LivePreview", "crates/od-ui/src/preferences.rs::preview_waveform"]
+spec = "Roadmap [48]"
+note = "The waveform preview draws a made-up bar with the renderer of the app; the scale preview shows a reading at the chosen scale (the window itself follows the operating system's scale). Deck layout is chosen here as well as in View › Deck Layout."
+
+[[feature]]
+id = "export-stick-screen"
+area = "export"
+name = "Stick screen: each stick with format badges, its sync state in words and in the line, and SYNC / CHECK / EJECT on its row"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::browser_craft::stick_screen_shows_badges_state_and_actions",
+]
+evidence = ["crates/od-ui/ui/devices.slint::DeviceLine"]
+spec = "Roadmap [48]"
+note = "Tried with simulated sticks (a folder with the stick marker); not yet with several physical sticks ([H3])."
+
+[[feature]]
+id = "browser-rails-and-areas"
+area = "browser"
+name = "Browser rails with whole words or signs with tooltips (never cut words), one double-click and Return rule, separate surfaces for lists, list and panels, a foldable lists column"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::browser_craft::narrow_rails_show_signs_not_cut_words",
+  "od-ui::ui_tests::browser_craft::the_lists_column_folds_to_its_rail",
+  "od-ui::ui_tests::browser_craft::typing_in_the_list_searches_and_return_plays_the_top_hit_in_prepare",
+]
+evidence = ["crates/od-ui/ui/sidebar.slint::RailItem", "crates/od-ui/ui/controls.slint::Glyph", "crates/od-ui/src/player.rs::play_in_player"]
+spec = "Roadmap [22]"
+note = "Double-click and Return: the free deck (or the fixed LOAD TO deck) in Perform, the player in Prepare, where the track plays and never pauses. The touch layout shows the signs as well (no tooltips on touch). The folded lists column is not remembered across starts."
+
+[[feature]]
+id = "browser-fuzzy-search"
+area = "browser"
+name = "Fuzzy search: typos forgiven, words across title, artist and album, best matches first; typing in the list searches, arrows move, Return loads the top hit"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::browser::fuzzy::tests::typos_are_forgiven_by_word_length",
+  "od-ui::browser::fuzzy::tests::every_word_has_to_match_somewhere",
+  "od-ui::browser::fuzzy::tests::good_matches_rank_first",
+  "od-ui::ui_tests::browser_craft::fuzzy_search_ranks_and_forgives_typos",
+  "od-ui::ui_tests::browser_craft::typing_in_the_list_searches_and_return_plays_the_top_hit_in_prepare",
+  "od-ui::ui_tests::browser_craft::arrows_from_the_search_and_return_load_to_the_free_deck_in_perform",
+]
+evidence = ["crates/od-ui/src/browser/fuzzy.rs", "crates/od-ui/src/browser/mod.rs::list_typed", "crates/od-ui/src/browser/mod.rs::search_key"]
+spec = "Roadmap [26]"
+note = "The collection search no longer uses the database's full-text index: every track is scored in memory (fast enough for tens of thousands of tracks; not measured on a 100 000-track library). After a click in the list, letters and digits go to the search, so deck shortcuts on letters wait until Esc or a load; the list shows a focus line while it has the keys."
+
+[[feature]]
+id = "browser-filter-chips"
+area = "browser"
+name = "Active filters as removable chips over the list, a compact list header and a foldable lists column"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::browser::filter::tests::active_conditions_become_removable_chips",
+  "od-ui::ui_tests::browser_craft::active_filters_show_as_removable_chips",
+  "od-ui::ui_tests::browser_craft::the_lists_column_folds_to_its_rail",
+]
+evidence = ["crates/od-ui/ui/filter.slint::FilterChips", "crates/od-ui/src/browser/filter.rs::chips"]
+spec = "Roadmap [26]"

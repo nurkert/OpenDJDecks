@@ -2,7 +2,7 @@
 title: Bibliothek, Playlists und Smart-Listen
 description: Tracks finden, sortieren und taggen. Playlists, Smart-Listen, Tags, Auto-Sortierung, die MATCH-Spalte, passende Tracks und der Explorer.
 keywords: [bibliothek, sammlung, playlist, playlists, smart liste, smart playlist, ordner, suche, suchen, filter, tag, tags, bewertung, sterne, farbe, kommentar, sortieren, auto sortierung, match, match spalte, passend, duplikate, doppelt, verschoben, fehlende dateien, explorer, verlauf, spalten, rückgängig, backup]
-features: [browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck, browser-calm-table]
+features: [browser-fuzzy-search, browser-filter-chips, browser-rails-and-areas, browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck, browser-calm-table]
 ---
 
 Der Browser ist in Prepare und Perform derselbe. Links liegen deine Quellen und Listen, in der Mitte die Tracks, rechts eine Leiste mit Panels.
@@ -12,6 +12,12 @@ Der Browser ist in Prepare und Perform derselbe. Links liegen deine Quellen und 
 ## Die Quellen links
 
 Die schmale Leiste schaltet, was der Baum zeigt: **ALLE** (die ganze Sammlung), **LISTEN** (Playlists, Sets und Smart-Listen), **ÄHNLICH** (passende Tracks), **SAMPLER** (das Sampler-Panel in Perform), **DATEIEN** (der Explorer), **USB** (deine Sticks), **VERLAUF** (Verläufe), **AUFNAHMEN** (Aufnahmen) und **TAG-LISTE** (die Tag-Liste).
+
+Die Wörter bleiben ganz, wo Platz ist. In einem schmalen Fenster, oder wenn ein Panel neben der Liste offen ist, zeigen beide Leisten stattdessen ein Zeichen: eine Platte für die Sammlung, Zeilen für die Listen, zwei Ringe für passende Tracks, vier Pads für den Sampler, einen Ordner, einen Stick, eine Uhr für die Verläufe, ein Mikrofon für die Aufnahmen und ein Lesezeichen für die Tag-Liste; rechts ein Etikett, zwei Ringe, vier Pads, ein „i“ für Info und zwei übereinanderliegende Flächen für den Sub-Browser. Halte den Zeiger über ein Zeichen, um seinen Namen zu lesen; auch Screenreader lesen den Namen.
+
+Die Taste mit dem Pfeil neben **LISTEN FILTERN** (**LISTEN EINKLAPPEN**) klappt die Listen bis auf die Leiste ein, damit die Tracks den Platz bekommen. Der Pfeil unten an der Leiste (**LISTEN ZEIGEN**) oder jede Quelle der Leiste holt sie zurück.
+
+Die Listen, die Trackliste und die Panel-Leiste liegen jeweils auf einer eigenen Fläche mit etwas Abstand dazwischen, so siehst du immer, in welchem Bereich du bist.
 
 ## Nach Tonart sortieren (ab Version 0.6)
 
@@ -49,7 +55,16 @@ bpm 120-126, key 8A~, genre house, rating >= 3, added < 30d
 
 ## Suchen und filtern
 
-Drücke `⌘F` und tippe; die Liste wird beim Tippen enger. Die Filtertaste über der Liste (`⌘J`) öffnet eine Leiste mit BPM-Bereich, **Tonart passt zum Master**, **BPM ±%** um das Master-Deck (doppeltes und halbes Tempo zählen), einer Mindest-**BEWERTUNG** und einem **TAGS**-Wert. **ZURÜCKSETZEN** entfernt alle Bedingungen.
+Drücke `⌘F` und tippe; die Liste wird beim Tippen enger. Du kannst auch einfach lostippen, nachdem du eine Zeile angeklickt hast: Buchstaben und Ziffern gehen direkt in die Suche. Dass die Liste die Tasten hat, zeigt eine helle Linie an ihrem linken Rand; `Esc` gibt die Tasten an die Decks zurück.
+
+Die Suche verzeiht Tippfehler und findet Wörter in Titel, Artist und Album, auch übergreifend (`nova drive` findet *Night Drive* von *Nova Lines*), dazu in Genre, Label, Remixer und Kommentar so, wie sie getippt sind. In Wörtern mit vier bis sieben Buchstaben ist ein Tippfehler erlaubt, in längeren zwei. Die besten Treffer stehen oben: ein Treffer im Titel vor einem im Artist, ein ganzes Wort vor einem Wortteil. Ein Klick auf einen Spaltenkopf sortiert die Treffer stattdessen nach dieser Spalte.
+
+- `↓` und `↑` in der Suche bewegen sich durch die Treffer.
+- `Return` lädt den besten Treffer oder die Zeile, zu der du gegangen bist: auf ein freies Deck in Perform, in den Player in Prepare, wo er gleich spielt. In Perform gehen die Deck-Tasten direkt nach dem Laden wieder.
+
+Die Filtertaste über der Liste (`⌘J`) öffnet eine Leiste mit BPM-Bereich, **Tonart passt zum Master**, **BPM ±%** um das Master-Deck (doppeltes und halbes Tempo zählen), einer Mindest-**BEWERTUNG** und einem **TAGS**-Wert.
+
+Jede gesetzte Bedingung steht als Chip über der Liste, auch wenn die Leiste zu ist: **GEFILTERT NACH** **BPM 120–128**, **BEWERTUNG ≥ 3** und so weiter. Ein Klick auf einen Chip entfernt diese Bedingung; **ZURÜCKSETZEN** neben den Chips entfernt alle.
 
 ## Die MATCH-Spalte
 
@@ -95,13 +110,13 @@ Ein Rechtsklick auf eine Zeile bietet alles Weitere: **Auf Deck laden**, **Analy
 
 ## Tracks laden
 
-- Doppelklick auf eine Zeile: auf ein freies Deck in Perform, in den Player in Prepare. **LADEN AUF: FREIES DECK** über der Liste sagt, wohin ein Doppelklick lädt; ein Klick wählt ein festes Deck. **ZEILEN: NORMAL** daneben stellt die Zeilenhöhe der Liste ein.
+- Doppelklick auf eine Zeile: auf ein freies Deck in Perform, in den Player in Prepare, wo der Track gleich spielt (ein Track, der dort schon spielt, läuft weiter). `Return` macht dasselbe mit der gewählten Zeile, in der Suche mit dem besten Treffer. **LADEN AUF: FREIES DECK** über der Liste sagt, wohin ein Doppelklick in Perform lädt; ein Klick wählt ein festes Deck. **ZEILEN: NORMAL** daneben stellt die Zeilenhöhe der Liste ein.
 - Ziehe eine Zeile auf ein Deck oder einen Prepare-Player, aus der Liste, dem Explorer oder aus Finder und Dateimanager.
 - `⇧←` / `⇧→` laden die Auswahl auf Deck 1 und 2, `⌥⇧←` / `⌥⇧→` auf Deck 3 und 4, und `Return` auf ein freies Deck.
 
 ## Ein zweiter Browser
 
-**SUB** über der Liste öffnet einen zweiten Baum und eine Liste darunter, damit du Tracks zwischen Listen ziehen kannst, ohne deine Position zu verlieren.
+**SUB-BROWSER** in der Panel-Leiste rechts öffnet einen zweiten Baum und eine Liste darunter, damit du Tracks zwischen Listen ziehen kannst, ohne deine Position zu verlieren.
 
 ## Verläufe
 

@@ -52,7 +52,7 @@ From version 0.7, open **Preferences › Analysis › Stems** and follow the ste
 
 ## My cue or grid edit is not on the stick
 
-Syncs run within seconds, but only while the stick is plugged in and registered. Press **SYNC NOW** (`⌘S`) to make sure.
+Syncs run within seconds, but only while the stick is plugged in and registered. Press **SYNC** on the stick's row (`⌘S`) to make sure.
 
 ## How do I back up my library?
 

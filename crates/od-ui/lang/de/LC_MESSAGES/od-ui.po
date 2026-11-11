@@ -8263,3 +8263,155 @@ msgstr "SHOW"
 msgctxt "PreparePlayer"
 msgid "Add a memory cue at the cursor"
 msgstr "Memory-Cue am Cursor setzen"
+
+msgctxt "AppWindow"
+msgid "In Prepare a double-click or Return plays the track in the player"
+msgstr "In Prepare spielt ein Doppelklick oder Return den Track im Player"
+
+msgctxt "DeviceLine"
+msgid "NOT PLUGGED IN"
+msgstr "NICHT EINGESTECKT"
+
+msgctxt "DeviceLine"
+msgid "IN SYNC"
+msgstr "SYNCHRON"
+
+msgctxt "DeviceLine"
+msgid "CHANGES WAITING"
+msgstr "ÄNDERUNGEN OFFEN"
+
+msgctxt "DeviceLine"
+msgid "SYNCING {} %"
+msgstr "SYNC LÄUFT {} %"
+
+msgctxt "DeviceLine"
+msgid "SYNC FAILED"
+msgstr "SYNC FEHLGESCHLAGEN"
+
+msgctxt "DeviceLine"
+msgid "NOT REGISTERED"
+msgstr "NICHT REGISTRIERT"
+
+msgctxt "DeviceLine"
+msgid "CLUB USB"
+msgstr "CLUB-USB"
+
+msgctxt "DeviceLine"
+msgid "CHECK"
+msgstr "PRÜFEN"
+
+msgctxt "DeviceLine"
+msgid "Read the stick back and compare every track, cue, grid and playlist with the library"
+msgstr "Den Stick zurücklesen und jeden Track, jeden Cue, jedes Grid und jede Playlist mit der Bibliothek vergleichen"
+
+msgctxt "FilterChips"
+msgid "FILTERED BY"
+msgstr "GEFILTERT NACH"
+
+msgctxt "FilterChips"
+msgid "Remove this condition"
+msgstr "Diese Bedingung entfernen"
+
+msgctxt "FilterChips"
+msgid "CLEAR"
+msgstr "ZURÜCKSETZEN"
+
+msgctxt "FilterChips"
+msgid "Remove every condition"
+msgstr "Alle Bedingungen entfernen"
+
+msgctxt "SetFlow"
+msgid "BAR ENERGY  ·  LINE TEMPO  ·  DASHED CAUTION  ·  STRUCK WARNING"
+msgstr "BALKEN ENERGIE  ·  LINIE TEMPO  ·  GESTRICHELT VORSICHT  ·  DURCHGESTRICHEN WARNUNG"
+
+msgctxt "SetFlow"
+msgid "NO WARNINGS: EVERY TRANSITION WITHIN 6 % TEMPO, NO KEY CLASH, NO ENERGY DROP"
+msgstr "KEINE WARNUNG: JEDER ÜBERGANG UNTER 6 % TEMPO, KEINE TONART BEISST SICH, KEIN ENERGIEABFALL"
+
+msgctxt "PlatterGroup"
+msgid "START {}"
+msgstr "START {}"
+
+msgctxt "LivePreview"
+msgid "PREVIEW"
+msgstr "VORSCHAU"
+
+msgctxt "LivePreview"
+msgid "CHANGES SHOW HERE AS YOU MAKE THEM"
+msgstr "ÄNDERUNGEN ERSCHEINEN HIER SOFORT"
+
+msgctxt "LivePreview"
+msgid "CALM WAVEFORM"
+msgstr "RUHIGE WELLENFORM"
+
+msgctxt "LivePreview"
+msgid "WAVEFORM"
+msgstr "WELLENFORM"
+
+msgctxt "LivePreview"
+msgid "LIVE"
+msgstr "LIVE"
+
+msgctxt "LivePreview"
+msgid "WAIT"
+msgstr "WARTET"
+
+msgctxt "LivePreview"
+msgid "FAULT"
+msgstr "FEHLER"
+
+msgctxt "LivePreview"
+msgid "COLOURS"
+msgstr "FARBEN"
+
+msgctxt "LivePreview"
+msgid "SCALE {} %"
+msgstr "SKALIERUNG {} %"
+
+msgctxt "LivePreview"
+msgid "SIMPLE"
+msgstr "EINFACH"
+
+msgctxt "LivePreview"
+msgid "FULL"
+msgstr "VOLL"
+
+msgctxt "LivePreview"
+msgid "STANDARD"
+msgstr "STANDARD"
+
+msgctxt "PreferencesWindow"
+msgid "Deck layout"
+msgstr "Deck-Layout"
+
+msgctxt "PreferencesWindow"
+msgid "SIMPLE"
+msgstr "EINFACH"
+
+msgctxt "PreferencesWindow"
+msgid "STANDARD"
+msgstr "STANDARD"
+
+msgctxt "PreferencesWindow"
+msgid "FULL"
+msgstr "VOLL"
+
+msgctxt "Sidebar"
+msgid "SHOW LISTS"
+msgstr "LISTEN ZEIGEN"
+
+msgctxt "Sidebar"
+msgid "HIDE LISTS"
+msgstr "LISTEN EINKLAPPEN"
+
+msgctxt "Sidebar"
+msgid "Show the lists"
+msgstr "Die Listen zeigen"
+
+msgctxt "Sidebar"
+msgid "Fold the lists away: more room for the tracks"
+msgstr "Die Listen einklappen: mehr Platz für die Tracks"
+
+msgctxt "AppWindow"
+msgid "No track matches the search or the filter."
+msgstr "Kein Track passt zur Suche oder zum Filter."

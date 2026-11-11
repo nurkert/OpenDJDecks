@@ -22,6 +22,7 @@
 mod alignment;
 mod craft;
 mod browser;
+mod browser_craft;
 mod design;
 mod editing;
 mod features;
