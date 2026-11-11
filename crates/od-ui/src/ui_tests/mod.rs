@@ -24,6 +24,7 @@ mod help_overlay;
 mod touch;
 mod alignment;
 mod craft;
+mod create;
 mod browser;
 mod browser_craft;
 mod design;

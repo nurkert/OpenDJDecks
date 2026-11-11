@@ -43,6 +43,8 @@ import { SetFlow } from "flow.slint";
 import { PerformView } from "perform.slint";
 import { LightingView, LightingPanel, Lighting, LightFixtureView, LightGroupView, LightingWindow, LightPlaceRow, LightTuneView, LightCueRow, LightFileRow } from "lighting.slint";
 import { Club, ClubStep, ClubItem } from "club.slint";
+import { Create, CreateDeck, CreateView } from "create.slint";
+export { Create, CreateDeck }
 export { Club, ClubStep, ClubItem }
 import { Mic } from "mic.slint";
 import { Queue, QueueRow, QueuePanel, SetAlertBar } from "queue.slint";
@@ -624,6 +626,7 @@ export component AppWindow inherits Window {
             MenuItem { title: @tr("Prepare"); activated => { root.set-mode("prepare"); } }
             MenuItem { title: @tr("Perform"); activated => { root.set-mode("perform"); } }
             MenuItem { title: @tr("Lighting"); activated => { root.set-mode("lighting"); } }
+            MenuItem { title: @tr("Create"); activated => { root.set-mode("create"); } }
             MenuSeparator { }
             Menu {
                 title: @tr("Prepare Layout");
@@ -762,7 +765,8 @@ export component AppWindow inherits Window {
                 upper := VerticalLayout {
                 // Kiosk: the decks take the screen, except in the BROWSE layout
                 // where the browser below gets the room.
-                vertical-stretch: root.kiosk && !(root.mode == "perform" && PerformLayout.layout == "browse") ? 1 : 0;
+                // CREATE takes the room of the browser as well.
+                vertical-stretch: root.mode == "create" || (root.kiosk && !(root.mode == "perform" && PerformLayout.layout == "browse")) ? 1 : 0;
                 preferred-height: root.mode == "prepare" && root.prepare-layout == "browser" ? 0px : root.upper-height > 0 ? root.upper-height
                     : (root.mode == "prepare" ? (root.prepare-layout == "two" ? 400px : root.prepare-layout == "dual" ? 150px : root.prepare-layout == "simple" ? 60px : 280px) : PerformLayout.layout == "browse" ? (root.kiosk ? 0px : 220px) : 620px + (PerformLayout.layout == "standard" ? (PerformLayout.wave-size == 2 ? 140px : PerformLayout.wave-size == 0 ? -40px : 0px) : 0px));
                 if root.mode == "prepare" && (root.prepare-layout == "player" || root.prepare-layout == "two"): PreparePlayer {
@@ -839,6 +843,8 @@ export component AppWindow inherits Window {
                     act(w) => { root.mini-act(1, w); }
                 }
                 if root.mode == "lighting": LightingView { vertical-stretch: 1; }
+                // [70] CREATE: its views, the result and the deck strip; no browser.
+                if root.mode == "create": CreateView { vertical-stretch: 1; }
                 // Kiosk: the browse screen replaces the decks, except in the
                 // BROWSE layout (decks reduced, the browser below).
                 if root.mode == "perform" && (!(root.kiosk && root.browser-open) || PerformLayout.layout == "browse"): PerformView {
@@ -943,7 +949,7 @@ export component AppWindow inherits Window {
                 // Recording bar under the player (top bar REC).
                 if root.mode == "prepare" && root.rec-panel && !root.kiosk: RecBar { }
                 // Touch: the panes keep their sizes (a 7 px grip is no target).
-                if !root.kiosk && !Theme.touch-mode && !(root.mode == "prepare" && root.prepare-layout == "browser"): Splitter {
+                if !root.kiosk && !Theme.touch-mode && !(root.mode == "prepare" && root.prepare-layout == "browser") && root.mode != "create": Splitter {
                     accessible-id: "browser.upper-splitter"; accessible-role: slider;
                     accessible-label: TooltipState.name-for(self.accessible-id, @tr("BROWSER HEIGHT"), "");
                     horizontal: true;
@@ -958,7 +964,7 @@ export component AppWindow inherits Window {
                     vertical-stretch: 1;
                     min-height: root.kiosk ? 180px : 218px;
                 }
-                if !(root.mode == "perform" && Lighting.panel) && (!root.kiosk || root.browser-open || (root.mode == "perform" && PerformLayout.layout == "browse")): Rectangle {
+                if !(root.mode == "perform" && Lighting.panel) && root.mode != "create" && (!root.kiosk || root.browser-open || (root.mode == "perform" && PerformLayout.layout == "browse")): Rectangle {
                     vertical-stretch: 1;
                     // The source rail needs its nine sources at the 24 px minimum;
                     // an open sub browser needs its own room as well.

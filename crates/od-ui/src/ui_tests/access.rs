@@ -200,6 +200,10 @@ fn views() -> Vec<(&'static str, fn(&Ui))> {
             u.app.ui.invoke_set_mode("lighting".into());
             u.pump(300);
         }),
+        ("create", |u| {
+            u.app.ui.invoke_set_mode("create".into());
+            u.pump(300);
+        }),
     ]
 }
 
@@ -210,8 +214,8 @@ fn focus_window(ui: &Ui) {
     ui.pump(50);
 }
 
-/// Every operable control of Prepare, Perform (Standard and Full) and
-/// Lighting is a Tab stop and shows the focus ring when it has the focus.
+/// Every operable control of Prepare, Perform (Standard and Full),
+/// Lighting and Create is a Tab stop and shows the focus ring when it has the focus.
 #[test]
 fn tab_reaches_every_control_with_a_visible_ring() {
     let _lock = volumes_lock();

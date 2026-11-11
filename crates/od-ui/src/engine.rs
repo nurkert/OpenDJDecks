@@ -488,6 +488,9 @@ fn frame(app: &App) {
         if app.ui.get_mode() == "perform" {
             decks::show_empty(app);
         }
+        if app.ui.get_mode() == "create" {
+            crate::create::frame(app, None);
+        }
         return;
     };
     player::follow_preview(app, &state);
@@ -496,6 +499,10 @@ fn frame(app: &App) {
     crate::queue::frame(app, &state);
     crate::restore::frame(app, &state);
     crate::perform_lock::frame(app, &state);
+    // CREATE keeps the decks in view in its strip.
+    if app.ui.get_mode() == "create" {
+        crate::create::frame(app, Some(&state));
+    }
     if app.ui.get_mode() != "perform" {
         return;
     }

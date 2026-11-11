@@ -1186,6 +1186,20 @@ fn main_states() -> Vec<State> {
             },
             teardown: Some(|u| super::touch::touch_on(u, false)),
         },
+        // [70] CREATE: MELODY, DRUMS and THEORY with the result bar and
+        // the deck strip (its play states only in a narrow window).
+        State { id: "create.melody", setup: |u| create(u, "melody"), teardown: None },
+        State { id: "create.drums", setup: |u| create(u, "drums"), teardown: None },
+        State { id: "create.theory", setup: |u| create(u, "theory"), teardown: None },
+        State {
+            id: "create.melody (audio running, four decks)",
+            setup: |u| {
+                crate::engine::ensure_engine(&u.app);
+                u.app.ui.invoke_set_deck_count(4);
+                create(u, "melody");
+            },
+            teardown: Some(|u| u.app.ui.invoke_set_deck_count(2)),
+        },
         // [21] SETUP: the floor plan, patch and channels beside rig,
         // outputs, safety and files; SHOW: stage, pads and cues beside the
         // show column with its large BLACKOUT.
@@ -1330,6 +1344,12 @@ fn main_states() -> Vec<State> {
             teardown: None,
         },
     ]
+}
+
+fn create(ui: &Ui, view: &str) {
+    ui.app.ui.invoke_set_mode("create".into());
+    crate::create::set_view(&ui.app, view);
+    ui.pump(300);
 }
 
 fn lighting(ui: &Ui, space: &str, centre: &str, tab: &str) {

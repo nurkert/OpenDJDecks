@@ -18,6 +18,8 @@ const META_TRACK: &str = "ui.track";
 const META_SECTION: &str = "ui.section";
 const META_CLUB: &str = "ui.club";
 const META_MODE: &str = "ui.mode";
+/// [70] The view of CREATE (MELODY, DRUMS or THEORY).
+const META_CREATE_VIEW: &str = "ui.create_view";
 const META_SIDEBAR: &str = "ui.sidebar_width";
 const META_UPPER: &str = "ui.upper_height";
 pub(crate) const META_LAYOUT: &str = "ui.prepare_layout";
@@ -219,6 +221,10 @@ pub(crate) fn restore_view(app: &App) {
     if let Some(l) = layout.filter(|l| PREPARE_LAYOUTS.contains(&l.as_str())) {
         app.ui.set_prepare_layout(l.into());
     }
+    let view = app.state.borrow().lib.meta(META_CREATE_VIEW).ok().flatten();
+    if let Some(v) = view {
+        crate::create::set_view(app, &v);
+    }
     let on = app.state.borrow().lib.meta(META_CLUB).ok().flatten();
     if on.as_deref() == Some("1") {
         crate::club::set_enabled(app, true);
@@ -242,6 +248,8 @@ pub(crate) fn remember_view(app: &App) {
     let _ = st.lib.set_meta(META_TRACK, &track);
     let _ = st.lib.set_meta(META_SECTION, app.ui.get_section().as_str());
     let _ = st.lib.set_meta(META_MODE, app.ui.get_mode().as_str());
+    let create_view = app.ui.global::<crate::Create>().get_view();
+    let _ = st.lib.set_meta(META_CREATE_VIEW, create_view.as_str());
     let _ = st
         .lib
         .set_meta(META_SIDEBAR, &app.ui.get_sidebar_width().to_string());

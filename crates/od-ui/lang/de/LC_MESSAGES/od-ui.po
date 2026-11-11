@@ -10256,3 +10256,388 @@ msgstr "Track-Gain 0,5 dB niedriger (wird beim Track gespeichert)"
 msgctxt "PreparePlayer"
 msgid "Track gain 0.5 dB higher (stored with the track)"
 msgstr "Track-Gain 0,5 dB höher (wird beim Track gespeichert)"
+
+#: ui/app.slint:629
+msgctxt "AppWindow"
+msgid "Create"
+msgstr "Create"
+
+#: ui/create.slint:76
+msgctxt "KeyStrip"
+msgid "Keyboard strip"
+msgstr "Tastaturleiste"
+
+#: ui/create.slint:113
+msgctxt "MelodyView"
+msgid "SOURCE"
+msgstr "QUELLE"
+
+#: ui/create.slint:114
+msgctxt "MelodyView"
+msgid "Pick one note from a track on a deck or in the library. Drag IN and OUT around it, then hear it."
+msgstr "Wähle einen Ton aus einem Track auf einem Deck oder in der Bibliothek. Zieh IN und OUT um ihn herum und hör ihn dir an."
+
+#: ui/create.slint:119
+msgctxt "MelodyView"
+msgid "NO NOTE PICKED"
+msgstr "KEIN TON GEWÄHLT"
+
+#: ui/create.slint:121
+msgctxt "MelodyView"
+msgid "Its pitch shows as a note name and cents, and you can correct it."
+msgstr "Seine Tonhöhe erscheint als Notenname mit Cent, und du kannst sie korrigieren."
+
+#: ui/create.slint:126
+msgctxt "MelodyView"
+msgid "HEAR"
+msgstr "HÖREN"
+
+#: ui/create.slint:127
+msgctxt "MelodyView"
+msgid "Play the picked note (comes with the note picker)"
+msgstr "Den gewählten Ton abspielen (kommt mit der Tonauswahl)"
+
+#: ui/create.slint:134
+msgctxt "MelodyView"
+msgid "NOTES"
+msgstr "NOTEN"
+
+#: ui/create.slint:135
+msgctxt "MelodyView"
+msgid "The key and scale come from the other deck or the next track. The scale's notes fill the pads; play or type the melody into the steps."
+msgstr "Tonart und Skala kommen vom anderen Deck oder vom nächsten Track. Die Töne der Skala liegen auf den Pads; spiel oder tippe die Melodie in die Schritte."
+
+#: ui/create.slint:137
+msgctxt "MelodyView"
+msgid "PADS"
+msgstr "PADS"
+
+#: ui/create.slint:139
+msgctxt "MelodyView"
+msgid "ARRANGE"
+msgstr "ANORDNEN"
+
+#: ui/create.slint:145
+msgctxt "MelodyView"
+msgid "NEXT TRACK"
+msgstr "NÄCHSTER TRACK"
+
+#: ui/create.slint:146
+msgctxt "MelodyView"
+msgid "Take the key of the next track in the set (comes with keys and scales)"
+msgstr "Die Tonart des nächsten Tracks im Set übernehmen (kommt mit Tonarten und Skalen)"
+
+#: ui/create.slint:150
+msgctxt "MelodyView"
+msgid "REC"
+msgstr "REC"
+
+#: ui/create.slint:151
+msgctxt "MelodyView"
+msgid "Record the pads into the steps (comes with the arranger)"
+msgstr "Die Pads in die Schritte aufnehmen (kommt mit dem Anordnen)"
+
+#: ui/create.slint:159
+msgctxt "MelodyView"
+msgid "FITS"
+msgstr "PASST"
+
+#: ui/create.slint:160
+msgctxt "MelodyView"
+msgid "The notes and chords of the chosen key, and which of them fit the track playing now."
+msgstr "Die Töne und Akkorde der gewählten Tonart und welche davon zum laufenden Track passen."
+
+#: ui/create.slint:161
+msgctxt "MelodyView"
+msgid "NO KEY CHOSEN YET"
+msgstr "NOCH KEINE TONART GEWÄHLT"
+
+#: ui/create.slint:172
+msgctxt "DrumsView"
+msgid "KIT"
+msgstr "KIT"
+
+#: ui/create.slint:173
+msgctxt "DrumsView"
+msgid "Built-in kits, made from synthesised sounds, or your own samples from the library."
+msgstr "Eingebaute Kits aus synthetisierten Klängen oder deine eigenen Samples aus der Bibliothek."
+
+#: ui/create.slint:174
+msgctxt "DrumsView"
+msgid "Each pad gets three knobs: PITCH, DECAY and TONE."
+msgstr "Jedes Pad bekommt drei Regler: PITCH, DECAY und TONE."
+
+#: ui/create.slint:179
+msgctxt "DrumsView"
+msgid "LOAD SAMPLE"
+msgstr "SAMPLE LADEN"
+
+#: ui/create.slint:180
+msgctxt "DrumsView"
+msgid "Put a sound from the library on a pad (comes with the drum machine)"
+msgstr "Einen Klang aus der Bibliothek auf ein Pad legen (kommt mit der Drum-Machine)"
+
+#: ui/create.slint:189
+msgctxt "DrumsView"
+msgid "PADS"
+msgstr "PADS"
+
+#: ui/create.slint:190
+msgctxt "DrumsView"
+msgid "Sixteen pads in two rows. Play them by hand or from a controller."
+msgstr "Sechzehn Pads in zwei Reihen. Spiel sie von Hand oder mit einem Controller."
+
+#: ui/create.slint:196
+msgctxt "DrumsView"
+msgid "STEPS"
+msgstr "SCHRITTE"
+
+#: ui/create.slint:197
+msgctxt "DrumsView"
+msgid "Sixteen steps on the master tempo, shared with the sampler's sequencer in Perform."
+msgstr "Sechzehn Schritte im Master-Tempo, geteilt mit dem Sequencer des Samplers in Perform."
+
+#: ui/create.slint:203
+msgctxt "DrumsView"
+msgid "PLAY"
+msgstr "PLAY"
+
+#: ui/create.slint:204
+msgctxt "DrumsView"
+msgid "Play the pattern on the master tempo (comes with the drum machine)"
+msgstr "Das Pattern im Master-Tempo abspielen (kommt mit der Drum-Machine)"
+
+#: ui/create.slint:208
+msgctxt "DrumsView"
+msgid "REC"
+msgstr "REC"
+
+#: ui/create.slint:209
+msgctxt "DrumsView"
+msgid "Record the pads into the steps (comes with the drum machine)"
+msgstr "Die Pads in die Schritte aufnehmen (kommt mit der Drum-Machine)"
+
+#: ui/create.slint:221
+msgctxt "DeckKey"
+msgid "Deck {}"
+msgstr "Deck {}"
+
+#: ui/create.slint:238
+msgctxt "DeckKey"
+msgid "NO TRACK"
+msgstr "KEIN TRACK"
+
+#: ui/create.slint:238
+msgctxt "DeckKey"
+msgid "NO KEY YET"
+msgstr "NOCH KEINE TONART"
+
+#: ui/create.slint:238
+msgctxt "DeckKey"
+msgid "PLAYING"
+msgstr "LÄUFT"
+
+#: ui/create.slint:251
+msgctxt "TheoryView"
+msgid "KEYS"
+msgstr "TONARTEN"
+
+#: ui/create.slint:252
+msgctxt "TheoryView"
+msgid "Both decks' keys, and the neighbouring keys that move smoothly."
+msgstr "Die Tonarten beider Decks und die Nachbartonarten, zu denen der Wechsel weich klingt."
+
+#: ui/create.slint:258
+msgctxt "TheoryView"
+msgid "CHECK"
+msgstr "PRÜFEN"
+
+#: ui/create.slint:259
+msgctxt "TheoryView"
+msgid "Type a melody, such as A3 C4 E4 D4, to see whether all its notes fit the key, and which do not."
+msgstr "Tippe eine Melodie, etwa A3 C4 E4 D4, und sieh, ob alle ihre Töne zur Tonart passen und welche nicht."
+
+#: ui/create.slint:265
+msgctxt "TheoryView"
+msgid "WHY"
+msgstr "WARUM"
+
+#: ui/create.slint:266
+msgctxt "TheoryView"
+msgid "Three short lines in plain words on why the notes fit."
+msgstr "Drei kurze Zeilen in einfachen Worten, warum die Töne passen."
+
+#: ui/create.slint:274 ui/create.slint:287
+msgctxt "ResultBar"
+msgid "RESULT"
+msgstr "ERGEBNIS"
+
+#: ui/create.slint:278
+msgctxt "ResultBar"
+msgid "No pattern yet. It shows here with its bars and tempo, ready to send to Perform or render as a loop."
+msgstr "Noch kein Pattern. Es erscheint hier mit Takten und Tempo, bereit für Perform oder als Loop zum Rendern."
+
+#: ui/create.slint:279
+msgctxt "ResultBar"
+msgid "THEORY only shows. What fits goes into MELODY."
+msgstr "THEORY zeigt nur. Was passt, kommt in MELODY."
+
+#: ui/create.slint:280
+msgctxt "ResultBar"
+msgid "No melody yet. It shows here with its notes, bars, tempo and cues, and whether the stick formats take it."
+msgstr "Noch keine Melodie. Sie erscheint hier mit Tönen, Takten, Tempo und Cues und ob die Stick-Formate sie aufnehmen."
+
+#: ui/create.slint:301
+msgctxt "ResultBar"
+msgid "SINGLE NOTES"
+msgstr "EINZELTÖNE"
+
+#: ui/create.slint:302
+msgctxt "ResultBar"
+msgid "One hot cue per note, to play them by hand (comes with rendering)"
+msgstr "Ein Hot Cue pro Ton, um sie von Hand zu spielen (kommt mit dem Rendern)"
+
+#: ui/create.slint:306
+msgctxt "ResultBar"
+msgid "MELODY"
+msgstr "MELODY"
+
+#: ui/create.slint:307
+msgctxt "ResultBar"
+msgid "One cue per note in order, ready as a transition (comes with rendering)"
+msgstr "Ein Cue pro Ton der Reihe nach, fertig als Übergang (kommt mit dem Rendern)"
+
+#: ui/create.slint:312 ui/create.slint:330
+msgctxt "ResultBar"
+msgid "SEND TO PERFORM"
+msgstr "AN PERFORM"
+
+#: ui/create.slint:313
+msgctxt "ResultBar"
+msgid "Put the notes on the pads in Perform (comes with the melody pad mode)"
+msgstr "Die Töne auf die Pads in Perform legen (kommt mit dem Melodie-Pad-Modus)"
+
+#: ui/create.slint:317
+msgctxt "ResultBar"
+msgid "RENDER"
+msgstr "RENDERN"
+
+#: ui/create.slint:318
+msgctxt "ResultBar"
+msgid "Write a new file with its beatgrid and cues (comes with rendering)"
+msgstr "Eine neue Datei mit Beatgrid und Cues schreiben (kommt mit dem Rendern)"
+
+#: ui/create.slint:322
+msgctxt "ResultBar"
+msgid "TO PLAYLIST"
+msgstr "IN PLAYLIST"
+
+#: ui/create.slint:323
+msgctxt "ResultBar"
+msgid "Add the rendered file to a playlist (comes with rendering)"
+msgstr "Die gerenderte Datei zu einer Playlist hinzufügen (kommt mit dem Rendern)"
+
+#: ui/create.slint:331
+msgctxt "ResultBar"
+msgid "Play the pattern from the sampler in Perform (comes with the drum machine)"
+msgstr "Das Pattern im Sampler in Perform spielen (kommt mit der Drum-Machine)"
+
+#: ui/create.slint:335
+msgctxt "ResultBar"
+msgid "RENDER LOOP"
+msgstr "LOOP RENDERN"
+
+#: ui/create.slint:336
+msgctxt "ResultBar"
+msgid "Write a bar-exact loop with a hot cue per sound (comes with the drum machine)"
+msgstr "Einen taktgenauen Loop mit einem Hot Cue pro Klang schreiben (kommt mit der Drum-Machine)"
+
+#: ui/create.slint:340
+msgctxt "ResultBar"
+msgid "SAVE PATTERN"
+msgstr "PATTERN SICHERN"
+
+#: ui/create.slint:341
+msgctxt "ResultBar"
+msgid "Keep the pattern in the sampler's store (comes with the drum machine)"
+msgstr "Das Pattern im Speicher des Samplers ablegen (kommt mit der Drum-Machine)"
+
+#: ui/create.slint:353
+msgctxt "StripDeck"
+msgid "PLAYING"
+msgstr "LÄUFT"
+
+#: ui/create.slint:353
+msgctxt "StripDeck"
+msgid "PAUSED"
+msgstr "PAUSE"
+
+#: ui/create.slint:353
+msgctxt "StripDeck"
+msgid "EMPTY"
+msgstr "LEER"
+
+#: ui/create.slint:356
+msgctxt "StripDeck"
+msgid "Deck {}"
+msgstr "Deck {}"
+
+#: ui/create.slint:423
+msgctxt "DeckStrip"
+msgid "Decks"
+msgstr "Decks"
+
+#: ui/create.slint:430
+msgctxt "DeckStrip"
+msgid "DECKS"
+msgstr "DECKS"
+
+#: ui/create.slint:433
+msgctxt "DeckStrip"
+msgid "The decks show here once audio runs"
+msgstr "Die Decks erscheinen hier, sobald Audio läuft"
+
+#: ui/create.slint:448
+msgctxt "CreateView"
+msgid "CREATE"
+msgstr "CREATE"
+
+#: ui/create.slint:466
+msgctxt "CreateView"
+msgid "MELODY"
+msgstr "MELODY"
+
+#: ui/create.slint:466
+msgctxt "CreateView"
+msgid "DRUMS"
+msgstr "DRUMS"
+
+#: ui/create.slint:466
+msgctxt "CreateView"
+msgid "THEORY"
+msgstr "THEORY"
+
+#: ui/create.slint:470
+msgctxt "CreateView"
+msgid "Melody: play the next track's melody from one note"
+msgstr "Melody: die Melodie des nächsten Tracks aus einem Ton spielen"
+
+#: ui/create.slint:471
+msgctxt "CreateView"
+msgid "Drums: a small drum machine with built-in sounds"
+msgstr "Drums: eine kleine Drum-Machine mit eingebauten Klängen"
+
+#: ui/create.slint:472
+msgctxt "CreateView"
+msgid "Theory: which notes and keys fit"
+msgstr "Theory: welche Töne und Tonarten passen"
+
+#: ui/topbar.slint:561
+msgctxt "TopBar"
+msgid "CREATE"
+msgstr "CREATE"
+
+#: ui/topbar.slint:561
+msgctxt "TopBar"
+msgid "Create: a melody from one note, drums, and which notes fit"
+msgstr "Create: eine Melodie aus einem Ton, Drums und welche Töne passen"

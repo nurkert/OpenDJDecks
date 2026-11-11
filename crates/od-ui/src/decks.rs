@@ -114,6 +114,19 @@ pub(crate) fn set_deck_count(app: &App, count: usize) {
         .set_meta(META_DECK_COUNT, &count.to_string());
 }
 
+/// The key of the track the engine plays on deck `i` (0-based), as the
+/// deck shows it ("" = none or another track still loading).
+pub(crate) fn key_text(app: &App, i: usize, track: Option<TrackId>) -> String {
+    app.decks
+        .borrow()
+        .loaded
+        .get(i)
+        .and_then(|l| l.as_ref())
+        .filter(|m| Some(m.id) == track)
+        .map(|m| m.key.clone())
+        .unwrap_or_default()
+}
+
 /// Next Perform layout (standard → vertical → browse → standard).
 pub(crate) fn cycle_perform_layout(app: &App) {
     let cur = app.ui.global::<crate::PerformLayout>().get_layout();

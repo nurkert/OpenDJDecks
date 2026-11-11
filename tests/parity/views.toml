@@ -7862,6 +7862,7 @@ elements = [
   "topbar.mode.prepare",
   "topbar.mode.perform",
   "topbar.mode.lighting",
+  "topbar.mode.create",
 ]
 
 [[view.region]]
@@ -8569,4 +8570,215 @@ elements = [
   "topbar.mode",
   "topbar.layout",
   "topbar.back-to-perform",
+]
+
+# ── CREATE (roadmap [70]) ──
+
+[[view]]
+id = "create"
+title = "Create: MELODY (SOURCE, NOTES, FITS), the result and the deck strip"
+mode = "create"
+source = "Roadmap [70], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+note = "The fourth work mode. The shell of [70]: the view switch centred at the top; SOURCE | NOTES | FITS, each saying what comes there, with the later controls drawn disabled; the RESULT bar with its disabled actions; the deck strip (play state, tempo, bar and track position, level) at the foot. No browser: CREATE takes its room. Not in the kiosk."
+
+[[view.region]]
+id = "topbar.modes"
+band = "topbar"
+place = "left of the top bar"
+order = "row"
+elements = [
+  "topbar.mode.prepare",
+  "topbar.mode.perform",
+  "topbar.mode.lighting",
+  "topbar.mode.create",
+]
+
+[[view.region]]
+id = "create.views"
+band = "create"
+place = "top, centred: one segmented control"
+order = "row"
+elements = [
+  "create.view.melody",
+  "create.view.drums",
+  "create.view.theory",
+]
+
+[[view.region]]
+id = "create.melody"
+band = "create"
+place = "the three zones, left to right"
+order = "row"
+elements = [
+  "create.melody.source",
+  "create.melody.notes",
+  "create.melody.fits",
+]
+
+[[view.region]]
+id = "create.melody.keys"
+band = "create"
+place = "under SOURCE and NOTES: their (disabled) keys"
+order = "row"
+elements = [
+  "create.source.hear",
+  "create.notes.next-track",
+  "create.notes.rec",
+]
+
+[[view.region]]
+id = "create.result"
+band = "create"
+place = "the RESULT bar under the zones: the summary over the actions"
+order = "column"
+elements = [
+  "create.result.summary",
+  "create.result.send",
+]
+
+[[view.region]]
+id = "create.result.actions"
+band = "create"
+place = "the RESULT bar: render mode, then where the result goes"
+order = "row"
+elements = [
+  "create.result.single-notes",
+  "create.result.melody",
+  "create.result.render",
+  "create.result.to-playlist",
+]
+
+[[view.region]]
+id = "create.strip"
+band = "create"
+place = "the foot: one entry per deck"
+order = "row"
+elements = [
+  "create.strip.deck1",
+  "create.strip.deck2",
+]
+
+[[view]]
+id = "create.drums"
+title = "Create: DRUMS (KIT, PADS over STEPS), the result and the deck strip"
+mode = "create"
+source = "Roadmap [70], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+note = "KIT beside PADS over STEPS; sixteen empty pads and steps as hollow slots until the drum machine arrives; the RESULT bar with SEND TO PERFORM, RENDER LOOP and SAVE PATTERN (disabled)."
+
+[[view.region]]
+id = "create.views"
+band = "create"
+place = "top, centred: one segmented control"
+order = "row"
+elements = [
+  "create.view.melody",
+  "create.view.drums",
+  "create.view.theory",
+]
+
+[[view.region]]
+id = "create.drums"
+band = "create"
+place = "the kit on the left, the pads beside it"
+order = "row"
+elements = [
+  "create.drums.kit",
+  "create.drums.pads",
+]
+
+[[view.region]]
+id = "create.drums.centre"
+band = "create"
+place = "the steps under the pads, the result under them"
+order = "column"
+elements = [
+  "create.drums.steps",
+  "create.result.summary",
+]
+
+[[view.region]]
+id = "create.drums.keys"
+band = "create"
+place = "under STEPS: their (disabled) keys"
+order = "row"
+elements = [
+  "create.steps.play",
+  "create.steps.rec",
+]
+
+[[view.region]]
+id = "create.result.actions"
+band = "create"
+place = "the RESULT bar"
+order = "row"
+elements = [
+  "create.result.send",
+  "create.result.render-loop",
+  "create.result.save-pattern",
+]
+
+[[view.region]]
+id = "create.strip"
+band = "create"
+place = "the foot: one entry per deck"
+order = "row"
+elements = [
+  "create.strip.deck1",
+  "create.strip.deck2",
+]
+
+[[view]]
+id = "create.theory"
+title = "Create: THEORY (KEYS, CHECK, WHY), the result and the deck strip"
+mode = "create"
+source = "Roadmap [70], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+note = "KEYS shows both decks' keys from the decks; CHECK and WHY say what comes there."
+
+[[view.region]]
+id = "create.views"
+band = "create"
+place = "top, centred: one segmented control"
+order = "row"
+elements = [
+  "create.view.melody",
+  "create.view.drums",
+  "create.view.theory",
+]
+
+[[view.region]]
+id = "create.theory"
+band = "create"
+place = "the three zones, left to right"
+order = "row"
+elements = [
+  "create.theory.keys",
+  "create.theory.check",
+  "create.theory.why",
+]
+
+[[view.region]]
+id = "create.theory.keys"
+band = "create"
+place = "KEYS: one line per deck"
+order = "column"
+elements = [
+  "create.theory.key.deck1",
+  "create.theory.key.deck2",
+  "create.result.summary",
+]
+
+[[view.region]]
+id = "create.strip"
+band = "create"
+place = "the foot: one entry per deck"
+order = "row"
+elements = [
+  "create.strip.deck1",
+  "create.strip.deck2",
 ]

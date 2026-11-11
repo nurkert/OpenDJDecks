@@ -82,8 +82,8 @@ fn record_key_is_an_action_with_a_timer() {
     );
 }
 
-/// [5] Undo is an editing action: it is offered in Prepare, not in Perform
-/// or Lighting.
+/// [5] Undo is an editing action: it is offered in Prepare, not in Perform,
+/// Lighting or Create.
 #[test]
 fn undo_only_where_editing_happens() {
     let ui = Ui::open((1440, 900));
@@ -91,7 +91,7 @@ fn undo_only_where_editing_happens() {
     ui.app.ui.set_mode("prepare".into());
     ui.pump(200);
     assert!(ui.has("topbar.undo"), "Prepare offers undo");
-    for mode in ["perform", "lighting"] {
+    for mode in ["perform", "lighting", "create"] {
         ui.app.ui.set_mode(mode.into());
         ui.pump(200);
         assert!(!ui.has("topbar.undo"), "{mode} offers no undo");
