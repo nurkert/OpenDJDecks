@@ -2556,7 +2556,7 @@ tests = [
   "od-ui::ui_tests::session::recording_panel_settings_and_silence_auto",
 ]
 evidence = ["crates/od-ui/src/recorder.rs::frame", "crates/od-ui/ui/rec.slint"]
-note = "Recording panel (Recordings section): REC, source, level, meter, elapsed time, file size, file name and the tracklist as it grows; `RecStrip` (source, level, meter) for the global bar"
+note = "Recording panel (Recordings section): REC, MARK, level, meter, elapsed time, file size, file name, loudness while recording and the tracklist as it grows (one scroll area with the finished mixes, so the page fits 800 x 640); `RecStrip` (source, level, meter) for the global bar"
 spec = "SPEC §11; UX §2.3"
 
 # ---- Export / USB devices ----
@@ -4528,3 +4528,236 @@ prio = "P3"
 tests = ["od-ui::render::tests::phrase_initials_are_distinct"]
 evidence = ["crates/od-ui/src/render.rs::phrase_short"]
 spec = "Roadmap [25]"
+
+# ---- Roadmap 0.9.0, block F (DJ) ----
+
+[[feature]]
+id = "rec-tracklist-edit"
+area = "recording"
+name = "Tracklist editor for a finished mix: rename, move by time, insert, remove; export as text or CUE with the chapters written into the files"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::dj_craft::recording_for_release_markers_voice_loudness_and_tracklist",
+  "od-ui::recorder::tests::tracklist_editing_helpers",
+]
+evidence = ["crates/od-ui/ui/rec.slint::TracklistEditor", "crates/od-ui/src/recorder.rs::edit_export", "crates/od-recorder/src/lib.rs::export_tracklist"]
+spec = "Roadmap [27]"
+note = "TRACKLIST on a mix opens rows of time, title and artist. Titles and artists are saved as typed; Return in a time field moves the entry (a time outside the recording is refused with a message); + inserts halfway to the next entry, INSERT AT START before the first. EXPORT TEXT / EXPORT CUE write the files next to the recording and rewrite the chapters into its WAV or FLAC and an MP3 copy, off the UI thread. The edited list is kept in <name>.json beside the recording and in the library, so SPLIT INTO TRACKS follows it"
+
+[[feature]]
+id = "rec-chapters"
+area = "recording"
+name = "Chapter markers in the recording: MARK while recording, every tracklist entry a chapter inside the WAV, MP3 and FLAC file"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-recorder::chapters::tests::wav_chapters_round_trip_and_replace_and_audio_stays",
+  "od-recorder::chapters::tests::mp3_and_flac_chapters_round_trip",
+  "od-recorder::tests::records_a_voice_track_markers_and_loudness",
+  "od-ui::ui_tests::dj_craft::recording_for_release_markers_voice_loudness_and_tracklist",
+]
+evidence = ["crates/od-recorder/src/chapters.rs", "crates/od-ui/src/recorder.rs::mark"]
+spec = "Roadmap [27]"
+note = "MARK (record.mark, Mod+Shift+Return) adds Marker n at the current time. WAV: a cue chunk and LIST/adtl labl names after the audio; MP3: an ID3v2.4 tag with CTOC and CHAP frames (TIT2 names); FLAC: CHAPTERnnn / CHAPTERnnnNAME Vorbis comments. Written again in place on export (the earlier chapters replaced); repair_wav leaves a finished file with chapters alone. Read back by the tests' own readers; not tried in other editors or podcast players"
+
+[[feature]]
+id = "rec-voice-track"
+area = "recording"
+name = "A voice track: the microphone recorded on its own beside the mix, sample-aligned"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-recorder::tests::records_a_voice_track_markers_and_loudness",
+  "od-ui::ui_tests::dj_craft::recording_for_release_markers_voice_loudness_and_tracklist",
+]
+evidence = ["crates/od-engine/src/engine.rs::take_voice_tap", "crates/od-recorder/src/lib.rs::start_with"]
+spec = "Roadmap [27]"
+note = "Preferences > Recording > Voice track. The engine's voice tap carries the MIC input after its level and before talkover, filled in the same audio block as the record tap, so '<name> voice.wav' has as many frames as the mix (test). The mix keeps the voice as heard. Tested with a generated input signal and the headless output; not with a real microphone"
+
+[[feature]]
+id = "rec-loudness"
+area = "recording"
+name = "Loudness (integrated and short-term LUFS), true peak and clips while recording and on every finished mix"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-recorder::loudness::tests::a_1k_sine_at_minus_23_reads_minus_23_lufs",
+  "od-recorder::loudness::tests::the_relative_gate_leaves_out_quiet_passages",
+  "od-recorder::loudness::tests::the_true_peak_sees_between_samples",
+  "od-recorder::loudness::tests::clips_count_runs_past_full_scale",
+  "od-ui::ui_tests::dj_craft::recording_for_release_markers_voice_loudness_and_tracklist",
+]
+evidence = ["crates/od-recorder/src/loudness.rs", "crates/od-ui/ui/rec.slint::LoudnessRow"]
+spec = "Roadmap [27]"
+note = "ITU-R BS.1770-4 / EBU R 128: K-weighting derived for any rate, 400 ms blocks with 75 % overlap, absolute gate -70 LUFS, relative gate -10 LU; true peak by 4x oversampling (48-tap windowed sinc); clips are runs of samples at or past full scale before the file clamps them. Checked against EBU Tech 3341 case 1 at 44.1 and 48 kHz and a gated case built like case 2; the other conformance files were not run. Over -1 dBTP or with clips the reading turns red"
+
+[[feature]]
+id = "export-emergency-stick"
+area = "export"
+name = "Emergency stick: one press copies the open set or list and the tracks on the decks to a plugged-in stick in playable formats, with progress and a clear result"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::emergency::tests::the_list_then_the_decks_without_doubles",
+  "od-ui::emergency::tests::playable_formats_always_include_club_usb",
+  "od-ui::ui_tests::dj_craft::emergency_stick_formats_and_stems_on_the_stick",
+]
+evidence = ["crates/od-ui/src/emergency.rs", "crates/od-ui/ui/devices.slint::EmergencyBand"]
+spec = "Roadmap [28]"
+note = "devices.emergency (Mod+Alt+Shift+E), the key on the USB screen and under DEVICES. The tracks go into a new playlist Emergency stick <date time>; an unregistered stick is registered with Club player USB (WAV for older players) and OpenDJDecks, a registered one keeps its formats and gains Club player USB. Progress from the device service; the result as a band (ready with the formats and EJECT, or failed with the reason), a line under the key and the status band. Tested on a simulated stick (a folder); not on a physical stick or a club player"
+
+[[feature]]
+id = "export-stick-formats"
+area = "export"
+name = "A stick's formats as a labelled element (FORMAT and a badge per format) on the USB screen, in the emergency result and over a stick's track list"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::dj_craft::emergency_stick_formats_and_stems_on_the_stick",
+  "od-ui::ui_tests::browser_craft::stick_screen_shows_badges_state_and_actions",
+]
+evidence = ["crates/od-ui/ui/devices.slint::FormatBadges"]
+spec = "Roadmap [28]"
+note = "Over a stick's list the formats come from its own files (export.pdb, the OpenDJDecks library), WAV from its registration. The tree's stick rows keep their detail line: three badges do not fit the lists column's 221 px"
+
+[[feature]]
+id = "export-stems-on-stick"
+area = "export"
+name = "Stem state per track on the stick: ON STICK or NONE in the STEMS column while browsing a stick, and a count over the list"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-devices::sync::tests::cached_stems_travel_with_the_tracks",
+  "od-ui::ui_tests::dj_craft::emergency_stick_formats_and_stems_on_the_stick",
+]
+evidence = ["crates/od-devices/src/sync.rs::stems_on_stick", "crates/od-ui/src/browser/tracks.rs::refresh_list"]
+spec = "Roadmap [28]"
+note = "Read from the stick's OPENDJDECKS/stems folder, one file check per row; shown when the STEMS column is chosen"
+
+[[feature]]
+id = "perform-queue"
+area = "deck"
+name = "Queue in Perform: up next, add from the browser, move, remove, LOAD NEXT to a free deck; kept across restarts"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::queue::tests::moves_within_the_list",
+  "od-ui::queue::tests::next_skips_do_not_play_and_unmatched_requests",
+  "od-ui::ui_tests::dj_craft::queue_requests_do_not_play_auto_play_and_dead_air",
+  "od-ui::ui_tests::dj_craft::new_controls_are_tab_stops_named_and_in_the_help",
+]
+evidence = ["crates/od-ui/src/queue.rs", "crates/od-ui/ui/queue.slint::QueuePanel"]
+spec = "Roadmap [29]"
+note = "QUEUE in the panel strip and View > Queue; queue.add (Mod+Alt+Shift+Q) and queue.next (Mod+Alt+Shift+N), Add to the queue in the row menu. Kept in the library meta. A free deck is empty or has played its track out"
+
+[[feature]]
+id = "perform-requests"
+area = "deck"
+name = "Requests: a quick note of a requested track, matched to the library when every word fits, else tied to a track by hand"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::dj_craft::queue_requests_do_not_play_auto_play_and_dead_air",
+]
+evidence = ["crates/od-ui/src/queue.rs::match_request"]
+spec = "Roadmap [29]"
+note = "Matched with the fuzzy search's scoring (typos forgiven; the best score wins). An unmatched request stays as a note until MATCH takes the track selected in the browser"
+
+[[feature]]
+id = "browser-do-not-play"
+area = "browser"
+name = "Do-not-play tag: marked in the list and the queue, a warning with UNLOAD / KEEP when loaded, left out of auto-play and LOAD NEXT"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::dj_craft::queue_requests_do_not_play_auto_play_and_dead_air",
+  "od-ui::ui_tests::dj_craft::bulk_tags_and_played_tonight",
+]
+evidence = ["crates/od-library/src/user_tags.rs::do_not_play", "crates/od-ui/src/queue.rs::set_dnp"]
+spec = "Roadmap [29]"
+note = "An ordinary tag value (Play: Do not play), so the Tags panel, filter and smart lists see it; toggled from the row menu or the info panel for the selection in one undo step. The warning lies over the foot of the list (and in the status band), never over the decks"
+
+[[feature]]
+id = "perform-auto-play"
+area = "deck"
+name = "Auto-play of the queue with a configurable mix (cut, 8, 16 or 32 beats)"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::queue::tests::mix_levels_and_lengths",
+  "od-ui::ui_tests::dj_craft::queue_requests_do_not_play_auto_play_and_dead_air",
+]
+evidence = ["crates/od-ui/src/queue.rs::auto_play"]
+spec = "Roadmap [29]"
+note = "Keeps a deck cued with the next playable track, starts the queue when nothing plays, and starts the cued deck when the track on air is the mix length from its end: the channel faders cross (or the crossfader moves when the decks sit on its two sides), SYNC on for the incoming deck when both have a beatgrid. The outgoing fader stays down afterwards. Tested with generated 8 s tracks in the headless engine; not tried at a gig"
+
+[[feature]]
+id = "perform-dead-air"
+area = "deck"
+name = "Dead-air warning: the track on air is about to run out and no deck is cued"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::queue::tests::dead_air_only_when_nothing_else_carries_on",
+  "od-ui::ui_tests::dj_craft::queue_requests_do_not_play_auto_play_and_dead_air",
+]
+evidence = ["crates/od-ui/src/queue.rs::dead_air", "crates/od-ui/ui/queue.slint::SetAlertBar"]
+spec = "Roadmap [29]"
+note = "15, 30 or 60 s before the end (WARN BEFORE SILENCE), over the foot of the list in Perform and in the status band, with LOAD NEXT when the queue holds a track. A deck counts as cued when it holds a track that is not played out and is not on air; nothing warns while another deck plays on or auto-play has a track"
+
+[[feature]]
+id = "browser-search-speed"
+area = "browser"
+name = "Search at request speed: a keystroke scores the kept, pre-folded list instead of reading and folding it again"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::dj_craft::search_base_matches_a_full_reload",
+  "od-ui::ui_tests::browser_craft::fuzzy_search_ranks_and_forgives_typos",
+]
+evidence = ["crates/od-ui/src/browser/tracks.rs::load_rows_search", "crates/od-ui/src/browser/fuzzy.rs::Folded"]
+spec = "Roadmap [63]"
+note = "Timed by the ignored test search_speed_on_50k_tracks through the real window on 50 000 generated tracks in a debug build: median 646 ms per keystroke before, 103 ms after (95th percentile 152 ms); the first keystroke after a reload builds the kept list (about 0.6 s). Of a keystroke about 35-55 ms is the search and the rest the table; a release build and a real 50 000-track collection were not timed"
+
+[[feature]]
+id = "browser-played-tonight"
+area = "browser"
+name = "Played tonight: the tick with its time, a TONIGHT column and a NOT PLAYED TONIGHT filter"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-ui::ui_tests::dj_craft::bulk_tags_and_played_tonight",
+  "od-ui::recorder::tests::a_track_counts_as_played_after_its_time_on_air",
+]
+evidence = ["crates/od-ui/src/recorder.rs::mark_played", "crates/od-ui/src/browser/filter.rs::Filter"]
+spec = "Roadmap [63]"
+note = "On air 30 s in all this session counts as played (as browser-played-mark); the time is when it passed that mark. The filter is a chip like the others"
+
+[[feature]]
+id = "browser-bulk-tags"
+area = "browser"
+name = "Bulk tag editing on a multi-selection: shared values shown, MIXED where they differ, one edit for all in one undo step"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::ui_tests::dj_craft::bulk_tags_and_played_tonight",
+]
+evidence = ["crates/od-ui/src/browser/mod.rs::edit_tags", "crates/od-ui/src/browser/mod.rs::refresh_info", "crates/od-ui/ui/info.slint::InfoPanel"]
+spec = "Roadmap [63]"
+note = "In the info panel's SUMMARY: title, artist, album, genre, label, remixer, composer, year and comment, plus Do not play. Rating and colour keep their row and menu ways; the Tags panel already tagged a selection"

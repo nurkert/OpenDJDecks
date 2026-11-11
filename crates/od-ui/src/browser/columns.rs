@@ -59,6 +59,8 @@ pub(crate) const COLUMNS: &[Column] = &[
     col("year", "YEAR", 44.0, 0.0, true, "year"),
     col("date-added", "ADDED", 86.0, 0.0, true, "date_added"),
     col("plays", "PLAYS", 46.0, 0.0, true, "play_count"),
+    // [63] When the track went on air tonight ("22:41").
+    col("tonight", "TONIGHT", 64.0, 0.0, true, ""),
     col("bitrate", "BITRATE", 62.0, 0.0, true, "bitrate"),
     col("rating", "RATING", 74.0, 0.0, true, "rating"),
 ];
@@ -82,8 +84,8 @@ pub(crate) const EXPLORER_COLUMNS: &[&str] = &[
 /// then what you browse by. Columns not listed step out first.
 const KEEP_ORDER: &[&str] = &[
     "title", "bpm", "key", "artist", "time", "artwork", "match", "rating", "genre", "user-tag",
-    "colour", "album", "label", "year", "plays", "comment", "stems", "date-added", "bitrate",
-    "preview",
+    "colour", "album", "label", "year", "plays", "tonight", "comment", "stems", "date-added",
+    "bitrate", "preview",
 ];
 
 /// Room a column takes in the table: its default fixed width, or the least
@@ -280,7 +282,7 @@ mod tests {
     /// fixed width, while the text columns share the rest.
     #[test]
     fn figure_columns_are_right_aligned_and_fixed() {
-        let figures = ["bpm", "key", "match", "time", "year", "date-added", "plays", "bitrate", "rating"];
+        let figures = ["bpm", "key", "match", "time", "year", "date-added", "plays", "tonight", "bitrate", "rating"];
         for c in COLUMNS {
             assert_eq!(c.right, figures.contains(&c.id), "{}", c.id);
             if c.right {

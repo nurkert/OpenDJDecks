@@ -1,8 +1,8 @@
 ---
 title: The basics of Perform
 description: Decks, layouts, sync, keylock, tempo, loops and beat jump, and every pad mode on the deck.
-keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, key clash, harmonic mixing, compatible key, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom, simple, standard, full, deck layout, hide, groups, saved layout]
-features: [deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
+keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, key clash, harmonic mixing, compatible key, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom, simple, standard, full, deck layout, hide, groups, saved layout, queue, up next, request, requests, auto-play, autoplay, auto mix, do not play, load next]
+features: [perform-queue, perform-requests, perform-auto-play, deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
 ---
 
 Perform is the live mode: the decks, the mixer and the browser in one view.
@@ -12,6 +12,19 @@ Perform is the live mode: the decks, the mixer and the browser in one view.
 ## Load and play
 
 Double-click a track in the browser, drag it onto a deck, or use `⇧←` and `⇧→`. **Play** and **CUE** work as on a player: CUE at rest sets the cue point, CUE while playing returns to it, holding CUE plays from it until you let go.
+
+## The queue, requests and auto-play
+
+**QUEUE** in the panel strip beside the list shows what comes next (`View › Queue` opens it too):
+
+![Perform with the queue: tracks, a request, an open request and a do-not-play track, auto-play mixing](../img/perform-queue.png)
+
+- **ADD** (or `⌥⇧⌘Q`, or *Add to the queue* in the row menu) adds the tracks selected in the browser. Each row has keys to move it up or down and **×** to remove it. The queue is kept with the library and survives a restart.
+- **LOAD NEXT** (or `⌥⇧⌘N`) loads the next track of the queue to a free deck: one that is empty or has played its track to the end.
+- **Requests**: type what someone asked for into the request field (*Artist, Title*) and press Return. If a track of the library matches every word, the request is queued with it; if not, it stays as a note (*REQUEST · NOT IN THE LIBRARY*) until you select the track in the browser and press the tick key on its row.
+- **Do not play**: a track tagged so (see [Library](library.md#tags-rating-and-colour)) shows struck red in the queue and in the list, LOAD NEXT and auto-play pass over it, and loading it anyway brings up a red warning over the foot of the list with **UNLOAD** and **KEEP**.
+
+**AUTO-PLAY** plays the queue by itself. It keeps a deck cued with the next track, starts the queue when nothing plays, and when the playing track is that many beats from its end it starts the cued deck and mixes into it: over **CUT** (at the very end), **8**, **16** or **32** beats under **MIX BEATS**. The mix crosses the two channel faders (or moves the crossfader when the two decks sit on its two sides) and turns on SYNC for the incoming deck when both tracks have a beatgrid. While it mixes the panel says so in yellow. Turning auto-play off in the middle of a mix finishes the levels at once. The outgoing channel's fader stays down afterwards; push it up before you play that deck by hand.
 
 ## Deck readouts
 

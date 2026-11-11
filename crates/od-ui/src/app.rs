@@ -148,6 +148,9 @@ impl App {
         explorer::wire(&app);
         player::wire(&app);
         devices::wire(&app);
+        crate::emergency::wire(&app);
+        crate::queue::wire(&app);
+        crate::dj_demo::run(&app);
         recorder::wire(&app);
         if !app.state.borrow().config.headless {
             controller::start(&app);
@@ -283,6 +286,7 @@ impl App {
         if devices::poll(self) {
             need_refresh = true;
         }
+        crate::emergency::tick(self);
         // Changes made through other connections (MCP server, od-cli).
         let changed = self.state.borrow().lib.external_change().unwrap_or(false);
         if changed || need_refresh {

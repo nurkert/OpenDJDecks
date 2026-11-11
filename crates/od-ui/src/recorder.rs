@@ -1,18 +1,35 @@
 //! Recorder: recording the master, the tracklist, the recording panel
 //! (level, meter, elapsed time, file size, live tracklist; `ui/rec.slint`),
 //! automatic start / stop on silence, and the recordings list.
+//!
+//! Recording for release ([27]): chapter markers (MARK) beside the tracks,
+//! a voice track (the MIC input alone) next to the mix, loudness, true peak
+//! and clips while recording and on every finished recording, and the
+//! tracklist editor (rename, remove, insert, move by time; export as text
+//! or CUE with the chapters written into the files).
 
 use crate::app::{App, handler};
 use crate::models::model;
-use crate::{RecTrack, RecordingRow, engine, format};
+use crate::{RecEditRow, RecTrack, RecordingRow, engine, format};
+use od_recorder::TracklistEntry;
 use od_engine::{Command, EngineState};
 use od_recorder::{AutoAction, Recorder, SilenceDetector};
-use slint::{ComponentHandle, Model};
+use slint::{ComponentHandle, Model, SharedString};
 use od_core::TrackId;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Instant;
+
+/// Sets a string property of a global only when it changed.
+macro_rules! set_if {
+    ($g:expr, $get:ident, $set:ident, $v:expr) => {{
+        let v: String = $v;
+        if $g.$get().as_str() != v {
+            $g.$set(v.into());
+        }
+    }};
+}
 
 /// Master level (dBFS) that counts as sound for the automatic start / stop.
 pub(crate) const SILENCE_DB: f32 = -40.0;
@@ -25,6 +42,9 @@ pub(crate) struct RecorderState {
     recorder: Option<Recorder>,
     /// Deck that was audible last (tracklist marks).
     last_dominant: Option<usize>,
+    /// The deck audible now and since when (seconds into the recording),
+    /// until it has stayed long enough to count ([`STAYS_FOR`]).
+    candidate: Option<(Option<usize>, f64)>,
     /// Start automatically when sound starts (Preferences > Recording).
     armed: bool,
     /// Deck that was audible last (play history), and this run's history
@@ -43,6 +63,18 @@ pub(crate) struct RecorderState {
     /// [`PLAYED_AFTER`]: the browser ticks those as played.
     on_air: HashMap<TrackId, f32>,
     pub(crate) played: HashSet<TrackId>,
+    /// When each played track passed the mark ("22:41"), for the list.
+    pub(crate) played_at: HashMap<TrackId, String>,
+    /// The tracklist editor ([27]): the recording open in it.
+    edit: Option<Editing>,
+}
+
+/// A finished recording open in the tracklist editor.
+pub(crate) struct Editing {
+    pub id: i64,
+    pub path: PathBuf,
+    pub duration: f64,
+    pub tracklist: Vec<TracklistEntry>,
 }
 
 impl RecorderState {
@@ -57,6 +89,7 @@ impl Default for RecorderState {
         Self {
             recorder: None,
             last_dominant: None,
+            candidate: None,
             armed: false,
             last_played: None,
             history_session: None,
@@ -66,6 +99,8 @@ impl Default for RecorderState {
             tracks: Vec::new(),
             on_air: HashMap::new(),
             played: HashSet::new(),
+            played_at: HashMap::new(),
+            edit: None,
         }
     }
 }
@@ -76,9 +111,19 @@ impl RecorderState {
     }
 }
 
-/// Hands the engine's record tap to the recorder (once audio starts).
-pub(crate) fn attach(app: &App, tap: od_engine::RecordTap, sample_rate: u32) {
-    app.recorder.borrow_mut().recorder = Some(Recorder::new(tap, sample_rate));
+/// Hands the engine's record tap (and its voice tap) to the recorder (once
+/// audio starts).
+pub(crate) fn attach(
+    app: &App,
+    tap: od_engine::RecordTap,
+    voice: Option<od_engine::RecordTap>,
+    sample_rate: u32,
+) {
+    let mut r = Recorder::new(tap, sample_rate);
+    if let Some(v) = voice {
+        r = r.with_voice(v);
+    }
+    app.recorder.borrow_mut().recorder = Some(r);
     apply_gain(app);
 }
 
@@ -235,6 +280,31 @@ fn log_play(app: &App, state: &EngineState) {
     }
 }
 
+/// How long a deck has to stay the audible one before it enters the
+/// tracklist (two decks at the same level swap the lead back and forth
+/// within a mix; the entry keeps the time it took the lead).
+pub(crate) const STAYS_FOR: f64 = 4.0;
+
+/// Tracklist hysteresis (pure): the audible deck `dom` at `now`; returns
+/// the deck to enter and since when, once it has stayed [`STAYS_FOR`]
+/// (the first one of a recording at once).
+pub(crate) fn settle(
+    candidate: &mut Option<(Option<usize>, f64)>,
+    dom: Option<usize>,
+    now: f64,
+    last: Option<usize>,
+    first: bool,
+) -> Option<(Option<usize>, f64)> {
+    if candidate.is_none_or(|c| c.0 != dom) {
+        *candidate = Some((dom, now));
+    }
+    let (d, since) = (*candidate)?;
+    if d == last || d.is_none() {
+        return None;
+    }
+    (first || now - since >= STAYS_FOR).then_some((d, since))
+}
+
 /// Time on air after which a track counts as played (a short listen or a
 /// check in the headphones does not).
 pub(crate) const PLAYED_AFTER: f32 = 30.0;
@@ -280,11 +350,36 @@ fn mark_played(app: &App, state: &EngineState, dt: f32) {
     let new = {
         let mut rs = app.recorder.borrow_mut();
         let rs = &mut *rs;
-        add_air_time(&mut rs.on_air, &mut rs.played, &audible, dt)
+        let before = rs.played.len();
+        let new = add_air_time(&mut rs.on_air, &mut rs.played, &audible, dt);
+        if rs.played.len() > before {
+            let now = clock_now(app);
+            for id in &audible {
+                if rs.played.contains(id) {
+                    rs.played_at.entry(*id).or_insert_with(|| now.clone());
+                }
+            }
+        }
+        new
     };
     if new {
+        let played = app.recorder.borrow().played.clone();
+        let reload = {
+            let mut st = app.state.borrow_mut();
+            st.browser.played_tonight = played;
+            st.browser.filter.unplayed
+        };
+        if reload {
+            app.state.borrow_mut().load_rows();
+        }
         crate::browser::refresh_tracks(app);
     }
+}
+
+/// The local time of day ("22:41") from the library clock.
+fn clock_now(app: &App) -> String {
+    let now = app.state.borrow().lib.now().unwrap_or_default();
+    now.get(11..16).unwrap_or_default().to_string()
 }
 
 /// "Mix 2026-11-06 18-30-00" from a library timestamp.
@@ -304,6 +399,27 @@ pub(crate) fn recording_detail(started: &str, duration: f64) -> String {
         started.replace('T', " ").trim_end_matches('Z'),
         format::time(duration)
     )
+}
+
+/// Marks `track` as played tonight at `at` (UI tests: the 30 s on air
+/// without waiting for them).
+#[cfg(test)]
+pub(crate) fn mark_played_now(app: &App, track: TrackId, at: &str) {
+    {
+        let mut rs = app.recorder.borrow_mut();
+        rs.played.insert(track);
+        rs.played_at.insert(track, at.to_string());
+    }
+    let played = app.recorder.borrow().played.clone();
+    let reload = {
+        let mut st = app.state.borrow_mut();
+        st.browser.played_tonight = played;
+        st.browser.filter.unplayed
+    };
+    if reload {
+        app.state.borrow_mut().load_rows();
+    }
+    crate::browser::refresh_tracks(app);
 }
 
 /// Shorter silence detection times (UI tests).
@@ -363,7 +479,15 @@ fn finish(
                 ));
                 continue;
             }
+            if let Err(e) = od_recorder::write_chapters(&out, &od_recorder::chapters_of(&rec.tracklist)) {
+                tracing::warn!(error = %e, "chapters not written into the converted recording");
+            }
             if ext == "flac" {
+                if let Some(mut info) = od_recorder::load_info(&rec.path) {
+                    let _ = std::fs::remove_file(od_recorder::info_path(&rec.path));
+                    info.voice = rec.voice.clone();
+                    let _ = od_recorder::save_info(&out, &info);
+                }
                 if let Ok(lib) = od_library::Library::open(&library) {
                     let _ = lib.conn().execute(
                         "UPDATE recording SET path = ?1 WHERE path = ?2",
@@ -402,19 +526,29 @@ fn start(app: &App) {
             recordings_today(&st.lib, &now) + 1,
         )
     };
+    let want_voice = app.state.borrow().settings.recording.voice;
+    let voice = want_voice
+        && app
+            .recorder
+            .borrow()
+            .recorder
+            .as_ref()
+            .is_some_and(|r| r.has_voice());
+    engine::send(app, Command::SetVoiceTap(voice));
     engine::send(app, Command::SetRecordTap(true));
     let r = app
         .recorder
         .borrow_mut()
         .recorder
         .as_mut()
-        .map(|r| r.start(&dir, &name));
+        .map(|r| r.start_with(&dir, &name, voice));
     match r {
         Some(Ok(path)) => {
             let mut rs = app.recorder.borrow_mut();
             rs.path = Some(path);
             rs.tracks.clear();
             rs.last_dominant = None;
+            rs.candidate = None;
         }
         Some(Err(e)) => app.status(format!("Recording could not start: {e}")),
         None => {}
@@ -424,6 +558,7 @@ fn start(app: &App) {
 /// Stops the recording, stores it and starts the split / conversion.
 fn stop(app: &App) {
     engine::send(app, Command::SetRecordTap(false));
+    engine::send(app, Command::SetVoiceTap(false));
     let result = app
         .recorder
         .borrow_mut()
@@ -441,6 +576,15 @@ fn stop(app: &App) {
                 rec.path.display(),
                 rec.tracklist.len()
             ));
+            let l = rec.loudness;
+            if l.clips > 0 || l.true_peak.is_some_and(|p| p > od_recorder::TRUE_PEAK_LIMIT) {
+                app.status(format!(
+                    "Recording saved: {} · true peak {} · {} clips",
+                    od_recorder::lufs_text(l.integrated),
+                    od_recorder::true_peak_text(l.true_peak),
+                    l.clips
+                ));
+            }
             let (settings, library) = {
                 let st = app.state.borrow();
                 (
@@ -458,6 +602,7 @@ fn stop(app: &App) {
     }
     let mut rs = app.recorder.borrow_mut();
     rs.last_dominant = None;
+    rs.candidate = None;
     rs.path = None;
 }
 
@@ -504,7 +649,14 @@ pub(crate) fn frame(app: &App, state: &EngineState) {
     let recording = app.recorder.borrow().is_recording();
     if recording {
         let dom = state.audible.dominant;
-        if dom != app.recorder.borrow().last_dominant {
+        let now = app.recorder.borrow().recorder.as_ref().map(|r| r.elapsed()).unwrap_or(0.0);
+        let settled = {
+            let mut rs = app.recorder.borrow_mut();
+            let first = rs.tracks.is_empty();
+            let last = rs.last_dominant;
+            settle(&mut rs.candidate, dom, now, last, first)
+        };
+        if let Some((dom, since)) = settled {
             app.recorder.borrow_mut().last_dominant = dom;
             if let Some(d) = dom {
                 let meta = app
@@ -514,9 +666,9 @@ pub(crate) fn frame(app: &App, state: &EngineState) {
                     .map(|m| (m.id, m.title.clone(), m.artist.clone()));
                 if let Some((id, title, artist)) = meta {
                     let mut rs = app.recorder.borrow_mut();
-                    let elapsed = rs.recorder.as_ref().map(|r| r.elapsed()).unwrap_or(0.0);
+                    let elapsed = since;
                     if let Some(r) = rs.recorder.as_mut() {
-                        r.mark_track(Some(id), &title, &artist);
+                        r.mark_track_at(since, Some(id), &title, &artist);
                     }
                     if rs
                         .tracks
@@ -561,6 +713,25 @@ fn project_panel(app: &App, state: &EngineState) {
     g.set_clip(peak >= 1.0);
     g.set_recording(recording);
     g.set_armed(rs.armed);
+    if recording {
+        let r = rs.recorder.as_ref();
+        let l = r.map(|r| r.loudness()).unwrap_or_default();
+        set_if!(g, get_integrated, set_integrated, od_recorder::lufs_text(l.integrated));
+        set_if!(g, get_short_term, set_short_term, od_recorder::lufs_text(l.short_term));
+        set_if!(g, get_true_peak, set_true_peak, od_recorder::true_peak_text(l.true_peak));
+        g.set_peak_over(l.true_peak.is_some_and(|p| p > od_recorder::TRUE_PEAK_LIMIT));
+        g.set_clips(l.clips.min(i32::MAX as u64) as i32);
+        let voice = r
+            .and_then(|r| r.voice_path())
+            .and_then(|p| p.file_name())
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        set_if!(g, get_voice_file, set_voice_file, voice);
+        g.set_markers(
+            r.map(|r| r.tracklist().iter().filter(|e| e.marker).count())
+                .unwrap_or(0) as i32,
+        );
+    }
     let elapsed = rs.recorder.as_ref().map(|r| r.elapsed()).unwrap_or(0.0);
     let new_elapsed: slint::SharedString = if recording {
         format::deck_time(elapsed).into()
@@ -607,6 +778,268 @@ fn project_panel(app: &App, state: &EngineState) {
     }
 }
 
+
+/// "−14.2 LUFS  ·  −0.8 dBTP  ·  0 CLIPS" and whether it calls for a look
+/// (clips, or a true peak over −1 dBTP).
+pub(crate) fn loudness_line(l: &od_recorder::Loudness) -> (String, bool) {
+    let over = l.clips > 0 || l.true_peak.is_some_and(|p| p > od_recorder::TRUE_PEAK_LIMIT);
+    (
+        od_i18n::trf(
+            "{}  ·  TRUE PEAK {}  ·  {} CLIPS",
+            &[
+                &od_recorder::lufs_text(l.integrated),
+                &od_recorder::true_peak_text(l.true_peak),
+                &l.clips,
+            ],
+        ),
+        over,
+    )
+}
+
+/// A chapter marker at the current time of the recording.
+fn mark(app: &App) {
+    let (n, at) = {
+        let mut rs = app.recorder.borrow_mut();
+        let Some(r) = rs.recorder.as_mut().filter(|r| r.is_recording()) else {
+            drop(rs);
+            app.status("Markers are set while recording");
+            return;
+        };
+        let count = r.tracklist().iter().filter(|e| e.marker).count() + 1;
+        let title = od_i18n::trf("Marker {}", &[&count]);
+        let at = r.elapsed();
+        let n = r.mark_chapter(&title);
+        rs.tracks.push((at, title, String::new()));
+        (n, at)
+    };
+    if let Some(n) = n {
+        app.status(format!("Marker {n} set at {}", format::deck_time(at)));
+    }
+}
+
+/// "12:34" or "1:02:03" (whole seconds) for the editor.
+pub(crate) fn edit_time(secs: f64) -> String {
+    let t = secs.max(0.0).round() as u64;
+    if t >= 3600 {
+        format!("{}:{:02}:{:02}", t / 3600, t / 60 % 60, t % 60)
+    } else {
+        format!("{}:{:02}", t / 60, t % 60)
+    }
+}
+
+/// Reads "12:34", "1:02:03", "754" or "12:34.5" as seconds.
+pub(crate) fn parse_time(text: &str) -> Option<f64> {
+    let t = text.trim();
+    if t.is_empty() {
+        return None;
+    }
+    let mut total = 0.0;
+    let parts: Vec<&str> = t.split(':').collect();
+    if parts.len() > 3 {
+        return None;
+    }
+    for (i, p) in parts.iter().enumerate() {
+        let v: f64 = p.trim().parse().ok()?;
+        if v < 0.0 || (i > 0 && v >= 60.0) {
+            return None;
+        }
+        total = total * 60.0 + v;
+    }
+    Some(total)
+}
+
+/// Inserts a new entry after `after` (`None`: before the first), halfway
+/// to the next one (or 30 s on, within the recording); returns its index
+/// (pure).
+pub(crate) fn insert_entry(
+    list: &mut Vec<TracklistEntry>,
+    after: Option<usize>,
+    duration: f64,
+    title: &str,
+) -> usize {
+    let (at, idx) = match after {
+        None => (0.0, 0),
+        Some(i) => {
+            let i = i.min(list.len().saturating_sub(1));
+            let from = list.get(i).map(|e| e.offset).unwrap_or(0.0);
+            let to = list
+                .get(i + 1)
+                .map(|e| e.offset)
+                .unwrap_or_else(|| (from + 60.0).min(duration.max(from)));
+            ((from + to) / 2.0, i + 1)
+        }
+    };
+    let idx = idx.min(list.len());
+    list.insert(
+        idx,
+        TracklistEntry {
+            offset: at,
+            track: None,
+            title: title.into(),
+            artist: String::new(),
+            marker: true,
+        },
+    );
+    idx
+}
+
+/// Puts the entries in time order (stable, pure).
+pub(crate) fn sort_entries(list: &mut [TracklistEntry]) {
+    list.sort_by(|a, b| a.offset.total_cmp(&b.offset));
+}
+
+/// Documentation screenshots: the editor on a made-up mix (in memory).
+pub(crate) fn demo_edit(app: &App, path: PathBuf, duration: f64, tracklist: Vec<TracklistEntry>) {
+    app.recorder.borrow_mut().edit = Some(Editing {
+        id: -1,
+        path,
+        duration,
+        tracklist,
+    });
+    project_edit(app);
+}
+
+/// Opens the tracklist editor on a recording.
+fn edit_open(app: &App, id: i64) {
+    let row: Option<(String, f64, String)> = app
+        .state
+        .borrow()
+        .lib
+        .conn()
+        .query_row(
+            "SELECT path, duration, tracklist FROM recording WHERE id = ?1",
+            [id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .ok();
+    let Some((path, duration, tracklist)) = row else {
+        return;
+    };
+    let path = PathBuf::from(path);
+    let tracklist = od_recorder::load_info(&path)
+        .map(|i| i.tracklist)
+        .unwrap_or_else(|| serde_json::from_str(&tracklist).unwrap_or_default());
+    app.recorder.borrow_mut().edit = Some(Editing {
+        id,
+        path,
+        duration,
+        tracklist,
+    });
+    app.ui.global::<crate::RecEdit>().set_error(SharedString::new());
+    project_edit(app);
+}
+
+/// The editor's rows from the open recording.
+fn project_edit(app: &App) {
+    let g = app.ui.global::<crate::RecEdit>();
+    let rs = app.recorder.borrow();
+    let Some(e) = rs.edit.as_ref() else {
+        g.set_open(false);
+        return;
+    };
+    g.set_open(true);
+    g.set_name(
+        e.path
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_default()
+            .into(),
+    );
+    g.set_summary(
+        od_i18n::trf(
+            "{} ENTRIES  ·  {}",
+            &[&e.tracklist.len(), &format::time(e.duration)],
+        )
+        .into(),
+    );
+    let rows: Vec<RecEditRow> = e
+        .tracklist
+        .iter()
+        .enumerate()
+        .map(|(i, t)| RecEditRow {
+            index: i as i32 + 1,
+            time: edit_time(if i == 0 { 0.0 } else { t.offset }).into(),
+            title: t.title.clone().into(),
+            artist: t.artist.clone().into(),
+            marker: t.marker,
+        })
+        .collect();
+    g.set_rows(model(rows));
+}
+
+/// Saves the open tracklist to the library and the info file.
+fn edit_save(app: &App) {
+    let rs = app.recorder.borrow();
+    let Some(e) = rs.edit.as_ref() else { return };
+    let _ = app.state.borrow().lib.conn().execute(
+        "UPDATE recording SET tracklist = ?1 WHERE id = ?2",
+        (
+            serde_json::to_string(&e.tracklist).unwrap_or_default(),
+            e.id,
+        ),
+    );
+    let mut info = od_recorder::load_info(&e.path).unwrap_or_default();
+    info.tracklist = e.tracklist.clone();
+    if info.duration <= 0.0 {
+        info.duration = e.duration;
+    }
+    if let Err(err) = od_recorder::save_info(&e.path, &info) {
+        tracing::warn!(error = %err, "recording info not saved");
+    }
+}
+
+fn edit_change(app: &App, f: impl FnOnce(&mut Editing)) {
+    {
+        let mut rs = app.recorder.borrow_mut();
+        let Some(e) = rs.edit.as_mut() else { return };
+        f(e);
+    }
+    edit_save(app);
+}
+
+/// Writes the CUE sheet and the text next to the recording, and the
+/// chapters into its files (the WAV or FLAC, an MP3 copy), off the UI
+/// thread.
+fn edit_export(app: &App, what: &str) {
+    let Some((path, tracklist)) = app
+        .recorder
+        .borrow()
+        .edit
+        .as_ref()
+        .map(|e| (e.path.clone(), e.tracklist.clone()))
+    else {
+        return;
+    };
+    let (cue, text) = match od_recorder::export_tracklist(&path, &tracklist) {
+        Ok(p) => p,
+        Err(e) => {
+            app.status(format!("Export failed: {e}"));
+            return;
+        }
+    };
+    let shown = if what == "cue" { cue } else { text };
+    app.status(format!("Tracklist written to {}", shown.display()));
+    let events = app.worker_tx.clone();
+    std::thread::spawn(move || {
+        let chapters = od_recorder::chapters_of(&tracklist);
+        let mut files = vec![path.clone()];
+        for ext in ["mp3", "flac"] {
+            let p = path.with_extension(ext);
+            if p.exists() && p != path {
+                files.push(p);
+            }
+        }
+        for f in files.iter().filter(|f| f.exists()) {
+            if let Err(e) = od_recorder::write_chapters(f, &chapters) {
+                let _ = events.send(crate::workers::WorkerEvent::Message(format!(
+                    "Chapters could not be written into {}: {e}",
+                    f.display()
+                )));
+            }
+        }
+    });
+}
+
 pub(crate) fn refresh_list(app: &App) {
     let st = app.state.borrow();
     let mut rows = Vec::new();
@@ -628,11 +1061,19 @@ pub(crate) fn refresh_list(app: &App) {
                     .file_stem()
                     .map(|s| s.to_string_lossy().into_owned())
                     .unwrap_or(path.clone());
+                let info = od_recorder::load_info(std::path::Path::new(&path));
+                let (loudness, over) = info
+                    .as_ref()
+                    .map(|i| loudness_line(&i.loudness))
+                    .unwrap_or_default();
                 rows.push(RecordingRow {
                     id: id as i32,
                     name: name.into(),
                     detail: recording_detail(&started, duration).into(),
                     path: path.into(),
+                    loudness: loudness.into(),
+                    over,
+                    voice: info.is_some_and(|i| i.voice.is_some_and(|v| v.exists())),
                 });
             }
         }
@@ -647,6 +1088,64 @@ pub(crate) fn wire(app: &Rc<App>) {
     ui.on_toggle_recording(handler!(app, |a| toggle(&a)));
     let g = ui.global::<crate::Rec>();
     g.on_toggle(handler!(app, |a| toggle(&a)));
+    g.on_mark(handler!(app, |a| mark(&a)));
+    let e = ui.global::<crate::RecEdit>();
+    e.on_edit(handler!(app, |a, id: i32| edit_open(&a, id as i64)));
+    e.on_close(handler!(app, |a| {
+        a.recorder.borrow_mut().edit = None;
+        project_edit(&a);
+        refresh_list(&a);
+    }));
+    e.on_set_title(handler!(app, |a, i: i32, t: SharedString| edit_change(&a, |e| {
+        if let Some(x) = e.tracklist.get_mut(i as usize) {
+            x.title = t.to_string();
+        }
+    })));
+    e.on_set_artist(handler!(app, |a, i: i32, t: SharedString| edit_change(&a, |e| {
+        if let Some(x) = e.tracklist.get_mut(i as usize) {
+            x.artist = t.to_string();
+        }
+    })));
+    e.on_set_time(handler!(app, |a, i: i32, t: SharedString| {
+        let g = a.ui.global::<crate::RecEdit>();
+        let duration = a.recorder.borrow().edit.as_ref().map(|e| e.duration).unwrap_or(0.0);
+        match parse_time(&t).filter(|s| *s <= duration.max(0.0) + 0.5) {
+            Some(secs) => {
+                g.set_error(SharedString::new());
+                edit_change(&a, |e| {
+                    if let Some(x) = e.tracklist.get_mut(i as usize) {
+                        x.offset = secs;
+                    }
+                    sort_entries(&mut e.tracklist);
+                });
+            }
+            None => g.set_error(
+                od_i18n::trf(
+                    "\"{}\" is not a time in the recording: type minutes and seconds such as 12:34 (up to {})",
+                    &[&t, &edit_time(duration)],
+                )
+                .into(),
+            ),
+        }
+        project_edit(&a);
+    }));
+    e.on_remove(handler!(app, |a, i: i32| {
+        edit_change(&a, |e| {
+            if (i as usize) < e.tracklist.len() {
+                e.tracklist.remove(i as usize);
+            }
+        });
+        project_edit(&a);
+    }));
+    e.on_insert(handler!(app, |a, i: i32| {
+        let title = od_i18n::tr("New entry").to_string();
+        edit_change(&a, |e| {
+            let after = (i >= 0).then_some(i as usize);
+            insert_entry(&mut e.tracklist, after, e.duration, &title);
+        });
+        project_edit(&a);
+    }));
+    e.on_export(handler!(app, |a, what: SharedString| edit_export(&a, &what)));
     g.on_set_gain(handler!(app, |a, i: i32| {
         let db = crate::settings::REC_GAINS
             .get(i.max(0) as usize)
@@ -701,12 +1200,17 @@ pub(crate) fn wire(app: &Rc<App>) {
             return;
         };
         let path = PathBuf::from(path);
+        let tracklist = od_recorder::load_info(&path)
+            .map(|i| i.tracklist)
+            .unwrap_or_else(|| serde_json::from_str(&tracklist).unwrap_or_default());
         let rec = od_recorder::Recording {
             cue_path: path.with_extension("cue"),
             text_path: path.with_extension("txt"),
-            tracklist: serde_json::from_str(&tracklist).unwrap_or_default(),
+            tracklist,
             duration,
             path,
+            voice: None,
+            loudness: Default::default(),
         };
         match od_recorder::split(&rec) {
             Ok(files) => a.status(format!(
@@ -795,6 +1299,46 @@ mod tests {
         // Quiet (−60 dB) does not count as sound.
         let mut d = SilenceDetector::new(SILENCE_DB, START_AFTER, STOP_AFTER);
         assert_eq!(auto_step(&mut d, 0.001, 10.0, false, true, true), None);
+    }
+
+    #[test]
+    fn the_tracklist_waits_until_a_deck_keeps_the_lead() {
+        let mut c = None;
+        // The first deck enters at once.
+        assert_eq!(settle(&mut c, Some(0), 0.0, None, true), Some((Some(0), 0.0)));
+        // Two decks swapping within a mix: nothing until one stays.
+        assert_eq!(settle(&mut c, Some(1), 60.0, Some(0), false), None);
+        assert_eq!(settle(&mut c, Some(0), 60.5, Some(0), false), None);
+        assert_eq!(settle(&mut c, Some(1), 61.0, Some(0), false), None);
+        assert_eq!(settle(&mut c, Some(1), 64.9, Some(0), false), None);
+        assert_eq!(settle(&mut c, Some(1), 65.1, Some(0), false), Some((Some(1), 61.0)), "with the time it took the lead");
+        assert_eq!(settle(&mut c, None, 70.0, Some(1), false), None, "silence enters nothing");
+    }
+
+    #[test]
+    fn tracklist_editing_helpers() {
+        assert_eq!(parse_time("12:34"), Some(754.0));
+        assert_eq!(parse_time("1:02:03"), Some(3723.0));
+        assert_eq!(parse_time(" 90 "), Some(90.0));
+        assert_eq!(parse_time("12:34.5"), Some(754.5));
+        assert_eq!(parse_time("1:75"), None);
+        assert_eq!(parse_time("x"), None);
+        assert_eq!(parse_time(""), None);
+        assert_eq!(edit_time(754.4), "12:34");
+        assert_eq!(edit_time(3723.0), "1:02:03");
+        let e = |o: f64, t: &str| TracklistEntry { offset: o, track: Some(TrackId(1)), title: t.into(), artist: String::new(), marker: false };
+        let mut l = vec![e(0.0, "a"), e(100.0, "b")];
+        assert_eq!(insert_entry(&mut l, Some(0), 300.0, "n"), 1);
+        assert_eq!(l[1].offset, 50.0);
+        assert_eq!(insert_entry(&mut l, Some(2), 130.0, "m"), 3);
+        assert_eq!(l[3].offset, 115.0, "halfway to the end of the recording");
+        assert_eq!(insert_entry(&mut l, None, 300.0, "s"), 0);
+        l[0].offset = 200.0;
+        sort_entries(&mut l);
+        assert_eq!(l.iter().map(|x| x.title.as_str()).collect::<Vec<_>>(), ["a", "n", "b", "m", "s"]);
+        let (line, over) = loudness_line(&od_recorder::Loudness { integrated: Some(-9.84), true_peak: Some(0.2), clips: 3, ..Default::default() });
+        assert_eq!(line, "−9.8 LUFS  ·  TRUE PEAK +0.2 dBTP  ·  3 CLIPS");
+        assert!(over);
     }
 
     #[test]

@@ -40,6 +40,14 @@ pub const SCOPES: &[(&str, &str)] = &[
         "browser",
         "browser: toolbar, source rail, tree, list title row, header, rows, panel strip",
     ),
+    (
+        "queue",
+        "queue panel beside the list: up next, requests, auto-play (roadmap [29])",
+    ),
+    (
+        "devices",
+        "USB screen: sticks, their formats, the stick check and the emergency stick",
+    ),
     ("info", "Info panel (right of the list)"),
     ("subbrowser", "sub-browser (second tree + list)"),
     ("status", "status band"),

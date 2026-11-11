@@ -1,0 +1,286 @@
+// [29] The queue in Perform: what comes next (add, reorder, remove, load
+// the next one), requests typed in and matched to the library, the
+// do-not-play mark, auto-play with its mix, and the set alert over the
+// browser when the music is about to run out with nothing cued or a
+// do-not-play track was loaded.
+
+import { Theme } from "tokens.slint";
+import { VLine, HLine } from "lines.slint";
+import { Caps, PlateButton, Field, TooltipState } from "controls.slint";
+
+export struct QueueRow {
+    title: string,
+    artist: string,
+    // "124.0 BPM · 8A · 6:12" for a track, "" for a request without one.
+    detail: string,
+    // The note typed for a request ("" = not a request).
+    request: string,
+    // A request with a library track behind it.
+    matched: bool,
+    // Tagged do not play: auto-play leaves it out, loading it warns.
+    dnp: bool,
+    // The track LOAD NEXT and auto-play take next.
+    next: bool,
+}
+
+export global Queue {
+    in property <[QueueRow]> rows;
+    in property <bool> auto;
+    // Mix choices ("CUT", "8", "16", "32" beats) and the current one.
+    in property <[string]> mixes;
+    in property <int> mix;
+    // Dead-air warning choices ("15 S", "30 S", "60 S") and the current one.
+    in property <[string]> warns;
+    in property <int> warn;
+    // Tracks are selected in the browser (ADD, MATCH).
+    in property <bool> can-add;
+    // A playable track waits and a deck is free (LOAD NEXT).
+    in property <bool> can-load;
+    // "MIXING DECK 1 › DECK 2 · 16 BEATS" while auto-play mixes.
+    in property <string> mixing;
+    // The set alert: "" | "dead-air" | "dnp".
+    in property <string> alert;
+    in property <string> alert-title;
+    in property <string> alert-detail;
+    callback add();
+    callback load-next();
+    callback remove(int);
+    // Moves row `i` by −1 (up) or +1 (down).
+    callback move(int, int);
+    callback request(string);
+    // Ties request row `i` to the track selected in the browser.
+    callback match(int);
+    callback set-auto(bool);
+    callback set-mix(int);
+    callback set-warn(int);
+    // "load" (dead air: LOAD NEXT), "unload" or "keep" (do not play).
+    callback alert-action(string);
+}
+
+component QueueItem inherits Rectangle {
+    in property <QueueRow> item;
+    in property <int> index;
+    in property <int> count;
+    // A group, not a list item: its keys are Tab stops and named in the
+    // help on their own.
+    accessible-role: groupbox;
+    accessible-id: "queue.row\{root.index}";
+    accessible-value: (root.item.title != "" ? root.item.title : root.item.request) + (root.item.dnp ? " · do not play" : "");
+    height: 44px;
+    // The mark: do not play struck red, a request sodium (dashed until a
+    // track is behind it), else a quiet bone line; the next one is lit.
+    VLine {
+        x: 2px; y: 7px; height: parent.height - 14px; weight: 2px;
+        tone: root.item.dnp ? Theme.fault : root.item.request != "" ? Theme.attention : root.item.next ? Theme.live : Theme.bone-3;
+        form: root.item.dnp ? "struck" : root.item.request != "" && !root.item.matched ? "dashed" : root.item.next || root.item.request != "" ? "solid" : "half";
+    }
+    property <length> keys-w: keys.preferred-width + Theme.s2;
+    Text {
+        x: 14px; y: 4px; width: parent.width - 14px - root.keys-w; height: 20px;
+        text: root.item.title != "" ? root.item.title : root.item.request;
+        overflow: elide; vertical-alignment: center;
+        font-family: Theme.family; font-size: Theme.control; font-weight: root.item.next ? Theme.weight-semi : Theme.weight-medium;
+        color: root.item.dnp ? Theme.bone-2 : Theme.bone;
+    }
+    Caps {
+        accessible-role: text; accessible-id: "queue.row\{root.index}.detail"; accessible-value: self.text;
+        x: 14px; y: 24px; width: parent.width - 14px - root.keys-w; height: 16px;
+        overflow: elide; vertical-alignment: center;
+        text: root.item.dnp ? @tr("DO NOT PLAY")
+            : root.item.request != "" && !root.item.matched ? @tr("REQUEST · NOT IN THE LIBRARY")
+            : root.item.request != "" ? @tr("REQUEST · {}", root.item.artist)
+            : root.item.artist != "" ? root.item.artist + "  ·  " + root.item.detail : root.item.detail;
+        color: root.item.dnp ? Theme.fault : root.item.request != "" ? Theme.bone-2 : Theme.bone-3;
+    }
+    keys := HorizontalLayout {
+        x: parent.width - self.width; y: (parent.height - self.height) / 2; height: Theme.touch-mode ? 44px : 26px;
+        width: self.preferred-width;
+        spacing: Theme.key-gap;
+        if root.item.request != "" && !root.item.matched: PlateButton {
+            accessible-id: "queue.row\{root.index}.match";
+            compact: true; glyph: "check"; tone: Theme.attention;
+            enabled: Queue.can-add;
+            tooltip: @tr("Take the track selected in the browser for this request");
+            clicked => { Queue.match(root.index); }
+        }
+        PlateButton {
+            accessible-id: "queue.row\{root.index}.up";
+            compact: true; glyph: "up";
+            enabled: root.index > 0;
+            tooltip: @tr("Move up in the queue");
+            clicked => { Queue.move(root.index, -1); }
+        }
+        PlateButton {
+            accessible-id: "queue.row\{root.index}.down";
+            compact: true; glyph: "down";
+            enabled: root.index < root.count - 1;
+            tooltip: @tr("Move down in the queue");
+            clicked => { Queue.move(root.index, 1); }
+        }
+        PlateButton {
+            accessible-id: "queue.row\{root.index}.remove";
+            compact: true; glyph: "close"; tone: Theme.fault;
+            tooltip: @tr("Remove from the queue");
+            clicked => { Queue.remove(root.index); }
+        }
+    }
+}
+
+export component QueuePanel inherits Rectangle {
+    accessible-id: "queue.panel"; accessible-role: groupbox;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    width: 300px;
+    Flickable {
+        x: 1px; width: parent.width - 1px;
+        VerticalLayout {
+            padding: Theme.s4;
+            spacing: Theme.s2;
+            alignment: start;
+            HorizontalLayout {
+                spacing: Theme.s2;
+                Caps { accessible-role: text; accessible-id: "queue.count"; accessible-value: Queue.rows.length; text: @tr("UP NEXT · {}", Queue.rows.length); color: Theme.bone-2; vertical-alignment: center; min-width: 0px; horizontal-stretch: 1; overflow: elide; }
+                // Auto-play: the queue plays on by itself, mixing over the
+                // chosen number of beats (CUT: at the end of the track).
+                PlateButton {
+                    accessible-id: "queue.auto";
+                    accessible-role: checkbox; accessible-checkable: true; accessible-checked: Queue.auto;
+                    horizontal-stretch: 0;
+                    compact: true; label: @tr("AUTO-PLAY"); tone: Theme.live;
+                    active: Queue.auto;
+                    tooltip: Queue.auto ? @tr("Stop playing the queue by itself") : @tr("Play the queue by itself, mixing each track into the next");
+                    clicked => { Queue.set-auto(!Queue.auto); }
+                }
+            }
+            HorizontalLayout {
+                spacing: Theme.key-gap;
+                alignment: start;
+                PlateButton {
+                    accessible-id: "queue.load-next";
+                    compact: true; label: @tr("LOAD NEXT"); tone: Theme.live;
+                    enabled: Queue.can-load;
+                    tooltip: @tr("Load the next track of the queue to a free deck");
+                    command: "queue.next";
+                    clicked => { Queue.load-next(); }
+                }
+                PlateButton {
+                    accessible-id: "queue.add";
+                    compact: true; label: @tr("ADD"); glyph: "plus";
+                    enabled: Queue.can-add;
+                    tooltip: @tr("Add the tracks selected in the browser to the queue");
+                    command: "queue.add";
+                    clicked => { Queue.add(); }
+                }
+            }
+            if Queue.mixing != "": Caps {
+                accessible-role: text; accessible-id: "queue.mixing"; accessible-value: self.text;
+                text: Queue.mixing; color: Theme.attention; overflow: elide;
+            }
+            Field {
+                accessible-id: "queue.request";
+                height: Theme.touch-mode ? 44px : 28px;
+                placeholder: @tr("REQUEST: ARTIST, TITLE · RETURN");
+                tone: Theme.attention;
+                accepted(t) => { Queue.request(t); self.text = ""; }
+            }
+            if Queue.rows.length == 0: Text {
+                text: @tr("Nothing queued. ADD takes the tracks selected in the browser; a request typed above is matched to the library.");
+                wrap: word-wrap;
+                font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
+            }
+            for r[i] in Queue.rows: QueueItem { item: r; index: i; count: Queue.rows.length; }
+            HLine { tone: Theme.rule; }
+            HorizontalLayout {
+                spacing: Theme.s2;
+                Caps { text: @tr("MIX BEATS"); vertical-alignment: center; min-width: 0px; horizontal-stretch: 1; overflow: elide; }
+                HorizontalLayout {
+                    spacing: Theme.key-gap;
+                    for m[i] in Queue.mixes: PlateButton {
+                        accessible-id: "queue.mix\{i}";
+                        compact: true; label: m;
+                        selected: Queue.mix == i;
+                        tooltip: i == 0 ? @tr("Auto-play cuts to the next track when one ends") : @tr("Auto-play mixes over {} beats", m);
+                        clicked => { Queue.set-mix(i); }
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: Theme.s2;
+                Caps { text: @tr("WARN BEFORE SILENCE"); vertical-alignment: center; min-width: 0px; horizontal-stretch: 1; overflow: elide; }
+                HorizontalLayout {
+                    spacing: Theme.key-gap;
+                    for w[i] in Queue.warns: PlateButton {
+                        accessible-id: "queue.warn\{i}";
+                        compact: true; label: w;
+                        selected: Queue.warn == i;
+                        tooltip: @tr("Warn {} before the music runs out with nothing cued", w);
+                        clicked => { Queue.set-warn(i); }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// [29] The set alert: over the foot of the browser, so the decks and the
+// mixer stay as they are. Dead air: the music runs out soon and no deck is
+// cued (LOAD NEXT when the queue holds a track). Do not play: a track
+// tagged so was loaded (UNLOAD or KEEP).
+export component SetAlertBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-id: "app.set-alert";
+    accessible-value: Queue.alert;
+    height: 56px;
+    background: Theme.ground-band; border-radius: Theme.r-panel;
+    TouchArea { }
+    HorizontalLayout {
+        padding-left: Theme.s4; padding-right: Theme.s3;
+        spacing: Theme.s4;
+        VerticalLayout {
+            padding-top: Theme.s2; padding-bottom: Theme.s2;
+            VLine { form: "struck"; tone: Theme.fault; }
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: Theme.key-gap;
+            Text {
+                accessible-role: text; accessible-id: "app.set-alert.title"; accessible-value: self.text;
+                text: Queue.alert-title;
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+                color: Theme.fault; overflow: elide;
+            }
+            Text {
+                accessible-role: text; accessible-id: "app.set-alert.detail"; accessible-value: self.text;
+                text: Queue.alert-detail; overflow: elide;
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            }
+        }
+        if Queue.alert == "dead-air" && Queue.can-load: VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-id: "app.set-alert.load";
+                label: @tr("LOAD NEXT"); tone: Theme.live; active: true;
+                tooltip: @tr("Load the next track of the queue to a free deck");
+                clicked => { Queue.alert-action("load"); }
+            }
+        }
+        if Queue.alert == "dnp": VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-id: "app.set-alert.unload";
+                label: @tr("UNLOAD"); tone: Theme.fault;
+                tooltip: @tr("Take the track off the deck again");
+                clicked => { Queue.alert-action("unload"); }
+            }
+        }
+        if Queue.alert == "dnp": VerticalLayout {
+            alignment: center; horizontal-stretch: 0;
+            PlateButton {
+                accessible-id: "app.set-alert.keep";
+                label: @tr("KEEP");
+                tooltip: @tr("Keep it on the deck and hide this warning");
+                clicked => { Queue.alert-action("keep"); }
+            }
+        }
+    }
+}

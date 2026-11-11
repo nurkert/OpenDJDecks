@@ -6,7 +6,7 @@
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
-import { Caps, PlateButton, KeyFocus, TooltipState } from "controls.slint";
+import { Caps, PlateButton, KeyFocus, TooltipState, Field } from "controls.slint";
 
 export struct RecTrack {
     // 1-based position in the recording.
@@ -32,7 +32,21 @@ export global Rec {
     // Recording level steps ("−6 dB" …) and the selected one.
     in property <[string]> gain-options;
     in property <int> gain;
+    // [27] Loudness of what is recorded so far: integrated and short-term
+    // ("−14.2 LUFS"), the true peak ("−0.8 dBTP"; over −1 dBTP it is
+    // called out) and the clips (runs at full scale).
+    in property <string> integrated;
+    in property <string> short-term;
+    in property <string> true-peak;
+    in property <bool> peak-over;
+    in property <int> clips;
+    // The voice track being written beside the mix ("" = none).
+    in property <string> voice-file;
+    // Chapter markers set so far.
+    in property <int> markers;
     callback toggle();
+    // A chapter marker at the current time.
+    callback mark();
     callback set-gain(int);
     // −1 / +1: one step down / up.
     callback step-gain(int);
@@ -109,12 +123,241 @@ export component RecStrip inherits HorizontalLayout {
     }
 }
 
+// One reading: a Label caps legend over its value (Control rank, 600).
+component Reading inherits VerticalLayout {
+    in property <string> test-id;
+    in property <string> legend;
+    in property <string> value;
+    in property <bool> fault;
+    alignment: center;
+    spacing: 0px;
+    Caps { text: root.legend; }
+    Text {
+        accessible-role: text; accessible-id: root.test-id; accessible-value: self.text;
+        text: root.value;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: root.fault ? Theme.fault : Theme.bone;
+    }
+}
+
+// [27] Loudness, true peak and clips of a recording. Over −1 dBTP the true
+// peak turns fault red, and clips get a struck red line beside their count
+// (solid live line while there are none).
+export component LoudnessRow inherits HorizontalLayout {
+    in property <string> integrated;
+    in property <string> short-term;
+    in property <string> true-peak;
+    in property <bool> peak-over;
+    in property <int> clips;
+    in property <bool> show-short: true;
+    spacing: Theme.s4;
+    height: 34px;
+    Reading { test-id: "rec.loudness"; legend: @tr("LOUDNESS"); value: root.integrated; }
+    if root.show-short: Reading { test-id: "rec.short-term"; legend: @tr("SHORT TERM"); value: root.short-term; }
+    Reading { test-id: "rec.true-peak"; legend: @tr("TRUE PEAK"); value: root.true-peak; fault: root.peak-over; }
+    HorizontalLayout {
+        spacing: Theme.s2;
+        VerticalLayout {
+            padding-top: Theme.s1; padding-bottom: Theme.s1;
+            VLine { weight: 2px; tone: root.clips > 0 ? Theme.fault : Theme.live; form: root.clips > 0 ? "struck" : "solid"; }
+        }
+        Reading { test-id: "rec.clips"; legend: @tr("CLIPS"); value: root.clips; fault: root.clips > 0; }
+    }
+    Rectangle { horizontal-stretch: 1; }
+}
+
+// [27] The tracklist of a finished recording, to edit before release.
+export struct RecEditRow {
+    index: int,
+    // "12:34" or "1:02:03".
+    time: string,
+    title: string,
+    artist: string,
+    // A marker set by hand (no track behind it).
+    marker: bool,
+}
+
+export global RecEdit {
+    in property <bool> open;
+    // The recording's name and "12 ENTRIES · 1:02:03".
+    in property <string> name;
+    in property <string> summary;
+    in property <[RecEditRow]> rows;
+    // A time that could not be read ("" = none).
+    in property <string> error;
+    // Opens the editor for a recording (its id).
+    callback edit(int);
+    // Return in the time field.
+    callback set-time(int, string);
+    // Every key typed in the title / artist fields (saved as typed).
+    callback set-title(int, string);
+    callback set-artist(int, string);
+    callback remove(int);
+    // A new entry after row `i` (−1: before the first).
+    callback insert(int);
+    // "text" or "cue": the file next to the recording, chapters into it.
+    callback export(string);
+    callback close();
+}
+
+export component TracklistEditor inherits VerticalLayout {
+    accessible-role: groupbox;
+    accessible-id: "rec.edit";
+    spacing: Theme.s2;
+    HorizontalLayout {
+        spacing: Theme.s2;
+        height: 32px;
+        VerticalLayout {
+            horizontal-stretch: 1; alignment: center;
+            Text {
+                text: RecEdit.name; overflow: elide;
+                font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone;
+            }
+            Caps { text: RecEdit.summary; overflow: elide; }
+        }
+        VerticalLayout { alignment: center; horizontal-stretch: 0; PlateButton { accessible-id: "rec.edit.export-text"; compact: true; label: @tr("EXPORT TEXT"); tone: Theme.live; tooltip: @tr("Write the tracklist as text (minutes, artist, title) next to the recording"); clicked => { RecEdit.export("text"); } } }
+        VerticalLayout { alignment: center; horizontal-stretch: 0; PlateButton { accessible-id: "rec.edit.export-cue"; compact: true; label: @tr("EXPORT CUE"); tone: Theme.live; tooltip: @tr("Write the CUE sheet next to the recording and the chapters into its files"); clicked => { RecEdit.export("cue"); } } }
+        VerticalLayout { alignment: center; horizontal-stretch: 0; PlateButton { accessible-id: "rec.edit.close"; compact: true; label: @tr("CLOSE"); tooltip: @tr("Back to the recordings"); clicked => { RecEdit.close(); } } }
+    }
+    if RecEdit.error != "": Text {
+        accessible-role: text; accessible-id: "rec.edit.error"; accessible-value: self.text;
+        text: RecEdit.error; overflow: elide;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.fault;
+    }
+    HorizontalLayout {
+        spacing: Theme.s2; height: 18px;
+        Rectangle { width: 22px; }
+        Caps { width: 76px; text: @tr("TIME"); vertical-alignment: center; }
+        Caps { horizontal-stretch: 2; min-width: 0px; text: @tr("TITLE"); vertical-alignment: center; }
+        Caps { horizontal-stretch: 1; min-width: 0px; text: @tr("ARTIST"); vertical-alignment: center; }
+        Rectangle { width: max(Theme.touch-min, 32px) * 2 + Theme.key-gap; }
+    }
+    HLine { tone: Theme.rule; }
+    Rectangle {
+        vertical-stretch: 1;
+        min-height: 34px;
+        Flickable {
+            VerticalLayout {
+                alignment: start;
+                spacing: Theme.key-gap;
+                for r[i] in RecEdit.rows: HorizontalLayout {
+                    accessible-role: groupbox; accessible-id: "rec.edit.row\{i}"; accessible-value: r.time + " " + r.title;
+                    spacing: Theme.s2;
+                    VerticalLayout {
+                        alignment: center;
+                        Text { width: 22px; text: r.index; font-family: Theme.family; font-size: Theme.control; color: r.marker ? Theme.attention : Theme.bone-3; horizontal-alignment: right; }
+                    }
+                    Field {
+                        accessible-id: "rec.edit.time\{i}";
+                        width: 76px;
+                        text: r.time;
+                        placeholder: @tr("TIME");
+                        tone: Theme.w656;
+                        accessible-description: @tr("Minutes and seconds such as 12:34; Return moves the entry there");
+                        accepted(t) => { RecEdit.set-time(i, t); }
+                    }
+                    Field {
+                        accessible-id: "rec.edit.title\{i}";
+                        horizontal-stretch: 2; min-width: 60px;
+                        text: r.title;
+                        placeholder: r.marker ? @tr("MARKER NAME") : @tr("TITLE");
+                        tone: Theme.w656;
+                        edited(t) => { RecEdit.set-title(i, t); }
+                    }
+                    Field {
+                        accessible-id: "rec.edit.artist\{i}";
+                        horizontal-stretch: 1; min-width: 48px;
+                        text: r.artist;
+                        placeholder: @tr("ARTIST");
+                        tone: Theme.w656;
+                        edited(t) => { RecEdit.set-artist(i, t); }
+                    }
+                    PlateButton {
+                        accessible-id: "rec.edit.insert\{i}";
+                        horizontal-stretch: 0; glyph: "plus";
+                        tooltip: @tr("Insert an entry after this one");
+                        clicked => { RecEdit.insert(i); }
+                    }
+                    PlateButton {
+                        accessible-id: "rec.edit.remove\{i}";
+                        horizontal-stretch: 0; glyph: "close"; tone: Theme.fault;
+                        tooltip: @tr("Remove this entry");
+                        clicked => { RecEdit.remove(i); }
+                    }
+                }
+                if RecEdit.rows.length == 0: Text {
+                    text: @tr("No entries. Insert one for each track of the mix.");
+                    font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
+                }
+                HorizontalLayout {
+                    alignment: start;
+                    PlateButton {
+                        accessible-id: "rec.edit.insert-first";
+                        compact: true; glyph: "plus"; label: @tr("INSERT AT START");
+                        tooltip: @tr("Insert an entry before the first one");
+                        clicked => { RecEdit.insert(-1); }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The finished recordings: name, date and length, loudness, and their
+// actions.
+export struct RecordingRow {
+    id: int,
+    name: string,
+    detail: string,
+    path: string,
+    // [27] "−14.2 LUFS · −0.8 dBTP · 0 CLIPS" ("" before it was measured).
+    loudness: string,
+    // Clipped or past −1 dBTP: the loudness line in fault red.
+    over: bool,
+    // A voice track lies beside it.
+    voice: bool,
+}
+
+export component RecordingList inherits VerticalLayout {
+    in property <[RecordingRow]> rows;
+    callback reveal(int);
+    callback split(int);
+    spacing: Theme.s1;
+    if root.rows.length == 0: Text {
+        text: @tr("No recordings yet. Press RECORD in Perform, or the record button on your controller.");
+        wrap: word-wrap; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-3;
+    }
+    for r[i] in root.rows: row := Rectangle {
+        accessible-role: groupbox; accessible-id: "rec.list.row\{i}"; accessible-value: r.name;
+        height: 64px;
+        VLine { x: 0; y: 8px; height: parent.height - 16px; tone: Theme.w656; }
+        property <length> keys-w: keys.preferred-width + Theme.s2;
+        Text { x: 16px; y: 6px; width: parent.width - 16px - row.keys-w; text: r.name; overflow: elide; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone; }
+        Caps { x: 16px; y: 27px; width: parent.width - 16px - row.keys-w; overflow: elide; text: r.voice ? @tr("{}  ·  VOICE TRACK", r.detail) : r.detail; }
+        Caps {
+            accessible-role: text; accessible-id: "rec.list.loudness\{i}"; accessible-value: self.text;
+            x: 16px; y: 43px; width: parent.width - 16px - row.keys-w; overflow: elide;
+            text: r.loudness; font-weight: Theme.weight-semi;
+            color: r.over ? Theme.fault : Theme.bone-2;
+        }
+        TouchArea { width: parent.width - row.keys-w; clicked => { root.reveal(r.id); } }
+        keys := HorizontalLayout {
+            x: parent.width - self.width; y: 8px; width: self.preferred-width; height: 26px;
+            spacing: Theme.key-gap;
+            PlateButton { accessible-id: "rec.list.tracklist\{i}"; compact: true; label: @tr("TRACKLIST"); tone: Theme.w656; tooltip: @tr("Edit the tracklist and export it as text or CUE"); clicked => { RecEdit.edit(r.id); } }
+            PlateButton { accessible-id: "rec.list.reveal\{i}"; compact: true; label: @tr("SHOW FILE"); tooltip: @tr("Show the recording in the file manager"); clicked => { root.reveal(r.id); } }
+            PlateButton { accessible-id: "rec.list.split\{i}"; compact: true; label: @tr("SPLIT INTO TRACKS"); tone: Theme.w656; tooltip: @tr("Cut the recording into one file per played track"); clicked => { root.split(r.id); } }
+        }
+    }
+    Rectangle { vertical-stretch: 1; }
+}
+
 // The recording panel: REC, level, meter, elapsed time, file size and the
 // live tracklist.
 export component RecPanel inherits VerticalLayout {
     spacing: Theme.s2;
     HorizontalLayout {
-        spacing: Theme.s3;
+        spacing: Theme.s2;
         height: 32px;
         VerticalLayout {
             horizontal-stretch: 0; alignment: center;
@@ -129,16 +372,27 @@ export component RecPanel inherits VerticalLayout {
                 clicked => { Rec.toggle(); }
             }
         }
-        Caps { accessible-role: text; accessible-id: "rec.panel.source"; accessible-value: self.text; text: @tr("MASTER"); vertical-alignment: center; }
+        VerticalLayout {
+            horizontal-stretch: 0; alignment: center;
+            PlateButton {
+                accessible-id: "rec.mark";
+                horizontal-stretch: 0; compact: true;
+                enabled: Rec.recording;
+                label: @tr("MARK");
+                tooltip: @tr("Set a chapter marker here: it goes into the tracklist and into the file");
+                command: "record.mark";
+                clicked => { Rec.mark(); }
+            }
+        }
         VerticalLayout { alignment: center; Level { accessible-id: "rec.panel.level"; } }
         VerticalLayout {
             alignment: center;
             horizontal-stretch: 1;
-            Meter { accessible-role: progress-indicator; accessible-id: "rec.panel.meter"; accessible-value: round(Rec.level * 100) + "%"; min-width: Theme.touch ? 96px : 120px; level: Rec.level; clipping: Rec.clip; }
+            Meter { accessible-role: progress-indicator; accessible-id: "rec.panel.meter"; accessible-value: round(Rec.level * 100) + "%"; min-width: 48px; level: Rec.level; clipping: Rec.clip; }
         }
         Text {
             accessible-role: text; accessible-id: "rec.panel.time"; accessible-value: Rec.elapsed;
-            min-width: 70px;
+            min-width: 60px;
             text: Rec.recording ? Rec.elapsed : "--:--:--";
             font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
             color: Rec.recording ? Theme.bone : Theme.bone-3;
@@ -146,7 +400,7 @@ export component RecPanel inherits VerticalLayout {
         }
         Text {
             accessible-role: text; accessible-id: "rec.size"; accessible-value: Rec.size;
-            min-width: 64px;
+            min-width: 40px;
             text: Rec.recording ? Rec.size : "";
             font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
             vertical-alignment: center; horizontal-alignment: right;
@@ -158,25 +412,16 @@ export component RecPanel inherits VerticalLayout {
         Text {
             accessible-role: text; accessible-id: "rec.file"; accessible-value: self.text;
             horizontal-stretch: 1;
-            text: Rec.recording ? Rec.file : @tr("Armed: recording starts when the master carries sound");
+            text: !Rec.recording ? @tr("Armed: recording starts when the master carries sound")
+                : Rec.voice-file != "" ? @tr("{} · voice in {}", Rec.file, Rec.voice-file) : Rec.file;
             font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; overflow: elide;
         }
     }
-    if Rec.recording: VerticalLayout {
-        accessible-role: list; accessible-id: "rec.tracklist";
-        spacing: Theme.key-gap;
-        if Rec.tracks.length == 0: Text {
-            text: @tr("The tracklist grows here as tracks become audible.");
-            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
-        }
-        for t in Rec.tracks: HorizontalLayout {
-            accessible-role: list-item; accessible-id: "rec.tracklist.row\{t.index}"; accessible-value: t.title;
-            spacing: Theme.s3;
-            height: 22px;
-            Text { width: 22px; text: t.index; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; horizontal-alignment: right; vertical-alignment: center; }
-            Text { width: 64px; text: t.time; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; }
-            Text { horizontal-stretch: 1; text: t.artist == "" ? t.title : t.artist + " — " + t.title; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; overflow: elide; }
-        }
+    // [27] Loudness while recording: integrated, short-term, true peak and
+    // clips, each a Label legend over its value.
+    if Rec.recording: LoudnessRow {
+        integrated: Rec.integrated; short-term: Rec.short-term;
+        true-peak: Rec.true-peak; peak-over: Rec.peak-over; clips: Rec.clips;
     }
     HLine { tone: Theme.rule; }
 }
@@ -212,4 +457,48 @@ export component RecBar inherits Rectangle {
         }
         Rectangle { horizontal-stretch: 1; }
     }
+}
+
+// The tracklist as it grows while recording.
+component LiveTracklist inherits VerticalLayout {
+    accessible-role: list; accessible-id: "rec.tracklist";
+    spacing: Theme.key-gap;
+    if Rec.tracks.length == 0: Text {
+        text: @tr("The tracklist grows here as tracks become audible.");
+        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
+    }
+    for t in Rec.tracks: HorizontalLayout {
+        accessible-role: list-item; accessible-id: "rec.tracklist.row\{t.index}"; accessible-value: t.title;
+        spacing: Theme.s3;
+        height: 22px;
+        Text { width: 22px; text: t.index; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; horizontal-alignment: right; vertical-alignment: center; }
+        Text { width: 64px; text: t.time; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; vertical-alignment: center; }
+        Text { horizontal-stretch: 1; text: t.artist == "" ? t.title : t.artist + " — " + t.title; font-family: Theme.family; font-size: Theme.control; color: Theme.bone; vertical-alignment: center; overflow: elide; }
+    }
+}
+
+// [27] The recordings page: the recording panel over the live tracklist
+// and the finished mixes (one scroll area), or the tracklist editor of a
+// finished mix in their place.
+export component RecordingsPage inherits VerticalLayout {
+    in property <[RecordingRow]> rows;
+    callback reveal(int);
+    callback split(int);
+    spacing: Theme.s2;
+    if !RecEdit.open: RecPanel { vertical-stretch: 0; }
+    if !RecEdit.open: Flickable {
+        vertical-stretch: 1;
+        min-height: 0px;
+        VerticalLayout {
+            alignment: start;
+            spacing: Theme.s2;
+            if Rec.recording: LiveTracklist { }
+            RecordingList {
+                rows: root.rows;
+                reveal(id) => { root.reveal(id); }
+                split(id) => { root.split(id); }
+            }
+        }
+    }
+    if RecEdit.open: TracklistEditor { vertical-stretch: 1; }
 }

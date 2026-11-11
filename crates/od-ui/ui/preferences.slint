@@ -521,6 +521,7 @@ export component PreferencesWindow inherits Window {
     in property <bool> auto-split;
     in property <bool> silence-start;
     in property <bool> silence-stop;
+    in property <bool> rec-voice;
     in property <string> rec-note;
     in property <string> rec-pattern;
     // The file name the pattern gives (example).
@@ -1002,6 +1003,9 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Start"); Switch { accessible-id: "prefs.recording.silence-start"; label: @tr("Start recording when sound starts"); on: root.silence-start; toggled(v) => { root.flag("rec.silence", v); } } }
                         Row { label: @tr("Stop"); Switch { accessible-id: "prefs.recording.silence-stop"; label: @tr("Stop recording after 30 seconds of silence"); on: root.silence-stop; toggled(v) => { root.flag("rec.silence-stop", v); } } }
                         Note { text: @tr("With automatic start, recording begins once the master carries sound for two seconds; stopping it by hand disarms it until the next start of the app."); }
+                        Heading { text: @tr("Voice"); }
+                        Row { label: @tr("Voice track"); Switch { accessible-id: "prefs.recording.voice"; label: @tr("Record the microphone on its own track as well"); on: root.rec-voice; toggled(v) => { root.flag("rec.voice", v); } } }
+                        Note { text: @tr("The voice track is a second WAV file next to the mix, sample for sample beside it, with only the MIC input in it. The mix keeps the voice as you heard it."); }
                     }
                 }
 

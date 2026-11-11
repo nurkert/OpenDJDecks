@@ -28,6 +28,24 @@ pub struct Settings {
     /// Mixer behaviour (Preferences > Controller > Mixer).
     pub mixer: MixerSettings,
     pub devices: DeviceSyncSettings,
+    /// [29] The queue's auto-play mix and the dead-air warning.
+    pub queue: QueueSettings,
+}
+
+/// The queue in Perform ([29]).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct QueueSettings {
+    /// Auto-play mix length in beats (0 = a cut at the end of the track).
+    pub mix_beats: u32,
+    /// Seconds before the music runs out that the dead-air warning shows.
+    pub warn_secs: u32,
+}
+
+impl Default for QueueSettings {
+    fn default() -> Self {
+        Self { mix_beats: 16, warn_secs: 30 }
+    }
 }
 
 /// "Sync all sticks" (Devices).
@@ -268,6 +286,8 @@ pub struct RecordingSettings {
     pub name_pattern: String,
     /// Recording level in dB (−12 … +12).
     pub gain_db: f32,
+    /// Record the microphone on its own track as well ([27]).
+    pub voice: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -429,6 +449,7 @@ impl Default for Settings {
             view: ViewSettings::default(),
             analysis: AnalysisSettings::default(),
             devices: DeviceSyncSettings::default(),
+            queue: QueueSettings::default(),
             controller: ControllerSettings::default(),
             recording: RecordingSettings::default(),
             advanced: AdvancedSettings::default(),
@@ -508,6 +529,7 @@ impl Default for RecordingSettings {
             silence_stop: false,
             name_pattern: String::new(),
             gain_db: 0.0,
+            voice: false,
         }
     }
 }

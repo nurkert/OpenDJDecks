@@ -9275,3 +9275,463 @@ msgstr "Die Show läuft von selbst. Die Setup-PIN unter LIGHTING übernimmt."
 msgctxt "OrderChain"
 msgid "TRIGGER"
 msgstr "TRIGGER"
+
+#: ui/preferences.slint:1006
+msgctxt "PreferencesWindow"
+msgid "Voice"
+msgstr "Stimme"
+
+#: ui/preferences.slint:1007
+msgctxt "PreferencesWindow"
+msgid "Voice track"
+msgstr "Sprachspur"
+
+#: ui/preferences.slint:1007
+msgctxt "PreferencesWindow"
+msgid "Record the microphone on its own track as well"
+msgstr "Das Mikrofon zusätzlich auf einer eigenen Spur aufnehmen"
+
+#: ui/preferences.slint:1008
+msgctxt "PreferencesWindow"
+msgid "The voice track is a second WAV file next to the mix, sample for sample beside it, with only the MIC input in it. The mix keeps the voice as you heard it."
+msgstr "Die Sprachspur ist eine zweite WAV-Datei neben dem Mix, Sample für Sample deckungsgleich, mit nur dem MIC-Eingang darin. Der Mix behält die Stimme so, wie du sie gehört hast."
+
+#: ui/rec.slint:155
+msgctxt "LoudnessRow"
+msgid "LOUDNESS"
+msgstr "LAUTHEIT"
+
+#: ui/rec.slint:156
+msgctxt "LoudnessRow"
+msgid "SHORT TERM"
+msgstr "KURZZEIT"
+
+#: ui/rec.slint:157
+msgctxt "LoudnessRow"
+msgid "TRUE PEAK"
+msgstr "TRUE PEAK"
+
+#: ui/rec.slint:164
+msgctxt "LoudnessRow"
+msgid "CLIPS"
+msgstr "CLIPS"
+
+#: ui/rec.slint:218
+msgctxt "TracklistEditor"
+msgid "EXPORT TEXT"
+msgstr "TEXT EXPORTIEREN"
+
+#: ui/rec.slint:218
+msgctxt "TracklistEditor"
+msgid "Write the tracklist as text (minutes, artist, title) next to the recording"
+msgstr "Die Trackliste als Text (Minuten, Künstler, Titel) neben die Aufnahme schreiben"
+
+#: ui/rec.slint:219
+msgctxt "TracklistEditor"
+msgid "EXPORT CUE"
+msgstr "CUE EXPORTIEREN"
+
+#: ui/rec.slint:219
+msgctxt "TracklistEditor"
+msgid "Write the CUE sheet next to the recording and the chapters into its files"
+msgstr "Das CUE-Sheet neben die Aufnahme und die Kapitel in ihre Dateien schreiben"
+
+#: ui/rec.slint:220
+msgctxt "TracklistEditor"
+msgid "CLOSE"
+msgstr "SCHLIESSEN"
+
+#: ui/rec.slint:220
+msgctxt "TracklistEditor"
+msgid "Back to the recordings"
+msgstr "Zurück zu den Aufnahmen"
+
+#: ui/rec.slint:230 ui/rec.slint:254
+msgctxt "TracklistEditor"
+msgid "TIME"
+msgstr "ZEIT"
+
+#: ui/rec.slint:231 ui/rec.slint:262
+msgctxt "TracklistEditor"
+msgid "TITLE"
+msgstr "TITEL"
+
+#: ui/rec.slint:232 ui/rec.slint:270
+msgctxt "TracklistEditor"
+msgid "ARTIST"
+msgstr "KÜNSTLER"
+
+#: ui/rec.slint:262
+msgctxt "TracklistEditor"
+msgid "MARKER NAME"
+msgstr "MARKERNAME"
+
+#: ui/rec.slint:277
+msgctxt "TracklistEditor"
+msgid "Insert an entry after this one"
+msgstr "Einen Eintrag nach diesem einfügen"
+
+#: ui/rec.slint:283
+msgctxt "TracklistEditor"
+msgid "Remove this entry"
+msgstr "Diesen Eintrag entfernen"
+
+#: ui/rec.slint:288
+msgctxt "TracklistEditor"
+msgid "No entries. Insert one for each track of the mix."
+msgstr "Keine Einträge. Füge einen für jeden Track des Mixes ein."
+
+#: ui/rec.slint:295
+msgctxt "TracklistEditor"
+msgid "INSERT AT START"
+msgstr "AM ANFANG EINFÜGEN"
+
+#: ui/rec.slint:296
+msgctxt "TracklistEditor"
+msgid "Insert an entry before the first one"
+msgstr "Einen Eintrag vor dem ersten einfügen"
+
+#: ui/rec.slint:304
+msgctxt "TracklistEditor"
+msgid "Return in a time field moves the entry; titles and artists are saved as you type. EXPORT writes the file again and puts the chapters into the recording."
+msgstr "Return in einem Zeitfeld verschiebt den Eintrag; Titel und Künstler werden beim Tippen gesichert. EXPORTIEREN schreibt die Datei neu und setzt die Kapitel in die Aufnahme."
+
+#: ui/rec.slint:330
+msgctxt "RecordingList"
+msgid "No recordings yet. Press RECORD in Perform, or the record button on your controller."
+msgstr "Noch keine Aufnahmen. Drücke AUFNEHMEN in Perform oder die Aufnahmetaste am Controller."
+
+#: ui/rec.slint:339
+msgctxt "RecordingList"
+msgid "{}  ·  VOICE TRACK"
+msgstr "{}  ·  SPRACHSPUR"
+
+#: ui/rec.slint:350
+msgctxt "RecordingList"
+msgid "TRACKLIST"
+msgstr "TRACKLISTE"
+
+#: ui/rec.slint:350
+msgctxt "RecordingList"
+msgid "Edit the tracklist and export it as text or CUE"
+msgstr "Die Trackliste bearbeiten und als Text oder CUE exportieren"
+
+#: ui/rec.slint:351
+msgctxt "RecordingList"
+msgid "SHOW FILE"
+msgstr "DATEI ZEIGEN"
+
+#: ui/rec.slint:351
+msgctxt "RecordingList"
+msgid "Show the recording in the file manager"
+msgstr "Aufnahme im Dateimanager zeigen"
+
+#: ui/rec.slint:352
+msgctxt "RecordingList"
+msgid "SPLIT INTO TRACKS"
+msgstr "IN TRACKS TEILEN"
+
+#: ui/rec.slint:352
+msgctxt "RecordingList"
+msgid "Cut the recording into one file per played track"
+msgstr "Aufnahme in eine Datei pro gespieltem Track schneiden"
+
+#: ui/rec.slint:384
+msgctxt "RecPanel"
+msgid "MARK"
+msgstr "MARKE"
+
+#: ui/rec.slint:385
+msgctxt "RecPanel"
+msgid "Set a chapter marker here: it goes into the tracklist and into the file"
+msgstr "Hier eine Kapitelmarke setzen: sie kommt in die Trackliste und in die Datei"
+
+#: ui/rec.slint:420
+msgctxt "RecPanel"
+msgid "{} · voice in {}"
+msgstr "{} · Stimme in {}"
+
+#: ui/devices.slint:38
+msgctxt "FormatBadges"
+msgid "FORMAT"
+msgstr "FORMAT"
+
+#: ui/devices.slint:38
+msgctxt "FormatBadges"
+msgid "NO FORMAT YET"
+msgstr "NOCH KEIN FORMAT"
+
+#: ui/devices.slint:39
+msgctxt "FormatBadges"
+msgid "CLUB USB"
+msgstr "CLUB-USB"
+
+#: ui/devices.slint:72
+msgctxt "EmergencyKey"
+msgid "COPYING {} %"
+msgstr "KOPIERT {} %"
+
+#: ui/devices.slint:72
+msgctxt "EmergencyKey"
+msgid "EMERGENCY STICK"
+msgstr "NOTFALL-STICK"
+
+#: ui/devices.slint:74
+msgctxt "EmergencyKey"
+msgid "Copy the open set or playlist and the tracks on the decks to the plugged-in stick, ready to play on club players"
+msgstr "Das offene Set oder die Playlist und die Tracks auf den Decks auf den eingesteckten Stick kopieren, spielbereit für Club-Player"
+
+#: ui/devices.slint:75
+msgctxt "EmergencyKey"
+msgid "Plug in a USB stick for an emergency copy"
+msgstr "Für eine Notfallkopie einen USB-Stick einstecken"
+
+#: ui/devices.slint:106
+msgctxt "EmergencyBand"
+msgid "Emergency stick ready: {}"
+msgstr "Notfall-Stick bereit: {}"
+
+#: ui/devices.slint:107
+msgctxt "EmergencyBand"
+msgid "Emergency stick failed"
+msgstr "Notfall-Stick fehlgeschlagen"
+
+#: ui/devices.slint:107
+msgctxt "EmergencyBand"
+msgid "Copying to {} for an emergency"
+msgstr "Kopiert für den Notfall auf {}"
+
+#: ui/devices.slint:130
+msgctxt "EmergencyBand"
+msgid "EJECT"
+msgstr "AUSWERFEN"
+
+#: ui/devices.slint:130
+msgctxt "EmergencyBand"
+msgid "Eject the emergency stick"
+msgstr "Den Notfall-Stick auswerfen"
+
+#: ui/devices.slint:131
+msgctxt "EmergencyBand"
+msgid "CLOSE"
+msgstr "SCHLIESSEN"
+
+#: ui/devices.slint:131
+msgctxt "EmergencyBand"
+msgid "Hide this result"
+msgstr "Dieses Ergebnis ausblenden"
+
+#: ui/rec.slint:256
+msgctxt "TracklistEditor"
+msgid "Minutes and seconds such as 12:34; Return moves the entry there"
+msgstr "Minuten und Sekunden wie 12:34; Return verschiebt den Eintrag dorthin"
+
+#: ui/rec.slint:467
+msgctxt "LiveTracklist"
+msgid "The tracklist grows here as tracks become audible."
+msgstr "Die Trackliste wächst hier, sobald Tracks hörbar werden."
+
+#: ui/sidebar.slint:577
+msgctxt "Sidebar"
+msgid "READY ON {}"
+msgstr "BEREIT AUF {}"
+
+#: ui/sidebar.slint:577
+msgctxt "Sidebar"
+msgid "FAILED · {}"
+msgstr "FEHLGESCHLAGEN · {}"
+
+#: ui/app.slint:643
+msgctxt "AppWindow"
+msgid "Queue"
+msgstr "Warteschlange"
+
+#: ui/app.slint:1495
+msgctxt "AppWindow"
+msgid "QUEUE"
+msgstr "REIHE"
+
+#: ui/app.slint:1497
+msgctxt "AppWindow"
+msgid "Queue: what plays next, requests and auto-play"
+msgstr "Warteschlange: was als Nächstes läuft, Wünsche und Auto-Play"
+
+#: ui/queue.slint:87
+msgctxt "QueueItem"
+msgid "DO NOT PLAY"
+msgstr "NICHT SPIELEN"
+
+#: ui/queue.slint:88
+msgctxt "QueueItem"
+msgid "REQUEST · NOT IN THE LIBRARY"
+msgstr "WUNSCH · NICHT IN DER BIBLIOTHEK"
+
+#: ui/queue.slint:89
+msgctxt "QueueItem"
+msgid "REQUEST · {}"
+msgstr "WUNSCH · {}"
+
+#: ui/queue.slint:101
+msgctxt "QueueItem"
+msgid "Take the track selected in the browser for this request"
+msgstr "Den im Browser ausgewählten Track für diesen Wunsch nehmen"
+
+#: ui/queue.slint:108
+msgctxt "QueueItem"
+msgid "Move up in the queue"
+msgstr "In der Warteschlange nach oben"
+
+#: ui/queue.slint:115
+msgctxt "QueueItem"
+msgid "Move down in the queue"
+msgstr "In der Warteschlange nach unten"
+
+#: ui/queue.slint:121
+msgctxt "QueueItem"
+msgid "Remove from the queue"
+msgstr "Aus der Warteschlange entfernen"
+
+#: ui/queue.slint:139
+msgctxt "QueuePanel"
+msgid "UP NEXT · {}"
+msgstr "ALS NÄCHSTES · {}"
+
+#: ui/queue.slint:146
+msgctxt "QueuePanel"
+msgid "AUTO-PLAY"
+msgstr "AUTO-PLAY"
+
+#: ui/queue.slint:148
+msgctxt "QueuePanel"
+msgid "Stop playing the queue by itself"
+msgstr "Die Warteschlange nicht mehr von selbst spielen"
+
+#: ui/queue.slint:148
+msgctxt "QueuePanel"
+msgid "Play the queue by itself, mixing each track into the next"
+msgstr "Die Warteschlange von selbst spielen und jeden Track in den nächsten mischen"
+
+#: ui/queue.slint:157
+msgctxt "QueuePanel"
+msgid "LOAD NEXT"
+msgstr "NÄCHSTEN LADEN"
+
+#: ui/queue.slint:159
+msgctxt "QueuePanel"
+msgid "Load the next track of the queue to a free deck"
+msgstr "Den nächsten Track der Warteschlange auf ein freies Deck laden"
+
+#: ui/queue.slint:165
+msgctxt "QueuePanel"
+msgid "ADD"
+msgstr "HINZU"
+
+#: ui/queue.slint:167
+msgctxt "QueuePanel"
+msgid "Add the tracks selected in the browser to the queue"
+msgstr "Die im Browser ausgewählten Tracks zur Warteschlange hinzufügen"
+
+#: ui/queue.slint:179
+msgctxt "QueuePanel"
+msgid "REQUEST: ARTIST, TITLE · RETURN"
+msgstr "WUNSCH: KÜNSTLER, TITEL · RETURN"
+
+#: ui/queue.slint:184
+msgctxt "QueuePanel"
+msgid "Nothing queued. ADD takes the tracks selected in the browser; a request typed above is matched to the library."
+msgstr "Nichts in der Warteschlange. HINZU nimmt die im Browser ausgewählten Tracks; ein oben getippter Wunsch wird in der Bibliothek gesucht."
+
+#: ui/queue.slint:192
+msgctxt "QueuePanel"
+msgid "MIX BEATS"
+msgstr "MIX-BEATS"
+
+#: ui/queue.slint:199
+msgctxt "QueuePanel"
+msgid "Auto-play cuts to the next track when one ends"
+msgstr "Auto-Play schneidet zum nächsten Track, wenn einer endet"
+
+#: ui/queue.slint:199
+msgctxt "QueuePanel"
+msgid "Auto-play mixes over {} beats"
+msgstr "Auto-Play mischt über {} Beats"
+
+#: ui/queue.slint:206
+msgctxt "QueuePanel"
+msgid "WARN BEFORE SILENCE"
+msgstr "VOR STILLE WARNEN"
+
+#: ui/queue.slint:213
+msgctxt "QueuePanel"
+msgid "Warn {} before the music runs out with nothing cued"
+msgstr "{} vor dem Ende der Musik warnen, wenn nichts bereitsteht"
+
+#: ui/queue.slint:260
+msgctxt "SetAlertBar"
+msgid "LOAD NEXT"
+msgstr "NÄCHSTEN LADEN"
+
+#: ui/queue.slint:261
+msgctxt "SetAlertBar"
+msgid "Load the next track of the queue to a free deck"
+msgstr "Den nächsten Track der Warteschlange auf ein freies Deck laden"
+
+#: ui/queue.slint:269
+msgctxt "SetAlertBar"
+msgid "UNLOAD"
+msgstr "ENTLADEN"
+
+#: ui/queue.slint:270
+msgctxt "SetAlertBar"
+msgid "Take the track off the deck again"
+msgstr "Den Track wieder vom Deck nehmen"
+
+#: ui/queue.slint:278
+msgctxt "SetAlertBar"
+msgid "KEEP"
+msgstr "BEHALTEN"
+
+#: ui/queue.slint:279
+msgctxt "SetAlertBar"
+msgid "Keep it on the deck and hide this warning"
+msgstr "Auf dem Deck lassen und diese Warnung ausblenden"
+
+#: ui/table.slint:256
+msgctxt "TrackLine"
+msgid "Add to the queue"
+msgstr "Zur Warteschlange hinzufügen"
+
+#: ui/table.slint:257
+msgctxt "TrackLine"
+msgid "Do not play (on / off)"
+msgstr "Nicht spielen (an / aus)"
+
+#: ui/filter.slint:101
+msgctxt "FilterBar"
+msgid "Not played tonight"
+msgstr "Heute nicht gespielt"
+
+#: ui/filter.slint:102
+msgctxt "FilterBar"
+msgid "Leave out the tracks that were on air in this session"
+msgstr "Die Tracks auslassen, die in dieser Session gelaufen sind"
+
+#: ui/info.slint:66
+msgctxt "InfoField"
+msgid "MIXED · RETURN SETS ALL"
+msgstr "GEMISCHT · RETURN SETZT ALLE"
+
+#: ui/info.slint:135
+msgctxt "InfoPanel"
+msgid "{} tracks selected: a field you change is set on all of them, in one undo step."
+msgstr "{} Tracks ausgewählt: ein Feld, das du änderst, wird bei allen gesetzt, in einem Rückgängig-Schritt."
+
+#: ui/info.slint:152
+msgctxt "InfoPanel"
+msgid "Do not play"
+msgstr "Nicht spielen"
+
+#: ui/info.slint:153
+msgctxt "InfoPanel"
+msgid "Warn when these tracks are loaded, and leave them out of auto-play"
+msgstr "Beim Laden dieser Tracks warnen und sie bei Auto-Play auslassen"

@@ -288,9 +288,109 @@ impl AppState {
         }
     }
 
+    /// What the rows before the search depend on.
+    fn search_key(&self) -> super::SearchKey {
+        let b = &self.browser;
+        super::SearchKey {
+            special: b.special.clone(),
+            node: b.node,
+            sort: b.sort.clone(),
+            descending: b.descending,
+            stick: b.stick.as_ref().map(|(i, _)| *i),
+        }
+    }
+
+    /// The rows of the current list before search and filter.
+    fn source_rows(&self) -> Vec<TrackRecord> {
+        let b = &self.browser;
+        match (&b.special, b.node) {
+            (Some(sp), _) => super::sources::rows(
+                &self.lib,
+                sp,
+                &b.tag_list,
+                b.similar_track,
+                &b.auto.lists,
+            ),
+            (None, None) => self
+                .src()
+                .tracks(sort_key(&b.sort).unwrap_or_default(), b.descending)
+                .unwrap_or_default(),
+            (None, Some(n)) => self.src().node_tracks(n).unwrap_or_default(),
+        }
+    }
+
+    /// [63] A new search over the same list: the rows before the search and
+    /// their folded text are kept from the last keystroke, so a keystroke
+    /// only scores, filters and projects. Any other change reloads in full
+    /// ([`AppState::load_rows`]).
+    pub fn load_rows_search(&mut self) {
+        if self.explorer.open.is_some() {
+            self.load_rows();
+            return;
+        }
+        let key = self.search_key();
+        if self.browser.search_base.as_ref().is_none_or(|b| b.key != key) {
+            let rows = self.source_rows();
+            let folded = rows.iter().map(super::fuzzy::Folded::of).collect();
+            self.browser.search_base = Some(super::SearchBase { key, rows, folded });
+        }
+        let b = &self.browser;
+        let base = b.search_base.as_ref().expect("built above");
+        let searching = !b.search.trim().is_empty();
+        let ranked = searching && b.search_ranked;
+        let q = super::fuzzy::Query::new(&b.search);
+        let mut hits = super::fuzzy::matches(&q, &base.folded);
+        if ranked {
+            hits.sort_by(|a, b| b.1.cmp(&a.1));
+        }
+        let mut rows: Vec<TrackRecord> = hits
+            .iter()
+            .map(|(i, _)| &base.rows[*i])
+            .filter(|t| {
+                !b.filter.active()
+                    || b.filter.matches(
+                        t,
+                        b.user_tags.get(&t.id).map(Vec::as_slice).unwrap_or(&[]),
+                        b.reference.as_ref(),
+                    )
+            })
+            .filter(|t| !(b.filter.unplayed && !self.read_only() && b.played_tonight.contains(&t.id)))
+            .cloned()
+            .collect();
+        let then = &self.settings.browser.sort_then;
+        let sql_sorted = b.node.is_none()
+            && b.special.is_none()
+            && !searching
+            && sort_key(&b.sort).is_some()
+            && b.sort != "key";
+        if !ranked && (!sql_sorted || !then.is_empty()) {
+            let reference = b.match_ref.as_ref();
+            let key_order = self.settings.key_order();
+            sort_rows_with(&mut rows, &b.sort, b.descending, then, key_order, &|t: &TrackRecord| {
+                super::filter::match_with(reference, t.bpm, t.key).rank()
+            });
+        }
+        self.set_rows(rows);
+    }
+
+    /// The new rows, keeping the selection on the same tracks.
+    fn set_rows(&mut self, rows: Vec<TrackRecord>) {
+        let selected: HashSet<TrackId> = self.selected_ids().into_iter().collect();
+        let b = &mut self.browser;
+        b.rows = rows;
+        b.selection = b
+            .rows
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| selected.contains(&t.id))
+            .map(|(i, _)| i)
+            .collect();
+    }
+
     /// Reloads the rows of the current list, keeping the selection on the
     /// same tracks.
     pub fn load_rows(&mut self) {
+        self.browser.search_base = None;
         if self.explorer.open.is_some() {
             let (col, desc) = (self.browser.sort.clone(), self.browser.descending);
             let key_order = self.settings.key_order();
@@ -326,6 +426,9 @@ impl AppState {
                     b.reference.as_ref(),
                 )
             });
+        }
+        if b.filter.unplayed && !self.read_only() {
+            rows.retain(|t| !b.played_tonight.contains(&t.id));
         }
         let then = &self.settings.browser.sort_then;
         // The key order is always applied here: SQL only knows the stored text.
@@ -375,6 +478,8 @@ pub(crate) fn same_row(a: &TrackRow, b: &TrackRow) -> bool {
         && a.note == b.note
         && a.deck == b.deck
         && a.played == b.played
+        && a.played_at == b.played_at
+        && a.dnp == b.dnp
         && a.tag_color == b.tag_color
         && a.label == b.label
         && a.comment == b.comment
@@ -580,6 +685,7 @@ fn refresh_list(app: &App) {
         }
     };
     let played = app.recorder.borrow().played.clone();
+    let played_at = app.recorder.borrow().played_at.clone();
     let entries = match (b.node, kind) {
         (Some(n), Some(NodeKind::Set)) => st.src().entries(n).unwrap_or_default(),
         _ => vec![],
@@ -587,7 +693,21 @@ fn refresh_list(app: &App) {
     let show_match = super::match_shown(&st);
     // [60] STEMS column: the cache (one file check per track, remembered)
     // and the stems-ahead batch.
-    let stems: Vec<(&'static str, String)> = if super::stems_shown(&st) && !st.read_only() {
+    // [28] On a stick: whether the stick carries each track's stems.
+    let on_stick: Option<Vec<bool>> = st
+        .stick_root()
+        .map(|root| b.rows.iter().map(|t| od_devices::stems_on_stick(root, &t.content_hash)).collect());
+    let stems: Vec<(&'static str, String)> = if let Some(on) = on_stick.as_ref().filter(|_| super::stems_shown(&st)) {
+        on.iter()
+            .map(|&s| {
+                if s {
+                    ("on-stick", od_i18n::tr("ON STICK").to_string())
+                } else {
+                    ("not-on-stick", od_i18n::tr("NONE").to_string())
+                }
+            })
+            .collect()
+    } else if super::stems_shown(&st) && !st.read_only() {
         let decks = app.decks.borrow();
         let cache = decks.stem_cache();
         b.rows
@@ -660,6 +780,15 @@ fn refresh_list(app: &App) {
                 .map(|(_, d)| *d as i32 + 1)
                 .unwrap_or(0),
             played: !st.read_only() && played.contains(&t.id),
+            played_at: if st.read_only() {
+                SharedString::new()
+            } else {
+                played_at.get(&t.id).cloned().unwrap_or_default().into()
+            },
+            dnp: b
+                .user_tags
+                .get(&t.id)
+                .is_some_and(|v| v.iter().any(od_library::UserTag::is_do_not_play)),
             tag_color: t
                 .tags
                 .color
@@ -744,6 +873,21 @@ fn refresh_list(app: &App) {
     };
     ui.set_node_title(title.clone().into());
     ui.set_node_kind(kind_str.into());
+    ui.set_stick_open(st.stick_root().is_some());
+    if let Some(root) = st.stick_root() {
+        let (club, native) = od_devices::stick_formats(root);
+        let compat = st
+            .devices
+            .statuses
+            .iter()
+            .find(|s| s.volume.as_ref().is_some_and(|v| v.mount_point == root))
+            .is_some_and(|s| s.device.formats.club_usb_compat);
+        ui.set_stick_club(club);
+        ui.set_stick_compat(compat);
+        ui.set_stick_native(native);
+        let with = on_stick.as_ref().map(|v| v.iter().filter(|s| **s).count()).unwrap_or(0);
+        ui.set_stick_stems(od_i18n::trf("STEMS ON THE STICK {} OF {}", &[&with, &b.rows.len()]).into());
+    }
     ui.set_node_sub(
         od_i18n::trf("{} TRACKS  ·  {}", &[&b.rows.len(), &format::time(total)]).into(),
     );

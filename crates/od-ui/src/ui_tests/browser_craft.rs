@@ -247,8 +247,8 @@ fn stick_screen_shows_badges_state_and_actions() {
     ui.pump(200);
     let n = id.0;
     assert!(ui.wait_until(10.0, |u| u.has(&format!("devices.stick{n}"))));
-    assert_eq!(ui.value(&format!("devices.badge.club{n}")), "CLUB USB");
-    assert_eq!(ui.value(&format!("devices.badge.native{n}")), "OPENDJDECKS");
+    assert_eq!(ui.value(&format!("devices.badge{n}.club")), "CLUB USB");
+    assert_eq!(ui.value(&format!("devices.badge{n}.native")), "OPENDJDECKS");
     let state = |u: &Ui| u.value(&format!("devices.state{n}"));
     assert!(
         ui.wait_until(30.0, |u| ["IN SYNC", "CHANGES WAITING"].contains(&state(u).as_str()) || state(u).starts_with("SYNCING")),

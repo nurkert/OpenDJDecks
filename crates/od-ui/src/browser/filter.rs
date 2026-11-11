@@ -24,6 +24,9 @@ pub(crate) struct Filter {
     pub key_match: bool,
     /// Tempo within ± this percentage of the reference (double / half time count).
     pub bpm_pct: Option<f64>,
+    /// [63] Only tracks not played tonight (applied with the played set,
+    /// beside [`Filter::matches`]).
+    pub unplayed: bool,
 }
 
 fn number(v: &str) -> Option<f64> {
@@ -57,6 +60,7 @@ impl Filter {
             || self.user_tag.is_some()
             || self.key_match
             || self.bpm_pct.is_some()
+            || self.unplayed
     }
 
     /// Conditions that need a reference track.
@@ -78,6 +82,7 @@ impl Filter {
             "key" => self.key_match = !value.is_empty(),
             "rating" => self.rating_min = value.trim().parse::<u8>().unwrap_or(0).min(5),
             "user-tag" => self.user_tag = parse_user_tag(value),
+            "unplayed" => self.unplayed = !value.is_empty(),
             "clear" => *self = Filter::default(),
             _ => {}
         }
@@ -144,6 +149,9 @@ impl Filter {
         if let Some(t) = &self.user_tag {
             out.push(("user-tag", user_tag_text(t)));
         }
+        if self.unplayed {
+            out.push(("unplayed", od_i18n::tr("NOT PLAYED TONIGHT").to_string()));
+        }
         out
     }
 
@@ -170,6 +178,7 @@ impl Filter {
                 .unwrap_or_default()
                 .into(),
             key_match: self.key_match,
+            unplayed: self.unplayed,
             bpm_pct: num(self.bpm_pct).into(),
             reference: reference
                 .map(|r| r.label.clone())

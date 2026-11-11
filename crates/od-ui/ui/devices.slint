@@ -6,7 +6,7 @@ import { Caps, PlateButton, KeyFocus, TooltipState } from "controls.slint";
 import { DeviceRow, VolumeRow } from "structs.slint";
 
 // A format the stick carries, as a labelled badge ([28], [48]).
-component FormatBadge inherits Rectangle {
+export component FormatBadge inherits Rectangle {
     in property <string> text;
     height: 18px;
     width: t.preferred-width + 12px;
@@ -17,6 +17,119 @@ component FormatBadge inherits Rectangle {
         text: root.text;
         font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
         color: Theme.bone-2; vertical-alignment: center;
+    }
+}
+
+// [28] The formats of a stick as one labelled element: a FORMAT legend
+// and a badge per format (CLUB USB, its WAV option, OPENDJDECKS), the same
+// on the USB screen, in the tree and over a stick's track list.
+export component FormatBadges inherits HorizontalLayout {
+    // Test id prefix: `<prefix>.club`, `<prefix>.wav`, `<prefix>.native`.
+    in property <string> prefix;
+    in property <bool> club;
+    in property <bool> compat;
+    in property <bool> native;
+    // Without the FORMAT legend (a tight row that names it otherwise).
+    in property <bool> legend: true;
+    spacing: Theme.s1;
+    alignment: start;
+    accessible-role: text;
+    accessible-id: root.prefix;
+    accessible-value: (root.club ? "CLUB USB " : "") + (root.club && root.compat ? "WAV " : "") + (root.native ? "OPENDJDECKS" : "");
+    if root.legend: Caps { horizontal-stretch: 0; text: root.club || root.native ? @tr("FORMAT") : @tr("NO FORMAT YET"); vertical-alignment: center; }
+    if root.club: FormatBadge { accessible-role: text; accessible-id: root.prefix + ".club"; accessible-value: self.text; text: @tr("CLUB USB"); }
+    if root.club && root.compat: FormatBadge { accessible-role: text; accessible-id: root.prefix + ".wav"; accessible-value: self.text; text: "WAV"; }
+    if root.native: FormatBadge { accessible-role: text; accessible-id: root.prefix + ".native"; accessible-value: self.text; text: "OPENDJDECKS"; }
+}
+
+// [28] The emergency stick: one press copies the open set or playlist and
+// the tracks on the decks to a plugged-in stick in the formats club
+// players and OpenDJDecks play.
+export global Emergency {
+    // A stick is plugged in to copy to.
+    in property <bool> available;
+    // "" (idle), "copying", "done" or "failed".
+    in property <string> stage;
+    in property <float> progress;
+    // The stick's name, and what happens or happened in words.
+    in property <string> stick;
+    in property <string> detail;
+    // The formats written.
+    in property <bool> club;
+    in property <bool> compat;
+    in property <bool> native;
+    callback start();
+    callback eject();
+    callback dismiss();
+}
+
+// The key: at rest a plate, filled live with its percent while copying.
+export component EmergencyKey inherits PlateButton {
+    accessible-id: "devices.emergency";
+    compact: true;
+    tone: Theme.live;
+    enabled: Emergency.available || Emergency.stage == "copying";
+    active: Emergency.stage == "copying";
+    label: Emergency.stage == "copying" ? @tr("COPYING {} %", Math.round(Emergency.progress * 100)) : @tr("EMERGENCY STICK");
+    tooltip: Emergency.available || Emergency.stage == "copying"
+        ? @tr("Copy the open set or playlist and the tracks on the decks to the plugged-in stick, ready to play on club players")
+        : @tr("Plug in a USB stick for an emergency copy");
+    command: "devices.emergency";
+    clicked => { if (Emergency.stage != "copying") { Emergency.start(); } }
+}
+
+// The result band on the USB screen: the line in the state's form, the
+// stick, what happened, the formats, EJECT when it is ready.
+export component EmergencyBand inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-id: "devices.emergency-band";
+    accessible-value: Emergency.stage;
+    height: 84px;
+    border-radius: Theme.r-panel;
+    background: Theme.ground;
+    property <string> form: Emergency.stage == "done" ? "solid" : Emergency.stage == "failed" ? "struck" : "dashed";
+    property <color> tone: Emergency.stage == "done" ? Theme.live : Emergency.stage == "failed" ? Theme.fault : Theme.attention;
+    if Emergency.stage != "copying": VLine { x: 12px; y: 10px; height: parent.height - 20px; form: root.form; tone: root.tone; }
+    if Emergency.stage == "copying": Rectangle {
+        x: 12px; y: 10px; width: Theme.line; height: parent.height - 20px;
+        VLine { height: parent.height; form: "dashed"; tone: Theme.attention.with-alpha(0.6); }
+        Rectangle {
+            y: parent.height * (1 - clamp(Emergency.progress, 0, 1));
+            height: parent.height * clamp(Emergency.progress, 0, 1);
+            background: Theme.live;
+            animate y, height { duration: Theme.t-panel; easing: Theme.ease; }
+        }
+    }
+    property <length> keys-w: keys.preferred-width + Theme.s2;
+    Text {
+        accessible-role: text; accessible-id: "devices.emergency-state"; accessible-value: self.text;
+        x: 26px; y: 8px; width: root.width - 26px - root.keys-w; height: 22px;
+        text: Emergency.stage == "done" ? @tr("Emergency stick ready: {}", Emergency.stick)
+            : Emergency.stage == "failed" ? @tr("Emergency stick failed") : @tr("Copying to {} for an emergency", Emergency.stick);
+        overflow: elide; vertical-alignment: center;
+        font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
+        color: Emergency.stage == "failed" ? Theme.fault : Theme.bone;
+    }
+    Text {
+        accessible-role: text; accessible-id: "devices.emergency-detail"; accessible-value: self.text;
+        x: 26px; y: 33px; width: root.width - 26px - Theme.s2; height: 18px;
+        text: Emergency.detail; overflow: elide; vertical-alignment: center;
+        font-family: Theme.family; font-size: Theme.control;
+        color: Emergency.stage == "failed" ? Theme.fault : Theme.bone-2;
+    }
+    // The formats written, as on the stick's own row.
+    HorizontalLayout {
+        x: 26px; y: 56px; width: root.width - 26px - Theme.s2; height: 18px;
+        spacing: Theme.s1;
+        FormatBadges { prefix: "devices.emergency.format"; legend: false; club: Emergency.club; compat: Emergency.compat; native: Emergency.native; }
+        Rectangle { horizontal-stretch: 1; }
+    }
+    keys := HorizontalLayout {
+        x: parent.width - self.width - Theme.s2; y: 6px; height: 26px;
+        width: self.preferred-width;
+        spacing: Theme.key-gap;
+        if Emergency.stage == "done": PlateButton { accessible-id: "devices.emergency-eject"; compact: true; label: @tr("EJECT"); tone: Theme.bone-3; tooltip: @tr("Eject the emergency stick"); clicked => { Emergency.eject(); } }
+        if Emergency.stage != "copying": PlateButton { accessible-id: "devices.emergency-close"; compact: true; label: @tr("CLOSE"); tooltip: @tr("Hide this result"); clicked => { Emergency.dismiss(); } }
     }
 }
 
@@ -108,13 +221,11 @@ export component DeviceLine inherits Rectangle {
             overflow: elide; vertical-alignment: center;
         }
     }
-    // Format badges, then the space.
+    // Format badges (labelled), then the space.
     HorizontalLayout {
         x: root.text-x; y: 56px; width: root.width - root.text-x - Theme.s2; height: 18px;
         spacing: Theme.s1;
-        if root.device.club: FormatBadge { accessible-role: text; accessible-id: "devices.badge.club\{root.device.id}"; accessible-value: self.text; text: @tr("CLUB USB"); }
-        if root.device.club && root.device.compat: FormatBadge { text: "WAV"; }
-        if root.device.native: FormatBadge { accessible-role: text; accessible-id: "devices.badge.native\{root.device.id}"; accessible-value: self.text; text: "OPENDJDECKS"; }
+        FormatBadges { horizontal-stretch: 0; prefix: "devices.badge\{root.device.id}"; club: root.device.club; compat: root.device.compat; native: root.device.native; }
         Rectangle { width: Theme.s1; }
         Caps { min-width: 0px; horizontal-stretch: 1; text: root.device.space; overflow: elide; vertical-alignment: center; }
     }

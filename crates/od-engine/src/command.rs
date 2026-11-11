@@ -47,6 +47,10 @@ pub enum Command {
     SetMasterDeck(Option<usize>),
     /// Enables/disables the record tap (master stereo into the record ring).
     SetRecordTap(bool),
+    /// Enables/disables the voice tap: the microphone / aux input on its
+    /// own (after its level, before talkover ducks the music) into a second
+    /// ring, sample-aligned with the record tap ([`crate::Engine::take_voice_tap`]).
+    SetVoiceTap(bool),
     /// Starts deck `deck` when the master clock reaches `beat` (a grid beat
     /// of the sync master, e.g. its next phrase start), within one audio
     /// block. Without a playing master the deck starts at once. `None`

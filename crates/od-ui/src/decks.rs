@@ -880,6 +880,18 @@ pub(crate) fn stems_warning(title: &str, deck: usize, separating: bool) -> Strin
     }
 }
 
+/// Takes the track off `deck` ([29]: UNLOAD on a do-not-play warning).
+pub(crate) fn unload(app: &App, deck: usize) {
+    if deck >= DECKS {
+        return;
+    }
+    engine::deck_cmd(app, deck, DeckCommand::Unload);
+    let mut d = app.decks.borrow_mut();
+    d.loaded[deck] = None;
+    d.pending[deck] = None;
+    d.engine_data[deck] = None;
+}
+
 /// Double-click in the library: load into the first deck that is not
 /// playing (Perform) or start the preview (Prepare).
 pub(crate) fn load_selected_into_free_deck(app: &App) {

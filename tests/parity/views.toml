@@ -8187,3 +8187,109 @@ elements = [
   "mixer.ch1.cue",
   "mixer.ch1.fader",
 ]
+
+[[view]]
+id = "recordings.tracklist"
+title = "Recordings: the tracklist editor of a finished mix"
+mode = "prepare"
+source = "Roadmap [27]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "browser", "status"]
+features = ["rec-tracklist-edit", "rec-chapters"]
+note = "TRACKLIST on a mix: its name and entry count, EXPORT TEXT / EXPORT CUE / CLOSE, then one row per entry with time, title, artist, insert after and remove; INSERT AT START under the rows"
+
+[[view.region]]
+id = "rec.edit.head"
+band = "browser"
+place = "top of the recordings page"
+order = "row"
+elements = [
+  "rec.edit.export-text",
+  "rec.edit.export-cue",
+  "rec.edit.close",
+]
+
+[[view.region]]
+id = "rec.edit.row0"
+band = "browser"
+place = "the first entry"
+order = "row"
+elements = [
+  "rec.edit.time0",
+  "rec.edit.title0",
+  "rec.edit.artist0",
+  "rec.edit.insert0",
+  "rec.edit.remove0",
+]
+
+[[view]]
+id = "panel.queue"
+title = "Queue panel beside the list (up next, requests, auto-play)"
+mode = "prepare"
+source = "Roadmap [29]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "browser", "status"]
+features = ["perform-queue", "perform-requests", "perform-auto-play", "perform-dead-air"]
+note = "The same panel in Perform and Prepare (here Prepare with the full browser, where the rows have the height): UP NEXT with AUTO-PLAY, LOAD NEXT and ADD, the request field, a row per entry with its keys, then MIX BEATS and WARN BEFORE SILENCE"
+
+[[view.region]]
+id = "queue.head"
+band = "browser"
+place = "panel, top"
+order = "row"
+elements = [
+  "queue.count",
+  "queue.auto",
+]
+
+[[view.region]]
+id = "queue.keys"
+band = "browser"
+place = "panel, under the head"
+order = "row"
+elements = [
+  "queue.load-next",
+  "queue.add",
+]
+
+[[view.region]]
+id = "queue.rows"
+band = "browser"
+place = "panel, the entries"
+order = "column"
+elements = [
+  "queue.request",
+  "queue.row0",
+  "queue.row1",
+]
+
+[[view]]
+id = "devices.emergency"
+title = "USB screen: the emergency stick and its result"
+mode = "prepare"
+source = "Roadmap [28]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "browser", "status"]
+features = ["export-emergency-stick", "export-stick-formats"]
+note = "EMERGENCY STICK under SYNC ALL STICKS, then the result band: what happened, the detail, the formats written as badges, EJECT and CLOSE"
+
+[[view.region]]
+id = "devices.emergency.result"
+band = "browser"
+place = "USB screen, left column"
+order = "column"
+elements = [
+  "devices.emergency",
+  "devices.emergency-state",
+  "devices.emergency-detail",
+]
+
+[[view.region]]
+id = "devices.emergency.keys"
+band = "browser"
+place = "the result band, right"
+order = "row"
+elements = [
+  "devices.emergency-eject",
+  "devices.emergency-close",
+]

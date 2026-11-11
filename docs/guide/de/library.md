@@ -1,8 +1,8 @@
 ---
 title: Bibliothek, Playlists und Smart-Listen
 description: Tracks finden, sortieren und taggen. Playlists, Smart-Listen, Tags, Auto-Sortierung, die MATCH-Spalte, passende Tracks und der Explorer.
-keywords: [bibliothek, sammlung, playlist, playlists, smart liste, smart playlist, ordner, suche, suchen, filter, tag, tags, bewertung, sterne, farbe, kommentar, sortieren, auto sortierung, match, match spalte, passend, duplikate, doppelt, verschoben, fehlende dateien, explorer, verlauf, spalten, rückgängig, backup]
-features: [browser-fuzzy-search, browser-filter-chips, browser-rails-and-areas, browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck, browser-calm-table]
+keywords: [bibliothek, sammlung, playlist, playlists, smart liste, smart playlist, ordner, suche, suchen, filter, tag, tags, bewertung, sterne, farbe, kommentar, sortieren, auto sortierung, match, match spalte, passend, duplikate, doppelt, verschoben, fehlende dateien, explorer, verlauf, spalten, rückgängig, backup, heute gespielt, schon gespielt, mehrere bearbeiten, sammelbearbeitung, gemischt, nicht spielen, suchgeschwindigkeit]
+features: [browser-do-not-play, browser-search-speed, browser-played-tonight, browser-bulk-tags, browser-fuzzy-search, browser-filter-chips, browser-rails-and-areas, browser-key-sort, browser-collection-table, browser-column-choice, browser-artwork, browser-tree-nodes, browser-tree-reorder, browser-add-to-playlist, browser-playlist-reorder, browser-drag-and-drop, browser-search, browser-filter, browser-rating, browser-track-colour, browser-comments, browser-tag-editing, browser-user-tags, browser-tag-list, browser-similar-tracks, browser-auto-sort, browser-match-column, browser-track-suggestion, browser-smart-playlists, browser-own-history, browser-loaded-indicator, browser-duplicate-check, browser-relocate, browser-consolidate, browser-undo-redo, browser-explorer, browser-explorer-subfolders, browser-explorer-import-on-load, browser-source-rail, browser-column-reorder-multisort, browser-row-context-menu, browser-info-panel, browser-sub-browser, browser-library-backups, browser-library-archive, browser-played-mark, browser-load-gestures, browser-drag-to-deck, browser-calm-table]
 ---
 
 Der Browser ist in Prepare und Perform derselbe. Links liegen deine Quellen und Listen, in der Mitte die Tracks, rechts eine Leiste mit Panels.
@@ -62,9 +62,15 @@ Die Suche verzeiht Tippfehler und findet Wörter in Titel, Artist und Album, auc
 - `↓` und `↑` in der Suche bewegen sich durch die Treffer.
 - `Return` lädt den besten Treffer oder die Zeile, zu der du gegangen bist: auf ein freies Deck in Perform, in den Player in Prepare, wo er gleich spielt. In Perform gehen die Deck-Tasten direkt nach dem Laden wieder.
 
-Die Filtertaste über der Liste (`⌘J`) öffnet eine Leiste mit BPM-Bereich, **Tonart passt zum Master**, **BPM ±%** um das Master-Deck (doppeltes und halbes Tempo zählen), einer Mindest-**BEWERTUNG** und einem **TAGS**-Wert.
+Die Suche hält beim Tippen Schritt, auch in einer großen Sammlung: Die durchsuchte Liste und der vereinfachte Text jedes Tracks bleiben von einem Tastendruck zum nächsten erhalten, so bewertet, filtert und zeichnet ein Tastendruck nur noch. In einer erzeugten Sammlung mit 50 000 Tracks brauchte ein Tastendruck in einem Entwicklungs-Build etwa 0,1 s; die veröffentlichte App ist ein optimierter Build.
+
+Die Filtertaste über der Liste (`⌘J`) öffnet eine Leiste mit BPM-Bereich, **Tonart passt zum Master**, **BPM ±%** um das Master-Deck (doppeltes und halbes Tempo zählen), einer Mindest-**BEWERTUNG**, einem **TAGS**-Wert und **Heute nicht gespielt**, das auslässt, was in dieser Session schon lief.
 
 Jede gesetzte Bedingung steht als Chip über der Liste, auch wenn die Leiste zu ist: **GEFILTERT NACH** **BPM 120–128**, **BEWERTUNG ≥ 3** und so weiter. Ein Klick auf einen Chip entfernt diese Bedingung; **ZURÜCKSETZEN** neben den Chips entfernt alle.
+
+## Heute gespielt
+
+Ein Track, der in dieser Session insgesamt 30 Sekunden lief, bekommt in der Liste einen grünen Haken, wo sonst die Decknummer steht. Die Spalte **HEUTE** (Zeilenmenü der Spaltenköpfe) zeigt, wann er lief, etwa *22:41*, und **Heute nicht gespielt** in der Filterleiste blendet diese Tracks aus, so läuft ein Wunsch nie versehentlich zweimal.
 
 ## Die MATCH-Spalte
 
@@ -80,8 +86,12 @@ Das Panel **PASSEND** rechts zeigt, was nach dem gewählten Track passt: innerha
 
 ## Tags, Bewertung und Farbe
 
+![Drei Tracks ausgewählt: das Info-Panel zeigt GEMISCHT, wo sie sich unterscheiden](../img/library-bulk-tags.png)
+
 - Klicke die Sterne einer Zeile zum Bewerten; ein erneuter Klick löscht. Das Zeilenmenü hat dasselbe, und **Farbe** setzt eine von acht Markierungen.
 - Das Panel **INFO** rechts zeigt alle Tags des gewählten Tracks; klicke ein Feld, tippe und speichere mit Return, auch den **KOMMENTAR**. Der Tab **COVER** zeigt das Cover.
+- Mit mehreren ausgewählten Tracks bearbeitet das Panel **INFO** alle: Ein Feld, das sie teilen, zeigt seinen Wert, ein Feld, in dem sie sich unterscheiden, ist leer mit *GEMISCHT · RETURN SETZT ALLE*. Was du in ein Feld tippst und mit Return bestätigst, wird bei jedem ausgewählten Track gesetzt, und ein Rückgängig (`⌘Z`) nimmt es bei allen zurück.
+- **Nicht spielen** am Fuß des Panels (oder *Nicht spielen (an / aus)* im Zeilenmenü) markiert die ausgewählten Tracks mit dem Tag-Wert *Play: Do not play*. Sie zeigen in der Liste eine rot durchgestrichene Marke, warnen beim Laden, und Auto-Play lässt sie aus (siehe [Perform](perform-basics.md#die-warteschlange-wuensche-und-auto-play)).
 - **TAGS** füllst du selbst: Im Panel tippst du `Kategorie: Wert` (zum Beispiel `Stimmung: Peak`) und drückst Return, um die Auswahl zu taggen, dann klickst du einen Wert zum Taggen oder Enttaggen. Filter und Spalte benutzen dieselben Werte.
 
 ## Die Tag-Liste

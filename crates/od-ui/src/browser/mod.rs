@@ -93,6 +93,29 @@ pub(crate) struct BrowserState {
     pub focus_tree: bool,
     /// AUTO SORT: the classified collection.
     pub auto: auto::AutoState,
+    /// [63] The list before the search, folded for it: kept while only the
+    /// search changes, dropped by every other reload.
+    pub search_base: Option<SearchBase>,
+    /// [63] Tracks on air long enough tonight to count as played (the
+    /// NOT PLAYED TONIGHT filter).
+    pub played_tonight: HashSet<TrackId>,
+}
+
+/// The rows a search runs over, with their folded text.
+pub(crate) struct SearchBase {
+    pub key: SearchKey,
+    pub rows: Vec<TrackRecord>,
+    pub folded: Vec<fuzzy::Folded>,
+}
+
+/// What the rows before the search depend on.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct SearchKey {
+    pub special: Option<Special>,
+    pub node: Option<NodeId>,
+    pub sort: String,
+    pub descending: bool,
+    pub stick: Option<usize>,
 }
 
 /// Sources that are not library nodes.
@@ -140,6 +163,8 @@ impl Default for BrowserState {
             tree_filter: String::new(),
             focus_tree: false,
             auto: auto::AutoState::default(),
+            search_base: None,
+            played_tonight: HashSet::new(),
         }
     }
 }
@@ -708,7 +733,7 @@ pub(crate) fn wire(app: &Rc<App>) {
             st.browser.search = q.to_string();
             st.browser.search_ranked = true;
             st.browser.search_moved = false;
-            st.load_rows();
+            st.load_rows_search();
         }
         refresh_tracks(&a);
         a.ui.set_focus_row(0);
@@ -807,6 +832,11 @@ pub(crate) fn wire(app: &Rc<App>) {
         app,
         |a, field: SharedString, value: SharedString| {
             let (field, value) = (field.to_string(), value.trim().to_string());
+            if field == "dnp" {
+                crate::queue::set_dnp(&a, !value.is_empty());
+                refresh_info(&a);
+                return;
+            }
             edit_tags(&a, |t| set_tag_field(t, &field, &value), "Tags saved");
         }
     ));
@@ -1213,14 +1243,26 @@ fn edit_tags(app: &App, f: impl Fn(&mut od_core::TrackTags), done: &str) {
         return;
     }
     let ids = app.state.borrow().selected_ids();
-    for id in &ids {
-        let tags = app.state.borrow().lib.track(*id).map(|t| t.tags);
-        let Ok(mut tags) = tags else { continue };
-        f(&mut tags);
-        let r = app.state.borrow_mut().lib.set_tags(*id, tags);
-        if app.report(r).is_none() {
-            return;
-        }
+    // [63] Every selected track in one edit, so one undo takes it back.
+    let states: Vec<od_library::EntityState> = ids
+        .iter()
+        .filter_map(|id| {
+            let mut tags = app.state.borrow().lib.track(*id).ok()?.tags;
+            f(&mut tags);
+            Some(od_library::EntityState::Tags { track: *id, tags })
+        })
+        .collect();
+    if states.is_empty() {
+        return;
+    }
+    let label = if states.len() > 1 {
+        od_i18n::trf("Edit tags of {} tracks", &[&states.len()])
+    } else {
+        "Edit tags".to_string()
+    };
+    let r = app.state.borrow_mut().lib.edit(&label, states);
+    if app.report(r).is_none() {
+        return;
     }
     app.after_edit(done);
 }
@@ -1418,6 +1460,11 @@ fn row_menu(app: &App, i: usize, action: &str) {
         }
         "taglist" => sources::add_selected_to_tag_list(app),
         "stems" => crate::stems_batch::separate_selected(app),
+        "queue" => {
+            let ids = app.state.borrow().selected_ids();
+            crate::queue::add(app, &ids);
+        }
+        "dnp" => crate::queue::toggle_dnp(app),
         "stems-list" => crate::stems_batch::separate_list(app),
         "similar" => {
             let track = app.state.borrow().player.current;
@@ -1666,7 +1713,46 @@ pub(crate) fn refresh_info(app: &App) {
                 .into(),
             has_artwork: false,
             artwork: Default::default(),
+            ..Default::default()
         });
+    // [63] A selection of many: the shared values, MIXED where they differ.
+    let ids: Vec<TrackId> = if st.read_only() { Vec::new() } else { st.selected_ids() };
+    let info = info.map(|mut i| {
+        if ids.len() > 1 {
+            let tracks: Vec<od_core::TrackTags> = ids.iter().filter_map(|id| st.lib.track(*id).ok().map(|t| t.tags)).collect();
+            i.count = tracks.len() as i32;
+            macro_rules! shared {
+                ($field:ident, $mixed:ident, $get:expr) => {{
+                    let first = tracks.first().map($get).unwrap_or_default();
+                    if tracks.iter().all(|t| $get(t) == first) {
+                        i.$field = first.into();
+                    } else {
+                        i.$field = SharedString::new();
+                        i.$mixed = true;
+                    }
+                }};
+            }
+            shared!(title, mixed_title, |t: &od_core::TrackTags| t.title.clone());
+            shared!(artist, mixed_artist, |t: &od_core::TrackTags| t.artist.clone());
+            shared!(album, mixed_album, |t: &od_core::TrackTags| t.album.clone());
+            shared!(genre, mixed_genre, |t: &od_core::TrackTags| t.genre.clone());
+            shared!(label, mixed_label, |t: &od_core::TrackTags| t.label.clone());
+            shared!(remixer, mixed_remixer, |t: &od_core::TrackTags| t.remixer.clone());
+            shared!(composer, mixed_composer, |t: &od_core::TrackTags| t.composer.clone());
+            shared!(year, mixed_year, |t: &od_core::TrackTags| t.year.map(|y| y.to_string()).unwrap_or_default());
+            shared!(comment, mixed_comment, |t: &od_core::TrackTags| t.comment.clone());
+        } else {
+            i.count = 1;
+        }
+        i.dnp = !ids.is_empty()
+            && ids.iter().all(|id| {
+                st.lib
+                    .user_tags(*id)
+                    .map(|v| v.iter().any(UserTag::is_do_not_play))
+                    .unwrap_or(false)
+            });
+        i
+    });
     let info = info.map(|mut i| {
         if let Some(img) = st
             .player

@@ -577,6 +577,21 @@ impl Default for NativeWriter {
     }
 }
 
+/// Whether the stick at `root` carries the separated stems of the track
+/// with `hash` ([28]: the stem state per track on the stick).
+pub fn stems_on_stick(root: &Path, hash: &od_core::ContentHash) -> bool {
+    root.join("OPENDJDECKS").join("stems").join(stem_file(hash)).is_file()
+}
+
+/// The formats a stick carries, read from its files: (Club player USB,
+/// OpenDJDecks).
+pub fn stick_formats(root: &Path) -> (bool, bool) {
+    (
+        root.join(crate::club_usb::PDB_PATH).is_file(),
+        od_format_native::library_path(root).exists(),
+    )
+}
+
 /// Stem file name for a content hash (as the stem cache names them).
 fn stem_file(hash: &od_core::ContentHash) -> String {
     let name: String = hash
@@ -824,6 +839,8 @@ mod tests {
         sync(&mut f);
         let on_stick = f.stick.join("OPENDJDECKS/stems").join(stem_file(&ha));
         assert_eq!(std::fs::read(&on_stick).unwrap(), b"stems of alpha");
+        assert!(stems_on_stick(&f.stick, &ha), "[28] the stick says it carries them");
+        assert_eq!(stick_formats(&f.stick), (false, true));
         assert_eq!(
             std::fs::read_dir(f.stick.join("OPENDJDECKS/stems"))
                 .unwrap()

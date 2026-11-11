@@ -1,8 +1,8 @@
 ---
 title: Safe during a set
 description: The audio line in the status band, what happens when the audio interface is lost, and the check before the gig.
-keywords: [lock, locked, performance lock, sleep, awake, screen saver, background, pause analysis, crash, restore, recover, killed, power cut, session, audio, output, device, interface, latency, dropouts, xrun, lost, unplugged, disconnected, sound card, gig check, before the gig, disk space, missing files, safety]
-features: [shell-audio-health, shell-gig-check, shell-crash-restore, shell-perform-lock]
+keywords: [lock, locked, performance lock, sleep, awake, screen saver, background, pause analysis, crash, restore, recover, killed, power cut, session, audio, output, device, interface, latency, dropouts, xrun, lost, unplugged, disconnected, sound card, gig check, before the gig, disk space, missing files, safety, dead air, silence, nothing cued, running out]
+features: [perform-dead-air, shell-audio-health, shell-gig-check, shell-crash-restore, shell-perform-lock]
 ---
 
 OpenDJDecks keeps an eye on the things that can end a set early. This page explains what it shows and what you can do.
@@ -19,6 +19,14 @@ The status band at the bottom right always shows **AUDIO**, the output that play
 | Half height | Audio has not started yet; it starts with the first track |
 
 If dropouts keep coming, raise the buffer size in **Preferences › Audio**. The device, buffer size and headphone output there apply at once, without a restart. Only a new sample rate waits for the next start.
+
+## Dead air
+
+When the track on air is about to run out and no other deck is cued, OpenDJDecks warns before the music stops: *Dead air in 0:24* in red over the foot of the list in Perform, with which deck runs out, and the same words in the status band. **LOAD NEXT** in the warning loads the queue's next track to a free deck; with an empty queue it tells you to load one. The warning goes as soon as a deck is cued (a track loaded and not played out, or playing with its fader down) or the music carries on on another deck.
+
+![The dead-air warning over the foot of the list with LOAD NEXT, and in the status band](../img/dead-air.png)
+
+How early it warns is set in the queue under **WARN BEFORE SILENCE**: **15 S**, **30 S** or **60 S** before the end. With auto-play on and a track in the queue it does not warn, because auto-play takes care of it.
 
 ## When the audio interface is lost
 

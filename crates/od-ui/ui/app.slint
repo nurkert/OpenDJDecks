@@ -34,7 +34,8 @@ import { UserTagPanel, SuggestionPanel } from "user_tags.slint";
 import { ColumnView, ColumnChoice, FilterView, FilterChip, UserTagChip, SuggestionRow } from "structs.slint";
 export { ColumnView, ColumnChoice, FilterView, FilterChip, UserTagChip, SuggestionRow }
 import { FilterChips } from "filter.slint";
-import { DeviceLine, StickCheck, StickCheckRow, StickCheckPanel } from "devices.slint";
+import { DeviceLine, StickCheck, StickCheckRow, StickCheckPanel, Emergency, EmergencyKey, EmergencyBand, FormatBadges } from "devices.slint";
+export { Emergency }
 export { StickCheck, StickCheckRow }
 import { ImportReview, ImportReviewDialog, ImportCountRow, ImportLeftOutRow } from "import_review.slint";
 export { ImportReview, ImportCountRow, ImportLeftOutRow }
@@ -44,7 +45,10 @@ import { LightingView, LightingPanel, Lighting, LightFixtureView, LightGroupView
 import { Club, ClubStep, ClubItem } from "club.slint";
 export { Club, ClubStep, ClubItem }
 import { Mic } from "mic.slint";
-import { Rec, RecTrack, RecPanel, RecBar } from "rec.slint";
+import { Queue, QueueRow, QueuePanel, SetAlertBar } from "queue.slint";
+export { Queue, QueueRow }
+import { Rec, RecTrack, RecBar, RecordingRow, RecordingsPage, RecEdit, RecEditRow } from "rec.slint";
+export { RecordingRow, RecEdit, RecEditRow }
 import { MixPreview, MixPreviewDeck, MixPreviewPanel } from "mix_preview.slint";
 export { MixPreview, MixPreviewDeck }
 export { Rec, RecTrack }
@@ -83,12 +87,6 @@ export struct NodeChoice {
     checked: bool,
 }
 
-export struct RecordingRow {
-    id: int,
-    name: string,
-    detail: string,
-    path: string,
-}
 
 component SectionTitle inherits HorizontalLayout {
     in property <string> title;
@@ -122,10 +120,10 @@ export component AppWindow inherits Window {
     default-font-size: Theme.body;
 
     // The list header's keys shorten when a panel takes the room (small window).
-    property <bool> list-tight: root.width < 1100px || (root.width < 1500px && (root.info-open || root.user-tag-open || root.similar-open));
+    property <bool> list-tight: root.width < 1100px || (root.width < 1500px && (root.info-open || root.user-tag-open || root.similar-open || root.queue-open));
     // The list header cannot hold the search as well: it gets a line of its own.
     // Too narrow for the lists, the list and a panel beside it.
-    property <bool> lists-yield: !root.kiosk && root.width < 1100px && (root.info-open || root.user-tag-open || root.similar-open) && root.section == "library";
+    property <bool> lists-yield: !root.kiosk && root.width < 1100px && (root.info-open || root.user-tag-open || root.similar-open || root.queue-open) && root.section == "library";
     property <bool> search-row: !root.kiosk && root.width < 1180px;
     in-out property <string> mode: "prepare";
     in-out property <string> section: "library";
@@ -221,6 +219,12 @@ export component AppWindow inherits Window {
 
     // Recordings.
     in property <[RecordingRow]> recordings;
+    // [28] The stick being browsed: its formats and "STEMS 3 OF 12".
+    in property <bool> stick-open;
+    in property <bool> stick-club;
+    in property <bool> stick-compat;
+    in property <bool> stick-native;
+    in property <string> stick-stems;
     // Prepare layout: "player" (player above the browser), "two" (a second,
     // compact player below it), "dual" (two compact players side by side),
     // "simple" (one compact player) or "browser" (full browser); persisted
@@ -458,6 +462,8 @@ export component AppWindow inherits Window {
     in-out property <bool> user-tag-open;
     in property <[UserTagChip]> user-tag-chips;
     in-out property <bool> similar-open;
+    // [29] The queue panel beside the list.
+    in-out property <bool> queue-open;
     in property <[SuggestionRow]> suggestions;
     in property <string> suggestion-reference;
     callback sort-then(string);
@@ -634,6 +640,7 @@ export component AppWindow inherits Window {
             MenuSeparator { }
             MenuItem { title: @tr("Tags"); checkable: true; checked: root.user-tag-open; activated => { root.menu-action("view.panel.user-tag"); } }
             MenuItem { title: @tr("Similar Tracks"); checkable: true; checked: root.similar-open; activated => { root.menu-action("view.panel.similar"); } }
+            MenuItem { title: @tr("Queue"); checkable: true; checked: root.queue-open; activated => { root.menu-action("view.panel.queue"); } }
             MenuItem { title: @tr("Info Panel"); checkable: true; checked: root.info-open; activated => { root.menu-action("view.panel.info"); } }
             MenuItem { title: @tr("Filter Bar"); checkable: true; checked: root.filter-open; activated => { root.menu-action("browser.filter"); } }
             MenuItem { title: @tr("Sub Browser"); checkable: true; checked: root.sub-browser-open; activated => { root.menu-action("view.panel.sub-browser"); } }
@@ -1129,6 +1136,13 @@ export component AppWindow inherits Window {
                                 edited(t) => { root.search(t); }
                             }
                         }
+                        // [28] A stick's formats as the labelled badges, and how
+                        // many of its tracks the stick carries stems for.
+                        if root.section == "library" && root.stick-open && !root.kiosk: HorizontalLayout {
+                            spacing: Theme.s3; height: 20px;
+                            FormatBadges { prefix: "browser.stick.format"; club: root.stick-club; compat: root.stick-compat; native: root.stick-native; }
+                            Caps { accessible-id: "browser.stick.stems"; accessible-role: text; accessible-value: root.stick-stems; text: root.stick-stems; vertical-alignment: center; min-width: 0px; horizontal-stretch: 1; overflow: elide; }
+                        }
                         // A narrow list: the search on a line of its own.
                         if root.section == "library" && root.search-row: HorizontalLayout {
                             Field {
@@ -1345,6 +1359,9 @@ export component AppWindow inherits Window {
                                     LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-id: "devices.eject-when-done"; label: @tr("Eject when done"); tooltip: @tr("Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"); checked: root.eject-when-done; toggled(v) => { root.set-eject-when-done(v); } }
                                     
                                 }
+                                // [28] The emergency stick and its result.
+                                HorizontalLayout { alignment: start; EmergencyKey { } }
+                                if Emergency.stage != "": EmergencyBand { }
                                 for d in root.devices: DeviceLine {
                                     device: d;
                                     roomy: true;
@@ -1412,29 +1429,20 @@ export component AppWindow inherits Window {
                         }
                         // ── Recordings section ──
                         if root.section == "recordings": SectionTitle { title: @tr("RECORDINGS"); sub: @tr("{} MIXES", root.recordings.length); }
-                        if root.section == "recordings": RecPanel { }
-                        if root.section == "recordings": VerticalLayout {
+                        if root.section == "recordings": RecordingsPage {
                             vertical-stretch: 1;
-                            spacing: Theme.s1;
-                            if root.recordings.length == 0: Text {
-                                text: @tr("No recordings yet. Press RECORD in Perform, or the record button on your controller.");
-                                wrap: word-wrap; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-3;
-                            }
-                            for r in root.recordings: Rectangle {
-                                height: 48px;
-                                VLine { x: 0; y: 8px; height: parent.height - 16px; tone: Theme.w656; }
-                                Text { x: 16px; y: 6px; text: r.name; font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone; }
-                                Caps { x: 16px; y: 28px; text: r.detail; }
-                                TouchArea { width: parent.width - 260px; clicked => { root.reveal-recording(r.id); } }
-                                HorizontalLayout {
-                                    x: parent.width - 250px; y: 8px; width: 250px; height: 26px;
-                                    spacing: Theme.s2; alignment: end;
-                                    PlateButton { compact: true; label: @tr("SHOW FILE"); tooltip: @tr("Show the recording in the file manager"); clicked => { root.reveal-recording(r.id); } }
-                                    PlateButton { compact: true; label: @tr("SPLIT INTO TRACKS"); tone: Theme.w656; tooltip: @tr("Cut the recording into one file per played track"); clicked => { root.split-recording(r.id); } }
-                                }
-                            }
-                            Rectangle { vertical-stretch: 1; }
+                            rows: root.recordings;
+                            reveal(id) => { root.reveal-recording(id); }
+                            split(id) => { root.split-recording(id); }
                         }
+                    }
+                    // [29] Dead air or a do-not-play track: over the foot of the
+                    // list, so the decks and the mixer neither move nor hide.
+                    // A list too short for it leaves the alert to the status
+                    // band.
+                    if Queue.alert != "" && root.mode == "perform" && AudioHealth.lost-device == "" && self.height >= 56px + 2 * Theme.s1: SetAlertBar {
+                        x: Theme.s1; y: parent.height - self.height - Theme.s1;
+                        width: parent.width - Theme.key-gap - 2 * Theme.s1;
                     }
                     }
                     if root.user-tag-open && root.section == "library": UserTagPanel {
@@ -1444,6 +1452,7 @@ export component AppWindow inherits Window {
                         toggle(c, v) => { root.user-tag-toggle(c, v); }
                         add(t) => { root.user-tag-add(t); }
                     }
+                    if root.queue-open && root.section == "library": QueuePanel { }
                     if root.similar-open && root.section == "library": SuggestionPanel {
                         rows: root.suggestions;
                         reference: root.suggestion-reference;
@@ -1481,6 +1490,12 @@ export component AppWindow inherits Window {
                                 current: root.similar-open;
                                 tooltip: @tr("Similar: tracks that fit after the selected one");
                                 clicked => { root.similar-open = !root.similar-open; root.panels-changed(); }
+                            }
+                            RailItem {
+                                accessible-id: "browser.panel.queue"; label: @tr("QUEUE"); icon: "list"; iconic: root.kiosk || root.list-tight; tone: Theme.attention;
+                                current: root.queue-open;
+                                tooltip: @tr("Queue: what plays next, requests and auto-play");
+                                clicked => { root.queue-open = !root.queue-open; root.panels-changed(); }
                             }
                             RailItem {
                                 accessible-id: "browser.panel.sampler"; label: @tr("SAMPLER"); icon: "pads"; iconic: root.kiosk || root.list-tight; tone: Theme.w656;
@@ -1538,6 +1553,15 @@ export component AppWindow inherits Window {
                             accessible-id: "status.summary"; accessible-role: text; accessible-value: root.list-summary;
                             horizontal-stretch: 0;
                             text: root.list-summary; vertical-alignment: center;
+                        }
+                        // [29] The set alert in the status band too (always seen,
+                        // also when the list is too short for its band).
+                        if Queue.alert != "" && root.mode == "perform": Text {
+                            accessible-id: "status.set-alert"; accessible-role: text; accessible-value: self.text;
+                            horizontal-stretch: 0;
+                            text: Queue.alert-title;
+                            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+                            color: Theme.fault; vertical-alignment: center;
                         }
                         AudioStatusLine { horizontal-stretch: 0; }
                     }

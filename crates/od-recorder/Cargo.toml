@@ -19,4 +19,5 @@ mp3lame-encoder = "0.3"
 
 [dev-dependencies]
 od-decode.workspace = true
+rtrb = "0.4"
 tempfile.workspace = true

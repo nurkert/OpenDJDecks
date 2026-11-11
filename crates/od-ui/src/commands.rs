@@ -105,6 +105,10 @@ pub(crate) fn run(app: &Rc<App>, id: &str) {
         "section.devices" => ui.invoke_select_section(S::from("devices")),
         "section.recordings" => ui.invoke_select_section(S::from("recordings")),
         "record.toggle" => ui.invoke_toggle_recording(),
+        "devices.emergency" => crate::emergency::start(app),
+        "queue.add" => slint::ComponentHandle::global::<crate::Queue>(ui).invoke_add(),
+        "queue.next" => slint::ComponentHandle::global::<crate::Queue>(ui).invoke_load_next(),
+        "record.mark" => slint::ComponentHandle::global::<crate::Rec>(ui).invoke_mark(),
         "devices.sync" => {
             let sel = ui.get_device_selected();
             if sel >= 0 {
@@ -256,6 +260,10 @@ pub(crate) fn run(app: &Rc<App>, id: &str) {
         "view.layout.dual" => shell::set_prepare_layout(app, "dual"),
         "view.layout.simple" => shell::set_prepare_layout(app, "simple"),
         "view.panel.info" => ui.set_info_open(!ui.get_info_open()),
+        "view.panel.queue" => {
+            ui.set_queue_open(!ui.get_queue_open());
+            ui.invoke_panels_changed();
+        }
         "view.panel.similar" => {
             ui.set_similar_open(!ui.get_similar_open());
             ui.invoke_panels_changed();

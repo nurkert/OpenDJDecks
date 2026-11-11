@@ -60,6 +60,7 @@ pub struct Engine {
     events: rtrb::Consumer<Event>,
     garbage: rtrb::Consumer<Garbage>,
     record: Option<RecordTap>,
+    voice: Option<RecordTap>,
     active_senders: Arc<AtomicUsize>,
 }
 
@@ -116,6 +117,8 @@ impl Engine {
         let (gb_tx, gb_rx) = rtrb::RingBuffer::new(GARBAGE_CAPACITY);
         let (rec_tx, rec_rx) =
             rtrb::RingBuffer::new(config.sample_rate as usize * 2 * RECORD_SECONDS);
+        let (voice_tx, voice_rx) =
+            rtrb::RingBuffer::new(config.sample_rate as usize * 2 * RECORD_SECONDS);
         let mut initial = EngineState {
             sample_rate: config.sample_rate,
             decks_count: config.decks,
@@ -135,6 +138,7 @@ impl Engine {
             ev_tx,
             gb_tx,
             rec_tx,
+            voice_tx,
             active_senders.clone(),
         );
         let engine = Engine {
@@ -145,6 +149,10 @@ impl Engine {
             garbage: gb_rx,
             record: Some(RecordTap {
                 consumer: rec_rx,
+                sample_rate: config.sample_rate,
+            }),
+            voice: Some(RecordTap {
+                consumer: voice_rx,
                 sample_rate: config.sample_rate,
             }),
             active_senders,
@@ -214,6 +222,13 @@ impl Engine {
         self.record.take()
     }
 
+    /// Takes the voice tap (once): the microphone / aux input alone, block
+    /// for block beside the record tap. It fills while both
+    /// `Command::SetRecordTap(true)` and `Command::SetVoiceTap(true)` are set.
+    pub fn take_voice_tap(&mut self) -> Option<RecordTap> {
+        self.voice.take()
+    }
+
     /// Frees objects the processor released (tracks, samples, queues).
     /// Called automatically by [`Engine::send`]; call periodically otherwise.
     pub fn collect_garbage(&mut self) {
@@ -237,6 +252,8 @@ pub struct EngineProcessor {
     record: rtrb::Producer<f32>,
     record_enabled: bool,
     record_dropped: u64,
+    voice: rtrb::Producer<f32>,
+    voice_enabled: bool,
     leaked: u64,
 
     decks: Vec<Deck>,
@@ -297,6 +314,7 @@ impl EngineProcessor {
         events: rtrb::Producer<Event>,
         garbage: rtrb::Producer<Garbage>,
         record: rtrb::Producer<f32>,
+        voice: rtrb::Producer<f32>,
         active_senders: Arc<AtomicUsize>,
     ) -> Self {
         let sr = config.sample_rate;
@@ -315,6 +333,8 @@ impl EngineProcessor {
             record,
             record_enabled: false,
             record_dropped: 0,
+            voice,
+            voice_enabled: false,
             leaked: 0,
             decks: (0..n)
                 .map(|i| Deck::new(i, sr, config.max_block, config.profile))
@@ -567,6 +587,7 @@ impl EngineProcessor {
                 self.explicit_master = m.filter(|&d| d < self.decks.len());
             }
             Command::SetRecordTap(on) => self.record_enabled = on,
+            Command::SetVoiceTap(on) => self.voice_enabled = on,
             Command::StartOnBeat { deck, beat } => {
                 if deck < self.decks.len() {
                     self.pending_start[deck] = beat.filter(|b| b.is_finite());
@@ -889,6 +910,11 @@ impl EngineProcessor {
         if self.record_enabled {
             let (pushed, _) = self.record.push_partial_slice(master_buf);
             self.record_dropped += (len - pushed.len()) as u64;
+            if self.voice_enabled {
+                // The input alone, in the same block as the master: the two
+                // files stay sample-aligned.
+                let _ = self.voice.push_partial_slice(&self.input_buf[..len]);
+            }
         }
 
         if self.master_cue {

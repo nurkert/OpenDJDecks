@@ -94,6 +94,16 @@ export component FilterBar inherits Rectangle {
             tooltip: @tr("Only tracks with this tag value");
             clicked => { tag-menu.show({ x: self.x, y: self.y + self.height }); }
         }
+        VLine { width: 1px; tone: Theme.rule; }
+        LineToggle {
+            accessible-id: "browser.filter.unplayed"; accessible-role: checkbox;
+            accessible-checkable: true; accessible-checked: self.checked;
+            label: @tr("Not played tonight");
+            tooltip: @tr("Leave out the tracks that were on air in this session");
+            checked: root.filter.unplayed;
+            tone: Theme.live;
+            toggled(v) => { root.edit("unplayed", v ? "1" : ""); }
+        }
         Rectangle { horizontal-stretch: 1; }
         PlateButton {
             accessible-id: "browser.filter.clear"; accessible-role: button;

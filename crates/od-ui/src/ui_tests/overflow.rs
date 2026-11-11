@@ -795,6 +795,186 @@ fn main_states() -> Vec<State> {
             },
             teardown: Some(|u| u.app.ui.invoke_select_section("library".into())),
         },
+        // [27] Recording for release: the panel while recording (loudness,
+        // true peak, clips, MARK, the voice track) over a finished mix with
+        // its loudness; then its tracklist in the editor with a refused time.
+        State {
+            id: "recordings (recording with loudness; a finished mix)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                super::dj_craft::finished_recording(u);
+                u.app.state.borrow_mut().change_settings(|s| s.recording.voice = true);
+                u.app.ui.invoke_select_section("recordings".into());
+                crate::engine::ensure_engine(&u.app);
+                if !u.app.ui.global::<crate::Rec>().get_recording() {
+                    u.app.ui.invoke_toggle_recording();
+                }
+                u.wait_until(5.0, |u| u.app.ui.global::<crate::Rec>().get_recording());
+                u.app.ui.global::<crate::Rec>().invoke_mark();
+                u.pump(300);
+            },
+            teardown: Some(|u| {
+                if u.app.ui.global::<crate::Rec>().get_recording() {
+                    u.app.ui.invoke_toggle_recording();
+                }
+                u.app.ui.invoke_select_section("library".into());
+            }),
+        },
+        State {
+            id: "recordings.tracklist editor",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                let id = super::dj_craft::finished_recording(u);
+                u.app.ui.invoke_select_section("recordings".into());
+                let g = u.app.ui.global::<crate::RecEdit>();
+                g.invoke_edit(id);
+                g.invoke_set_time(1, "9:99:99".into());
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                u.app.ui.global::<crate::RecEdit>().invoke_close();
+                u.app.ui.invoke_select_section("library".into());
+            }),
+        },
+        // [28] The emergency stick while copying and with its result, the
+        // labelled format badges on the USB screen and in the tree.
+        State {
+            id: "usb-sticks emergency (copying)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                usb_stick(u);
+                super::dj_craft::fake_emergency(u, "copying");
+                u.app.ui.invoke_select_section("devices".into());
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                u.app.state.borrow_mut().devices.emergency = None;
+                u.app.ui.invoke_select_section("library".into());
+            }),
+        },
+        State {
+            id: "usb-sticks emergency (ready, tree)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                usb_stick(u);
+                super::dj_craft::fake_emergency(u, "done");
+                u.app.ui.invoke_select_section("devices".into());
+                click(u, "browser.rail.devices");
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                u.app.state.borrow_mut().devices.emergency = None;
+                u.app.ui.invoke_select_section("library".into());
+            }),
+        },
+        State {
+            id: "usb-sticks emergency (failed)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                usb_stick(u);
+                super::dj_craft::fake_emergency(u, "failed");
+                u.app.ui.invoke_select_section("devices".into());
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                u.app.state.borrow_mut().devices.emergency = None;
+                u.app.ui.invoke_select_section("library".into());
+            }),
+        },
+        // [28] A stick's track list: its formats and how many carry stems.
+        State {
+            id: "browser.stick list (formats, stems)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                let w = &u.app.ui;
+                w.set_stick_open(true);
+                w.set_stick_club(true);
+                w.set_stick_compat(true);
+                w.set_stick_native(true);
+                w.set_stick_stems(od_i18n::trf("STEMS ON THE STICK {} OF {}", &[&120, &1240]).into());
+                u.pump(200);
+            },
+            teardown: Some(|u| u.app.ui.set_stick_open(false)),
+        },
+        // [29] The queue beside the list: tracks, requests (matched and
+        // not), a do-not-play track, auto-play mixing; in Perform and
+        // Prepare. Then the set alert over the browser.
+        State {
+            id: "queue.perform (rows, requests, do not play, mixing)",
+            setup: |u| {
+                perform(u, 2, "standard");
+                super::dj_craft::fill_queue(u);
+                u.app.ui.set_queue_open(true);
+                u.app.ui.global::<crate::Queue>().set_auto(true);
+                u.app.ui.global::<crate::Queue>().set_mixing(od_i18n::trf("MIXING DECK {} › DECK {} · {} BEATS", &[&1, &2, &16]).into());
+                u.pump(200);
+            },
+            teardown: Some(|u| u.app.ui.set_queue_open(false)),
+        },
+        State {
+            id: "queue.prepare (rows)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                super::dj_craft::fill_queue(u);
+                u.app.ui.set_queue_open(true);
+                u.pump(200);
+            },
+            teardown: Some(|u| u.app.ui.set_queue_open(false)),
+        },
+        State {
+            id: "queue.alert dead air",
+            setup: |u| {
+                perform(u, 2, "standard");
+                super::dj_craft::fake_alert(u, "dead-air");
+                u.pump(50);
+            },
+            teardown: Some(|u| super::dj_craft::fake_alert(u, "")),
+        },
+        State {
+            id: "queue.alert do not play",
+            setup: |u| {
+                perform(u, 4, "standard");
+                super::dj_craft::fake_alert(u, "dnp");
+                u.pump(50);
+            },
+            teardown: Some(|u| super::dj_craft::fake_alert(u, "")),
+        },
+        // [63] Tags on two tracks at once (MIXED, one undo step, do not
+        // play); the filter bar with NOT PLAYED TONIGHT; the TONIGHT column.
+        State {
+            id: "prepare.info bulk (two tracks)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                u.app.ui.set_info_open(true);
+                u.app.ui.invoke_row_clicked(1, true, false);
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                u.app.ui.set_info_open(false);
+                u.app.ui.invoke_row_clicked(0, false, false);
+            }),
+        },
+        State {
+            id: "prepare.filter bar (not played tonight, tonight column)",
+            setup: |u| {
+                prepare(u, "view.layout.player");
+                u.app.state.borrow_mut().change_settings(|s| {
+                    if !s.browser.columns.iter().any(|c| c == "tonight") {
+                        s.browser.columns.push("tonight".into());
+                    }
+                });
+                crate::recorder::mark_played_now(&u.app, u.fx.tracks[0].0, "22:41");
+                u.app.ui.set_filter_open(true);
+                u.app.ui.invoke_filter_edit("unplayed".into(), "1".into());
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                u.app.ui.invoke_filter_edit("clear".into(), "".into());
+                u.app.ui.set_filter_open(false);
+                u.app.state.borrow_mut().change_settings(|s| s.browser.columns.retain(|c| c != "tonight"));
+                crate::browser::refresh_tracks(&u.app);
+            }),
+        },
         State { id: "perform.2.simple", setup: |u| perform(u, 2, "simple"), teardown: None },
         State { id: "perform.2.standard", setup: |u| perform(u, 2, "standard"), teardown: None },
         State { id: "perform.2.full", setup: |u| perform(u, 2, "full"), teardown: None },
@@ -1343,6 +1523,10 @@ impl Report {
 }
 
 fn run_main(lang: &str, states: Vec<State>, group: &str) {
+    // `OD_OVERFLOW_ONLY=recordings` audits only the states whose id holds
+    // the text (while working on a view; the full audit runs without it).
+    let only = std::env::var("OD_OVERFLOW_ONLY").unwrap_or_default();
+    let states: Vec<State> = states.into_iter().filter(|s| only.is_empty() || s.id.contains(only.as_str())).collect();
     let _lock = super::harness::volumes_lock();
     let ui = Ui::start(fixture(lang), (1440, 900), false);
     let all = cases(MIN, None);

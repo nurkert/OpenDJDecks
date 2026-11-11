@@ -6,6 +6,7 @@ import { VLine, HLine } from "lines.slint";
 import { Caps, Toggle, PlateButton, Glyph, TipArea, TooltipState, Stepper, Field, Disclosure, KeyFocus } from "controls.slint";
 import { TreeItem } from "rail.slint";
 import { TreeRow, DeviceRow, VolumeRow, ExplorerRow } from "structs.slint";
+import { EmergencyKey, Emergency } from "devices.slint";
 
 component Heading inherits Rectangle {
     in property <string> label;
@@ -558,6 +559,24 @@ export component Sidebar inherits Rectangle {
                         tone: Theme.live;
                         tooltip: @tr("Keep this stick in sync with the selected playlist");
                         clicked => { root.register-volume(v.index); }
+                    }
+                }
+                // [28] One press: the open list and the decks' tracks to a
+                // plugged-in stick; its percent while copying, the result
+                // in a line beneath.
+                if Emergency.available || Emergency.stage != "": HorizontalLayout {
+                    padding-left: Theme.s5; padding-right: Theme.s3; padding-top: Theme.s1;
+                    alignment: start;
+                    EmergencyKey { accessible-id: "browser.tree.emergency"; }
+                }
+                if Emergency.stage == "done" || Emergency.stage == "failed": Rectangle {
+                    height: 18px;
+                    Caps {
+                        accessible-role: text; accessible-id: "browser.tree.emergency-result"; accessible-value: self.text;
+                        x: 24px; y: 0; height: 18px; width: max(0px, parent.width - 36px); overflow: elide;
+                        text: Emergency.stage == "done" ? @tr("READY ON {}", Emergency.stick) : @tr("FAILED · {}", Emergency.detail);
+                        color: Emergency.stage == "failed" ? Theme.fault : Theme.bone-2;
+                        vertical-alignment: center;
                     }
                 }
                 hist-h := Heading { label: @tr("HISTORIES"); }
