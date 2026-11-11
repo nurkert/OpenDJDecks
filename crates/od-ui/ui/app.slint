@@ -1339,14 +1339,17 @@ export component AppWindow inherits Window {
                             wrap: word-wrap; font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                         }
                         // A narrow window scrolls the board sideways instead of
-                        // squeezing the sticks and their details over each other.
+                        // squeezing the sticks and their details over each other;
+                        // a low one scrolls it down (the emergency result above
+                        // the sticks takes height).
                         if root.section == "devices": Flickable {
                             vertical-stretch: 1;
                             content-width: max(self.width, dev-row.min-width);
+                            content-height: max(self.height, dev-row.min-height);
                             mouse-drag-pan-enabled: false;
                             dev-row := HorizontalLayout {
                             width: max(parent.width, self.min-width);
-                            height: parent.height;
+                            height: max(parent.height, self.min-height);
                             spacing: Theme.s5;
                             VerticalLayout {
                                 min-width: 320px; preferred-width: 460px; max-width: 460px;
