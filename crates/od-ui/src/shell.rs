@@ -20,7 +20,7 @@ const META_CLUB: &str = "ui.club";
 const META_MODE: &str = "ui.mode";
 const META_SIDEBAR: &str = "ui.sidebar_width";
 const META_UPPER: &str = "ui.upper_height";
-const META_LAYOUT: &str = "ui.prepare_layout";
+pub(crate) const META_LAYOUT: &str = "ui.prepare_layout";
 
 /// Prepare layouts: the player above the browser, 2 players (a compact
 /// second player below), dual (two compact players side by side), simple
@@ -316,6 +316,8 @@ fn key(app: &Rc<App>, text: &str, control: bool, meta: bool, alt: bool, shift: b
             .map(|a| a.id.clone())
     };
     match id {
+        // Esc in Prepare is BACK TO PERFORM only after EDIT on a deck.
+        Some(id) if id == "prepare.back-to-perform" && !crate::edit_in_prepare::from_perform() => false,
         Some(id) => {
             tracing::debug!(%chord, id, "key");
             crate::commands::run(app, &id);
@@ -385,7 +387,10 @@ pub(crate) fn wire(app: &Rc<App>) {
             _ => {}
         }
     }));
-    ui.on_set_mode(handler!(app, |a, m: SharedString| a.ui.set_mode(m)));
+    ui.on_set_mode(handler!(app, |a, m: SharedString| {
+        a.ui.set_mode(m);
+        crate::edit_in_prepare::mode_changed(&a);
+    }));
     ui.on_undo(handler!(app, |a| a.undo()));
     ui.on_redo(handler!(app, |a| a.redo()));
     let weak = Rc::downgrade(app);

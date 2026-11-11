@@ -410,6 +410,12 @@ pub(crate) fn active() -> bool {
     SESSION.with(|s| s.borrow().is_some())
 }
 
+/// The track an EDIT GRID session runs on (its decks follow the session's
+/// grid, not the stored one, until DONE or CANCEL).
+pub(crate) fn session_track() -> Option<TrackId> {
+    SESSION.with(|s| s.borrow().as_ref().map(|s| s.track))
+}
+
 /// Changes whenever the session's picture changes (the waveform redraws).
 pub(crate) fn revision() -> u64 {
     REV.with(|r| r.get()) ^ crate::transients::version().wrapping_mul(0x9E37_79B9)

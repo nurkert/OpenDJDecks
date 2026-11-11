@@ -718,6 +718,20 @@ impl Library {
     }
 
     /// Loads the full analysis of a track (empty defaults if not analysed).
+    /// The phrases every reader sees (normalized, with the drop you marked),
+    /// as [`Library::analysis`] gives them, without reading the waveform.
+    pub fn phrases(&self, id: TrackId) -> Result<Vec<Phrase>> {
+        let phrases = od_core::normalize_phrases(&read_phrases(&self.conn, id)?);
+        if phrases.is_empty() {
+            return Ok(phrases);
+        }
+        let grid = self.beatgrid(id)?.unwrap_or_default();
+        Ok(match read_drop(&self.conn, id)?.and_then(|t| grid.nearest_beat(t)) {
+            Some(beat) => od_core::mark_drop(&phrases, beat as u32),
+            None => phrases,
+        })
+    }
+
     pub fn analysis(&self, id: TrackId) -> Result<TrackAnalysis> {
         let row = self
             .conn

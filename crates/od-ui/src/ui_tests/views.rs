@@ -162,6 +162,17 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             }
         }
         "perform.deck-craft" => perform(2),
+        // [69] EDIT IN PREPARE.
+        "perform.edit-in-prepare" | "prepare.from-perform" => {
+            if kiosk {
+                return Err("the kiosk has no Prepare".into());
+            }
+            perform(2);
+            if id == "prepare.from-perform" {
+                super::perform_craft::load(ui, 0, 0);
+                slint::ComponentHandle::global::<crate::EditInPrepare>(w).invoke_open(1, "phrases".into());
+            }
+        }
         // [66] [67] Block H.
         "perform.stem-cue" | "perform.external-mixer" => {
             if kiosk {

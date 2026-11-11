@@ -438,6 +438,7 @@ pub(crate) fn refresh_detail(app: &App) {
     ui.set_track_artist(t.tags.artist.clone().into());
     ui.set_track_bpm(t.bpm.map(|b| format!("{b:.2}")).unwrap_or_default().into());
     ui.set_track_key(st.key_text(&t).into());
+    ui.set_track_gain(crate::deck_grid::gain_label(crate::deck_grid::stored_gain(st.src(), id)).into());
     ui.set_track_duration(format::time(t.duration).into());
     ui.set_track_analysed(t.analysis_version >= od_analysis::ANALYSIS_VERSION);
     ui.set_grid_source(
@@ -1072,6 +1073,19 @@ pub(crate) fn act(app: &App, what: &str) {
             engine::ensure_engine(app);
         }
         _ => {}
+    }
+    if let Some(step) = match what {
+        "gain-up" => Some(0.5),
+        "gain-down" => Some(-0.5),
+        _ => None,
+    } {
+        if app.guard_read_only() {
+            return;
+        }
+        let Some(id) = app.state.borrow().player.current else { return };
+        let now = crate::deck_grid::stored_gain(&app.state.borrow().lib, id);
+        crate::deck_grid::set_track_gain(app, id, now + step);
+        return;
     }
     match what {
         "loop-in" => engine::deck_cmd(app, preview, DeckCommand::LoopIn),

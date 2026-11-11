@@ -105,9 +105,12 @@ impl StickCheck {
     }
 }
 
-fn readable(path: &Path) -> Mark {
+fn readable(path: &Path, probe: bool) -> Mark {
     if !path.is_file() {
         return Mark::Missing;
+    }
+    if !probe {
+        return Mark::Ok;
     }
     match od_decode::probe(path) {
         Ok(_) => Mark::Ok,
@@ -163,6 +166,38 @@ fn expected_lists(
 
 /// Checks the stick of `device` mounted at `root` against `lib`.
 pub fn check_stick(lib: &Library, device: DeviceId, root: &Path) -> od_library::Result<StickCheck> {
+    compare(lib, device, root, true)
+}
+
+/// What the stick holds that is not the library's, by the same comparison
+/// as [`check_stick`] (without opening the audio files): the tracks whose
+/// cues or beatgrid differ or are missing, and whether a playlist or a
+/// format differs. A sync writes these even when the change log has nothing
+/// for them (a stick written from another state of the library, a library
+/// restored from a backup), so that the check and the sync agree.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct StickDrift {
+    pub tracks: HashSet<TrackId>,
+    pub playlists: bool,
+    pub formats: bool,
+}
+
+pub fn stick_drift(lib: &Library, device: DeviceId, root: &Path) -> od_library::Result<StickDrift> {
+    let c = compare(lib, device, root, false)?;
+    let off = |m: Mark| matches!(m, Mark::Differs | Mark::Missing);
+    Ok(StickDrift {
+        tracks: c
+            .tracks
+            .iter()
+            .filter(|t| off(t.cues) || off(t.grid))
+            .map(|t| t.track)
+            .collect(),
+        playlists: !c.playlist_problems.is_empty(),
+        formats: !c.format_problems.is_empty(),
+    })
+}
+
+fn compare(lib: &Library, device: DeviceId, root: &Path, probe: bool) -> od_library::Result<StickCheck> {
     let dev = lib.device(device)?;
     let wanted = lib.device_tracks(device)?;
     let wanted_ids: HashSet<TrackId> = wanted.iter().map(|t| t.id).collect();
@@ -206,7 +241,7 @@ pub fn check_stick(lib: &Library, device: DeviceId, root: &Path) -> od_library::
                         row.file = row.file.and(Mark::Missing);
                         continue;
                     };
-                    row.file = row.file.and(readable(&stick.resolve(&rec.path)));
+                    row.file = row.file.and(readable(&stick.resolve(&rec.path), probe));
                     let lib_cues = lib.cues(row.track)?;
                     let stick_cues = stick.library.cues(row.track).ok();
                     row.cues = row.cues.and(cue_mark(&lib_cues, stick_cues.as_deref()));
@@ -267,7 +302,7 @@ pub fn check_stick(lib: &Library, device: DeviceId, root: &Path) -> od_library::
                         .filter(|w| w.path == t.device_path)
                         .map(|w| w.path.clone())
                         .unwrap_or_else(|| t.device_path.clone());
-                    row.file = row.file.and(readable(&root.join(audio.trim_start_matches('/'))));
+                    row.file = row.file.and(readable(&root.join(audio.trim_start_matches('/')), probe));
                     let dat = std::fs::read(root.join(t.anlz_path.trim_start_matches('/')))
                         .ok()
                         .and_then(|b| AnlzFile::parse(&b).ok());
@@ -500,6 +535,64 @@ mod tests {
         let c = check_stick(&f.lib, f.dev, &f.stick).unwrap();
         assert!(c.ready(), "{c:#?}");
         assert_eq!(c.tracks.len(), 1, "Beta left the playlist and the stick");
+    }
+
+    /// The demo stick's bug: the check named a track's cues as changed, SYNC
+    /// wrote nothing ("0 copied, 0 updated, 0 removed") and the next check
+    /// named them again, because the sync only went by the change log. Here
+    /// the library is restored from a backup taken before a cue edit was
+    /// synced, so the stick holds cues the library no longer has and the
+    /// change log has nothing for them.
+    #[test]
+    fn the_sync_writes_what_the_check_calls_changed() {
+        for formats in [both(), DeviceFormats::default()] {
+            let mut f = setup(formats);
+            let backup = f._dir.path().join("before-edit.sqlite");
+            f.lib.backup_to(&backup).unwrap();
+            f.lib
+                .set_cues(f.ids[0], vec![Cue::hot(0, 0.5), Cue::hot(3, 0.9)])
+                .unwrap();
+            sync(&mut f);
+            assert!(check_stick(&f.lib, f.dev, &f.stick).unwrap().ready());
+            f.lib.restore_in_place(&backup).unwrap();
+            assert_eq!(
+                f.lib.pending_changes(f.dev).unwrap().count,
+                0,
+                "the log knows nothing"
+            );
+
+            let c = check_stick(&f.lib, f.dev, &f.stick).unwrap();
+            let alpha = c.tracks.iter().find(|t| t.title == "Alpha").unwrap();
+            assert_eq!(alpha.cues, Mark::Differs, "{c:#?}");
+            assert!(!c.ready());
+            let drift = stick_drift(&f.lib, f.dev, &f.stick).unwrap();
+            assert_eq!(drift.tracks, HashSet::from([f.ids[0]]));
+
+            let mut writers: Vec<Box<dyn FormatWriter + Send>> = vec![
+                Box::new(NativeWriter { stems: None }),
+                Box::new(ClubUsbWriter::default()),
+            ];
+            let report = sync_device(
+                &mut f.lib,
+                f.dev,
+                &f.stick.clone(),
+                &mut writers,
+                &SyncOptions::default(),
+                &AtomicBool::new(false),
+                |_| {},
+            )
+            .unwrap();
+            assert!(!report.full);
+            assert_eq!(report.updated, 1, "SYNC writes the track the check named");
+            let c = check_stick(&f.lib, f.dev, &f.stick).unwrap();
+            assert!(c.ready(), "{c:#?}");
+            assert!(
+                stick_drift(&f.lib, f.dev, &f.stick)
+                    .unwrap()
+                    .tracks
+                    .is_empty()
+            );
+        }
     }
 
     #[test]

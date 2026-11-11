@@ -28,6 +28,7 @@ impl App {
     pub(crate) fn refresh_library(&self) {
         crate::explorer::refresh_library_data(self);
         crate::decks::refresh_analysis(self);
+        crate::decks::follow_library(self);
         self.state.borrow_mut().load_rows();
         browser::refresh_tree(self);
         browser::refresh_tracks(self);
@@ -99,6 +100,9 @@ pub(crate) fn run(app: &Rc<App>, id: &str) {
         "library.undo" => app.undo(),
         "library.redo" => app.redo(),
         "mode.prepare" => ui.invoke_set_mode(S::from("prepare")),
+        "prepare.back-to-perform" => {
+            crate::edit_in_prepare::back(app);
+        }
         "mode.perform" => ui.invoke_set_mode(S::from("perform")),
         "mode.lighting" => ui.invoke_set_mode(S::from("lighting")),
         "section.library" => ui.invoke_select_section(S::from("library")),
@@ -381,6 +385,7 @@ fn deck_action(app: &App, n: usize, action: &str) {
     };
     let state = || engine::snapshot(app).map(|s| s.decks[i]);
     match action {
+        "edit" => crate::edit_in_prepare::toggle(app, i),
         "play" => ui.invoke_deck_toggle_play(d),
         "cue" => ui.invoke_deck_cue(d),
         "sync" => ui.invoke_deck_sync(d),

@@ -1642,6 +1642,26 @@ fn build() -> Vec<Action> {
         );
     }
 
+    // ── EDIT IN PREPARE: a deck's track in the Prepare player and back ──
+    for (n, key) in [(1u8, "D"), (2, "J"), (3, "F"), (4, "H")] {
+        b.add(
+            format!("deck{n}.edit"),
+            "Edit in Prepare: this deck's track in the player (again: back to Perform)",
+            None,
+            Group::Deck(n),
+            Global,
+            &[&format!("Mod+Alt+Shift+{key}")],
+        );
+    }
+    b.add(
+        "prepare.back-to-perform",
+        "Back to Perform (after EDIT on a deck)",
+        None,
+        Group::Player,
+        Prepare,
+        &["Escape"],
+    );
+
     // ── Decks 3 and 4: function keys ──
     for n in [3u8, 4] {
         let prefix = if n == 3 { "" } else { "Shift+" };

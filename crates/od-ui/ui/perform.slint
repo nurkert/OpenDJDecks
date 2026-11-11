@@ -12,7 +12,8 @@ import { DropZone } from "drag.slint";
 import { DeckView, CueMark, HotCueSlot, ChannelView, PhraseMark, LaneMotion, FxUnitView, PadView } from "structs.slint";
 import { FxPanel, ChannelFxSelector, ChoiceList } from "fx.slint";
 import { SamplerPanel } from "sampler.slint";
-import { SamplerPadView, SamplerView, DeckTime, DeckGrid, DeckGridView, GridEdit, DeckMix } from "structs.slint";
+import { SamplerPadView, SamplerView, DeckTime, DeckGrid, DeckGridView, GridEdit, DeckMix, EditInPrepare } from "structs.slint";
+import { DeckEditMenu } from "edit_menu.slint";
 import { WaveLane, VerticalLane } from "wave.slint";
 import { MicControls } from "mic.slint";
 import { RecStrip } from "rec.slint";
@@ -164,9 +165,15 @@ component Readout inherits VerticalLayout {
     in property <string> relation-text;
     // Ink of the sub line (bone-2; sodium for a value that needs you).
     in property <color> sub-tone: Theme.bone-2;
+    // The deck's EDIT IN PREPARE menu on a right-click of the value (KEY).
+    in property <bool> edit-menu;
+    in property <DeckView> deck;
+    // Smallest width whatever it shows (the label and value count too).
+    in property <length> floor;
     callback scale(float);
     spacing: 0;
     alignment: center;
+    if root.floor > 0: Rectangle { min-width: root.floor; height: 0px; }
     if !root.scale-keys: Caps { text: root.label; font-size: Theme.label; horizontal-alignment: root.align; }
     if root.scale-keys: HorizontalLayout {
         alignment: end;
@@ -203,6 +210,7 @@ component Readout inherits VerticalLayout {
             if root.relation == "clash": Rectangle { x: parent.width * 0.7; y: -3px; width: 1px; height: 8px; background: Theme.fault; }
             TipArea { y: -12px; height: 16px; tooltip: root.relation-text; }
         }
+        if root.edit-menu && root.deck.loaded: DeckEditMenu { width: parent.width; height: parent.height; deck: root.deck; }
     }
     if root.sub != "" && root.sub2 == "": Text {
         accessible-role: text;
@@ -306,7 +314,11 @@ component Overview inherits VerticalLayout {
             }
         }
     }
-    PhraseBar { phrases: root.deck.phrases; height: root.wave-height < 36px ? 10px : 14px; }
+    PhraseBar {
+        phrases: root.deck.phrases; height: root.wave-height < 36px ? 10px : 14px;
+        // Right-click: the deck's EDIT IN PREPARE menu.
+        if root.deck.loaded: DeckEditMenu { width: parent.width; height: parent.height; deck: root.deck; }
+    }
 }
 
 // Pad letters (PadView.index 0..7), for accessible labels.
@@ -696,7 +708,9 @@ component PadColumns inherits VerticalLayout {
     callback param(int);
     horizontal-stretch: 3;
     spacing: Theme.s1;
-    property <bool> grid-open;
+    // Open GRID panels live in DeckGrid, so they stay open across a trip
+    // to Prepare (EDIT IN PREPARE).
+    property <bool> grid-open: DeckGrid.is-open(root.deck.deck);
     // Pads take the height the deck row has (the mixer beside it sets it).
     // The panel takes the pads' width: the deck (and the mixer between the
     // decks) stays where it is when it opens.
@@ -716,7 +730,7 @@ component PadColumns inherits VerticalLayout {
     PadModeBar {
         deck: root.deck;
         grid-open: root.grid-open;
-        grid-toggle => { root.grid-open = !root.grid-open; }
+        grid-toggle => { DeckGrid.toggle(root.deck.deck); }
         mode-step(d) => { root.mode-step(d); }
         mode-set(i) => { root.mode-set(i); }
         param(d) => { root.param(d); }
@@ -1344,13 +1358,14 @@ component DeckControls inherits HorizontalLayout {
     callback keylock();
     callback tempo(float);
     spacing: root.narrow ? Theme.s2 : Theme.s3;
-    // The GRID panel replaces the pads (its key is in the loop column).
-    property <bool> grid-open;
+    // The GRID panel replaces the pads (its key is in the loop column);
+    // open panels live in DeckGrid (they stay open across Prepare).
+    property <bool> grid-open: DeckGrid.is-open(root.deck.deck);
 
     if root.mirror: tempo-r := VerticalLayout { TempoColumn { vertical-stretch: 1; mirror: true; deck: root.deck; tempo(v) => { root.tempo(v); } } }
     if root.mirror && DeckLayout.platter: PlatterGroup { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; mirror: true; setup: DeckLayout.setup; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
     if root.mirror: TransportRows { deck: root.deck; base: root.base; cue => { root.cue(); } toggle-play => { root.toggle-play(); } sync => { root.sync(); } }
-    if root.mirror && DeckLayout.loops: LoopRows { deck: root.deck; base: root.base; narrow: root.narrow; grid-open: root.grid-open; grid-toggle => { root.grid-open = !root.grid-open; } loop(b) => { root.loop(b); } loop-exit => { root.loop-exit(); } loop-scale(f) => { root.loop-scale(f); } beat-jump-step(f) => { root.beat-jump-step(f); } loop-manual => { root.loop-manual(); } }
+    if root.mirror && DeckLayout.loops: LoopRows { deck: root.deck; base: root.base; narrow: root.narrow; grid-open: root.grid-open; grid-toggle => { DeckGrid.toggle(root.deck.deck); } loop(b) => { root.loop(b); } loop-exit => { root.loop-exit(); } loop-scale(f) => { root.loop-scale(f); } beat-jump-step(f) => { root.beat-jump-step(f); } loop-manual => { root.loop-manual(); } }
 
     if DeckLayout.pads: PadRows {
         deck: root.deck; base: root.base; grid-open: root.grid-open; narrow: root.narrow;
@@ -1358,7 +1373,7 @@ component DeckControls inherits HorizontalLayout {
         mode-step(d) => { root.mode-step(d); } mode-set(i) => { root.mode-set(i); } param(d) => { root.param(d); }
     }
 
-    if !root.mirror && DeckLayout.loops: LoopRows { deck: root.deck; base: root.base; narrow: root.narrow; grid-open: root.grid-open; grid-toggle => { root.grid-open = !root.grid-open; } loop(b) => { root.loop(b); } loop-exit => { root.loop-exit(); } loop-scale(f) => { root.loop-scale(f); } beat-jump-step(f) => { root.beat-jump-step(f); } loop-manual => { root.loop-manual(); } }
+    if !root.mirror && DeckLayout.loops: LoopRows { deck: root.deck; base: root.base; narrow: root.narrow; grid-open: root.grid-open; grid-toggle => { DeckGrid.toggle(root.deck.deck); } loop(b) => { root.loop(b); } loop-exit => { root.loop-exit(); } loop-scale(f) => { root.loop-scale(f); } beat-jump-step(f) => { root.beat-jump-step(f); } loop-manual => { root.loop-manual(); } }
     if !root.mirror: TransportRows { deck: root.deck; base: root.base; cue => { root.cue(); } toggle-play => { root.toggle-play(); } sync => { root.sync(); } }
     if !root.mirror && DeckLayout.platter: PlatterGroup { deck: root.deck; tone: root.tone; base: root.base; narrow: root.narrow; mirror: false; setup: DeckLayout.setup; set-bpm(t) => { root.set-bpm(t); } range => { root.tempo-range(); } slip => { root.slip(); } quantize => { root.quantize(); } keylock => { root.keylock(); } tempo-range => { root.tempo-range(); } }
     if !root.mirror: VerticalLayout { TempoColumn { vertical-stretch: 1; deck: root.deck; tempo(v) => { root.tempo(v); } } }
@@ -1407,6 +1422,9 @@ component KioskDeck inherits Rectangle {
     // row of their own, as on a tight deck.
     in property <bool> split;
     property <bool> two-rows: root.tight || root.split;
+    // EDIT IN PREPARE where the deck has room for it beside the other keys
+    // (a narrower deck leaves it to the deck's shortcut and controller).
+    property <bool> edit-key: root.full && PopupPlace.window-width >= 900px;
     property <length> key: root.tight ? 32px : 44px;
     property <length> legend: root.tight ? Theme.label : Theme.control;
     property <length> tracking: root.tight ? 0.6px : 1.2px;
@@ -1450,6 +1468,14 @@ component KioskDeck inherits Rectangle {
                 Text { accessible-role: text; accessible-id: "deck\{root.deck.deck}.time-remaining"; accessible-value: DeckTime.main(root.deck); text: DeckTime.main(root.deck) == "" ? "—" : DeckTime.main(root.deck); font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; horizontal-alignment: right; }
                 Text { accessible-role: text; accessible-id: "deck\{root.deck.deck}.time-elapsed"; accessible-value: root.deck.elapsed; text: root.deck.elapsed; font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2; horizontal-alignment: right; }
             }
+            // EDIT IN PREPARE (beyond the kiosk, which has no Prepare).
+            if root.edit-key && !root.two-rows: VerticalLayout { alignment: center; Toggle {
+                accessible-role: button; accessible-id: "deck\{root.deck.deck}.edit";
+                size: root.key; width: root.tight ? self.min-width : 52px; label-size: root.legend; tracking: root.tracking; label: @tr("EDIT"); enabled: root.deck.loaded;
+                tooltip: @tr("Edit in Prepare: fix this track's phrases, grid, cues or key while the decks play on");
+                command: "deck" + root.deck.deck + ".edit";
+                clicked => { EditInPrepare.open(root.deck.deck, ""); }
+            } }
             if !root.two-rows: VerticalLayout { alignment: center; Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.key-sync;
                 accessible-id: "deck\{root.deck.deck}.key-sync";
@@ -1498,6 +1524,13 @@ component KioskDeck inherits Rectangle {
                 clicked => { MixerParts.toggle(root.deck.deck); }
             }
             Rectangle { horizontal-stretch: 1; }
+            if root.edit-key: Toggle {
+                accessible-role: button; accessible-id: "deck\{root.deck.deck}.edit";
+                size: root.key; width: root.tight ? self.min-width : 52px; label-size: root.legend; tracking: root.tracking; label: @tr("EDIT"); enabled: root.deck.loaded;
+                tooltip: @tr("Edit in Prepare: fix this track's phrases, grid, cues or key while the decks play on");
+                command: "deck" + root.deck.deck + ".edit";
+                clicked => { EditInPrepare.open(root.deck.deck, ""); }
+            }
         }
         // Overview (needle search) and the part mutes.
         HorizontalLayout {
@@ -1829,6 +1862,24 @@ export component DeckPanel inherits Rectangle {
                     overflow: elide;
                 }
             }
+            // EDIT IN PREPARE: the track in the Prepare player to fix its
+            // phrases (or its grid while the GRID panel is open); the decks
+            // play on. A right-click on the waveform, phrases or key offers
+            // every editor and the quick fixes. The full deck has it under
+            // MASTER; compact and browse decks, whose column holds SYNC
+            // too, beside the title.
+            if root.compact || root.browse: VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 0;
+                Toggle {
+                    accessible-role: button; accessible-id: "deck\{root.deck.deck}.edit";
+                    width: self.min-width;
+                    size: 24px; label: @tr("EDIT"); enabled: root.deck.loaded;
+                    tooltip: @tr("Edit in Prepare: fix this track's phrases, grid, cues or key while the decks play on");
+                    command: "deck" + root.deck.deck + ".edit";
+                    clicked => { EditInPrepare.open(root.deck.deck, ""); }
+                }
+            }
             Readout {
                 value-label: "deck\{root.deck.deck}.bpm"; label: "BPM"; template: "000.00"; value: root.deck.bpm; size: root.tight-header ? Theme.heading : !root.compact ? Theme.hero : root.four ? Theme.body : Theme.heading;
                 // ÷2 / ×2 where the hero value leaves room for them.
@@ -1840,9 +1891,13 @@ export component DeckPanel inherits Rectangle {
             // An unsure key says how sure in sodium under it ("41 %"), narrower
             // than the key itself so the header keeps its widths.
             Readout {
+                // Wide enough for an unsure key's percent under it, so the
+                // header keeps its widths when a track loads.
+                floor: 32px;
                 value-label: "deck\{root.deck.deck}.key"; label: @tr("KEY"); template: "12A"; value: root.deck.key; size: !root.compact ? Theme.heading : root.four ? Theme.control : Theme.body;
                 sub: root.deck.key-unsure; sub-label: "deck\{root.deck.deck}.key-sure"; sub-tone: Theme.attention;
                 relation: root.deck.key-relation; relation-text: root.deck.key-relation-text;
+                edit-menu: true; deck: root.deck;
             }
             // Key sync and key shift (semitones; the value resets). Narrow
             // decks leave them to the Key Shift pad mode and the keyboard.
@@ -1877,6 +1932,13 @@ export component DeckPanel inherits Rectangle {
                 // SYNC moves to the transport column on the full deck.
                 if root.compact || root.browse: Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.sync; accessible-id: "deck\{root.deck.deck}.beat-sync"; guide: "deck\{root.deck.deck}.beat-sync"; size: 24px; label: "SYNC"; enabled: !PhaseMeter.practice; on: root.deck.sync; tone: Theme.live; clicked => { root.sync(); } }
                 Toggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.deck.master; accessible-id: "deck\{root.deck.deck}.master"; size: 24px; label: root.four ? "MSTR" : "MASTER"; on: root.deck.master; tone: root.tone; clicked => { root.master(); } }
+                if !root.compact && !root.browse: Toggle {
+                    accessible-role: button; accessible-id: "deck\{root.deck.deck}.edit";
+                    size: 24px; label: @tr("EDIT"); enabled: root.deck.loaded;
+                    tooltip: @tr("Edit in Prepare: fix this track's phrases, grid, cues or key while the decks play on");
+                    command: "deck" + root.deck.deck + ".edit";
+                    clicked => { EditInPrepare.open(root.deck.deck, ""); }
+                }
             }
         }
 

@@ -252,10 +252,20 @@ pub fn sync_device(
     let pending = lib.pending_changes(device)?;
     let interrupted = od_format_native::interrupted_sync(root)?.is_some();
     let mut placement = PlacementMap::load(root);
-    let full = opts.force_full
+    let mut full = opts.force_full
         || interrupted
         || lib.device(device)?.synced_seq == 0
         || placement.tracks.is_empty();
+    // What the stick check would call changed, read from the stick itself:
+    // the change log alone misses a stick written from another state of the
+    // library (a restored backup, another computer), and then the check
+    // would keep reporting a change that SYNC never writes.
+    let drift = if full {
+        crate::check::StickDrift::default()
+    } else {
+        crate::check::stick_drift(lib, device, root)?
+    };
+    full |= drift.formats;
     let mut report = SyncReport {
         full,
         ..Default::default()
@@ -296,7 +306,7 @@ pub fn sync_device(
     let mut changed: BTreeSet<TrackId> = if full {
         wanted_ids.iter().copied().collect()
     } else {
-        pending.tracks.clone()
+        pending.tracks.iter().chain(&drift.tracks).copied().collect()
     };
     // Index in `placed` of the tracks to write as WAV, and the copy there is
     // now (kept if the conversion fails).
@@ -540,7 +550,7 @@ pub fn sync_device(
         tree: &tree,
         changed: &changed,
         removed: &removed,
-        playlists_changed: full || pending.playlists || !removed.is_empty(),
+        playlists_changed: full || pending.playlists || drift.playlists || !removed.is_empty(),
         full,
     };
     for w in writers.iter_mut() {

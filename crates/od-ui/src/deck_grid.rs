@@ -124,7 +124,8 @@ pub(crate) fn act(app: &App, d: usize, action: &str, arg: &str) {
     let op = match action {
         "set-one" => Op::SetOne(pos),
         "shift" => Op::Shift(num / 1000.0),
-        "beat" => Op::Beats(num),
+        // "downbeat": the deck menu's quick fix, one undo step each.
+        "beat" | "downbeat" => Op::Beats(num),
         "step" => Op::Step(num),
         "scale" if num > 0.0 => Op::Scale(num),
         "bpm" => match crate::player::parse_bpm(arg) {
@@ -199,12 +200,14 @@ pub(crate) fn act(app: &App, d: usize, action: &str, arg: &str) {
 
 fn set_gain(app: &App, d: usize, id: TrackId, action: &str, num: f64) {
     let now = app.decks.borrow().loaded(d).map_or(0.0, |m| m.gain_adjust);
-    let db = if action == "gain-reset" {
-        0.0
-    } else {
-        ((now + num as f32) * 10.0).round() / 10.0
-    }
-    .clamp(-GAIN_LIMIT, GAIN_LIMIT);
+    let db = if action == "gain-reset" { 0.0 } else { now + num as f32 };
+    set_track_gain(app, id, db);
+}
+
+/// Stores `db` (rounded to 0.1, within ±12) as the gain correction of
+/// track `id`; every deck playing it and the Prepare player follow at once.
+pub(crate) fn set_track_gain(app: &App, id: TrackId, db: f32) {
+    let db = ((db * 10.0).round() / 10.0).clamp(-GAIN_LIMIT, GAIN_LIMIT);
     let r = app.state.borrow_mut().lib.set_meta(&gain_key(id), &format!("{db:.1}"));
     if app.report(r).is_none() {
         return;
@@ -217,6 +220,9 @@ fn set_gain(app: &App, d: usize, id: TrackId, action: &str, num: f64) {
         }
     }
     drop(decks);
+    if app.state.borrow().player.current == Some(id) {
+        app.ui.set_track_gain(gain_label(db).into());
+    }
     app.status(format!("Gain {}", gain_label(db)));
 }
 

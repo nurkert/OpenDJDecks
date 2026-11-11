@@ -6,7 +6,7 @@ import { DragGhost, DragState } from "drag.slint";
 export { DragState }
 export { LaneDrag } from "wave.slint";
 export { PopupPlace }
-export { DeckTime, GridEdit, DeckGrid, DeckGridView, DeckMix, AnalysisSure } from "structs.slint";
+export { DeckTime, GridEdit, DeckGrid, DeckGridView, DeckMix, AnalysisSure, EditInPrepare, PlayerTabs } from "structs.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
 import { Caps, PlateButton, Field, LineToggle, Splitter, TooltipState, PopupPlace, FirstStart, GuideMark, ControllerSetup, KeyFocus, FocusRing } from "controls.slint";
 import { FirstStartBar } from "first_start.slint";
@@ -166,6 +166,8 @@ export component AppWindow inherits Window {
     in property <string> track-artist;
     in property <string> track-bpm;
     in property <string> track-key;
+    // The player track's gain correction ("+1.5 dB").
+    in property <string> track-gain;
     in property <string> track-duration;
     in property <string> grid-source;
     // Active BPM detection range ("70–180"), shown where the BPM is analysed.
@@ -773,6 +775,7 @@ export component AppWindow inherits Window {
                     artist: root.track-artist;
                     bpm: root.track-bpm;
                     key: root.track-key;
+                    gain: root.track-gain;
                     duration: root.track-duration;
                     position: root.track-position;
                     grid-source: root.grid-source;

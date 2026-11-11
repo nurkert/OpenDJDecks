@@ -4188,3 +4188,113 @@ msgstr ""
 msgctxt "PreferencesWindow"
 msgid "Pad, page or group"
 msgstr ""
+
+#: ui/edit_menu.slint:13
+msgctxt "DeckEditMenu"
+msgid "Edit phrases…"
+msgstr ""
+
+#: ui/edit_menu.slint:14
+msgctxt "DeckEditMenu"
+msgid "Edit beatgrid…"
+msgstr ""
+
+#: ui/edit_menu.slint:15
+msgctxt "DeckEditMenu"
+msgid "Edit cues…"
+msgstr ""
+
+#: ui/edit_menu.slint:16
+msgctxt "DeckEditMenu"
+msgid "Edit key…"
+msgstr ""
+
+#: ui/edit_menu.slint:17
+msgctxt "DeckEditMenu"
+msgid "Edit gain…"
+msgstr ""
+
+#: ui/edit_menu.slint:18
+msgctxt "DeckEditMenu"
+msgid "Edit track info…"
+msgstr ""
+
+#: ui/edit_menu.slint:19
+msgctxt "DeckEditMenu"
+msgid "Edit stems…"
+msgstr ""
+
+#: ui/edit_menu.slint:21
+msgctxt "DeckEditMenu"
+msgid "Downbeat one beat earlier"
+msgstr ""
+
+#: ui/edit_menu.slint:22
+msgctxt "DeckEditMenu"
+msgid "Downbeat one beat later"
+msgstr ""
+
+#: ui/edit_menu.slint:23
+msgctxt "DeckEditMenu"
+msgid "Phrase boundary one bar earlier"
+msgstr ""
+
+#: ui/edit_menu.slint:24
+msgctxt "DeckEditMenu"
+msgid "Phrase boundary one bar later"
+msgstr ""
+
+#: ui/edit_menu.slint:25
+msgctxt "DeckEditMenu"
+msgid "Use the likely key {}"
+msgstr ""
+
+#: ui/edit_menu.slint:25
+msgctxt "DeckEditMenu"
+msgid "Use the likely key"
+msgstr ""
+
+#: ui/perform.slint
+msgctxt "DeckPanel"
+msgid "EDIT"
+msgstr ""
+
+#: ui/perform.slint
+msgctxt "DeckPanel"
+msgid "Edit in Prepare: fix this track's phrases, grid, cues or key while the decks play on"
+msgstr ""
+
+#: ui/perform.slint
+msgctxt "KioskDeck"
+msgid "EDIT"
+msgstr ""
+
+#: ui/perform.slint
+msgctxt "KioskDeck"
+msgid "Edit in Prepare: fix this track's phrases, grid, cues or key while the decks play on"
+msgstr ""
+
+#: ui/topbar.slint
+msgctxt "TopBar"
+msgid "BACK TO PERFORM"
+msgstr ""
+
+#: ui/topbar.slint
+msgctxt "TopBar"
+msgid "Back to Perform, the decks as you left them"
+msgstr ""
+
+#: ui/player.slint
+msgctxt "PreparePlayer"
+msgid "GAIN"
+msgstr ""
+
+#: ui/player.slint
+msgctxt "PreparePlayer"
+msgid "Track gain 0.5 dB lower (stored with the track)"
+msgstr ""
+
+#: ui/player.slint
+msgctxt "PreparePlayer"
+msgid "Track gain 0.5 dB higher (stored with the track)"
+msgstr ""

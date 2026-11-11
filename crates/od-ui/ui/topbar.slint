@@ -10,6 +10,7 @@ import { Club } from "club.slint";
 import { Lighting, LinkStatus } from "lighting.slint";
 import { PerformLayout, DeckLayout } from "perform.slint";
 import { GigCheck, LockKey, PerformLock } from "safety.slint";
+import { EditInPrepare } from "structs.slint";
 
 component ModeTab inherits Rectangle {
     // The spoken name (readable, translated; the test id is `accessible-id`).
@@ -60,13 +61,15 @@ component PanelToggle inherits Rectangle {
     // Smallest width (44 px touch keys in the kiosk) and availability.
     in property <length> min-w: 0px;
     in property <bool> enabled: true;
+    // The fill while on.
+    in property <color> tone: Theme.setup-on;
     callback clicked();
     width: max(root.min-w, Theme.touch-min, t.preferred-width + (root.narrow ? 12px : 22px));
     // A step below the modes: panels are not a place to be.
     Rectangle {
         y: 9px; height: parent.height - 18px;
         border-radius: Theme.r-control;
-        background: Theme.face(root.enabled, touch.pressed, touch.has-hover, false, root.on || root.running, root.running ? Theme.fault : Theme.setup-on);
+        background: Theme.face(root.enabled, touch.pressed, touch.has-hover, false, root.on || root.running, root.running ? Theme.fault : root.tone);
         animate background { duration: Theme.t-press; easing: Theme.ease; }
     }
     t := Text {
@@ -559,6 +562,16 @@ export component TopBar inherits Rectangle {
                 on: root.prepare-layout != "player";
                 tooltip: @tr("Next Prepare layout: player, 2 players, dual, simple, full browser");
                 clicked => { root.cycle-layout(); }
+            }
+            // EDIT IN PREPARE: the way back to the decks, as you left them.
+            if root.mode == "prepare" && !root.kiosk && EditInPrepare.from-perform: Rectangle { width: Theme.key-gap; }
+            if root.mode == "prepare" && !root.kiosk && EditInPrepare.from-perform: PanelToggle {
+                narrow: root.narrow;
+                accessible-id: "topbar.back-to-perform"; accessible-role: button;
+                label: @tr("BACK TO PERFORM"); on: true; tone: Theme.attention;
+                tooltip: @tr("Back to Perform, the decks as you left them");
+                command: "prepare.back-to-perform";
+                clicked => { EditInPrepare.back(); }
             }
             if root.show-panels: PanelToggle {
                 narrow: root.narrow;

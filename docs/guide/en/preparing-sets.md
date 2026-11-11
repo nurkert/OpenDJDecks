@@ -58,3 +58,7 @@ This is only for listening: the stored track, its beatgrid and its analysis do n
 ## Layouts for preparing
 
 The layout button at the top of Prepare cycles through **PLAYER** (one player above the browser), **2 PLAYERS** (a full player and a compact second one), **DUAL** (two compact players side by side), **SIMPLE** (one compact player) and **FULL BROWSER**. `⌥⌘4` to `⌥⌘8` choose one directly. Player 2 takes the selected track with **LOAD** or a dragged row; it is handy for checking a transition.
+
+## Coming from a deck
+
+**EDIT** on a Perform deck (or its right-click menu) opens that deck's track here with the editor you asked for, while the decks play on. The player switches to the **PLAYER** layout if needed; the **INFO** tab of the cue list also holds the track's **GAIN** correction with − and +. **BACK TO PERFORM** in the top bar, or `Esc`, returns to the decks and puts this layout back ([Fix the analysis while you play](perform-basics.md#fix-the-analysis-while-you-play)).

@@ -167,6 +167,7 @@ release.
 | `deck.keylock`, `deck.key_sync`, `deck.key_reset` | press | | |
 | `deck.tempo` | absolute | | `Tempo(-1..1)` |
 | `deck.tempo_range`, `deck.tempo_reset`, `deck.tap_bpm`, `deck.quantize` | press | | |
+| `deck.edit_in_prepare` | press | | `EditInPrepare`: the deck's track in the Prepare player; again (in Prepare) back to Perform |
 | `deck.jog_touch` | momentary | | `JogTouch(bool)` |
 | `deck.jog_turn` | relative | `mode` = `scratch` / `bend` / `search` | `JogTurn { ticks, mode }` |
 | `deck.hot_cue` | momentary | `slot` | `HotCue { slot, pressed }` |

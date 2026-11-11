@@ -1,0 +1,27 @@
+// EDIT IN PREPARE from a deck: the right-click menu of a deck's waveform,
+// phrase strip and key. The first group opens the deck's track in the
+// Prepare player with that editor; the second fixes the deck in place
+// (each one undo step), so a wrong downbeat, phrase boundary or key is put
+// right without leaving Perform.
+
+import { DeckView, EditInPrepare } from "structs.slint";
+
+export component DeckEditMenu inherits ContextMenuArea {
+    in property <DeckView> deck;
+    enabled: root.deck.loaded;
+    Menu {
+        MenuItem { title: @tr("Edit phrases…"); activated => { EditInPrepare.open(root.deck.deck, "phrases"); } }
+        MenuItem { title: @tr("Edit beatgrid…"); activated => { EditInPrepare.open(root.deck.deck, "grid"); } }
+        MenuItem { title: @tr("Edit cues…"); activated => { EditInPrepare.open(root.deck.deck, "cues"); } }
+        MenuItem { title: @tr("Edit key…"); activated => { EditInPrepare.open(root.deck.deck, "key"); } }
+        MenuItem { title: @tr("Edit gain…"); activated => { EditInPrepare.open(root.deck.deck, "gain"); } }
+        MenuItem { title: @tr("Edit track info…"); activated => { EditInPrepare.open(root.deck.deck, "info"); } }
+        MenuItem { title: @tr("Edit stems…"); activated => { EditInPrepare.open(root.deck.deck, "stems"); } }
+        MenuSeparator { }
+        MenuItem { title: @tr("Downbeat one beat earlier"); enabled: !root.deck.grid-locked; activated => { EditInPrepare.quick(root.deck.deck, "beat-earlier"); } }
+        MenuItem { title: @tr("Downbeat one beat later"); enabled: !root.deck.grid-locked; activated => { EditInPrepare.quick(root.deck.deck, "beat-later"); } }
+        MenuItem { title: @tr("Phrase boundary one bar earlier"); enabled: root.deck.phrases.length > 0; activated => { EditInPrepare.quick(root.deck.deck, "phrase-earlier"); } }
+        MenuItem { title: @tr("Phrase boundary one bar later"); enabled: root.deck.phrases.length > 0; activated => { EditInPrepare.quick(root.deck.deck, "phrase-later"); } }
+        MenuItem { title: root.deck.key-alt != "" ? @tr("Use the likely key {}", root.deck.key-alt) : @tr("Use the likely key"); enabled: root.deck.key-alt != ""; activated => { EditInPrepare.quick(root.deck.deck, "key-alt"); } }
+    }
+}

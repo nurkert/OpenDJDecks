@@ -11,7 +11,7 @@ import { Pad } from "perform.slint";
 import { CueMarker } from "wave.slint";
 import { ChoiceList } from "fx.slint";
 import { DropZone } from "drag.slint";
-import { CueMark, HotCueSlot, PhraseMark, GridEdit, AnalysisSure } from "structs.slint";
+import { CueMark, HotCueSlot, PhraseMark, GridEdit, AnalysisSure, PlayerTabs, EditInPrepare } from "structs.slint";
 
 component Tab inherits Rectangle {
     // The spoken name (readable, translated; the test id is `accessible-id`).
@@ -58,8 +58,26 @@ component Reading inherits HorizontalLayout {
     in property <string> action-tip;
     callback use-alt();
     callback act();
+    // − / + keys before the value (the gain correction), with their tips.
+    in property <bool> steps;
+    in property <string> step-a11y;
+    in property <string> down-tip;
+    in property <string> up-tip;
+    callback step(int);
+    // EDIT IN PREPARE pointed here (a sodium line before the legend).
+    in property <bool> pointed;
     spacing: Theme.s2;
+    if root.pointed: VerticalLayout { alignment: center; VLine { height: 14px; weight: 2px; tone: Theme.attention; } }
     Caps { text: root.label; font-size: Theme.label; vertical-alignment: center; }
+    if root.steps: Rectangle { horizontal-stretch: 1; }
+    if root.steps: VerticalLayout {
+        alignment: center;
+        HorizontalLayout {
+            spacing: Theme.key-gap;
+            PlateButton { accessible-role: button; accessible-id: root.step-a11y + "-down"; compact: true; label: "−"; width: 30px; tooltip: root.down-tip; clicked => { root.step(-1); } }
+            PlateButton { accessible-role: button; accessible-id: root.step-a11y + "-up"; compact: true; label: "+"; width: 30px; tooltip: root.up-tip; clicked => { root.step(1); } }
+        }
+    }
     if root.sure != "" || root.action != "": Rectangle { horizontal-stretch: 1; }
     if root.sure != "": HorizontalLayout {
         spacing: Theme.s1;
@@ -576,6 +594,8 @@ export component PreparePlayer inherits Rectangle {
     // The active BPM detection range, e.g. "70–180".
     in property <string> bpm-range;
     in property <string> key;
+    // The track's gain correction ("+1.5 dB").
+    in property <string> gain;
     in property <string> duration;
     in property <string> position;
     in property <string> grid-source;
@@ -627,11 +647,12 @@ export component PreparePlayer inherits Rectangle {
     callback jump-start();
     callback info-dragged(length);
     callback info-reset();
-    property <string> tool-tab: "cue";
+    // The tabs live in PlayerTabs, so EDIT IN PREPARE can open one.
+    property <string> tool-tab: PlayerTabs.tool;
     // EDIT GRID shows the GRID tools.
     property <bool> grid-editing: GridEdit.active;
-    changed grid-editing => { if (self.grid-editing) { root.tool-tab = "grid"; } }
-    property <string> list-tab: AnalysisSure.first-tab;
+    changed grid-editing => { if (self.grid-editing) { PlayerTabs.tool = "grid"; } }
+    property <string> list-tab: PlayerTabs.list != "" ? PlayerTabs.list : AnalysisSure.first-tab;
     // Cue list row being edited (index into `cues`), -1 = none.
     property <int> selected-cue: -1;
     background: Theme.ground-band; border-radius: Theme.r-panel;
@@ -713,6 +734,7 @@ export component PreparePlayer inherits Rectangle {
                                     use-alt => { AnalysisSure.fix("bpm"); }
                                 }
                                 Reading {
+                                    pointed: PlayerTabs.focus == "key";
                                     label: @tr("KEY"); value: root.key;
                                     sure: root.has-track ? AnalysisSure.key : ""; unsure: AnalysisSure.key-unsure; alt: AnalysisSure.key-alt;
                                     sure-a11y: "player1.key-sure"; alt-tip: @tr("Take the likely other key as your key (one undo step)");
@@ -724,6 +746,17 @@ export component PreparePlayer inherits Rectangle {
                                     action-a11y: "player1.reanalyse";
                                     action-tip: AnalysisSure.key == "" ? @tr("Analyse again to see how sure key and grid are") : @tr("Analyse the track again (your own key and locked grid stay)");
                                     act => { AnalysisSure.fix("analyse"); }
+                                }
+                                // Your correction of the track's auto gain, stored with the
+                                // track; a deck playing it follows at once.
+                                Reading {
+                                    pointed: PlayerTabs.focus == "gain";
+                                    a11y-label: "player1.gain"; label: @tr("GAIN"); template: "−12.0 dB";
+                                    value: root.has-track ? root.gain : "";
+                                    steps: root.has-track && !root.read-only; step-a11y: "player1.gain";
+                                    down-tip: @tr("Track gain 0.5 dB lower (stored with the track)");
+                                    up-tip: @tr("Track gain 0.5 dB higher (stored with the track)");
+                                    step(d) => { root.act(d > 0 ? "gain-up" : "gain-down"); }
                                 }
                                 Reading { label: @tr("TIME"); value: root.duration; }
                                 // The tempo range the analysis folds into (Preferences › Analysis).
@@ -786,10 +819,10 @@ export component PreparePlayer inherits Rectangle {
                         padding: Theme.s2;
                         spacing: Theme.key-gap;
                         alignment: stretch;
-                        Tab { accessible-id: "player1.cue-list.tab.all"; horizontal-stretch: 1; pad: 12px; label: @tr("ALL"); current: root.list-tab == "all"; clicked => { root.list-tab = "all"; } }
-                        Tab { accessible-id: "player1.cue-list.tab.memory"; horizontal-stretch: 1; pad: 12px; label: "MEMORY"; current: root.list-tab == "memory"; clicked => { root.list-tab = "memory"; } }
-                        Tab { accessible-id: "player1.cue-list.tab.hot-cue"; horizontal-stretch: 1; pad: 12px; label: "HOT CUE"; current: root.list-tab == "hot"; clicked => { root.list-tab = "hot"; } }
-                        Tab { accessible-id: "player1.cue-list.tab.info"; horizontal-stretch: 1; pad: 12px; label: "INFO"; current: root.list-tab == "info"; clicked => { root.list-tab = "info"; } }
+                        Tab { accessible-id: "player1.cue-list.tab.all"; horizontal-stretch: 1; pad: 12px; label: @tr("ALL"); current: root.list-tab == "all"; clicked => { PlayerTabs.list = "all"; } }
+                        Tab { accessible-id: "player1.cue-list.tab.memory"; horizontal-stretch: 1; pad: 12px; label: "MEMORY"; current: root.list-tab == "memory"; clicked => { PlayerTabs.list = "memory"; } }
+                        Tab { accessible-id: "player1.cue-list.tab.hot-cue"; horizontal-stretch: 1; pad: 12px; label: "HOT CUE"; current: root.list-tab == "hot"; clicked => { PlayerTabs.list = "hot"; } }
+                        Tab { accessible-id: "player1.cue-list.tab.info"; horizontal-stretch: 1; pad: 12px; label: "INFO"; current: root.list-tab == "info"; clicked => { PlayerTabs.list = "info"; } }
                     }
                 }
             }
@@ -992,12 +1025,12 @@ export component PreparePlayer inherits Rectangle {
                 if !(GridEdit.active && root.has-track): HorizontalLayout {
                     height: 30px;
                     spacing: Theme.key-gap;
-                    Tab { accessible-id: "player1.tab.cue-loop"; height: 30px; pad: root.narrow ? 12px : 24px; label: "CUE / LOOP"; current: root.tool-tab == "cue"; clicked => { root.tool-tab = "cue"; } }
-                    Tab { accessible-id: "player1.tab.grid"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("GRID"); current: root.tool-tab == "grid"; clicked => { root.tool-tab = "grid"; } }
-                    Tab { accessible-id: "player1.tab.phrase"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("PHRASE"); current: root.tool-tab == "phrase"; clicked => { root.tool-tab = "phrase"; } }
-                    Tab { accessible-id: "player1.tab.edit"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("EDIT"); current: root.tool-tab == "edit"; clicked => { root.tool-tab = "edit"; } }
-                    Tab { accessible-id: "player1.tab.shift"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("TEMPO / KEY"); current: root.tool-tab == "shift"; clicked => { root.tool-tab = "shift"; } }
-                    Tab { accessible-id: "player1.tab.stems"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("STEMS"); current: root.tool-tab == "stems"; clicked => { root.tool-tab = "stems"; } }
+                    Tab { accessible-id: "player1.tab.cue-loop"; height: 30px; pad: root.narrow ? 12px : 24px; label: "CUE / LOOP"; current: root.tool-tab == "cue"; clicked => { PlayerTabs.tool = "cue"; } }
+                    Tab { accessible-id: "player1.tab.grid"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("GRID"); current: root.tool-tab == "grid"; clicked => { PlayerTabs.tool = "grid"; } }
+                    Tab { accessible-id: "player1.tab.phrase"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("PHRASE"); current: root.tool-tab == "phrase"; clicked => { PlayerTabs.tool = "phrase"; } }
+                    Tab { accessible-id: "player1.tab.edit"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("EDIT"); current: root.tool-tab == "edit"; clicked => { PlayerTabs.tool = "edit"; } }
+                    Tab { accessible-id: "player1.tab.shift"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("TEMPO / KEY"); current: root.tool-tab == "shift"; clicked => { PlayerTabs.tool = "shift"; } }
+                    Tab { accessible-id: "player1.tab.stems"; height: 30px; pad: root.narrow ? 12px : 24px; label: @tr("STEMS"); current: root.tool-tab == "stems"; clicked => { PlayerTabs.tool = "stems"; } }
                     Rectangle { horizontal-stretch: 1; min-width: 16px; }
                     // Narrow: the loop is set with the CUE / LOOP keys below.
                     if !root.narrow: HorizontalLayout {

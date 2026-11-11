@@ -5,6 +5,7 @@
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
 import { DeckView, LaneMotion, CueMark, GridEdit, DeckMix } from "structs.slint";
+import { DeckEditMenu } from "edit_menu.slint";
 
 // A cue on a zoomed waveform, drawn so it reads on any waveform: a hot cue
 // is a line in its colour with a flag at the top carrying its letter (dark
@@ -298,13 +299,11 @@ export component WaveLane inherits Rectangle {
             horizontal-alignment: center; vertical-alignment: center;
         }
     }
-    // Right-click on the waveform: edit this deck's beatgrid (any lane
-    // height; tall lanes also have the GRID key in the gutter).
-    if root.deck.loaded: ContextMenuArea {
+    // Right-click on the waveform: the deck's EDIT IN PREPARE menu (any
+    // lane height; tall lanes also have the GRID key in the gutter).
+    if root.deck.loaded: DeckEditMenu {
         x: root.gutter; width: root.area; height: parent.height;
-        Menu {
-            MenuItem { title: @tr("Edit beatgrid…"); activated => { GridEdit.open-deck(root.deck.deck); } }
-        }
+        deck: root.deck;
     }
     // Bar counter at the playhead: the phrase (or what is counted) small
     // above, the count large below, on a quiet plate right of the needle so

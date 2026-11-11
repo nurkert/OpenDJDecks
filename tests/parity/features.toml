@@ -3746,6 +3746,26 @@ evidence = ["deck_grid.rs::act", "deck_grid.rs::tick", "ui/perform.slint::GridPa
 note = "The grid key beside the pad mode swaps the pads for the panel (the deck keeps its width), working while the track plays: a meter of how far the grid sits off the kicks (median of the last 8 beats, −20…+20 ms), FIT, the tempo and CLICK (metronome in the headphones); SET 1 (the kick just heard, ±60 ms, becomes the 1), ±1 / ±10 ms, ±1 beat; −.01 / +.01 and ÷2 / ×2 about the playhead, PIN (two pins solve the tempo), AUTO-FIX; EDIT … opens the Prepare editor, LOCK, and the track's auto-gain correction ±0.5 dB. Grid changes go to the library at once (decks follow without a gap); nudges within 1.5 s are one undo step"
 
 [[feature]]
+id = "deck-edit-in-prepare"
+area = "deck"
+name = "EDIT IN PREPARE from a playing deck: the track in the Prepare player with the right editor, quick fixes in place, back to Perform"
+scope = "in"
+status = "done"
+prio = "P2"
+qualifier = "beyond the usual"
+tests = [
+  "od-ui::ui_tests::edit_in_prepare::edit_key_opens_the_track_in_prepare_and_esc_returns",
+  "od-ui::ui_tests::edit_in_prepare::back_to_perform_by_key_shortcut_controller_and_tab",
+  "od-ui::ui_tests::edit_in_prepare::deck_menu_opens_each_editor",
+  "od-ui::ui_tests::edit_in_prepare::quick_fixes_stay_in_perform_and_undo_one_by_one",
+  "od-ui::ui_tests::edit_in_prepare::fixes_in_prepare_reach_the_loaded_deck",
+  "od-ui::edit_in_prepare::tests::the_boundary_under_the_playhead_moves_one_bar",
+]
+evidence = ["crates/od-ui/src/edit_in_prepare.rs::open", "crates/od-ui/src/edit_in_prepare.rs::quick", "crates/od-ui/src/decks.rs::follow_library", "crates/od-ui/ui/edit_menu.slint::DeckEditMenu", "crates/od-engine/src/track.rs::with_cues"]
+spec = "Roadmap [69]"
+note = "EDIT in the deck header (full, compact, browse and touch decks; `deck.edit_in_prepare` on a controller, ⌥⇧⌘D / J / F / H) puts the deck's track in the Prepare player at the deck's position with the PHRASE tab (or the grid while the deck's GRID panel is open); the right-click menu of the waveform, phrase strip and key opens Phrases, Grid, Cues, Key, Gain, Info or Stems and fixes in place: the downbeat ±1 beat, the phrase boundary nearest the playhead ±1 bar, the likely key ([62]), each one undo step. The decks play on and nothing reloads; every edit reaches the loaded decks at once (same audio, new grid or cues swapped in). BACK TO PERFORM, Esc, the mode shortcut or the PERFORM tab return to the same decks and view state. Not tried on a touch screen or a controller"
+
+[[feature]]
 id = "browser-played-mark"
 area = "browser"
 name = "Played tick in the list (on air this session)"
@@ -3798,12 +3818,13 @@ tests = [
   "od-devices::check::tests::library_changes_since_the_sync_show_until_the_next_sync",
   "od-devices::check::tests::an_interrupted_sync_is_not_ready",
   "od-devices::check::tests::a_stick_without_its_formats_is_not_ready",
+  "od-devices::check::tests::the_sync_writes_what_the_check_calls_changed",
   "od-ui::stick_check::tests::the_summary_counts_tracks_lists_and_formats",
   "od-ui::ui_tests::features::stick_check_gives_a_verdict_and_a_row_per_track",
 ]
 evidence = ["crates/od-devices/src/check.rs", "crates/od-ui/src/stick_check.rs"]
 spec = "Roadmap [53]"
-note = "CHECK STICK on the Devices page reads both stick formats back (OpenDJDecks library, Club player USB export and analysis files). Ready only when every file opens as audio, cues and grids match the library, playlists hold the library's tracks in order, the chosen formats are there and no sync was cut off. Whether a given player model accepts the stick is not covered (roadmap [H2])."
+note = "CHECK STICK on the Devices page reads both stick formats back (OpenDJDecks library, Club player USB export and analysis files). Ready only when every file opens as audio, cues and grids match the library, playlists hold the library's tracks in order, the chosen formats are there and no sync was cut off. Whether a given player model accepts the stick is not covered (roadmap [H2]). SYNC uses the check's own comparison besides the change log, so what the check calls changed is written by the next SYNC (a stick written from another state of the library, e.g. after a library backup was restored)."
 
 [[feature]]
 id = "export-club-usb-compat"
