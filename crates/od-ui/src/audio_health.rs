@@ -263,6 +263,11 @@ pub(crate) fn retry(app: &App) {
 /// output, or nothing when that is the lost device itself.
 fn fallback_name(lost: &Lost) -> Option<String> {
     if lost.virtual_out {
+        // Documentation pictures (`OPENDJDECKS_DEMO_PROOF` with
+        // `audio-anon`): an anonymous computer output to switch to.
+        if od_core::env::var("DEMO_PROOF").is_some_and(|v| v.split(',').any(|p| p == "audio-anon")) {
+            return Some(od_i18n::tr("Built-in output").to_string());
+        }
         return Some(crate::engine::null_output().name);
     }
     od_audio_io::default_output_device_name(od_audio_io::Backend::Default)

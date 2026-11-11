@@ -129,7 +129,18 @@ const NULL_RATE: u32 = 48_000;
 
 /// The virtual output standing in for a device when no audio is wanted.
 pub(crate) fn null_output() -> od_audio_io::VirtualOutput {
-    od_audio_io::VirtualOutput::new(od_i18n::tr("No audio output (headless)"), NULL_RATE)
+    od_audio_io::VirtualOutput::new(null_name(), NULL_RATE)
+}
+
+/// The virtual output's name. Documentation pictures
+/// (`OPENDJDECKS_DEMO_PROOF` with `audio-anon`) show an anonymous
+/// interface on the status line instead of "headless".
+fn null_name() -> &'static str {
+    if od_core::env::var("DEMO_PROOF").is_some_and(|v| v.split(',').any(|p| p == "audio-anon")) {
+        od_i18n::tr("Eight-output interface")
+    } else {
+        od_i18n::tr("No audio output (headless)")
+    }
 }
 
 /// Audio rendered into nothing: the engine runs on the virtual output, and
@@ -148,7 +159,7 @@ fn start_null(app: &App, lite: bool) {
     }
     let host = od_audio_io::AudioHost::start_virtual(&null_output(), processor);
     let mut h = app.engine.borrow_mut();
-    h.message = od_i18n::tr("No audio output (headless)").into();
+    h.message = null_name().into();
     h.engine = Some(engine);
     h.host = Some(host);
     drop(h);

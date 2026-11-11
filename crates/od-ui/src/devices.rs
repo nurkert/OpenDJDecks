@@ -110,6 +110,13 @@ fn conversion_summary(report: &od_devices::SyncReport) -> String {
 }
 
 fn space(free: u64, total: u64) -> String {
+    // Documentation pictures (`OPENDJDECKS_DEMO_PROOF` with `stick-size`):
+    // a made-up 32 GB stick instead of the disk the demo sticks live on.
+    let (free, total) = if od_core::env::var("DEMO_PROOF").is_some_and(|v| v.split(',').any(|p| p == "stick-size")) {
+        (21_400_000_000, 32_000_000_000)
+    } else {
+        (free, total)
+    };
     od_i18n::trf(
         "{} FREE OF {}",
         &[&format::bytes(free), &format::bytes(total)],
