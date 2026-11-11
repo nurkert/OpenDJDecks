@@ -2,12 +2,12 @@
 title: Einstellungen und Tastenkürzel
 description: Audiogeräte, Sprache und Darstellung, Wellenformen, Deck-Standards, alle Tastenkürzel und wie du sie änderst.
 keywords: [einstellungen, optionen, audio, ausgabegerät, puffer, abtastrate, sprache, deutsch, englisch, theme, darstellung, dunkel, hell, farbenblind, kontrast, skalierung, zoom, wellenform, tastenkürzel, kürzel, tastatur, tasten, belegen, belegung, shortcut]
-features: [analysis-bpm-ranges, prefs-window, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends, shell-motion-language]
+features: [analysis-bpm-ranges, prefs-window, prefs-live-preview, prefs-audio-device, prefs-display, prefs-waveform-options, prefs-deck-defaults, prefs-browser-font, analysis-waveform-styles, shell-ui-scaling, shell-colour-blind-contrast, shell-keyboard-layouts, browser-keyboard-shortcuts, audio-coreaudio, audio-linux-backends, shell-motion-language]
 ---
 
 Öffne die **Einstellungen** mit dem Zahnrad oben, oder `⌘,` auf dem Mac und `Strg+,` auf Windows und Linux. `Esc` schließt das Fenster. **EINSTELLUNG FINDEN** oben durchsucht alle Seiten.
 
-![Einstellungen](../img/preferences.png)
+![Die Einstellungen auf der Seite Ansicht, oben die Live-Vorschau](../img/preferences.png)
 
 ## Audio
 
@@ -20,6 +20,10 @@ Unter Windows läuft Audio über WASAPI, unter macOS über CoreAudio und unter L
 **GIG** in der oberen Leiste ist ein Preset fürs Spielen: Ein Klick stellt hohen Kontrast, die Palette für Farbenblinde und eine größere Oberfläche zugleich ein, ein zweiter Klick stellt deine Werte wieder her. Der Pfeil daneben stellt die einzelnen Teile ein. Die leere Bibliothek bietet beim ersten Start denselben Knopf **GIG-PRESET**.
 
 Sprache, Tonart-Schreibweise (**Camelot**, **Open Key** oder **musikalisch**), die Darstellung (dunkel, hell oder wie das System), **Skalierung** von 75 bis 200 % (gilt sofort) und die **Wellenform-Farbe**: 3 Bänder, einfarbig oder RGB. Unter **EIGENE FARBEN** wählst du die Farben für Tiefen, Mitten und Höhen selbst; **STANDARDFARBEN** stellt die vorgegebenen wieder her.
+
+**VORSCHAU** oben auf der Seite zeigt, was die Einstellungen darunter ändern, während du sie änderst: eine Wellenform mit deiner **Wellenform-Farbe** und der Einstellung **Ruhige Wellenform**, die vier Deckfarben und die Statuslinien (sie folgen **Palette für Farbenblinde** und **Hoher Kontrast (helles Licht)**), einen Wert in deiner **Skalierung** und einen Plan des **Deck-Layouts**. **Deck-Layout** wählt **EINFACH**, **STANDARD** oder **VOLL** für die Decks in Perform, genau wie **Ansicht › Deck-Layout**.
+
+Die Seiten sehen aus wie der Rest der App: Jeder Abschnitt beginnt auf einem eigenen Band, der gewählte Wert einer Auswahl ist gefüllt, und Schalter sind gefüllte Spuren.
 
 - **Palette für Farbenblinde** und **Hoher Kontrast (helles Licht)** gelten sofort.
 - **Bewegung reduzieren** schaltet jede Animation ab: Tasten, Schalter, Bereiche und die Modus-Reiter wechseln sofort, und das Pulsieren einer scharfen Taste, der Ladestreifen und die Stroboskop-Vorschau stehen still. Die Einstellung ist zunächst aus, weil sich die Systemeinstellung nicht auslesen lässt. Pegel, Wellenformen und Abspielmarken animieren nie: Sie zeigen den Klang immer so, wie er ist.

@@ -4,6 +4,8 @@
 pub(crate) mod auto;
 mod columns;
 mod filter;
+pub(crate) mod flow;
+pub(crate) mod fuzzy;
 pub(crate) mod navigate;
 mod sources;
 pub(crate) mod sub;
@@ -51,6 +53,14 @@ pub(crate) struct BrowserState {
     pub tree_filter: String,
     /// Selected position in a set's flow.
     pub flow_selected: Option<usize>,
+    /// Selected transition of a set's flow (from position `i` to `i + 1`).
+    pub flow_pair: Option<usize>,
+    /// While searching the best matches come first, until a column
+    /// header is clicked.
+    pub search_ranked: bool,
+    /// The selection was moved with the arrow keys since the search last
+    /// changed (Return in the search then loads it, else the top hit).
+    pub search_moved: bool,
     /// Mounted sticks carrying an OpenDJDecks library: (name, root).
     pub sticks: Vec<(String, PathBuf)>,
     /// The stick being browsed (read-only source), with its index in `sticks`.
@@ -109,6 +119,9 @@ impl Default for BrowserState {
             anchor: None,
             expanded: HashSet::new(),
             flow_selected: None,
+            flow_pair: None,
+            search_ranked: true,
+            search_moved: false,
             sticks: Vec::new(),
             stick: None,
             previews: HashMap::new(),
@@ -213,6 +226,130 @@ pub(crate) fn select_row(app: &App, i: usize, toggle: bool, range: bool) {
     }
     refresh_tracks(app);
     player::refresh_detail(app);
+}
+
+/// Selects the transition from position `i` to `i + 1` of a set: both
+/// rows, the first as the flow's position (its note is about this
+/// transition).
+pub(crate) fn select_pair(app: &App, i: usize) {
+    if i + 1 >= app.state.borrow().row_count() {
+        return;
+    }
+    select_row(app, i, false, false);
+    {
+        let mut st = app.state.borrow_mut();
+        st.browser.selection = [i, i + 1].into_iter().collect();
+        st.browser.anchor = Some(i);
+        st.browser.flow_selected = Some(i);
+        st.browser.flow_pair = Some(i);
+    }
+    refresh_tracks(app);
+    app.ui.set_focus_row(i as i32);
+}
+
+/// A key in the search field: arrows move the selection in the list,
+/// Return loads (the row moved to, else the top hit), Escape leaves.
+pub(crate) fn search_key(app: &App, key: &str) {
+    match key {
+        "up" | "down" => {
+            let moved = app.state.borrow().browser.search_moved;
+            if !moved && key == "down" && app.state.borrow().row_count() > 0 {
+                // The first step lands on the top hit.
+                select_row(app, 0, false, false);
+                app.ui.set_focus_row(0);
+            } else {
+                step_selection(app, key == "up");
+            }
+            app.state.borrow_mut().browser.search_moved = true;
+        }
+        "return" => {
+            let row = {
+                let st = app.state.borrow();
+                if st.row_count() == 0 {
+                    None
+                } else if st.browser.search_moved {
+                    st.browser.selection.iter().next_back().copied()
+                } else {
+                    Some(0)
+                }
+            };
+            if let Some(i) = row {
+                app.ui.invoke_row_activated(i as i32);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// A key typed while the list has the focus: a letter or a digit starts a
+/// search with it (true: taken).
+pub(crate) fn list_typed(app: &App, text: &str, modified: bool) -> bool {
+    let mut chars = text.chars();
+    let (Some(c), None) = (chars.next(), chars.next()) else {
+        return false;
+    };
+    if modified || !(c.is_alphanumeric()) {
+        return false;
+    }
+    let q = format!("{}{c}", app.ui.get_search_text());
+    app.ui.set_search_text(q.clone().into());
+    app.ui.invoke_search(q.into());
+    app.ui.set_search_focus(app.ui.get_search_focus() + 1);
+    true
+}
+
+/// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF`, comma separated):
+/// `collection` opens All tracks, `flow-pair:<i>` selects a set's transition, `search:<text>` searches,
+/// `filter-chips` sets a BPM range, `lists-collapsed` folds
+/// the lists column, `usb` opens the USB screen on the first stick and
+/// `prefs-view[:<y>]` opens Preferences › View scrolled to `y`.
+fn demo(app: &Rc<App>) {
+    let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
+    let weak = Rc::downgrade(app);
+    slint::Timer::single_shot(std::time::Duration::from_secs(5), move || {
+        let Some(a) = weak.upgrade() else { return };
+        for part in v.split(',') {
+            if part == "collection" {
+                select_node(&a, -1);
+            }
+            if let Some(i) = part.strip_prefix("flow-pair:").and_then(|i| i.parse().ok()) {
+                select_pair(&a, i);
+            }
+            if let Some(q) = part.strip_prefix("search:") {
+                a.ui.set_search_text(q.into());
+                a.ui.invoke_search(q.into());
+            }
+            if part == "filter-chips" {
+                let mut st = a.state.borrow_mut();
+                st.browser.filter.edit("bpm-min", "120");
+                st.browser.filter.edit("bpm-max", "128");
+            }
+            if part == "filter-chips" {
+                refresh_filter(&a);
+            }
+            if part == "lists-collapsed" {
+                a.ui.set_lists_collapsed(true);
+            }
+            if part == "usb" {
+                a.ui.invoke_select_section("devices".into());
+                let id = a
+                    .state
+                    .borrow()
+                    .devices
+                    .statuses
+                    .first()
+                    .map(|s| s.device.id.0 as i32);
+                if let Some(id) = id {
+                    a.ui.invoke_open_device(id);
+                }
+            }
+            if let Some(rest) = part.strip_prefix("prefs-view") {
+                crate::preferences::open(&a);
+                let y = rest.trim_start_matches(':').parse().unwrap_or(0.0);
+                crate::preferences::demo_page(&a, "view", y);
+            }
+        }
+    });
 }
 
 /// Selects every row of the list.
@@ -429,6 +566,7 @@ fn select_node(app: &App, id: i32) {
         }
         st.browser.selection.clear();
         st.browser.flow_selected = None;
+        st.browser.flow_pair = None;
         st.browser.search.clear();
         let in_list = st
             .browser
@@ -565,10 +703,22 @@ pub(crate) fn wire(app: &Rc<App>) {
     }));
     ui.on_remove_selected(handler!(app, |a| remove_selected(&a)));
     ui.on_search(handler!(app, |a, q: SharedString| {
-        a.state.borrow_mut().browser.search = q.to_string();
-        a.state.borrow_mut().load_rows();
+        {
+            let mut st = a.state.borrow_mut();
+            st.browser.search = q.to_string();
+            st.browser.search_ranked = true;
+            st.browser.search_moved = false;
+            st.load_rows();
+        }
         refresh_tracks(&a);
+        a.ui.set_focus_row(0);
     }));
+    ui.on_search_key(handler!(app, |a, k: SharedString| search_key(&a, k.as_str())));
+    let weak = Rc::downgrade(app);
+    ui.on_list_typed(move |text, control, meta, alt| {
+        weak.upgrade()
+            .is_some_and(|a| list_typed(&a, text.as_str(), control || meta || alt))
+    });
     ui.on_set_smart_rule(handler!(app, |a, text: SharedString| {
         if a.guard_read_only() {
             return;
@@ -600,6 +750,7 @@ pub(crate) fn wire(app: &Rc<App>) {
             if b.sort == "position" {
                 b.descending = false;
             }
+            b.search_ranked = false;
         }
         sources::refresh_match_reference(&a);
         if !a.state.borrow().settings.browser.sort_then.is_empty() {
@@ -611,6 +762,7 @@ pub(crate) fn wire(app: &Rc<App>) {
         refresh_tracks(&a);
     }));
     wire_columns(app);
+    demo(app);
     sources::wire(app);
     sub::wire(app);
     ui.on_row_clicked(handler!(app, |a, i: i32, toggle: bool, range: bool| {
@@ -720,9 +872,11 @@ pub(crate) fn wire(app: &Rc<App>) {
         spawn_import(path, dirs, a.worker_tx.clone(), a.analysis.wake.clone());
         a.status("Adding music…");
     }));
-    ui.on_flow_select(handler!(app, |a, i: i32| select_row(
-        &a, i as usize, false, false
-    )));
+    ui.on_flow_select(handler!(app, |a, i: i32| {
+        a.state.borrow_mut().browser.flow_pair = None;
+        select_row(&a, i as usize, false, false)
+    }));
+    ui.on_flow_select_pair(handler!(app, |a, i: i32| select_pair(&a, i as usize)));
     ui.on_set_transition_note(handler!(app, |a, text: SharedString| {
         if a.guard_read_only() {
             return;

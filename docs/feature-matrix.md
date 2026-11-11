@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 276 features; 270 in scope: 270 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 282 features; 276 in scope: 276 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -92,6 +92,10 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Preview a track at another tempo or key (TEMPO / KEY tab in the Prepare player) | DONE | `player.rs::apply_shift`, `player.rs::shift_readout`, `ui/player.slint::PreparePlayer`; Steps of whole percents (with key lock, so the key stays) and semitones on the hidden preview deck. Nothing is stored with the track or its analysis; the shift ends when another track is previewed and is not remembered as a deck switch | 2 | P2 |
 | KEY column sorts by circle of fifths or alphabetically (stored choice) | DONE | `browser/tracks.rs::KeyOrder`, `browser/tracks.rs::compare_keys`, `ui/table.slint::TrackTable`; Two checkable items in the column menu; circle of fifths (Camelot order) is the default. Alphabetical sorts by the key text in the chosen notation. The key sort is always done in the app, not by SQL | 2 | P2 |
 | Calmer track table: titles lead, figures right-aligned in tabular digits, a selection fill, the loaded mark in the deck colour | DONE | `crates/od-ui/ui/table.slint::TrackLine`, `crates/od-ui/ui/sidebar.slint::Sidebar`; The lists column stops at its content width and clips, so it never draws over the table.; (Roadmap [49]) | 4 | P3 |
+| Set Flow as a chart: energy bars, a tempo line and key per track, transition markers with named warnings (tempo jump, key clash, energy drop or jump); a click selects the pair | DONE | `crates/od-ui/src/browser/flow.rs`, `crates/od-ui/ui/flow.slint::SetFlow`; Warns above 6 % tempo change (half and double time count as the same tempo), on a key clash by the key relation of [62], and on an energy step of 0.4 of the set's range that is also a quarter of the louder track. Above 3 % tempo or a key that changes the energy is a caution (dashed). The energy thresholds were set on generated tracks and the demo library, not yet on real sets.; (Roadmap [47]) | 5 | P2 |
+| Browser rails with whole words or signs with tooltips (never cut words), one double-click and Return rule, separate surfaces for lists, list and panels, a foldable lists column | DONE | `crates/od-ui/ui/sidebar.slint::RailItem`, `crates/od-ui/ui/controls.slint::Glyph`, `crates/od-ui/src/player.rs::play_in_player`; Double-click and Return: the free deck (or the fixed LOAD TO deck) in Perform, the player in Prepare, where the track plays and never pauses. The touch layout shows the signs as well (no tooltips on touch). The folded lists column is not remembered across starts.; (Roadmap [22]) | 3 | P3 |
+| Fuzzy search: typos forgiven, words across title, artist and album, best matches first; typing in the list searches, arrows move, Return loads the top hit | DONE | `crates/od-ui/src/browser/fuzzy.rs`, `crates/od-ui/src/browser/mod.rs::list_typed`, `crates/od-ui/src/browser/mod.rs::search_key`; The collection search no longer uses the database's full-text index: every track is scored in memory (fast enough for tens of thousands of tracks; not measured on a 100 000-track library). After a click in the list, letters and digits go to the search, so deck shortcuts on letters wait until Esc or a load; the list shows a focus line while it has the keys.; (Roadmap [26]) | 6 | P2 |
+| Active filters as removable chips over the list, a compact list header and a foldable lists column | DONE | `crates/od-ui/ui/filter.slint::FilterChips`, `crates/od-ui/src/browser/filter.rs::chips`; (Roadmap [26]) | 3 | P3 |
 
 ## 2. Analysis
 
@@ -301,6 +305,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Sync all sticks at once, with eject when done | DONE | `manager.rs::sync_all`, `manager.rs::sync_stick`, `devices.rs::wire`; SYNC ALL STICKS (and the sync key in the DEVICES heading) runs every plugged-in stick on its own thread with its own progress line. A stored Eject when done ejects each stick once its sync has finished; a stick that fails keeps its error and stays mounted, the others carry on | 2 | P2 |
 | Stick check before a gig: file, cues and grid per track, playlists, a ready verdict | DONE | `crates/od-devices/src/check.rs`, `crates/od-ui/src/stick_check.rs`; CHECK STICK on the Devices page reads both stick formats back (OpenDJDecks library, Club player USB export and analysis files). Ready only when every file opens as audio, cues and grids match the library, playlists hold the library's tracks in order, the chosen formats are there and no sync was cut off. Whether a given player model accepts the stick is not covered (roadmap [H2]).; (Roadmap [53]) | 8 | P2 |
 | Maximum compatibility: FLAC and AAC/ALAC as 16-bit WAV on Club player USB sticks | DONE | `convert.rs::write_wav`, `sync.rs::sync_device`, `club_usb.rs::ClubUsbWriter`, `placement.rs::WavCopy`; Off by default, per stick. FLAC, AAC and ALAC tracks are written as stereo 16-bit WAV for Club player USB (sample rates above 48 kHz are reduced); the export and analysis files name the .wav, a conversion is only redone when the source changes and removed when it is stale. Sticks that also carry the OpenDJDecks format keep the original file for it. Originals in the library are never touched. | 5 | P2 |
+| Stick screen: each stick with format badges, its sync state in words and in the line, and SYNC / CHECK / EJECT on its row | DONE | `crates/od-ui/ui/devices.slint::DeviceLine`; Tried with simulated sticks (a folder with the stick marker); not yet with several physical sticks ([H3]).; (Roadmap [48]) | 1 | P3 |
 
 ## 11. Preferences, audio and controllers
 
@@ -324,6 +329,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Published controller list: status per model and per controller class | DONE | `crates/od-controller/src/hardware.rs::controller_list_markdown`, `docs/guide/en/controllers.md`; Generated from the mapping files and the guided-setup templates. A model is verified only when every control of it is confirmed on a unit; today none is, so every row says not confirmed.; (Roadmap [13]) | 2 | P2 |
 | Guided setup for controllers without a mapping: move each core control when asked, save a shareable mapping | DONE | `crates/od-controller/src/guided.rs`, `crates/od-ui/src/controller_setup.rs`, `ui/controller_setup.slint`; Preferences › Controller › SET UP A CONTROLLER or View › Controller Setup. Built on MIDI learn; the matching on-screen control gets the guide outline. Ports without a mapping are opened only while the setup, MIDI learn or the monitor runs. Every captured entry is written with verify = true. Tested with simulated MIDI only; not run with a real unit.; (Roadmap [13]) | 4 | P2 |
 | Generic controller templates by class: two decks entry level, two decks battle style (CUT curve), four decks | DONE | `mappings/templates/two-deck-entry.toml`, `mappings/templates/two-deck-battle.toml`, `mappings/templates/four-deck.toml`; Templates name no model and hold no MIDI numbers; the guided setup fills them from the owner's unit. No new model mapping was derived from manuals, vendor software or other projects' files.; (Roadmap [13]) | 2 | P2 |
+| Preferences in the new design with live previews: waveform colours and calm waveform, deck colours and status lines (colour-blind, contrast), the interface scale and the deck layout | DONE | `crates/od-ui/ui/preferences.slint::LivePreview`, `crates/od-ui/src/preferences.rs::preview_waveform`; The waveform preview draws a made-up bar with the renderer of the app; the scale preview shows a reading at the chosen scale (the window itself follows the operating system's scale). Deck layout is chosen here as well as in View › Deck Layout.; (Roadmap [48]) | 1 | P3 |
 
 ## 12. Shell, layouts and panels
 
@@ -385,13 +391,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 270 |
+| DONE | 276 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **276** |
+| **Total** | **282** |
 
 ## P1 gaps and implementation notes
 

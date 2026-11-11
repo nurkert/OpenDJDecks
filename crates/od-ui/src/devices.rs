@@ -144,6 +144,9 @@ pub(crate) fn refresh(app: &App) {
                     .into(),
                 formats: formats.join(" + ").into(),
                 connected: s.volume.is_some(),
+                club: s.device.formats.club_usb,
+                compat: s.device.formats.club_usb_compat,
+                native: s.device.formats.opendjdecks,
             }
         })
         .collect();

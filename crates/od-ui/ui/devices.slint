@@ -5,15 +5,44 @@ import { VLine, HLine, ProgressLine } from "lines.slint";
 import { Caps, PlateButton } from "controls.slint";
 import { DeviceRow, VolumeRow } from "structs.slint";
 
+// A format the stick carries, as a labelled badge ([28], [48]).
+component FormatBadge inherits Rectangle {
+    in property <string> text;
+    height: 18px;
+    width: t.preferred-width + 12px;
+    border-radius: Theme.r-control;
+    background: Theme.plate-raised;
+    t := Text {
+        x: 6px; height: parent.height;
+        text: root.text;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+        color: Theme.bone-2; vertical-alignment: center;
+    }
+}
+
+// One stick on the USB screen: its device line (the state as line form),
+// name and format badges, the sync state in words, space, and its actions.
+// Selected: the sodium tick and a hairline edge.
 export component DeviceLine inherits Rectangle {
     in property <DeviceRow> device;
     in property <bool> roomy: false;
-    // Selection: a single sodium tick, never a fill.
     in property <bool> selected: false;
     callback sync();
     callback eject();
     callback open();
-    height: root.roomy ? 78px : 64px;
+    callback check();
+    accessible-role: list-item;
+    accessible-label: "devices.stick\{root.device.id}";
+    accessible-value: root.device.name + " · " + root.state-text;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.selected;
+    height: 84px;
+    border-radius: Theme.r-control;
+    // Each stick sits in its own well; the open one carries the sodium
+    // tick and a bone name, its keys keep their plates.
+    background: Theme.ground;
+    border-width: root.selected ? Theme.hair : 0px;
+    border-color: Theme.rule-strong;
 
     property <string> form:
         device.state == "in-sync" ? "solid" :
@@ -25,15 +54,22 @@ export component DeviceLine inherits Rectangle {
         device.state == "pending" ? Theme.attention :
         device.state == "error" ? Theme.fault :
         device.state == "syncing" ? Theme.attention : Theme.bone-3;
+    // The sync state in words, beside the line that draws it.
+    out property <string> state-text:
+        !device.connected ? @tr("NOT PLUGGED IN") :
+        device.state == "in-sync" ? @tr("IN SYNC") :
+        device.state == "pending" ? @tr("CHANGES WAITING") :
+        device.state == "syncing" ? @tr("SYNCING {} %", Math.round(device.progress * 100)) :
+        device.state == "error" ? @tr("SYNC FAILED") : @tr("NOT REGISTERED");
 
     if root.selected: Rectangle {
-        x: -14px; y: 18px; width: 10px; height: 2px;
+        x: 0; y: parent.height / 2 - 1px; width: 6px; height: 2px;
         background: Theme.attention;
     }
-    if root.device.state != "syncing": VLine { x: 0; y: 8px; height: parent.height - 16px; form: root.form; tone: root.tone; }
+    if root.device.state != "syncing": VLine { x: 12px; y: 10px; height: parent.height - 20px; form: root.form; tone: root.tone; }
     // Syncing: the dashed line fills up to solid by progress.
     if root.device.state == "syncing": Rectangle {
-        x: 0; y: 8px; width: Theme.line; height: parent.height - 16px;
+        x: 12px; y: 10px; width: Theme.line; height: parent.height - 20px;
         VLine { height: parent.height; form: "dashed"; tone: Theme.attention.with-alpha(0.6); }
         Rectangle {
             y: parent.height * (1 - clamp(root.device.progress, 0, 1));
@@ -42,41 +78,70 @@ export component DeviceLine inherits Rectangle {
             animate y, height { duration: Theme.t-mode; easing: Theme.ease; }
         }
     }
+    property <length> text-x: 26px;
+    property <length> keys-w: keys.preferred-width + Theme.s2;
+    // Name (the keys on its right).
     Text {
-        x: 18px; y: 8px; width: parent.width - 176px;
+        x: root.text-x; y: 8px; width: root.width - root.text-x - root.keys-w; height: 22px;
         text: root.device.name;
         font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
         color: root.device.connected ? Theme.bone : Theme.bone-2;
-        overflow: elide;
+        overflow: elide; vertical-alignment: center;
     }
-    Text {
-        x: 18px; y: 28px; width: parent.width - 176px;
-        text: root.device.detail;
-        font-family: Theme.family; font-size: Theme.control; letter-spacing: 0.6px;
-        color: root.device.state == "error" ? Theme.fault : Theme.bone-3;
-        overflow: elide;
-    }
-    Caps {
-        x: 18px; y: 46px;
-        text: root.device.space + (root.device.formats == "" ? "" : "  ·  " + root.device.formats);
-        font-size: Theme.label;
-    }
+    // The sync state in words (tone and line form say it as well).
     HorizontalLayout {
-        x: parent.width - 160px; y: 10px; width: 160px; height: 26px;
+        x: root.text-x; y: 33px; width: root.width - root.text-x - Theme.s2; height: 18px;
         spacing: Theme.s2;
-        alignment: end;
+        Text {
+            accessible-role: text; accessible-label: "devices.state\{root.device.id}"; accessible-value: self.text;
+            horizontal-stretch: 0;
+            text: root.state-text;
+            font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1.6px;
+            color: root.device.state == "error" ? Theme.fault : root.device.state == "in-sync" && root.device.connected ? Theme.bone : Theme.bone-2;
+            vertical-alignment: center;
+        }
+        Text {
+            min-width: 0px; horizontal-stretch: 1;
+            text: root.device.detail;
+            font-family: Theme.family; font-size: Theme.control;
+            color: root.device.state == "error" ? Theme.fault : Theme.bone-3;
+            overflow: elide; vertical-alignment: center;
+        }
+    }
+    // Format badges, then the space.
+    HorizontalLayout {
+        x: root.text-x; y: 56px; width: root.width - root.text-x - Theme.s2; height: 18px;
+        spacing: Theme.s1;
+        if root.device.club: FormatBadge { accessible-role: text; accessible-label: "devices.badge.club\{root.device.id}"; accessible-value: self.text; text: @tr("CLUB USB"); }
+        if root.device.club && root.device.compat: FormatBadge { text: "WAV"; }
+        if root.device.native: FormatBadge { accessible-role: text; accessible-label: "devices.badge.native\{root.device.id}"; accessible-value: self.text; text: "OPENDJDECKS"; }
+        Rectangle { width: Theme.s1; }
+        Caps { min-width: 0px; horizontal-stretch: 1; text: root.device.space; overflow: elide; vertical-alignment: center; }
+    }
+    open-area := TouchArea {
+        width: parent.width - root.keys-w;
+        mouse-cursor: pointer;
+        clicked => { root.open(); }
+    }
+    keys := HorizontalLayout {
+        x: parent.width - self.width - Theme.s2; y: 6px; height: 26px;
+        width: self.preferred-width;
+        spacing: Theme.key-gap;
         if root.device.connected && root.device.state != "syncing": PlateButton {
+            accessible-role: button; accessible-label: "devices.sync\{root.device.id}";
             compact: true; label: @tr("SYNC"); tone: Theme.live; tooltip: @tr("Sync this stick now"); command: "devices.sync";
             clicked => { root.sync(); }
         }
+        if root.device.connected && root.device.state != "syncing": PlateButton {
+            accessible-role: button; accessible-label: "devices.check\{root.device.id}";
+            compact: true; label: @tr("CHECK"); tone: Theme.attention; tooltip: @tr("Read the stick back and compare every track, cue, grid and playlist with the library");
+            clicked => { root.check(); }
+        }
         if root.device.connected: PlateButton {
+            accessible-role: button; accessible-label: "devices.eject\{root.device.id}";
             compact: true; label: @tr("EJECT"); tone: Theme.bone-3; tooltip: @tr("Eject this stick"); command: "devices.eject";
             clicked => { root.eject(); }
         }
-    }
-    TouchArea {
-        width: parent.width - 166px;
-        clicked => { root.open(); }
     }
 }
 

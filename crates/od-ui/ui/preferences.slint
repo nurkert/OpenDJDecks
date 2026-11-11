@@ -1,7 +1,8 @@
-// Preferences: a separate window (categories on
-// the left, the page on the right), drawn in OpenDJDecks' own language: the
-// selected category hangs from the rail by a sodium line, settings are
-// rows of bone labels with outlined plates.
+// Preferences: a separate window (categories on a panel surface on the
+// left, the page on the right), in the state language of DESIGN.md: the
+// current category and each chosen value are filled, switches are filled
+// tracks, sections start on a band of the panel surface, and the View page
+// previews what its settings change.
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
@@ -51,20 +52,25 @@ component Category inherits Rectangle {
 }
 
 // A section heading on a page.
+// Each section starts on a band of the panel surface (no outline).
 component Heading inherits VerticalLayout {
     in property <string> text;
     in property <string> note;
     // Accessible label of the heading text (test hook; empty: none).
     in property <string> a11y;
-    padding-top: Theme.s4;
-    spacing: Theme.s1;
-    HorizontalLayout {
-        spacing: Theme.s3;
-        Text { accessible-label: root.a11y; text: root.text; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; vertical-alignment: center; }
-        if root.note != "": Caps { text: root.note; color: Theme.attention; vertical-alignment: center; }
-        Rectangle { horizontal-stretch: 1; }
+    padding-top: Theme.s3;
+    padding-bottom: Theme.s1;
+    Rectangle {
+        background: Theme.ground-band;
+        border-radius: Theme.r-control;
+        HorizontalLayout {
+            padding-left: Theme.s3; padding-right: Theme.s3; padding-top: Theme.s1; padding-bottom: Theme.s1;
+            spacing: Theme.s3;
+            Text { accessible-label: root.a11y; text: root.text; font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone; vertical-alignment: center; }
+            if root.note != "": Caps { text: root.note; color: Theme.attention; vertical-alignment: center; }
+            Rectangle { horizontal-stretch: 1; }
+        }
     }
-    HLine { tone: Theme.rule; }
 }
 
 // A labelled setting row.
@@ -202,6 +208,158 @@ component Button inherits VerticalLayout {
 component Note inherits Text {
     font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
     wrap: word-wrap;
+}
+
+// Previews of the View page ([48]): drawn with the same tokens and
+// renderer as the app, so a change shows at once.
+// The waveform: colours, calm mode, playhead and beat lines.
+component PreviewWave inherits VerticalLayout {
+    in property <image> wave;
+    in property <bool> calm;
+    spacing: Theme.s1;
+    Rectangle {
+        accessible-role: image; accessible-label: "prefs.view.preview.wave";
+        accessible-value: root.calm ? "calm" : "standard";
+        height: 60px; background: Theme.ground; clip: true;
+        for b in 16: Rectangle {
+            x: parent.width * (b + 0.5) / 16; width: 1px;
+            y: root.calm ? 0px : 0px; height: root.calm ? 6px : parent.height;
+            background: root.calm ? Theme.rule : Theme.rule-strong;
+        }
+        for b in 16: Rectangle {
+            visible: root.calm;
+            x: parent.width * (b + 0.5) / 16; width: 1px;
+            y: parent.height - 6px; height: 6px; background: Theme.rule;
+        }
+        Image { width: parent.width; height: parent.height; source: root.wave; image-fit: fill; }
+        // Playhead: crisp bone between dark rims when calm, doubled sodium otherwise.
+        if root.calm: Rectangle { x: parent.width / 2 - 1.5px; width: 3px; height: parent.height; background: Theme.ground; }
+        if root.calm: Rectangle { x: parent.width / 2 - 0.5px; width: 1px; height: parent.height; background: Theme.bone; }
+        if !root.calm: Rectangle { x: parent.width / 2 - 3.5px; width: 2px; height: parent.height; background: Theme.attention; }
+        if !root.calm: Rectangle { x: parent.width / 2 + 1.5px; width: 2px; height: parent.height; background: Theme.attention; }
+    }
+    Caps { text: root.calm ? @tr("CALM WAVEFORM") : @tr("WAVEFORM"); height: 16px; }
+}
+
+// Deck colours with their numerals and the status lines: they follow the
+// colour-blind palette and the contrast at once.
+component PreviewColours inherits VerticalLayout {
+    accessible-role: groupbox; accessible-label: "prefs.view.preview.colours";
+    spacing: Theme.s1;
+    HorizontalLayout {
+        height: 26px; spacing: Theme.s2;
+        for d in 4: HorizontalLayout {
+            spacing: Theme.s1;
+            Rectangle { width: 2px; background: Theme.deck-color(d + 1); }
+            Text { text: d + 1; font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.deck-color(d + 1); vertical-alignment: center; }
+        }
+    }
+    HorizontalLayout {
+        height: 26px; spacing: Theme.s2;
+        VLine { tone: Theme.live; form: "solid"; }
+        Caps { text: @tr("LIVE"); vertical-alignment: center; }
+        VLine { tone: Theme.attention; form: "dashed"; }
+        Caps { text: @tr("WAIT"); vertical-alignment: center; }
+        VLine { tone: Theme.fault; form: "struck"; }
+        Caps { text: @tr("FAULT"); vertical-alignment: center; }
+    }
+    Caps { text: @tr("COLOURS"); height: 16px; }
+}
+
+// A reading at the chosen interface scale.
+component PreviewScale inherits VerticalLayout {
+    in property <float> scale;
+    accessible-role: text; accessible-label: "prefs.view.preview.scale";
+    accessible-value: Math.round(root.scale * 100) + " %";
+    spacing: Theme.s1;
+    Rectangle {
+        height: 60px; clip: true;
+        Text {
+            x: 0; height: parent.height;
+            text: "124.00";
+            font-family: Theme.family; font-weight: Theme.weight-semi;
+            font-size: Theme.heading * min(2, max(0.75, root.scale));
+            color: Theme.bone; vertical-alignment: center;
+        }
+    }
+    Caps { text: @tr("SCALE {} %", Math.round(root.scale * 100)); height: 16px; }
+}
+
+// The deck layout as a plan (0 Simple, 1 Standard, 2 Full).
+component PreviewLayout inherits VerticalLayout {
+    in property <int> layout;
+    accessible-role: image; accessible-label: "prefs.view.preview.layout";
+    accessible-value: root.layout == 0 ? "simple" : root.layout == 2 ? "full" : "standard";
+    spacing: Theme.s1;
+    Rectangle {
+        height: 60px; background: Theme.ground; border-radius: Theme.r-control;
+        // Pads: two rows of four.
+        for p in 8: Rectangle {
+            x: 6px + Math.mod(p, 4) * (root.layout == 0 ? 15px : 11px);
+            y: (root.layout == 0 ? 8px : 30px) + Math.floor(p / 4) * (root.layout == 0 ? 15px : 11px);
+            width: root.layout == 0 ? 13px : 9px; height: self.width;
+            background: Theme.plate-raised; border-radius: 2px;
+        }
+        // Platter (Standard and Full).
+        if root.layout != 0: Rectangle {
+            x: 6px; y: 4px; width: 22px; height: 22px; border-radius: 11px;
+            border-width: 2px; border-color: Theme.bone-3;
+        }
+        // Setup keys (Standard and Full).
+        if root.layout != 0: Rectangle { x: 32px; y: 6px; width: 16px; height: 5px; background: Theme.plate; }
+        if root.layout != 0: Rectangle { x: 32px; y: 14px; width: 16px; height: 5px; background: Theme.plate; }
+        // Effects strip (Full).
+        if root.layout == 2: Rectangle { x: 54px; y: 4px; width: 44px; height: 10px; background: Theme.plate; border-radius: 2px; }
+        // Transport and tempo fader.
+        Rectangle { x: parent.width - 34px; y: parent.height - 18px; width: 12px; height: 12px; border-radius: 6px; background: Theme.plate-raised; }
+        Rectangle { x: parent.width - 18px; y: parent.height - 18px; width: 12px; height: 12px; border-radius: 6px; background: Theme.live; }
+        Rectangle { x: parent.width - 10px; y: 18px; width: 2px; height: 22px; background: Theme.rule-strong; }
+    }
+    Caps { text: root.layout == 0 ? @tr("SIMPLE") : root.layout == 2 ? @tr("FULL") : @tr("STANDARD"); height: 16px; }
+}
+
+// Live previews on the View page ([48]): a row on top of the page, or a
+// column beside it when the window is wide.
+component LivePreview inherits Rectangle {
+    in property <image> wave;
+    in property <bool> calm;
+    in property <float> scale;
+    // 0 Simple, 1 Standard, 2 Full.
+    in property <int> layout;
+    // A column beside the settings instead of a row above them.
+    in property <bool> stacked;
+    accessible-role: groupbox;
+    accessible-label: "prefs.view.preview";
+    background: Theme.ground-band;
+    border-radius: Theme.r-panel;
+    height: root.stacked ? col.preferred-height + 40px : 128px;
+    Caps { x: Theme.s3; y: Theme.s2; height: 16px; text: @tr("PREVIEW"); color: Theme.bone-2; }
+    if !root.stacked: Caps {
+        x: parent.width * 0.4; y: Theme.s2; width: parent.width * 0.6 - Theme.s3; height: 16px;
+        horizontal-alignment: right; overflow: elide;
+        text: @tr("CHANGES SHOW HERE AS YOU MAKE THEM");
+    }
+    if !root.stacked: HorizontalLayout {
+        x: Theme.s3; y: 32px; width: parent.width - 2 * Theme.s3; height: 84px;
+        spacing: Theme.s4;
+        PreviewWave { horizontal-stretch: 1; min-width: 120px; wave: root.wave; calm: root.calm; }
+        PreviewColours { width: 150px; }
+        if root.width >= 640px: PreviewScale { width: 150px; scale: root.scale; }
+        PreviewLayout { width: 104px; layout: root.layout; }
+    }
+    col := VerticalLayout {
+        visible: root.stacked;
+        x: Theme.s3; y: 32px; width: parent.width - 2 * Theme.s3; height: root.stacked ? self.preferred-height : 0px;
+        spacing: Theme.s3;
+        if root.stacked: PreviewWave { wave: root.wave; calm: root.calm; }
+        if root.stacked: HorizontalLayout {
+            spacing: Theme.s4;
+            PreviewColours { horizontal-stretch: 1; }
+            PreviewLayout { width: 104px; layout: root.layout; }
+        }
+        if root.stacked: PreviewScale { scale: root.scale; }
+        if root.stacked: Caps { text: @tr("CHANGES SHOW HERE AS YOU MAKE THEM"); wrap: word-wrap; }
+    }
 }
 
 export component PreferencesWindow inherits Window {
@@ -362,6 +520,11 @@ export component PreferencesWindow inherits Window {
     in property <bool> club-other-beat: true;
     in property <bool> incoming-overlay: true;
     in property <bool> calm-waveform;
+    // Live previews: the waveform as drawn now, the interface scale and
+    // the deck layout (0 Simple, 1 Standard, 2 Full).
+    in property <image> preview-wave;
+    in property <float> preview-scale: 1;
+    in property <int> deck-layout: 1;
     callback record-key(string);
     callback reset-key(string);
     callback clear-key(string);
@@ -383,7 +546,7 @@ export component PreferencesWindow inherits Window {
             // ── Categories ──
             Rectangle {
                 width: 200px;
-                VLine { x: Theme.rail-x - 16px; y: 0; height: parent.height; tone: Theme.rule; }
+                background: Theme.ground-band;
                 VerticalLayout {
                     padding-top: Theme.s4;
                     spacing: Theme.key-gap;
@@ -415,8 +578,6 @@ export component PreferencesWindow inherits Window {
                     text: root.platform-note; font-size: Theme.label; wrap: word-wrap;
                 }
             }
-            VLine { tone: Theme.rule; }
-
             // ── Page ──
             VerticalLayout {
                 horizontal-stretch: 1;
@@ -460,13 +621,19 @@ export component PreferencesWindow inherits Window {
                 }
 
                 // ── View ──
-                if root.page == "view": Flickable {
+                // A wide window shows the preview beside the settings, a
+                // narrow one above them.
+                if root.page == "view": HorizontalLayout {
+                    vertical-stretch: 1;
+                    spacing: Theme.s5;
+                Flickable {
                     vertical-stretch: 1;
                     content-width: self.width;
                     VerticalLayout {
                         width: parent.width;
                         alignment: start;
                         spacing: Theme.s1;
+                        if root.width < 1100px: LivePreview { wave: root.preview-wave; calm: root.calm-waveform; scale: root.preview-scale; layout: root.deck-layout; }
                         Heading { text: @tr("Display"); }
                         Row { label: @tr("Language"); Choice { accessible-label: "prefs.view.language"; options: [@tr("SYSTEM"), "ENGLISH", "DEUTSCH"]; selected: root.language; picked(i) => { root.choose("view.language", i); } } }
                         Row { label: @tr("Tooltips"); Switch { accessible-label: "prefs.view.tooltips"; label: @tr("Show what a control does and its shortcut on hover"); on: root.tooltips; toggled(v) => { root.flag("view.tooltips", v); } } }
@@ -490,10 +657,17 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Contrast"); Switch { accessible-label: "prefs.view.high-contrast"; label: @tr("High contrast (bright light)"); on: root.high-contrast; toggled(v) => { root.flag("view.contrast", v); } } }
                         Row { label: @tr("Motion"); Switch { accessible-label: "prefs.view.reduced-motion"; label: @tr("Reduce motion"); on: root.reduced-motion; toggled(v) => { root.flag("view.motion", v); } } }
                         Row { label: @tr("UI scale"); Choice { accessible-label: "prefs.view.scale"; options: root.scale-options; selected: root.scale; picked(i) => { root.choose("view.scale", i); } } }
+                        Row { label: @tr("Deck layout"); Choice { accessible-label: "prefs.view.deck-layout"; options: [@tr("SIMPLE"), @tr("STANDARD"), @tr("FULL")]; selected: root.deck-layout; picked(i) => { root.choose("view.deck-layout", i); } } }
                         Row { label: @tr("Club mode"); Switch { accessible-label: "prefs.view.club-other-beat"; label: @tr("Show the other deck's beat under the beat boxes"); on: root.club-other-beat; toggled(v) => { root.flag("view.club-other-beat", v); } } }
                         Row { label: @tr("Incoming track"); Switch { accessible-label: "prefs.view.incoming-overlay"; label: @tr("Draw the incoming track over the playing waveform"); on: root.incoming-overlay; toggled(v) => { root.flag("view.incoming-overlay", v); } } }
                         Row { label: @tr("Calm waveform"); Switch { accessible-label: "prefs.view.calm-waveform"; label: @tr("Crisp playhead, faint beat lines, softer colours"); on: root.calm-waveform; toggled(v) => { root.flag("view.calm-waveform", v); } } }
                     }
+                }
+                if root.width >= 1100px: VerticalLayout {
+                    width: 300px;
+                    alignment: start;
+                    LivePreview { stacked: true; wave: root.preview-wave; calm: root.calm-waveform; scale: root.preview-scale; layout: root.deck-layout; }
+                }
                 }
 
                 // ── Analysis ──

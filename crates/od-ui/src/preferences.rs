@@ -380,6 +380,11 @@ pub(crate) fn refresh(app: &App) {
         );
         w.set_colorblind(s.view.colorblind_safe);
         w.set_high_contrast(s.view.high_contrast);
+        // Live previews ([48]): the waveform as it is drawn now, the scale
+        // and the deck layout.
+        w.set_preview_wave(crate::render::preview(&preview_waveform(), 480, 56));
+        w.set_preview_scale(s.view.scale);
+        w.set_deck_layout(index_of(&["simple", "standard", "full"], &s.perform.layout.as_str()));
         w.set_reduced_motion(s.view.reduced_motion);
         w.set_bar_counter(index_of(
             &crate::settings::BAR_COUNTERS,
@@ -1174,6 +1179,27 @@ fn clear_binding(app: &App, id: &str) {
 
 /// Applies everything that can change live; the rest shows "applies after
 /// restart".
+/// A made-up bar of house music for the waveform preview: a kick on each
+/// beat, a bass line between, hats on the offbeats and a breakdown at the
+/// end (the colours show every band).
+pub(crate) fn preview_waveform() -> od_core::Waveform {
+    let columns = (0..480)
+        .map(|i| {
+            let beat = (i % 30) as f32 / 30.0;
+            let kick = (1.0 - beat * 4.0).max(0.0);
+            let off = ((i + 15) % 30) as f32 / 30.0;
+            let hat = (1.0 - off * 8.0).max(0.0);
+            let breakdown = if i > 360 { 0.35 } else { 1.0 };
+            let low = (40.0 + 200.0 * kick) * breakdown;
+            let mid = 70.0 + 60.0 * ((i as f32 * 0.21).sin() * 0.5 + 0.5);
+            let high = (30.0 + 160.0 * hat) * (2.0 - breakdown).min(1.0);
+            let peak = low.max(mid).max(high);
+            od_core::WaveformColumn { low: low as u8, mid: mid as u8, high: high as u8, peak: peak.min(255.0) as u8 }
+        })
+        .collect();
+    od_core::Waveform { columns_per_second: 120.0, columns }
+}
+
 pub(crate) fn refresh_live(app: &App) {
     apply_live(app);
     refresh(app);
@@ -1327,6 +1353,10 @@ fn choose(app: &App, key: &str, i: i32) {
                 .unwrap_or(&"camelot")
                 .to_string()
         }),
+        "view.deck-layout" => {
+            crate::deck_layout::set_level(app, ["simple", "standard", "full"].get(i).unwrap_or(&"standard"));
+            refresh(app);
+        }
         "view.scale" => change(app, |s| {
             s.view.scale = SCALES.get(i).copied().unwrap_or(1.0)
         }),

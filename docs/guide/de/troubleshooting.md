@@ -52,7 +52,7 @@ Die Trennung braucht einmalig den Download ihres Modells. Ab Version 0.7 fragt d
 
 ## Meine Cue- oder Grid-Änderung ist nicht auf dem Stick
 
-Der Sync läuft innerhalb von Sekunden, aber nur, solange der Stick eingesteckt und registriert ist. Drücke **JETZT SYNCHRONISIEREN** (`⌘S`), um sicherzugehen.
+Der Sync läuft innerhalb von Sekunden, aber nur, solange der Stick eingesteckt und registriert ist. Drücke **SYNC** in der Zeile des Sticks (`⌘S`), um sicherzugehen.
 
 ## Wie sichere ich meine Bibliothek?
 

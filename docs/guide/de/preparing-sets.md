@@ -2,12 +2,12 @@
 title: Ein Set vorbereiten
 description: Ein Set ist eine Playlist mit Plan. Sieh den Verlauf von Tempo, Tonart und Energie, schreib Übergangsnotizen, halte Ersatz-Tracks bereit und plane die Startzeit.
 keywords: [set, sets, setliste, planen, planung, verlauf, set verlauf, übergang, übergänge, notizen, ersatz, reihenfolge, energie, tonart, tempo, harmonisch]
-features: [prepare-preview-shift, browser-sets-flow, browser-set-backups, shell-prepare-layouts]
+features: [prepare-preview-shift, browser-sets-flow, browser-set-flow-chart, browser-set-backups, shell-prepare-layouts]
 ---
 
 Ein Set ist eine geordnete Liste mit Extras für den Auftritt: Es zeigt, wie sich Tempo, Tonart und Energie von Track zu Track entwickeln, und du kannst dir für jeden Übergang Notizen hinterlassen.
 
-![Ein Set mit dem Verlauf von Tempo, Tonart und Energie und den Übergangsmarken](../img/set-flow.png)
+![Ein Set als Diagramm von Energie und Tempo, mit markierten Übergängen und zwei benannten Warnungen darunter](../img/set-flow.png)
 
 ## Ein Set anlegen
 
@@ -17,13 +17,22 @@ Ein Set ist eine geordnete Liste mit Extras für den Auftritt: Es zeigt, wie sic
 
 ## Den Verlauf lesen
 
-**SET-VERLAUF** zeichnet für jeden Track eine Linie: Ihre Höhe ist die Energie, darunter stehen BPM und Tonart. Zwischen zwei Tracks zeigt eine Marke, wie gut sie zusammenpassen:
+**SET-VERLAUF** ist ein Diagramm des Sets von links nach rechts, eine Spalte pro Track:
 
-- keine Marke: guter Übergang
-- **gestrichelt**: Vorsicht, ein Schritt in Tempo oder Tonart, den man üben sollte
-- **durchgestrichen**: ein Clash
+- der **Balken** ist die Energie des Tracks, auf das Set skaliert, damit die Stufen sichtbar werden;
+- die **Linie** mit einem Punkt auf jedem Track ist das Tempo, links an der Achse stehen die niedrigsten und höchsten BPM des Sets;
+- unter jeder Spalte stehen Tonart, BPM, Position und die Zeit, zu der der Track beginnt.
 
-Klicke eine Position an, um sie auszuwählen. Notizen, Ersatz-Tracks und was du hörst beziehen sich auf die gewählte Position.
+Zwischen zwei Tracks zeigt eine Marke, wie der Übergang passt:
+
+- **durchgezogen**: er passt;
+- **gestrichelt**: lohnt eine Probe, ein Temposchritt von mehr als 3 % oder ein Tonartwechsel, der die Energie hebt oder senkt;
+- **halb**: Tempo oder Tonart sind noch nicht bekannt;
+- **durchgestrichen** in Rot mit einem roten Punkt oben: eine Warnung.
+
+Ein Übergang warnt, wenn das Tempo um mehr als 6 % springt (doppeltes und halbes Tempo zählen als dasselbe Tempo), wenn sich die Tonarten beißen (dieselbe Regel wie die Tonartlinie auf den Decks, siehe [Perform-Grundlagen](perform-basics.md)) oder wenn die Energie steil fällt oder springt. Jede Warnung steht mit ihrem Grund unter dem Diagramm, zum Beispiel `2 → 3` **TEMPO +9.1 %** oder `5 → 6` **TONART BEISST SICH 12B → 6B**; **ENERGIEABFALL** und **ENERGIESPRUNG** benennen die Energiestufen. Ohne Warnung sagt das die Zeile unter dem Diagramm. Halte den Zeiger über eine Marke, um den ganzen Übergang in einem Satz zu lesen.
+
+Klicke eine Warnung oder eine Marke an, um den Übergang auszuwählen: Beide Tracks sind dann in der Liste gewählt, so kannst du sie nacheinander anhören, und die Übergangsnotiz gehört zu ihm. Klicke eine Spalte an, um eine Position auszuwählen. Notizen, Ersatz-Tracks und was du hörst beziehen sich auf die gewählte Position.
 
 ## Notizen und Ersatz
 

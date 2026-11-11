@@ -190,6 +190,22 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             prepare_library();
             w.invoke_explorer_select(0);
         }
+        "browser.set-flow" => {
+            prepare_library();
+            let mut lib = ui.fx.lib();
+            let set = match lib.all_nodes().unwrap().into_iter().find(|n| n.name == "View set") {
+                Some(n) => n.id,
+                None => {
+                    let set = lib.create_node(None, od_library::NodeKind::Set, "View set").unwrap();
+                    let ids: Vec<_> = ui.fx.tracks.iter().map(|t| t.0).collect();
+                    lib.add_to_node(set, &ids, None).unwrap();
+                    set
+                }
+            };
+            drop(lib);
+            ui.app.refresh_library();
+            w.invoke_select_node(set.0 as i32);
+        }
         "browser.devices" => {
             // The Devices source of the rail: the tree shows the sticks, the
             // list keeps the open list.

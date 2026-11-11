@@ -795,6 +795,25 @@ pub(crate) fn toggle_preview(app: &App) {
     );
 }
 
+/// Double-click or Return on a track in Prepare: it plays in the player
+/// (from its cue), never pauses. A track already playing goes on.
+pub(crate) fn play_in_player(app: &App) {
+    let (previewing, slot, current) = {
+        let st = app.state.borrow();
+        (st.player.previewing, st.player.preview_slot, st.player.current)
+    };
+    let held = current.is_some() && app.decks.borrow().loaded_id(decks::PREVIEW_DECK) == current;
+    if previewing && slot != 2 && held {
+        return;
+    }
+    if previewing && slot != 2 {
+        // Another track was playing: toggling would only pause it.
+        engine::deck_cmd(app, decks::PREVIEW_DECK, DeckCommand::Pause);
+        set_previewing(app, false);
+    }
+    toggle_preview(app);
+}
+
 fn set_previewing(app: &App, on: bool) {
     app.state.borrow_mut().player.previewing = on;
     let slot = app.state.borrow().player.preview_slot;

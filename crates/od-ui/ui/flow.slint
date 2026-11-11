@@ -1,70 +1,210 @@
-// Set flow: each position is an emission line whose height is the track's
-// energy; transitions between positions show their fit as line form.
+// Set Flow as a chart ([47]): per position a bar for its energy and a dot
+// on the tempo line, key and tempo written under it; between positions a
+// transition marker in the line grammar (solid fits, dashed caution, half
+// unknown, struck warning). Warnings name their reason below the chart;
+// a click on a marker or a warning selects the two tracks.
 
 import { Theme } from "tokens.slint";
 import { VLine, HLine } from "lines.slint";
 import { Caps } from "controls.slint";
-import { FlowPoint } from "structs.slint";
+import { TipArea } from "tooltip.slint";
+import { FlowPoint, FlowWarning } from "structs.slint";
+
+// One warning under the chart: a struck fault line and its reason.
+component WarningChip inherits Rectangle {
+    in property <string> text;
+    in property <bool> current;
+    callback clicked();
+    accessible-role: button;
+    accessible-value: root.text;
+    height: 24px;
+    width: t.preferred-width + 26px;
+    border-radius: Theme.r-control;
+    background: root.current ? Theme.bone : touch.has-hover ? Theme.plate-raised : Theme.plate;
+    VLine { x: 8px; y: 5px; height: parent.height - 10px; weight: 2px; form: "struck"; tone: root.current ? Theme.ground : Theme.fault; }
+    t := Text {
+        x: 18px; height: parent.height;
+        text: root.text;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+        color: root.current ? Theme.ground : Theme.bone;
+        vertical-alignment: center;
+    }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
 
 export component SetFlow inherits Rectangle {
     in property <[FlowPoint]> points;
     in property <string> total;
     in property <int> selected: -1;
+    // The selected transition (from position `pair` to the next), -1 none.
+    in property <int> pair: -1;
+    in property <[FlowWarning]> warnings;
+    in property <string> bpm-low;
+    in property <string> bpm-high;
     callback select(int);
-    height: 150px;
+    callback select-pair(int);
+    accessible-role: groupbox;
+    accessible-label: "browser.flow";
+    accessible-value: root.warnings.length;
+    height: 178px;
 
-    property <length> column-width: root.points.length == 0 ? 0px : min(120px, (root.width - 24px) / root.points.length);
+    // The chart: the tempo axis on the left, the columns after it.
+    property <length> axis: 40px;
+    property <length> top: 24px;
+    property <length> chart-h: 76px;
+    property <length> bottom: root.top + root.chart-h;
+    property <length> column-width: root.points.length == 0 ? 0px : min(140px, (root.width - root.axis) / root.points.length);
+    // Labels on every column when there is room, else every Nth and the
+    // selected ones.
+    property <int> label-step: root.column-width >= 40px ? 1 : Math.ceil(44px / max(1px, root.column-width));
+    function cx(i: int) -> length { return root.axis + (i + 0.5) * root.column-width; }
+    function by(level: float) -> length { return root.bottom - 6px - (root.chart-h - 12px) * level; }
 
-    Caps { x: 0; y: 0; text: @tr("SET FLOW") + "  ·  " + root.total; }
-    Caps { x: root.width * 0.4; y: 0; width: root.width * 0.6; horizontal-alignment: right; text: @tr("HEIGHT ENERGY  ·  DASHED CAUTION  ·  STRUCK CLASH"); font-size: Theme.label; }
-    HLine { y: 120px; width: parent.width; tone: Theme.rule; }
+    // ── Header: title, total, warnings count, legend ──
+    Caps {
+        x: 0; y: 0; height: 16px;
+        text: @tr("SET FLOW") + "  ·  " + root.total;
+        color: Theme.bone-2;
+    }
+    if root.width >= 760px: Caps {
+        x: root.width * 0.35; y: 0; width: root.width * 0.65; height: 16px;
+        horizontal-alignment: right; overflow: elide;
+        text: @tr("BAR ENERGY  ·  LINE TEMPO  ·  DASHED CAUTION  ·  STRUCK WARNING");
+    }
 
-    for p[i] in root.points: Rectangle {
-        x: 12px + i * root.column-width;
-        y: 18px;
+    // ── Grid and tempo axis ──
+    HLine { x: root.axis; y: root.top; width: root.width - root.axis; tone: Theme.rule; }
+    HLine { x: root.axis; y: root.top + root.chart-h / 2; width: root.width - root.axis; tone: Theme.rule; form: "dashed"; }
+    HLine { x: root.axis; y: root.bottom; width: root.width - root.axis; tone: Theme.rule-strong; }
+    Text {
+        x: 0; y: root.top - 2px; width: root.axis - 8px; height: 14px;
+        text: root.bpm-high; horizontal-alignment: right;
+        font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
+    }
+    Caps { x: 0; y: root.top + root.chart-h / 2 - 7px; width: root.axis - 8px; height: 14px; text: "BPM"; horizontal-alignment: right; }
+    Text {
+        x: 0; y: root.bottom - 14px; width: root.axis - 8px; height: 14px;
+        text: root.bpm-low; horizontal-alignment: right;
+        font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
+    }
+
+    for p[i] in root.points: col := Rectangle {
+        x: root.axis + i * root.column-width;
+        y: root.top;
         width: root.column-width;
-        height: 132px;
+        height: 120px;
+        property <bool> picked: i == root.selected || i == root.pair || (root.pair >= 0 && i == root.pair + 1);
+        // Selected: an ash plate behind the column (the selection fill).
+        if col.picked: Rectangle { width: parent.width; height: parent.height; background: Theme.plate; border-radius: Theme.r-control; }
+        // Energy: a bar from the base line.
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            width: min(8px, max(3px, root.column-width * 0.25));
+            y: root.chart-h - max(4px, (root.chart-h - 4px) * p.energy);
+            height: max(4px, (root.chart-h - 4px) * p.energy);
+            background: i == root.selected ? Theme.attention : Theme.rule-strong;
+        }
+        // Labels under the chart.
+        property <bool> labelled: Math.mod(i, root.label-step) == 0 || self.picked;
+        if labelled: Text {
+            x: 2px; y: root.chart-h + 4px; width: parent.width - 4px; height: 16px;
+            text: p.key == "" ? "–" : p.key;
+            horizontal-alignment: center; overflow: elide;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+            color: col.picked ? Theme.bone : Theme.bone-2;
+        }
+        if labelled: Text {
+            x: 2px; y: root.chart-h + 20px; width: parent.width - 4px; height: 14px;
+            text: p.bpm == "" ? "–" : p.bpm;
+            horizontal-alignment: center; overflow: elide;
+            font-family: Theme.family; font-size: Theme.label; color: Theme.bone-2;
+        }
+        if labelled && root.column-width >= 52px: Text {
+            x: 2px; y: root.chart-h + 32px; width: parent.width - 4px; height: 12px;
+            text: p.pos + "  " + p.start;
+            horizontal-alignment: center; overflow: elide;
+            font-family: Theme.family; font-size: Theme.label; color: Theme.bone-3;
+        }
+        TipArea {
+            // Clear of the transition markers on both edges.
+            x: parent.width > 40px ? 12px : 0px; width: parent.width > 40px ? parent.width - 24px : parent.width;
+            accessible-role: button;
+            accessible-label: "browser.flow.point\{i}";
+            accessible-value: p.title;
+            tooltip: p.pos + "  ·  " + p.title;
+            mouse-cursor: pointer;
+            clicked => { root.select(i); }
+        }
+    }
 
-        // Energy line.
+    // Tempo: a line through the positions with a dot on each.
+    for p[i] in root.points: Path {
+        x: 0; y: 0; width: root.width; height: root.height;
+        viewbox-width: self.width / 1px; viewbox-height: self.height / 1px;
+        visible: i + 1 < root.points.length && p.bpm-level >= 0 && root.points[i + 1].bpm-level >= 0;
+        stroke: Theme.bone-2;
+        stroke-width: 1.5px;
+        MoveTo { x: root.cx(i) / 1px; y: root.by(p.bpm-level) / 1px; }
+        LineTo { x: root.cx(i + 1) / 1px; y: root.by(i + 1 < root.points.length ? root.points[i + 1].bpm-level : 0) / 1px; }
+    }
+    for p[i] in root.points: Rectangle {
+        visible: p.bpm-level >= 0;
+        x: root.cx(i) - 3px; y: root.by(max(0, p.bpm-level)) - 3px;
+        width: 6px; height: 6px; border-radius: 3px;
+        background: i == root.selected ? Theme.attention : Theme.bone;
+    }
+
+    // Transition markers between the positions.
+    for p[i] in root.points: mark := Rectangle {
+        visible: p.fit != "none";
+        x: root.axis + (i + 1) * root.column-width - self.width / 2;
+        y: root.top;
+        // A 24 px target, the marker drawn in its middle.
+        width: 24px; height: root.chart-h;
+        property <bool> warn: p.fit == "warning";
         VLine {
-            x: 6px;
-            y: 102px - max(6px, 92px * p.energy);
-            height: max(6px, 92px * p.energy);
-            weight: i == root.selected ? 3px : 2px;
-            tone: i == root.selected ? Theme.attention : Theme.bone-2;
+            x: (parent.width - self.width) / 2; y: 12px; height: parent.height - 12px;
+            weight: mark.warn ? 2px : 1px;
+            tone: mark.warn ? Theme.fault : p.fit == "caution" ? Theme.attention : Theme.bone-3;
+            form: mark.warn ? "struck" : p.fit == "caution" ? "dashed" : p.fit == "unknown" ? "half" : "solid";
         }
-        // Labels: every position when there is room, otherwise every Nth
-        // position and always the selected one.
-        property <bool> labelled: root.column-width >= 44px || i == root.selected || Math.mod(i, Math.ceil(48px / max(1px, root.column-width))) == 0;
-        if labelled: Text {
-            x: 10px; y: 70px;
-            text: p.bpm;
-            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-medium; color: Theme.bone;
+        // The selected transition: a sodium tick over its marker.
+        if i == root.pair: Rectangle { x: (parent.width - 12px) / 2; y: 0; width: 12px; height: 3px; background: Theme.attention; }
+        // A warning: a filled fault mark at the top.
+        if mark.warn && i != root.pair: Rectangle {
+            x: (parent.width - 8px) / 2; y: 1px; width: 8px; height: 8px; border-radius: 4px;
+            background: Theme.fault;
         }
-        if labelled: Text {
-            x: 10px; y: 86px;
-            text: p.key;
-            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-2;
+        TipArea {
+            accessible-role: button;
+            accessible-label: "browser.flow.transition\{i}";
+            accessible-value: p.reason != "" ? p.reason : p.fit;
+            tooltip: p.detail;
+            mouse-cursor: pointer;
+            clicked => { root.select-pair(i); }
         }
-        if root.column-width >= 70px: Text {
-            x: 6px; y: 106px; width: root.column-width - 10px;
-            text: p.start;
-            font-family: Theme.family; font-size: Theme.label; letter-spacing: 1px; color: Theme.bone-3;
-            overflow: elide;
-        }
-        // Transition marker to the next position.
-        if p.tempo-fit != "none": Rectangle {
-            x: root.column-width - 6px; y: 30px; width: 1px; height: 60px;
-            property <string> worst:
-                p.tempo-fit == "clash" || p.key-fit == "clash" ? "clash" :
-                p.tempo-fit == "ok" || p.key-fit == "ok" ? "ok" :
-                p.tempo-fit == "unknown" || p.key-fit == "unknown" ? "unknown" : "good";
-            VLine {
-                height: parent.height; weight: 1px;
-                tone: self.form == "struck" ? Theme.fault : self.form == "dashed" ? Theme.attention : Theme.bone-3;
-                form: parent.worst == "clash" ? "struck" : parent.worst == "ok" ? "dashed" : parent.worst == "unknown" ? "half" : "solid";
+    }
+
+    // ── Warnings, each with its reason ──
+    Flickable {
+        x: 0; y: root.height - 26px; width: root.width; height: 26px;
+        content-width: max(self.width, warn-row.preferred-width);
+        mouse-drag-pan-enabled: false;
+        warn-row := HorizontalLayout {
+            spacing: Theme.s2;
+            alignment: start;
+            height: 24px;
+            if root.warnings.length == 0 && root.points.length > 1: Caps {
+                accessible-role: text; accessible-label: "browser.flow.no-warnings"; accessible-value: self.text;
+                text: @tr("NO WARNINGS: EVERY TRANSITION WITHIN 6 % TEMPO, NO KEY CLASH, NO ENERGY DROP");
+                vertical-alignment: center;
+            }
+            for w[j] in root.warnings: WarningChip {
+                accessible-label: "browser.flow.warning\{j}";
+                text: w.text;
+                current: w.index == root.pair;
+                clicked => { root.select-pair(w.index); }
             }
         }
-        TouchArea { clicked => { root.select(i); } }
     }
 }

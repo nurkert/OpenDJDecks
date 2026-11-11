@@ -6572,6 +6572,66 @@ omit = [
 ]
 reason = "The controller’s MASTER LEVEL knob; the master meter stays on screen."
 
+# ---- A set: Set Flow chart (roadmap [47]) ----
+[[view]]
+id = "browser.set-flow"
+title = "A set with its Set Flow chart"
+mode = "prepare"
+source = "Roadmap [47]"
+sizes = ["desktop", "laptop"]
+bands = ["browser"]
+features = ["browser-set-flow-chart", "browser-rails-and-areas"]
+note = "Energy bars, the tempo line and key per position; a marker per transition (24 px target) and the warnings named under the chart. The touch layout has no Prepare."
+
+[[view.region]]
+id = "browser.title"
+band = "browser"
+place = "list area, title row"
+order = "row"
+elements = [
+  "browser.list-title",
+  "browser.search",
+]
+
+[[view.region]]
+id = "browser.flow"
+band = "browser"
+place = "list area, under the title"
+order = "column"
+elements = [
+  "browser.flow",
+]
+
+[[view.region]]
+id = "browser.lists.fold"
+band = "browser"
+place = "foot of the source rail"
+order = "any"
+elements = [
+  "browser.lists.toggle",
+]
+
+[[view.region]]
+id = "browser.flow.points"
+band = "browser"
+place = "the chart's columns"
+order = "row"
+elements = [
+  "browser.flow.point0",
+  "browser.flow.point1",
+  "browser.flow.point2",
+]
+
+[[view.region]]
+id = "browser.flow.transitions"
+band = "browser"
+place = "between the columns"
+order = "row"
+elements = [
+  "browser.flow.transition0",
+  "browser.flow.transition1",
+]
+
 [[view]]
 id = "browser.devices"
 title = "Browser source: Devices"
