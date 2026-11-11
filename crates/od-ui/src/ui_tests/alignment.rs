@@ -52,7 +52,9 @@ pub(crate) fn snapped_children(root: &ElementHandle) -> Vec<String> {
             .find_map(|k| {
                 nodes[k]
                     .e
-                    .accessible_id().filter(|s| !s.is_empty()).or_else(|| nodes[k].e.accessible_label())
+                    .accessible_id()
+                    .filter(|s| !s.is_empty())
+                    .or_else(|| nodes[k].e.accessible_label())
                     .filter(|s| !s.is_empty())
                     .map(|s| s.to_string())
             })
@@ -74,6 +76,24 @@ pub(crate) fn snapped_children(root: &ElementHandle) -> Vec<String> {
         if l.r.w < 1.0 || l.r.h < 1.0 || l.e.computed_opacity() <= 0.01 {
             continue;
         }
+        // What the layout's scroll areas show of it. Elements scrolled out
+        // of view are not visited, but a part reaching into view is (a focus
+        // ring drawn 4 px around a stepper just below the edge), so only
+        // children fully in view are checked.
+        let view = (0..i)
+            .filter(|&k| {
+                nodes[k].end >= i && nodes[k].e.type_name().is_some_and(|t| t == "Flickable")
+            })
+            .map(|k| nodes[k].r.clone())
+            .reduce(|a, b| {
+                let (x, y) = (a.x.max(b.x), a.y.max(b.y));
+                Rect {
+                    x,
+                    y,
+                    w: (a.right().min(b.right()) - x).max(0.0),
+                    h: (a.bottom().min(b.bottom()) - y).max(0.0),
+                }
+            });
         // Direct children: step over each child's subtree.
         let mut j = i + 1;
         while j <= l.end && j < nodes.len() {
@@ -84,15 +104,48 @@ pub(crate) fn snapped_children(root: &ElementHandle) -> Vec<String> {
             } else {
                 (c.r.w, l.r.w)
             };
-            if c.r.w >= 1.0 && c.r.h >= 1.0 && c.e.computed_opacity() > 0.01 && size < 0.9 * room {
+            if c.r.w >= 1.0
+                && c.r.h >= 1.0
+                && c.e.computed_opacity() > 0.01
+                && size < 0.9 * room
+                && view.as_ref().is_none_or(|v| v.contains(&c.r, 0.5))
+            {
                 let (before, after) = if horizontal {
                     (c.r.y - l.r.y, l.r.bottom() - c.r.bottom())
                 } else {
                     (c.r.x - l.r.x, l.r.right() - c.r.right())
                 };
                 if after - before > TOL {
+                    // Where it is: the named ancestors of the layout and the
+                    // element types inside the child (an unnamed child is
+                    // otherwise hard to find).
+                    let ancestors: Vec<String> = (0..i)
+                        .filter(|&k| nodes[k].end >= i)
+                        .filter_map(|k| {
+                            nodes[k]
+                                .e
+                                .accessible_id()
+                                .filter(|s| !s.is_empty())
+                                .map(|s| s.to_string())
+                        })
+                        .collect();
+                    let inside: Vec<String> = (j..next.min(nodes.len()))
+                        .take(8)
+                        .map(|k| {
+                            format!(
+                                "{} {:.0}×{:.0}",
+                                nodes[k]
+                                    .e
+                                    .type_name()
+                                    .map(|s| s.to_string())
+                                    .unwrap_or_default(),
+                                nodes[k].r.w,
+                                nodes[k].r.h
+                            )
+                        })
+                        .collect();
                     out.push(format!(
-                        "`{}` sits at the {} of its {} ({:.0} px before, {:.0} px after; layout at {:.0},{:.0} {:.0}×{:.0})",
+                        "`{}` sits at the {} of its {} ({:.0} px before, {:.0} px after; layout at {:.0},{:.0} {:.0}×{:.0}; in {}; holds {})",
                         name(j, next),
                         if horizontal { "top" } else { "left" },
                         if horizontal { "row" } else { "column" },
@@ -101,7 +154,9 @@ pub(crate) fn snapped_children(root: &ElementHandle) -> Vec<String> {
                         l.r.x,
                         l.r.y,
                         l.r.w,
-                        l.r.h
+                        l.r.h,
+                        ancestors.join(" > "),
+                        inside.join(", ")
                     ));
                 }
             }
@@ -182,11 +237,18 @@ fn controls_centred_kiosk() {
 fn live_numbers_keep_their_digits_in_place() {
     let ui = Ui::open((1440, 900));
     let width = |label: &str| Rect::of(&ui.get(label)).w;
-    let samples = ["-1:08.4", "-1:08.8", "-1:11.1", "-0:00.0", "-7:59.9", "-2:34.5", "-6:66.6", "-9:99.9"];
+    let samples = [
+        "-1:08.4", "-1:08.8", "-1:11.1", "-0:00.0", "-7:59.9", "-2:34.5", "-6:66.6", "-9:99.9",
+    ];
     let mut problems = Vec::new();
     for (label, set) in [
-        ("topbar.clock", &(|u: &Ui, t: &str| u.app.ui.set_clock(t.into())) as &dyn Fn(&Ui, &str)),
-        ("status.summary", &|u: &Ui, t: &str| u.app.ui.set_list_summary(t.into())),
+        (
+            "topbar.clock",
+            &(|u: &Ui, t: &str| u.app.ui.set_clock(t.into())) as &dyn Fn(&Ui, &str),
+        ),
+        ("status.summary", &|u: &Ui, t: &str| {
+            u.app.ui.set_list_summary(t.into())
+        }),
     ] {
         let mut widths = Vec::new();
         for s in samples {
@@ -196,7 +258,10 @@ fn live_numbers_keep_their_digits_in_place() {
         let first = widths[0].1;
         for (s, w) in &widths {
             if (w - first).abs() > 0.01 {
-                problems.push(format!("`{label}`: `{s}` is {w:.2} px wide, `{}` {first:.2} px", widths[0].0));
+                problems.push(format!(
+                    "`{label}`: `{s}` is {w:.2} px wide, `{}` {first:.2} px",
+                    widths[0].0
+                ));
             }
         }
         // Each digit alone: one width for all ten.
@@ -226,7 +291,10 @@ fn popups_stay_inside_the_window() {
     // Wants to start 30 px left of the window: moved in.
     assert_eq!(30.0 + p.invoke_x(30.0, -60.0, 200.0), 4.0);
     // Would run past the right edge: ends 4 px inside.
-    assert_eq!(ww - 50.0 + p.invoke_x(ww - 50.0, 0.0, 200.0) + 200.0, ww - 4.0);
+    assert_eq!(
+        ww - 50.0 + p.invoke_x(ww - 50.0, 0.0, 200.0) + 200.0,
+        ww - 4.0
+    );
     // Below does not fit at the bottom: opens above.
     assert_eq!(p.invoke_y(wh - 20.0, 20.0, -110.0, 100.0), -110.0);
     assert_eq!(p.invoke_y(100.0, 20.0, -110.0, 100.0), 20.0);
@@ -235,9 +303,23 @@ fn popups_stay_inside_the_window() {
     let mut problems = Vec::new();
     // The FX panel makes the decks compact (pad mode then cycles on a key),
     // so the pad mode lists are opened without it.
-    let fx = ["fx.unit1.slot1.type", "fx.unit2.slot1.type", "fx.channel-fx.type", "topbar.mode"];
-    let decks = ["deck1.pad-mode", "deck2.pad-mode", "fx.channel-fx.type", "topbar.mode"];
-    for (size, with_fx, openers) in [((1000, 700), true, &fx), ((1440, 900), true, &fx), ((1440, 900), false, &decks)] {
+    let fx = [
+        "fx.unit1.slot1.type",
+        "fx.unit2.slot1.type",
+        "fx.channel-fx.type",
+        "topbar.mode",
+    ];
+    let decks = [
+        "deck1.pad-mode",
+        "deck2.pad-mode",
+        "fx.channel-fx.type",
+        "topbar.mode",
+    ];
+    for (size, with_fx, openers) in [
+        ((1000, 700), true, &fx),
+        ((1440, 900), true, &fx),
+        ((1440, 900), false, &decks),
+    ] {
         let ui = Ui::open(size);
         crate::engine::ensure_engine(&ui.app);
         ui.app.ui.invoke_set_mode("perform".into());
@@ -246,7 +328,12 @@ fn popups_stay_inside_the_window() {
         }
         ui.pump(300);
         let (ww, wh) = ui.size();
-        let win = Rect { x: 0.0, y: 0.0, w: ww, h: wh };
+        let win = Rect {
+            x: 0.0,
+            y: 0.0,
+            w: ww,
+            h: wh,
+        };
         for opener in openers.iter().copied() {
             let Some(e) = ui.find(opener) else {
                 problems.push(format!("{size:?}: no `{opener}`"));
@@ -258,7 +345,10 @@ fn popups_stay_inside_the_window() {
             let mut lists = Vec::new();
             ui.app.ui.root_element().visit_descendants(|el| {
                 let t = el.type_name().unwrap_or_default();
-                if t == "ChoiceList" || (opener == "topbar.mode" && el.accessible_label().is_some_and(|l| l == "LIGHTING")) {
+                if t == "ChoiceList"
+                    || (opener == "topbar.mode"
+                        && el.accessible_label().is_some_and(|l| l == "LIGHTING"))
+                {
                     lists.push(Rect::of(&el));
                 }
                 std::ops::ControlFlow::<()>::Continue(())
