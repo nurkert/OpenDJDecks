@@ -4306,7 +4306,7 @@ dependencies = [
 
 [[package]]
 name = "od-analysis"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "od-core",
  "od-decode",
@@ -4316,7 +4316,7 @@ dependencies = [
 
 [[package]]
 name = "od-audio-io"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "cpal",
@@ -4331,7 +4331,7 @@ dependencies = [
 
 [[package]]
 name = "od-cli"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -4352,7 +4352,7 @@ dependencies = [
 
 [[package]]
 name = "od-controller"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "crossbeam-channel",
  "libc",
@@ -4366,7 +4366,7 @@ dependencies = [
 
 [[package]]
 name = "od-core"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4375,7 +4375,7 @@ dependencies = [
 
 [[package]]
 name = "od-decode"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "blake3",
  "hound",
@@ -4387,7 +4387,7 @@ dependencies = [
 
 [[package]]
 name = "od-devices"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "blake3",
  "crossbeam-channel",
@@ -4408,7 +4408,7 @@ dependencies = [
 
 [[package]]
 name = "od-engine"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "od-core",
  "od-decode",
@@ -4421,7 +4421,7 @@ dependencies = [
 
 [[package]]
 name = "od-format-clubusb"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "binrw",
  "fallible-iterator",
@@ -4432,7 +4432,7 @@ dependencies = [
 
 [[package]]
 name = "od-format-native"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "od-core",
  "od-library",
@@ -4444,11 +4444,11 @@ dependencies = [
 
 [[package]]
 name = "od-i18n"
-version = "0.8.0"
+version = "0.9.0"
 
 [[package]]
 name = "od-import"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "aes",
  "cbc",
@@ -4470,7 +4470,7 @@ dependencies = [
 
 [[package]]
 name = "od-library"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "od-core",
  "rusqlite",
@@ -4485,7 +4485,7 @@ dependencies = [
 
 [[package]]
 name = "od-lighting"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "od-core",
  "serde",
@@ -4497,7 +4497,7 @@ dependencies = [
 
 [[package]]
 name = "od-mcp"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -4518,7 +4518,7 @@ dependencies = [
 
 [[package]]
 name = "od-parity"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4527,7 +4527,7 @@ dependencies = [
 
 [[package]]
 name = "od-recorder"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "crossbeam-channel",
  "flacenc",
@@ -4546,7 +4546,7 @@ dependencies = [
 
 [[package]]
 name = "od-soak"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "libc",
@@ -4560,7 +4560,7 @@ dependencies = [
 
 [[package]]
 name = "od-stems"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "crossbeam-channel",
  "hound",
@@ -4581,7 +4581,7 @@ dependencies = [
 
 [[package]]
 name = "od-ui"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "crossbeam-channel",
@@ -4625,7 +4625,7 @@ dependencies = [
 
 [[package]]
 name = "od-update"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "semver",
  "serde",
@@ -4655,7 +4655,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "opendjdecks"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "od-core",

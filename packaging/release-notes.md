@@ -1,35 +1,64 @@
-OpenDJDecks 0.8.0, the open-source DJ software for macOS, Linux, Windows and the Raspberry Pi. Website and guides: [opendjdecks.de](https://opendjdecks.de). Still a beta.
+OpenDJDecks 0.9.0, the open-source DJ software for macOS, Linux, Windows and the Raspberry Pi. Website and guides: [opendjdecks.de](https://opendjdecks.de). Still a beta.
 
-## New in 0.8.0: what electronic DJs need, and it adapts to you
+## New in 0.9.0: the rest of the craft
 
-### For the mix
+### Interface
 
-- **A library import you can check:** a preview of what will carry over and what will not, then a before and after count and undo.
-- **A mixer for bass swaps:** a kill on every EQ band and a one-tap swap between decks, now, on the beat or on the bar. Knobs show their values, and each channel has a clip lamp.
-- **Phrase-aligned blends:** bars to the next drop and break, start on the next phrase, a PHRASE sync mode, and the incoming track drawn over the playing waveform.
-- **High tempos:** a 150–300 BPM range, and ½ and 2× on the deck.
-- **Loop roll and capture**, from 1/32 to 4 beats.
-- **Stems ready before the gig:** separate a whole list ahead of time, see the stem state per track, get a warning on load, and solo or keep only one stem.
-- **Effects for drops:** a large level, build-ups locked to 8, 16 or 32 bars, tails after release, an XY surface and ALL FX OFF.
-- **Key relation on the deck,** and how sure the analysis is of key and grid, with a one-button fix.
+- **A calmer, more physical interface:**
+  - One motion language and knobs, faders and meters with value arcs and readouts.
+  - A calmer library table and an optional calm waveform.
+  - Perform lanes centred on the window, and waveforms you can drag.
+- **Set Flow as a chart,** with warnings between tracks for tempo jumps, key clashes and energy drops.
+- **Preferences and the USB screen in the new design,** with live previews.
+- **A help overlay** (`F12` or `?`) that names every control, also on touch.
+- **A touch layout** for the whole deck, not only the kiosk.
+- **Full keyboard focus and readable screen reader names.**
+- **Edit in Prepare:** an EDIT key and a right-click menu on the deck open the track's phrases, grid, cues, key, gain or info in Prepare while the decks keep playing. Quick fixes stay in Perform: downbeat ±1 beat, phrase boundary ±1 bar, use the likely key.
+- **Clearer browser:** filter chips, a foldable lists column, fuzzy search, and type-then-Enter to load.
+- **Smarter phrase detection,** measured on a generated test set.
 
-### For you
+### DJ
 
-- **Simple, Standard and Full layouts,** and your own saved layouts. Whole groups can be hidden.
-- **A controller list and a guided setup** that learns an unlisted controller one control at a time.
-- **Your own lighting looks and chases** on pads with pages and group masters, and the full lighting controls in Perform and Club.
-- **AUTO you can steer:** palettes, a phrase-to-look table, HOLD and RELEASE, and a visible order of who is in control.
-- **Connecting lighting interfaces:** several universes, a USB-DMX port picker, Art-Net node discovery, a test pattern and a guided setup.
-- **Safer flash limit:** every quick rise in brightness now counts as a flash, so dim or capped lights keep to the flash limit as well.
+- **Recording for release:** loudness, true peak and clips while recording, chapter markers, a separate voice track, and a tracklist editor with text and CUE export.
+- **Sticks:** labelled format badges, stems per track on the stick, and a one-press emergency stick.
+- **A queue in Perform:**
+  - Requests matched to your library.
+  - A do-not-play tag.
+  - Auto-play, and a dead-air warning before the music runs out.
+- **Search at request speed,** a played-tonight mark, and tags edited on many tracks at once.
+- **Mixer and deck:**
+  - EQ kills also in stem mode, crossfader curves on the mixer, cut-in and reverse.
+  - Split cue: the cue on one ear, the master on the other.
+- **Cues:**
+  - Edit hot cues from Perform, set drop markers, and jump by phrase on the beat.
+  - Each cue gets its own play mode: cue, latch, gate or momentary.
+- **A sampler that stays in view,** and the planned set in Perform: the next track, its transition note, and how you stand against the plan.
+- **Stems you can audition** on the headphones, and your own stem files as deck parts.
+- **Output routing:** master and headphones on any output pair, an external-mixer mode, split cue on one stereo output, and MIDI clock out.
+
+### Lighting
+
+- **SETUP and SHOW,** with a large blackout and an output test.
+- **A floor plan** for placing and turning fixtures, with per-fixture tuning.
+- **An editable cue list** and a cue lane in Prepare.
+- **Named rig, show and venue files.**
+- **A separate lighting operator:** a second controller for the lights, OSC input, and a second computer that follows the music over the network.
+- **DJ events as triggers,** with the audio input or the network as music sources.
+- **Unattended mode** for a fixed venue, behind the setup PIN.
+
+### Fixed
+
+- **Stick sync:** after a restored backup or an undone import, SYNC now writes everything the stick check reports as changed.
 
 ## Good to know
 
 Many of these features have not yet been tried on real hardware, at a gig or by ear, including:
 
-- controller mappings and the guided setup,
-- Art-Net, sACN and USB-DMX interfaces,
-- touch screens,
-- real records above 200 BPM.
+- controller mappings, the lighting controller layout and OSC,
+- multi-output audio interfaces, an external mixer and MIDI clock receivers,
+- lighting rigs and DMX interfaces,
+- touch screens and screen readers,
+- physical sticks and club players.
 
 Try your setup before a gig.
 
