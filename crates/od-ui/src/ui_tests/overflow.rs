@@ -1033,8 +1033,30 @@ fn run_main(lang: &str, states: Vec<State>, group: &str) {
     report.finish(group);
 }
 
+/// The language is chosen for the whole process when the app starts, so
+/// the German runs go into a child process of this test binary: in this
+/// one they would switch the strings of the tests running beside them.
+fn in_own_process(test: &str) {
+    if std::env::var_os("OD_OVERFLOW_CHILD").is_some() {
+        return;
+    }
+    let exe = std::env::current_exe().expect("test binary");
+    let status = std::process::Command::new(exe)
+        .args([test, "--exact", "--ignored", "--test-threads=1", "--nocapture"])
+        .env("OD_OVERFLOW_CHILD", "1")
+        .status()
+        .expect("child test runs");
+    assert!(status.success(), "{test} found overflows (see its output above)");
+}
+
 #[test]
 fn overflow_views_de() {
+    in_own_process("ui_tests::overflow::overflow_views_de_run");
+}
+
+#[test]
+#[ignore = "runs in its own process from overflow_views_de"]
+fn overflow_views_de_run() {
     run_main("de", main_states(), "views-de");
 }
 
@@ -1045,6 +1067,12 @@ fn overflow_views_en() {
 
 #[test]
 fn overflow_popups_and_dialogs_de() {
+    in_own_process("ui_tests::overflow::overflow_popups_and_dialogs_de_run");
+}
+
+#[test]
+#[ignore = "runs in its own process from overflow_popups_and_dialogs_de"]
+fn overflow_popups_and_dialogs_de_run() {
     run_main("de", popup_states(), "popups-de");
 }
 
@@ -1053,9 +1081,16 @@ fn overflow_popups_and_dialogs_en() {
     run_main("en", popup_states(), "popups-en");
 }
 
-/// Preferences (every page) and the booth window, in their own windows.
+/// Preferences (every page) and the booth window, in their own windows,
+/// in both languages (so in a process of its own, see [`in_own_process`]).
 #[test]
 fn overflow_windows() {
+    in_own_process("ui_tests::overflow::overflow_windows_run");
+}
+
+#[test]
+#[ignore = "runs in its own process from overflow_windows"]
+fn overflow_windows_run() {
     let _lock = super::harness::volumes_lock();
     let mut report = Report::default();
     for lang in ["de", "en"] {
