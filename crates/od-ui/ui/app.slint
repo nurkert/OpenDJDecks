@@ -1345,22 +1345,26 @@ export component AppWindow inherits Window {
                         if root.section == "devices": Flickable {
                             vertical-stretch: 1;
                             content-width: max(self.width, dev-row.min-width);
-                            content-height: max(self.height, dev-row.min-height);
+                            content-height: max(self.height, dev-row.preferred-height);
                             mouse-drag-pan-enabled: false;
                             dev-row := HorizontalLayout {
                             width: max(parent.width, self.min-width);
-                            height: max(parent.height, self.min-height);
+                            height: max(parent.height, self.preferred-height);
                             spacing: Theme.s5;
                             VerticalLayout {
                                 min-width: 320px; preferred-width: 460px; max-width: 460px;
                                 horizontal-stretch: 0;
                                 spacing: Theme.s1;
-                                if root.devices.length > 0: FlexboxLayout {
-                                    spacing-horizontal: Theme.s4; spacing-vertical: Theme.s1;
+                                // One row each: a wrapping row reported less height
+                                // than it took (German, Linux), and the sticks ran
+                                // past the board.
+                                if root.devices.length > 0: HorizontalLayout {
                                     alignment: start;
                                     PlateButton { accessible-role: button; accessible-id: "devices.sync-all"; compact: true; label: @tr("SYNC ALL STICKS"); tone: Theme.live; tooltip: @tr("Sync every plugged-in stick at the same time"); clicked => { root.sync-all-devices(); } }
+                                }
+                                if root.devices.length > 0: HorizontalLayout {
+                                    alignment: start;
                                     LineToggle { accessible-role: checkbox; accessible-checkable: true; accessible-checked: self.checked; accessible-id: "devices.eject-when-done"; label: @tr("Eject when done"); tooltip: @tr("Eject each stick as soon as its sync has finished (also for sync started from the DEVICES heading)"); checked: root.eject-when-done; toggled(v) => { root.set-eject-when-done(v); } }
-                                    
                                 }
                                 // [28] The emergency stick and its result.
                                 HorizontalLayout { alignment: start; EmergencyKey { } }
