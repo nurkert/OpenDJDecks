@@ -3,7 +3,7 @@
 Every user action of OpenDJDecks is a command in one registry
 (`crates/od-ui/src/keymap.rs`) with an id, a default binding per platform
 and optional user bindings (SPEC §12.2). The registry currently holds
-**294 actions**; every one has a default binding, and no two defaults
+**295 actions**; every one has a default binding, and no two defaults
 collide where they apply (checked by tests, together with this table).
 
 `F12` (and `?` wherever no shortcut takes it) shows the help overlay, which
@@ -98,6 +98,7 @@ Perform). Text fields keep the keys they type.
 | Switch to Prepare | `mode.prepare` | both | `⌥⌘1` | `Alt+1` |
 | Switch to Perform | `mode.perform` | both | `⌥⌘2` | `Alt+2` |
 | Switch to Lighting | `mode.lighting` | both | `⌥⌘3` | `Alt+3` |
+| Switch to Create | `mode.create` | both | `⌥⌘0` | `Alt+0` |
 | Show the library | `section.library` | both | `⌥⌘L` | `Alt+L` |
 | Show USB sticks | `section.devices` | both | `⌥⌘D` | `Alt+D` |
 | Show recordings | `section.recordings` | both | `⌥⌘R` | `Alt+R` |

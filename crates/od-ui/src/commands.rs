@@ -105,6 +105,9 @@ pub(crate) fn run(app: &Rc<App>, id: &str) {
         }
         "mode.perform" => ui.invoke_set_mode(S::from("perform")),
         "mode.lighting" => ui.invoke_set_mode(S::from("lighting")),
+        // The kiosk has no CREATE (its one screen is Perform's).
+        "mode.create" if !app.state.borrow().config.kiosk => ui.invoke_set_mode(S::from("create")),
+        "mode.create" => {}
         "section.library" => ui.invoke_select_section(S::from("library")),
         "section.devices" => ui.invoke_select_section(S::from("devices")),
         "section.recordings" => ui.invoke_select_section(S::from("recordings")),

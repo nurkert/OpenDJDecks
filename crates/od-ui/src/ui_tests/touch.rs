@@ -51,6 +51,10 @@ fn views() -> Vec<(&'static str, fn(&Ui))> {
             u.app.ui.invoke_set_mode("lighting".into());
             u.pump(400);
         }),
+        ("create", |u| {
+            u.app.ui.invoke_set_mode("create".into());
+            u.pump(400);
+        }),
     ]
 }
 

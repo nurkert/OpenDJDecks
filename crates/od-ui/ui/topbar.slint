@@ -18,13 +18,15 @@ component ModeTab inherits Rectangle {
     accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
     accessible-description: TooltipState.describe(root.tooltip, root.command);
     in property <bool> narrow;
+    // Tighter still in a small window (the bar's `tabs-tight`).
+    in property <bool> tight;
     in property <string> label;
     in property <bool> current;
     in property <string> tooltip;
     in property <string> command;
     in property <string> guide;
     callback clicked();
-    min-width: t.preferred-width + (root.narrow ? 18px : 32px);
+    min-width: t.preferred-width + (root.tight ? 8px : root.narrow ? 12px : 32px);
     // One segmented control: the current mode is the filled segment.
     Rectangle {
         y: Theme.s2; height: parent.height - 2 * Theme.s2;
@@ -35,7 +37,7 @@ component ModeTab inherits Rectangle {
     }
     t := Text {
         text: root.label;
-        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: root.narrow ? 1.2px : 2.4px;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: root.tight ? 0.2px : root.narrow ? 0.6px : 2.4px;
         color: root.current ? Theme.ground : touch.has-hover ? Theme.bone : Theme.bone-2;
         vertical-alignment: center;
     }
@@ -491,6 +493,11 @@ export component TopBar inherits Rectangle {
     property <length> zone: root.narrow ? Theme.s3 : Theme.s5;
     // Below this width the brand is its rail mark, so live values keep room.
     property <bool> brand-short: root.width < 1360px;
+    // The mode tabs tighten before the bar wraps: narrower below 1920 px,
+    // tighter still below 1420 px, so the four modes and the live values
+    // share one row in English and German from 1280 px up.
+    property <bool> tabs-narrow: root.narrow || root.width < 1920px;
+    property <bool> tabs-tight: root.width < 1420px;
 
     // Under everything else: the bar's own background takes the window
     // drag (the keys on top keep their clicks).
@@ -508,7 +515,7 @@ export component TopBar inherits Rectangle {
             accessible-id: "topbar.mode"; accessible-role: tab-list;
             accessible-value: root.mode;
             x: prep.x; y: prep.y;
-            width: light.x + light.width - prep.x; height: prep.height;
+            width: create.x + create.width - prep.x; height: prep.height;
         }
 
         // The bar is two groups: the modes and what they show, then what
@@ -532,20 +539,26 @@ export component TopBar inherits Rectangle {
                 }
             }
             prep := ModeTab {
-                narrow: root.narrow;
+                narrow: root.tabs-narrow; tight: root.tabs-tight;
                 accessible-id: "topbar.mode.prepare"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
                 label: @tr("PREPARE"); guide: "topbar.mode.prepare"; tooltip: @tr("Prepare: library, beatgrids, cues and sticks"); command: "mode.prepare"; current: root.mode == "prepare"; clicked => { root.set-mode("prepare"); } }
             perf := ModeTab {
-                narrow: root.narrow;
+                narrow: root.tabs-narrow; tight: root.tabs-tight;
                 accessible-id: "topbar.mode.perform"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
                 label: @tr("PERFORM"); guide: "topbar.mode.perform"; tooltip: @tr("Perform: decks and mixer"); command: "mode.perform"; current: root.mode == "perform"; clicked => { root.set-mode("perform"); } }
             light := ModeTab {
-                narrow: root.narrow;
+                narrow: root.tabs-narrow; tight: root.tabs-tight;
                 accessible-id: "topbar.mode.lighting"; accessible-role: tab;
                 accessible-item-selectable: true; accessible-item-selected: self.current;
                 label: @tr("LIGHTING"); tooltip: @tr("Lighting: DMX rig and light show"); command: "mode.lighting"; current: root.mode == "lighting"; clicked => { root.set-mode("lighting"); } }
+            // [70] Tab names stay English in German, like the others.
+            create := ModeTab {
+                narrow: root.tabs-narrow; tight: root.tabs-tight;
+                accessible-id: "topbar.mode.create"; accessible-role: tab;
+                accessible-item-selectable: true; accessible-item-selected: self.current;
+                label: @tr("CREATE"); tooltip: @tr("Create: a melody from one note, drums, and which notes fit"); command: "mode.create"; current: root.mode == "create"; clicked => { root.set-mode("create"); } }
             // ── Second zone: what this mode shows ──
             Rectangle { width: root.zone; }
             if root.mode == "perform" && !root.kiosk: ViewMenu {

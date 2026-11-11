@@ -525,6 +525,7 @@ const DE: &[(&str, &str)] = &[
     ("Switch to Prepare", "Zu Prepare wechseln"),
     ("Switch to Perform", "Zu Perform wechseln"),
     ("Switch to Lighting", "Zu Lighting wechseln"),
+    ("Switch to Create", "Zu Create wechseln"),
     ("Club mode on / off", "Club-Modus an / aus"),
     ("Load tracks on two decks", "Tracks auf zwei Decks laden"),
     (

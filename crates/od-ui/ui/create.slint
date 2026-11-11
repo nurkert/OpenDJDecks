@@ -1,0 +1,486 @@
+// CREATE (roadmap [70]): the fourth work mode, for what DJs make before a
+// set. MELODY plays the next track's melody from one note, DRUMS is a small
+// drum machine, THEORY shows which notes fit. Each view reads left to right,
+// then down: its zones, the RESULT bar, and a slim deck strip so the decks
+// stay in view (they keep playing; CREATE only changes what is shown).
+//
+// This is the shell: every zone says what comes there and what you will do
+// in it. Controls that are not there yet are drawn disabled with their
+// later names, never as working keys. State lives in the `Create` global.
+
+import { Theme } from "tokens.slint";
+import { VLine } from "lines.slint";
+import { Caps, PlateButton } from "controls.slint";
+
+// One deck in the strip (create.rs, from the engine's deck state).
+export struct CreateDeck {
+    deck: int,
+    loaded: bool,
+    playing: bool,
+    // Tempo as played, "124.0" ("" = no grid or no track).
+    bpm: string,
+    // The loaded track's key in the chosen notation ("" = none).
+    key: string,
+    // Position in the track 0..1.
+    progress: float,
+    // Position in the bar 0..1 (0 without a grid), unsmoothed.
+    bar: float,
+    // Channel level 0..1 (peak, unsmoothed).
+    level: float,
+}
+
+export global Create {
+    // The view: "melody", "drums" or "theory" (remembered, shell.rs).
+    in-out property <string> view: "melody";
+    in property <[CreateDeck]> decks;
+}
+
+// Prose in a zone: wraps to the width its column gives it.
+component Prose inherits Text {
+    font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
+    wrap: word-wrap;
+    min-width: 0px; preferred-width: 0px;
+}
+
+// One zone of a view: a band-charcoal surface with its name in caps, a
+// sentence on what it is for, and the parts that come there.
+component Zone inherits Rectangle {
+    in property <string> title;
+    in property <string> summary;
+    accessible-role: groupbox;
+    accessible-label: root.title;
+    background: Theme.ground-band;
+    border-radius: Theme.r-panel;
+    VerticalLayout {
+        padding: Theme.s3; spacing: Theme.s3;
+        Caps { text: root.title; color: Theme.bone-2; font-weight: Theme.weight-semi; }
+        Prose { text: root.summary; }
+        @children
+        Rectangle { vertical-stretch: 1; }
+    }
+}
+
+// An empty slot (a pad or a step): a hollow outline with its legend.
+component Slot inherits Rectangle {
+    in property <string> legend;
+    border-radius: Theme.r-control;
+    border-width: Theme.hair; border-color: Theme.rule-strong;
+    min-width: 0px;
+    Caps { width: parent.width; height: parent.height; text: root.legend; horizontal-alignment: center; vertical-alignment: center; overflow: elide; }
+}
+
+// The keyboard strip, two octaves from C. Drawn quiet until a key is
+// chosen; then the root, the scale and the chord notes light up ([73]).
+component KeyStrip inherits Rectangle {
+    accessible-role: image;
+    accessible-label: @tr("Keyboard strip");
+    height: 56px;
+    property <length> key-w: (root.width - 13 * Theme.key-gap) / 14;
+    for i in 14: Rectangle {
+        x: i * (root.key-w + Theme.key-gap); y: 0; width: root.key-w; height: root.height;
+        background: Theme.plate; border-radius: Theme.r-control;
+        if Math.mod(i, 7) == 0: Caps {
+            y: parent.height - self.height - Theme.s1; width: parent.width;
+            text: i == 0 ? "C3" : "C4"; horizontal-alignment: center;
+        }
+    }
+    // Black keys after C, D, F, G and A of each octave.
+    for i in [0, 1, 3, 4, 5, 7, 8, 10, 11, 12]: Rectangle {
+        x: (i + 1) * (root.key-w + Theme.key-gap) - root.key-w * 0.3 - Theme.key-gap / 2; y: 0;
+        width: root.key-w * 0.6; height: root.height * 0.58;
+        background: Theme.ground; border-radius: Theme.r-control;
+    }
+}
+
+// A row of hollow slots, one per legend, a little apart every four.
+component SlotRow inherits HorizontalLayout {
+    in property <[string]> legends;
+    spacing: Theme.key-gap;
+    height: Theme.touch-mode ? 44px : 36px;
+    for l[i] in root.legends: HorizontalLayout {
+        padding-left: i > 0 && Math.mod(i, 4) == 0 ? Theme.s2 : 0px;
+        Slot { legend: l; }
+    }
+}
+
+// MELODY: SOURCE | NOTES | FITS.
+component MelodyView inherits HorizontalLayout {
+    in property <bool> narrow;
+    spacing: Theme.key-gap;
+    Zone {
+        accessible-id: "create.melody.source";
+        width: root.narrow ? 250px : 320px;
+        title: @tr("SOURCE");
+        summary: @tr("Pick one note from a track on a deck or in the library. Drag IN and OUT around it, then hear it.");
+        // The zoomed waveform comes here; empty until a note is picked.
+        Rectangle {
+            height: 72px;
+            background: Theme.ground; border-radius: Theme.r-control;
+            Caps { width: parent.width; height: parent.height; text: @tr("NO NOTE PICKED"); horizontal-alignment: center; vertical-alignment: center; }
+        }
+        Prose { text: @tr("Its pitch shows as a note name and cents, and you can correct it."); }
+        HorizontalLayout {
+            alignment: center;
+            PlateButton {
+                accessible-id: "create.source.hear"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("HEAR");
+                tooltip: @tr("Play the picked note (comes with the note picker)");
+            }
+        }
+    }
+    Zone {
+        accessible-id: "create.melody.notes";
+        horizontal-stretch: 1;
+        title: @tr("NOTES");
+        summary: @tr("The key and scale come from the other deck or the next track. The scale's notes fill the pads; play or type the melody into the steps.");
+        KeyStrip { }
+        Caps { text: @tr("PADS"); }
+        SlotRow { legends: ["1", "2", "3", "4", "5", "6", "7", "8"]; }
+        Caps { text: @tr("ARRANGE"); }
+        SlotRow { legends: ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]; }
+        HorizontalLayout {
+            alignment: center; spacing: Theme.key-gap;
+            PlateButton {
+                accessible-id: "create.notes.next-track"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("NEXT TRACK");
+                tooltip: @tr("Take the key of the next track in the set (comes with keys and scales)");
+            }
+            PlateButton {
+                accessible-id: "create.notes.rec"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("REC");
+                tooltip: @tr("Record the pads into the steps (comes with the arranger)");
+            }
+        }
+    }
+    // FITS folds away in a narrow window; THEORY has it too.
+    if !root.narrow: Zone {
+        accessible-id: "create.melody.fits";
+        width: 280px;
+        title: @tr("FITS");
+        summary: @tr("The notes and chords of the chosen key, and which of them fit the track playing now.");
+        Caps { text: @tr("NO KEY CHOSEN YET"); }
+    }
+}
+
+// DRUMS: KIT | PADS over STEPS.
+component DrumsView inherits HorizontalLayout {
+    in property <bool> narrow;
+    spacing: Theme.key-gap;
+    Zone {
+        accessible-id: "create.drums.kit";
+        width: root.narrow ? 250px : 320px;
+        title: @tr("KIT");
+        summary: @tr("Built-in kits, made from synthesised sounds, or your own samples from the library.");
+        Prose { text: @tr("Each pad gets three knobs: PITCH, DECAY and TONE."); }
+        HorizontalLayout {
+            alignment: center;
+            PlateButton {
+                accessible-id: "create.kit.load"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("LOAD SAMPLE");
+                tooltip: @tr("Put a sound from the library on a pad (comes with the drum machine)");
+            }
+        }
+    }
+    VerticalLayout {
+        horizontal-stretch: 1;
+        spacing: Theme.key-gap;
+        Zone {
+            accessible-id: "create.drums.pads";
+            title: @tr("PADS");
+            summary: @tr("Sixteen pads in two rows. Play them by hand or from a controller.");
+            SlotRow { legends: ["1", "2", "3", "4", "5", "6", "7", "8"]; }
+            SlotRow { legends: ["9", "10", "11", "12", "13", "14", "15", "16"]; }
+        }
+        Zone {
+            accessible-id: "create.drums.steps";
+            title: @tr("STEPS");
+            summary: @tr("Sixteen steps on the master tempo, shared with the sampler's sequencer in Perform.");
+            SlotRow { legends: ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]; }
+            HorizontalLayout {
+                alignment: center; spacing: Theme.key-gap;
+                PlateButton {
+                    accessible-id: "create.steps.play"; accessible-role: button;
+                    compact: true; enabled: false; label: @tr("PLAY");
+                    tooltip: @tr("Play the pattern on the master tempo (comes with the drum machine)");
+                }
+                PlateButton {
+                    accessible-id: "create.steps.rec"; accessible-role: button;
+                    compact: true; enabled: false; label: @tr("REC");
+                    tooltip: @tr("Record the pads into the steps (comes with the drum machine)");
+                }
+            }
+        }
+    }
+}
+
+// One deck's key in THEORY: numeral in the deck colour, the key or a dash.
+component DeckKey inherits Rectangle {
+    in property <CreateDeck> deck;
+    accessible-role: text;
+    accessible-id: "create.theory.key.deck\{root.deck.deck}";
+    accessible-label: @tr("Deck {}", root.deck.deck);
+    accessible-value: root.deck.key;
+    HorizontalLayout {
+        spacing: Theme.s3;
+        Text {
+            width: 18px;
+            text: root.deck.deck;
+            font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+            color: Theme.deck-color(root.deck.deck); vertical-alignment: center;
+        }
+        Text {
+            text: root.deck.key != "" ? root.deck.key : "—";
+            font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+            color: root.deck.key != "" ? Theme.bone : Theme.bone-3; vertical-alignment: center;
+        }
+        Caps {
+            horizontal-stretch: 1;
+            text: !root.deck.loaded ? @tr("NO TRACK") : root.deck.key == "" ? @tr("NO KEY YET") : root.deck.playing ? @tr("PLAYING") : "";
+            vertical-alignment: center; overflow: elide;
+        }
+    }
+}
+
+// THEORY: KEYS | CHECK | WHY.
+component TheoryView inherits HorizontalLayout {
+    in property <bool> narrow;
+    spacing: Theme.key-gap;
+    Zone {
+        accessible-id: "create.theory.keys";
+        width: root.narrow ? 250px : 320px;
+        title: @tr("KEYS");
+        summary: @tr("Both decks' keys, and the neighbouring keys that move smoothly.");
+        for d in Create.decks: DeckKey { deck: d; }
+    }
+    Zone {
+        accessible-id: "create.theory.check";
+        horizontal-stretch: 1;
+        title: @tr("CHECK");
+        summary: @tr("Type a melody, such as A3 C4 E4 D4, to see whether all its notes fit the key, and which do not.");
+        KeyStrip { }
+    }
+    Zone {
+        accessible-id: "create.theory.why";
+        width: root.narrow ? 220px : 280px;
+        title: @tr("WHY");
+        summary: @tr("Three short lines in plain words on why the notes fit.");
+    }
+}
+
+// RESULT: what was made in one line, and what to do with it.
+component ResultBar inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-id: "create.result";
+    accessible-label: @tr("RESULT");
+    background: Theme.ground-band;
+    border-radius: Theme.r-panel;
+    property <string> summary: Create.view == "drums"
+        ? @tr("No pattern yet. It shows here with its bars and tempo, ready to send to Perform or render as a loop.")
+        : Create.view == "theory" ? @tr("THEORY only shows. What fits goes into MELODY.")
+        : @tr("No melody yet. It shows here with its notes, bars, tempo and cues, and whether the stick formats take it.");
+    // Only as tall as its line and its actions; the views take the rest.
+    vertical-stretch: 0;
+    VerticalLayout {
+        padding: Theme.s3; spacing: Theme.s2;
+        // One line: a wrapping text here would be measured at no width and
+        // stretch the bar.
+        HorizontalLayout {
+            spacing: Theme.s3;
+            Caps { text: @tr("RESULT"); color: Theme.bone-2; font-weight: Theme.weight-semi; vertical-alignment: center; }
+            Text {
+                accessible-id: "create.result.summary"; accessible-role: text; accessible-value: self.text;
+                horizontal-stretch: 1; min-width: 0px;
+                text: root.summary;
+                font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
+                vertical-alignment: center; overflow: elide;
+            }
+        }
+        if Create.view == "melody": HorizontalLayout {
+            alignment: center; spacing: Theme.s3;
+            HorizontalLayout {
+                spacing: Theme.key-gap;
+                PlateButton {
+                    accessible-id: "create.result.single-notes"; accessible-role: tab;
+                    compact: true; enabled: false; label: @tr("SINGLE NOTES");
+                    tooltip: @tr("One hot cue per note, to play them by hand (comes with rendering)");
+                }
+                PlateButton {
+                    accessible-id: "create.result.melody"; accessible-role: tab;
+                    compact: true; enabled: false; label: @tr("MELODY");
+                    tooltip: @tr("One cue per note in order, ready as a transition (comes with rendering)");
+                }
+            }
+            PlateButton {
+                accessible-id: "create.result.send"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("SEND TO PERFORM");
+                tooltip: @tr("Put the notes on the pads in Perform (comes with the melody pad mode)");
+            }
+            PlateButton {
+                accessible-id: "create.result.render"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("RENDER");
+                tooltip: @tr("Write a new file with its beatgrid and cues (comes with rendering)");
+            }
+            PlateButton {
+                accessible-id: "create.result.to-playlist"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("TO PLAYLIST");
+                tooltip: @tr("Add the rendered file to a playlist (comes with rendering)");
+            }
+        }
+        if Create.view == "drums": HorizontalLayout {
+            alignment: center; spacing: Theme.s3;
+            PlateButton {
+                accessible-id: "create.result.send"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("SEND TO PERFORM");
+                tooltip: @tr("Play the pattern from the sampler in Perform (comes with the drum machine)");
+            }
+            PlateButton {
+                accessible-id: "create.result.render-loop"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("RENDER LOOP");
+                tooltip: @tr("Write a bar-exact loop with a hot cue per sound (comes with the drum machine)");
+            }
+            PlateButton {
+                accessible-id: "create.result.save-pattern"; accessible-role: button;
+                compact: true; enabled: false; label: @tr("SAVE PATTERN");
+                tooltip: @tr("Keep the pattern in the sampler's store (comes with the drum machine)");
+            }
+        }
+    }
+}
+
+// One deck in the strip: numeral, play state (line and word), and while
+// there is room the tempo, where it is in the bar and the track, and the
+// level. Nothing here is a control: the decks are played in Perform.
+component StripDeck inherits Rectangle {
+    in property <CreateDeck> deck;
+    in property <bool> slim;
+    property <string> state: root.deck.playing ? @tr("PLAYING") : root.deck.loaded ? @tr("PAUSED") : @tr("EMPTY");
+    accessible-role: text;
+    accessible-id: "create.strip.deck\{root.deck.deck}";
+    accessible-label: @tr("Deck {}", root.deck.deck);
+    accessible-value: root.deck.bpm != "" ? root.state + " " + root.deck.bpm + " BPM" : root.state;
+    HorizontalLayout {
+        spacing: Theme.s2;
+        Text {
+            width: 14px;
+            text: root.deck.deck;
+            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi;
+            color: Theme.deck-color(root.deck.deck); vertical-alignment: center;
+        }
+        // The state line: solid green while playing, half strong rule when not.
+        VLine { form: root.deck.playing ? "solid" : "half"; tone: root.deck.playing ? Theme.live : Theme.rule-strong; }
+        Caps {
+            min-width: self.preferred-width;
+            text: root.state; font-weight: Theme.weight-semi;
+            color: root.deck.playing ? Theme.bone : Theme.bone-3; vertical-alignment: center;
+        }
+        if !root.slim: Text {
+            accessible-id: "create.strip.deck\{root.deck.deck}.bpm"; accessible-role: text; accessible-value: self.text;
+            width: 52px; horizontal-alignment: right;
+            text: root.deck.bpm != "" ? root.deck.bpm : "—";
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+            color: root.deck.bpm != "" ? Theme.bone : Theme.bone-3; vertical-alignment: center;
+        }
+        // The bar (four beats, the deck's line where it is) over the track
+        // (a hairline filled up to the position).
+        if !root.slim: Rectangle {
+            accessible-id: "create.strip.deck\{root.deck.deck}.phase"; accessible-role: progress-indicator;
+            accessible-value: round(root.deck.progress * 100) + " %";
+            min-width: 60px; horizontal-stretch: 1;
+            for b in 4: Rectangle {
+                x: b * parent.width / 4; y: parent.height / 2 - 5px; width: Theme.hair; height: 7px;
+                background: Theme.rule-strong;
+            }
+            Rectangle { x: 0; y: parent.height / 2 - 2px; width: parent.width; height: Theme.hair; background: Theme.rule-strong; }
+            if root.deck.loaded: Rectangle {
+                x: clamp(root.deck.bar, 0, 1) * (parent.width - Theme.line); y: Theme.s1; width: Theme.line; height: parent.height / 2 - Theme.s1;
+                background: Theme.deck-color(root.deck.deck);
+            }
+            Rectangle {
+                x: 0; y: parent.height - Theme.s1 - Theme.line; width: parent.width; height: Theme.line;
+                background: Theme.plate;
+            }
+            Rectangle {
+                x: 0; y: parent.height - Theme.s1 - Theme.line; width: parent.width * clamp(root.deck.progress, 0, 1); height: Theme.line;
+                background: Theme.bone-3;
+            }
+        }
+        // Level: a filled line, live, attention near the top, fault at clip.
+        if !root.slim: Rectangle {
+            accessible-id: "create.strip.deck\{root.deck.deck}.level"; accessible-role: progress-indicator;
+            accessible-value: round(root.deck.level * 100) + " %";
+            width: 40px;
+            Rectangle { x: 0; y: parent.height / 2 - 2px; width: parent.width; height: 4px; background: Theme.plate; border-radius: 2px; }
+            Rectangle {
+                x: 0; y: parent.height / 2 - 2px; width: parent.width * clamp(root.deck.level, 0, 1); height: 4px; border-radius: 2px;
+                background: root.deck.level >= 0.99 ? Theme.fault : root.deck.level > 0.8 ? Theme.attention : Theme.live;
+            }
+        }
+    }
+}
+
+// The deck strip at the foot of CREATE.
+component DeckStrip inherits Rectangle {
+    in property <bool> slim;
+    accessible-role: groupbox;
+    accessible-id: "create.strip";
+    accessible-label: @tr("Decks");
+    height: Theme.touch-mode ? 44px : 36px;
+    background: Theme.ground-band;
+    border-radius: Theme.r-panel;
+    HorizontalLayout {
+        padding-left: Theme.s3; padding-right: Theme.s3;
+        spacing: root.slim ? Theme.s4 : Theme.s5;
+        Caps { text: @tr("DECKS"); vertical-alignment: center; }
+        if Create.decks.length == 0: Text {
+            horizontal-stretch: 1;
+            text: @tr("The decks show here once audio runs");
+            font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3; vertical-alignment: center;
+            overflow: elide;
+        }
+        for d in Create.decks: StripDeck {
+            horizontal-stretch: root.slim ? 0 : 1;
+            deck: d; slim: root.slim;
+        }
+        if root.slim: Rectangle { horizontal-stretch: 1; }
+    }
+}
+
+export component CreateView inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-id: "create.view";
+    accessible-label: @tr("CREATE");
+    // A narrow window folds FITS away and gives the side zones less room;
+    // below about 1060 px the strip keeps the play states only. Follows the
+    // width through plain properties, so it does not feed back into the
+    // layout.
+    property <bool> narrow;
+    property <bool> slim;
+    init => { self.narrow = self.width < 1100px; self.slim = self.width < 1060px; }
+    changed width => { self.narrow = self.width < 1100px; self.slim = self.width < 1060px; }
+    VerticalLayout {
+        spacing: Theme.key-gap;
+        // The three views: one segmented control, centred.
+        Rectangle {
+            background: Theme.ground-band;
+            border-radius: Theme.r-panel;
+            HorizontalLayout {
+                alignment: center; spacing: Theme.key-gap;
+                padding-top: Theme.s2; padding-bottom: Theme.s2;
+                for v in [{ id: "melody", label: @tr("MELODY") }, { id: "drums", label: @tr("DRUMS") }, { id: "theory", label: @tr("THEORY") }]: PlateButton {
+                    accessible-id: "create.view." + v.id; accessible-role: tab;
+                    width: max(112px, self.min-width);
+                    label: v.label; selected: Create.view == v.id;
+                    tooltip: v.id == "melody" ? @tr("Melody: play the next track's melody from one note")
+                        : v.id == "drums" ? @tr("Drums: a small drum machine with built-in sounds")
+                        : @tr("Theory: which notes and keys fit");
+                    clicked => { Create.view = v.id; }
+                }
+            }
+        }
+        if Create.view == "melody": MelodyView { vertical-stretch: 1; narrow: root.narrow; }
+        if Create.view == "drums": DrumsView { vertical-stretch: 1; narrow: root.narrow; }
+        if Create.view == "theory": TheoryView { vertical-stretch: 1; narrow: root.narrow; }
+        ResultBar { }
+        DeckStrip { slim: root.slim; }
+    }
+}

@@ -606,6 +606,16 @@ fn build() -> Vec<Action> {
         &["Mod+Alt+3"],
         &["Alt+3"],
     );
+    // 4 to 8 are the Prepare layouts, so CREATE takes 0.
+    b.add_split(
+        "mode.create",
+        "Switch to Create",
+        None,
+        g,
+        Global,
+        &["Mod+Alt+0"],
+        &["Alt+0"],
+    );
     b.add_split(
         "section.library",
         "Show the library",
@@ -2424,6 +2434,8 @@ mod tests {
             "library.redo",
             "mode.prepare",
             "mode.perform",
+            "mode.lighting",
+            "mode.create",
             "record.toggle",
             "browser.search",
             "browser.up",

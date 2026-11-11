@@ -200,6 +200,7 @@ name is empty or looks like an id.
 | `devices` | USB screen | `devices.stick1`, `devices.emergency`, `devices.check-panel` |
 | `status` | status band | `status.summary`, `status.activity` |
 | `lighting` | LIGHTING view | `lighting.rig.add`, `lighting.output.artnet`, `lighting.stage`, `lighting.mode.auto`, `lighting.blackout`, `lighting.cue.go` |
+| `create` | CREATE view (roadmap [70]) | `create.view.melody`, `create.melody.notes`, `create.result.summary`, `create.strip.deck1` |
 | `prefs` | Preferences window | `prefs.nav.audio`, `prefs.audio.buffer`, `prefs.reset` |
 | `menu`, `ctx` | menu bar, context menus | `menu.view.info`, `ctx.row.load`, `ctx.header.auto-size` |
 

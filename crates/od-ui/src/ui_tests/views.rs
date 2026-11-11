@@ -137,6 +137,14 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
                 l.set_centre("triggers".into());
             }
         }
+        // [70] CREATE and its three views.
+        "create" | "create.drums" | "create.theory" => {
+            if kiosk {
+                return Err("CREATE is not part of the kiosk".into());
+            }
+            w.invoke_set_mode("create".into());
+            crate::create::set_view(&ui.app, id.strip_prefix("create.").unwrap_or("melody"));
+        }
         "recordings.tracklist" | "panel.queue" | "devices.emergency" => {
             if kiosk {
                 return Err("not part of the kiosk".into());

@@ -62,6 +62,10 @@ pub const SCOPES: &[(&str, &str)] = &[
         "lighting",
         "LIGHTING view: rig, outputs, stage preview, show controls",
     ),
+    (
+        "create",
+        "CREATE view: MELODY, DRUMS and THEORY, the result bar, the deck strip (roadmap [70])",
+    ),
     ("prefs", "Preferences window"),
     ("menu", "menus (menu bar and View menu entries)"),
     ("ctx", "context menus (ctx.row.*, ctx.header.*)"),
