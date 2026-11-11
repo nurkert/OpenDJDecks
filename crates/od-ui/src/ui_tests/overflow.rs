@@ -1033,6 +1033,13 @@ fn run_main(lang: &str, states: Vec<State>, group: &str) {
     report.finish(group);
 }
 
+/// The audits are the heaviest UI tests: one at a time, so they do not
+/// starve the timing of the other tests on a small CI runner.
+fn heavy() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    LOCK.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 /// The language is chosen for the whole process when the app starts, so
 /// the German runs go into a child process of this test binary: in this
 /// one they would switch the strings of the tests running beside them.
@@ -1040,6 +1047,7 @@ fn in_own_process(test: &str) {
     if std::env::var_os("OD_OVERFLOW_CHILD").is_some() {
         return;
     }
+    let _one = heavy();
     let exe = std::env::current_exe().expect("test binary");
     let status = std::process::Command::new(exe)
         .args([test, "--exact", "--ignored", "--test-threads=1", "--nocapture"])
@@ -1062,6 +1070,7 @@ fn overflow_views_de_run() {
 
 #[test]
 fn overflow_views_en() {
+    let _one = heavy();
     run_main("en", main_states(), "views-en");
 }
 
@@ -1078,6 +1087,7 @@ fn overflow_popups_and_dialogs_de_run() {
 
 #[test]
 fn overflow_popups_and_dialogs_en() {
+    let _one = heavy();
     run_main("en", popup_states(), "popups-en");
 }
 
