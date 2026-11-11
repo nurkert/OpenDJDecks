@@ -206,6 +206,9 @@ pub enum DeckAction {
     TempoRange,
     TempoReset,
     TapBpm,
+    /// The deck's track in the Prepare player to fix its analysis; again
+    /// (in Prepare) back to Perform.
+    EditInPrepare,
     Quantize,
     JogTouch(bool),
     /// Relative jog movement in hardware ticks (sign = direction).

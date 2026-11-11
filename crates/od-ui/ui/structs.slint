@@ -396,6 +396,8 @@ export struct DeckView {
     key-relation: string,
     key-relation-text: string,
     key-unsure: string,
+    // The likely other key when the analysis was unsure ("" = none).
+    key-alt: string,
     // [60] Stem keys: "ready", "separating", "queued", "none" ("" = no
     // track); stems were expected here and are missing; the soloed part.
     stems-state: string,
@@ -594,7 +596,43 @@ export global AnalysisSure {
 
 export global DeckGrid {
     in property <[DeckGridView]> decks;
+    // Decks whose GRID panel is open, a bit per deck (1 << (deck - 1)): kept
+    // here so the panels stay open across a trip to Prepare.
+    in-out property <int> open;
     callback act(int, string, string);
+    public pure function is-open(deck: int) -> bool {
+        Math.mod(Math.floor(root.open / Math.pow(2, deck - 1)), 2) == 1
+    }
+    public function toggle(deck: int) {
+        root.open = root.is-open(deck) ? root.open - Math.pow(2, deck - 1) : root.open + Math.pow(2, deck - 1);
+    }
+}
+
+// EDIT IN PREPARE: from a Perform deck to its track in the Prepare player,
+// with the editor for what you want to fix, and back to where you were.
+// Targets: "phrases", "grid", "cues", "key", "gain", "info", "stems".
+// Quick fixes in place: "beat-earlier", "beat-later" (the downbeat one
+// beat), "phrase-earlier", "phrase-later" (the phrase boundary under the
+// playhead one bar), "key-alt" (the likely other key).
+export global EditInPrepare {
+    // Prepare was opened from a Perform deck: BACK TO PERFORM shows.
+    in property <bool> from-perform;
+    // That deck (1-based) and what it edits.
+    in property <int> deck;
+    in property <string> target;
+    callback open(int, string);
+    callback quick(int, string);
+    callback back();
+}
+
+// The Prepare player's tool tab ("cue", "grid", "phrase", "edit", "shift",
+// "stems") and cue list tab ("all", "memory", "hot", "info"; "" = the
+// default), kept here so EDIT IN PREPARE can open the right one.
+export global PlayerTabs {
+    in-out property <string> tool: "cue";
+    in-out property <string> list;
+    // The INFO reading to point at ("key", "gain"; "" = none).
+    in-out property <string> focus;
 }
 
 // The beatgrid editing session of the Prepare player (EDIT GRID): on while

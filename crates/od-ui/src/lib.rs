@@ -27,6 +27,7 @@ mod controller_setup;
 mod covers;
 mod deck_craft;
 mod deck_grid;
+mod edit_in_prepare;
 mod deck_layout;
 mod decks;
 mod devices;

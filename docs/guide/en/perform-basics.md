@@ -2,7 +2,7 @@
 title: The basics of Perform
 description: Decks, layouts, sync, keylock, tempo, loops and beat jump, and every pad mode on the deck.
 keywords: [booth, booth view, second screen, distance, large, phase, phase meter, beatmatching, beatmatch, practice, tempo difference, in sync, perform, deck, decks, play, cue, sync, beat sync, master, keylock, key lock, master tempo, tempo, tempo fader, pitch, bend, nudge, jog, vinyl, scratch, slip, quantize, beat jump, pads, pad mode, hot cue pad, key shift, key sync, key clash, harmonic mixing, compatible key, slicer, four decks, 4 decks, layout, vertical, browse, waveform, zoom, simple, standard, full, deck layout, hide, groups, saved layout, queue, up next, request, requests, auto-play, autoplay, auto mix, do not play, load next]
-features: [perform-queue, perform-requests, perform-auto-play, deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-cut-in, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-mode-phrase, pad-mode-cue-edit, deck-layout-platter, perform-set-plan, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill]
+features: [perform-queue, perform-requests, perform-auto-play, deck-key-relation, deck-count-layers, deck-play-cue, deck-jog, deck-tempo-fader, deck-key-lock, deck-key-shift, deck-key-sync, deck-beat-sync, deck-quantize, deck-slip, deck-reverse, deck-censor, deck-cut-in, deck-beat-jump, deck-beat-jump-size, deck-needle-search, deck-search-buttons, pad-mode-hot-cue, pad-mode-beat-loop, pad-mode-beat-jump, pad-mode-keyboard, pad-mode-key-shift, pad-mode-slicer, pad-mode-memory-cue, pad-mode-timed-censor, pad-mode-phrase, pad-mode-cue-edit, deck-layout-platter, perform-set-plan, pad-led-feedback, deck-waveform-zoom, deck-waveform-overview-detail, deck-header-readouts, deck-platter-readout, deck-waveform-zone, shell-perform-layouts, perform-view-menu, deck-layouts, deck-layout-groups, deck-layout-saved, shell-panel-toggles, shell-splitters, deck-phase-meter, perform-booth-view, deck-centre-group, deck-waveform-calm, deck-waveform-anchor, deck-waveform-drag, shell-help-overlay, shell-touch-layout, shell-compact-decks-fill, deck-edit-in-prepare]
 ---
 
 Perform is the live mode: the decks, the mixer and the browser in one view.
@@ -46,6 +46,15 @@ While you drag, a small readout at the playhead shows the offset in seconds (pau
 ### Calm waveform
 
 **Preferences › View › Calm waveform** draws the large waveforms more quietly: a crisp, thin playhead between two dark edges, faint beat lines (plain beats only as short ticks at the edges) and softer band colours. It is off by default.
+
+## Fix the analysis while you play
+
+Notice in the middle of a set that a deck's phrases, grid, cues or key are wrong? Fix them without losing your place:
+
+- **EDIT** in the deck header (under **MASTER**; beside the title on compact decks) puts the deck's track in the Prepare player at the deck's position, with the **PHRASE** tab open (the grid editor when the deck's **GRID** panel is open). The decks play on: Prepare only shows the same track, nothing is loaded again. `⌥⇧⌘D` does it for deck 1 (`⌥⇧⌘J`, `F`, `H` for decks 2 to 4), `deck.edit_in_prepare` on a controller.
+- **Right-click** the deck's waveform, its phrase strip or its **KEY** for the menu: *Edit phrases*, *Edit beatgrid*, *Edit cues*, *Edit key*, *Edit gain*, *Edit track info* and *Edit stems* open Prepare with that editor. Below them are the quick fixes that stay in Perform: the downbeat one beat earlier or later, the phrase boundary nearest the playhead one bar earlier or later, and *Use the likely key* when the analysis was unsure ([Key against the other decks](#key-against-the-other-decks)). Each quick fix is one undo step.
+- Every edit you make in Prepare, and every undo, reaches the loaded decks at once: the phrase countdowns, phrase-aligned blends, the light show and the waveforms use the corrected data while the track plays on.
+- **BACK TO PERFORM** in the top bar, `Esc`, `⌥⌘2` or the **PERFORM** tab take you back to the decks exactly as you left them.
 
 ## The centre of the deck
 

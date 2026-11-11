@@ -58,3 +58,7 @@ Das gilt nur fürs Hören: Der gespeicherte Track, sein Beatgrid und seine Analy
 ## Layouts zum Vorbereiten
 
 Der Layout-Knopf oben in Prepare schaltet durch **PLAYER** (ein Player über dem Browser), **2 PLAYER** (ein voller Player und ein kompakter zweiter), **DUAL** (zwei kompakte Player nebeneinander), **EINFACH** (ein kompakter Player) und **GANZER BROWSER**. `⌥⌘4` bis `⌥⌘8` wählen direkt. Player 2 übernimmt den ausgewählten Track mit **LADEN** oder eine gezogene Zeile; praktisch, um einen Übergang zu prüfen.
+
+## Von einem Deck aus
+
+**EDIT** an einem Perform-Deck (oder sein Rechtsklick-Menü) öffnet den Track dieses Decks hier mit dem gewünschten Editor, während die Decks weiterspielen. Der Player wechselt dafür wenn nötig ins Layout **PLAYER**; der **INFO**-Tab der Cue-Liste enthält auch die **GAIN**-Korrektur des Tracks mit − und +. **ZURÜCK ZU PERFORM** in der oberen Leiste oder `Esc` führt zu den Decks zurück und stellt dieses Layout wieder her ([Die Analyse korrigieren, während du spielst](perform-basics.md#die-analyse-korrigieren-waehrend-du-spielst)).

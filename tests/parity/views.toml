@@ -8518,3 +8518,55 @@ elements = [
   "player1.stems.inst",
   "player1.stems.source",
 ]
+
+# ---- Roadmap [69] EDIT IN PREPARE ----
+[[view]]
+id = "perform.edit-in-prepare"
+title = "Perform: EDIT in each deck header, under MASTER"
+mode = "perform"
+source = "Roadmap [69]"
+sizes = ["desktop", "laptop"]
+bands = ["deck-row"]
+features = ["deck-edit-in-prepare"]
+note = "EDIT opens the deck's track in the Prepare player (the decks play on); compact and browse decks have it beside the title, the touch decks beside KEY or on their second row. The kiosk has no Prepare and no EDIT."
+
+[[view.region]]
+id = "deck1.header-keys"
+band = "deck-row"
+place = "deck 1, header, right column"
+order = "column"
+elements = [
+  "deck1.master",
+  "deck1.edit",
+]
+
+[[view.region]]
+id = "deck2.header-keys"
+band = "deck-row"
+place = "deck 2, header, right column"
+order = "column"
+elements = [
+  "deck2.master",
+  "deck2.edit",
+]
+
+[[view]]
+id = "prepare.from-perform"
+title = "Prepare opened from a deck: BACK TO PERFORM in the top bar"
+mode = "prepare"
+source = "Roadmap [69]"
+sizes = ["desktop", "laptop"]
+bands = ["topbar"]
+features = ["deck-edit-in-prepare"]
+note = "While Prepare was opened from a Perform deck, BACK TO PERFORM (filled, sodium) follows the Prepare layout key; Esc, the mode shortcut and the PERFORM tab return as well."
+
+[[view.region]]
+id = "topbar.trip"
+band = "topbar"
+place = "second zone, after the Prepare layout key"
+order = "row"
+elements = [
+  "topbar.mode",
+  "topbar.layout",
+  "topbar.back-to-perform",
+]

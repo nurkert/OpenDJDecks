@@ -30,6 +30,7 @@ mod design;
 mod dj_craft;
 mod perform_craft;
 mod editing;
+mod edit_in_prepare;
 mod features;
 mod flows;
 mod mix;

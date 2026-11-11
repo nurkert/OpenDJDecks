@@ -10146,3 +10146,113 @@ msgstr "MIDI-Clock-Ausgang"
 msgctxt "PreferencesWindow"
 msgid "Sends the master deck's tempo as MIDI clock (24 pulses a beat), with start on its next beat and stop when it stops."
 msgstr "Sendet das Tempo des Master-Decks als MIDI-Clock (24 Pulse pro Schlag), mit Start auf seinem nächsten Schlag und Stopp, wenn es stoppt."
+
+#: ui/edit_menu.slint:13
+msgctxt "DeckEditMenu"
+msgid "Edit phrases…"
+msgstr "Phrasen bearbeiten…"
+
+#: ui/edit_menu.slint:14
+msgctxt "DeckEditMenu"
+msgid "Edit beatgrid…"
+msgstr "Beatgrid bearbeiten…"
+
+#: ui/edit_menu.slint:15
+msgctxt "DeckEditMenu"
+msgid "Edit cues…"
+msgstr "Cues bearbeiten…"
+
+#: ui/edit_menu.slint:16
+msgctxt "DeckEditMenu"
+msgid "Edit key…"
+msgstr "Tonart bearbeiten…"
+
+#: ui/edit_menu.slint:17
+msgctxt "DeckEditMenu"
+msgid "Edit gain…"
+msgstr "Gain bearbeiten…"
+
+#: ui/edit_menu.slint:18
+msgctxt "DeckEditMenu"
+msgid "Edit track info…"
+msgstr "Track-Info bearbeiten…"
+
+#: ui/edit_menu.slint:19
+msgctxt "DeckEditMenu"
+msgid "Edit stems…"
+msgstr "Stems bearbeiten…"
+
+#: ui/edit_menu.slint:21
+msgctxt "DeckEditMenu"
+msgid "Downbeat one beat earlier"
+msgstr "Downbeat einen Beat früher"
+
+#: ui/edit_menu.slint:22
+msgctxt "DeckEditMenu"
+msgid "Downbeat one beat later"
+msgstr "Downbeat einen Beat später"
+
+#: ui/edit_menu.slint:23
+msgctxt "DeckEditMenu"
+msgid "Phrase boundary one bar earlier"
+msgstr "Phrasengrenze einen Takt früher"
+
+#: ui/edit_menu.slint:24
+msgctxt "DeckEditMenu"
+msgid "Phrase boundary one bar later"
+msgstr "Phrasengrenze einen Takt später"
+
+#: ui/edit_menu.slint:25
+msgctxt "DeckEditMenu"
+msgid "Use the likely key {}"
+msgstr "Wahrscheinliche Tonart {} nehmen"
+
+#: ui/edit_menu.slint:25
+msgctxt "DeckEditMenu"
+msgid "Use the likely key"
+msgstr "Wahrscheinliche Tonart nehmen"
+
+#: ui/perform.slint
+msgctxt "DeckPanel"
+msgid "EDIT"
+msgstr "EDIT"
+
+#: ui/perform.slint
+msgctxt "DeckPanel"
+msgid "Edit in Prepare: fix this track's phrases, grid, cues or key while the decks play on"
+msgstr "In Prepare bearbeiten: Phrasen, Grid, Cues oder Tonart dieses Tracks korrigieren, während die Decks weiterspielen"
+
+#: ui/perform.slint
+msgctxt "KioskDeck"
+msgid "EDIT"
+msgstr "EDIT"
+
+#: ui/perform.slint
+msgctxt "KioskDeck"
+msgid "Edit in Prepare: fix this track's phrases, grid, cues or key while the decks play on"
+msgstr "In Prepare bearbeiten: Phrasen, Grid, Cues oder Tonart dieses Tracks korrigieren, während die Decks weiterspielen"
+
+#: ui/topbar.slint
+msgctxt "TopBar"
+msgid "BACK TO PERFORM"
+msgstr "ZURÜCK ZU PERFORM"
+
+#: ui/topbar.slint
+msgctxt "TopBar"
+msgid "Back to Perform, the decks as you left them"
+msgstr "Zurück zu Perform, die Decks so, wie du sie verlassen hast"
+
+#: ui/player.slint
+msgctxt "PreparePlayer"
+msgid "GAIN"
+msgstr "GAIN"
+
+#: ui/player.slint
+msgctxt "PreparePlayer"
+msgid "Track gain 0.5 dB lower (stored with the track)"
+msgstr "Track-Gain 0,5 dB niedriger (wird beim Track gespeichert)"
+
+#: ui/player.slint
+msgctxt "PreparePlayer"
+msgid "Track gain 0.5 dB higher (stored with the track)"
+msgstr "Track-Gain 0,5 dB höher (wird beim Track gespeichert)"

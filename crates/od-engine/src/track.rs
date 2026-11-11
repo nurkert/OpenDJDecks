@@ -52,6 +52,30 @@ pub struct TrackData {
     pub stems: Option<StemData>,
 }
 
+/// Hot cues by bank and slot, and the memory cues sorted by time, of a
+/// library cue list.
+fn cue_tables(cues: &[Cue]) -> ([[Option<HotCue>; HOT_CUES]; HOT_CUE_BANKS], Box<[HotCue]>) {
+    let mut hot_cues = [[None; HOT_CUES]; HOT_CUE_BANKS];
+    let mut memory: Vec<HotCue> = Vec::new();
+    for c in cues {
+        let hc = HotCue {
+            start: c.start,
+            loop_end: c.loop_end,
+            trigger: c.trigger,
+        };
+        match c.kind {
+            CueKind::Hot(slot) if (slot as usize) < HOT_CUES * HOT_CUE_BANKS => {
+                let slot = slot as usize;
+                hot_cues[slot / HOT_CUES][slot % HOT_CUES] = Some(hc)
+            }
+            CueKind::Hot(_) => {}
+            CueKind::Memory => memory.push(hc),
+        }
+    }
+    memory.sort_by(|a, b| a.start.total_cmp(&b.start));
+    (hot_cues, memory.into_boxed_slice())
+}
+
 impl TrackData {
     /// Builds track data from decoded audio, resampling to `engine_rate` if
     /// needed (slow; call off the real-time thread). The audio is mixed to
@@ -95,24 +119,7 @@ impl TrackData {
         } else {
             stereo
         };
-        let mut hot_cues = [[None; HOT_CUES]; HOT_CUE_BANKS];
-        let mut memory: Vec<HotCue> = Vec::new();
-        for c in cues {
-            let hc = HotCue {
-                start: c.start,
-                loop_end: c.loop_end,
-                trigger: c.trigger,
-            };
-            match c.kind {
-                CueKind::Hot(slot) if (slot as usize) < HOT_CUES * HOT_CUE_BANKS => {
-                    let slot = slot as usize;
-                    hot_cues[slot / HOT_CUES][slot % HOT_CUES] = Some(hc)
-                }
-                CueKind::Hot(_) => {}
-                CueKind::Memory => memory.push(hc),
-            }
-        }
-        memory.sort_by(|a, b| a.start.total_cmp(&b.start));
+        let (hot_cues, memory) = cue_tables(cues);
         let first_sound = samples
             .iter()
             .position(|v| v.abs() > AUTO_CUE_THRESHOLD)
@@ -123,7 +130,7 @@ impl TrackData {
             samples: samples.into(),
             beatgrid,
             hot_cues,
-            memory_cues: memory.into_boxed_slice(),
+            memory_cues: memory,
             auto_gain_db,
             first_sound,
             stems,
@@ -201,6 +208,24 @@ impl TrackData {
             beatgrid,
             hot_cues: self.hot_cues,
             memory_cues: self.memory_cues.clone(),
+            auto_gain_db: self.auto_gain_db,
+            first_sound: self.first_sound,
+            stems: self.stems.clone(),
+        })
+    }
+
+    /// A copy of this track with other cues (a cue edit while the track is
+    /// loaded, e.g. from Prepare; swapped in with
+    /// [`crate::DeckCommand::SwapTrackData`]). Shares the audio.
+    pub fn with_cues(&self, cues: &[Cue]) -> Arc<Self> {
+        let (hot_cues, memory_cues) = cue_tables(cues);
+        Arc::new(Self {
+            id: self.id,
+            sample_rate: self.sample_rate,
+            samples: self.samples.clone(),
+            beatgrid: self.beatgrid.clone(),
+            hot_cues,
+            memory_cues,
             auto_gain_db: self.auto_gain_db,
             first_sound: self.first_sound,
             stems: self.stems.clone(),

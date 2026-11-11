@@ -157,6 +157,7 @@ pub const ACTION_NAMES: &[&str] = &[
     "deck.tempo_range",
     "deck.tempo_reset",
     "deck.tap_bpm",
+    "deck.edit_in_prepare",
     "deck.quantize",
     "deck.jog_touch",
     "deck.jog_turn",
@@ -350,6 +351,7 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
         "deck.tempo_range" => (Button, deck_press(DeckAction::TempoRange)),
         "deck.tempo_reset" => (Button, deck_press(DeckAction::TempoReset)),
         "deck.tap_bpm" => (Button, deck_press(DeckAction::TapBpm)),
+        "deck.edit_in_prepare" => (Button, deck_press(DeckAction::EditInPrepare)),
         "deck.quantize" => (Button, deck_press(DeckAction::Quantize)),
         "deck.jog_touch" => (
             Button,

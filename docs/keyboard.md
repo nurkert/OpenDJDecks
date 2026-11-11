@@ -3,7 +3,7 @@
 Every user action of OpenDJDecks is a command in one registry
 (`crates/od-ui/src/keymap.rs`) with an id, a default binding per platform
 and optional user bindings (SPEC §12.2). The registry currently holds
-**289 actions**; every one has a default binding, and no two defaults
+**294 actions**; every one has a default binding, and no two defaults
 collide where they apply (checked by tests, together with this table).
 
 `F12` (and `?` wherever no shortcut takes it) shows the help overlay, which
@@ -321,6 +321,16 @@ Perform). Text fields keep the keys they type.
 | Key sync on / off | `deck2.keysync` | Perform | `⇧⌘B` | `Ctrl+Shift+B` |
 | Key shift up a semitone | `deck2.keyshift.up` | Perform | `⇧⌘.` | `Ctrl+Shift+.` |
 | Key shift down a semitone | `deck2.keyshift.down` | Perform | `⇧⌘,` | `Ctrl+Shift+,` |
+| **Deck 1** | | | | |
+| Edit in Prepare: this deck's track in the player (again: back to Perform) | `deck1.edit` | both | `⌥⇧⌘D` | `Ctrl+Alt+Shift+D` |
+| **Deck 2** | | | | |
+| Edit in Prepare: this deck's track in the player (again: back to Perform) | `deck2.edit` | both | `⌥⇧⌘J` | `Ctrl+Alt+Shift+J` |
+| **Deck 3** | | | | |
+| Edit in Prepare: this deck's track in the player (again: back to Perform) | `deck3.edit` | both | `⌥⇧⌘F` | `Ctrl+Alt+Shift+F` |
+| **Deck 4** | | | | |
+| Edit in Prepare: this deck's track in the player (again: back to Perform) | `deck4.edit` | both | `⌥⇧⌘H` | `Ctrl+Alt+Shift+H` |
+| **Prepare player** | | | | |
+| Back to Perform (after EDIT on a deck) | `prepare.back-to-perform` | Prepare | `Esc` | `Esc` |
 | **Deck 3** | | | | |
 | Cue | `deck3.cue` | Perform | `F1` | `F1` |
 | Play / pause | `deck3.play` | Perform | `F2` | `F2` |

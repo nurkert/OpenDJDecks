@@ -1193,6 +1193,17 @@ pub(crate) fn refresh_analysis(app: &App) {
 
 #[cfg(test)]
 impl Decks {
+    /// The track data the engine plays on deck `d` (EDIT IN PREPARE tests:
+    /// the same audio before and after an edit).
+    pub(crate) fn engine_track(&self, d: usize) -> Option<Arc<od_engine::TrackData>> {
+        self.engine_data[d].clone()
+    }
+
+    /// Deck `d`'s key as shown and its cue list.
+    pub(crate) fn key_and_cues(&self, d: usize) -> Option<(String, Vec<od_core::Cue>)> {
+        self.loaded(d).map(|m| (m.key.clone(), m.source.cues.clone()))
+    }
+
     /// A separation job was queued (the worker exists).
     pub(crate) fn stems_requested(&self) -> bool {
         self.stem_worker.is_some()
@@ -1415,6 +1426,9 @@ pub(crate) struct DeckFields {
     pub key_relation: SharedString,
     pub key_relation_text: SharedString,
     pub key_unsure: SharedString,
+    /// The likely other key when the analysis was unsure ("8A"; "" = none):
+    /// the deck menu's quick fix takes it.
+    pub key_alt: SharedString,
     /// [60] What the stem keys show ([`crate::stem_mix::KeyState`]), the
     /// warning that stems were expected, and the soloed part ("" = none).
     pub stems_state: SharedString,
@@ -1634,6 +1648,7 @@ pub(crate) fn deck_fields(s: &DeckState, i: &DeckInputs) -> DeckFields {
         key_relation: SharedString::default(),
         key_relation_text: SharedString::default(),
         key_unsure: crate::key_mix::unsure_text(meta.and_then(|m| m.confidence).map(|c| c.key)).into(),
+        key_alt: SharedString::default(),
         stems_state: crate::stem_mix::key_state(
             meta.is_some(),
             s.stems_available,
@@ -1800,6 +1815,7 @@ impl Lane {
             key_relation: f.key_relation,
             key_relation_text: f.key_relation_text,
             key_unsure: f.key_unsure,
+            key_alt: f.key_alt,
             stems_state: f.stems_state,
             stems_expected: f.stems_expected,
             stem_solo: f.stem_solo,
@@ -2051,6 +2067,12 @@ pub(crate) fn project(app: &App, state: &EngineState) {
         let rel = if loading { None } else { crate::key_mix::relation(&state.decks, count, i) };
         fields.key_relation = crate::key_mix::relation_id(rel.map(|r| r.0)).into();
         fields.key_relation_text = crate::key_mix::relation_text(rel, notation).into();
+        fields.key_alt = meta
+            .and_then(|m| m.confidence)
+            .and_then(|c| c.key_alt)
+            .map(|k| k.format(notation))
+            .unwrap_or_default()
+            .into();
         // The loop heard last (a roll too), for CAPTURE.
         if s.loop_state.active
             && let (Some(t), Some(a), Some(b)) = (s.track, s.loop_state.start, s.loop_state.end)
@@ -2881,6 +2903,139 @@ pub(crate) fn follow_grid(app: &App, id: TrackId, grid: &Beatgrid) {
     }
     for (d, data) in swaps {
         engine::deck_cmd(app, d, DeckCommand::SwapTrackData(data));
+    }
+}
+
+/// Every loaded deck takes what the library now holds for its track: the
+/// beatgrid, phrases, cues, key, drop, gain correction, title and artist (an
+/// edit in Prepare, an undo, a quick fix from the deck's menu). The audio
+/// stays: the engine gets the same samples with the new grid or cues
+/// ([`DeckCommand::SwapTrackData`]), so a playing deck goes on without a
+/// gap. Phrase countdowns, phrase blends, the waveform lanes and the light
+/// show read the new data from the next frame on. Decks playing from a
+/// stick keep the stick's data; the grid of an EDIT GRID session is the
+/// session's until DONE.
+pub(crate) fn follow_library(app: &App) {
+    if app.decks.borrow().loaded_from_stick {
+        return;
+    }
+    let ids: Vec<(usize, TrackId)> = {
+        let dk = app.decks.borrow();
+        (0..DECKS).filter_map(|d| dk.loaded_id(d).map(|id| (d, id))).collect()
+    };
+    if ids.is_empty() {
+        return;
+    }
+    let editing = crate::grid_edit::session_track();
+    let scale = app.ui.window().scale_factor();
+    let notation = app.state.borrow().settings.key_notation();
+    let mut cue_swaps = Vec::new();
+    let mut grids = Vec::new();
+    let mut keys = Vec::new();
+    let mut gains = Vec::new();
+    let mut lights = Vec::new();
+    let mut cue_tracks = Vec::new();
+    {
+        let st = app.state.borrow();
+        let lib = &st.lib;
+        let mut guard = app.decks.borrow_mut();
+        let dk = &mut *guard;
+        for (d, id) in ids {
+            let Ok(t) = lib.track(id) else { continue };
+            let grid = lib.beatgrid(id).ok().flatten().unwrap_or_default();
+            let phrases = lib.phrases(id).unwrap_or_default();
+            let cues = lib.cues(id).unwrap_or_default();
+            let drop = lib.drop_marker(id).ok().flatten();
+            let gain = crate::deck_grid::stored_gain(lib, id);
+            let (key, key_source) = match lib.key_with_source(id).ok().flatten() {
+                Some((k, s)) => (Some(k), Some(s)),
+                None => (t.key, None),
+            };
+            let mut redraw = false;
+            let Some(m) = dk.loaded[d].as_mut() else { continue };
+            if editing != Some(id) && m.grid != grid {
+                grids.push((id, grid.clone()));
+                redraw = true;
+            }
+            if m.phrases != phrases || m.drop != drop {
+                m.phrases = phrases;
+                m.drop = drop;
+                redraw = true;
+                lights.push(id);
+            }
+            if redraw {
+                let g = if editing == Some(id) { m.grid.clone() } else { grid.clone() };
+                m.phrase_marks = phrase_marks(&m.phrases, &g, t.duration);
+                m.overview = render::overview(
+                    &m.waveform,
+                    &g,
+                    t.duration,
+                    (900.0 * scale) as u32,
+                    (30.0 * scale) as u32,
+                );
+            }
+            if m.source.cues != cues {
+                m.cues = cue_marks(&cues, t.duration, false);
+                m.labels = hot_labels(&cues);
+                m.triggers = hot_triggers(&cues);
+                m.source.cues = cues.clone();
+                redraw = true;
+                cue_tracks.push(id);
+                if let Some(data) = dk.engine_data[d].as_ref().filter(|x| x.id == id) {
+                    let next = data.with_cues(&cues);
+                    dk.engine_data[d] = Some(next.clone());
+                    cue_swaps.push((d, next));
+                }
+            }
+            let Some(m) = dk.loaded[d].as_mut() else { continue };
+            if m.musical_key != key {
+                m.musical_key = key;
+                m.key = key.map(|k| k.format(notation)).unwrap_or_default();
+                // A key you set is not a guess any more.
+                if let Some(c) = m.confidence.as_mut()
+                    && key_source.is_some_and(|s| s != od_core::DataSource::Analysis)
+                {
+                    c.key = 1.0;
+                    c.key_alt = None;
+                }
+                keys.push((d, key));
+                lights.push(id);
+                redraw = true;
+            }
+            if (m.gain_adjust - gain).abs() > 0.001 {
+                m.gain_adjust = gain;
+                gains.push((d, gain));
+            }
+            if m.title != t.tags.title || m.artist != t.tags.artist {
+                m.title = t.tags.title.clone();
+                m.artist = t.tags.artist.clone();
+                redraw = true;
+            }
+            if redraw {
+                dk.views.lanes[d].track = None;
+                dk.views.lanes[d].fields = None;
+            }
+        }
+    }
+    for (id, grid) in grids {
+        follow_grid(app, id, &grid);
+    }
+    for (d, data) in cue_swaps {
+        engine::deck_cmd(app, d, DeckCommand::SwapTrackData(data));
+    }
+    for (d, key) in keys {
+        engine::deck_cmd(app, d, DeckCommand::SetTrackKey(key));
+    }
+    for (d, gain) in gains {
+        engine::deck_cmd(app, d, DeckCommand::SetGainAdjust(gain));
+    }
+    lights.sort_unstable_by_key(|t| t.0);
+    lights.dedup();
+    for id in lights {
+        crate::lighting::forget_track(app, id);
+    }
+    if !cue_tracks.is_empty() {
+        crate::deck_craft::project(app);
     }
 }
 

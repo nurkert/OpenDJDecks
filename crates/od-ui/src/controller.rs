@@ -438,6 +438,10 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
             decks::tap_bpm(app, d);
             None
         }
+        DeckAction::EditInPrepare => {
+            crate::edit_in_prepare::toggle(app, d);
+            None
+        }
         DeckAction::MemoryCueSet => {
             decks::memory_cue(app, d, true);
             None

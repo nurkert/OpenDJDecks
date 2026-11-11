@@ -165,6 +165,7 @@ impl App {
         }
         decks::wire(&app);
         deck_grid::wire(&app);
+        crate::edit_in_prepare::wire(&app);
         shell::wire_window_chrome(&app);
         mixer::wire(&app);
         crate::deck_craft::wire(&app);
