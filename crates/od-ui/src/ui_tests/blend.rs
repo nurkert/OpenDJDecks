@@ -227,7 +227,7 @@ fn loop_roll_and_capture() {
     let (ui, ids) = open();
     perform(&ui);
     load(&ui, 0, ids[0]);
-    ui.app.ui.invoke_deck_pad_mode_set(1, 13);
+    ui.app.ui.invoke_deck_pad_mode_set(1, 14);
     assert!(ui.wait_until(2.0, |u| u.value("deck1.pad-mode") == "ROLL"));
     assert!(ui.has("deck1.loop.capture"));
     crate::engine::deck_cmd(&ui.app, 0, DeckCommand::Play);

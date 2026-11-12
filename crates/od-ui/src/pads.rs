@@ -1,5 +1,5 @@
 //! Deck pad modes (SPEC §10.1): Hot Cue, Hold FX, Beat Jump, Sampler,
-//! Keyboard, Key Shift, Beat Loop, Slicer, Stems and Memory Cue.
+//! Melody, Keyboard, Key Shift, Beat Loop, Slicer, Stems and Memory Cue.
 //!
 //! The eight pads of a deck show and do what the deck's pad mode says. The
 //! functions here are pure: they project the engine state into pad rows and
@@ -16,11 +16,12 @@ use od_engine::{
 
 /// Pad modes offered on screen, in selector order (Hold FX page 2 is
 /// reached with the ‹ › of the Hold FX mode).
-pub(crate) const UI_MODES: [PadMode; 16] = [
+pub(crate) const UI_MODES: [PadMode; 17] = [
     PadMode::HotCue,
     PadMode::HoldFx1,
     PadMode::BeatJump,
     PadMode::Sampler,
+    PadMode::Melody,
     PadMode::Keyboard,
     PadMode::KeyShift,
     PadMode::BeatLoop,
@@ -84,6 +85,8 @@ pub(crate) struct PadCtx<'a> {
     pub mode: PadMode,
     /// Sampler bank shown (global).
     pub sampler_bank: usize,
+    /// [77] What the MELODY pads play: 0 the notes sent, 1 the octave above.
+    pub melody_page: usize,
     /// Hot cue the Keyboard pads play (0..8 in the active bank).
     pub keyboard_cue: usize,
     /// Slicer domain in beats.
@@ -147,6 +150,17 @@ pub(crate) fn sampler_slot(deck: usize, bank: usize, pad: usize) -> usize {
     slot_of(bank, (deck % 2) * 8 + pad.min(7))
 }
 
+/// [77] Sampler slot of MELODY pad `pad` on `page`: pads 1–8 of the
+/// MELODY bank hold the notes sent, 9–16 the octave above.
+pub(crate) fn melody_slot(page: usize, pad: usize) -> usize {
+    slot_of(od_engine::MELODY_BANK, page.min(1) * 8 + pad.min(7))
+}
+
+/// Whether CREATE has sent notes: a slot of the MELODY bank holds one.
+pub(crate) fn melody_sent(slots: &[Option<SlotInfo>]) -> bool {
+    (0..16).any(|p| slots.get(slot_of(od_engine::MELODY_BANK, p)).is_some_and(Option::is_some))
+}
+
 /// Key shift readout: "±0", "+2", "−3".
 pub(crate) fn key_shift_label(semitones: f32) -> String {
     let r = semitones.round() as i32;
@@ -184,7 +198,12 @@ pub(crate) fn param_label(s: &DeckState, ctx: &PadCtx) -> String {
         PadMode::HoldFx1 => "PAGE 1".into(),
         PadMode::HoldFx2 => "PAGE 2".into(),
         PadMode::BeatJump => format!("JUMP {}", beats_label(s.beat_jump_size)),
+        PadMode::Sampler if ctx.sampler_bank == od_engine::MELODY_BANK => "MELODY".into(),
         PadMode::Sampler => format!("BANK {}", ctx.sampler_bank + 1),
+        // Nothing sent: the bar says where the notes come from instead.
+        PadMode::Melody if !melody_sent(ctx.sampler_slots) => String::new(),
+        PadMode::Melody if ctx.melody_page == 0 => "NOTES".into(),
+        PadMode::Melody => "OCT UP".into(),
         PadMode::Keyboard => format!(
             "CUE {}",
             hot_letter(s.hot_cue_bank * HOT_CUES + ctx.keyboard_cue)
@@ -315,6 +334,19 @@ pub(crate) fn pad_views(
                     -1,
                 )
             }
+            // [77] The note names; unset (outlined) until CREATE sent notes.
+            PadMode::Melody => {
+                let slot = melody_slot(ctx.melody_page, i);
+                let st = sampler.get(slot).copied().unwrap_or_default();
+                let name = ctx
+                    .sampler_slots
+                    .get(slot)
+                    .and_then(|x| x.as_ref())
+                    .map(|x| x.name.clone())
+                    .unwrap_or_default();
+                let caption = if name.is_empty() { format!("{}", i + 1) } else { name };
+                pad(i, caption, "", st.loaded, st.playing, -1)
+            }
             PadMode::Keyboard => {
                 let semis = KEY_STEPS[i];
                 let base = s.hot_cues[ctx.keyboard_cue.min(HOT_CUES - 1)].is_some();
@@ -437,6 +469,15 @@ pub(crate) fn press_commands(
         PadMode::BeatJump if pressed => vec![deck(DeckCommand::BeatJump { beats: pad_jump(i) })],
         PadMode::Sampler => {
             let slot = sampler_slot(d, ctx.sampler_bank, i);
+            vec![Command::Sampler(if pressed {
+                SamplerCommand::Trigger { slot }
+            } else {
+                SamplerCommand::Release { slot }
+            })]
+        }
+        // [77] The sampler's own trigger: QUANT and the slot's settings apply.
+        PadMode::Melody => {
+            let slot = melody_slot(ctx.melody_page, i);
             vec![Command::Sampler(if pressed {
                 SamplerCommand::Trigger { slot }
             } else {
@@ -572,6 +613,7 @@ mod tests {
             deck: 1,
             mode,
             sampler_bank: 0,
+            melody_page: 0,
             keyboard_cue: 0,
             slicer_beats: 8.0,
             labels,
@@ -605,6 +647,8 @@ mod tests {
         assert_eq!(step_mode(PadMode::HotCue, 1), PadMode::HoldFx1);
         assert_eq!(step_mode(PadMode::HotCue, -1), PadMode::CueEdit);
         assert_eq!(step_mode(PadMode::HoldFx2, 1), PadMode::BeatJump);
+        assert_eq!(step_mode(PadMode::Sampler, 1), PadMode::Melody);
+        assert_eq!(step_mode(PadMode::Melody, 1), PadMode::Keyboard);
         assert_eq!(step_mode(PadMode::Slicer, 1), PadMode::Stems);
         assert_eq!(step_mode(PadMode::MemoryCue, 1), PadMode::Lighting);
         assert_eq!(step_mode(PadMode::Lighting, 1), PadMode::TimedCensor);
@@ -729,6 +773,54 @@ mod tests {
             up[..],
             [Command::Sampler(SamplerCommand::Release { slot: 27 })]
         ));
+    }
+
+    /// [77] MELODY pads: the notes of the MELODY bank by name (the ‹ ›
+    /// page the octave above), played through the sampler's own trigger;
+    /// unset and without a value until CREATE sent notes.
+    #[test]
+    fn melody_pads_play_the_melody_bank() {
+        let base = od_engine::MELODY_BANK * 16;
+        let mut sampler = vec![SamplerSlotState::default(); SAMPLER_TOTAL];
+        let mut slots = vec![None; SAMPLER_TOTAL];
+        let c = ctx(PadMode::Melody, &[], &slots);
+        let s = DeckState::default();
+        let empty = pad_views(&s, &ChannelState::default(), &sampler, &c);
+        assert_eq!(empty.iter().map(|p| p.caption.to_string()).collect::<Vec<_>>(), ["1", "2", "3", "4", "5", "6", "7", "8"]);
+        assert!(empty.iter().all(|p| !p.set && !p.lit));
+        assert_eq!(param_label(&s, &c), "", "nothing sent: the hint takes the place");
+        for (i, (n, up)) in [("A3", "A4"), ("C4", "C5"), ("E4", "E5")].into_iter().enumerate() {
+            slots[base + i] = Some(SlotInfo { name: n.into(), ..Default::default() });
+            slots[base + 8 + i] = Some(SlotInfo { name: up.into(), ..Default::default() });
+            sampler[base + i].loaded = true;
+            sampler[base + 8 + i].loaded = true;
+        }
+        sampler[base + 1].playing = true;
+        let mut c = ctx(PadMode::Melody, &[], &slots);
+        let p = pad_views(&s, &ChannelState::default(), &sampler, &c);
+        assert_eq!(
+            p.iter().map(|p| (p.caption.to_string(), p.set, p.lit)).take(4).collect::<Vec<_>>(),
+            [("A3".into(), true, false), ("C4".into(), true, true), ("E4".into(), true, false), ("4".into(), false, false)]
+        );
+        assert_eq!(param_label(&s, &c), "NOTES");
+        assert!(matches!(
+            press_commands(&s, &c, 1, true)[..],
+            [Command::Sampler(SamplerCommand::Trigger { slot })] if slot == base + 1
+        ));
+        // Deck 2 plays the same notes (not the other half, as the sampler).
+        c.deck = 0;
+        assert!(matches!(
+            press_commands(&s, &c, 1, false)[..],
+            [Command::Sampler(SamplerCommand::Release { slot })] if slot == base + 1
+        ));
+        c.melody_page = 1;
+        assert_eq!(param_label(&s, &c), "OCT UP");
+        assert_eq!(pad_views(&s, &ChannelState::default(), &sampler, &c)[0].caption.as_str(), "A4");
+        assert!(matches!(
+            press_commands(&s, &c, 0, true)[..],
+            [Command::Sampler(SamplerCommand::Trigger { slot })] if slot == base + 8
+        ));
+        assert_eq!(melody_slot(1, 9), base + 15, "clamped to the bank");
     }
 
     #[test]

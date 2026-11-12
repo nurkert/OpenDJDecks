@@ -57,6 +57,14 @@
 //! add-to-playlist menu, or a new playlist, as one undo step; sticks get
 //! the file through the playlists they sync, like any track, and the
 //! status line says which.
+//!
+//! [77] SEND TO PERFORM puts the notes into the sampler's MELODY bank (see
+//! [`send_notes`]): pads 1–8 the notes, 9–16 the octave above, each a
+//! one-shot from the render cache, written beside the rendered files
+//! (`created/melody`) so the bank comes back after a restart like any
+//! loaded sample. The MELODY pad mode on each deck plays them through the
+//! sampler's own trigger, so QUANT and the slot's controls apply; there is
+//! no second store. RESULT shows SENT while the bank holds these notes.
 
 use crate::app::App;
 use crate::arrange::{self, Grid, Melody, STEPS};
@@ -397,6 +405,14 @@ pub(crate) struct Runtime {
     render_due: bool,
     /// The last file rendered, and for what.
     made: Option<(RenderSig, create_render::Made)>,
+    /// [77] SEND TO PERFORM runs (for what), its notes come back here.
+    sending: Option<SendSig>,
+    send_tx: Sender<Result<Vec<(crate::sampler::SlotInfo, Arc<SampleData>)>, String>>,
+    send_rx: Receiver<Result<Vec<(crate::sampler::SlotInfo, Arc<SampleData>)>, String>>,
+    /// Send once the audio is in.
+    send_due: bool,
+    /// What the MELODY bank holds since the last send.
+    in_perform: Option<SendSig>,
 }
 
 /// REC armed: the beat the grid counts from (once a note came in on it),
@@ -431,6 +447,7 @@ impl Default for Runtime {
         let (tx, rx) = unbounded();
         let (rendered_tx, rendered_rx) = unbounded();
         let (render_tx, render_rx) = unbounded();
+        let (send_tx, send_rx) = unbounded();
         Self {
             note: None,
             audio: None,
@@ -470,6 +487,11 @@ impl Default for Runtime {
             render_rx,
             render_due: false,
             made: None,
+            sending: None,
+            send_tx,
+            send_rx,
+            send_due: false,
+            in_perform: None,
         }
     }
 }
@@ -552,6 +574,8 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_render_file(move || w(&render));
     let w = with.clone();
     g.on_to_playlist(move |id| w(&|a| to_playlist(a, id)));
+    let w = with.clone();
+    g.on_send_to_perform(move || w(&send_to_perform));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -871,10 +895,10 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
             }
             (rt.measure_due && current, std::mem::take(&mut rt.hear_due) && current, std::mem::take(&mut rt.pads_due) && current)
         };
-        let render_due = {
+        let (render_due, send_due) = {
             let mut rt = app.create.borrow_mut();
-            let current = rt.note.as_ref().and_then(|n| n.track) == Some(id);
-            std::mem::take(&mut rt.render_due) && current && rt.audio.is_some()
+            let current = rt.note.as_ref().and_then(|n| n.track) == Some(id) && rt.audio.is_some();
+            (std::mem::take(&mut rt.render_due) && current, std::mem::take(&mut rt.send_due) && current)
         };
         if measure_due {
             // Measuring renders the pads too.
@@ -891,9 +915,13 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
         if render_due {
             render(app);
         }
+        if send_due {
+            send_to_perform(app);
+        }
     }
     poll_rendered(app);
     poll_render(app);
+    poll_send(app);
     tick_play(app, state);
     let ended = {
         let rt = app.create.borrow();
@@ -2072,6 +2100,7 @@ fn render_sig(app: &App) -> RenderSig {
 /// whether it renders or is READY.
 fn show_result(app: &App) {
     let sig = render_sig(app);
+    let send = send_sig(app);
     let track = track_bpm(app);
     let view = {
         let rt = app.create.borrow();
@@ -2105,6 +2134,15 @@ fn show_result(app: &App) {
             check: line.into(),
             state: state.into(),
             can: sig.note.is_some() && !sig.plan.notes.is_empty() && check.fits && sig.bpm > 0.0,
+            send: if rt.sending.is_some() {
+                "sending"
+            } else if send.is_some() && rt.in_perform == send && crate::pads::melody_sent(&app.sampler.slots.borrow()) {
+                "sent"
+            } else {
+                ""
+            }
+            .into(),
+            can_send: send.as_ref().is_some_and(|s| !s.notes.is_empty()),
         }
     };
     let g = app.ui.global::<crate::Create>();
@@ -2317,6 +2355,150 @@ fn placed(app: &App, node: od_library::NodeId, title: &str) -> String {
     }
 }
 
+// ── [77] Into Perform ───────────────────────────────────────────────────
+
+/// What SEND TO PERFORM sends: the note it is rendered from, the notes
+/// (MIDI, low to high), how they are spelled, and how many of the strip's
+/// notes found no pad.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct SendSig {
+    note: RenderKey,
+    notes: Vec<i32>,
+    spell: Option<ScaleKey>,
+    left: usize,
+}
+
+/// The notes SEND TO PERFORM puts on the 8 MELODY pads (MIDI, low to
+/// high): the strip's different notes in the order they first play, the
+/// first 8 of them; with an empty strip the pads' notes (`pads`). Also how
+/// many of the strip's different notes found no pad.
+pub(crate) fn send_notes(m: &Melody, pads: Option<[i32; PADS]>) -> (Vec<i32>, usize) {
+    let mut notes: Vec<i32> = Vec::new();
+    for s in m.steps.iter().flatten() {
+        if !notes.contains(&s.note) {
+            notes.push(s.note);
+        }
+    }
+    if notes.is_empty() {
+        return (pads.map(|p| p.to_vec()).unwrap_or_default(), 0);
+    }
+    let left = notes.len().saturating_sub(PADS);
+    notes.truncate(PADS);
+    notes.sort_unstable();
+    (notes, left)
+}
+
+/// What SEND TO PERFORM would send now (none without a note with a pitch).
+fn send_sig(app: &App) -> Option<SendSig> {
+    let rate = app.engine.borrow().sample_rate();
+    let rt = app.create.borrow();
+    let note = rt.note.as_ref().and_then(|n| RenderKey::of(n, rate))?;
+    let pads = pad_targets(note.pitch, rt.octave, rt.choice.pad_key());
+    let (notes, left) = send_notes(&rt.melody, Some(pads));
+    Some(SendSig { note, notes, spell: rt.choice.key, left })
+}
+
+/// SEND TO PERFORM: the notes (and the octave above) from the render cache,
+/// the ones missing rendered on a worker thread (once the source audio is
+/// in), written to `created/melody` and then put into the sampler's MELODY
+/// bank (see [`poll_send`]).
+pub(crate) fn send_to_perform(app: &App) {
+    if app.guard_read_only() || app.create.borrow().sending.is_some() {
+        return;
+    }
+    let Some(sig) = send_sig(app) else {
+        app.status(od_i18n::tr("Pick a note in SOURCE first").to_string());
+        return;
+    };
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        return;
+    }
+    let targets: Vec<i32> = sig.notes.iter().copied().chain(sig.notes.iter().map(|n| n + 12)).collect();
+    let (cached, missing): (HashMap<i32, Arc<SampleData>>, Vec<i32>) = {
+        let rt = app.create.borrow();
+        let current = rt.cache.key.as_ref() == Some(&sig.note);
+        let cached: HashMap<i32, Arc<SampleData>> =
+            targets.iter().filter_map(|&t| rt.cache.get(t).filter(|_| current).map(|s| (t, s))).collect();
+        let missing = targets.iter().copied().filter(|t| !cached.contains_key(t)).collect();
+        (cached, missing)
+    };
+    let source = match missing.is_empty() {
+        true => None,
+        false => match audio(app) {
+            Some(a) => Some(a),
+            None => {
+                app.create.borrow_mut().send_due = true;
+                app.status(od_i18n::tr("Sending the notes once the track is read…").to_string());
+                return;
+            }
+        },
+    };
+    let Some(n) = note(app) else { return };
+    let folder = create_render::dir(&app.state.borrow().config.library_path).join("melody");
+    let names: Vec<String> = targets.iter().map(|&t| note_name(sig.spell, t)).collect();
+    let (key, tx) = (sig.note.clone(), app.create.borrow().send_tx.clone());
+    let fade = n.fade();
+    let (start, end) = (n.start, n.end);
+    std::thread::spawn(move || {
+        let mut notes = cached;
+        if let Some(a) = source {
+            let src_rate = a.rate();
+            let mut note = a.stereo(start, end);
+            apply_fades(&mut note, src_rate, fade);
+            if !note.is_empty() {
+                for t in missing {
+                    notes.insert(t, shift_one(&note, src_rate, fade, &key, t).0);
+                }
+            }
+        }
+        let made = (|| -> anyhow::Result<Vec<(crate::sampler::SlotInfo, Arc<SampleData>)>> {
+            std::fs::create_dir_all(&folder)?;
+            let mut out = Vec::new();
+            for (i, (t, name)) in targets.iter().zip(names).enumerate() {
+                let Some(sample) = notes.get(t) else { anyhow::bail!("{name} could not be rendered") };
+                let path = folder.join(format!("melody-{:02}.wav", i + 1));
+                crate::track_edit::write_wav(&path, &sample.samples, 2, sample.sample_rate)?;
+                let info = crate::sampler::SlotInfo { path, name, bpm: None, mode: "oneshot".into(), gain: 1.0, sync: false, pattern: 0 };
+                out.push((info, sample.clone()));
+            }
+            Ok(out)
+        })();
+        let _ = tx.send(made.map_err(|e| e.to_string()));
+    });
+    app.create.borrow_mut().sending = Some(sig);
+    app.status(od_i18n::tr("Sending the notes to Perform…").to_string());
+    show_result(app);
+}
+
+/// The notes are in: the MELODY bank holds them (notes on pads 1–8, the
+/// octave above on 9–16, the rest emptied), and RESULT reads SENT.
+fn poll_send(app: &App) {
+    let Ok(result) = app.create.borrow().send_rx.try_recv() else { return };
+    let sig = app.create.borrow_mut().sending.take();
+    match (result, sig) {
+        (Ok(notes), Some(sig)) => {
+            let half = notes.len() / 2;
+            let mut pads: Vec<Option<(crate::sampler::SlotInfo, Arc<SampleData>)>> = vec![None; od_engine::SAMPLER_SLOTS];
+            for (i, n) in notes.into_iter().enumerate() {
+                let pad = if i < half { i } else { PADS + i - half };
+                pads[pad] = Some(n);
+            }
+            crate::sampler::fill_bank(app, od_engine::MELODY_BANK, pads);
+            let (count, left) = (sig.notes.len(), sig.left);
+            app.create.borrow_mut().in_perform = Some(sig);
+            app.status(if left > 0 {
+                od_i18n::trf("Sent the first {} notes to Perform ({} more found no pad): the MELODY pad mode plays them from the sampler's MELODY bank", &[&count, &left])
+            } else {
+                od_i18n::trf("Sent {} notes to Perform: the MELODY pad mode plays them from the sampler's MELODY bank", &[&count])
+            });
+        }
+        (Ok(_), None) => {}
+        (Err(e), _) => app.status(od_i18n::trf("The notes could not be sent: {}", &[&e])),
+    }
+    show_result(app);
+}
+
 /// The last file rendered (tests).
 #[cfg(test)]
 pub(crate) fn made(app: &App) -> Option<create_render::Made> {
@@ -2435,6 +2617,52 @@ pub(crate) fn stage_rendered(app: &App, track: TrackId) {
     show_result(app);
 }
 
+/// [77] Fills the MELODY bank with `notes` and the octave above as short
+/// silent samples (no files), or empties it (`notes` empty).
+#[cfg(test)]
+pub(crate) fn stage_bank(app: &App, notes: &[i32], spell: Option<ScaleKey>) {
+    let rate = app.engine.borrow().sample_rate();
+    let silent = || SampleData::new(od_decode::DecodedAudio { sample_rate: rate, channels: 2, samples: vec![0.0; 256] }, rate);
+    let mut pads: Vec<Option<(crate::sampler::SlotInfo, Arc<SampleData>)>> = vec![None; od_engine::SAMPLER_SLOTS];
+    for (i, &n) in notes.iter().take(PADS).enumerate() {
+        for (pad, t) in [(i, n), (PADS + i, n + 12)] {
+            let name = note_name(spell, t);
+            let info = crate::sampler::SlotInfo { path: PathBuf::from(format!("{name}.wav")), name, mode: "oneshot".into(), gain: 1.0, ..Default::default() };
+            pads[pad] = Some((info, silent()));
+        }
+    }
+    crate::sampler::fill_bank(app, od_engine::MELODY_BANK, pads);
+}
+
+/// [77] The full strip rendered and sent: SEND TO PERFORM reads SENT.
+#[cfg(test)]
+pub(crate) fn stage_sent(app: &App, track: TrackId) {
+    stage_rendered(app, track);
+    let sig = send_sig(app);
+    if let Some(sig) = &sig {
+        stage_bank(app, &sig.notes, sig.spell);
+    }
+    app.create.borrow_mut().in_perform = sig;
+    show_result(app);
+}
+
+/// [77] Deck 1 in the MELODY pad mode in Perform: with 8 notes sent (with
+/// sharps, the widest names) or with nothing sent (the hint).
+#[cfg(test)]
+pub(crate) fn stage_melody_pads(app: &App, sent: bool) {
+    let notes: Vec<i32> = if sent { vec![54, 56, 58, 61, 63, 66, 68, 70] } else { Vec::new() };
+    stage_bank(app, &notes, None);
+    app.ui.invoke_set_mode("perform".into());
+    crate::decks::set_pad_mode(app, 0, od_controller::PadMode::Melody);
+}
+
+/// [77] Back to hot cues and an empty MELODY bank.
+#[cfg(test)]
+pub(crate) fn unstage_melody_pads(app: &App) {
+    crate::decks::set_pad_mode(app, 0, od_controller::PadMode::HotCue);
+    stage_bank(app, &[], None);
+}
+
 /// [76] `track` marked as rendered from CREATE, and the CREATED list open
 /// in PREPARE.
 #[cfg(test)]
@@ -2457,7 +2685,9 @@ pub(crate) fn stage_created(app: &App, track: TrackId) {
 /// strip in a loop; `create-render-single` chooses SINGLE NOTES and
 /// `create-render` renders the strip into a new file (READY); then
 /// `create-to-playlist` opens TO PLAYLIST's menu, or `create-created-list`
-/// opens the CREATED list in PREPARE.
+/// opens the CREATED list in PREPARE; `create-send` sends the strip to
+/// Perform (SENT), `create-send-perform` then shows deck 1's MELODY pads in
+/// Perform, and `create-melody-empty` shows them with nothing sent.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -2500,10 +2730,22 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         if parts.iter().any(|p| p == "create-render") {
             render(&a);
         }
+        if parts.iter().any(|p| p == "create-send" || p == "create-send-perform") {
+            send_to_perform(&a);
+        }
+        if parts.iter().any(|p| p == "create-melody-empty") {
+            crate::sampler::fill_bank(&a, od_engine::MELODY_BANK, vec![None; od_engine::SAMPLER_SLOTS]);
+            a.ui.invoke_set_mode("perform".into());
+            crate::decks::set_pad_mode(&a, 0, od_controller::PadMode::Melody);
+        }
         // Once the render is in.
         let weak = std::rc::Rc::downgrade(&a);
         slint::Timer::single_shot(Duration::from_secs(8), move || {
             let Some(a) = weak.upgrade() else { return };
+            if parts.iter().any(|p| p == "create-send-perform") {
+                a.ui.invoke_set_mode("perform".into());
+                crate::decks::set_pad_mode(&a, 0, od_controller::PadMode::Melody);
+            }
             if parts.iter().any(|p| p == "create-to-playlist") {
                 let g = a.ui.global::<crate::Create>();
                 g.set_open_picker(g.get_open_picker() + 1);
@@ -2762,5 +3004,25 @@ mod tests {
     fn no_grid_no_bar_position() {
         let s = DeckState { track: Some(od_core::TrackId(1)), beat: 3.2, beat_in_bar: 0, ..Default::default() };
         assert_eq!(strip_row(0, &s, 0.0, String::new()).bar, 0.0);
+    }
+
+    /// [77] SEND TO PERFORM: the strip's different notes in the order they
+    /// first play, the first 8 of them, low to high; an empty strip sends
+    /// the pads' notes.
+    #[test]
+    fn send_takes_the_strips_first_eight_notes_low_to_high() {
+        let pads = [57, 59, 60, 62, 64, 65, 67, 69];
+        let mut m = Melody::default();
+        assert_eq!(send_notes(&m, Some(pads)), (pads.to_vec(), 0), "empty strip: the pads");
+        assert_eq!(send_notes(&m, None), (vec![], 0));
+        for (i, n) in [64, 57, 60, 57, 64, 62].into_iter().enumerate() {
+            m.set(i, n);
+        }
+        assert_eq!(send_notes(&m, Some(pads)), (vec![57, 60, 62, 64], 0));
+        for (i, n) in (70..80).enumerate() {
+            m.set(10 + i, n);
+        }
+        // 14 different notes: the first 8 that play (57, 60, 62, 64, 70–73).
+        assert_eq!(send_notes(&m, Some(pads)), (vec![57, 60, 62, 64, 70, 71, 72, 73], 6));
     }
 }

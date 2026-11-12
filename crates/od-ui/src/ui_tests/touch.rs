@@ -85,6 +85,22 @@ fn views() -> Vec<(&'static str, fn(&Ui))> {
             crate::create::stage_rendered(&u.app, u.fx.tracks[0].0);
             u.pump(400);
         }),
+        // [77] Sent to Perform (SENT), and the MELODY pads with notes and
+        // without.
+        ("create (sent, SENT)", |u| {
+            u.app.ui.invoke_set_mode("create".into());
+            crate::create::set_view(&u.app, "melody");
+            crate::create::stage_sent(&u.app, u.fx.tracks[0].0);
+            u.pump(400);
+        }),
+        ("perform (MELODY pads)", |u| {
+            crate::create::stage_melody_pads(&u.app, true);
+            u.pump(400);
+        }),
+        ("perform (MELODY pads, nothing sent)", |u| {
+            crate::create::stage_melody_pads(&u.app, false);
+            u.pump(400);
+        }),
         // [76] The CREATED list in Perform's browser (PREPARE's top bar is
         // not part of the touch layout).
         ("perform with the CREATED list", |u| {

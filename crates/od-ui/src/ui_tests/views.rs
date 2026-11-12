@@ -172,6 +172,21 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             crate::create::set_view(&ui.app, "melody");
             crate::create::stage_rendered(&ui.app, ui.fx.tracks[0].0);
         }
+        // [77] The strip sent to Perform (SENT).
+        "create.sent" => {
+            if kiosk {
+                return Err("CREATE is not part of the kiosk".into());
+            }
+            w.invoke_set_mode("create".into());
+            crate::create::set_view(&ui.app, "melody");
+            crate::create::stage_sent(&ui.app, ui.fx.tracks[0].0);
+        }
+        // [77] Deck 1 in the MELODY pad mode, with notes sent and without.
+        "perform.melody-pads" | "perform.melody-pads-empty" => {
+            perform(2);
+            crate::create::stage_melody_pads(&ui.app, id == "perform.melody-pads");
+            ui.pump(300);
+        }
         "recordings.tracklist" | "panel.queue" | "devices.emergency" => {
             if kiosk {
                 return Err("not part of the kiosk".into());

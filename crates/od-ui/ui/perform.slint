@@ -328,24 +328,25 @@ global PadLetters {
 
 // Pad modes, in selector order (ids as in DeckView.pad-mode).
 global PadModes {
-    out property <[string]> ids: ["hot_cue", "hold_fx1", "beat_jump", "sampler", "keyboard", "key_shift", "beat_loop", "slicer", "stems", "memory_cue", "lighting", "timed_censor", "pattern_recall", "loop_roll", "phrase", "cue_edit"];
-    out property <[string]> names: [@tr("HOT CUE"), @tr("HOLD FX"), @tr("BEAT JUMP"), @tr("SAMPLER"), @tr("KEYBOARD"), @tr("KEY SHIFT"), @tr("BEAT LOOP"), @tr("SLICER"), @tr("STEMS"), @tr("MEMORY CUE"), @tr("LIGHTING"), @tr("CENSOR"), @tr("PATTERN"), @tr("ROLL"), @tr("PHRASE"), @tr("CUE EDIT")];
+    out property <[string]> ids: ["hot_cue", "hold_fx1", "beat_jump", "sampler", "melody", "keyboard", "key_shift", "beat_loop", "slicer", "stems", "memory_cue", "lighting", "timed_censor", "pattern_recall", "loop_roll", "phrase", "cue_edit"];
+    out property <[string]> names: [@tr("HOT CUE"), @tr("HOLD FX"), @tr("BEAT JUMP"), @tr("SAMPLER"), @tr("MELODY"), @tr("KEYBOARD"), @tr("KEY SHIFT"), @tr("BEAT LOOP"), @tr("SLICER"), @tr("STEMS"), @tr("MEMORY CUE"), @tr("LIGHTING"), @tr("CENSOR"), @tr("PATTERN"), @tr("ROLL"), @tr("PHRASE"), @tr("CUE EDIT")];
     public pure function index(id: string) -> int {
         if (id == "hold_fx1" || id == "hold_fx2") { return 1; }
         if (id == "beat_jump") { return 2; }
         if (id == "sampler") { return 3; }
-        if (id == "keyboard") { return 4; }
-        if (id == "key_shift") { return 5; }
-        if (id == "beat_loop") { return 6; }
-        if (id == "slicer") { return 7; }
-        if (id == "stems") { return 8; }
-        if (id == "memory_cue") { return 9; }
-        if (id == "lighting") { return 10; }
-        if (id == "timed_censor") { return 11; }
-        if (id == "pattern_recall") { return 12; }
-        if (id == "loop_roll") { return 13; }
-        if (id == "phrase") { return 14; }
-        if (id == "cue_edit") { return 15; }
+        if (id == "melody") { return 4; }
+        if (id == "keyboard") { return 5; }
+        if (id == "key_shift") { return 6; }
+        if (id == "beat_loop") { return 7; }
+        if (id == "slicer") { return 8; }
+        if (id == "stems") { return 9; }
+        if (id == "memory_cue") { return 10; }
+        if (id == "lighting") { return 11; }
+        if (id == "timed_censor") { return 12; }
+        if (id == "pattern_recall") { return 13; }
+        if (id == "loop_roll") { return 14; }
+        if (id == "phrase") { return 15; }
+        if (id == "cue_edit") { return 16; }
         return 0;
     }
     // Hot cues keep their cue colours (with their letter); every other pad
@@ -362,6 +363,8 @@ global PadModes {
 export component DeckPad inherits Rectangle {
     accessible-role: button;
     accessible-label: TooltipState.name-for(self.accessible-id, @tr("PAD {}", root.p.caption), touch.tooltip);
+    // [77] A MELODY pad without a note sent to it plays nothing.
+    accessible-enabled: root.mode != "melody" || root.p.set;
     in property <PadView> p;
     in property <string> mode;
     callback press(bool);
@@ -401,6 +404,8 @@ export component DeckPad inherits Rectangle {
     touch := TipArea {
         tooltip: root.mode == "hot_cue" ? (root.p.set ? @tr("Hot cue: jump (hold to preview while paused) — right click deletes") : @tr("Hot cue: store the current position"))
             : root.mode == "sampler" ? @tr("Play the sampler slot (drop tracks on the sampler panel)")
+            : root.mode == "melody" ? (root.p.set ? @tr("Play this note from the sampler's MELODY bank, on the beat with QUANT — right click stops it")
+                : @tr("Send notes from CREATE: SEND TO PERFORM puts them on these pads"))
             : root.mode == "beat_jump" ? @tr("Jump by this many beats")
             : root.mode == "beat_loop" ? @tr("Loop this many beats; press again to exit")
             : root.mode == "loop_roll" ? @tr("Roll this many beats while held; the track carries on underneath and resumes on release")
@@ -670,6 +675,20 @@ component PadModeBar inherits Rectangle {
             tooltip: @tr("Capture the loop you just heard (roll or loop) as a hot loop on the first free pad, else as a memory loop");
             clicked => { DeckMix.capture(root.deck.deck); }
         }
+        // [77] MELODY with nothing sent: where the notes come from, in
+        // the value's place; one word fits a narrow column, the spoken
+        // value and the tooltip say it in full.
+        if root.deck.pad-mode == "melody" && root.deck.pad-param == "": Rectangle {
+            accessible-role: text; accessible-id: "deck\{root.deck.deck}.pad-hint"; accessible-value: @tr("Send notes from CREATE");
+            horizontal-stretch: 1; min-width: 0px;
+            Caps {
+                width: parent.width; height: parent.height;
+                text: "CREATE"; letter-spacing: 0.6px;
+                color: Theme.bone-2; horizontal-alignment: center;
+                vertical-alignment: center; overflow: elide;
+            }
+            TipArea { tooltip: @tr("Send notes from CREATE: SEND TO PERFORM puts them on these pads"); }
+        }
         if root.with-param && root.deck.pad-param != "": Stepper {
             horizontal-stretch: 1;
             size: root.size; font-size: Theme.control; arrow: 16px;
@@ -678,6 +697,7 @@ component PadModeBar inherits Rectangle {
             tooltip: root.deck.pad-mode == "hot_cue" ? @tr("Hot cue bank")
                 : root.deck.pad-mode == "beat_jump" ? @tr("Beat jump size of the − / + buttons")
                 : root.deck.pad-mode == "sampler" ? @tr("Sampler bank")
+                : root.deck.pad-mode == "melody" ? @tr("The notes sent, or the octave above")
                 : root.deck.pad-mode == "keyboard" ? @tr("Hot cue the keyboard plays")
                 : root.deck.pad-mode == "key_shift" ? @tr("Key shift in semitones")
                 : root.deck.pad-mode == "slicer" ? @tr("Length of the sliced section")
@@ -2008,7 +2028,7 @@ export component DeckPanel inherits Rectangle {
                     accessible-value: self.label;
                     size: root.ctl-h; width: 52px;
                     label: root.deck.pad-mode == "hot_cue" ? "CUE" : root.deck.pad-mode == "hold_fx1" || root.deck.pad-mode == "hold_fx2" ? "FX" : root.deck.pad-mode == "beat_jump" ? "JUMP"
-                        : root.deck.pad-mode == "sampler" ? "SMPL" : root.deck.pad-mode == "keyboard" ? "KEYB" : root.deck.pad-mode == "key_shift" ? "KEY" : root.deck.pad-mode == "beat_loop" ? "LOOP" : "SLICE";
+                        : root.deck.pad-mode == "sampler" ? "SMPL" : root.deck.pad-mode == "melody" ? "MEL" : root.deck.pad-mode == "keyboard" ? "KEYB" : root.deck.pad-mode == "key_shift" ? "KEY" : root.deck.pad-mode == "beat_loop" ? "LOOP" : "SLICE";
                     on: root.deck.pad-mode != "hot_cue"; tone: PadModes.tone(root.deck.pad-mode);
                     tooltip: @tr("Pad mode: click for the next one");
                     command: "deck" + root.deck.deck + ".padmode.next";

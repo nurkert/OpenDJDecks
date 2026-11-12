@@ -54,8 +54,12 @@ pub const HOT_CUES: usize = 8;
 pub const HOT_CUE_BANKS: usize = 4;
 /// Number of sampler slots per bank (one pad page).
 pub const SAMPLER_SLOTS: usize = 16;
-/// Number of sampler banks.
-pub const SAMPLER_BANKS: usize = 4;
+/// Number of sampler banks: four for the user's samples and the MELODY
+/// bank ([`MELODY_BANK`]).
+pub const SAMPLER_BANKS: usize = 5;
+/// The bank CREATE's SEND TO PERFORM fills with notes: pads 1–8 the notes
+/// sent, 9–16 the octave above. The MELODY pad mode plays it.
+pub const MELODY_BANK: usize = SAMPLER_BANKS - 1;
 /// Total sampler slots addressable by [`crate::SamplerCommand`]: slot
 /// `bank * SAMPLER_SLOTS + pad`.
 pub const SAMPLER_TOTAL: usize = SAMPLER_SLOTS * SAMPLER_BANKS;

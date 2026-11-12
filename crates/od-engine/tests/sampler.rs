@@ -84,6 +84,35 @@ fn quantised_trigger_starts_on_the_grid() {
     assert_eq!(out[0], 0.5);
 }
 
+/// [77] The MELODY bank is a bank like the others: its slots (the notes
+/// CREATE sends) load, start on the master grid with QUANT and keep their
+/// pitch (no tempo, so SYNC does not change their speed).
+#[test]
+fn melody_bank_slots_trigger_on_the_grid() {
+    assert_eq!(MELODY_BANK, SAMPLER_BANKS - 1);
+    let first = MELODY_BANK * SAMPLER_SLOTS;
+    let octave = first + 8;
+    assert!(octave < SAMPLER_TOTAL);
+    let mut rig = clock_rig();
+    for slot in [first, octave] {
+        smp(&mut rig, SamplerCommand::Load { slot, sample: sample(48_000, |i| 0.25 + i as f32 / 96_000.0) });
+        smp(&mut rig, SamplerCommand::SetSync { slot, on: true });
+    }
+    smp(&mut rig, SamplerCommand::SetQuantize(Some(1.0)));
+    rig.render(235); // 30 080 frames
+    smp(&mut rig, SamplerCommand::Trigger { slot: octave });
+    rig.render(1);
+    let st = rig.state();
+    assert!(st.sampler[first].loaded && st.sampler[octave].pending && !st.sampler[octave].playing);
+    let out = rig.render(150);
+    // The next beat at 120 BPM: 48 000 = 30 080 + 128 + 17 792.
+    assert_eq!(onsets(&out), vec![17_792]);
+    assert_eq!(out[17_792 * 2], 0.25);
+    let later = out[(17_792 + 1000) * 2];
+    assert!((later - (0.25 + 1000.0 / 96_000.0)).abs() < 1e-6, "played at its own speed: {later}");
+    assert!(rig.state().sampler[octave].playing);
+}
+
 #[test]
 fn one_shot_loop_and_gate_modes() {
     let mut rig = clock_rig();

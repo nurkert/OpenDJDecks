@@ -298,6 +298,8 @@ pub(crate) struct Decks {
     pub pad_mode: [PadMode; DECKS],
     /// Hot cue the Keyboard pads play, per deck (0..8).
     pub keyboard_cue: [usize; DECKS],
+    /// [77] What the MELODY pads play, per deck: 0 the notes, 1 an octave up.
+    pub melody_page: [usize; DECKS],
     /// Slicer domain per deck, in beats.
     pub slicer_beats: [f64; DECKS],
     /// TAP BPM per deck (controller).
@@ -400,6 +402,7 @@ impl Default for Decks {
             shift: [false; DECKS],
             pad_mode: [PadMode::HotCue; DECKS],
             keyboard_cue: [0; DECKS],
+            melody_page: [0; DECKS],
             slicer_beats: [8.0; DECKS],
             taps: Default::default(),
             stem_cache: od_stems::StemCache::open_default(),
@@ -1865,6 +1868,7 @@ impl DeckViews {
                 deck: d,
                 mode: PadMode::HotCue,
                 sampler_bank: 0,
+                melody_page: 0,
                 keyboard_cue: 0,
                 slicer_beats: 8.0,
                 labels: &[],
@@ -2015,6 +2019,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
             deck: i,
             mode: d.pad_mode[i],
             sampler_bank,
+            melody_page: d.melody_page[i],
             keyboard_cue: d.keyboard_cue[i],
             slicer_beats: d.slicer_beats[i],
             labels: meta.map(|m| m.labels.as_slice()).unwrap_or(&[]),
@@ -2402,6 +2407,7 @@ fn with_pads<R>(app: &App, d: usize, f: impl FnOnce(&DeckState, &pads::PadCtx) -
         deck: d,
         mode: dk.pad_mode[d],
         sampler_bank: app.sampler.bank.get(),
+        melody_page: dk.melody_page[d],
         keyboard_cue: dk.keyboard_cue[d],
         slicer_beats: dk.slicer_beats[d],
         labels: &labels,
@@ -2427,6 +2433,7 @@ pub(crate) fn pad_rows(app: &App, d: usize, state: &EngineState) -> Vec<PadView>
         deck: d,
         mode: dk.pad_mode[d],
         sampler_bank: app.sampler.bank.get(),
+        melody_page: dk.melody_page[d],
         keyboard_cue: dk.keyboard_cue[d],
         slicer_beats: dk.slicer_beats[d],
         labels,
@@ -2465,6 +2472,13 @@ pub(crate) fn pad(app: &App, d: usize, index: usize, pressed: bool) {
             }
             return;
         }
+        // [77] Nothing sent yet: say where the notes come from.
+        PadMode::Melody if !pads::melody_sent(&app.sampler.slots.borrow()) => {
+            if pressed {
+                app.status(od_i18n::tr("Send notes from CREATE first: SEND TO PERFORM puts them on these pads").to_string());
+            }
+            return;
+        }
         PadMode::PatternRecall => {
             if pressed
                 && engine::ensure_engine(app)
@@ -2494,6 +2508,13 @@ pub(crate) fn pad_alt(app: &App, d: usize, index: usize) {
         }
         PadMode::Sampler => {
             let slot = pads::sampler_slot(d, app.sampler.bank.get(), index);
+            engine::send(
+                app,
+                Command::Sampler(od_engine::SamplerCommand::Stop { slot }),
+            );
+        }
+        PadMode::Melody => {
+            let slot = pads::melody_slot(app.decks.borrow().melody_page[d], index);
             engine::send(
                 app,
                 Command::Sampler(od_engine::SamplerCommand::Stop { slot }),
@@ -2537,6 +2558,11 @@ pub(crate) fn pad_param(app: &App, d: usize, delta: i32) {
         PadMode::HoldFx2 => set_pad_mode(app, d, PadMode::HoldFx1),
         PadMode::BeatJump => step_jump_size(app, d, delta),
         PadMode::Sampler => crate::sampler::step_bank_by(app, delta),
+        // [77] The notes sent or the octave above (two pages, either way).
+        PadMode::Melody => {
+            let mut dk = app.decks.borrow_mut();
+            dk.melody_page[d] = (dk.melody_page[d] as i32 + delta).rem_euclid(2) as usize;
+        }
         PadMode::Keyboard => {
             let mut dk = app.decks.borrow_mut();
             dk.keyboard_cue[d] = (dk.keyboard_cue[d] as i32 + delta).rem_euclid(8) as usize;

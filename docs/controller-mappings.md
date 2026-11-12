@@ -187,7 +187,7 @@ release.
 | `deck.phrase_jump` | press | `forward` (bool, default `true`) | `PhraseJump { forward }`: to the next or previous phrase, whole beats so that the phrase start lands on the next downbeat, in time |
 | `deck.drop_mark` | press | | `DropMark`: marks the drop on the downbeat nearest the playhead; near the marked drop it clears it (one undo step) |
 | `deck.shift` | momentary | | `Shift(bool)`; also drives software shift |
-| `deck.pad_mode` | press | `mode` = `hot_cue`, `beat_loop`, `beat_jump`, `sampler`, `hold_fx1`, `hold_fx2`, `keyboard`, `key_shift`, `slicer`, `loop_roll` (pads roll 1/32 … 4 beats while held), `phrase` (phrase jumps and the drop), `cue_edit` (pads pick the hot cue the cue panel edits) | |
+| `deck.pad_mode` | press | `mode` = `hot_cue`, `beat_loop`, `beat_jump`, `sampler`, `hold_fx1`, `hold_fx2`, `keyboard`, `key_shift`, `slicer`, `loop_roll` (pads roll 1/32 … 4 beats while held), `phrase` (phrase jumps and the drop), `cue_edit` (pads pick the hot cue the cue panel edits), `melody` (pads play the notes CREATE sent to the sampler's MELODY bank) | |
 | `deck.pad` | momentary | `index` | `Pad { index, pressed, velocity }` (generic, interpreted by pad mode) |
 | `deck.needle_search` | absolute | | `NeedleSearch(0..1)` |
 | `deck.select` | press | optional `deck` | `DeckSelect` for the bound deck, or for `deck` |
