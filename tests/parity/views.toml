@@ -8752,7 +8752,7 @@ mode = "create"
 source = "Roadmap [70], CREATE concept (0.10.0)"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "create"]
-note = "KIT beside PADS over STEPS; sixteen empty pads and steps as hollow slots until the drum machine arrives; the RESULT bar with SEND TO PERFORM, RENDER LOOP and SAVE PATTERN (disabled)."
+note = "KIT beside PADS over STEPS. KIT: the built-in kits as one segmented control (TIGHT, WARM, DUSTY; the chosen one filled bone), the selected pad's name and length, and its PITCH, DECAY and TONE knobs with their values under them (a double-click brings back the kit's setting), a line on what the knobs set, and LOAD SAMPLE (disabled until own samples come). PADS: bank 1's eight synthesised sounds by name (KICK, SNARE, HAT, OPEN HAT, CLAP, TOM 1, TOM 2, RIDE), the selected one filled bone, the one sounding sodium, CHANGED under one set away from its kit; pads 9 to 16 as hollow slots and the sixteen steps until the drum machine arrives (roadmap [79]); the RESULT bar with SEND TO PERFORM, RENDER LOOP and SAVE PATTERN (disabled)."
 
 [[view.region]]
 id = "create.views"
@@ -8773,6 +8773,55 @@ order = "row"
 elements = [
   "create.drums.kit",
   "create.drums.pads",
+]
+
+[[view.region]]
+id = "create.drums.kits"
+band = "create"
+place = "KIT, top, centred: the built-in kits as one segmented control"
+order = "row"
+elements = [
+  "create.kit.tight",
+  "create.kit.warm",
+  "create.kit.dusty",
+]
+
+[[view.region]]
+id = "create.drums.kit.column"
+band = "create"
+place = "KIT, top to bottom: the selected pad, its knobs' values, LOAD SAMPLE"
+order = "column"
+elements = [
+  "create.kit.pad",
+  "create.kit.decay.value",
+  "create.kit.load",
+]
+
+[[view.region]]
+id = "create.drums.knobs"
+band = "create"
+place = "KIT: the selected pad's knobs in one row, each value under its knob"
+order = "row"
+elements = [
+  "create.kit.pitch",
+  "create.kit.decay",
+  "create.kit.tone",
+]
+
+[[view.region]]
+id = "create.drums.pad.row"
+band = "create"
+place = "PADS: bank 1's eight sounds in one row, a little apart after four"
+order = "row"
+elements = [
+  "create.drums.pad1",
+  "create.drums.pad2",
+  "create.drums.pad3",
+  "create.drums.pad4",
+  "create.drums.pad5",
+  "create.drums.pad6",
+  "create.drums.pad7",
+  "create.drums.pad8",
 ]
 
 [[view.region]]

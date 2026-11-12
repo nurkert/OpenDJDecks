@@ -255,6 +255,13 @@ fn views() -> Vec<(&'static str, fn(&Ui))> {
             crate::create::stage_theory(&u.app, u.fx.tracks[0].0);
             u.pump(300);
         }),
+        // [79] DRUMS: the kit, its knobs and the pads, one playing.
+        ("create drums (kit set, a pad playing)", |u| {
+            u.app.ui.invoke_set_mode("create".into());
+            crate::create::set_view(&u.app, "drums");
+            crate::create::stage_drums(&u.app);
+            u.pump(300);
+        }),
         ("perform (MELODY pads)", |u| {
             crate::create::stage_melody_pads(&u.app, true);
             u.pump(300);

@@ -10436,16 +10436,6 @@ msgctxt "DrumsView"
 msgid "KIT"
 msgstr "KIT"
 
-#: ui/create.slint:173
-msgctxt "DrumsView"
-msgid "Built-in kits, made from synthesised sounds, or your own samples from the library."
-msgstr "Eingebaute Kits aus synthetisierten Klängen oder deine eigenen Samples aus der Bibliothek."
-
-#: ui/create.slint:174
-msgctxt "DrumsView"
-msgid "Each pad gets three knobs: PITCH, DECAY and TONE."
-msgstr "Jedes Pad bekommt drei Regler: PITCH, DECAY und TONE."
-
 #: ui/create.slint:179
 msgctxt "DrumsView"
 msgid "LOAD SAMPLE"
@@ -10460,11 +10450,6 @@ msgstr "Einen Klang aus der Bibliothek auf ein Pad legen (kommt mit der Drum-Mac
 msgctxt "DrumsView"
 msgid "PADS"
 msgstr "PADS"
-
-#: ui/create.slint:190
-msgctxt "DrumsView"
-msgid "Sixteen pads in two rows. Play them by hand or from a controller."
-msgstr "Sechzehn Pads in zwei Reihen. Spiel sie von Hand oder mit einem Controller."
 
 #: ui/create.slint:196
 msgctxt "DrumsView"
@@ -11567,3 +11552,143 @@ msgstr "Die Gründe erscheinen, sobald eine Tonart gewählt ist: auf einem Deck,
 msgctxt "DeckKey"
 msgid "PLAYING NOW"
 msgstr "LÄUFT JETZT"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "KICK"
+msgstr "KICK"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "SNARE"
+msgstr "SNARE"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "HAT"
+msgstr "HAT"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "OPEN HAT"
+msgstr "HAT OFFEN"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "CLAP"
+msgstr "CLAP"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "TOM 1"
+msgstr "TOM 1"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "TOM 2"
+msgstr "TOM 2"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "RIDE"
+msgstr "RIDE"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "TIGHT"
+msgstr "KNAPP"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "WARM"
+msgstr "WARM"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "DUSTY"
+msgstr "STAUBIG"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "{} st"
+msgstr "{} HT"
+
+#: ui/create.slint
+msgctxt "KitChooser"
+msgid "Tight: short, bright sounds"
+msgstr "Knapp: kurze, helle Klänge"
+
+#: ui/create.slint
+msgctxt "KitChooser"
+msgid "Warm: lower, rounder sounds that ring longer"
+msgstr "Warm: tiefere, rundere Klänge, die länger klingen"
+
+#: ui/create.slint
+msgctxt "KitChooser"
+msgid "Dusty: dark and low, with a driven kick and toms"
+msgstr "Staubig: dunkel und tief, mit angezerrter Kick und Toms"
+
+#: ui/create.slint
+msgctxt "KitChooser"
+msgid "Choosing a kit sets every pad to it"
+msgstr "Ein Kit setzt alle Pads auf seine Klänge"
+
+#: ui/create.slint
+msgctxt "DrumKnobs"
+msgid "PITCH"
+msgstr "PITCH"
+
+#: ui/create.slint
+msgctxt "DrumKnobs"
+msgid "DECAY"
+msgstr "DECAY"
+
+#: ui/create.slint
+msgctxt "DrumKnobs"
+msgid "TONE"
+msgstr "TONE"
+
+#: ui/create.slint
+msgctxt "DrumKnobs"
+msgid "Pitch of the selected pad, in semitones"
+msgstr "Tonhöhe des gewählten Pads in Halbtönen"
+
+#: ui/create.slint
+msgctxt "DrumKnobs"
+msgid "Decay of the selected pad: how long it rings"
+msgstr "Ausklang des gewählten Pads: wie lange es klingt"
+
+#: ui/create.slint
+msgctxt "DrumKnobs"
+msgid "Tone of the selected pad, from dark to bright"
+msgstr "Klang des gewählten Pads, von dunkel bis hell"
+
+#: ui/create.slint
+msgctxt "DrumPad"
+msgid "Play {} and set it with the knobs in KIT"
+msgstr "{} spielen und mit den Reglern in KIT einstellen"
+
+#: ui/create.slint
+msgctxt "DrumPad"
+msgid "PLAYING"
+msgstr "KLINGT"
+
+#: ui/create.slint
+msgctxt "DrumPad"
+msgid "SELECTED"
+msgstr "GEWÄHLT"
+
+#: ui/create.slint
+msgctxt "DrumPad"
+msgid "CHANGED"
+msgstr "GEÄNDERT"
+
+#: ui/create.slint
+msgctxt "DrumsView"
+msgid "A pad pressed is the one the knobs set. A double-click on a knob brings back the kit's setting. The kits are synthesised, so they sound the same on every computer."
+msgstr "Das zuletzt gedrückte Pad stellen die Regler ein. Ein Doppelklick auf einen Regler holt die Einstellung des Kits zurück. Die Kits sind synthetisiert und klingen auf jedem Computer gleich."
+
+#: ui/create.slint
+msgctxt "DrumsView"
+msgid "Press a pad to hear it. Pads 9 to 16 come with the steps."
+msgstr "Drück ein Pad, um es zu hören. Die Pads 9 bis 16 kommen mit den Schritten."
