@@ -1182,3 +1182,106 @@ fn theory_shows_both_decks_the_neighbours_and_checks_a_melody() {
     assert!(!ui.has("create.theory.why-off"), "back with HINTS");
     assert!(ui.value("create.theory.why-none").starts_with("The reasons show once a key is chosen"), "no key after the restart: no decks");
 }
+
+// ── [79] DRUMS ──────────────────────────────────────────────────────────
+
+/// The samples of pad `i` as it plays now.
+fn drum(ui: &Ui, i: usize) -> Vec<f32> {
+    crate::create::drum_now(&ui.app, i).samples.to_vec()
+}
+
+/// DRUMS shows the kit and its 8 pads by name; a press selects a pad and
+/// plays it on the audition voice (PLAYING, then SELECTED); its knobs turn
+/// PITCH, DECAY and TONE and the next press plays the sound rendered anew;
+/// a kit sets every pad; a double-click on a knob brings back the kit's
+/// setting; everything is back after a restart.
+#[test]
+fn drum_pads_play_the_kit_and_their_knobs_change_the_sound() {
+    let ui = Ui::open((1440, 900));
+    crate::engine::ensure_engine(&ui.app);
+    ui.click("topbar.mode.create");
+    ui.click("create.view.drums");
+    ui.pump(200);
+    let g = ui.app.ui.global::<crate::Create>();
+    assert_eq!(g.get_kit(), "tight", "the first kit by default");
+    let names: Vec<String> = (1..=8).map(|i| label(&ui, &format!("create.drums.pad{i}"))).collect();
+    assert_eq!(names, ["KICK", "SNARE", "HAT", "OPEN HAT", "CLAP", "TOM 1", "TOM 2", "RIDE"]);
+    for id in ["create.kit.tight", "create.kit.warm", "create.kit.dusty", "create.kit.pitch", "create.kit.decay", "create.kit.tone"] {
+        assert!(ui.has(id), "{id}");
+    }
+    assert_eq!(ui.value("create.drums.pad1"), "SELECTED", "KICK is selected at first");
+    assert!(ui.value("create.kit.pad").starts_with("KICK · "), "{}", ui.value("create.kit.pad"));
+    assert_eq!(ui.get("create.kit.load").accessible_enabled(), Some(false), "own samples come with [80]");
+
+    // A press: the snare plays on the audition voice and is selected.
+    ui.click("create.drums.pad2");
+    assert!(ui.wait_until(2.0, |u| snapshot(u).auditioning), "the snare plays");
+    assert_eq!(ui.value("create.drums.pad2"), "PLAYING");
+    assert!(ui.wait_until(3.0, |u| u.value("create.drums.pad2") == "SELECTED"), "and ends: {}", ui.value("create.drums.pad2"));
+    assert_eq!(ui.value("create.drums.pad1"), "");
+    assert!(ui.value("create.kit.pad").starts_with("SNARE · "));
+    assert_eq!(ui.value("create.kit.pitch.value"), "+2 st", "the TIGHT snare");
+    let before = drum(&ui, 1);
+
+    // PITCH dragged up a quarter of its travel: six semitones.
+    let knob = Rect::of(&ui.get("create.kit.pitch"));
+    let ring = slint::LogicalPosition::new(knob.x + knob.w / 2.0, knob.y + 20.0);
+    ui.drag_points(ring, slint::LogicalPosition::new(ring.x, ring.y - 40.0));
+    assert_eq!(crate::create::drum_kit(&ui.app).pads[1].pitch, 8, "+2 and six more");
+    assert_eq!(ui.value("create.kit.pitch.value"), "+8 st");
+    let higher = drum(&ui, 1);
+    assert_ne!(higher, before, "rendered anew");
+    assert_eq!(higher.len(), before.len(), "PITCH keeps the length");
+    // DECAY longer, TONE darker (as the knobs send them).
+    let length = ui.value("create.kit.decay.value");
+    g.invoke_set_drum("decay".into(), 80.0);
+    ui.pump(50);
+    assert_ne!(ui.value("create.kit.decay.value"), length);
+    let longer = drum(&ui, 1);
+    assert!(longer.len() > higher.len() * 2, "longer: {} vs {}", longer.len(), higher.len());
+    g.invoke_set_drum("tone".into(), 10.4);
+    ui.pump(50);
+    assert_eq!(ui.value("create.kit.tone.value"), "10 %", "whole steps");
+    assert_ne!(drum(&ui, 1), longer);
+    let p = crate::create::drum_kit(&ui.app).pads[1];
+    assert_eq!((p.pitch, p.decay, p.tone), (8, 80, 10));
+    // Set away from the kit: the pad says so.
+    assert!(ui.has("create.drums.pad2") && g.get_drum_pads().row_data(1).unwrap().set);
+    ui.click("create.drums.pad2");
+    assert!(ui.wait_until(2.0, |u| snapshot(u).auditioning), "the turned snare plays");
+
+    // A double-click on TONE brings back the kit's setting.
+    ui.double_click_at(ring_of(&ui, "create.kit.tone"));
+    ui.pump(50);
+    assert_eq!(crate::create::drum_kit(&ui.app).pads[1].tone, 70, "TIGHT's snare tone");
+
+    // Restart: the kit, the settings and the selected pad are back.
+    let stored = crate::create::drum_kit(&ui.app);
+    assert!(ui.fx.lib().meta(crate::create::META_DRUMS).unwrap().is_some(), "stored");
+    let Ui { app, fx, .. } = ui;
+    drop(app);
+    let ui = Ui::start(fx, (1440, 900), false);
+    ui.app.ui.invoke_set_mode("create".into());
+    crate::create::set_view(&ui.app, "drums");
+    ui.pump(200);
+    assert_eq!(crate::create::drum_kit(&ui.app), stored);
+    assert_eq!(ui.value("create.kit.pitch.value"), "+8 st");
+    assert_eq!(ui.value("create.drums.pad2"), "SELECTED");
+
+    // Another kit sets every pad to it.
+    ui.click("create.kit.warm");
+    ui.pump(50);
+    let g = ui.app.ui.global::<crate::Create>();
+    assert_eq!(g.get_kit(), "warm");
+    let warm = od_engine::drums::kit("warm").unwrap();
+    let d = crate::create::drum_kit(&ui.app);
+    assert!(d.pads.iter().zip(warm.pads).all(|(a, b)| od_engine::drums::Params::from(*a) == b), "WARM on every pad");
+    assert_eq!(ui.value("create.kit.pitch.value"), "-2 st", "WARM's snare");
+    assert!(!g.get_drum_pads().row_data(1).unwrap().set, "nothing set away from it");
+}
+
+/// Where a knob's ring is (the top of its element).
+fn ring_of(ui: &Ui, id: &str) -> slint::LogicalPosition {
+    let r = Rect::of(&ui.get(id));
+    slint::LogicalPosition::new(r.x + r.w / 2.0, r.y + 20.0)
+}

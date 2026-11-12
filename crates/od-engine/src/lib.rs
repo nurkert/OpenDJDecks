@@ -33,6 +33,7 @@ mod channelfx;
 pub mod command;
 pub mod config;
 mod deck;
+pub mod drums;
 pub mod dsp;
 mod engine;
 mod input;

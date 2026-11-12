@@ -28,7 +28,7 @@
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
 import { MenuTarget } from "structs.slint";
-import { Caps, PlateButton, Stepper, Field, KeyFocus, LineToggle, TipArea, TooltipState, FocusRing, ArmedOutline } from "controls.slint";
+import { Caps, PlateButton, Stepper, Field, KeyFocus, LineToggle, TipArea, TooltipState, FocusRing, ArmedOutline, Knob } from "controls.slint";
 
 // One deck in the strip (create.rs, from the engine's deck state).
 export struct CreateDeck {
@@ -230,6 +230,14 @@ export struct CreateRender {
     can-send: bool,
 }
 
+// [79] One pad of DRUMS (create.rs): the pad the knobs set, sounding on
+// the audition voice, and set away from the kit's own settings.
+export struct CreateDrumPad {
+    selected: bool,
+    playing: bool,
+    set: bool,
+}
+
 export global Create {
     // The view: "melody", "drums" or "theory" (remembered, shell.rs).
     in-out property <string> view: "melody";
@@ -349,6 +357,39 @@ export global Create {
     in property <[string]> why;
     in property <string> fit-why;
     callback choose-chord(int);
+    // [79] DRUMS: the built-in kit ("tight", "warm", "dusty"), its 8 pads,
+    // the pad the knobs set and its settings (PITCH in semitones -12..12,
+    // DECAY and TONE 0..100; the knobs write them back), the kit's own
+    // settings for it (a double-click on a knob brings them back) and how
+    // long it sounds ("0.35 s").
+    in property <string> kit: "tight";
+    in property <[CreateDrumPad]> drum-pads: [{}, {}, {}, {}, {}, {}, {}, {}];
+    in property <int> drum-selected;
+    in-out property <float> drum-pitch;
+    in-out property <float> drum-decay: 50;
+    in-out property <float> drum-tone: 50;
+    in property <float> kit-pitch;
+    in property <float> kit-decay: 50;
+    in property <float> kit-tone: 50;
+    in property <string> drum-length;
+    // A pad pressed (selected and played), a kit chosen, a knob turned
+    // ("pitch", "decay", "tone").
+    callback play-drum(int);
+    callback choose-kit(string);
+    callback set-drum(string, float);
+    // A pad's sound in capitals.
+    public pure function drum-name(i: int) -> string {
+        return i == 0 ? @tr("KICK") : i == 1 ? @tr("SNARE") : i == 2 ? @tr("HAT") : i == 3 ? @tr("OPEN HAT")
+            : i == 4 ? @tr("CLAP") : i == 5 ? @tr("TOM 1") : i == 6 ? @tr("TOM 2") : i == 7 ? @tr("RIDE") : "";
+    }
+    // A kit's name in capitals.
+    public pure function kit-name(id: string) -> string {
+        return id == "tight" ? @tr("TIGHT") : id == "warm" ? @tr("WARM") : id == "dusty" ? @tr("DUSTY") : "";
+    }
+    // PITCH in semitones: "+3 st", "0 st".
+    public pure function pitch-text(v: float) -> string {
+        return @tr("{} st", (Math.round(v) > 0 ? "+" : "") + Math.round(v));
+    }
     // The selected step holds a note.
     public pure function step-has-note() -> bool {
         return root.selected >= 0 && root.selected < root.steps.length && root.steps[root.selected].note != "";
@@ -1580,6 +1621,165 @@ component MelodyView inherits HorizontalLayout {
     }
 }
 
+// [79] The kit: one segmented control, the kit chosen filled bone.
+component KitChooser inherits HorizontalLayout {
+    vertical-stretch: 0;
+    alignment: center; spacing: Theme.key-gap;
+    for k in [
+        { id: "tight", tip: @tr("Tight: short, bright sounds") },
+        { id: "warm", tip: @tr("Warm: lower, rounder sounds that ring longer") },
+        { id: "dusty", tip: @tr("Dusty: dark and low, with a driven kick and toms") },
+    ]: PlateButton {
+        accessible-id: "create.kit." + k.id; accessible-role: button;
+        compact: true; label: Create.kit-name(k.id);
+        selected: Create.kit == k.id;
+        tooltip: k.tip + ". " + @tr("Choosing a kit sets every pad to it");
+        clicked => { Create.choose-kit(k.id); }
+    }
+}
+
+// [79] A knob of the selected pad with its value under it.
+component DrumKnob inherits VerticalLayout {
+    in property <string> which;
+    in property <string> label;
+    in property <string> tip;
+    in property <string> shown;
+    in property <float> minimum;
+    in property <float> maximum;
+    in property <float> default-value;
+    in-out property <float> value;
+    vertical-stretch: 0;
+    spacing: Theme.s1;
+    alignment: start;
+    Knob {
+        accessible-id: "create.kit." + root.which; accessible-value: root.shown;
+        label: root.label; size: 40px;
+        minimum: root.minimum; maximum: root.maximum; default-value: root.default-value;
+        value <=> root.value;
+        readout: root.shown;
+        tooltip: root.tip;
+        changed(v) => { Create.set-drum(root.which, v); }
+    }
+    Text {
+        accessible-role: text; accessible-id: "create.kit." + root.which + ".value"; accessible-value: self.text;
+        text: root.shown;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone;
+        horizontal-alignment: center; overflow: elide;
+    }
+}
+
+// [79] PITCH, DECAY and TONE of the selected pad, centred under its name.
+component DrumKnobs inherits VerticalLayout {
+    vertical-stretch: 0;
+    spacing: Theme.s2;
+    Text {
+        accessible-role: text; accessible-id: "create.kit.pad"; accessible-value: self.text;
+        text: Create.drum-name(Create.drum-selected) + " · " + Create.drum-length;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2;
+        letter-spacing: 1.2px;
+        horizontal-alignment: center; overflow: elide;
+    }
+    HorizontalLayout {
+        alignment: center; spacing: Theme.s4;
+        DrumKnob {
+            which: "pitch"; label: @tr("PITCH");
+            tip: @tr("Pitch of the selected pad, in semitones");
+            shown: Create.pitch-text(Create.drum-pitch);
+            minimum: -12; maximum: 12; default-value: Create.kit-pitch;
+            value <=> Create.drum-pitch;
+        }
+        DrumKnob {
+            which: "decay"; label: @tr("DECAY");
+            tip: @tr("Decay of the selected pad: how long it rings");
+            shown: Create.drum-length;
+            minimum: 0; maximum: 100; default-value: Create.kit-decay;
+            value <=> Create.drum-decay;
+        }
+        DrumKnob {
+            which: "tone"; label: @tr("TONE");
+            tip: @tr("Tone of the selected pad, from dark to bright");
+            shown: Math.round(Create.drum-tone) + " %";
+            minimum: 0; maximum: 100; default-value: Create.kit-tone;
+            value <=> Create.drum-tone;
+        }
+    }
+}
+
+// [79] One drum pad: its sound's name, played on press (sodium fill while
+// it sounds). The pad the knobs set is filled bone; one set away from the
+// kit says so under its name.
+component DrumPad inherits Rectangle {
+    in property <CreateDrumPad> pad;
+    in property <int> index;
+    property <string> name: Create.drum-name(root.index);
+    property <bool> lit: root.pad.playing;
+    property <string> tip: @tr("Play {} and set it with the knobs in KIT", root.name);
+    accessible-role: button;
+    accessible-id: "create.drums.pad" + (root.index + 1);
+    accessible-label: TooltipState.name-for(self.accessible-id, root.name, root.tip);
+    accessible-value: root.lit ? @tr("PLAYING") : root.pad.selected ? @tr("SELECTED") : "";
+    accessible-description: root.tip;
+    accessible-action-default => { Create.play-drum(root.index); }
+    // All alike wide, whatever the name, so they line up with 9 to 16.
+    min-width: Theme.touch-min;
+    preferred-width: Theme.touch-min;
+    horizontal-stretch: 1;
+    height: Theme.touch-mode ? 52px : 44px;
+    background: Theme.face(true, touch.pressed, touch.has-hover, root.pad.selected && !root.lit, root.lit, Theme.attention);
+    border-radius: Theme.r-control;
+    property <color> ink: Theme.ink(true, touch.pressed, touch.has-hover, root.pad.selected && !root.lit, root.lit);
+    VerticalLayout {
+        padding-left: Theme.s1; padding-right: Theme.s1;
+        alignment: center; spacing: 0px;
+        Text {
+            text: root.name;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+            color: root.ink; horizontal-alignment: center; overflow: elide;
+        }
+        if root.pad.set: Caps {
+            text: @tr("CHANGED");
+            color: root.lit || root.pad.selected ? root.ink : Theme.bone-3;
+            horizontal-alignment: center; overflow: elide;
+        }
+    }
+    // A pad plays on press, as on an instrument.
+    touch := TipArea {
+        tooltip: root.tip;
+        mouse-cursor: pointer;
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) { Create.play-drum(root.index); }
+        }
+    }
+    KeyFocus { activate => { Create.play-drum(root.index); } }
+}
+
+// [79] The 8 pads of bank 1, a little apart after four; in two rows of
+// four where one row would leave a pad too narrow for its name. Follows
+// the width through a plain property, so it does not feed back into the
+// layout.
+component DrumPads inherits VerticalLayout {
+    property <bool> two-rows;
+    vertical-stretch: 0;
+    init => { self.two-rows = self.width < 520px; }
+    changed width => { self.two-rows = self.width < 520px; }
+    spacing: Theme.key-gap;
+    if !root.two-rows: HorizontalLayout {
+        spacing: Theme.key-gap;
+        for p[i] in Create.drum-pads: HorizontalLayout {
+            padding-left: i > 0 && Math.mod(i, 4) == 0 ? Theme.s2 : 0px;
+            DrumPad { pad: p; index: i; }
+        }
+    }
+    if root.two-rows: HorizontalLayout {
+        spacing: Theme.key-gap;
+        for i in 4: DrumPad { pad: Create.drum-pads[i]; index: i; }
+    }
+    if root.two-rows: HorizontalLayout {
+        spacing: Theme.key-gap;
+        for i in 4: DrumPad { pad: Create.drum-pads[i + 4]; index: i + 4; }
+    }
+}
+
 // DRUMS: KIT | PADS over STEPS.
 component DrumsView inherits HorizontalLayout {
     in property <bool> narrow;
@@ -1588,8 +1788,9 @@ component DrumsView inherits HorizontalLayout {
         accessible-id: "create.drums.kit";
         width: root.narrow ? 280px : 320px;
         title: @tr("KIT");
-        summary: @tr("Built-in kits, made from synthesised sounds, or your own samples from the library.");
-        Prose { text: @tr("Each pad gets three knobs: PITCH, DECAY and TONE."); }
+        KitChooser { }
+        DrumKnobs { }
+        Prose { text: @tr("A pad pressed is the one the knobs set. A double-click on a knob brings back the kit's setting. The kits are synthesised, so they sound the same on every computer."); }
         HorizontalLayout {
             alignment: center;
             PlateButton {
@@ -1605,9 +1806,15 @@ component DrumsView inherits HorizontalLayout {
         Zone {
             accessible-id: "create.drums.pads";
             title: @tr("PADS");
-            summary: @tr("Sixteen pads in two rows. Play them by hand or from a controller.");
-            SlotRow { legends: ["1", "2", "3", "4", "5", "6", "7", "8"]; }
+            DrumPads { }
             SlotRow { legends: ["9", "10", "11", "12", "13", "14", "15", "16"]; }
+            Text {
+                accessible-role: text; accessible-id: "create.drums.hint"; accessible-value: self.text;
+                min-width: 0px;
+                text: @tr("Press a pad to hear it. Pads 9 to 16 come with the steps.");
+                font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
+                overflow: elide;
+            }
         }
         Zone {
             accessible-id: "create.drums.steps";

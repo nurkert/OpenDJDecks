@@ -75,6 +75,15 @@
 //! strip's melody against the key that names the notes out of it, and up
 //! to three reasons in plain words. HINTS hides the reasons (and HAPPY and
 //! SAD); the facts stay.
+//!
+//! [79] DRUMS plays the built-in kits of [`od_engine::drums`]: eight
+//! synthesised sounds (KICK to RIDE) on the pads of bank 1, each with
+//! PITCH, DECAY and TONE; a kit sets all eight. A pad press selects the pad
+//! for the knobs and plays its sound on the audition voice, like a MELODY
+//! pad, rendered at the engine's rate and kept until its settings change.
+//! The pads do not take sampler slots yet: [80] puts the kit into the
+//! sampler's store with the steps and Perform. The kit and the settings are
+//! kept in `create.drums`.
 
 use crate::app::App;
 use crate::arrange::{self, Grid, Melody, STEPS};
@@ -83,6 +92,7 @@ use crate::engine;
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use od_analysis::pitch::{self, PitchOutcome};
 use od_core::{KeyNotation, MusicalKey, NotePitch, Scale, ScaleKey, TrackId};
+use od_engine::drums;
 use od_engine::noteshift::{self, ShiftMethod};
 use od_engine::{Command, DeckState, EngineState, SampleData, SamplerCommand, TrackData};
 use serde::{Deserialize, Serialize};
@@ -432,6 +442,11 @@ pub(crate) struct Runtime {
     send_due: bool,
     /// What the MELODY bank holds since the last send.
     in_perform: Option<SendSig>,
+    /// [79] The kit and the pads' settings, their rendered sounds, the pad
+    /// that plays (on the audition voice).
+    drums: Drums,
+    drum_cache: [Option<DrumSound>; drums::PADS],
+    drum_playing: Option<usize>,
 }
 
 /// REC armed: the beat the grid counts from (once a note came in on it),
@@ -515,6 +530,9 @@ impl Default for Runtime {
             send_rx,
             send_due: false,
             in_perform: None,
+            drums: Drums::default(),
+            drum_cache: Default::default(),
+            drum_playing: None,
         }
     }
 }
@@ -601,6 +619,12 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_to_playlist(move |id| w(&|a| to_playlist(a, id)));
     let w = with.clone();
     g.on_send_to_perform(move || w(&send_to_perform));
+    let w = with.clone();
+    g.on_play_drum(move |i| w(&|a| play_drum(a, i.max(0) as usize)));
+    let w = with.clone();
+    g.on_choose_kit(move |id| w(&|a| choose_kit(a, &id)));
+    let w = with.clone();
+    g.on_set_drum(move |which, v| w(&|a| set_drum(a, &which, v)));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -617,6 +641,7 @@ fn restore(app: &App) {
     let choice = app.state.borrow().lib.meta(META_KEY).ok().flatten().and_then(|j| serde_json::from_str::<KeyChoice>(&j).ok());
     let melody = app.state.borrow().lib.meta(META_MELODY).ok().flatten().and_then(|j| serde_json::from_str::<Melody>(&j).ok());
     let render = app.state.borrow().lib.meta(META_RENDER).ok().flatten().and_then(|j| serde_json::from_str::<create_render::Choice>(&j).ok());
+    let kit = app.state.borrow().lib.meta(META_DRUMS).ok().flatten().and_then(|j| serde_json::from_str::<Drums>(&j).ok());
     {
         let mut rt = app.create.borrow_mut();
         rt.note = note;
@@ -624,6 +649,8 @@ fn restore(app: &App) {
         rt.melody = melody.unwrap_or_default();
         rt.melody.normalize();
         rt.render = render.unwrap_or_default();
+        rt.drums = kit.unwrap_or_default();
+        rt.drums.normalize();
     }
     render_wave(app);
     show(app);
@@ -832,7 +859,7 @@ fn measure(app: &App) {
 pub(crate) fn hear(app: &App) {
     let hearing = {
         let rt = app.create.borrow();
-        rt.hearing.is_some() && rt.pad_playing.is_none() && rt.key_playing.is_none()
+        rt.hearing.is_some() && rt.pad_playing.is_none() && rt.key_playing.is_none() && rt.drum_playing.is_none()
     };
     if hearing {
         stop_hearing(app);
@@ -869,6 +896,7 @@ fn audition(app: &App, sample: Arc<SampleData>, pad: Option<usize>, key: Option<
         rt.hearing = Some(Instant::now());
         rt.pad_playing = pad;
         rt.key_playing = key;
+        rt.drum_playing = None;
     }
     show(app);
 }
@@ -886,6 +914,7 @@ fn stop_hearing(app: &App) {
         let mut rt = app.create.borrow_mut();
         rt.pad_playing = None;
         rt.key_playing = None;
+        rt.drum_playing = None;
         rt.hearing.take().is_some()
     };
     if was {
@@ -957,6 +986,7 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
         rt.hearing = None;
         rt.pad_playing = None;
         rt.key_playing = None;
+        rt.drum_playing = None;
         drop(rt);
         show(app);
     }
@@ -1034,7 +1064,7 @@ fn show(app: &App) {
         rt.note.as_ref().map(|n| {
             let mut v = note_view(n, rt.measure_due);
             v.wave = rt.wave.clone();
-            v.hearing = rt.hearing.is_some() && rt.pad_playing.is_none() && rt.key_playing.is_none();
+            v.hearing = rt.hearing.is_some() && rt.pad_playing.is_none() && rt.key_playing.is_none() && rt.drum_playing.is_none();
             v
         })
     };
@@ -1042,6 +1072,7 @@ fn show(app: &App) {
     g.set_note(view.unwrap_or_default());
     show_key(app);
     show_pads(app);
+    show_drums(app);
     show_result(app);
 }
 
@@ -1941,6 +1972,262 @@ pub(crate) fn choose_chord(app: &App, i: i32) {
     }
     show_pads(app);
     show_theory(app, engine::snapshot(app).as_ref());
+}
+
+// ── [79] DRUMS: the built-in kits ───────────────────────────────────────
+
+/// Library meta key of the kit and the pads' settings (JSON).
+pub(crate) const META_DRUMS: &str = "create.drums";
+
+/// One pad's settings as stored (see [`drums::Params`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct DrumPad {
+    pub pitch: i8,
+    pub decay: u8,
+    pub tone: u8,
+}
+
+impl From<drums::Params> for DrumPad {
+    fn from(p: drums::Params) -> Self {
+        Self { pitch: p.pitch, decay: p.decay, tone: p.tone }
+    }
+}
+
+impl From<DrumPad> for drums::Params {
+    fn from(p: DrumPad) -> Self {
+        drums::Params { pitch: p.pitch, decay: p.decay, tone: p.tone }.clamped()
+    }
+}
+
+/// The kit chosen, the 8 pads' settings (the kit's, then as turned) and
+/// the pad the knobs set.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub(crate) struct Drums {
+    pub kit: String,
+    pub pads: Vec<DrumPad>,
+    pub selected: usize,
+}
+
+impl Default for Drums {
+    fn default() -> Self {
+        let kit = &drums::KITS[0];
+        Self { kit: kit.id.into(), pads: kit.pads.iter().map(|&p| p.into()).collect(), selected: 0 }
+    }
+}
+
+impl Drums {
+    /// The built-in kit chosen (the first for an unknown id).
+    pub fn kit(&self) -> &'static drums::Kit {
+        drums::kit(&self.kit).unwrap_or(&drums::KITS[0])
+    }
+
+    /// A stored value read back: a known kit, 8 pads in range.
+    pub fn normalize(&mut self) {
+        let kit = self.kit();
+        self.kit = kit.id.into();
+        self.pads.truncate(drums::PADS);
+        for i in self.pads.len()..drums::PADS {
+            self.pads.push(kit.pads[i].into());
+        }
+        for p in &mut self.pads {
+            *p = drums::Params::from(*p).into();
+        }
+        self.selected = self.selected.min(drums::PADS - 1);
+    }
+
+    pub fn params(&self, i: usize) -> drums::Params {
+        self.pads[i].into()
+    }
+}
+
+/// The kit's pad `i` as rendered at `rate`, for its settings.
+#[derive(Clone)]
+struct DrumSound {
+    params: drums::Params,
+    rate: u32,
+    sample: Arc<SampleData>,
+}
+
+/// Renders pad `i` with `p` at `rate` as a stereo one-shot (the same sound
+/// on both sides). A sound is short and plain arithmetic, so it renders on
+/// the press itself; the cache keeps it until its settings change.
+pub(crate) fn drum_sample(i: usize, p: drums::Params, rate: u32) -> Arc<SampleData> {
+    let mono = drums::render(drums::Voice::ALL[i], p, rate);
+    let samples = mono.iter().flat_map(|&x| [x, x]).collect();
+    SampleData::new(od_decode::DecodedAudio { sample_rate: rate, channels: 2, samples }, rate)
+}
+
+/// The sound of pad `i` from the cache, rendered first if its settings or
+/// the engine's rate changed.
+fn drum_sound(app: &App, i: usize) -> Arc<SampleData> {
+    let rate = app.engine.borrow().sample_rate();
+    let params = app.create.borrow().drums.params(i);
+    if let Some(s) = app.create.borrow().drum_cache[i].as_ref().filter(|s| s.params == params && s.rate == rate) {
+        return s.sample.clone();
+    }
+    let sample = drum_sample(i, params, rate);
+    app.create.borrow_mut().drum_cache[i] = Some(DrumSound { params, rate, sample: sample.clone() });
+    sample
+}
+
+/// A pad pressed: it becomes the one the knobs set, and plays on the
+/// audition voice (to the headphones while a deck plays, as HEAR).
+pub(crate) fn play_drum(app: &App, i: usize) {
+    if i >= drums::PADS {
+        return;
+    }
+    let moved = std::mem::replace(&mut app.create.borrow_mut().drums.selected, i) != i;
+    if moved {
+        save_drums(app);
+    }
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        show_drums(app);
+        return;
+    }
+    let sample = drum_sound(app, i);
+    let cue = to_cue(app);
+    engine::send(app, Command::Sampler(SamplerCommand::Audition { sample, cue }));
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.hearing = Some(Instant::now());
+        rt.pad_playing = None;
+        rt.key_playing = None;
+        rt.drum_playing = Some(i);
+    }
+    show(app);
+}
+
+/// A pad selected for the knobs without playing it (the demo, tests).
+pub(crate) fn select_drum(app: &App, i: usize) {
+    if i < drums::PADS {
+        app.create.borrow_mut().drums.selected = i;
+        save_drums(app);
+        show_drums(app);
+    }
+}
+
+/// A built-in kit chosen: its settings on every pad.
+pub(crate) fn choose_kit(app: &App, id: &str) {
+    let Some(kit) = drums::kit(id) else { return };
+    {
+        let mut rt = app.create.borrow_mut();
+        let selected = rt.drums.selected;
+        rt.drums = Drums { kit: kit.id.into(), pads: kit.pads.iter().map(|&p| p.into()).collect(), selected };
+    }
+    save_drums(app);
+    show_drums(app);
+}
+
+/// A knob of the selected pad turned: "pitch" (semitones), "decay" or
+/// "tone" (0..100), rounded to whole steps. The pad renders anew on its
+/// next press.
+pub(crate) fn set_drum(app: &App, which: &str, v: f32) {
+    let changed = {
+        let mut rt = app.create.borrow_mut();
+        let i = rt.drums.selected;
+        let old = rt.drums.pads[i];
+        let mut p = old;
+        let v = v.round();
+        match which {
+            "pitch" => p.pitch = v.clamp(-12.0, 12.0) as i8,
+            "decay" => p.decay = v.clamp(0.0, 100.0) as u8,
+            "tone" => p.tone = v.clamp(0.0, 100.0) as u8,
+            _ => return,
+        }
+        rt.drums.pads[i] = p;
+        p != old
+    };
+    if changed {
+        save_drums(app);
+    }
+    // Shown either way: the knob snaps to the whole step.
+    show_drums(app);
+}
+
+fn save_drums(app: &App) {
+    if app.state.borrow().read_only() {
+        return;
+    }
+    let json = serde_json::to_string(&app.create.borrow().drums).unwrap_or_default();
+    if let Err(e) = app.state.borrow_mut().lib.set_meta(META_DRUMS, &json) {
+        tracing::warn!(error = %e, "drum kit not saved");
+    }
+}
+
+/// The pads (selected, playing) and the knobs of the selected pad.
+pub(crate) fn drum_rows(d: &Drums, playing: Option<usize>) -> Vec<crate::CreateDrumPad> {
+    let kit = d.kit();
+    (0..drums::PADS)
+        .map(|i| crate::CreateDrumPad {
+            selected: d.selected == i,
+            playing: playing == Some(i),
+            set: d.params(i) != kit.pads[i],
+        })
+        .collect()
+}
+
+/// The length of pad `i` as it sounds, "0.35 s".
+pub(crate) fn drum_length(d: &Drums, i: usize) -> String {
+    let frames = drums::frames(drums::Voice::ALL[i], d.params(i), 48_000);
+    format!("{:.2} s", frames as f64 / 48_000.0)
+}
+
+fn show_drums(app: &App) {
+    let (d, playing) = {
+        let rt = app.create.borrow();
+        (rt.drums.clone(), rt.drum_playing)
+    };
+    let g = app.ui.global::<crate::Create>();
+    set_rows(g.get_drum_pads(), drum_rows(&d, playing), |m| g.set_drum_pads(m));
+    let i = d.selected;
+    let p = d.params(i);
+    let k = d.kit().pads[i];
+    g.set_kit(d.kit.as_str().into());
+    g.set_drum_selected(i as i32);
+    g.set_drum_pitch(f32::from(p.pitch));
+    g.set_drum_decay(f32::from(p.decay));
+    g.set_drum_tone(f32::from(p.tone));
+    g.set_kit_pitch(f32::from(k.pitch));
+    g.set_kit_decay(f32::from(k.decay));
+    g.set_kit_tone(f32::from(k.tone));
+    g.set_drum_length(drum_length(&d, i).into());
+}
+
+/// The kit and the pads' settings (tests).
+#[cfg(test)]
+pub(crate) fn drum_kit(app: &App) -> Drums {
+    app.create.borrow().drums.clone()
+}
+
+/// The sound pad `i` plays now (tests): rendered for its settings.
+#[cfg(test)]
+pub(crate) fn drum_now(app: &App, i: usize) -> Arc<SampleData> {
+    drum_sound(app, i)
+}
+
+/// DRUMS for the audits in its widest state: every pad set away from
+/// the kit (CHANGED), OPEN HAT (the longest name) shown as playing
+/// without sound, the snare selected.
+#[cfg(test)]
+pub(crate) fn stage_drums(app: &App) {
+    for i in 0..drums::PADS {
+        app.create.borrow_mut().drums.selected = i;
+        set_drum(app, "pitch", -12.0);
+    }
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.drums.selected = 1;
+        rt.drum_playing = Some(3);
+    }
+    show_drums(app);
+}
+
+#[cfg(test)]
+pub(crate) fn unstage_drums(app: &App) {
+    app.create.borrow_mut().drum_playing = None;
+    choose_kit(app, drums::KITS[0].id);
 }
 
 // ── [74] Arrange ────────────────────────────────────────────────────────
@@ -3022,7 +3309,10 @@ pub(crate) fn stage_created(app: &App, track: TrackId) {
 /// `create-fits` sets the key a fifth below deck 2's by hand (so FITS
 /// strikes what the deck playing does not share) and marks its first chord,
 /// `create-theory` opens THEORY, `create-theory-wrong` types a melody with
-/// notes out of the key and `create-hints-off` turns the hints off.
+/// notes out of the key and `create-hints-off` turns the hints off;
+/// `create-drums` opens DRUMS with the snare set and selected,
+/// `create-drums-warm` with the WARM kit, `create-drums-play` plays the
+/// ride again and again.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -3082,6 +3372,26 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         }
         if parts.iter().any(|p| p == "create-theory") {
             set_view(&a, "theory");
+        }
+        // [79] DRUMS: a kit, the snare set to five semitones up and
+        // selected; `create-drums-play` keeps the ride sounding.
+        if parts.iter().any(|p| p.starts_with("create-drums")) {
+            set_view(&a, "drums");
+            if parts.iter().any(|p| p == "create-drums-warm") {
+                choose_kit(&a, "warm");
+            }
+            select_drum(&a, 1);
+            set_drum(&a, "pitch", 5.0);
+        }
+        if parts.iter().any(|p| p == "create-drums-play") {
+            let weak = std::rc::Rc::downgrade(&a);
+            let timer = slint::Timer::default();
+            timer.start(slint::TimerMode::Repeated, Duration::from_millis(600), move || {
+                if let Some(a) = weak.upgrade() {
+                    play_drum(&a, 7);
+                }
+            });
+            std::mem::forget(timer);
         }
         if parts.iter().any(|p| p == "create-melody-empty") {
             crate::sampler::fill_bank(&a, od_engine::MELODY_BANK, vec![None; od_engine::SAMPLER_SLOTS]);

@@ -8,6 +8,9 @@ license.workspace = true
 [[bin]]
 name = "opendjdecks"
 path = "src/main.rs"
+# No tests here: `cargo test` then needs no build of the UI library beside
+# its test build (see crates/od-ui/Cargo.toml).
+test = false
 
 [features]
 kiosk = ["od-ui/kiosk"]

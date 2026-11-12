@@ -149,7 +149,7 @@ A fourth tab next to PREPARE, PERFORM and LIGHTING for the things DJs today do i
 
 ### Drum machine
 
-- [ ] **[79]** Built-in synthesised kits with pitch, decay and tone per pad, the same on every platform.
+- [x] **[79]** Built-in synthesised kits with pitch, decay and tone per pad, the same on every platform.
 - [ ] **[80]** 16 pads and a 16-step row with swing and half time, following the master tempo, sharing kits and samples with the sampler, and playable from Perform.
 - [ ] **[81]** Render a pattern as a bar-exact loop file with a hot cue per sound.
 
