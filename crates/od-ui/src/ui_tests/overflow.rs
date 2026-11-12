@@ -1233,6 +1233,16 @@ fn main_states() -> Vec<State> {
             },
             teardown: Some(|u| u.app.ui.global::<crate::Create>().set_more(false)),
         },
+        // [75] The strip rendered: READY, SINGLE NOTES, the check line.
+        State {
+            id: "create.melody (rendered, READY)",
+            setup: |u| {
+                create(u, "melody");
+                crate::create::stage_rendered(&u.app, u.fx.tracks[0].0);
+                u.pump(200);
+            },
+            teardown: Some(|u| u.app.ui.global::<crate::Create>().set_more(false)),
+        },
         State {
             id: "create.melody (audio running, four decks)",
             setup: |u| {

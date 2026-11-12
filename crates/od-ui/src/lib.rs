@@ -27,6 +27,7 @@ mod controller;
 mod controller_setup;
 mod covers;
 mod create;
+mod create_render;
 mod deck_craft;
 mod deck_grid;
 mod edit_in_prepare;

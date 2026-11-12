@@ -163,6 +163,15 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             crate::create::set_view(&ui.app, "melody");
             crate::create::stage_melody(&ui.app, ui.fx.tracks[0].0);
         }
+        // [75] The strip rendered (READY).
+        "create.render" => {
+            if kiosk {
+                return Err("CREATE is not part of the kiosk".into());
+            }
+            w.invoke_set_mode("create".into());
+            crate::create::set_view(&ui.app, "melody");
+            crate::create::stage_rendered(&ui.app, ui.fx.tracks[0].0);
+        }
         "recordings.tracklist" | "panel.queue" | "devices.emergency" => {
             if kiosk {
                 return Err("not part of the kiosk".into());

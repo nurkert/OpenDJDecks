@@ -100,6 +100,9 @@ Every control has to pass one test: does it help a melody from one note, a live 
    - MELODY makes one cue per note, in order, ready as a transition.
    - The file is a new WAV at the chosen tempo (master or the source track) with a beat grid. The original track is never touched.
    - Before rendering, a line says what the stick formats take: the cue count and whether the file fits. A limit shows before the render, not after.
+   - As built ([75]): SINGLE NOTES puts each distinct note of the strip, low to high, on the downbeat of its own bar, cut after three beats; MELODY plays the strip in time from the first downbeat over its whole bars, rests silent and holds kept. Each cue is named by its note and lands on its step of the grid. The grid is constant and locked.
+   - The limit is the 32 hot cues (pads A–H in four banks) the library, the engine and both stick formats we write carry; a full strip of 32 notes fits. Cues after H sit on later pad banks, and the line says how many. How players show them is untested on real players.
+   - Files go to `created` beside the library and into the library as tracks with their grid and cues. RENDER then reads READY in green until the notes, layout or tempo change.
 7. **Into the set.** TO PLAYLIST and TO STICK use the normal library and sync. The file also lands in a CREATED list. SEND TO PERFORM puts the notes on the MELODY pad mode and into a sampler bank of the same name.
 
 ## Drums

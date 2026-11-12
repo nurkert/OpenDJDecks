@@ -472,7 +472,8 @@ fn a_typed_melody_fills_the_strip_and_takes_edits() {
     assert!(ui.value("create.arrange.hint").starts_with("Not read: H4"), "{}", ui.value("create.arrange.hint"));
     assert_eq!(ui.value("create.arrange.count"), "6 NOTES · 2 BARS", "9 steps of 1/8");
     assert!(ui.value("create.result.summary").starts_with("6 notes · 2 bars · "), "{}", ui.value("create.result.summary"));
-    assert!(ui.value("create.result.summary").ends_with(" BPM"));
+    assert!(ui.value("create.result.summary").ends_with(" BPM · 6 cues"), "{}", ui.value("create.result.summary"));
+    assert_eq!(ui.value("create.result.check"), "Stick formats: 6 of 32 hot cues · fits", "said before any render");
     assert_eq!(ui.value("create.arrange.steps"), "A3 C4 E4 D4 - Bb3 _ - G3");
     for id in ["create.result.send", "create.result.render", "create.result.to-playlist"] {
         assert_eq!(ui.get(id).accessible_enabled(), Some(false), "{id} comes later");
@@ -636,4 +637,105 @@ fn play_sends_the_steps_in_order_and_lights_the_step() {
     assert!(!ui.app.ui.global::<crate::Create>().get_playing());
     assert!(ui.wait_until(1.0, |u| !snapshot(u).auditioning), "stopped at once");
     assert!(steps(&ui).iter().all(|v| !v.ends_with("playing")));
+}
+
+// ── [75] Render ─────────────────────────────────────────────────────────
+
+fn label(ui: &Ui, id: &str) -> String {
+    ui.get(id).accessible_label().map(|s| s.to_string()).unwrap_or_default()
+}
+
+/// The file rendered last: its frames, rate, grid and cues in the library.
+fn rendered_file(ui: &Ui) -> (crate::create_render::Made, u32, u32, od_core::Beatgrid, Vec<od_core::Cue>) {
+    let made = crate::create::made(&ui.app).expect("a render");
+    let r = hound::WavReader::open(&made.path).expect("a WAV file");
+    let (frames, rate) = (r.duration(), r.spec().sample_rate);
+    let lib = ui.fx.lib();
+    let grid = lib.beatgrid(made.track).unwrap().expect("a beatgrid");
+    let cues = lib.cues(made.track).unwrap();
+    (made, frames, rate, grid, cues)
+}
+
+/// RESULT says what the stick formats take before anything is rendered;
+/// RENDER writes a new WAV file beside the library and adds it as a track
+/// with a locked grid at the chosen tempo and one hot cue per note (named
+/// by the note), then reads READY until the notes, layout or tempo change;
+/// MELODY keeps the strip in time, SINGLE NOTES puts each distinct note on
+/// its own bar, and the track's tempo can be chosen. The source file is
+/// never touched.
+#[test]
+fn render_writes_a_new_track_with_grid_and_cues_and_leaves_the_source() {
+    let ui = Ui::open((1440, 900));
+    let id = ui.fx.tracks[0].0;
+    super::perform_craft::with_grid(&ui, id);
+    let source = ui.fx.lib().track(id).unwrap().path;
+    let bytes = std::fs::read(&source).unwrap();
+    let mtime = std::fs::metadata(&source).unwrap().modified().unwrap();
+    picked_on_deck1(&ui);
+    let g = ui.app.ui.global::<crate::Create>();
+    // Nothing on the strip: nothing to render, no check yet.
+    assert!(!ui.has("create.result.check"));
+    assert_eq!(ui.get("create.result.render").accessible_enabled(), Some(false));
+    g.invoke_type_steps("A3 C4 _ - E4 A3".into());
+    ui.pump(100);
+    assert_eq!(ui.value("create.result.check"), "Stick formats: 4 of 32 hot cues · fits", "before the render");
+    let bpm = g.get_render().bpm.to_string();
+    assert_eq!(ui.value("create.result.summary"), format!("4 notes · 1 bar · {bpm} BPM · 4 cues"));
+    assert!(ui.get("create.result.melody").accessible_label().is_some());
+    assert_eq!(g.get_render().layout, "melody", "MELODY by default");
+    assert_eq!(label(&ui, "create.result.render"), "RENDER");
+    assert_eq!(ui.get("create.result.render").accessible_enabled(), Some(true));
+    // MELODY at the master tempo.
+    ui.click("create.result.render");
+    assert!(ui.wait_until(20.0, |u| label(u, "create.result.render") == "READY"), "READY: {}", label(&ui, "create.result.render"));
+    assert_eq!(g.get_render().state, "ready");
+    let (made, frames, rate, grid, cues) = rendered_file(&ui);
+    let master: f64 = bpm.parse().unwrap();
+    assert!(made.path.starts_with(ui.fx.root.join("library/created")), "{}", made.path.display());
+    assert!(made.title.ends_with(&format!("(Melody {} BPM)", crate::create_render::tempo(master))), "{}", made.title);
+    let at = |beat: f64| crate::create_render::seconds(beat, crate::create_render::tempo(master));
+    assert_eq!(frames as usize, (at(4.0) * f64::from(rate)).round() as usize, "one bar at the master tempo");
+    assert!(grid.locked && (grid.first_bpm().unwrap() - crate::create_render::tempo(master)).abs() < 1e-9);
+    let named: Vec<(String, f64)> = cues.iter().map(|c| (c.label.clone(), c.start)).collect();
+    assert_eq!(named.iter().map(|c| c.0.as_str()).collect::<Vec<_>>(), ["A3", "C4", "E4", "A3"], "one cue per note, in order");
+    for ((_, start), beat) in named.iter().zip([0.0, 0.5, 2.0, 2.5]) {
+        assert!((start - at(beat)).abs() < 1e-6, "on its step: {start} vs beat {beat}");
+    }
+    assert!(cues.iter().enumerate().all(|(i, c)| c.kind == od_core::CueKind::Hot(i as u8)), "A, B, C, D");
+    let t = ui.fx.lib().track(made.track).unwrap();
+    assert_eq!(t.tags.title, made.title, "a library track");
+    // READY again only says where it is.
+    ui.click("create.result.render");
+    assert_eq!(crate::create::made(&ui.app).unwrap().track, made.track, "no second file");
+    // SINGLE NOTES: READY goes, three distinct notes on three bars.
+    ui.click("create.result.single-notes");
+    assert_eq!(label(&ui, "create.result.render"), "RENDER", "another file now");
+    assert_eq!(ui.value("create.result.check"), "Stick formats: 3 of 32 hot cues · fits");
+    assert_eq!(ui.value("create.result.summary"), format!("3 notes · 3 bars · {bpm} BPM · 3 cues"));
+    // At the track's tempo (240 BPM).
+    ui.click("create.result.tempo.track");
+    assert_eq!(g.get_render().bpm, "240.0");
+    ui.click("create.result.render");
+    assert!(ui.wait_until(20.0, |u| label(u, "create.result.render") == "READY"));
+    let (single, frames, rate, grid, cues) = rendered_file(&ui);
+    assert_ne!(single.track, made.track);
+    assert_ne!(single.path, made.path);
+    assert_eq!(frames as usize, 3 * rate as usize, "three bars at 240 BPM: 3 s");
+    assert_eq!(cues.iter().map(|c| c.label.as_str()).collect::<Vec<_>>(), ["A3", "C4", "E4"], "low to high");
+    for (i, c) in cues.iter().enumerate() {
+        let b = grid.nearest_beat(c.start).unwrap();
+        assert!((grid.beats[b].time - c.start).abs() < 1e-9 && grid.beats[b].bar_position == 1, "cue {i} on a downbeat");
+        assert!((c.start - i as f64).abs() < 1e-9, "bar {i}");
+    }
+    // The same notes in another order are the same SINGLE NOTES file;
+    // another note is not: READY goes.
+    g.invoke_type_steps("E4 C4 A3".into());
+    assert_eq!(label(&ui, "create.result.render"), "READY");
+    g.invoke_type_steps("A3 C4 G4".into());
+    assert_eq!(label(&ui, "create.result.render"), "RENDER");
+    // The choices are kept; the source file is untouched.
+    assert!(ui.fx.lib().meta(crate::create::META_RENDER).unwrap().is_some_and(|j| j.contains("single") && j.contains("track")));
+    assert_eq!(std::fs::read(&source).unwrap(), bytes, "the source's bytes");
+    assert_eq!(std::fs::metadata(&source).unwrap().modified().unwrap(), mtime, "and its time");
+    assert!(ui.fx.lib().track(id).unwrap().path == source);
 }
