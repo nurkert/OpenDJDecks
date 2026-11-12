@@ -181,6 +181,15 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             crate::create::set_view(&ui.app, "melody");
             crate::create::stage_sent(&ui.app, ui.fx.tracks[0].0);
         }
+        // [80] The drum machine with a pattern playing and REC armed.
+        "create.drums.machine" => {
+            if kiosk {
+                return Err("CREATE is not part of the kiosk".into());
+            }
+            w.invoke_set_mode("create".into());
+            crate::create::set_view(&ui.app, "drums");
+            crate::create::stage_drums(&ui.app);
+        }
         // [78] What fits, in FITS and in THEORY.
         "create.fits" | "create.theory.fits" => {
             if kiosk {

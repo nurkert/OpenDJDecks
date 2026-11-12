@@ -809,10 +809,22 @@ pub enum SamplerCommand {
     },
     /// Clears all patterns.
     SeqClear,
-    /// Starts/stops the step sequencer. Steps are 16th notes locked to the
-    /// master beat clock (step = ⌊beat × 4⌋ mod 16), triggered sample
-    /// accurately.
+    /// Starts/stops the step sequencer. Steps are 16th notes (8ths at half
+    /// time) locked to the master beat clock, counted from the sequencer's
+    /// origin (beat 0 until [`SamplerCommand::SeqPlayFrom`] sets one: step
+    /// = ⌊(beat − origin) × 4⌋ mod 16), triggered sample accurately.
     SeqPlay(bool),
+    /// [80] Starts the sequencer with step 1 on beat `beat` of the master
+    /// beat clock (CREATE's PLAY: the next bar while a deck plays), or on
+    /// the next block when `None`; no step sounds before it. The beat
+    /// stays the origin the steps count from.
+    SeqPlayFrom(Option<f64>),
+    /// [80] Swing, `0..=SEQ_SWING_MAX`: every off-beat step (the second
+    /// 16th of each eighth) sounds this share of a step late.
+    SeqSwing(f32),
+    /// [80] Half time: a step lasts an eighth note, so the 16 steps run
+    /// over two bars at half the master tempo.
+    SeqHalfTime(bool),
     /// Pattern recording: while on and playing, `Trigger` also stores the
     /// nearest step for the slot.
     SeqRecord(bool),

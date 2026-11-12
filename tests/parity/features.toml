@@ -1748,9 +1748,10 @@ status = "done"
 prio = "P3"
 tests = [
   "od-ui::ui_tests::perform::pattern_recall_stores_and_recalls",
+  "od-ui::ui_tests::create::a_saved_pattern_plays_from_the_pattern_pads_in_perform",
 ]
 spec = "UX §1.3"
-note = "Pad mode PATTERN: an empty pad stores the sampler sequence patterns, a stored pad recalls them and starts the sequencer, the shifted pad clears it"
+note = "Pad mode PATTERN: an empty pad stores the sampler sequence patterns (with swing and half time), a stored pad recalls them and starts the sequencer, the shifted pad clears it; the sequences are kept in the sampler's store, and CREATE's SAVE PATTERN writes to one (roadmap [80])"
 [[feature]]
 id = "pad-mode-timed-censor"
 area = "deck"
@@ -2404,11 +2405,18 @@ prio = "P3"
 tests = [
   "od-engine::sampler::sequencer_plays_steps_on_the_master_beat",
   "od-engine::sampler::sequencer_pattern_recording",
+  "od-engine::sampler::swing_delays_the_off_beat_steps_by_its_share_of_a_step",
+  "od-engine::sampler::half_time_doubles_the_step_length",
+  "od-engine::sampler::play_from_a_beat_starts_step_one_there",
+  "od-engine::sampler::the_sequencer_plays_the_kit_slots_on_the_master_grid",
   "od-ui::sampler::tests::pattern_flags",
   "od-ui::sampler::tests::panel_projection",
+  "od-ui::ui_tests::create::drum_steps_are_the_sequencers_pattern_and_play_in_order",
+  "od-ui::ui_tests::create::rec_quantises_pad_presses_and_clear_has_an_undo",
+  "od-ui::ui_tests::create::load_sample_fills_pad_nine_and_a_restart_keeps_the_drum_machine",
 ]
-evidence = ["sampler.slint::SamplerPanel"]
-note = "Footer row of the sampler panel: REC / PLAY / SAVE (onto the next free Pattern Recall pad), the 16 steps of the selected slot, the playing step and CLR; patterns saved with the slots"
+evidence = ["sampler.slint::SamplerPanel", "crates/od-ui/src/create.rs::toggle_drum_step"]
+note = "Footer row of the sampler panel: REC / PLAY / SAVE (onto the next free Pattern Recall pad), the 16 steps of the selected slot, the playing step and CLR; patterns saved with the slots. CREATE's DRUMS edits the same sequencer (roadmap [80]): the kit and samples in a sixth bank, DRUMS; SWING (0–75 % of a step on the off-beat steps) and HALF TIME (eighth-note steps) apply to every slot; PLAY from CREATE starts step 1 on the next bar while a deck plays"
 
 [[feature]]
 id = "sampler-panel"

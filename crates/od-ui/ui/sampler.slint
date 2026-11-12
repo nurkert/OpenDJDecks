@@ -154,7 +154,8 @@ export component SamplerPanel inherits Rectangle {
     property <length> row-h: 32px;
     property <length> gap: 2px;
     // [77] A narrow panel (the kiosk) drops the BANK caption and shortens
-    // MELODY, so the footer keeps its keys. Follows the width through a
+    // MELODY, so the footer keeps its keys; [80] also DRUMS, the SEQ
+    // caption and the volume's travel. Follows the width through a
     // plain property, so it does not feed back into the layout.
     property <bool> narrow;
     init => { self.narrow = self.width < 960px; }
@@ -329,6 +330,16 @@ export component SamplerPanel inherits Rectangle {
                     command: "sampler.bank.next";
                     clicked => { root.bank(4); }
                 }
+                // [80] The sixth bank holds CREATE's drum kit and samples.
+                Toggle {
+                    accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.s.bank == 5;
+                    accessible-id: "sampler.bank6";
+                    size: Theme.target; min-w: Theme.target;
+                    label: root.narrow ? "DRM" : @tr("DRUMS"); label-size: Theme.label; tracking: 0.8px; on: root.s.bank == 5; tone: Theme.w546;
+                    tooltip: @tr("Sampler bank DRUMS: CREATE's drum kit on pads 1 to 8, its samples on 9 to 16");
+                    command: "sampler.bank.next";
+                    clicked => { root.bank(5); }
+                }
             }
             Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.s.quantize;
@@ -343,7 +354,8 @@ export component SamplerPanel inherits Rectangle {
                 tooltip: @tr("Sync the selected sample to the master tempo"); clicked => { root.sync(); } }
             Rectangle {
                 accessible-role: slider; accessible-id: "sampler.master"; accessible-value: Math.round(root.s.volume * 100) + "%";
-                width: 96px;
+                // [80] Shorter in a narrow panel, so the sixth bank fits.
+                width: root.narrow ? 72px : 96px;
                 Caps { x: 0; text: @tr("VOL"); font-size: Theme.label; vertical-alignment: center; height: parent.height; }
                 Rectangle { x: 26px; y: (parent.height - 2px) / 2; width: parent.width - 26px; height: 2px; background: Theme.rule-strong; }
                 Rectangle { x: 26px; y: (parent.height - 2px) / 2; width: (parent.width - 26px) * clamp(root.s.volume, 0, 1); height: 2px; background: Theme.attention; }
@@ -358,7 +370,7 @@ export component SamplerPanel inherits Rectangle {
                 }
             }
             Rectangle { width: Theme.s2; }
-            Caps { text: "SEQ"; font-size: Theme.label; vertical-alignment: center; width: 24px; }
+            if !root.narrow: Caps { text: "SEQ"; font-size: Theme.label; vertical-alignment: center; width: 24px; }
             Toggle {
                 accessible-role: checkbox; accessible-checkable: true; accessible-checked: root.s.seq-recording;
                 accessible-id: "sampler.seq.rec";

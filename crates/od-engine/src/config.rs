@@ -54,17 +54,25 @@ pub const HOT_CUES: usize = 8;
 pub const HOT_CUE_BANKS: usize = 4;
 /// Number of sampler slots per bank (one pad page).
 pub const SAMPLER_SLOTS: usize = 16;
-/// Number of sampler banks: four for the user's samples and the MELODY
-/// bank ([`MELODY_BANK`]).
-pub const SAMPLER_BANKS: usize = 5;
+/// Number of sampler banks: four for the user's samples, the MELODY bank
+/// ([`MELODY_BANK`]) and the DRUMS bank ([`DRUMS_BANK`]).
+pub const SAMPLER_BANKS: usize = 6;
 /// The bank CREATE's SEND TO PERFORM fills with notes: pads 1–8 the notes
 /// sent, 9–16 the octave above. The MELODY pad mode plays it.
-pub const MELODY_BANK: usize = SAMPLER_BANKS - 1;
+pub const MELODY_BANK: usize = 4;
+/// The bank of CREATE's drum machine (roadmap [80]): pads 1–8 the built-in
+/// kit's sounds, 9–16 samples from the library. Its step patterns are the
+/// sequencer's like any slot's.
+pub const DRUMS_BANK: usize = SAMPLER_BANKS - 1;
 /// Total sampler slots addressable by [`crate::SamplerCommand`]: slot
 /// `bank * SAMPLER_SLOTS + pad`.
 pub const SAMPLER_TOTAL: usize = SAMPLER_SLOTS * SAMPLER_BANKS;
-/// Steps of the sampler step sequencer (one bar of 16th notes).
+/// Steps of the sampler step sequencer (one bar of 16th notes; two bars at
+/// half time).
 pub const SEQ_STEPS: usize = 16;
+/// The most SWING the sequencer takes: an off-beat step this share of a
+/// step late.
+pub const SEQ_SWING_MAX: f32 = 0.75;
 /// Slices of the slicer domain (one per pad).
 pub const SLICER_SLICES: usize = 8;
 /// Number of Tempo FX units.

@@ -10441,46 +10441,6 @@ msgctxt "DrumsView"
 msgid "LOAD SAMPLE"
 msgstr "SAMPLE LADEN"
 
-#: ui/create.slint:180
-msgctxt "DrumsView"
-msgid "Put a sound from the library on a pad (comes with the drum machine)"
-msgstr "Einen Klang aus der Bibliothek auf ein Pad legen (kommt mit der Drum-Machine)"
-
-#: ui/create.slint:189
-msgctxt "DrumsView"
-msgid "PADS"
-msgstr "PADS"
-
-#: ui/create.slint:196
-msgctxt "DrumsView"
-msgid "STEPS"
-msgstr "SCHRITTE"
-
-#: ui/create.slint:197
-msgctxt "DrumsView"
-msgid "Sixteen steps on the master tempo, shared with the sampler's sequencer in Perform."
-msgstr "Sechzehn Schritte im Master-Tempo, geteilt mit dem Sequencer des Samplers in Perform."
-
-#: ui/create.slint:203
-msgctxt "DrumsView"
-msgid "PLAY"
-msgstr "PLAY"
-
-#: ui/create.slint:204
-msgctxt "DrumsView"
-msgid "Play the pattern on the master tempo (comes with the drum machine)"
-msgstr "Das Pattern im Master-Tempo abspielen (kommt mit der Drum-Machine)"
-
-#: ui/create.slint:208
-msgctxt "DrumsView"
-msgid "REC"
-msgstr "REC"
-
-#: ui/create.slint:209
-msgctxt "DrumsView"
-msgid "Record the pads into the steps (comes with the drum machine)"
-msgstr "Die Pads in die Schritte aufnehmen (kommt mit der Drum-Machine)"
-
 #: ui/create.slint:221
 msgctxt "DeckKey"
 msgid "Deck {}"
@@ -10606,30 +10566,15 @@ msgctxt "ResultBar"
 msgid "Add to a new playlist"
 msgstr "Zu einer neuen Playlist hinzufügen"
 
-#: ui/create.slint:331
-msgctxt "ResultBar"
-msgid "Play the pattern from the sampler in Perform (comes with the drum machine)"
-msgstr "Das Pattern im Sampler in Perform spielen (kommt mit der Drum-Machine)"
-
 #: ui/create.slint:335
 msgctxt "ResultBar"
 msgid "RENDER LOOP"
 msgstr "LOOP RENDERN"
 
-#: ui/create.slint:336
-msgctxt "ResultBar"
-msgid "Write a bar-exact loop with a hot cue per sound (comes with the drum machine)"
-msgstr "Einen taktgenauen Loop mit einem Hot Cue pro Klang schreiben (kommt mit der Drum-Machine)"
-
 #: ui/create.slint:340
 msgctxt "ResultBar"
 msgid "SAVE PATTERN"
 msgstr "PATTERN SICHERN"
-
-#: ui/create.slint:341
-msgctxt "ResultBar"
-msgid "Keep the pattern in the sampler's store (comes with the drum machine)"
-msgstr "Das Pattern im Speicher des Samplers ablegen (kommt mit der Drum-Machine)"
 
 #: ui/create.slint:353
 msgctxt "StripDeck"
@@ -11665,11 +11610,6 @@ msgstr "Klang des gewählten Pads, von dunkel bis hell"
 
 #: ui/create.slint
 msgctxt "DrumPad"
-msgid "Play {} and set it with the knobs in KIT"
-msgstr "{} spielen und mit den Reglern in KIT einstellen"
-
-#: ui/create.slint
-msgctxt "DrumPad"
 msgid "PLAYING"
 msgstr "KLINGT"
 
@@ -11684,11 +11624,241 @@ msgid "CHANGED"
 msgstr "GEÄNDERT"
 
 #: ui/create.slint
-msgctxt "DrumsView"
-msgid "A pad pressed is the one the knobs set. A double-click on a knob brings back the kit's setting. The kits are synthesised, so they sound the same on every computer."
-msgstr "Das zuletzt gedrückte Pad stellen die Regler ein. Ein Doppelklick auf einen Regler holt die Einstellung des Kits zurück. Die Kits sind synthetisiert und klingen auf jedem Computer gleich."
+msgctxt "Create"
+msgid "PAD {}"
+msgstr "PAD {}"
+
+#: ui/create.slint
+msgctxt "DrumPad"
+msgid "Pad {}: empty. Select it, then LOAD SAMPLE puts the track open in Prepare's player on it"
+msgstr "Pad {}: leer. Wähle es, dann legt SAMPLE LADEN den Track aus dem Prepare-Player darauf"
+
+#: ui/create.slint
+msgctxt "DrumPad"
+msgid "Play {}; STEPS shows its steps. LOAD SAMPLE replaces it"
+msgstr "{} spielen; SCHRITTE zeigt seine Schritte. SAMPLE LADEN ersetzt es"
+
+#: ui/create.slint
+msgctxt "DrumPad"
+msgid "Play {}; the knobs in KIT set it and STEPS shows its steps"
+msgstr "{} spielen; die Regler in KIT stellen es ein, SCHRITTE zeigt seine Schritte"
+
+#: ui/create.slint
+msgctxt "DrumPad"
+msgid "EMPTY"
+msgstr "LEER"
+
+#: ui/create.slint
+msgctxt "DrumPad"
+msgid "SAMPLE"
+msgstr "SAMPLE"
+
+#: ui/create.slint
+msgctxt "DrumStep"
+msgid "Set or clear step {} of the selected pad; the arrow keys move along the steps, Return sets one"
+msgstr "Schritt {} des gewählten Pads setzen oder löschen; die Pfeiltasten gehen die Schritte entlang, Return setzt einen"
+
+#: ui/create.slint
+msgctxt "DrumStep"
+msgid "STEP {}"
+msgstr "SCHRITT {}"
+
+#: ui/create.slint
+msgctxt "DrumStep"
+msgid "set"
+msgstr "gesetzt"
+
+#: ui/create.slint
+msgctxt "DrumStep"
+msgid "empty"
+msgstr "leer"
+
+#: ui/create.slint
+msgctxt "DrumStep"
+msgid "playing"
+msgstr "spielt"
+
+#: ui/create.slint
+msgctxt "DrumStep"
+msgid "other pads"
+msgstr "andere Pads"
+
+#: ui/create.slint
+msgctxt "DrumSteps"
+msgid "The steps of the selected pad: a tap or Return sets or clears one, the arrow keys move along them"
+msgstr "Die Schritte des gewählten Pads: Tippen oder Return setzt oder löscht einen, die Pfeiltasten gehen sie entlang"
+
+#: ui/create.slint
+msgctxt "DrumSteps"
+msgid "Steps"
+msgstr "Schritte"
+
+#: ui/create.slint
+msgctxt "DrumSteps"
+msgid "{} of 16 set"
+msgstr "{} von 16 gesetzt"
+
+#: ui/create.slint
+msgctxt "DrumFeel"
+msgid "SWING"
+msgstr "SWING"
+
+#: ui/create.slint
+msgctxt "DrumFeel"
+msgid "Swing: every off-beat step that share of a step late (33 % is a triplet shuffle)"
+msgstr "Swing: jeder Offbeat-Schritt um diesen Anteil eines Schritts später (33 % ist ein Triolen-Shuffle)"
+
+#: ui/create.slint
+msgctxt "DrumFeel"
+msgid "HALF TIME"
+msgstr "HALBES TEMPO"
+
+#: ui/create.slint
+msgctxt "DrumFeel"
+msgid "Half time: a step is an eighth note, so the 16 steps take two bars (for material read at half the tempo)"
+msgstr "Halbes Tempo: Ein Schritt ist eine Achtelnote, die 16 Schritte dauern also zwei Takte (für Material, das im halben Tempo gelesen wird)"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "NEXT BAR"
+msgstr "NÄCHSTER TAKT"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "STOP"
+msgstr "STOPP"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "PLAY"
+msgstr "PLAY"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "Play the steps on the master tempo, from the next bar while a deck plays (through the sampler); again to stop"
+msgstr "Die Schritte im Master-Tempo spielen, ab dem nächsten Takt, solange ein Deck spielt (über den Sampler); noch einmal stoppt"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "REC ON"
+msgstr "REC AN"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "REC"
+msgstr "REC"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "Record: pads pressed while the steps play land on the nearest step; again to stop"
+msgstr "Aufnehmen: Pads, die gedrückt werden, während die Schritte spielen, landen auf dem nächsten Schritt; noch einmal stoppt"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "CLEAR"
+msgstr "LEEREN"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "Empty every pad's steps (UNDO brings them back)"
+msgstr "Die Schritte aller Pads leeren (RÜCKGÄNGIG holt sie zurück)"
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "UNDO"
+msgstr "RÜCKG."
+
+#: ui/create.slint
+msgctxt "DrumKeys"
+msgid "Bring back the steps as they were before the last CLEAR"
+msgstr "Die Schritte zurückholen, wie sie vor dem letzten LEEREN waren"
 
 #: ui/create.slint
 msgctxt "DrumsView"
-msgid "Press a pad to hear it. Pads 9 to 16 come with the steps."
-msgstr "Drück ein Pad, um es zu hören. Die Pads 9 bis 16 kommen mit den Schritten."
+msgid "The knobs set the kit pad selected last. A double-click on a knob brings back the kit's setting. The kits are synthesised, so they sound the same on every computer."
+msgstr "Die Regler stellen das zuletzt gewählte Kit-Pad ein. Ein Doppelklick auf einen Regler holt die Einstellung des Kits zurück. Die Kits sind synthetisiert und klingen deshalb auf jedem Computer gleich."
+
+#: ui/create.slint
+msgctxt "DrumsView"
+msgid "Put the track open in Prepare's player (or the file selected in a folder) on the selected pad of 9 to 16, else the first empty one"
+msgstr "Den Track aus dem Prepare-Player (oder die in einem Ordner gewählte Datei) auf das gewählte Pad von 9 bis 16 legen, sonst auf das erste leere"
+
+#: ui/create.slint
+msgctxt "DrumsView"
+msgid "PADS · DRUMS BANK"
+msgstr "PADS · BANK DRUMS"
+
+#: ui/create.slint
+msgctxt "DrumsView"
+msgid "A pad plays and shows its steps below. Pads 9 to 16 take samples from the library: LOAD SAMPLE."
+msgstr "Ein Pad spielt und zeigt unten seine Schritte. Pads 9 bis 16 nehmen Samples aus der Bibliothek: SAMPLE LADEN."
+
+#: ui/create.slint
+msgctxt "DrumsView"
+msgid "STEPS ({})"
+msgstr "SCHRITTE ({})"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "pattern {}"
+msgstr "Pattern {}"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "every PATTERN pad taken"
+msgstr "alle PATTERN-Pads belegt"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "16 steps"
+msgstr "16 Schritte"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "swing {} %"
+msgstr "Swing {} %"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "half time"
+msgstr "halbes Tempo"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Sent: the PATTERN pads in Perform play this pattern, the sampler's DRUMS bank holds the kit"
+msgstr "Gesendet: Die PATTERN-Pads in Perform spielen dieses Pattern, die Sampler-Bank DRUMS hält das Kit"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Save the pattern on a PATTERN pad and put the sampler in Perform on the DRUMS bank"
+msgstr "Das Pattern auf einem PATTERN-Pad sichern und den Sampler in Perform auf die Bank DRUMS stellen"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Write a bar-exact loop with a hot cue per sound (not built yet)"
+msgstr "Einen taktgenauen Loop mit einem Hot Cue pro Klang schreiben (noch nicht gebaut)"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "SAVED"
+msgstr "GESICHERT"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Saved: pad S{} of the PATTERN pad mode in Perform plays it"
+msgstr "Gesichert: Pad S{} des Pad-Modus PATTERN in Perform spielt es"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Keep the steps, swing and half time in the sampler's store, on a PATTERN pad in Perform"
+msgstr "Die Schritte, Swing und halbes Tempo im Speicher des Samplers behalten, auf einem PATTERN-Pad in Perform"
+
+#: ui/create.slint
+msgctxt "SamplerPanel"
+msgid "DRUMS"
+msgstr "DRUMS"
+
+#: ui/create.slint
+msgctxt "SamplerPanel"
+msgid "Sampler bank DRUMS: CREATE's drum kit on pads 1 to 8, its samples on 9 to 16"
+msgstr "Sampler-Bank DRUMS: das Drum-Kit aus CREATE auf den Pads 1 bis 8, seine Samples auf 9 bis 16"
