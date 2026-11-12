@@ -526,6 +526,10 @@ const DE: &[(&str, &str)] = &[
     ("Switch to Perform", "Zu Perform wechseln"),
     ("Switch to Lighting", "Zu Lighting wechseln"),
     ("Switch to Create", "Zu Create wechseln"),
+    // [71] CREATE: picking a note.
+    ("No track in the player: select one in the library", "Kein Track im Player: wähle einen in der Bibliothek"),
+    ("No track on deck {}", "Kein Track auf Deck {}"),
+    ("Not a note: {}. Type one such as A3, F#2 or Bb4", "Kein Ton: {}. Gib einen wie A3, F#2 oder Bb4 ein"),
     ("Club mode on / off", "Club-Modus an / aus"),
     ("Load tracks on two decks", "Tracks auf zwei Decks laden"),
     (

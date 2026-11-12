@@ -85,6 +85,8 @@ pub struct App {
     pub(crate) first_start: RefCell<crate::first_start::Guide>,
     /// The guided controller setup (roadmap [13]).
     pub(crate) controller_setup: RefCell<crate::controller_setup::Runtime>,
+    /// CREATE's picked note and its audio (roadmap [71]).
+    pub(crate) create: RefCell<crate::create::Runtime>,
     worker_events: Receiver<WorkerEvent>,
     tick_timer: slint::Timer,
 }
@@ -128,6 +130,7 @@ impl App {
             mic: RefCell::new(crate::mic::MicRuntime::default()),
             first_start: RefCell::new(crate::first_start::Guide::default()),
             controller_setup: RefCell::new(Default::default()),
+            create: RefCell::new(Default::default()),
             engine: RefCell::new(engine::EngineHost::default()),
             decks: RefCell::new(decks::Decks::default()),
             mixer: mixer::MixerView::default(),
@@ -195,6 +198,8 @@ impl App {
         crate::perform_lock::wire(&app);
         crate::phase::wire(&app);
         crate::booth::wire(&app);
+        crate::create::wire(&app);
+        crate::create::demo(&app);
         decks::autoload(&app);
 
         let _ = app.state.borrow_mut().lib.check_missing();

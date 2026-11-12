@@ -816,4 +816,13 @@ pub enum SamplerCommand {
     /// Pattern recording: while on and playing, `Trigger` also stores the
     /// nearest step for the slot.
     SeqRecord(bool),
+    /// Plays `sample` once on a voice of its own, outside the slots (CREATE's
+    /// HEAR, roadmap [71]): to the cue only when `cue`, else to the master.
+    /// Not affected by the sampler level, quantize or `StopAll`.
+    Audition {
+        sample: Arc<SampleData>,
+        cue: bool,
+    },
+    /// Stops the audition (short fade).
+    StopAudition,
 }

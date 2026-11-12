@@ -263,6 +263,8 @@ pub struct EngineState {
     /// All sampler slots, `bank * SAMPLER_SLOTS + pad`.
     pub sampler: [SamplerSlotState; SAMPLER_TOTAL],
     pub sequencer: SequencerState,
+    /// The sampler's audition voice is playing (CREATE's HEAR).
+    pub auditioning: bool,
     pub audible: AudibleState,
     pub input: InputState,
     pub record_tap: bool,
@@ -303,6 +305,7 @@ impl Default for EngineState {
             tempo_fx_multi: [false; TEMPO_FX_UNITS],
             sampler: [SamplerSlotState::default(); SAMPLER_TOTAL],
             sequencer: SequencerState::default(),
+            auditioning: false,
             audible: AudibleState::default(),
             input: InputState::default(),
             record_tap: false,

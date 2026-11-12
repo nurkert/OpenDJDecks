@@ -24,7 +24,8 @@ pub enum KeyNotation {
     Musical,
 }
 
-const NAMES: [&str; 12] = [
+/// Pitch class names (0 = C), as keys and notes are spelled.
+pub(crate) const NAMES: [&str; 12] = [
     "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B",
 ];
 

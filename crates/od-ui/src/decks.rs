@@ -573,6 +573,12 @@ impl Decks {
         self.loaded.get(deck).and_then(|l| l.as_ref()).map(|l| l.id)
     }
 
+    /// The track data the engine plays on `deck` (CREATE measures and
+    /// plays a note from it; EDIT IN PREPARE tests compare it).
+    pub fn engine_track(&self, deck: usize) -> Option<Arc<od_engine::TrackData>> {
+        self.engine_data.get(deck).and_then(Clone::clone)
+    }
+
     pub fn loaded(&self, deck: usize) -> Option<&Loaded> {
         self.loaded.get(deck).and_then(|l| l.as_ref())
     }
@@ -1206,12 +1212,6 @@ pub(crate) fn refresh_analysis(app: &App) {
 
 #[cfg(test)]
 impl Decks {
-    /// The track data the engine plays on deck `d` (EDIT IN PREPARE tests:
-    /// the same audio before and after an edit).
-    pub(crate) fn engine_track(&self, d: usize) -> Option<Arc<od_engine::TrackData>> {
-        self.engine_data[d].clone()
-    }
-
     /// Deck `d`'s key as shown and its cue list.
     pub(crate) fn key_and_cues(&self, d: usize) -> Option<(String, Vec<od_core::Cue>)> {
         self.loaded(d).map(|m| (m.key.clone(), m.source.cues.clone()))

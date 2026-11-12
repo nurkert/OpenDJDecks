@@ -1191,6 +1191,17 @@ fn main_states() -> Vec<State> {
         State { id: "create.melody", setup: |u| create(u, "melody"), teardown: None },
         State { id: "create.drums", setup: |u| create(u, "drums"), teardown: None },
         State { id: "create.theory", setup: |u| create(u, "theory"), teardown: None },
+        // [71] A picked note in its widest state: corrected (SET BY YOU)
+        // where no clear pitch was found.
+        State {
+            id: "create.melody (a note picked)",
+            setup: |u| {
+                create(u, "melody");
+                crate::create::stage(&u.app, u.fx.tracks[0].0);
+                u.pump(200);
+            },
+            teardown: None,
+        },
         State {
             id: "create.melody (audio running, four decks)",
             setup: |u| {

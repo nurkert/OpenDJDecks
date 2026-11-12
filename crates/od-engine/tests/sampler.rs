@@ -330,3 +330,30 @@ fn tempo_fx_on_the_sampler() {
         "no echo when the unit sits on another channel: {dry}"
     );
 }
+
+/// [71] The audition voice (CREATE's HEAR) plays a sample once beside the
+/// slots: to the master at unity, ignoring the sampler level, or to the cue
+/// only; a stop fades it out.
+#[test]
+fn audition_plays_once_on_master_or_cue() {
+    let mut rig = clock_rig();
+    rig.send(Command::Mixer(MixerCommand::SetSamplerLevel(0.0)));
+    rig.send(Command::Mixer(MixerCommand::SetHeadphoneMix(0.0)));
+    smp(&mut rig, SamplerCommand::Audition { sample: dc(1000, 0.5), cue: false });
+    let out = rig.render(20);
+    assert_eq!(out[0], 0.5, "on the master at once, at unity");
+    assert_eq!(out[999 * 2], 0.5);
+    assert_eq!(out[1000 * 2], 0.0, "once");
+    assert!(!rig.state().auditioning);
+    assert!(rig.state().sampler.iter().all(|s| !s.loaded), "no slot was used");
+    // On the cue: the master stays silent.
+    smp(&mut rig, SamplerCommand::Audition { sample: dc(48_000, 0.25), cue: true });
+    let out = rig.render(5);
+    assert!(out.iter().all(|&v| v == 0.0), "not on the master");
+    assert!(rig.phones[..BLOCK * 2].iter().all(|&v| (v - 0.25).abs() < 1e-6), "on the cue");
+    assert!(rig.state().auditioning);
+    smp(&mut rig, SamplerCommand::StopAudition);
+    rig.render(3);
+    assert!(rig.phones[..BLOCK * 2].iter().all(|&v| v == 0.0), "stopped after its fade");
+    assert!(!rig.state().auditioning);
+}

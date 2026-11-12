@@ -478,6 +478,7 @@ fn frame(app: &App) {
         None => (None, Vec::new()),
     };
     decks::persist_cue_events(app, &events);
+    crate::create::poll(app, state.as_ref());
     crate::lighting::frame(app, state.as_ref());
     top_bar(app, state.as_ref());
     if app.ui.get_mode() == "prepare" {

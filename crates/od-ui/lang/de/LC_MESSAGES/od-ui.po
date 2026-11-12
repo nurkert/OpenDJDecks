@@ -10274,18 +10274,9 @@ msgstr "QUELLE"
 
 #: ui/create.slint:114
 msgctxt "MelodyView"
-msgid "Pick one note from a track on a deck or in the library. Drag IN and OUT around it, then hear it."
-msgstr "Wähle einen Ton aus einem Track auf einem Deck oder in der Bibliothek. Zieh IN und OUT um ihn herum und hör ihn dir an."
+msgid "Pick one note from a track on a deck or in the player. Drag IN and OUT around it, then hear it."
+msgstr "Wähle einen Ton aus einem Track auf einem Deck oder im Player. Zieh IN und OUT um ihn herum und hör ihn dir an."
 
-#: ui/create.slint:119
-msgctxt "MelodyView"
-msgid "NO NOTE PICKED"
-msgstr "KEIN TON GEWÄHLT"
-
-#: ui/create.slint:121
-msgctxt "MelodyView"
-msgid "Its pitch shows as a note name and cents, and you can correct it."
-msgstr "Seine Tonhöhe erscheint als Notenname mit Cent, und du kannst sie korrigieren."
 
 #: ui/create.slint:126
 msgctxt "MelodyView"
@@ -10294,8 +10285,123 @@ msgstr "HÖREN"
 
 #: ui/create.slint:127
 msgctxt "MelodyView"
-msgid "Play the picked note (comes with the note picker)"
-msgstr "Den gewählten Ton abspielen (kommt mit der Tonauswahl)"
+msgid "Play the note from IN to OUT, with its fade (on the headphones while a deck plays)"
+msgstr "Den Ton von IN bis OUT mit seiner Blende abspielen (auf dem Kopfhörer, solange ein Deck spielt)"
+
+#: ui/create.slint
+msgctxt "SourceChooser"
+msgid "DECK 1"
+msgstr "DECK 1"
+
+#: ui/create.slint
+msgctxt "SourceChooser"
+msgid "DECK 2"
+msgstr "DECK 2"
+
+#: ui/create.slint
+msgctxt "SourceChooser"
+msgid "PLAYER"
+msgstr "PLAYER"
+
+#: ui/create.slint
+msgctxt "SourceChooser"
+msgid "Pick a note from the track in the player, at its position"
+msgstr "Einen Ton aus dem Track im Player wählen, an seiner Position"
+
+#: ui/create.slint
+msgctxt "SourceChooser"
+msgid "Pick a note from the track on deck {}, where it plays now"
+msgstr "Einen Ton aus dem Track auf Deck {} wählen, an der Stelle, die gerade spielt"
+
+#: ui/create.slint
+msgctxt "NoteLine"
+msgid "too short"
+msgstr "zu kurz"
+
+#: ui/create.slint
+msgctxt "NoteLine"
+msgid "silent"
+msgstr "still"
+
+#: ui/create.slint
+msgctxt "NoteLine"
+msgid "no clear pitch"
+msgstr "keine klare Tonhöhe"
+
+#: ui/create.slint
+msgctxt "NoteHandle"
+msgid "IN"
+msgstr "IN"
+
+#: ui/create.slint
+msgctxt "NoteHandle"
+msgid "OUT"
+msgstr "OUT"
+
+#: ui/create.slint
+msgctxt "NoteHandle"
+msgid "IN: where the note starts; drag it, or use the arrow keys"
+msgstr "IN: wo der Ton beginnt; ziehen oder mit den Pfeiltasten"
+
+#: ui/create.slint
+msgctxt "NoteHandle"
+msgid "OUT: where the note ends, with a short fade; drag it, or use the arrow keys"
+msgstr "OUT: wo der Ton mit einer kurzen Blende endet; ziehen oder mit den Pfeiltasten"
+
+#: ui/create.slint
+msgctxt "NoteWave"
+msgid "Zoomed waveform"
+msgstr "Vergrößerte Wellenform"
+
+#: ui/create.slint
+msgctxt "NoteWave"
+msgid "NO NOTE PICKED"
+msgstr "KEIN TON GEWÄHLT"
+
+#: ui/create.slint
+msgctxt "NoteBadge"
+msgid "SET BY YOU"
+msgstr "VON DIR GESETZT"
+
+#: ui/create.slint
+msgctxt "NoteBadge"
+msgid "DETECTED"
+msgstr "ERKANNT"
+
+#: ui/create.slint
+msgctxt "NoteBadge"
+msgid "MEASURING"
+msgstr "WIRD GEMESSEN"
+
+#: ui/create.slint
+msgctxt "NoteBadge"
+msgid "UNSURE"
+msgstr "UNSICHER"
+
+#: ui/create.slint
+msgctxt "NoteBadge"
+msgid "How sure the pitch is"
+msgstr "Wie sicher die Tonhöhe ist"
+
+#: ui/create.slint
+msgctxt "PitchRow"
+msgid "Pitch"
+msgstr "Tonhöhe"
+
+#: ui/create.slint
+msgctxt "PitchRow"
+msgid "Note: a semitone down or up"
+msgstr "Ton: einen Halbton tiefer oder höher"
+
+#: ui/create.slint
+msgctxt "PitchRow"
+msgid "Cents: a cent lower or higher"
+msgstr "Cent: einen Cent tiefer oder höher"
+
+#: ui/create.slint
+msgctxt "TypeRow"
+msgid "TYPE A NOTE"
+msgstr "TON EINGEBEN"
 
 #: ui/create.slint:134
 msgctxt "MelodyView"

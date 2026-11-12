@@ -8581,7 +8581,7 @@ mode = "create"
 source = "Roadmap [70], CREATE concept (0.10.0)"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "create"]
-note = "The fourth work mode. The shell of [70]: the view switch centred at the top; SOURCE | NOTES | FITS, each saying what comes there, with the later controls drawn disabled; the RESULT bar with its disabled actions; the deck strip (play state, tempo, bar and track position, level) at the foot. No browser: CREATE takes its room. Not in the kiosk."
+note = "The fourth work mode. The shell of [70]: the view switch centred at the top; SOURCE | NOTES | FITS, each saying what comes there, with the later controls drawn disabled; SOURCE picks a note ([71]: DECK 1, DECK 2, PLAYER, the zoomed waveform, HEAR); the RESULT bar with its disabled actions; the deck strip (play state, tempo, bar and track position, level) at the foot. No browser: CREATE takes its room. Not in the kiosk."
 
 [[view.region]]
 id = "topbar.modes"
@@ -8615,6 +8615,17 @@ elements = [
   "create.melody.source",
   "create.melody.notes",
   "create.melody.fits",
+]
+
+[[view.region]]
+id = "create.source.from"
+band = "create"
+place = "SOURCE, top: where the note comes from, one segmented control (roadmap [71])"
+order = "row"
+elements = [
+  "create.source.deck1",
+  "create.source.deck2",
+  "create.source.player",
 ]
 
 [[view.region]]
