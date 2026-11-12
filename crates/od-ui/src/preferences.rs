@@ -483,7 +483,6 @@ pub(crate) fn refresh(app: &App) {
             let st = app.state.borrow();
             w.set_low_cpu(crate::low_cpu::active(&st.settings, &st.config));
             w.set_low_cpu_locked(st.config.lite);
-            w.set_low_cpu_state(crate::low_cpu::state_text(&st.settings, &st.config).into());
         }
         w.set_phrases_overview(s.view.phrases_overview);
         w.set_phrase_types(index_of(

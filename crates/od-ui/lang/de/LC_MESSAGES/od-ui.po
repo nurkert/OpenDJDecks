@@ -8677,8 +8677,8 @@ msgid "Low-CPU mode"
 msgstr "CPU-Sparmodus"
 
 msgctxt "PreferencesWindow"
-msgid "LOW CPU"
-msgstr "CPU SPAREN"
+msgid "ALWAYS ON · LITE PROFILE"
+msgstr "IMMER AN · LITE-PROFIL"
 
 msgctxt "PreferencesWindow"
 msgid "Fewer redraws and no decorative motion, for older or busy computers"

@@ -169,10 +169,14 @@ component Switch inherits Rectangle {
     accessible-label: TooltipState.name-for(self.accessible-id, root.label, "");
     in property <string> label;
     in property <bool> on;
+    // Off when something else decides the value (the switch then shows
+    // it, dimmed, and the row says why beside it).
+    in property <bool> enabled: true;
     callback toggled(bool);
     accessible-role: checkbox;
     accessible-checkable: true;
     accessible-checked: root.on;
+    accessible-enabled: root.enabled;
     height: 28px;
     // A narrow row elides the text; the tooltip then shows it whole.
     min-width: 120px;
@@ -183,6 +187,7 @@ component Switch inherits Rectangle {
     Rectangle {
         x: 0; y: (parent.height - 14px) / 2; width: 26px; height: 14px; border-radius: 7px;
         background: root.on ? Theme.live : Theme.plate-raised;
+        opacity: root.enabled ? 1 : 0.5;
         Rectangle {
             y: (parent.height - 10px) / 2; x: root.on ? parent.width - self.width - 2px : 2px;
             width: 10px; height: 10px; border-radius: 5px; background: root.on ? Theme.ink-on : Theme.bone-3;
@@ -193,10 +198,10 @@ component Switch inherits Rectangle {
         x: 34px; width: parent.width - 34px; height: parent.height;
         text: root.label;
         font-family: Theme.family; font-size: Theme.body; overflow: elide;
-        color: root.on ? Theme.bone : Theme.bone-2;
+        color: root.on && root.enabled ? Theme.bone : Theme.bone-2;
         vertical-alignment: center;
     }
-    TipArea { tooltip: root.elided ? root.label : ""; mouse-cursor: pointer; clicked => { root.toggled(!root.on); } }
+    TipArea { tooltip: root.elided ? root.label : ""; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.toggled(!root.on); } }
 }
 
 // A choice among many (devices): one line per option.
@@ -569,13 +574,12 @@ export component PreferencesWindow inherits Window {
     in property <bool> incoming-overlay: true;
     in property <bool> calm-waveform;
     in property <bool> touch-layout;
-    // Low-CPU mode ([68]): on (the setting or the Lite profile), locked on
-    // by the Lite profile, and its state in words.
+    // Low-CPU mode ([68]): on (the setting or the Lite profile), and
+    // locked on by the Lite profile.
     in property <bool> low-cpu;
     // Scroll position of the View page (documentation pictures).
     in-out property <length> view-scroll;
     in property <bool> low-cpu-locked;
-    in property <string> low-cpu-state;
     // Live previews: the waveform as drawn now, the interface scale and
     // the deck layout (0 Simple, 1 Standard, 2 Full).
     in property <image> preview-wave;
@@ -739,22 +743,14 @@ export component PreferencesWindow inherits Window {
                             HorizontalLayout {
                                 alignment: start;
                                 spacing: Theme.s4;
-                                // On is filled with its word beside it (DESIGN.md, State Language).
-                                PlateButton {
-                                    accessible-role: checkbox; accessible-id: "prefs.view.low-cpu";
-                                    accessible-checkable: true; accessible-checked: root.low-cpu;
-                                    tall: true;
-                                    label: @tr("LOW CPU");
-                                    active: root.low-cpu;
-                                    enabled: !root.low-cpu-locked;
-                                    tooltip: @tr("Fewer redraws and no decorative motion, for older or busy computers");
-                                    clicked => { root.flag("view.low-cpu", !root.low-cpu); }
-                                }
-                                Text {
-                                    accessible-role: AccessibleRole.text; accessible-id: "prefs.view.low-cpu.state"; accessible-value: root.low-cpu-state;
-                                    text: root.low-cpu-state;
-                                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: Theme.tracking-index;
-                                    color: root.low-cpu ? Theme.bone : Theme.bone-2;
+                                Switch { accessible-id: "prefs.view.low-cpu"; label: @tr("Fewer redraws and no decorative motion, for older or busy computers"); on: root.low-cpu; enabled: !root.low-cpu-locked; toggled(v) => { root.flag("view.low-cpu", v); } }
+                                // Locked on by the Lite profile: the reason in words.
+                                if root.low-cpu-locked: Text {
+                                    accessible-role: AccessibleRole.text; accessible-id: "prefs.view.low-cpu.locked"; accessible-value: self.text;
+                                    horizontal-stretch: 0;
+                                    text: @tr("ALWAYS ON · LITE PROFILE");
+                                    font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: Theme.tracking-index;
+                                    color: Theme.bone-2;
                                     vertical-alignment: center;
                                 }
                             }

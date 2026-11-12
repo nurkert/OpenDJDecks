@@ -78,17 +78,6 @@ pub(crate) fn detail_due(on: bool, last: Option<Instant>, now: Instant) -> bool 
     !on || last.is_none_or(|t| now.duration_since(t) >= DETAIL_EVERY)
 }
 
-/// The state word and line shown beside the key in Preferences.
-pub(crate) fn state_text(settings: &Settings, config: &AppConfig) -> String {
-    if config.lite {
-        od_i18n::tr("ON · ALWAYS IN THE LITE PROFILE").into()
-    } else if settings.view.low_cpu {
-        od_i18n::tr("ON").into()
-    } else {
-        od_i18n::tr("OFF").into()
-    }
-}
-
 /// Applies a change of the mode: the frame tick's rate (motion follows
 /// the theme, the rest is read where it is used).
 pub(crate) fn apply(app: &App) {
