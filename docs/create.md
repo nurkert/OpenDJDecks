@@ -107,6 +107,7 @@ Every control has to pass one test: does it help a melody from one note, a live 
    - As built ([76]): every rendered track is marked in the library (not by its tags or comment, which stay yours to edit) and listed under CREATED in the browser tree, newest first; it sorts, searches and loads onto decks like any list.
    - TO PLAYLIST is enabled once RENDER reads READY (before that its tooltip says to render first). It opens the browser's own add-to-playlist menu: the list added to last, every playlist and set, or a new playlist named after the file. Each is one undo step.
    - There is no separate TO STICK: a stick gets the file like any track, through a playlist it syncs. After adding, the status line names the registered sticks that take it with their next sync, or says that none does.
+   - As built ([77]): SEND TO PERFORM sends the strip's different notes in the order they first play, the first 8 of them, low to high (the status line says how many found no pad); with an empty strip it sends the 8 pad notes. They fill pads 1–8 of the sampler's fifth bank, MELODY, and the octave above fills pads 9–16. The notes come from the same render cache as the pads and RENDER, and are kept as files in `created/melody` so the bank is back after a restart like any loaded sample. SEND TO PERFORM then reads SENT in green until the notes change.
 
 ## Drums
 
@@ -140,6 +141,7 @@ Every control has to pass one test: does it help a melody from one note, a live 
 
 - **MELODY pad mode** on each deck: 8 pads play the sent notes, 8 more play the octave or the chord notes. They follow QUANT and SYNC like sampler pads, and are mappable for controllers.
 - The notes sit in a sampler bank named MELODY, so the sampler's controls, sync and quantise apply.
+- As built ([77]): MELODY sits next to SAMPLER in each deck's pad modes. Pads A–H play the notes sent; the ‹ › beside the mode switches them to the octave above (an octave rather than chord notes: it needs no chord choice and the notes are already rendered alike). Every deck plays the same notes. A pad press is the sampler's own trigger, so QUANT starts the note on the next beat of the master tempo and the slot's mode and gain apply. A note carries no tempo of its own, so the sampler's SYNC has nothing to stretch: the note keeps its pitch at any master tempo. Before anything was sent the pads stay outlined and the bar says "Send notes from CREATE". On a controller, `deck.pad_mode` with `mode = "melody"` selects it and `deck.pad` plays its pads; that is tested against the mapping, not on hardware.
 - A rendered file loads on a deck like any track, with its hot cues.
 
 ## Risks

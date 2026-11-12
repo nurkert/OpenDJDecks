@@ -1012,6 +1012,63 @@ mod tests {
         );
     }
 
+    /// [77] The MELODY pad mode: a mode button selects it, its pads are
+    /// the deck's pads, and both can carry LED feedback.
+    #[test]
+    fn melody_pad_mode_maps() {
+        assert_eq!(PadMode::parse("melody"), Some(PadMode::Melody));
+        assert_eq!(PadMode::Melody.name(), "melody");
+        assert!(PadMode::ALL.contains(&PadMode::Melody));
+        let press = InputValue::Button {
+            pressed: true,
+            velocity: 127,
+        };
+        let mut mode = Table::new();
+        mode.insert("mode".into(), Value::String("melody".into()));
+        let t = parse_action("deck.pad_mode", &mode).unwrap();
+        assert!(t.needs_deck);
+        assert_eq!(
+            t.produce(Some(1), press),
+            Some(ControlAction::Deck {
+                deck: 1,
+                action: DeckAction::PadMode(PadMode::Melody)
+            })
+        );
+        let mut pad = Table::new();
+        pad.insert("index".into(), Value::Integer(2));
+        assert_eq!(
+            parse_action("deck.pad", &pad).unwrap().produce(Some(1), press),
+            Some(ControlAction::Deck {
+                deck: 1,
+                action: DeckAction::Pad {
+                    index: 2,
+                    pressed: true,
+                    velocity: 127
+                }
+            })
+        );
+        use crate::feedback::{DeckElement, FeedbackTarget};
+        assert_eq!(
+            crate::mapping::parse_target("deck.pad_mode", Some(1), &mode).unwrap(),
+            FeedbackTarget::Deck {
+                deck: 1,
+                element: DeckElement::PadMode(PadMode::Melody)
+            }
+        );
+        let mut led = mode.clone();
+        led.insert("index".into(), Value::Integer(7));
+        assert_eq!(
+            crate::mapping::parse_target("deck.pad", Some(1), &led).unwrap(),
+            FeedbackTarget::Deck {
+                deck: 1,
+                element: DeckElement::Pad {
+                    mode: PadMode::Melody,
+                    index: 7
+                }
+            }
+        );
+    }
+
     /// [60] [61] Stem solo (held) and keep-only, FX panic and the bar-locked
     /// build-up.
     #[test]

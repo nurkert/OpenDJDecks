@@ -8982,3 +8982,80 @@ elements = [
   "create.result.send",
   "create.result.to-playlist",
 ]
+
+[[view]]
+id = "create.sent"
+title = "Create: MELODY sent to Perform (SEND TO PERFORM reads SENT)"
+mode = "create"
+source = "Roadmap [77], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+features = ["pad-mode-melody"]
+note = "SEND TO PERFORM puts the strip's different notes (the first 8 that play, low to high; with an empty strip the pads' notes) on pads 1–8 of the sampler's MELODY bank and the octave above on 9–16, then reads SENT, filled green, until the notes change."
+
+[[view.region]]
+id = "create.sent.actions"
+band = "create"
+place = "RESULT, second line: RENDER, SEND TO PERFORM (SENT), TO PLAYLIST"
+order = "row"
+elements = [
+  "create.result.render",
+  "create.result.send",
+  "create.result.to-playlist",
+]
+
+# ---- Perform: the MELODY pad mode (roadmap [77]) ----
+[[view]]
+id = "perform.melody-pads"
+title = "Perform: deck 1 in the MELODY pad mode with notes sent"
+mode = "perform"
+source = "Roadmap [77], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["deck-row"]
+features = ["pad-mode-melody"]
+note = "The pads name the notes sent from CREATE, in the sampler's MELODY bank; the ‹ › beside the mode shows NOTES or OCT UP (the octave above). A pad is the sampler's own trigger, so QUANT starts it on the beat."
+
+[[view.region]]
+id = "deck1.melody"
+band = "deck-row"
+place = "left deck control area: pads A–D"
+order = "column"
+elements = [
+  "deck1.pad.A",
+  "deck1.pad.B",
+  "deck1.pad.C",
+  "deck1.pad.D",
+]
+
+[[view.region]]
+id = "deck1.melody.right"
+band = "deck-row"
+place = "left deck control area: pads E–H, the pad mode below"
+order = "column"
+elements = [
+  "deck1.pad.E",
+  "deck1.pad.F",
+  "deck1.pad.G",
+  "deck1.pad.H",
+  "deck1.pad-mode",
+]
+
+[[view]]
+id = "perform.melody-pads-empty"
+title = "Perform: deck 1 in the MELODY pad mode, nothing sent yet"
+mode = "perform"
+source = "Roadmap [77], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["deck-row"]
+features = ["pad-mode-melody"]
+note = "Before CREATE sent notes the pads are outlined and play nothing; in the value's place beside the mode the bar says Send notes from CREATE."
+
+[[view.region]]
+id = "deck1.melody.bar"
+band = "deck-row"
+place = "under the pads: the pad mode and the hint"
+order = "row"
+elements = [
+  "deck1.pad-mode",
+  "deck1.pad-hint",
+]

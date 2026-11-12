@@ -466,7 +466,7 @@ fn lighting_pad_mode_drives_the_show() {
     ui.app.ui.invoke_set_mode("perform".into());
     crate::engine::ensure_engine(&ui.app);
     ui.pump(200);
-    ui.app.ui.invoke_deck_pad_mode_set(1, 10);
+    ui.app.ui.invoke_deck_pad_mode_set(1, 11);
     ui.pump(100);
     assert_eq!(
         ui.app.decks.borrow().pad_mode[0],

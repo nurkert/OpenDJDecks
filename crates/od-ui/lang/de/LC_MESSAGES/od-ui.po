@@ -10591,11 +10591,6 @@ msgctxt "ResultBar"
 msgid "SEND TO PERFORM"
 msgstr "AN PERFORM"
 
-#: ui/create.slint:313
-msgctxt "ResultBar"
-msgid "Put the notes on the pads in Perform (comes with the melody pad mode)"
-msgstr "Die Töne auf die Pads in Perform legen (kommt mit dem Melodie-Pad-Modus)"
-
 #: ui/create.slint:317
 msgctxt "ResultBar"
 msgid "RENDER"
@@ -11347,3 +11342,68 @@ msgstr "Erstellt"
 msgctxt "AppWindow"
 msgid "Nothing rendered yet. Notes you RENDER in CREATE land here."
 msgstr "Noch nichts gerendert. Töne, die du in CREATE RENDERST, landen hier."
+
+#: ui/perform.slint
+msgctxt "PadModes"
+msgid "MELODY"
+msgstr "MELODY"
+
+#: ui/perform.slint
+msgctxt "DeckPad"
+msgid "Play this note from the sampler's MELODY bank, on the beat with QUANT — right click stops it"
+msgstr "Diesen Ton aus der Sampler-Bank MELODY spielen, mit QUANT auf dem Beat — Rechtsklick stoppt ihn"
+
+#: ui/perform.slint
+msgctxt "DeckPad"
+msgid "Send notes from CREATE: SEND TO PERFORM puts them on these pads"
+msgstr "Töne aus CREATE senden: AN PERFORM legt sie auf diese Pads"
+
+#: ui/perform.slint
+msgctxt "PadModeBar"
+msgid "The notes sent, or the octave above"
+msgstr "Die gesendeten Töne oder die Oktave darüber"
+
+#: ui/perform.slint
+msgctxt "PadModeBar"
+msgid "Send notes from CREATE"
+msgstr "Töne aus CREATE senden"
+
+#: ui/sampler.slint
+msgctxt "SamplerPanel"
+msgid "MELODY"
+msgstr "MELODY"
+
+#: ui/sampler.slint
+msgctxt "SamplerPanel"
+msgid "Sampler bank MELODY: the notes sent from CREATE (8 notes, then the octave above)"
+msgstr "Sampler-Bank MELODY: die aus CREATE gesendeten Töne (8 Töne, dann die Oktave darüber)"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "SENT"
+msgstr "GESENDET"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "SENDING"
+msgstr "SENDET"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Sent: the MELODY pad mode in Perform plays these notes from the sampler's MELODY bank"
+msgstr "Gesendet: Der Pad-Modus MELODY in Perform spielt diese Töne aus der Sampler-Bank MELODY"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Put the notes on the MELODY pads in Perform and into the sampler's MELODY bank: the strip's notes, else the pads'"
+msgstr "Die Töne auf die MELODY-Pads in Perform und in die Sampler-Bank MELODY legen: die Töne der Leiste, sonst die der Pads"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Pick a note in SOURCE first: then its notes go to the MELODY pads in Perform"
+msgstr "Wähle zuerst einen Ton in QUELLE: Dann gehen seine Töne auf die MELODY-Pads in Perform"
+
+#: ui/perform.slint
+msgctxt "PadModeBar"
+msgid "Send notes from CREATE: SEND TO PERFORM puts them on these pads"
+msgstr "Töne aus CREATE senden: AN PERFORM legt sie auf diese Pads"

@@ -510,7 +510,7 @@ fn own_pads_from_controllers_and_deck_pads() {
     ui.app.ui.invoke_set_mode("perform".into());
     crate::engine::ensure_engine(&ui.app);
     ui.pump(200);
-    ui.app.ui.invoke_deck_pad_mode_set(1, 10);
+    ui.app.ui.invoke_deck_pad_mode_set(1, 11);
     ui.pump(100);
     crate::decks::pad(&ui.app, 0, 0, true);
     crate::decks::pad(&ui.app, 0, 0, false);

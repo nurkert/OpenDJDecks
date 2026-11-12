@@ -2,6 +2,10 @@
 //! triggering, sync to the master tempo and a 16-step sequencer (SPEC
 //! §10.3a).
 //!
+//! [77] The fifth bank is MELODY: CREATE's SEND TO PERFORM fills it with
+//! notes ([`fill_bank`]), the MELODY pad mode plays it, and otherwise it is
+//! a bank like the others (the same slots, store and controls).
+//!
 //! The engine holds the audio and the playing state; this module loads
 //! samples (decoded off the UI thread), remembers what is in which slot
 //! (library meta `sampler`, restored when audio starts) and projects the
@@ -57,7 +61,8 @@ struct Decoded {
 }
 
 pub(crate) struct SamplerRuntime {
-    /// Bank shown in the panel and played by the deck pads (0..4).
+    /// Bank shown in the panel and played by the deck pads (0..5, the last
+    /// one MELODY).
     pub bank: Cell<usize>,
     /// Slot edited in the panel (0..SAMPLER_TOTAL).
     pub selected: Cell<usize>,
@@ -284,6 +289,36 @@ fn install(app: &App, d: Decoded) {
             "Loaded {name} into sampler slot {}",
             slot % SAMPLER_SLOTS + 1
         ));
+    }
+}
+
+/// [77] Puts samples already in memory into `bank`, pad by pad (`None`
+/// empties a pad), as one-shots at unity gain without tempo or pattern,
+/// and keeps them like loaded files: `info.path` is where each one is
+/// stored, so they come back after a restart.
+pub(crate) fn fill_bank(app: &App, bank: usize, pads: Vec<Option<(SlotInfo, Arc<SampleData>)>>) {
+    engine::ensure_engine(app);
+    for (pad, entry) in pads.into_iter().enumerate().take(SAMPLER_SLOTS) {
+        let slot = slot_of(bank, pad);
+        let Some((info, data)) = entry else {
+            engine::send(app, Command::Sampler(SamplerCommand::Unload { slot }));
+            app.sampler.slots.borrow_mut()[slot] = None;
+            continue;
+        };
+        engine::send(app, Command::Sampler(SamplerCommand::SeqPattern { slot, mask: 0 }));
+        install(
+            app,
+            Decoded {
+                slot,
+                quiet: true,
+                info,
+                data,
+            },
+        );
+    }
+    save_soon(app);
+    if engine::snapshot(app).is_none() {
+        show_idle(app);
     }
 }
 
@@ -744,8 +779,8 @@ mod tests {
         assert_eq!(slot_of(0, 0), 0);
         assert_eq!(slot_of(2, 5), 37);
         assert_eq!(slot_of(9, 99), SAMPLER_TOTAL - 1);
-        assert_eq!(step_bank(0, -1), 3);
-        assert_eq!(step_bank(3, 1), 0);
+        assert_eq!(step_bank(0, -1), od_engine::MELODY_BANK, "the MELODY bank is the last");
+        assert_eq!(step_bank(od_engine::MELODY_BANK, 1), 0);
         for m in [SampleMode::OneShot, SampleMode::Loop, SampleMode::Gate] {
             assert_eq!(mode_from_name(mode_name(m)), m);
             assert_eq!(mode_from_index(mode_index(m)), m);

@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 332 features; 326 in scope: 326 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 333 features; 327 in scope: 327 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -217,6 +217,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Drop marker: mark the drop on a downbeat; shown on the waveform and overview; the phrases (drop look, DROP n, phrase pads) use it | DONE | `crates/od-library/src/tracks.rs::set_drop_marker`, `od_core::mark_drop`; Stored per track in the library (schema 5, one undo step); Library::analysis gives the phrases with the drop in them, so lighting and Prepare follow. Not written to sticks; (Roadmap [31]) | 4 | P2 |
 | Pad mode PHRASE: back / on one phrase, to the marked drop, mark the drop, to the next build-up, drop, breakdown, outro | DONE | `crates/od-ui/src/pads.rs::pad_views`, `crates/od-ui/src/deck_craft.rs::phrase_pad`; `deck.pad_mode` with `mode = "phrase"`; (Roadmap [31]) | 2 | P2 |
 | Pad mode CUE EDIT: the pads pick the hot cue the panel beside the list edits | DONE | `crates/od-ui/src/deck_craft.rs::select_pad`; `deck.pad_mode` with `mode = "cue_edit"`; DONE or another mode closes the panel; (Roadmap [31]) | 1 | P2 |
+| Pad mode MELODY: the pads play the notes sent from CREATE (the sampler's MELODY bank), the octave above behind the ‹ › | DONE | `crates/od-ui/src/pads.rs::melody_slot`, `crates/od-ui/src/create.rs::send_to_perform`; `deck.pad_mode` with `mode = "melody"`; a pad is the sampler's own trigger, so QUANT applies; tested against the mapping, not on hardware; (Roadmap [77]) | 4 | P2 |
 | PLATTER group in the deck layout: hidden, the pads take its room (larger cue pads with their names) | DONE | `crates/od-ui/src/deck_layout.rs::HIDEABLE`; With the platter go its keys (REV, SLIP, QUANTIZE, KEYLOCK, range, CUT IN); (Roadmap [64]) | 1 | P3 |
 | The planned set in Perform: the track on air, the next one with its transition note, ahead or behind the plan by time and position | DONE | `crates/od-ui/src/set_plan.rs::tick`, `crates/od-ui/ui/set_plan.slint::PlanLine`; The last set opened in the browser is the plan; the time needs the set's PLANNED START. Tried with the demo library and the clock, not at a gig; (Roadmap [65]) | 4 | P2 |
 
@@ -441,13 +442,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 326 |
+| DONE | 327 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **332** |
+| **Total** | **333** |
 
 ## P1 gaps and implementation notes
 

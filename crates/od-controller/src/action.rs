@@ -137,10 +137,14 @@ pub enum PadMode {
     /// Hot cue edits: a pad picks the hot cue the cue panel edits (name,
     /// colour, position, how the pad plays it).
     CueEdit,
+    /// Melody: the pads play the notes CREATE sent to the sampler's MELODY
+    /// bank (the ‹ › switches to the octave above), quantised like
+    /// sampler pads.
+    Melody,
 }
 
 impl PadMode {
-    pub const ALL: [PadMode; 17] = [
+    pub const ALL: [PadMode; 18] = [
         PadMode::HotCue,
         PadMode::BeatLoop,
         PadMode::BeatJump,
@@ -158,6 +162,7 @@ impl PadMode {
         PadMode::LoopRoll,
         PadMode::Phrase,
         PadMode::CueEdit,
+        PadMode::Melody,
     ];
 
     pub fn name(self) -> &'static str {
@@ -179,6 +184,7 @@ impl PadMode {
             PadMode::LoopRoll => "loop_roll",
             PadMode::Phrase => "phrase",
             PadMode::CueEdit => "cue_edit",
+            PadMode::Melody => "melody",
         }
     }
 

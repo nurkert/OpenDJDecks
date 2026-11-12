@@ -157,6 +157,10 @@ export struct CreateRender {
     state: string,
     // RENDER can run.
     can: bool,
+    // [77] SEND TO PERFORM: "sending", "sent" (the MELODY bank holds these
+    // notes) or "", and whether there is a note to send.
+    send: string,
+    can-send: bool,
 }
 
 export global Create {
@@ -261,6 +265,8 @@ export global Create {
     in property <[MenuTarget]> recent;
     callback to-playlist(int);
     in-out property <int> open-picker;
+    // [77] SEND TO PERFORM: the notes into the sampler's MELODY bank.
+    callback send-to-perform();
     // The selected step holds a note.
     public pure function step-has-note() -> bool {
         return root.selected >= 0 && root.selected < root.steps.length && root.steps[root.selected].note != "";
@@ -1468,6 +1474,8 @@ component ResultBar inherits Rectangle {
         + " · " + (Create.render.cues == 1 ? @tr("1 cue") : @tr("{} cues", Create.render.cues));
     property <bool> ready: Create.render.state == "ready";
     property <bool> rendering: Create.render.state == "rendering";
+    property <bool> sent: Create.render.send == "sent";
+    property <bool> sending: Create.render.send == "sending";
     // A narrow window drops the tempos from MASTER and TRACK (the line
     // above says the one in use). Follows the width through a plain
     // property, so it does not feed back into the layout.
@@ -1561,10 +1569,19 @@ component ResultBar inherits Rectangle {
                     : @tr("Write a new file with its beatgrid and a hot cue per note; the source track stays as it is");
                 clicked => { Create.render-file(); }
             }
+            // [77] Sent: filled green with the word SENT while the MELODY
+            // bank holds these notes.
             PlateButton {
                 accessible-id: "create.result.send"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("SEND TO PERFORM");
-                tooltip: @tr("Put the notes on the pads in Perform (comes with the melody pad mode)");
+                compact: true;
+                label: root.sent ? @tr("SENT") : root.sending ? @tr("SENDING") : @tr("SEND TO PERFORM");
+                enabled: Create.render.can-send || root.sent || root.sending;
+                active: root.sent || root.sending;
+                tone: root.sent ? Theme.live : Theme.attention;
+                tooltip: root.sent ? @tr("Sent: the MELODY pad mode in Perform plays these notes from the sampler's MELODY bank")
+                    : Create.render.can-send ? @tr("Put the notes on the MELODY pads in Perform and into the sampler's MELODY bank: the strip's notes, else the pads'")
+                    : @tr("Pick a note in SOURCE first: then its notes go to the MELODY pads in Perform");
+                clicked => { Create.send-to-perform(); }
             }
             // [76] The browser's add-to-playlist menu, for the file READY:
             // the lists added to last, every playlist and set, or a new

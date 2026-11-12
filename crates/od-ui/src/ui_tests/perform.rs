@@ -61,13 +61,13 @@ fn fx_multi_mode_slots() {
 fn new_pad_modes_are_selectable() {
     let ui = Ui::open((1440, 900));
     perform(&ui);
-    ui.app.ui.invoke_deck_pad_mode_set(1, 8);
+    ui.app.ui.invoke_deck_pad_mode_set(1, 9);
     ui.pump(100);
     assert_eq!(
         ui.app.decks.borrow().pad_mode[0],
         od_controller::PadMode::Stems
     );
-    ui.app.ui.invoke_deck_pad_mode_set(1, 9);
+    ui.app.ui.invoke_deck_pad_mode_set(1, 10);
     ui.pump(100);
     assert_eq!(
         ui.app.decks.borrow().pad_mode[0],
@@ -252,7 +252,7 @@ fn fx_sampler_assign_and_auto() {
 fn pattern_recall_stores_and_recalls() {
     let ui = Ui::open((1440, 900));
     perform(&ui);
-    ui.app.ui.invoke_deck_pad_mode_set(1, 12);
+    ui.app.ui.invoke_deck_pad_mode_set(1, 13);
     ui.pump(100);
     assert_eq!(
         ui.app.decks.borrow().pad_mode[0],

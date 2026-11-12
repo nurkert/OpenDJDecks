@@ -552,6 +552,13 @@ const DE: &[(&str, &str)] = &[
     ("Rendered as a new track: {}. The file is in the library's created folder", "Als neuer Track gerendert: {}. Die Datei liegt im Ordner created der Bibliothek"),
     ("The render failed: {}", "Das Rendern ist fehlgeschlagen: {}"),
     ("Render notes", "Töne rendern"),
+    // [77] CREATE: the notes into the sampler's MELODY bank and pad mode.
+    ("Send notes from CREATE first: SEND TO PERFORM puts them on these pads", "Sende zuerst Töne aus CREATE: AN PERFORM legt sie auf diese Pads"),
+    ("Sending the notes once the track is read…", "Die Töne werden gesendet, sobald der Track gelesen ist …"),
+    ("Sending the notes to Perform…", "Die Töne gehen an Perform …"),
+    ("Sent {} notes to Perform: the MELODY pad mode plays them from the sampler's MELODY bank", "{} Töne an Perform gesendet: Der Pad-Modus MELODY spielt sie aus der Sampler-Bank MELODY"),
+    ("Sent the first {} notes to Perform ({} more found no pad): the MELODY pad mode plays them from the sampler's MELODY bank", "Die ersten {} Töne an Perform gesendet ({} weitere fanden kein Pad): Der Pad-Modus MELODY spielt sie aus der Sampler-Bank MELODY"),
+    ("The notes could not be sent: {}", "Die Töne ließen sich nicht senden: {}"),
     // [76] CREATE: the rendered file into playlists, the CREATED list, sticks.
     ("Created", "Erstellt"),
     ("Add to a new playlist", "Zu einer neuen Playlist hinzufügen"),

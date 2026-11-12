@@ -991,6 +991,26 @@ fn main_states() -> Vec<State> {
                 u.pump(200);
             }),
         },
+        // [77] MELODY pads with eight notes sent (sharps), and with
+        // nothing sent (the hint in the value's place).
+        State {
+            id: "perform.melody pads (sent)",
+            setup: |u| {
+                perform(u, 2, "standard");
+                crate::create::stage_melody_pads(&u.app, true);
+                u.pump(300);
+            },
+            teardown: Some(|u| crate::create::unstage_melody_pads(&u.app)),
+        },
+        State {
+            id: "perform.melody pads (nothing sent)",
+            setup: |u| {
+                perform(u, 2, "standard");
+                crate::create::stage_melody_pads(&u.app, false);
+                u.pump(300);
+            },
+            teardown: Some(|u| crate::create::unstage_melody_pads(&u.app)),
+        },
         State {
             id: "perform.set plan (note, behind)",
             setup: |u| {
@@ -1242,6 +1262,19 @@ fn main_states() -> Vec<State> {
                 u.pump(200);
             },
             teardown: Some(|u| u.app.ui.global::<crate::Create>().set_more(false)),
+        },
+        // [77] The strip sent to Perform: SEND TO PERFORM reads SENT.
+        State {
+            id: "create.melody (sent, SENT)",
+            setup: |u| {
+                create(u, "melody");
+                crate::create::stage_sent(&u.app, u.fx.tracks[0].0);
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                u.app.ui.global::<crate::Create>().set_more(false);
+                crate::create::unstage_melody_pads(&u.app);
+            }),
         },
         // [76] The CREATED list open in PREPARE.
         State {

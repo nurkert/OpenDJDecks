@@ -952,3 +952,110 @@ fn a_rendered_track_in_a_synced_playlist_reaches_the_stick_with_cues_and_grid() 
     drop(native);
     let _ = std::fs::remove_dir_all(&stick);
 }
+
+// ── [77] Into Perform ───────────────────────────────────────────────────
+
+/// Names in the sampler's MELODY bank, pad by pad ("" = empty).
+fn melody_bank(ui: &Ui) -> Vec<String> {
+    let base = od_engine::MELODY_BANK * od_engine::SAMPLER_SLOTS;
+    ui.app.sampler.slots.borrow()[base..base + od_engine::SAMPLER_SLOTS]
+        .iter()
+        .map(|s| s.as_ref().map(|s| s.name.clone()).unwrap_or_default())
+        .collect()
+}
+
+/// Captions of deck 1's pads in its mode.
+fn deck1_pads(ui: &Ui) -> Vec<String> {
+    crate::decks::pad_rows(&ui.app, 0, &snapshot(ui)).iter().map(|p| p.caption.to_string()).collect()
+}
+
+/// Before anything is sent the MELODY pad mode shows where the notes come
+/// from and its pads play nothing. SEND TO PERFORM puts the strip's notes
+/// (low to high) on pads 1–8 of the sampler's MELODY bank and the octave
+/// above on 9–16, and reads SENT until the notes change; the MELODY pads
+/// name them, the ‹ › turns to the octave, and a pad starts its note
+/// through the sampler on the next beat with QUANT. A controller reaches
+/// the mode and its pads through the mapping actions.
+#[test]
+fn send_to_perform_fills_the_melody_bank_and_its_pad_mode() {
+    use od_controller::{ControlAction, DeckAction, PadMode};
+    let ui = Ui::open((1440, 900));
+    let base = od_engine::MELODY_BANK * od_engine::SAMPLER_SLOTS;
+    // Nothing sent: the hint, outlined pads that play nothing.
+    crate::engine::ensure_engine(&ui.app);
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::decks::set_pad_mode(&ui.app, 0, PadMode::Melody);
+    ui.pump(200);
+    assert_eq!(ui.value("deck1.pad-mode"), "MELODY");
+    assert_eq!(ui.value("deck1.pad-hint"), "Send notes from CREATE");
+    assert_eq!(ui.get("deck1.pad.A").accessible_enabled(), Some(false));
+    assert_eq!(deck1_pads(&ui), ["1", "2", "3", "4", "5", "6", "7", "8"]);
+    crate::decks::pad(&ui.app, 0, 0, true);
+    assert!(ui.app.ui.get_status_text().contains("Send notes from CREATE first"), "{}", ui.app.ui.get_status_text());
+    // CREATE: a note, a strip, SEND TO PERFORM.
+    super::perform_craft::with_grid(&ui, ui.fx.tracks[0].0);
+    picked_on_deck1(&ui);
+    let g = ui.app.ui.global::<crate::Create>();
+    g.invoke_type_steps("E4 A3 C4 A3".into());
+    ui.pump(100);
+    assert_eq!(label(&ui, "create.result.send"), "SEND TO PERFORM");
+    assert_eq!(ui.get("create.result.send").accessible_enabled(), Some(true));
+    ui.click("create.result.send");
+    assert!(ui.wait_until(20.0, |u| label(u, "create.result.send") == "SENT"), "SENT: {}", label(&ui, "create.result.send"));
+    assert_eq!(g.get_render().send, "sent");
+    let status = ui.app.ui.get_status_text().to_string();
+    assert!(status.starts_with("Sent 3 notes to Perform"), "{status}");
+    assert!(!status.contains('/'), "no paths: {status}");
+    let mut want = vec![String::new(); 16];
+    for (i, (n, up)) in [("A3", "A4"), ("C4", "C5"), ("E4", "E5")].into_iter().enumerate() {
+        want[i] = n.into();
+        want[8 + i] = up.into();
+    }
+    assert_eq!(melody_bank(&ui), want, "notes on 1–8, the octave on 9–16");
+    assert!(ui.wait_until(5.0, |u| {
+        let s = snapshot(u);
+        (0..16).all(|p| s.sampler[base + p].loaded == !want[p].is_empty())
+    }), "the engine's slots hold them");
+    let st = snapshot(&ui);
+    assert!(st.sampler[base].mode == od_engine::SampleMode::OneShot && !st.sampler[base].sync);
+    // Kept like any loaded sample: a file each, in the sampler's store
+    // (written as Perform shows the sampler).
+    let folder = ui.fx.root.join("library/created/melody");
+    assert!(folder.join("melody-01.wav").exists() && folder.join("melody-06.wav").exists());
+    ui.app.ui.invoke_set_mode("perform".into());
+    assert!(ui.wait_until(5.0, |u| u.fx.lib().meta(crate::sampler::META_SAMPLER).unwrap().is_some_and(|j| j.contains("melody-06.wav"))));
+    // The sampler panel shows the bank under its name.
+    crate::sampler::set_bank(&ui.app, od_engine::MELODY_BANK);
+    ui.app.ui.set_sampler_panel(true);
+    ui.pump(200);
+    assert_eq!(ui.get("sampler.bank5").accessible_checked(), Some(true));
+    crate::sampler::set_bank(&ui.app, 0);
+    // Perform: the note names, the octave behind the ‹ ›.
+    ui.pump(200);
+    assert!(!ui.has("deck1.pad-hint"));
+    assert_eq!(deck1_pads(&ui)[..4], ["A3", "C4", "E4", "4"]);
+    assert_eq!(ui.get("deck1.pad.B").accessible_enabled(), Some(true));
+    assert_eq!(ui.get("deck1.pad.D").accessible_enabled(), Some(false));
+    crate::decks::pad_param(&ui.app, 0, 1);
+    assert_eq!(deck1_pads(&ui)[..3], ["A4", "C5", "E5"]);
+    crate::decks::pad_param(&ui.app, 0, 1);
+    // A pad with QUANT and deck 1 playing: the sampler's slot waits for the
+    // next beat, then plays.
+    crate::sampler::set_quantize(&ui.app, true);
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::Play);
+    assert!(ui.wait_until(5.0, |u| snapshot(u).decks[0].playing && snapshot(u).sequencer.quantize == Some(1.0)));
+    crate::decks::pad(&ui.app, 0, 1, true);
+    assert!(ui.wait_until(5.0, |u| snapshot(u).sampler[base + 1].playing), "C4 plays from the MELODY bank");
+    crate::decks::pad(&ui.app, 0, 1, false);
+    // A controller: the mode by its mapping action, then a pad.
+    crate::decks::set_pad_mode(&ui.app, 1, PadMode::HotCue);
+    crate::controller::handle_action(&ui.app, ControlAction::Deck { deck: 2, action: DeckAction::PadMode(PadMode::Melody) });
+    assert_eq!(ui.app.decks.borrow().pad_mode[1], PadMode::Melody);
+    crate::controller::handle_action(&ui.app, ControlAction::Deck { deck: 2, action: DeckAction::Pad { index: 2, pressed: true, velocity: 127 } });
+    assert!(ui.wait_until(5.0, |u| snapshot(u).sampler[base + 2].playing), "E4 plays from deck 2's pad");
+    // Other notes: SEND TO PERFORM again.
+    ui.app.ui.invoke_set_mode("create".into());
+    g.invoke_type_steps("A3 C4 G4".into());
+    ui.pump(100);
+    assert_eq!(label(&ui, "create.result.send"), "SEND TO PERFORM");
+}

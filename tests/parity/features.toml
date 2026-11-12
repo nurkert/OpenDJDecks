@@ -4894,6 +4894,23 @@ spec = "Roadmap [31]"
 note = "`deck.pad_mode` with `mode = \"cue_edit\"`; DONE or another mode closes the panel"
 
 [[feature]]
+id = "pad-mode-melody"
+area = "deck"
+name = "Pad mode MELODY: the pads play the notes sent from CREATE (the sampler's MELODY bank), the octave above behind the ‹ ›"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::pads::tests::melody_pads_play_the_melody_bank",
+  "od-ui::ui_tests::create::send_to_perform_fills_the_melody_bank_and_its_pad_mode",
+  "od-engine::sampler::melody_bank_slots_trigger_on_the_grid",
+  "od-controller::templates::tests::melody_pad_mode_maps",
+]
+evidence = ["crates/od-ui/src/pads.rs::melody_slot", "crates/od-ui/src/create.rs::send_to_perform"]
+spec = "Roadmap [77]"
+note = "`deck.pad_mode` with `mode = \"melody\"`; a pad is the sampler's own trigger, so QUANT applies; tested against the mapping, not on hardware"
+
+[[feature]]
 id = "cues-edit-perform"
 area = "cues"
 name = "Hot cue edits from Perform: rename, recolour, move to (or store at) the playhead, delete"
