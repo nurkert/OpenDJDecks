@@ -30,8 +30,20 @@
 //! back the chromatic pads of [72]. The keyboard strip shows the root, the
 //! scale and the notes out of it over the pads' two octaves, and plays a
 //! key on the audition voice. The choice is kept in `create.key`.
+//!
+//! [74] ARRANGE puts the notes in order on a strip of 32 steps on the
+//! master grid ([`crate::arrange`]). REC records the pads and the keys:
+//! on the nearest step of the grid while PLAY or the master deck plays,
+//! else step by step from a cursor. Typed note names replace the strip from
+//! step 1. A step is selected with a tap and moved, transposed or deleted;
+//! CLEAR empties the strip and UNDO brings back what the last CLEAR or
+//! typing replaced. PLAY sends the notes from the render cache to the
+//! audition voice, each on its beat of the master clock (from the next bar
+//! while a deck plays), so the decks are never touched. The strip is kept
+//! in `create.melody`.
 
 use crate::app::App;
+use crate::arrange::{self, Grid, Melody, STEPS};
 use crate::engine;
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use od_analysis::pitch::{self, PitchOutcome};
@@ -102,6 +114,16 @@ pub(crate) fn frame(app: &App, state: Option<&EngineState>) {
     }
     // [73] The key follows the other deck; NEXT TRACK says what it would take.
     follow_deck(app, state);
+    // [74] The tempo for RESULT, and where REC puts a note now.
+    let tempo = crate::format::bpm(Some(state.map_or(120.0, |s| s.master_bpm)), 1);
+    if g.get_tempo().as_str() != tempo {
+        g.set_tempo(tempo.into());
+    }
+    let grid = state.is_some_and(|s| master_beat(s).is_some()) || app.create.borrow().play.is_some();
+    if app.create.borrow().rec_grid != grid {
+        app.create.borrow_mut().rec_grid = grid;
+        show_arrange(app);
+    }
     let due = app.create.borrow().next_at.is_none_or(|t| t.elapsed() > NEXT_EVERY);
     if due {
         refresh_next(app);
@@ -323,6 +345,44 @@ pub(crate) struct Runtime {
     /// What NEXT TRACK would take, looked up now and then.
     next: NextTrack,
     next_at: Option<Instant>,
+    /// [74] The arrange strip and its selected step.
+    melody: Melody,
+    selected: Option<usize>,
+    /// REC armed.
+    rec: Option<Rec>,
+    /// Where REC puts a note now: on the grid (PLAY or the master deck
+    /// plays), else at the cursor.
+    rec_grid: bool,
+    /// PLAY runs.
+    play: Option<Play>,
+    /// The strip before the last CLEAR or typed notes (UNDO).
+    undo: Option<Melody>,
+    /// What the last typing could not read, and whether it was too long.
+    typed_bad: Vec<String>,
+    typed_long: bool,
+    /// The notes PLAY sent, as (step, MIDI) (tests).
+    #[cfg(test)]
+    sent: Vec<(usize, i32)>,
+}
+
+/// REC armed: the beat the grid counts from (once a note came in on it),
+/// and the step the next note fills when nothing plays.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+struct Rec {
+    origin: Option<f64>,
+    cursor: usize,
+}
+
+/// PLAY: the beat of the master clock step 1 starts on, the next step to
+/// send (counted on from 0 across loops), the beat of the note sent and
+/// not started yet, the clock last seen and the step that sounds.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Play {
+    start: f64,
+    next: i64,
+    waiting: Option<f64>,
+    last: f64,
+    step: Option<usize>,
 }
 
 /// A note asked for before it was rendered: a pad, or a key of the strip.
@@ -358,6 +418,16 @@ impl Default for Runtime {
             choice: KeyChoice::default(),
             next: NextTrack::default(),
             next_at: None,
+            melody: Melody::default(),
+            selected: None,
+            rec: None,
+            rec_grid: false,
+            play: None,
+            undo: None,
+            typed_bad: Vec::new(),
+            typed_long: false,
+            #[cfg(test)]
+            sent: Vec::new(),
         }
     }
 }
@@ -410,6 +480,28 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_set_hints(move |on| w(&|a| set_hints(a, on)));
     let w = with.clone();
     g.on_play_key(move |i| w(&|a| play_key(a, i)));
+    let w = with.clone();
+    g.on_set_grid(move |id| w(&|a| set_grid(a, &id)));
+    let w = with.clone();
+    g.on_toggle_rec(move || w(&toggle_rec));
+    let w = with.clone();
+    g.on_toggle_play(move || w(&toggle_play));
+    let w = with.clone();
+    g.on_set_loop(move |on| w(&|a| set_loop(a, on)));
+    let w = with.clone();
+    g.on_clear_steps(move || w(&clear_steps));
+    let w = with.clone();
+    g.on_undo_steps(move || w(&undo_steps));
+    let w = with.clone();
+    g.on_select_step(move |i| w(&|a| select_step(a, i)));
+    let w = with.clone();
+    g.on_move_step(move |d| w(&|a| move_step(a, d)));
+    let w = with.clone();
+    g.on_delete_step(move || w(&delete_step));
+    let w = with.clone();
+    g.on_shift_step(move |d, semitone| w(&|a| shift_step(a, d, semitone)));
+    let w = with.clone();
+    g.on_type_steps(move |t| w(&|a| type_steps(a, &t)));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -424,13 +516,17 @@ fn restore(app: &App) {
     let stored = app.state.borrow().lib.meta(META_NOTE).ok().flatten();
     let note = stored.and_then(|j| serde_json::from_str::<PickedNote>(&j).ok()).filter(|n| n.track.is_some());
     let choice = app.state.borrow().lib.meta(META_KEY).ok().flatten().and_then(|j| serde_json::from_str::<KeyChoice>(&j).ok());
+    let melody = app.state.borrow().lib.meta(META_MELODY).ok().flatten().and_then(|j| serde_json::from_str::<Melody>(&j).ok());
     {
         let mut rt = app.create.borrow_mut();
         rt.note = note;
         rt.choice = choice.unwrap_or_default();
+        rt.melody = melody.unwrap_or_default();
+        rt.melody.normalize();
     }
     render_wave(app);
     show(app);
+    show_arrange(app);
 }
 
 fn save(app: &App) {
@@ -665,10 +761,7 @@ pub(crate) fn hear(app: &App) {
 /// plays on air, else to the master. `pad` says which pad it is, `key`
 /// which key of the strip (HEAR: neither).
 fn audition(app: &App, sample: Arc<SampleData>, pad: Option<usize>, key: Option<i32>) {
-    let cue = engine::snapshot(app).is_some_and(|s| {
-        let count = app.decks.borrow().deck_count.min(s.decks.len());
-        s.decks[..count].iter().any(|d| d.playing)
-    });
+    let cue = to_cue(app);
     engine::send(app, Command::Sampler(SamplerCommand::Audition { sample, cue }));
     {
         let mut rt = app.create.borrow_mut();
@@ -677,6 +770,14 @@ fn audition(app: &App, sample: Arc<SampleData>, pad: Option<usize>, key: Option<
         rt.key_playing = key;
     }
     show(app);
+}
+
+/// The audition voice plays to the headphones while a deck plays on air.
+fn to_cue(app: &App) -> bool {
+    engine::snapshot(app).is_some_and(|s| {
+        let count = app.decks.borrow().deck_count.min(s.decks.len());
+        s.decks[..count].iter().any(|d| d.playing)
+    })
 }
 
 fn stop_hearing(app: &App) {
@@ -732,6 +833,7 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
         }
     }
     poll_rendered(app);
+    tick_play(app, state);
     let ended = {
         let rt = app.create.borrow();
         rt.hearing.is_some_and(|t| t.elapsed() > Duration::from_millis(150) && !state.is_some_and(|s| s.auditioning))
@@ -1065,6 +1167,8 @@ fn prepare_pads(app: &App) {
         }
         // The pad or key pressed first, then the rest.
         let mut want = pad_targets(key.pitch, octave, scale).to_vec();
+        // [74] And the notes of the strip, for PLAY.
+        want.extend(rt.melody.steps.iter().flatten().map(|s| s.note));
         if let Some(d) = rt.due {
             want.insert(0, d.target);
         }
@@ -1157,6 +1261,7 @@ pub(crate) fn play_pad(app: &App, i: usize) {
         }
     };
     play_target(app, target, Some(i));
+    record(app, target);
 }
 
 /// [73] Key `i` of the strip pressed: its note plays as a pad's would.
@@ -1170,6 +1275,7 @@ pub(crate) fn play_key(app: &App, i: i32) {
         strip_start(Some(&pad_targets(p, rt.octave, rt.choice.pad_key()))) + i
     };
     play_target(app, target, None);
+    record(app, target);
 }
 
 /// The octave switch: the pads an octave down or up (within ±2).
@@ -1392,6 +1498,7 @@ pub(crate) fn set_hints(app: &App, on: bool) {
 fn key_changed(app: &App) {
     show_key(app);
     show_pads(app);
+    show_arrange(app);
     save_key(app);
     prepare_pads(app);
 }
@@ -1442,6 +1549,428 @@ fn show_key(app: &App) {
 #[cfg(test)]
 pub(crate) fn choice(app: &App) -> KeyChoice {
     app.create.borrow().choice.clone()
+}
+
+// ── [74] Arrange ────────────────────────────────────────────────────────
+
+/// Library meta key of the arrange strip (JSON).
+pub(crate) const META_MELODY: &str = "create.melody";
+/// PLAY sends a note at most this many beats before it starts.
+const AHEAD: f64 = 1.0;
+
+/// The master deck's beat and its place in the bar (1..=4, 0 without a
+/// grid), while it plays.
+fn master_beat(s: &EngineState) -> Option<(f64, u8)> {
+    let m = s.master_deck?;
+    let d = s.decks.get(m)?;
+    (d.playing && d.track.is_some()).then_some((d.beat, d.beat_in_bar))
+}
+
+/// Where PLAY starts: on the next bar while the master deck plays, else at
+/// once on the running clock.
+fn play_start(s: &EngineState) -> f64 {
+    match master_beat(s) {
+        Some((beat, in_bar)) => arrange::bar_start(beat, in_bar) + f64::from(arrange::BEATS_PER_BAR),
+        None => s.clock_beat,
+    }
+}
+
+/// What the strip shows: each step's note (spelled as `key`), whether the
+/// note before holds over it, the gap before it (a beat, a bar), the bar it
+/// starts, and whether it is selected, sounds or is REC's next step.
+pub(crate) fn step_rows(
+    m: &Melody,
+    key: Option<ScaleKey>,
+    selected: Option<usize>,
+    playing: Option<usize>,
+    cursor: Option<usize>,
+) -> Vec<crate::CreateStep> {
+    let (per_beat, per_bar) = (m.grid.per_beat() as usize, m.grid.per_bar() as usize);
+    (0..STEPS)
+        .map(|i| crate::CreateStep {
+            note: m.steps[i].map(|s| arrange::name(key, s.note)).unwrap_or_default().into(),
+            held: m.steps[i].is_none() && m.held_by(i).is_some(),
+            gap: if i == 0 {
+                0
+            } else if i % per_bar == 0 {
+                2
+            } else {
+                i32::from(i % per_beat == 0)
+            },
+            bar: if i % per_bar == 0 { (i / per_bar + 1) as i32 } else { 0 },
+            selected: selected == Some(i),
+            playing: playing == Some(i),
+            cursor: cursor == Some(i),
+        })
+        .collect()
+}
+
+fn show_arrange(app: &App) {
+    let (rows, m, text, rt_sel, rec, rec_grid, playing, undo, bad, long) = {
+        let rt = app.create.borrow();
+        let cursor = rt.rec.filter(|_| !rt.rec_grid).map(|r| r.cursor).filter(|&c| c < STEPS);
+        let playing = rt.play.and_then(|p| p.step);
+        let rows = step_rows(&rt.melody, rt.choice.key, rt.selected, playing, cursor);
+        (rows, rt.melody.clone(), rt.melody.text(rt.choice.key), rt.selected, rt.rec, rt.rec_grid, rt.play.is_some(), rt.undo.is_some(), rt.typed_bad.join(", "), rt.typed_long)
+    };
+    let g = app.ui.global::<crate::Create>();
+    set_rows(g.get_steps(), rows, |r| g.set_steps(r));
+    g.set_grid(m.grid.id().into());
+    g.set_steps_text(text.into());
+    g.set_notes(m.notes() as i32);
+    g.set_bars(m.bars() as i32);
+    g.set_looped(m.looped);
+    g.set_selected(rt_sel.map_or(-1, |i| i as i32));
+    g.set_rec(rec.is_some());
+    g.set_rec_mode(if rec_grid { "grid" } else { "steps" }.into());
+    g.set_rec_cursor(rec.map_or(0, |r| r.cursor as i32));
+    g.set_playing(playing);
+    g.set_can_undo(undo);
+    g.set_typed_bad(bad.into());
+    g.set_typed_long(long);
+}
+
+fn save_melody(app: &App) {
+    if app.state.borrow().read_only() {
+        return;
+    }
+    let json = serde_json::to_string(&app.create.borrow().melody).unwrap_or_default();
+    if let Err(e) = app.state.borrow_mut().lib.set_meta(META_MELODY, &json) {
+        tracing::warn!(error = %e, "melody not saved");
+    }
+}
+
+/// The strip changed: shown, kept, its notes rendered. An edit after CLEAR
+/// or typing leaves nothing for UNDO to bring back.
+fn edited(app: &App, keep_undo: bool) {
+    {
+        let mut rt = app.create.borrow_mut();
+        if !keep_undo {
+            rt.undo = None;
+        }
+    }
+    show_arrange(app);
+    save_melody(app);
+    prepare_pads(app);
+}
+
+/// The grid: 1/4, 1/8 or 1/16 a step (the notes keep their steps).
+pub(crate) fn set_grid(app: &App, id: &str) {
+    let Some(grid) = Grid::from_id(id) else { return };
+    app.create.borrow_mut().melody.grid = grid;
+    restart_play(app);
+    show_arrange(app);
+    save_melody(app);
+}
+
+pub(crate) fn set_loop(app: &App, on: bool) {
+    app.create.borrow_mut().melody.looped = on;
+    show_arrange(app);
+    save_melody(app);
+}
+
+/// REC: armed, the next note goes on the selected step (else after the
+/// last note); again disarms it.
+pub(crate) fn toggle_rec(app: &App) {
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.rec = match rt.rec {
+            Some(_) => None,
+            None => Some(Rec { origin: None, cursor: rt.selected.unwrap_or(rt.melody.used() % STEPS) }),
+        };
+    }
+    show_arrange(app);
+}
+
+/// A note played on a pad or a key while REC is armed: on the nearest step
+/// of PLAY's grid, else of the master deck's (counted from the bar it was
+/// in at the first note), else on the cursor's step, which moves on. The
+/// decks are only read.
+pub(crate) fn record(app: &App, target: i32) {
+    if app.create.borrow().rec.is_none() {
+        return;
+    }
+    let state = engine::snapshot(app);
+    let step = {
+        let mut rt = app.create.borrow_mut();
+        let grid = rt.melody.grid;
+        let play = rt.play;
+        let Some(rec) = rt.rec.as_mut() else { return };
+        let on_grid = match (play, state.as_ref().and_then(master_beat)) {
+            (Some(p), _) => state.as_ref().map(|s| (s.clock_beat, p.start)),
+            (None, Some((beat, in_bar))) => Some((beat, *rec.origin.get_or_insert(arrange::bar_start(beat, in_bar)))),
+            (None, None) => None,
+        };
+        match on_grid {
+            Some((beat, origin)) => Some(arrange::nearest_step(beat, origin, grid)),
+            None if rec.cursor < STEPS => {
+                rec.cursor += 1;
+                Some(rec.cursor - 1)
+            }
+            None => None,
+        }
+    };
+    let Some(i) = step else {
+        app.status(od_i18n::tr("The strip is full: select a step to record from there, or CLEAR it").to_string());
+        return;
+    };
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.melody.set(i, target);
+        rt.selected = Some(i);
+    }
+    edited(app, false);
+}
+
+/// A step tapped: selected, its note played (unless PLAY runs); REC's
+/// cursor moves there.
+pub(crate) fn select_step(app: &App, i: i32) {
+    let Ok(i) = usize::try_from(i) else { return };
+    if i >= STEPS {
+        return;
+    }
+    let note = {
+        let mut rt = app.create.borrow_mut();
+        rt.selected = Some(i);
+        if let Some(r) = rt.rec.as_mut() {
+            r.cursor = i;
+        }
+        rt.melody.steps[i].map(|s| s.note).filter(|_| rt.play.is_none())
+    };
+    show_arrange(app);
+    if let Some(n) = note {
+        play_target(app, n, None);
+    }
+}
+
+/// The selected note a step left or right (swapped with what is there);
+/// on an empty step the selection moves instead.
+pub(crate) fn move_step(app: &App, d: i32) {
+    let moved = {
+        let mut rt = app.create.borrow_mut();
+        let Some(i) = rt.selected else { return };
+        if rt.melody.steps[i].is_some() {
+            let j = rt.melody.move_step(i, d);
+            rt.selected = Some(j);
+            j != i
+        } else {
+            rt.selected = Some((i as i32 + d.signum()).clamp(0, STEPS as i32 - 1) as usize);
+            false
+        }
+    };
+    if moved {
+        edited(app, false);
+    } else {
+        show_arrange(app);
+    }
+}
+
+/// The selected step emptied.
+pub(crate) fn delete_step(app: &App) {
+    {
+        let mut rt = app.create.borrow_mut();
+        let Some(i) = rt.selected else { return };
+        if rt.melody.steps[i].is_none() {
+            return;
+        }
+        rt.melody.delete(i);
+    }
+    edited(app, false);
+}
+
+/// The selected note a step of the scale up or down (a semitone with
+/// `semitone`, or without a key); it plays at its new pitch.
+pub(crate) fn shift_step(app: &App, d: i32, semitone: bool) {
+    let note = {
+        let mut rt = app.create.borrow_mut();
+        let Some(i) = rt.selected else { return };
+        let key = rt.choice.key;
+        if !rt.melody.transpose(i, d, key, semitone) {
+            return;
+        }
+        rt.melody.steps[i].map(|s| s.note).filter(|_| rt.play.is_none())
+    };
+    edited(app, false);
+    if let Some(n) = note {
+        play_target(app, n, None);
+    }
+}
+
+/// Typed note names replace the strip from step 1 (UNDO brings the old one
+/// back); what is not a note is reported and takes its step as a rest.
+pub(crate) fn type_steps(app: &App, text: &str) {
+    if text.trim().is_empty() {
+        return;
+    }
+    let typed = arrange::parse(text);
+    {
+        let mut rt = app.create.borrow_mut();
+        let old = rt.melody.clone();
+        rt.melody.replace(typed.steps);
+        if old.notes() > 0 && old != rt.melody {
+            rt.undo = Some(old);
+        }
+        rt.typed_bad = typed.bad;
+        rt.typed_long = typed.too_long;
+        rt.selected = None;
+    }
+    restart_play(app);
+    edited(app, true);
+}
+
+/// CLEAR: every step empty; UNDO brings them back.
+pub(crate) fn clear_steps(app: &App) {
+    {
+        let mut rt = app.create.borrow_mut();
+        if rt.melody.notes() == 0 {
+            return;
+        }
+        let old = rt.melody.clone();
+        rt.melody.clear();
+        rt.undo = Some(old);
+        rt.selected = None;
+        rt.typed_bad.clear();
+        rt.typed_long = false;
+    }
+    stop_play(app);
+    edited(app, true);
+}
+
+/// UNDO: the strip as it was before the last CLEAR or typed notes.
+pub(crate) fn undo_steps(app: &App) {
+    {
+        let mut rt = app.create.borrow_mut();
+        let Some(old) = rt.undo.take() else { return };
+        rt.melody = old;
+        rt.selected = None;
+        rt.typed_bad.clear();
+        rt.typed_long = false;
+    }
+    edited(app, false);
+}
+
+/// PLAY: the strip through the audition voice, once or looped, in time
+/// with the master (from the next bar while a deck plays); again stops it
+/// at once.
+pub(crate) fn toggle_play(app: &App) {
+    if app.create.borrow().play.is_some() {
+        stop_play(app);
+        return;
+    }
+    if app.create.borrow().melody.notes() == 0 {
+        return;
+    }
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        return;
+    }
+    let Some(s) = engine::snapshot(app) else { return };
+    stop_hearing(app);
+    app.create.borrow_mut().play = Some(Play { start: play_start(&s), next: 0, waiting: None, last: s.clock_beat, step: None });
+    prepare_pads(app);
+    show_arrange(app);
+}
+
+fn stop_play(app: &App) {
+    if app.create.borrow_mut().play.take().is_some() {
+        engine::send(app, Command::Sampler(SamplerCommand::StopAudition));
+        show_arrange(app);
+    }
+}
+
+/// While PLAY runs the strip changed under it: it starts again from step 1
+/// as PLAY would.
+fn restart_play(app: &App) {
+    if app.create.borrow().play.is_some() {
+        stop_play(app);
+        toggle_play(app);
+    }
+}
+
+/// Every frame while PLAY runs: the step that sounds, and the next note
+/// sent to the audition voice with its beat once the one before has
+/// started, from the render cache (a note not rendered yet is left out).
+/// A jump of the clock (a deck started, stopped or cued) starts again on
+/// the next bar; without LOOP PLAY ends after the last bar.
+fn tick_play(app: &App, state: Option<&EngineState>) {
+    let Some(s) = state else { return };
+    if app.create.borrow().play.is_none() {
+        return;
+    }
+    let rate = app.engine.borrow().sample_rate();
+    let mut send = None;
+    let (shown, ended) = {
+        let mut guard = app.create.borrow_mut();
+        let rt = &mut *guard;
+        let Some(mut p) = rt.play else { return };
+        let clock = s.clock_beat;
+        let m = &rt.melody;
+        let len = m.play_steps() as i64;
+        let before = p.step;
+        if clock < p.last - 0.25 || clock > p.last + 8.0 {
+            p = Play { start: play_start(s), next: 0, waiting: None, last: clock, step: None };
+            send = Some(None);
+        }
+        p.last = clock;
+        let cur = arrange::step_at(clock, p.start, m.grid);
+        let ended = len == 0 || (!m.looped && cur >= len);
+        p.step = (cur >= 0 && !ended).then(|| cur.rem_euclid(len.max(1)) as usize);
+        if !ended && p.waiting.is_none_or(|b| clock >= b) {
+            let end = if m.looped { p.next + len } else { len };
+            let found = (p.next..end).find(|&k| m.steps[k.rem_euclid(len) as usize].is_some());
+            match found {
+                Some(k) => {
+                    let beat = arrange::beat_of(k, p.start, m.grid);
+                    if beat - clock <= AHEAD {
+                        let step = m.steps[k.rem_euclid(len) as usize].unwrap_or(arrange::Step::new(0));
+                        let late = beat < clock - 1.0 / f64::from(m.grid.per_beat());
+                        let current = rt.note.as_ref().and_then(|n| RenderKey::of(n, rate)) == rt.cache.key;
+                        if let Some(sample) = rt.cache.get(step.note).filter(|_| current && !late) {
+                            let until = arrange::beat_of(k + i64::from(step.len), p.start, m.grid);
+                            send = Some(Some((sample, beat, until)));
+                            p.waiting = Some(beat);
+                            #[cfg(test)]
+                            rt.sent.push((k.rem_euclid(len) as usize, step.note));
+                        }
+                        p.next = k + 1;
+                    }
+                }
+                None if !m.looped => p.next = len,
+                None => {}
+            }
+        }
+        rt.play = (!ended).then_some(p);
+        (before != p.step, ended)
+    };
+    match send {
+        Some(Some((sample, beat, until))) => {
+            let cue = to_cue(app);
+            engine::send(app, Command::Sampler(SamplerCommand::AuditionAt { sample, cue, beat, until }));
+        }
+        Some(None) => engine::send(app, Command::Sampler(SamplerCommand::StopAudition)),
+        None => {}
+    }
+    if shown || ended {
+        show_arrange(app);
+    }
+}
+
+/// The arrange strip (tests).
+#[cfg(test)]
+pub(crate) fn melody(app: &App) -> Melody {
+    app.create.borrow().melody.clone()
+}
+
+/// Whether `target` (MIDI) is rendered for the current note (tests).
+#[cfg(test)]
+pub(crate) fn rendered(app: &App, target: i32) -> bool {
+    app.create.borrow().cache.get(target).is_some()
+}
+
+/// The notes PLAY sent, as (step, MIDI), since the last call (tests).
+#[cfg(test)]
+pub(crate) fn take_sent(app: &App) -> Vec<(usize, i32)> {
+    std::mem::take(&mut app.create.borrow_mut().sent)
 }
 
 /// A picked note for the audits, in its widest state: a correction
@@ -1500,13 +2029,42 @@ pub(crate) fn stage_scale(app: &App, track: TrackId) {
     show_pads(app);
 }
 
+/// [74] The staged note and key (MORE folded) with a full strip, in its
+/// widest state:
+/// 32 notes on 1/16 spelled with sharps, a step selected, REC armed step by
+/// step (its cursor shown), UNDO ready and a typing error reported.
+#[cfg(test)]
+pub(crate) fn stage_melody(app: &App, track: TrackId) {
+    stage_scale(app, track);
+    {
+        let mut rt = app.create.borrow_mut();
+        let key = ScaleKey::new(6, Scale::HarmonicMinor);
+        let notes = key.notes_from(66, 8);
+        let mut m = Melody { grid: Grid::Sixteenth, looped: true, ..Melody::default() };
+        for i in 0..STEPS {
+            m.set(i, notes[(i * 3) % notes.len()]);
+        }
+        rt.undo = Some(Melody::default());
+        rt.melody = m;
+        rt.selected = Some(5);
+        rt.rec = Some(Rec { origin: None, cursor: 6 });
+        rt.typed_bad = vec!["H4".into(), "X#9".into()];
+    }
+    // The modes folded: the strip is what is shown here.
+    app.ui.global::<crate::Create>().set_more(false);
+    show_arrange(app);
+}
+
 /// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF`, comma separated),
 /// on the demo library with the decks loaded by `OPENDJDECKS_AUTOLOAD`:
 /// `create-note` opens MELODY and picks a note from deck 1;
 /// `create-note-set` corrects it a semitone up as well (SET BY YOU);
 /// `create-note-far` puts the pads an octave up (FAR on every pad);
 /// `create-scale-set` chooses a mode by hand (MORE open, SET BY YOU);
-/// `create-scale-off` turns SNAP TO SCALE off.
+/// `create-scale-off` turns SNAP TO SCALE off;
+/// `create-melody` types a melody into the strip and selects a step;
+/// `create-melody-rec` arms REC as well; `create-melody-play` plays the
+/// strip in a loop.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -1531,6 +2089,17 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         }
         if parts.iter().any(|p| p == "create-scale-off") {
             set_snap(&a, false);
+        }
+        if parts.iter().any(|p| p == "create-melody") {
+            type_steps(&a, "A3 C4 E4 D4 - C4 _ B3 A3 C4 E4 G4 _ _ F4 E4");
+            select_step(&a, 3);
+        }
+        if parts.iter().any(|p| p == "create-melody-rec") {
+            toggle_rec(&a);
+        }
+        if parts.iter().any(|p| p == "create-melody-play") {
+            set_loop(&a, true);
+            toggle_play(&a);
         }
     });
 }

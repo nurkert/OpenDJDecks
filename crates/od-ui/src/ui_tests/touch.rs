@@ -73,6 +73,12 @@ fn views() -> Vec<(&'static str, fn(&Ui))> {
             crate::create::stage_scale(&u.app, u.fx.tracks[0].0);
             u.pump(400);
         }),
+        ("create (a full melody)", |u| {
+            u.app.ui.invoke_set_mode("create".into());
+            crate::create::set_view(&u.app, "melody");
+            crate::create::stage_melody(&u.app, u.fx.tracks[0].0);
+            u.pump(400);
+        }),
     ]
 }
 

@@ -357,3 +357,37 @@ fn audition_plays_once_on_master_or_cue() {
     assert!(rig.phones[..BLOCK * 2].iter().all(|&v| v == 0.0), "stopped after its fade");
     assert!(!rig.state().auditioning);
 }
+
+/// [74] A note waits for its beat of the master clock and stops on its own
+/// beat; the next one starts on its beat while the sounding one fades out;
+/// a stop drops a waiting note.
+#[test]
+fn audition_at_starts_and_stops_on_the_master_beat() {
+    let mut rig = clock_rig();
+    rig.send(Command::Mixer(MixerCommand::SetSamplerLevel(0.0)));
+    rig.send(Command::Mixer(MixerCommand::SetHeadphoneMix(0.0)));
+    rig.render(10); // 1 280 frames
+    // Beat 1 is frame 24 000 at 120 BPM; beat 1.5 frame 36 000.
+    smp(&mut rig, SamplerCommand::AuditionAt { sample: dc(48_000, 0.5), cue: false, beat: 1.0, until: 1.5 });
+    let out = rig.render(300); // to 39 680
+    assert!(rig.state().clock_beat > 1.6, "the clock follows the master: {}", rig.state().clock_beat);
+    assert_eq!(onsets(&out), vec![24_000 - 1_280], "on beat 1");
+    assert_eq!(out[(24_000 - 1_280 + 100) * 2], 0.5);
+    assert_eq!(out[(36_000 - 1_280 - 1) * 2], 0.5, "until beat 1.5");
+    assert_eq!(out[(36_000 - 1_280 + 200) * 2], 0.0, "then faded out");
+    assert!(!rig.state().auditioning);
+    // Two notes in a row: the second starts on beat 2 and the first fades.
+    smp(&mut rig, SamplerCommand::AuditionAt { sample: dc(96_000, 0.5), cue: false, beat: 1.6, until: 4.0 });
+    rig.render(1);
+    assert!(rig.state().auditioning, "a past beat starts it at once");
+    smp(&mut rig, SamplerCommand::AuditionAt { sample: dc(96_000, 0.25), cue: false, beat: 2.0, until: 4.0 });
+    let from = 39_680 + 128;
+    let out = rig.render(100);
+    assert_eq!(out[(48_000 - from - 1) * 2], 0.5, "the first until beat 2");
+    assert_eq!(out[(48_000 - from + 200) * 2], 0.25, "the second from beat 2, alone after the fade");
+    // A stop drops a note still waiting.
+    smp(&mut rig, SamplerCommand::AuditionAt { sample: dc(1_000, 0.5), cue: false, beat: 100.0, until: 101.0 });
+    smp(&mut rig, SamplerCommand::StopAudition);
+    rig.render(3);
+    assert!(!rig.state().auditioning);
+}

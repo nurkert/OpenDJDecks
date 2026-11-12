@@ -1222,6 +1222,17 @@ fn main_states() -> Vec<State> {
             },
             teardown: Some(|u| u.app.ui.global::<crate::Create>().set_more(false)),
         },
+        // [74] A full strip: 32 notes on 1/16 with sharps, a step selected,
+        // REC armed step by step, a typing error reported.
+        State {
+            id: "create.melody (a full melody)",
+            setup: |u| {
+                create(u, "melody");
+                crate::create::stage_melody(&u.app, u.fx.tracks[0].0);
+                u.pump(200);
+            },
+            teardown: Some(|u| u.app.ui.global::<crate::Create>().set_more(false)),
+        },
         State {
             id: "create.melody (audio running, four decks)",
             setup: |u| {

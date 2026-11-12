@@ -18,6 +18,7 @@ mod a11y;
 mod app;
 mod audio_health;
 mod appearance;
+mod arrange;
 mod booth;
 mod browser;
 mod club;

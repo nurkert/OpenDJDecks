@@ -10413,20 +10413,8 @@ msgctxt "PadsHead"
 msgid "PADS"
 msgstr "PADS"
 
-#: ui/create.slint:139
-msgctxt "MelodyView"
-msgid "ARRANGE"
-msgstr "ANORDNEN"
 
-#: ui/create.slint:150
-msgctxt "MelodyView"
-msgid "REC"
-msgstr "REC"
 
-#: ui/create.slint:151
-msgctxt "MelodyView"
-msgid "Record the pads into the steps (comes with the arranger)"
-msgstr "Die Pads in die Schritte aufnehmen (kommt mit dem Anordnen)"
 
 #: ui/create.slint:159
 msgctxt "MelodyView"
@@ -11047,3 +11035,230 @@ msgstr "AKKORDE"
 msgctxt "MelodyView"
 msgid "The notes and chords of the chosen key. Which of them fit the track playing now comes later."
 msgstr "Die Töne und Akkorde der gewählten Tonart. Welche davon zum laufenden Track passen, kommt später."
+
+#: ui/create.slint
+msgctxt "ArrangeStep"
+msgid "Select the step; its note plays. The arrow keys move the note, up and down change it, Delete empties it"
+msgstr "Den Schritt wählen; sein Ton erklingt. Die Pfeiltasten verschieben den Ton, auf und ab ändern ihn, Entf leert ihn"
+
+#: ui/create.slint
+msgctxt "ArrangeStep"
+msgid "STEP {}"
+msgstr "SCHRITT {}"
+
+#: ui/create.slint
+msgctxt "ArrangeStep"
+msgid "held"
+msgstr "gehalten"
+
+#: ui/create.slint
+msgctxt "ArrangeStep"
+msgid "empty"
+msgstr "leer"
+
+#: ui/create.slint
+msgctxt "ArrangeStep"
+msgid "selected"
+msgstr "gewählt"
+
+#: ui/create.slint
+msgctxt "ArrangeStep"
+msgid "playing"
+msgstr "spielt"
+
+#: ui/create.slint
+msgctxt "ArrangeStep"
+msgid "records next"
+msgstr "nimmt als Nächstes auf"
+
+#: ui/create.slint
+msgctxt "ArrangeSteps"
+msgid "Steps"
+msgstr "Schritte"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "ARRANGE"
+msgstr "ANORDNEN"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "EMPTY"
+msgstr "LEER"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "1 NOTE"
+msgstr "1 TON"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "{} NOTES"
+msgstr "{} TÖNE"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "1 BAR"
+msgstr "1 TAKT"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "{} BARS"
+msgstr "{} TAKTE"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "REC ON"
+msgstr "REC AN"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "REC"
+msgstr "REC"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "Record: play the pads or the keys into the steps, on the master grid while it plays, else step by step; again to stop"
+msgstr "Aufnehmen: die Pads oder Tasten in die Schritte spielen, auf das Master-Raster, solange es läuft, sonst Schritt für Schritt; noch einmal zum Beenden"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "STOP"
+msgstr "STOPP"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "PLAY"
+msgstr "PLAY"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "Play the steps on the master tempo, from the next bar while a deck plays (on the headphones); again to stop"
+msgstr "Die Schritte im Master-Tempo abspielen, ab dem nächsten Takt, solange ein Deck spielt (auf dem Kopfhörer); noch einmal zum Stoppen"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "LOOP"
+msgstr "LOOP"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "Loop: PLAY goes round the strip's bars until stopped"
+msgstr "Loop: PLAY wiederholt die Takte der Leiste, bis es gestoppt wird"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "CLEAR"
+msgstr "LEEREN"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "Empty every step (UNDO brings them back)"
+msgstr "Alle Schritte leeren (RÜCKGÄNGIG holt sie zurück)"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "UNDO"
+msgstr "RÜCKGÄNGIG"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "Bring back the steps as they were before the last CLEAR or typed notes"
+msgstr "Die Schritte zurückholen, wie sie vor dem letzten LEEREN oder Eintippen waren"
+
+#: ui/create.slint
+msgctxt "EditKeys"
+msgid "Move the selected note a step left (Left arrow)"
+msgstr "Den gewählten Ton einen Schritt nach links schieben (Pfeil links)"
+
+#: ui/create.slint
+msgctxt "EditKeys"
+msgid "Move the selected note a step right (Right arrow)"
+msgstr "Den gewählten Ton einen Schritt nach rechts schieben (Pfeil rechts)"
+
+#: ui/create.slint
+msgctxt "EditKeys"
+msgid "The selected note a step of the scale down (Down arrow; with Shift a semitone)"
+msgstr "Den gewählten Ton eine Stufe der Tonleiter tiefer (Pfeil ab; mit Umschalt einen Halbton)"
+
+#: ui/create.slint
+msgctxt "EditKeys"
+msgid "The selected note a step of the scale up (Up arrow; with Shift a semitone)"
+msgstr "Den gewählten Ton eine Stufe der Tonleiter höher (Pfeil auf; mit Umschalt einen Halbton)"
+
+
+#: ui/create.slint
+msgctxt "EditKeys"
+msgid "Empty the selected step (Delete)"
+msgstr "Den gewählten Schritt leeren (Entf)"
+
+
+#: ui/create.slint
+msgctxt "GridKeys"
+msgid "A step is a quarter note: 32 steps make 8 bars"
+msgstr "Ein Schritt ist eine Viertelnote: 32 Schritte sind 8 Takte"
+
+#: ui/create.slint
+msgctxt "GridKeys"
+msgid "A step is an eighth note: 32 steps make 4 bars"
+msgstr "Ein Schritt ist eine Achtelnote: 32 Schritte sind 4 Takte"
+
+#: ui/create.slint
+msgctxt "GridKeys"
+msgid "A step is a sixteenth note: 32 steps make 2 bars"
+msgstr "Ein Schritt ist eine Sechzehntelnote: 32 Schritte sind 2 Takte"
+
+#: ui/create.slint
+msgctxt "TypeSteps"
+msgid "TYPE: A3 C4 - E4"
+msgstr "EINGEBEN: A3 C4 - E4"
+
+#: ui/create.slint
+msgctxt "ArrangeLine"
+msgid "Not read: {}. Each took its step as a rest."
+msgstr "Nicht gelesen: {}. Jeder nahm seinen Schritt als Pause."
+
+#: ui/create.slint
+msgctxt "ArrangeLine"
+msgid "Only 32 steps fit: the rest was left out."
+msgstr "Nur 32 Schritte passen: der Rest wurde weggelassen."
+
+#: ui/create.slint
+msgctxt "ArrangeLine"
+msgid "REC: each note lands on the nearest step of the master grid."
+msgstr "REC: Jeder Ton landet auf dem nächsten Schritt des Master-Rasters."
+
+#: ui/create.slint
+msgctxt "ArrangeLine"
+msgid "REC: the strip is full. Select a step to record from there."
+msgstr "REC: Die Leiste ist voll. Wähle einen Schritt, um ab dort aufzunehmen."
+
+#: ui/create.slint
+msgctxt "ArrangeLine"
+msgid "REC: each note fills the next step, now step {}."
+msgstr "REC: Jeder Ton füllt den nächsten Schritt, jetzt Schritt {}."
+
+#: ui/create.slint
+msgctxt "ArrangeLine"
+msgid "Typing replaces the strip from step 1: - is a rest, _ holds the note before."
+msgstr "Eintippen ersetzt die Leiste ab Schritt 1: - ist eine Pause, _ hält den Ton davor."
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "1 note"
+msgstr "1 Ton"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "{} notes"
+msgstr "{} Töne"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "1 bar"
+msgstr "1 Takt"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "{} bars"
+msgstr "{} Takte"

@@ -823,6 +823,17 @@ pub enum SamplerCommand {
         sample: Arc<SampleData>,
         cue: bool,
     },
-    /// Stops the audition (short fade).
+    /// Plays `sample` once on the audition voice from beat `beat` of the
+    /// master beat clock (the free-running clock while no master plays) to
+    /// beat `until`, sample accurately (CREATE's arrange strip, roadmap
+    /// [74]). A note already sounding fades out as it starts; it replaces a
+    /// note still waiting. A beat already past starts it at once.
+    AuditionAt {
+        sample: Arc<SampleData>,
+        cue: bool,
+        beat: f64,
+        until: f64,
+    },
+    /// Stops the audition (short fade) and drops a waiting note.
     StopAudition,
 }

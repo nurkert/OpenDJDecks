@@ -8631,7 +8631,7 @@ elements = [
 [[view.region]]
 id = "create.melody.keys"
 band = "create"
-place = "under SOURCE and NOTES: HEAR, and the (disabled) REC beside ARRANGE"
+place = "under SOURCE and NOTES: HEAR, and REC beside ARRANGE (roadmap [74])"
 order = "row"
 elements = [
   "create.source.hear",
@@ -8857,4 +8857,54 @@ elements = [
   "create.fits.key",
   "create.fits.notes",
   "create.fits.chords",
+]
+
+[[view]]
+id = "create.arrange"
+title = "Create: MELODY with a full arrange strip (32 steps, REC armed)"
+mode = "create"
+source = "Roadmap [74], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+note = "ARRANGE under the pads: what the strip holds (notes and bars) beside REC (armed: a red fill with the word), PLAY and LOOP, then CLEAR and UNDO; the 32 steps on the grid, grouped by beat and bar, in one row where there is room and two rows of 16 otherwise, empty steps hollow, the selected one in bone, the one PLAY is on in sodium, REC's next step with the red armed outline; one row under them with the selected step's move, change and delete keys, typing (from step 1) and the grid (1/4, 1/8, 1/16); a line under it says what REC or typing does, or what typing could not read. RESULT counts the notes and bars at the master tempo."
+
+[[view.region]]
+id = "create.arrange.head"
+band = "create"
+place = "ARRANGE, top: what it holds, then REC, PLAY and LOOP, then CLEAR and UNDO"
+order = "row"
+elements = [
+  "create.arrange.count",
+  "create.notes.rec",
+  "create.arrange.play",
+  "create.arrange.loop",
+  "create.arrange.clear",
+  "create.arrange.undo",
+]
+
+[[view.region]]
+id = "create.arrange.edit"
+band = "create"
+place = "ARRANGE, under the steps: move, change and delete the selected step, typing, the grid on the right"
+order = "row"
+elements = [
+  "create.arrange.left",
+  "create.arrange.right",
+  "create.arrange.down",
+  "create.arrange.up",
+  "create.arrange.delete",
+  "create.arrange.type",
+  "create.arrange.grid.4",
+  "create.arrange.grid.8",
+  "create.arrange.grid.16",
+]
+
+[[view.region]]
+id = "create.arrange.column"
+band = "create"
+place = "ARRANGE: the steps over the edit row and its line"
+order = "column"
+elements = [
+  "create.arrange.step1",
+  "create.arrange.hint",
 ]
