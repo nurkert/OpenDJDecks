@@ -569,6 +569,13 @@ export component PreferencesWindow inherits Window {
     in property <bool> incoming-overlay: true;
     in property <bool> calm-waveform;
     in property <bool> touch-layout;
+    // Low-CPU mode ([68]): on (the setting or the Lite profile), locked on
+    // by the Lite profile, and its state in words.
+    in property <bool> low-cpu;
+    // Scroll position of the View page (documentation pictures).
+    in-out property <length> view-scroll;
+    in property <bool> low-cpu-locked;
+    in property <string> low-cpu-state;
     // Live previews: the waveform as drawn now, the interface scale and
     // the deck layout (0 Simple, 1 Standard, 2 Full).
     in property <image> preview-wave;
@@ -691,6 +698,7 @@ export component PreferencesWindow inherits Window {
                     spacing: Theme.s5;
                 Flickable {
                     vertical-stretch: 1;
+                    content-y <=> root.view-scroll;
                     content-width: self.width;
                     VerticalLayout {
                         width: parent.width;
@@ -725,6 +733,33 @@ export component PreferencesWindow inherits Window {
                         Row { label: @tr("Incoming track"); Switch { accessible-id: "prefs.view.incoming-overlay"; label: @tr("Draw the incoming track over the playing waveform"); on: root.incoming-overlay; toggled(v) => { root.flag("view.incoming-overlay", v); } } }
                         Row { label: @tr("Calm waveform"); Switch { accessible-id: "prefs.view.calm-waveform"; label: @tr("Crisp playhead, faint beat lines, softer colours"); on: root.calm-waveform; toggled(v) => { root.flag("view.calm-waveform", v); } } }
                         Row { label: @tr("Touch"); Switch { accessible-id: "prefs.view.touch"; label: @tr("Touch layout: every control at least 44 px"); on: root.touch-layout; toggled(v) => { root.flag("view.touch", v); } } }
+                        Heading { text: @tr("Computer load"); }
+                        Row {
+                            label: @tr("Low-CPU mode");
+                            HorizontalLayout {
+                                alignment: start;
+                                spacing: Theme.s4;
+                                // On is filled with its word beside it (DESIGN.md, State Language).
+                                PlateButton {
+                                    accessible-role: checkbox; accessible-id: "prefs.view.low-cpu";
+                                    accessible-checkable: true; accessible-checked: root.low-cpu;
+                                    tall: true;
+                                    label: @tr("LOW CPU");
+                                    active: root.low-cpu;
+                                    enabled: !root.low-cpu-locked;
+                                    tooltip: @tr("Fewer redraws and no decorative motion, for older or busy computers");
+                                    clicked => { root.flag("view.low-cpu", !root.low-cpu); }
+                                }
+                                Text {
+                                    accessible-role: AccessibleRole.text; accessible-id: "prefs.view.low-cpu.state"; accessible-value: root.low-cpu-state;
+                                    text: root.low-cpu-state;
+                                    font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: Theme.tracking-index;
+                                    color: root.low-cpu ? Theme.bone : Theme.bone-2;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                        Note { text: @tr("Draws the decks 30 times a second instead of 60, moves the waveforms in steps instead of gliding, turns off decorative motion and leaves half the cores free while stems are separated. With the buffer size on AUTO, audio uses 256 instead of 128 frames from its next start (under 3 ms more latency). Playback timing, controller response and the light show are not changed. Always on in the Lite profile (Raspberry Pi)."); }
                     }
                 }
                 if root.width >= 1100px: VerticalLayout {

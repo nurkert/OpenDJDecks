@@ -19,6 +19,10 @@ pub(crate) struct EngineHost {
     /// Device line or the reason audio is not running.
     pub message: String,
     timer: slint::Timer,
+    /// The frame tick's period (`crate::low_cpu::frame_period`).
+    period: Duration,
+    /// The app the frame tick drives (set when it starts).
+    me: std::rc::Weak<App>,
     last_feedback: Instant,
 }
 
@@ -30,6 +34,8 @@ impl Default for EngineHost {
             parked: None,
             message: od_i18n::tr("Audio starts when you load a track").into(),
             timer: slint::Timer::default(),
+            period: crate::low_cpu::FRAME_FULL,
+            me: std::rc::Weak::new(),
             last_feedback: Instant::now(),
         }
     }
@@ -70,7 +76,7 @@ fn start_engine(app: &App) -> bool {
         return true;
     }
     let audio = app.state.borrow().settings.audio.clone();
-    let mut cfg = audio_config(&audio, lite);
+    let mut cfg = audio_config(&audio, crate::low_cpu::on(app));
     if cfg.device.is_none() {
         cfg.device = od_audio_io::list_devices(od_audio_io::Backend::Default)
             .ok()
@@ -167,10 +173,11 @@ fn start_null(app: &App, lite: bool) {
 }
 
 /// The audio configuration from Preferences > Audio (device `None` =
-/// automatic).
+/// automatic). `low_cpu`: low-CPU mode or the Lite profile (a larger
+/// automatic buffer).
 pub(crate) fn audio_config(
     a: &crate::settings::AudioSettings,
-    lite: bool,
+    low_cpu: bool,
 ) -> od_audio_io::AudioConfig {
     let routing = crate::routing::routing(a);
     let cue = crate::routing::cue_device(a);
@@ -180,10 +187,8 @@ pub(crate) fn audio_config(
         device: (!a.device.is_empty()).then(|| a.device.clone()),
         buffer_frames: Some(if a.buffer > 0 {
             a.buffer
-        } else if lite {
-            256
         } else {
-            128
+            crate::low_cpu::auto_buffer(low_cpu)
         }),
         sample_rate: (a.sample_rate > 0).then_some(a.sample_rate),
         routing,
@@ -565,11 +570,22 @@ fn top_bar(app: &App, state: Option<&od_engine::EngineState>) {
     }
 }
 
-/// Starts the frame timer (60 Hz, 30 Hz in Lite) and shows the engine line.
+/// Starts the frame timer (60 Hz, 30 Hz in low-CPU mode and Lite) and
+/// shows the engine line.
 pub(crate) fn start(app: &Rc<App>) {
-    let lite = app.state.borrow().config.lite;
-    let period = Duration::from_millis(if lite { 33 } else { 16 });
+    run_frames(app, crate::low_cpu::frame_period(crate::low_cpu::on(app)));
+    show_message(app);
+    crate::routing::refresh_mixer(app);
+    crate::routing::apply_clock(app);
+}
+
+fn run_frames(app: &Rc<App>, period: Duration) {
     let w = Rc::downgrade(app);
+    {
+        let mut h = app.engine.borrow_mut();
+        h.period = period;
+        h.me = w.clone();
+    }
     app.engine
         .borrow()
         .timer
@@ -582,9 +598,25 @@ pub(crate) fn start(app: &Rc<App>) {
                 controller::feedback(&app);
             }
         });
-    show_message(app);
-    crate::routing::refresh_mixer(app);
-    crate::routing::apply_clock(app);
+}
+
+/// Runs the frame timer at `period` from now on (low-CPU mode switched);
+/// nothing happens before it was started or when the period is the same.
+pub(crate) fn retime(app: &App, period: Duration) {
+    let running = app.engine.borrow().timer.running();
+    if !running || app.engine.borrow().period == period {
+        return;
+    }
+    let me = app.engine.borrow().me.upgrade();
+    if let Some(rc) = me {
+        run_frames(&rc, period);
+    }
+}
+
+/// The frame timer's period now.
+#[cfg(test)]
+pub(crate) fn frame_period(app: &App) -> Duration {
+    app.engine.borrow().period
 }
 
 #[cfg(test)]

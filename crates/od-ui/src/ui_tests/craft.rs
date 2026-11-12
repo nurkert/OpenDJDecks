@@ -74,6 +74,55 @@ fn reduced_motion_stops_every_named_timing() {
     assert_eq!(timings(&ui.app.ui.global::<crate::Theme>()), on, "back on");
 }
 
+/// [68] Low-CPU mode: a 44 px key in Preferences › View with its state
+/// in words, stored; it halves the frame tick, turns decorative motion off
+/// and steps the playing waveform (rate 0, moved on each tick) instead of
+/// letting it glide on the display clock. Off again restores all three.
+#[test]
+fn low_cpu_mode_throttles_redraws_and_is_stored() {
+    use slint::Model;
+    use std::time::Duration;
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::engine::ensure_engine(&ui.app);
+    ui.pump(300);
+    crate::decks::load_track(&ui.app, 0, ui.fx.tracks[0].0, None);
+    assert!(
+        ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.loaded && !d.loading)),
+        "deck 1 loads"
+    );
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::Play);
+    let lane = |u: &Ui| u.app.ui.get_lane_motion().row_data(0).unwrap_or_default();
+    assert!(ui.wait_until(5.0, |u| lane(u).rate > 0.0), "the lane glides at full rate");
+    assert_eq!(crate::engine::frame_period(&ui.app), Duration::from_millis(16));
+    assert!(ui.app.ui.global::<crate::Theme>().get_motion());
+
+    let w = prefs(&ui, "view");
+    let key = prefs_el(&w, "prefs.view.low-cpu");
+    assert!(key.size().height >= 44.0, "a 44 px target: {:?}", key.size());
+    let state = |w: &crate::PreferencesWindow| prefs_el(w, "prefs.view.low-cpu.state").accessible_value().unwrap_or_default();
+    assert_eq!(state(&w), "OFF", "the state in words");
+    key.mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert!(stored(&ui).view.low_cpu, "stored");
+    assert_eq!(state(&w), "ON");
+    assert_eq!(crate::engine::frame_period(&ui.app), Duration::from_millis(33), "30 frames a second");
+    assert!(!ui.app.ui.global::<crate::Theme>().get_motion(), "no decorative motion");
+    assert!(ui.wait_until(2.0, |u| lane(u).rate == 0.0), "the lane is stepped");
+    let (at, tiles) = (lane(&ui).pos, lane(&ui).tiles);
+    assert!(ui.wait_until(2.0, |u| lane(u).pos > at + 0.05), "and still moves with the deck");
+    // Moving the playhead keeps the tiles (no new textures every frame);
+    // at most one tile step may fall in between.
+    assert!(lane(&ui).tiles - tiles <= 1, "tiles kept while stepping: {tiles} → {}", lane(&ui).tiles);
+
+    prefs_el(&w, "prefs.view.low-cpu").mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert!(!stored(&ui).view.low_cpu);
+    assert_eq!(crate::engine::frame_period(&ui.app), Duration::from_millis(16));
+    assert!(ui.app.ui.global::<crate::Theme>().get_motion());
+    assert!(ui.wait_until(2.0, |u| lane(u).rate > 0.0), "gliding again");
+}
+
 /// [46] Knobs: bipolar knobs (trim, EQ, CH FX) carry a centre mark, a
 /// unipolar one (headphone level) does not; the value arc appears once a
 /// bipolar knob leaves the centre; dragging shows the value above the ring

@@ -110,6 +110,18 @@ Hour by hour:
 - **What this means for you:** with four decks, stems and effects at a 5.3 ms buffer, close everything else on the computer, or pick a larger buffer. Two decks were stable even next to heavy work.
 - **Still to do:** these runs were made on a computer in daily use. A run on a quiet computer and runs of eight hours have not been made yet. They will be added here, measured the same way.
 
+## The whole app with its window
+
+The runs above measure the engine alone. This one measures the whole app, window drawing included, on the same computer: MacBookPro18,2 (Apple M1 Max, 10 cores), 32 GB, macOS 27.0.1, its built-in 120 Hz display, window 1440 × 900, Perform with the demo library (tracks of 2 min 35 s). No audio device was opened (the app's virtual output, as in the tests). After 20 s to load, the processor time of the app was read over 30 s; 100 % is one core busy. Memory is the resident size at the end.
+
+| | Idle in Perform | One deck playing | Two decks playing | Memory, two decks |
+|---|---|---|---|---|
+| 0.9.0 as released (optimised) | 4 % | 59–61 % | 98–99 % | 0.47 GB |
+| Development build, Low-CPU mode off | 5–7 % | 100–101 % | 99–100 % | 0.50 GB |
+| Development build, Low-CPU mode on | 6 % | 70–71 % | 89–90 % | 0.50 GB |
+
+Two runs each; ranges are the two results. The development build is unoptimised, so it costs more than a released app, and with the mode off it is held back by the drawing, which already fills a core. With Low-CPU mode on, one deck playing took about 30 % less of a core in the same build, two decks about 10 % less. How much the mode saves in an optimised build has not been measured yet; nor were slower computers, Windows, Linux or a Raspberry Pi.
+
 ## Repeat it on your computer
 
 You need the source code and the Rust toolchain. Build the measurement optimised (a debug build would understate what the engine can do):

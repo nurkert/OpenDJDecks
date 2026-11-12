@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 335 features; 329 in scope: 329 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 336 features; 330 in scope: 330 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -390,6 +390,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Colour-blind palette and high-contrast theme | DONE | Preferences > View switches (and the CLI flags) set the colour-blind-safe palette and the high-contrast theme live; stored in the settings; (SPEC §12) | 1 |  |
 | English and German UI | DONE | `crates/od-i18n`; (SPEC §2) | 2 |  |
 | Lite / Full performance profiles | DONE | (SPEC §3.2) | 2 |  |
+| Low-CPU mode: 30 frames a second, stepped waveforms, no decorative motion, larger automatic buffer | DONE | `crates/od-ui/src/low_cpu.rs`, `crates/od-ui/ui/wave.slint::WaveLane`; Preferences › View › Computer load, stored; always on in the Lite profile (Raspberry Pi). The waveform lanes keep their tile textures while the playhead is stepped. Measured on one Apple M1 Max only (debug build); not measured on a Raspberry Pi or older computers.; (Roadmap [68]) | 6 |  |
 | Raspberry Pi kiosk (linuxkms, Perform, controller browsing) | DONE (beyond the usual) | Built and driven headless on CI (`packaging/ci/headless-e2e.sh`); the kiosk configuration (Perform, browse screen, 44 px touch rows and keys) is driven by a UI test; (SPEC §3.3) | 1 |  |
 | Keyboard shortcuts for layouts and a View menu | DONE | `crates/od-ui/ui/app.slint::MenuBar`; View menu (modes, Prepare layout, info / similar / Tags / filter panels, sections) and keys ⌥⌘4 / ⌥⌘5 (layouts), ⌥⌘I / ⌥⌘E / ⌥⌘G (panels); the menu bar is native on macOS, elsewhere its actions are reached by the keys; (UX §1.9, §4 P3.7) | 3 |  |
 | Perform view menu (2 / 4 decks, horizontal / vertical, Browse) | DONE | `ui/topbar.slint::ViewMenu`, `decks.rs::set_perform_view`; One menu in the top bar with a picture per view; the deck count is kept across starts | 1 | P2 |
@@ -444,13 +445,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 329 |
+| DONE | 330 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **335** |
+| **Total** | **336** |
 
 ## P1 gaps and implementation notes
 

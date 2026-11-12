@@ -36,7 +36,9 @@ Oder lade das Paket `opendjdecks-pi-*.tar.gz` von der [Download-Seite](/download
 
 Bereite Sticks auf deinem Mac oder Linux-Rechner vor. Ein registrierter Stick trägt das OpenDJDecks-Format, und der Pi spielt es direkt, auch die [Stems](stems.md#stems-auf-dem-stick-und-am-raspberry-pi), die du auf dem Laptop getrennt hast.
 
-Der Pi läuft im Leistungsprofil **Lite**, das auf kleiner Hardware zuverlässig bleibt. Es ist dieselbe App mit demselben Bibliotheksformat.
+Der Pi läuft im Leistungsprofil **Lite**, das auf kleiner Hardware zuverlässig bleibt. Es ist dieselbe App mit demselben Bibliotheksformat. Im Lite-Profil ist der [CPU-Sparmodus](preferences.md#ansicht) immer an: 30 Bilder pro Sekunde, Wellenformen in Schritten, keine Animationen und ein automatischer Audiopuffer von 256 Frames.
+
+Wie viel Prozessor der Pi braucht, wurde auf einem echten Raspberry Pi noch nicht gemessen.
 
 ## Entwickler
 

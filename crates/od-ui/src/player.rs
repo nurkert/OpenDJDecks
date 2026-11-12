@@ -709,6 +709,8 @@ struct DetailSrc {
 
 thread_local! {
     static DETAIL_SRC: std::cell::RefCell<Option<DetailSrc>> = const { std::cell::RefCell::new(None) };
+    /// When the playing preview last drew the enlarged waveform.
+    static DETAIL_AT: std::cell::Cell<Option<std::time::Instant>> = const { std::cell::Cell::new(None) };
 }
 
 /// Renders the zoomed waveform around the cursor (only when it moved by at
@@ -864,7 +866,12 @@ pub(crate) fn follow_preview(app: &App, state: &od_engine::EngineState) {
         }
         app.ui
             .set_track_position(format::cue_time(d.position).into());
-        render_detail(app);
+        // Low-CPU mode draws the enlarged waveform less often while it plays.
+        let now = std::time::Instant::now();
+        if crate::low_cpu::detail_due(crate::low_cpu::on(app), DETAIL_AT.with(|t| t.get()), now) {
+            DETAIL_AT.with(|t| t.set(Some(now)));
+            render_detail(app);
+        }
         crate::grid_edit::cursor_moved(app);
     }
     if d.at_end {

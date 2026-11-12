@@ -8668,6 +8668,26 @@ msgctxt "PreferencesWindow"
 msgid "Touch layout: every control at least 44 px"
 msgstr "Touch-Layout: jedes Bedienelement mindestens 44 px"
 
+msgctxt "PreferencesWindow"
+msgid "Computer load"
+msgstr "Rechenlast"
+
+msgctxt "PreferencesWindow"
+msgid "Low-CPU mode"
+msgstr "CPU-Sparmodus"
+
+msgctxt "PreferencesWindow"
+msgid "LOW CPU"
+msgstr "CPU SPAREN"
+
+msgctxt "PreferencesWindow"
+msgid "Fewer redraws and no decorative motion, for older or busy computers"
+msgstr "Seltener neu zeichnen und keine Animationen, für ältere oder ausgelastete Computer"
+
+msgctxt "PreferencesWindow"
+msgid "Draws the decks 30 times a second instead of 60, moves the waveforms in steps instead of gliding, turns off decorative motion and leaves half the cores free while stems are separated. With the buffer size on AUTO, audio uses 256 instead of 128 frames from its next start (under 3 ms more latency). Playback timing, controller response and the light show are not changed. Always on in the Lite profile (Raspberry Pi)."
+msgstr "Zeichnet die Decks 30-mal statt 60-mal pro Sekunde, bewegt die Wellenformen in Schritten statt gleitend, schaltet Animationen ab und lässt beim Trennen von Stems die Hälfte der Kerne frei. Steht die Puffergröße auf AUTO, nutzt Audio ab dem nächsten Start 256 statt 128 Frames (unter 3 ms mehr Latenz). Das Timing der Wiedergabe, die Reaktion des Controllers und die Lichtshow bleiben gleich. Im Lite-Profil (Raspberry Pi) immer an."
+
 msgctxt "TouchOfferBar"
 msgid "Touch layout"
 msgstr "Touch-Layout"

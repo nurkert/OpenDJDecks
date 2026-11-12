@@ -90,7 +90,21 @@ export component WaveLane inherits Rectangle {
     property <length> gutter: 44px;
     property <length> area: root.width - root.gutter;
     property <duration> base-tick;
-    changed motion => { root.base-tick = animation-tick(); }
+    // The tiles as last taken from `motion` (see LaneMotion.tiles).
+    property <image> tile0;
+    property <image> tile1;
+    property <image> tile2;
+    property <int> tiles-seen: -1;
+    function take-tiles() {
+        if (root.motion.tiles != root.tiles-seen) {
+            root.tiles-seen = root.motion.tiles;
+            root.tile0 = root.motion.tile0;
+            root.tile1 = root.motion.tile1;
+            root.tile2 = root.motion.tile2;
+        }
+    }
+    init => { root.take-tiles(); root.take-ov-tiles(); }
+    changed motion => { root.base-tick = animation-tick(); root.take-tiles(); }
     // Playhead now (seconds); only depends on the frame clock while moving.
     property <float> now: root.motion.rate == 0 ? root.motion.pos : root.motion.pos + root.motion.rate * ((animation-tick() - root.base-tick) / 1ms);
     // The playhead's anchor: by default the centre of the waveform area; in
@@ -106,9 +120,9 @@ export component WaveLane inherits Rectangle {
     property <float> left-t: root.now - root.motion.span * root.past;
     background: Theme.ground-band;
     clip: true;
-    if root.motion.loaded: Image { x: root.gutter + (root.motion.t0 - root.left-t) / root.motion.span * root.area; width: root.area; height: parent.height; source: root.motion.tile0; image-fit: fill; }
-    if root.motion.loaded: Image { x: root.gutter + (root.motion.t1 - root.left-t) / root.motion.span * root.area; width: root.area; height: parent.height; source: root.motion.tile1; image-fit: fill; }
-    if root.motion.loaded: Image { x: root.gutter + (root.motion.t2 - root.left-t) / root.motion.span * root.area; width: root.area; height: parent.height; source: root.motion.tile2; image-fit: fill; }
+    if root.motion.loaded: Image { x: root.gutter + (root.motion.t0 - root.left-t) / root.motion.span * root.area; width: root.area; height: parent.height; source: root.tile0; image-fit: fill; }
+    if root.motion.loaded: Image { x: root.gutter + (root.motion.t1 - root.left-t) / root.motion.span * root.area; width: root.area; height: parent.height; source: root.tile1; image-fit: fill; }
+    if root.motion.loaded: Image { x: root.gutter + (root.motion.t2 - root.left-t) / root.motion.span * root.area; width: root.area; height: parent.height; source: root.tile2; image-fit: fill; }
     // Played audio left of the playhead is veiled.
     if root.motion.loaded: Rectangle { x: root.gutter; width: root.head - root.gutter; height: parent.height; background: Theme.ground.with-alpha(0.45); }
     // The incoming track over the playing one: its outline in its deck
@@ -117,7 +131,19 @@ export component WaveLane inherits Rectangle {
     property <LaneMotion> ov: DeckMix.overlay[root.deck.deck - 1];
     property <bool> ov-shown: root.overlay-on && root.motion.loaded && root.ov.loaded && root.ov.of-deck > 0 && root.ov.span > 0;
     property <duration> ov-tick;
-    changed ov => { root.ov-tick = animation-tick(); }
+    property <image> ov-tile0;
+    property <image> ov-tile1;
+    property <image> ov-tile2;
+    property <int> ov-seen: -1;
+    function take-ov-tiles() {
+        if (root.ov.tiles != root.ov-seen) {
+            root.ov-seen = root.ov.tiles;
+            root.ov-tile0 = root.ov.tile0;
+            root.ov-tile1 = root.ov.tile1;
+            root.ov-tile2 = root.ov.tile2;
+        }
+    }
+    changed ov => { root.ov-tick = animation-tick(); root.take-ov-tiles(); }
     property <float> ov-now: root.ov.rate == 0 ? root.ov.pos : root.ov.pos + root.ov.rate * ((animation-tick() - root.ov-tick) / 1ms);
     property <float> ov-left: root.ov-now - root.ov.span * root.past;
     property <color> ov-tone: Theme.deck-color(root.ov.of-deck);
@@ -129,9 +155,9 @@ export component WaveLane inherits Rectangle {
         property <length> x0: root.ov.mark < 0 ? root.gutter : max(root.gutter, min(root.width, root.gutter + (root.ov.mark - root.ov-left) / root.ov.span * root.area));
         x: self.x0; width: max(0px, root.width - self.x0); height: parent.height;
         clip: true;
-        Image { x: root.gutter - parent.x0 + (root.ov.t0 - root.ov-left) / root.ov.span * root.area; width: root.area; height: parent.height; source: root.ov.tile0; image-fit: fill; colorize: root.ov-tone; opacity: 0.85; }
-        Image { x: root.gutter - parent.x0 + (root.ov.t1 - root.ov-left) / root.ov.span * root.area; width: root.area; height: parent.height; source: root.ov.tile1; image-fit: fill; colorize: root.ov-tone; opacity: 0.85; }
-        Image { x: root.gutter - parent.x0 + (root.ov.t2 - root.ov-left) / root.ov.span * root.area; width: root.area; height: parent.height; source: root.ov.tile2; image-fit: fill; colorize: root.ov-tone; opacity: 0.85; }
+        Image { x: root.gutter - parent.x0 + (root.ov.t0 - root.ov-left) / root.ov.span * root.area; width: root.area; height: parent.height; source: root.ov-tile0; image-fit: fill; colorize: root.ov-tone; opacity: 0.85; }
+        Image { x: root.gutter - parent.x0 + (root.ov.t1 - root.ov-left) / root.ov.span * root.area; width: root.area; height: parent.height; source: root.ov-tile1; image-fit: fill; colorize: root.ov-tone; opacity: 0.85; }
+        Image { x: root.gutter - parent.x0 + (root.ov.t2 - root.ov-left) / root.ov.span * root.area; width: root.area; height: parent.height; source: root.ov-tile2; image-fit: fill; colorize: root.ov-tone; opacity: 0.85; }
     }
     if root.ov-shown && root.ov.mark >= 0: Rectangle {
         property <length> px: root.gutter + (root.ov.mark - root.ov-left) / root.ov.span * root.area;
@@ -352,14 +378,28 @@ export component VerticalLane inherits Rectangle {
     property <length> gutter: 26px;
     property <length> area: root.height - root.gutter;
     property <duration> base-tick;
-    changed motion => { root.base-tick = animation-tick(); }
+    // The tiles as last taken from `motion` (see LaneMotion.tiles).
+    property <image> tile0;
+    property <image> tile1;
+    property <image> tile2;
+    property <int> tiles-seen: -1;
+    function take-tiles() {
+        if (root.motion.tiles != root.tiles-seen) {
+            root.tiles-seen = root.motion.tiles;
+            root.tile0 = root.motion.tile0;
+            root.tile1 = root.motion.tile1;
+            root.tile2 = root.motion.tile2;
+        }
+    }
+    init => { root.take-tiles(); }
+    changed motion => { root.base-tick = animation-tick(); root.take-tiles(); }
     property <float> now: root.motion.rate == 0 ? root.motion.pos : root.motion.pos + root.motion.rate * ((animation-tick() - root.base-tick) / 1ms);
     property <float> top-t: root.now - root.motion.span / 2;
     background: Theme.ground-band;
     clip: true;
-    if root.motion.loaded: Image { y: root.gutter + (root.motion.t0 - root.top-t) / root.motion.span * root.area; height: root.area; width: parent.width; source: root.motion.tile0; image-fit: fill; }
-    if root.motion.loaded: Image { y: root.gutter + (root.motion.t1 - root.top-t) / root.motion.span * root.area; height: root.area; width: parent.width; source: root.motion.tile1; image-fit: fill; }
-    if root.motion.loaded: Image { y: root.gutter + (root.motion.t2 - root.top-t) / root.motion.span * root.area; height: root.area; width: parent.width; source: root.motion.tile2; image-fit: fill; }
+    if root.motion.loaded: Image { y: root.gutter + (root.motion.t0 - root.top-t) / root.motion.span * root.area; height: root.area; width: parent.width; source: root.tile0; image-fit: fill; }
+    if root.motion.loaded: Image { y: root.gutter + (root.motion.t1 - root.top-t) / root.motion.span * root.area; height: root.area; width: parent.width; source: root.tile1; image-fit: fill; }
+    if root.motion.loaded: Image { y: root.gutter + (root.motion.t2 - root.top-t) / root.motion.span * root.area; height: root.area; width: parent.width; source: root.tile2; image-fit: fill; }
     // Played audio above the playhead is veiled.
     if root.motion.loaded: Rectangle { y: root.gutter; height: root.area / 2; width: parent.width; background: Theme.ground.with-alpha(0.45); }
     // Cues across the lane: flag (hot) or triangle (memory) on the left.

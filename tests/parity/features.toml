@@ -3235,6 +3235,24 @@ tests = [
 spec = "SPEC §3.2"
 
 [[feature]]
+id = "shell-low-cpu"
+area = "shell"
+name = "Low-CPU mode: 30 frames a second, stepped waveforms, no decorative motion, larger automatic buffer"
+scope = "in"
+status = "done"
+tests = [
+  "od-ui::ui_tests::craft::low_cpu_mode_throttles_redraws_and_is_stored",
+  "od-ui::low_cpu::tests::the_setting_or_the_lite_profile_turns_it_on",
+  "od-ui::low_cpu::tests::it_halves_the_frame_rate_and_doubles_the_automatic_buffer",
+  "od-ui::low_cpu::tests::separation_keeps_half_the_cores_free",
+  "od-ui::low_cpu::tests::the_player_detail_is_drawn_less_often",
+  "od-ui::low_cpu::tests::the_setting_is_stored_and_read_back",
+]
+evidence = ["crates/od-ui/src/low_cpu.rs", "crates/od-ui/ui/wave.slint::WaveLane"]
+spec = "Roadmap [68]"
+note = "Preferences › View › Computer load, stored; always on in the Lite profile (Raspberry Pi). The waveform lanes keep their tile textures while the playhead is stepped. Measured on one Apple M1 Max only (debug build); not measured on a Raspberry Pi or older computers."
+
+[[feature]]
 id = "shell-kiosk"
 area = "shell"
 name = "Raspberry Pi kiosk (linuxkms, Perform, controller browsing)"

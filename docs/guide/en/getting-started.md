@@ -19,6 +19,16 @@ With an empty library, a checklist appears under the top bar: **Add music**, **A
 
 Download the app for your computer from the [download page](/en/download/) and follow the short guide for your system there. On a Mac the first start needs one extra confirmation, because the app is not signed by Apple.
 
+### What your computer needs
+
+- **System:** macOS 13 or newer, on Apple silicon or Intel. Windows 10 or 11, 64-bit (x86-64). Linux on x86-64 or 64-bit ARM: Ubuntu 24.04, Debian 13 or newer (the packages need glibc 2.38). A Raspberry Pi 4 or 5 with 64-bit Raspberry Pi OS (trixie or newer), see [Raspberry Pi standalone](raspberry-pi.md).
+- **Processor:** 64-bit with four cores or more. With two decks playing, the app kept about one core busy on the one computer it was measured on (an Apple M1 Max, see below). On an older or slower computer, turn on **Low-CPU mode** in **Preferences › View**.
+- **Memory:** 8 GB. The app used about 0.5 GB with two short tracks playing; long tracks, four decks and stems take more, and separating stems needs about 1 GB more while it runs.
+- **Disk:** about 150 MB for the app, about 170 MB more for the stem model if you separate stems, and room for your music and its separated stems.
+- **Display:** 1280 × 800 or larger. The window can be made as small as 800 × 640, the smallest size the app is checked at; the decks then take a compact form. The Raspberry Pi kiosk has its own layout for 800 × 480 touchscreens.
+
+These are cautious figures from one measured computer. Slower computers, older systems and the Raspberry Pi have not been measured yet. What was measured, and how, is on [Long-run results](long-run-results.md#the-whole-app-with-its-window).
+
 The interface is in English or German and follows your system. To choose it yourself, open **Preferences** (the gear at the top, or `⌘,` on the Mac and `Ctrl+,` on Windows and Linux), then **View › Language**.
 
 ## 2. Add your music
