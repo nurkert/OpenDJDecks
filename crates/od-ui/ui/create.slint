@@ -14,7 +14,10 @@
 // track or by hand, on the pads (SNAP TO SCALE) and the keyboard strip.
 // [74] ARRANGE puts the notes in order on 32 steps of the master grid:
 // played in with REC, or typed; a tapped step moves, changes or goes; PLAY
-// plays the strip on the audition voice in time with the master.
+// plays the strip on the audition voice in time with the master. [75]
+// RESULT renders the notes into a new file with a beatgrid and a hot cue
+// per note (SINGLE NOTES or MELODY, at the master or the track's tempo),
+// saying first what the stick formats take, then READY in green.
 
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
@@ -128,6 +131,30 @@ export struct CreateStep {
     cursor: bool,
 }
 
+// [75] What RENDER would make, and what it made (create.rs).
+export struct CreateRender {
+    // "single" (one cue per distinct note) or "melody" (one per note in order).
+    layout: string,
+    // "master" or "track"; both tempos ("124.0"; "" = the track has no
+    // grid), and the one in use.
+    tempo-from: string,
+    master: string,
+    track: string,
+    bpm: string,
+    // The notes in the file, its bars and its hot cues.
+    notes: int,
+    bars: int,
+    cues: int,
+    // What the stick formats take: "fits", "over" ("" = nothing to render),
+    // and the line that says it.
+    fits: string,
+    check: string,
+    // "rendering", "ready" (the file is in the library) or "".
+    state: string,
+    // RENDER can run.
+    can: bool,
+}
+
 export global Create {
     // The view: "melody", "drums" or "theory" (remembered, shell.rs).
     in-out property <string> view: "melody";
@@ -217,6 +244,11 @@ export global Create {
     callback delete-step();
     // Typed note names: they replace the strip from step 1.
     callback type-steps(string);
+    // [75] RESULT: the layout, the tempo, RENDER.
+    in property <CreateRender> render;
+    callback set-layout(string);
+    callback set-tempo-from(string);
+    callback render-file();
     // The selected step holds a note.
     public pure function step-has-note() -> bool {
         return root.selected >= 0 && root.selected < root.steps.length && root.steps[root.selected].note != "";
@@ -1415,17 +1447,28 @@ component ResultBar inherits Rectangle {
     property <string> summary: Create.view == "drums"
         ? @tr("No pattern yet. It shows here with its bars and tempo, ready to send to Perform or render as a loop.")
         : Create.view == "theory" ? @tr("THEORY only shows. What fits goes into MELODY.")
-        : Create.notes > 0 ? root.melody
+        : Create.render.notes > 0 ? root.melody
         : @tr("No melody yet. It shows here with its notes, bars, tempo and cues, and whether the stick formats take it.");
-    // [74] The melody: "8 notes · 4 bars · 124.0 BPM".
-    property <string> melody: (Create.notes == 1 ? @tr("1 note") : @tr("{} notes", Create.notes))
-        + " · " + (Create.bars == 1 ? @tr("1 bar") : @tr("{} bars", Create.bars)) + " · " + Create.tempo + " BPM";
+    // [74] [75] What the file holds: "8 notes · 4 bars · 124.0 BPM · 8 cues".
+    property <string> melody: (Create.render.notes == 1 ? @tr("1 note") : @tr("{} notes", Create.render.notes))
+        + " · " + (Create.render.bars == 1 ? @tr("1 bar") : @tr("{} bars", Create.render.bars))
+        + " · " + (Create.render.bpm == "" ? "—" : Create.render.bpm) + " BPM"
+        + " · " + (Create.render.cues == 1 ? @tr("1 cue") : @tr("{} cues", Create.render.cues));
+    property <bool> ready: Create.render.state == "ready";
+    property <bool> rendering: Create.render.state == "rendering";
+    // A narrow window drops the tempos from MASTER and TRACK (the line
+    // above says the one in use). Follows the width through a plain
+    // property, so it does not feed back into the layout.
+    property <bool> tight;
+    init => { self.tight = self.width < 960px; }
+    changed width => { self.tight = self.width < 960px; }
     // Only as tall as its line and its actions; the views take the rest.
     vertical-stretch: 0;
     VerticalLayout {
         padding: Theme.s3; spacing: Theme.s2;
         // One line: a wrapping text here would be measured at no width and
-        // stretch the bar.
+        // stretch the bar. [75] The stick formats' check on the right: a
+        // solid green line when the file fits, a struck red one when not.
         HorizontalLayout {
             spacing: Theme.s3;
             Caps { text: @tr("RESULT"); color: Theme.bone-2; font-weight: Theme.weight-semi; vertical-alignment: center; }
@@ -1436,6 +1479,25 @@ component ResultBar inherits Rectangle {
                 font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                 vertical-alignment: center; overflow: elide;
             }
+            if Create.view == "melody" && Create.render.fits != "": HorizontalLayout {
+                horizontal-stretch: 0; min-width: 0px; spacing: Theme.s2;
+                VerticalLayout {
+                    alignment: center;
+                    VLine {
+                        height: 14px;
+                        form: Create.render.fits == "fits" ? "solid" : "struck";
+                        tone: Create.render.fits == "fits" ? Theme.live : Theme.fault;
+                    }
+                }
+                Text {
+                    accessible-id: "create.result.check"; accessible-role: text; accessible-value: self.text;
+                    min-width: 0px;
+                    text: Create.render.check;
+                    font-family: Theme.family; font-size: Theme.control;
+                    color: Create.render.fits == "fits" ? Theme.bone-2 : Theme.bone;
+                    vertical-alignment: center; overflow: elide;
+                }
+            }
         }
         if Create.view == "melody": HorizontalLayout {
             alignment: center; spacing: Theme.s3;
@@ -1443,14 +1505,49 @@ component ResultBar inherits Rectangle {
                 spacing: Theme.key-gap;
                 PlateButton {
                     accessible-id: "create.result.single-notes"; accessible-role: tab;
-                    compact: true; enabled: false; label: @tr("SINGLE NOTES");
-                    tooltip: @tr("One hot cue per note, to play them by hand (comes with rendering)");
+                    compact: true; label: @tr("SINGLE NOTES");
+                    selected: Create.render.layout == "single";
+                    tooltip: @tr("Render one hot cue per note, each note on its own bar, to play them by hand");
+                    clicked => { Create.set-layout("single"); }
                 }
                 PlateButton {
                     accessible-id: "create.result.melody"; accessible-role: tab;
-                    compact: true; enabled: false; label: @tr("MELODY");
-                    tooltip: @tr("One cue per note in order, ready as a transition (comes with rendering)");
+                    compact: true; label: @tr("MELODY");
+                    selected: Create.render.layout == "melody";
+                    tooltip: @tr("Render the strip in time, one cue per note in order, ready as a transition");
+                    clicked => { Create.set-layout("melody"); }
                 }
+            }
+            HorizontalLayout {
+                spacing: Theme.key-gap;
+                PlateButton {
+                    accessible-id: "create.result.tempo.master"; accessible-role: tab;
+                    compact: true; label: root.tight ? @tr("MASTER") : @tr("MASTER") + " " + Create.render.master;
+                    selected: Create.render.tempo-from == "master";
+                    tooltip: @tr("Render at the master tempo");
+                    clicked => { Create.set-tempo-from("master"); }
+                }
+                PlateButton {
+                    accessible-id: "create.result.tempo.track"; accessible-role: tab;
+                    compact: true; label: root.tight ? @tr("TRACK") : @tr("TRACK") + " " + (Create.render.track == "" ? "—" : Create.render.track);
+                    selected: Create.render.tempo-from == "track";
+                    enabled: Create.render.track != "" || Create.render.tempo-from == "track";
+                    tooltip: Create.render.track == "" ? @tr("The source track has no beatgrid: analyse it to render at its tempo")
+                        : @tr("Render at the tempo of the track the note comes from");
+                    clicked => { Create.set-tempo-from("track"); }
+                }
+            }
+            // Rendered: filled green with the word READY.
+            PlateButton {
+                accessible-id: "create.result.render"; accessible-role: button;
+                compact: true;
+                label: root.ready ? @tr("READY") : root.rendering ? @tr("RENDERING") : @tr("RENDER");
+                enabled: Create.render.can || root.ready || root.rendering;
+                active: root.ready || root.rendering;
+                tone: root.ready ? Theme.live : Theme.attention;
+                tooltip: root.ready ? @tr("Rendered: the file is in the library with its beatgrid and cues")
+                    : @tr("Write a new file with its beatgrid and a hot cue per note; the source track stays as it is");
+                clicked => { Create.render-file(); }
             }
             PlateButton {
                 accessible-id: "create.result.send"; accessible-role: button;
@@ -1458,14 +1555,9 @@ component ResultBar inherits Rectangle {
                 tooltip: @tr("Put the notes on the pads in Perform (comes with the melody pad mode)");
             }
             PlateButton {
-                accessible-id: "create.result.render"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("RENDER");
-                tooltip: @tr("Write a new file with its beatgrid and cues (comes with rendering)");
-            }
-            PlateButton {
                 accessible-id: "create.result.to-playlist"; accessible-role: button;
                 compact: true; enabled: false; label: @tr("TO PLAYLIST");
-                tooltip: @tr("Add the rendered file to a playlist (comes with rendering)");
+                tooltip: @tr("Add the rendered file to a playlist (comes with the created list)");
             }
         }
         if Create.view == "drums": HorizontalLayout {

@@ -139,7 +139,7 @@ A fourth tab next to PREPARE, PERFORM and LIGHTING for the things DJs today do i
 - [x] **[72]** Pitch the note to every note it needs with a clean start and tail, with a warning on large shifts and a hint to pick another source note.
 - [x] **[73]** Key and scale from the analysis (the other deck's or the next track's key in one press), and the scale's notes on pads and on a keyboard strip, with snap to scale and octaves.
 - [x] **[74]** An arrange strip of up to 32 steps on the master grid, played in or typed as note names, with move and delete.
-- [ ] **[75]** Render a new file (the original is never touched) at the chosen tempo with a beat grid and one hot cue per note, as single notes or in melody order, with a check of what club players can take.
+- [x] **[75]** Render a new file (the original is never touched) at the chosen tempo with a beat grid and one hot cue per note, as single notes or in melody order, with a check of what club players can take.
 - [ ] **[76]** The result goes into a playlist, the library's CREATED list and onto registered sticks through the normal sync.
 
 ### Playing it live

@@ -41,9 +41,20 @@
 //! audition voice, each on its beat of the master clock (from the next bar
 //! while a deck plays), so the decks are never touched. The strip is kept
 //! in `create.melody`.
+//!
+//! [75] RENDER writes the strip into a new WAV file at the master tempo or
+//! the source track's, with a locked beatgrid and one hot cue per note:
+//! SINGLE NOTES (each distinct note on its own bar) or MELODY (the strip in
+//! time); see [`crate::create_render`]. The notes come from the render
+//! cache (the ones missing are rendered alike on the worker). Before the
+//! render RESULT says what the stick formats take; after it RENDER reads
+//! READY until the notes, tempo or layout change. The file goes to
+//! `created` beside the library and into the library as a track with its
+//! grid and cues. The choices are kept in `create.render`.
 
 use crate::app::App;
 use crate::arrange::{self, Grid, Melody, STEPS};
+use crate::create_render::{self, Layout, Plan, TempoFrom};
 use crate::engine;
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use od_analysis::pitch::{self, PitchOutcome};
@@ -115,9 +126,15 @@ pub(crate) fn frame(app: &App, state: Option<&EngineState>) {
     // [73] The key follows the other deck; NEXT TRACK says what it would take.
     follow_deck(app, state);
     // [74] The tempo for RESULT, and where REC puts a note now.
-    let tempo = crate::format::bpm(Some(state.map_or(120.0, |s| s.master_bpm)), 1);
+    let master = state.map_or(120.0, |s| s.master_bpm);
+    let tempo = crate::format::bpm(Some(master), 1);
     if g.get_tempo().as_str() != tempo {
         g.set_tempo(tempo.into());
+    }
+    // [75] RENDER at the master tempo follows it.
+    if create_render::tempo(master) != create_render::tempo(app.create.borrow().master_bpm) {
+        app.create.borrow_mut().master_bpm = master;
+        show_result(app);
     }
     let grid = state.is_some_and(|s| master_beat(s).is_some()) || app.create.borrow().play.is_some();
     if app.create.borrow().rec_grid != grid {
@@ -363,6 +380,17 @@ pub(crate) struct Runtime {
     /// The notes PLAY sent, as (step, MIDI) (tests).
     #[cfg(test)]
     sent: Vec<(usize, i32)>,
+    /// [75] RENDER's layout and tempo, the master tempo as last seen.
+    render: create_render::Choice,
+    master_bpm: f64,
+    /// A render runs (for what), its result comes back here.
+    rendering: Option<RenderSig>,
+    render_tx: Sender<Result<create_render::Made, String>>,
+    render_rx: Receiver<Result<create_render::Made, String>>,
+    /// Render once the audio is in.
+    render_due: bool,
+    /// The last file rendered, and for what.
+    made: Option<(RenderSig, create_render::Made)>,
 }
 
 /// REC armed: the beat the grid counts from (once a note came in on it),
@@ -396,6 +424,7 @@ impl Default for Runtime {
     fn default() -> Self {
         let (tx, rx) = unbounded();
         let (rendered_tx, rendered_rx) = unbounded();
+        let (render_tx, render_rx) = unbounded();
         Self {
             note: None,
             audio: None,
@@ -428,6 +457,13 @@ impl Default for Runtime {
             typed_long: false,
             #[cfg(test)]
             sent: Vec::new(),
+            render: create_render::Choice::default(),
+            master_bpm: 120.0,
+            rendering: None,
+            render_tx,
+            render_rx,
+            render_due: false,
+            made: None,
         }
     }
 }
@@ -502,6 +538,12 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_shift_step(move |d, semitone| w(&|a| shift_step(a, d, semitone)));
     let w = with.clone();
     g.on_type_steps(move |t| w(&|a| type_steps(a, &t)));
+    let w = with.clone();
+    g.on_set_layout(move |id| w(&|a| set_layout(a, &id)));
+    let w = with.clone();
+    g.on_set_tempo_from(move |id| w(&|a| set_tempo_from(a, &id)));
+    let w = with.clone();
+    g.on_render_file(move || w(&render));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -517,12 +559,14 @@ fn restore(app: &App) {
     let note = stored.and_then(|j| serde_json::from_str::<PickedNote>(&j).ok()).filter(|n| n.track.is_some());
     let choice = app.state.borrow().lib.meta(META_KEY).ok().flatten().and_then(|j| serde_json::from_str::<KeyChoice>(&j).ok());
     let melody = app.state.borrow().lib.meta(META_MELODY).ok().flatten().and_then(|j| serde_json::from_str::<Melody>(&j).ok());
+    let render = app.state.borrow().lib.meta(META_RENDER).ok().flatten().and_then(|j| serde_json::from_str::<create_render::Choice>(&j).ok());
     {
         let mut rt = app.create.borrow_mut();
         rt.note = note;
         rt.choice = choice.unwrap_or_default();
         rt.melody = melody.unwrap_or_default();
         rt.melody.normalize();
+        rt.render = render.unwrap_or_default();
     }
     render_wave(app);
     show(app);
@@ -819,6 +863,11 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
             }
             (rt.measure_due && current, std::mem::take(&mut rt.hear_due) && current, std::mem::take(&mut rt.pads_due) && current)
         };
+        let render_due = {
+            let mut rt = app.create.borrow_mut();
+            let current = rt.note.as_ref().and_then(|n| n.track) == Some(id);
+            std::mem::take(&mut rt.render_due) && current && rt.audio.is_some()
+        };
         if measure_due {
             // Measuring renders the pads too.
             measure(app);
@@ -831,8 +880,12 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
         if hear_due {
             hear(app);
         }
+        if render_due {
+            render(app);
+        }
     }
     poll_rendered(app);
+    poll_render(app);
     tick_play(app, state);
     let ended = {
         let rt = app.create.borrow();
@@ -928,6 +981,7 @@ fn show(app: &App) {
     g.set_note(view.unwrap_or_default());
     show_key(app);
     show_pads(app);
+    show_result(app);
 }
 
 // ── [72] The note on pads ───────────────────────────────────────────────
@@ -1192,15 +1246,21 @@ fn prepare_pads(app: &App) {
             if generation.load(Ordering::SeqCst) != my {
                 return;
             }
-            let shifted = noteshift::shift_note(&note, src_rate, shift_to(key.pitch, target), fade);
-            let audio = od_decode::DecodedAudio { sample_rate: src_rate, channels: 2, samples: shifted.samples };
-            let sample = SampleData::new(audio, key.rate);
-            let r = Rendered { key: key.clone(), target, sample, method: shifted.method };
+            let (sample, method) = shift_one(&note, src_rate, fade, &key, target);
+            let r = Rendered { key: key.clone(), target, sample, method };
             if tx.send(r).is_err() {
                 return;
             }
         }
     });
+}
+
+/// The note (faded, interleaved stereo at `src_rate`) at `target`, at the
+/// engine rate of `key`.
+fn shift_one(note: &[f32], src_rate: u32, fade: f64, key: &RenderKey, target: i32) -> (Arc<SampleData>, ShiftMethod) {
+    let shifted = noteshift::shift_note(note, src_rate, shift_to(key.pitch, target), fade);
+    let audio = od_decode::DecodedAudio { sample_rate: src_rate, channels: 2, samples: shifted.samples };
+    (SampleData::new(audio, key.rate), shifted.method)
 }
 
 /// Rendered notes come in: kept, and a pad or key waiting for one plays it.
@@ -1628,6 +1688,7 @@ fn show_arrange(app: &App) {
     g.set_can_undo(undo);
     g.set_typed_bad(bad.into());
     g.set_typed_long(long);
+    show_result(app);
 }
 
 fn save_melody(app: &App) {
@@ -1955,6 +2016,240 @@ fn tick_play(app: &App, state: Option<&EngineState>) {
     }
 }
 
+// ── [75] Render ─────────────────────────────────────────────────────────
+
+/// Library meta key of RESULT's layout and tempo (JSON).
+pub(crate) const META_RENDER: &str = "create.render";
+
+/// What a render is made of: once any of it changes, the file rendered is
+/// no longer READY.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct RenderSig {
+    layout: Layout,
+    bpm: f64,
+    plan: Plan,
+    note: Option<RenderKey>,
+    spell: Option<ScaleKey>,
+}
+
+/// The source track's tempo (its grid's), if it has one.
+fn track_bpm(app: &App) -> Option<f64> {
+    let id = app.create.borrow().note.as_ref().and_then(|n| n.track)?;
+    let st = app.state.borrow();
+    let grid = st.src().beatgrid(id).ok().flatten().or_else(|| st.lib.beatgrid(id).ok().flatten())?;
+    grid.dominant_bpm().filter(|b| *b > 0.0)
+}
+
+/// What RENDER would make now: the plan, and the tempo (none when the
+/// track's tempo is chosen and it has no grid).
+fn render_sig(app: &App) -> RenderSig {
+    let track = track_bpm(app);
+    let rate = app.engine.borrow().sample_rate();
+    let rt = app.create.borrow();
+    let bpm = match rt.render.tempo {
+        TempoFrom::Master => Some(rt.master_bpm),
+        TempoFrom::Track => track,
+    };
+    RenderSig {
+        layout: rt.render.layout,
+        bpm: bpm.map_or(0.0, create_render::tempo),
+        plan: create_render::plan(&rt.melody, rt.render.layout),
+        note: rt.note.as_ref().and_then(|n| RenderKey::of(n, rate)),
+        spell: rt.choice.key,
+    }
+}
+
+/// What RESULT shows of the render: the layout and tempo chosen, both
+/// tempos, the notes, bars and cues, what the stick formats take, and
+/// whether it renders or is READY.
+fn show_result(app: &App) {
+    let sig = render_sig(app);
+    let track = track_bpm(app);
+    let view = {
+        let rt = app.create.borrow();
+        let check = create_render::check(sig.plan.cues());
+        let line = if sig.plan.notes.is_empty() {
+            String::new()
+        } else if !check.fits {
+            od_i18n::trf("Stick formats: {} of {} hot cues. Too many: render fewer notes", &[&check.cues, &create_render::CUE_LIMIT])
+        } else if check.later > 0 {
+            od_i18n::trf("Stick formats: {} of {} hot cues · fits, {} on later pad banks", &[&check.cues, &create_render::CUE_LIMIT, &check.later])
+        } else {
+            od_i18n::trf("Stick formats: {} of {} hot cues · fits", &[&check.cues, &create_render::CUE_LIMIT])
+        };
+        let state = if rt.rendering.is_some() {
+            "rendering"
+        } else if rt.made.as_ref().is_some_and(|(s, _)| *s == sig) {
+            "ready"
+        } else {
+            ""
+        };
+        crate::CreateRender {
+            layout: sig.layout.id().into(),
+            tempo_from: rt.render.tempo.id().into(),
+            master: crate::format::bpm(Some(rt.master_bpm), 1).into(),
+            track: crate::format::bpm(track, 1).into(),
+            bpm: crate::format::bpm(Some(sig.bpm), 1).into(),
+            notes: sig.plan.cues() as i32,
+            bars: sig.plan.bars() as i32,
+            cues: check.cues as i32,
+            fits: if sig.plan.notes.is_empty() { "" } else if check.fits { "fits" } else { "over" }.into(),
+            check: line.into(),
+            state: state.into(),
+            can: sig.note.is_some() && !sig.plan.notes.is_empty() && check.fits && sig.bpm > 0.0,
+        }
+    };
+    let g = app.ui.global::<crate::Create>();
+    if g.get_render() != view {
+        g.set_render(view);
+    }
+}
+
+fn save_render(app: &App) {
+    if app.state.borrow().read_only() {
+        return;
+    }
+    let json = serde_json::to_string(&app.create.borrow().render).unwrap_or_default();
+    if let Err(e) = app.state.borrow_mut().lib.set_meta(META_RENDER, &json) {
+        tracing::warn!(error = %e, "render choice not saved");
+    }
+}
+
+/// SINGLE NOTES or MELODY.
+pub(crate) fn set_layout(app: &App, id: &str) {
+    let Some(l) = Layout::from_id(id) else { return };
+    app.create.borrow_mut().render.layout = l;
+    show_result(app);
+    save_render(app);
+}
+
+/// The tempo of the file: the master's or the source track's.
+pub(crate) fn set_tempo_from(app: &App, id: &str) {
+    let Some(t) = TempoFrom::from_id(id) else { return };
+    app.create.borrow_mut().render.tempo = t;
+    show_result(app);
+    save_render(app);
+}
+
+/// RENDER: the notes into a new file on a worker thread (once the source
+/// audio is in, when notes are missing from the cache), added to the
+/// library. Nothing happens past the stick formats' limit; READY again
+/// only says where the file is.
+pub(crate) fn render(app: &App) {
+    if app.guard_read_only() {
+        return;
+    }
+    let sig = render_sig(app);
+    if app.create.borrow().rendering.is_some() {
+        return;
+    }
+    if let Some((_, made)) = app.create.borrow().made.as_ref().filter(|(s, _)| *s == sig) {
+        app.status(od_i18n::trf("Already rendered: {} is in the library", &[&made.title]));
+        return;
+    }
+    let Some(key) = sig.note.clone() else {
+        app.status(od_i18n::tr("Pick a note in SOURCE first").to_string());
+        return;
+    };
+    if sig.plan.notes.is_empty() {
+        app.status(od_i18n::tr("Nothing to render: put notes on the strip first").to_string());
+        return;
+    }
+    if !create_render::check(sig.plan.cues()).fits {
+        app.status(od_i18n::trf("{} hot cues are more than the stick formats hold: render fewer notes", &[&sig.plan.cues()]));
+        return;
+    }
+    if sig.bpm <= 0.0 {
+        app.status(od_i18n::tr("The source track has no beatgrid: render at the master tempo").to_string());
+        return;
+    }
+    let mut targets: Vec<i32> = sig.plan.notes.iter().map(|p| p.note).collect();
+    targets.sort_unstable();
+    targets.dedup();
+    let (cached, missing): (HashMap<i32, Arc<SampleData>>, Vec<i32>) = {
+        let rt = app.create.borrow();
+        let current = rt.cache.key.as_ref() == Some(&key);
+        let cached: HashMap<i32, Arc<SampleData>> =
+            targets.iter().filter_map(|&t| rt.cache.get(t).filter(|_| current).map(|s| (t, s))).collect();
+        let missing = targets.iter().copied().filter(|t| !cached.contains_key(t)).collect();
+        (cached, missing)
+    };
+    let source = match missing.is_empty() {
+        true => None,
+        false => match audio(app) {
+            Some(a) => Some(a),
+            None => {
+                app.create.borrow_mut().render_due = true;
+                app.status(od_i18n::tr("Rendering the notes once the track is read…").to_string());
+                return;
+            }
+        },
+    };
+    let Some(n) = note(app) else { return };
+    let (title, artist) = {
+        let st = app.state.borrow();
+        n.track.and_then(|id| st.src().track(id).ok()).map(|t| (t.tags.title, t.tags.artist)).unwrap_or_default()
+    };
+    let (text, tx) = {
+        let rt = app.create.borrow();
+        (rt.melody.text(rt.choice.key), rt.render_tx.clone())
+    };
+    let job = create_render::Job {
+        library: app.state.borrow().config.library_path.clone(),
+        title,
+        artist,
+        layout: sig.layout,
+        plan: sig.plan.clone(),
+        bpm: sig.bpm,
+        rate: key.rate,
+        notes: cached,
+        key: sig.spell,
+        text,
+    };
+    let fade = n.fade();
+    let (start, end) = (n.start, n.end);
+    std::thread::spawn(move || {
+        let mut job = job;
+        if let Some(a) = source {
+            let src_rate = a.rate();
+            let mut note = a.stereo(start, end);
+            apply_fades(&mut note, src_rate, fade);
+            if !note.is_empty() {
+                for t in missing {
+                    job.notes.insert(t, shift_one(&note, src_rate, fade, &key, t).0);
+                }
+            }
+        }
+        let _ = tx.send(create_render::write(&job).map_err(|e| e.to_string()));
+    });
+    app.create.borrow_mut().rendering = Some(sig);
+    app.status(od_i18n::tr("Rendering the notes into a new file…").to_string());
+    show_result(app);
+}
+
+/// A render came back: the track is in the library (READY), or why not.
+fn poll_render(app: &App) {
+    let Ok(result) = app.create.borrow().render_rx.try_recv() else { return };
+    let sig = app.create.borrow_mut().rendering.take();
+    match (result, sig) {
+        (Ok(made), Some(sig)) => {
+            app.status(od_i18n::trf("Rendered as a new track: {}. The file is in the library's created folder", &[&made.title]));
+            app.create.borrow_mut().made = Some((sig, made));
+            let _ = app.analysis.wake.send(());
+            app.refresh_library();
+        }
+        (Ok(_), None) => {}
+        (Err(e), _) => app.status(od_i18n::trf("The render failed: {}", &[&e])),
+    }
+    show_result(app);
+}
+
+/// The last file rendered (tests).
+#[cfg(test)]
+pub(crate) fn made(app: &App) -> Option<create_render::Made> {
+    app.create.borrow().made.as_ref().map(|(_, m)| m.clone())
+}
+
 /// The arrange strip (tests).
 #[cfg(test)]
 pub(crate) fn melody(app: &App) -> Melody {
@@ -2055,6 +2350,18 @@ pub(crate) fn stage_melody(app: &App, track: TrackId) {
     show_arrange(app);
 }
 
+/// [75] The full strip as rendered: RENDER reads READY (the file is not
+/// written), SINGLE NOTES chosen.
+#[cfg(test)]
+pub(crate) fn stage_rendered(app: &App, track: TrackId) {
+    stage_melody(app, track);
+    app.create.borrow_mut().render.layout = Layout::Single;
+    let sig = render_sig(app);
+    let made = create_render::Made { track, title: "Staged".into(), path: PathBuf::from("Staged.wav") };
+    app.create.borrow_mut().made = Some((sig, made));
+    show_result(app);
+}
+
 /// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF`, comma separated),
 /// on the demo library with the decks loaded by `OPENDJDECKS_AUTOLOAD`:
 /// `create-note` opens MELODY and picks a note from deck 1;
@@ -2064,7 +2371,8 @@ pub(crate) fn stage_melody(app: &App, track: TrackId) {
 /// `create-scale-off` turns SNAP TO SCALE off;
 /// `create-melody` types a melody into the strip and selects a step;
 /// `create-melody-rec` arms REC as well; `create-melody-play` plays the
-/// strip in a loop.
+/// strip in a loop; `create-render-single` chooses SINGLE NOTES and
+/// `create-render` renders the strip into a new file (READY).
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -2100,6 +2408,12 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         if parts.iter().any(|p| p == "create-melody-play") {
             set_loop(&a, true);
             toggle_play(&a);
+        }
+        if parts.iter().any(|p| p == "create-render-single") {
+            set_layout(&a, "single");
+        }
+        if parts.iter().any(|p| p == "create-render") {
+            render(&a);
         }
     });
 }

@@ -8686,11 +8686,13 @@ elements = [
 [[view.region]]
 id = "create.result.actions"
 band = "create"
-place = "the RESULT bar: render mode, then where the result goes"
+place = "the RESULT bar: render layout, tempo and RENDER, then where the result goes (roadmap [75])"
 order = "row"
 elements = [
   "create.result.single-notes",
   "create.result.melody",
+  "create.result.tempo.master",
+  "create.result.tempo.track",
   "create.result.render",
   "create.result.to-playlist",
 ]
@@ -8907,4 +8909,38 @@ order = "column"
 elements = [
   "create.arrange.step1",
   "create.arrange.hint",
+]
+
+[[view]]
+id = "create.render"
+title = "Create: MELODY rendered (RESULT with the stick formats' check, RENDER READY)"
+mode = "create"
+source = "Roadmap [75], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+note = "RESULT under the zones, compact: one line with what the file holds (notes, bars, tempo, cues) and, on the right, what the stick formats take (the cue count against the 32 hot cues the formats we write store, and whether it fits; a solid green line when it does, a struck red one when not), shown before any render; under it SINGLE NOTES | MELODY, the tempo (MASTER or the source TRACK, each with its BPM), RENDER, then the later SEND TO PERFORM and TO PLAYLIST. After a render RENDER is filled green with the word READY until the notes, layout or tempo change."
+
+[[view.region]]
+id = "create.render.line"
+band = "create"
+place = "RESULT, first line: what the file holds, the stick formats' check on the right"
+order = "row"
+elements = [
+  "create.result.summary",
+  "create.result.check",
+]
+
+[[view.region]]
+id = "create.result.actions"
+band = "create"
+place = "RESULT, second line: layout, tempo, RENDER (READY), then where the result goes"
+order = "row"
+elements = [
+  "create.result.single-notes",
+  "create.result.melody",
+  "create.result.tempo.master",
+  "create.result.tempo.track",
+  "create.result.render",
+  "create.result.send",
+  "create.result.to-playlist",
 ]

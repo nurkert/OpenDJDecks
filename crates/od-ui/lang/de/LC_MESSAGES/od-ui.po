@@ -10573,8 +10573,8 @@ msgstr "EINZELTÖNE"
 
 #: ui/create.slint:302
 msgctxt "ResultBar"
-msgid "One hot cue per note, to play them by hand (comes with rendering)"
-msgstr "Ein Hot Cue pro Ton, um sie von Hand zu spielen (kommt mit dem Rendern)"
+msgid "Render one hot cue per note, each note on its own bar, to play them by hand"
+msgstr "Einen Hot Cue pro Ton rendern, jeder Ton in seinem eigenen Takt, um sie von Hand zu spielen"
 
 #: ui/create.slint:306
 msgctxt "ResultBar"
@@ -10583,8 +10583,8 @@ msgstr "MELODY"
 
 #: ui/create.slint:307
 msgctxt "ResultBar"
-msgid "One cue per note in order, ready as a transition (comes with rendering)"
-msgstr "Ein Cue pro Ton der Reihe nach, fertig als Übergang (kommt mit dem Rendern)"
+msgid "Render the strip in time, one cue per note in order, ready as a transition"
+msgstr "Die Leiste im Takt rendern, ein Cue pro Ton der Reihe nach, fertig als Übergang"
 
 #: ui/create.slint:312 ui/create.slint:330
 msgctxt "ResultBar"
@@ -10603,8 +10603,8 @@ msgstr "RENDERN"
 
 #: ui/create.slint:318
 msgctxt "ResultBar"
-msgid "Write a new file with its beatgrid and cues (comes with rendering)"
-msgstr "Eine neue Datei mit Beatgrid und Cues schreiben (kommt mit dem Rendern)"
+msgid "Write a new file with its beatgrid and a hot cue per note; the source track stays as it is"
+msgstr "Eine neue Datei mit Beatgrid und einem Hot Cue pro Ton schreiben; der Quelltrack bleibt, wie er ist"
 
 #: ui/create.slint:322
 msgctxt "ResultBar"
@@ -10613,8 +10613,8 @@ msgstr "IN PLAYLIST"
 
 #: ui/create.slint:323
 msgctxt "ResultBar"
-msgid "Add the rendered file to a playlist (comes with rendering)"
-msgstr "Die gerenderte Datei zu einer Playlist hinzufügen (kommt mit dem Rendern)"
+msgid "Add the rendered file to a playlist (comes with the created list)"
+msgstr "Die gerenderte Datei zu einer Playlist hinzufügen (kommt mit der Liste des Erstellten)"
 
 #: ui/create.slint:331
 msgctxt "ResultBar"
@@ -11262,3 +11262,53 @@ msgstr "1 Takt"
 msgctxt "ResultBar"
 msgid "{} bars"
 msgstr "{} Takte"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "1 cue"
+msgstr "1 Cue"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "{} cues"
+msgstr "{} Cues"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "MASTER"
+msgstr "MASTER"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "TRACK"
+msgstr "TRACK"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Render at the master tempo"
+msgstr "Im Master-Tempo rendern"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "The source track has no beatgrid: analyse it to render at its tempo"
+msgstr "Der Quelltrack hat kein Beatgrid: Analysiere ihn, um in seinem Tempo zu rendern"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Render at the tempo of the track the note comes from"
+msgstr "Im Tempo des Tracks rendern, aus dem der Ton stammt"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "READY"
+msgstr "FERTIG"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "RENDERING"
+msgstr "RENDERT"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Rendered: the file is in the library with its beatgrid and cues"
+msgstr "Gerendert: Die Datei ist mit Beatgrid und Cues in der Bibliothek"
