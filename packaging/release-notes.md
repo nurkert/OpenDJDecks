@@ -1,64 +1,46 @@
-OpenDJDecks 0.9.0, the open-source DJ software for macOS, Linux, Windows and the Raspberry Pi. Website and guides: [opendjdecks.de](https://opendjdecks.de). Still a beta.
+OpenDJDecks 0.10.0, the open-source DJ software for macOS, Linux, Windows and the Raspberry Pi. Website and guides: [opendjdecks.de](https://opendjdecks.de). Still a beta.
 
-## New in 0.9.0: the rest of the craft
+## New in 0.10.0: CREATE
 
-### Interface
+A fourth tab next to PREPARE, PERFORM and LIGHTING for making your own sounds between and during sets.
 
-- **A calmer, more physical interface:**
-  - One motion language and knobs, faders and meters with value arcs and readouts.
-  - A calmer library table and an optional calm waveform.
-  - Perform lanes centred on the window, and waveforms you can drag.
-- **Set Flow as a chart,** with warnings between tracks for tempo jumps, key clashes and energy drops.
-- **Preferences and the USB screen in the new design,** with live previews.
-- **A help overlay** (`F12` or `?`) that names every control, also on touch.
-- **A touch layout** for the whole deck, not only the kiosk.
-- **Full keyboard focus and readable screen reader names.**
-- **Edit in Prepare:** an EDIT key and a right-click menu on the deck open the track's phrases, grid, cues, key, gain or info in Prepare while the decks keep playing. Quick fixes stay in Perform: downbeat ±1 beat, phrase boundary ±1 bar, use the likely key.
-- **Clearer browser:** filter chips, a foldable lists column, fuzzy search, and type-then-Enter to load.
-- **Smarter phrase detection,** measured on a generated test set.
+### Melody
 
-### DJ
+- **From one note to a melody:** pick a note from a deck, the player or the built-in tone, and play it across a keyboard and eight pads in any scale. Every note is shifted from that source, so it keeps its sound; notes far from the source carry a warning.
+- **An arrange strip** with 32 steps on 1/4, 1/8 or 1/16, recording on the master grid, typing (`A3 C4 - E4`), loop, clear and undo.
+- **Render as a new track:** a WAV in your library with grid, key and a hot cue per note, ready for sticks.
+- **SEND TO PERFORM:** the notes land on the sampler's new MELODY bank and the MELODY pad mode, on every deck.
 
-- **Recording for release:** loudness, true peak and clips while recording, chapter markers, a separate voice track, and a tracklist editor with text and CUE export.
-- **Sticks:** labelled format badges, stems per track on the stick, and a one-press emergency stick.
-- **A queue in Perform:**
-  - Requests matched to your library.
-  - A do-not-play tag.
-  - Auto-play, and a dead-air warning before the music runs out.
-- **Search at request speed,** a played-tonight mark, and tags edited on many tracks at once.
-- **Mixer and deck:**
-  - EQ kills also in stem mode, crossfader curves on the mixer, cut-in and reverse.
-  - Split cue: the cue on one ear, the master on the other.
-- **Cues:**
-  - Edit hot cues from Perform, set drop markers, and jump by phrase on the beat.
-  - Each cue gets its own play mode: cue, latch, gate or momentary.
-- **A sampler that stays in view,** and the planned set in Perform: the next track, its transition note, and how you stand against the plan.
-- **Stems you can audition** on the headphones, and your own stem files as deck parts.
-- **Output routing:** master and headphones on any output pair, an external-mixer mode, split cue on one stereo output, and MIDI clock out.
+### Drums
 
-### Lighting
+- **Three built-in kits** (TIGHT, WARM, DUSTY), synthesised so they sound the same on every computer, with pitch, decay and tone per pad.
+- **A 16-pad drum machine:** pads 1 to 8 play the kit, 9 to 16 your own samples. A 16-step row with swing and half time follows the master tempo and starts on the next bar.
+- **Shared with the sampler:** the steps are the sampler's sequencer, so Perform plays and edits the same pattern. Stored patterns now survive a restart.
+- **RENDER LOOP:** a bar-exact loop file of 1 to 8 bars with a loop marker and a hot cue per sound.
 
-- **SETUP and SHOW,** with a large blackout and an output test.
-- **A floor plan** for placing and turning fixtures, with per-fixture tuning.
-- **An editable cue list** and a cue lane in Prepare.
-- **Named rig, show and venue files.**
-- **A separate lighting operator:** a second controller for the lights, OSC input, and a second computer that follows the music over the network.
-- **DJ events as triggers,** with the audio input or the network as music sources.
-- **Unattended mode** for a fixed venue, behind the setup PIN.
+### Theory
+
+- **What fits:** the notes and chords of the key in use, what the other deck plays, and a check of your melody with plain-word reasons. Hints can be switched off.
+
+### Never empty
+
+- **Starter melodies and drum patterns** so the first screen always plays something, never over your own work.
+- **A MIDI keyboard** plays and records notes in CREATE, and drum pads from notes 36 to 51. Mapped DJ controllers are not affected.
+- **CREATED,** a list of everything you made, and a CREATE guide in English and German.
 
 ### Fixed
 
-- **Stick sync:** after a restored backup or an undone import, SYNC now writes everything the stick check reports as changed.
+- **Analysis:** tracks made in CREATE never get a key you did not choose.
+- **Narrow pad columns:** values in steppers no longer run into the arrows.
+- **Stems:** two separations of the same track at once no longer fail.
 
 ## Good to know
 
 Many of these features have not yet been tried on real hardware, at a gig or by ear, including:
 
-- controller mappings, the lighting controller layout and OSC,
-- multi-output audio interfaces, an external mixer and MIDI clock receivers,
-- lighting rigs and DMX interfaces,
-- touch screens and screen readers,
-- physical sticks and club players.
+- a MIDI keyboard in CREATE,
+- rendered files with many hot cues on club players,
+- controller mappings, multi-output audio interfaces and lighting rigs from earlier releases.
 
 Try your setup before a gig.
 
