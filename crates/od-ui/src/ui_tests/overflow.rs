@@ -1276,6 +1276,40 @@ fn main_states() -> Vec<State> {
                 crate::create::unstage_melody_pads(&u.app);
             }),
         },
+        // [78] What fits: B major against C# major playing now (struck
+        // notes and chords, a chord marked), a melody with five notes out
+        // of the key, in FITS and in THEORY; THEORY with the hints off.
+        State {
+            id: "create.melody (what fits)",
+            setup: |u| {
+                create(u, "melody");
+                crate::create::stage_theory(&u.app, u.fx.tracks[0].0);
+                u.pump(200);
+            },
+            teardown: Some(|u| crate::create::unstage_theory(&u.app)),
+        },
+        State {
+            id: "create.theory (what fits)",
+            setup: |u| {
+                create(u, "theory");
+                crate::create::stage_theory(&u.app, u.fx.tracks[0].0);
+                u.pump(200);
+            },
+            teardown: Some(|u| crate::create::unstage_theory(&u.app)),
+        },
+        State {
+            id: "create.theory (hints off)",
+            setup: |u| {
+                create(u, "theory");
+                crate::create::stage_theory(&u.app, u.fx.tracks[0].0);
+                crate::create::set_hints(&u.app, false);
+                u.pump(200);
+            },
+            teardown: Some(|u| {
+                crate::create::set_hints(&u.app, true);
+                crate::create::unstage_theory(&u.app);
+            }),
+        },
         // [76] The CREATED list open in PREPARE.
         State {
             id: "prepare.created list",

@@ -10531,11 +10531,6 @@ msgctxt "TheoryView"
 msgid "CHECK"
 msgstr "PRÜFEN"
 
-#: ui/create.slint:259
-msgctxt "TheoryView"
-msgid "Type a melody, such as A3 C4 E4 D4, to see whether all its notes fit the key, and which do not."
-msgstr "Tippe eine Melodie, etwa A3 C4 E4 D4, und sieh, ob alle ihre Töne zur Tonart passen und welche nicht."
-
 #: ui/create.slint:265
 msgctxt "TheoryView"
 msgid "WHY"
@@ -10555,11 +10550,6 @@ msgstr "ERGEBNIS"
 msgctxt "ResultBar"
 msgid "No pattern yet. It shows here with its bars and tempo, ready to send to Perform or render as a loop."
 msgstr "Noch kein Pattern. Es erscheint hier mit Takten und Tempo, bereit für Perform oder als Loop zum Rendern."
-
-#: ui/create.slint:279
-msgctxt "ResultBar"
-msgid "THEORY only shows. What fits goes into MELODY."
-msgstr "THEORY zeigt nur. Was passt, kommt in MELODY."
 
 #: ui/create.slint:280
 msgctxt "ResultBar"
@@ -11002,11 +10992,6 @@ msgid "HINTS"
 msgstr "HINWEISE"
 
 #: ui/create.slint
-msgctxt "ScaleRow"
-msgid "Hints: HAPPY and SAD under MAJOR and MINOR"
-msgstr "Hinweise: FRÖHLICH und TRAURIG unter DUR und MOLL"
-
-#: ui/create.slint
 msgctxt "ModeKey"
 msgid "Play in {}"
 msgstr "In {} spielen"
@@ -11045,11 +11030,6 @@ msgstr "TÖNE"
 msgctxt "KeyFits"
 msgid "CHORDS"
 msgstr "AKKORDE"
-
-#: ui/create.slint
-msgctxt "MelodyView"
-msgid "The notes and chords of the chosen key. Which of them fit the track playing now comes later."
-msgstr "Die Töne und Akkorde der gewählten Tonart. Welche davon zum laufenden Track passen, kommt später."
 
 #: ui/create.slint
 msgctxt "ArrangeStep"
@@ -11407,3 +11387,183 @@ msgstr "Wähle zuerst einen Ton in QUELLE: Dann gehen seine Töne auf die MELODY
 msgctxt "PadModeBar"
 msgid "Send notes from CREATE: SEND TO PERFORM puts them on these pads"
 msgstr "Töne aus CREATE senden: AN PERFORM legt sie auf diese Pads"
+
+#: ui/create.slint
+msgctxt "StripKey"
+msgid "in the chord"
+msgstr "im Akkord"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "Hints: HAPPY and SAD under MAJOR and MINOR, and the lines on why notes fit"
+msgstr "Hinweise: FRÖHLICH und TRAURIG unter DUR und MOLL und die Zeilen, warum Töne passen"
+
+#: ui/create.slint
+msgctxt "FitNote"
+msgid "fits"
+msgstr "passt"
+
+#: ui/create.slint
+msgctxt "FitNote"
+msgid "not in {}"
+msgstr "nicht in {}"
+
+#: ui/create.slint
+msgctxt "ChordKey"
+msgid "Clear the marks of {} on the keyboard strip"
+msgstr "Die Markierung von {} auf der Tastaturleiste entfernen"
+
+#: ui/create.slint
+msgctxt "ChordKey"
+msgid "Mark the notes of {} on the keyboard strip"
+msgstr "Die Töne von {} auf der Tastaturleiste markieren"
+
+#: ui/create.slint
+msgctxt "ChordKey"
+msgid "fits"
+msgstr "passt"
+
+#: ui/create.slint
+msgctxt "ChordKey"
+msgid "not in {}"
+msgstr "nicht in {}"
+
+#: ui/create.slint
+msgctxt "ChordKey"
+msgid "marked"
+msgstr "markiert"
+
+#: ui/create.slint
+msgctxt "FitsNow"
+msgid "NO DECK PLAYS"
+msgstr "KEIN DECK LÄUFT"
+
+#: ui/create.slint
+msgctxt "FitsNow"
+msgid "DECK {} PLAYS · KEY NOT KNOWN"
+msgstr "DECK {} LÄUFT · TONART UNBEKANNT"
+
+#: ui/create.slint
+msgctxt "FitsNow"
+msgid "DECK {} PLAYS {}"
+msgstr "DECK {} SPIELT {}"
+
+#: ui/create.slint
+msgctxt "KeyFits"
+msgid "Nothing to compare with: play a track with a known key on a deck."
+msgstr "Nichts zum Vergleichen: Spiele einen Track mit bekannter Tonart auf einem Deck."
+
+#: ui/create.slint
+msgctxt "KeyFits"
+msgid "Analyse its track to see which of these fit."
+msgstr "Analysiere seinen Track, um zu sehen, welche davon passen."
+
+#: ui/create.slint
+msgctxt "KeyFits"
+msgid "All 7 notes and all 7 chords fit."
+msgstr "Alle 7 Töne und alle 7 Akkorde passen."
+
+#: ui/create.slint
+msgctxt "KeyFits"
+msgid "{} of 7 notes and {} of 7 chords fit. The struck ones are not in {}."
+msgstr "{} von 7 Tönen und {} von 7 Akkorden passen. Die durchgestrichenen sind nicht in {}."
+
+#: ui/create.slint
+msgctxt "KeyFits"
+msgid "Why: {}"
+msgstr "Warum: {}"
+
+#: ui/create.slint
+msgctxt "NeighbourRow"
+msgid "SAME NOTES"
+msgstr "GLEICHE TÖNE"
+
+#: ui/create.slint
+msgctxt "NeighbourRow"
+msgid "A FIFTH UP"
+msgstr "EINE QUINTE HÖHER"
+
+#: ui/create.slint
+msgctxt "NeighbourRow"
+msgid "A FIFTH DOWN"
+msgstr "EINE QUINTE TIEFER"
+
+#: ui/create.slint
+msgctxt "NeighbourRow"
+msgid "DECK {}"
+msgstr "DECK {}"
+
+#: ui/create.slint
+msgctxt "TheoryType"
+msgid "TYPE A MELODY: A3 C4 E4 D4"
+msgstr "MELODIE TIPPEN: A3 C4 E4 D4"
+
+#: ui/create.slint
+msgctxt "CheckLine"
+msgid "No key chosen yet: the check needs one."
+msgstr "Noch keine Tonart gewählt: Die Prüfung braucht eine."
+
+#: ui/create.slint
+msgctxt "CheckLine"
+msgid "No melody yet: type one here or play one into ARRANGE."
+msgstr "Noch keine Melodie: Tippe hier eine oder spiele eine in ANORDNEN ein."
+
+#: ui/create.slint
+msgctxt "CheckLine"
+msgid "Not in {}: {}"
+msgstr "Nicht in {}: {}"
+
+#: ui/create.slint
+msgctxt "CheckLine"
+msgid "All notes fit {}"
+msgstr "Alle Töne passen zu {}"
+
+#: ui/create.slint
+msgctxt "TheoryView"
+msgid "NEXT TO {}"
+msgstr "NEBEN {}"
+
+#: ui/create.slint
+msgctxt "TheoryView"
+msgid "NO KEY CHOSEN YET"
+msgstr "NOCH KEINE TONART GEWÄHLT"
+
+#: ui/create.slint
+msgctxt "TheoryView"
+msgid "KEY"
+msgstr "TONART"
+
+#: ui/create.slint
+msgctxt "TheoryView"
+msgid "MELODY"
+msgstr "MELODIE"
+
+#: ui/create.slint
+msgctxt "TheoryView"
+msgid "HINTS"
+msgstr "HINWEISE"
+
+#: ui/create.slint
+msgctxt "TheoryView"
+msgid "Hints: the lines on why notes fit, and HAPPY and SAD under MAJOR and MINOR"
+msgstr "Hinweise: die Zeilen, warum Töne passen, und FRÖHLICH und TRAURIG unter DUR und MOLL"
+
+#: ui/create.slint
+msgctxt "TheoryView"
+msgid "The hints are off: the notes, chords and the check stay. HINTS brings these lines back."
+msgstr "Die Hinweise sind aus: Töne, Akkorde und die Prüfung bleiben. HINWEISE bringt diese Zeilen zurück."
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "THEORY shows what fits. A melody typed here lands on MELODY's strip."
+msgstr "THEORY zeigt, was passt. Eine hier getippte Melodie landet auf der Leiste in MELODY."
+
+#: ui/create.slint
+msgctxt "TheoryView"
+msgid "The reasons show once a key is chosen: on a deck, by NEXT TRACK or by you in MELODY."
+msgstr "Die Gründe erscheinen, sobald eine Tonart gewählt ist: auf einem Deck, mit NÄCHSTER TRACK oder von dir in MELODY."
+
+#: ui/create.slint
+msgctxt "DeckKey"
+msgid "PLAYING NOW"
+msgstr "LÄUFT JETZT"
