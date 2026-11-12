@@ -890,6 +890,15 @@ fn a_rendered_track_in_a_synced_playlist_reaches_the_stick_with_cues_and_grid() 
     let stick = test_env().join("volumes").join(name);
     let _ = std::fs::remove_dir_all(&stick);
     std::fs::create_dir_all(&stick).unwrap();
+    // Gone again even when an assertion fails: the volumes are shared by
+    // every UI test of this run.
+    struct Gone(std::path::PathBuf);
+    impl Drop for Gone {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    let _gone = Gone(stick.clone());
     let uuid = format!("uuid-{name}-{}", std::process::id());
     od_format_native::write_marker(
         &stick,
@@ -950,7 +959,6 @@ fn a_rendered_track_in_a_synced_playlist_reaches_the_stick_with_cues_and_grid() 
     let row = g.get_rows().iter().find(|r| r.title == made.title.as_str()).expect("a row for the file");
     assert_eq!(row.file, "ok");
     drop(native);
-    let _ = std::fs::remove_dir_all(&stick);
 }
 
 // ── [77] Into Perform ───────────────────────────────────────────────────
@@ -1639,6 +1647,7 @@ fn render_loop_writes_a_bar_exact_loop_with_a_cue_per_sound_into_created() {
     assert!(ui.wait_until(20.0, |u| label(u, "create.result.render-loop") == "READY"));
     let again = crate::create::loop_made(&ui.app).unwrap();
     assert_ne!(again.path, made.path, "a new file, never a replaced one");
+    assert_eq!(again.title, format!("{} 2", made.title), "numbered in the list as its file is");
     assert_eq!(std::fs::read(&again.path).unwrap(), std::fs::read(&made.path).unwrap(), "the same pattern, the same bytes");
     // Another step: READY goes. The bars are kept.
     ui.click("create.drums.step1");

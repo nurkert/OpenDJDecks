@@ -254,10 +254,15 @@ pub(crate) fn dir(library: &Path) -> PathBuf {
     library.parent().unwrap_or(Path::new(".")).join("created")
 }
 
+/// The file name a title gets (characters no file system takes become -).
+fn file_stem(title: &str) -> String {
+    title.chars().map(|c| if "/\\:*?\"<>|".contains(c) || c.is_control() { '-' } else { c }).collect()
+}
+
 /// "<title>.wav" in `dir` (characters a file name cannot hold replaced),
 /// or "<title> 2.wav" … when taken: a render never replaces a file.
 pub(crate) fn file_path(dir: &Path, title: &str) -> PathBuf {
-    let stem: String = title.chars().map(|c| if "/\\:*?\"<>|".contains(c) || c.is_control() { '-' } else { c }).collect();
+    let stem = file_stem(title);
     (1..)
         .map(|n| dir.join(if n == 1 { format!("{stem}.wav") } else { format!("{stem} {n}.wav") }))
         .find(|p| !p.exists())
@@ -326,10 +331,18 @@ fn add(
     edit: &str,
 ) -> anyhow::Result<Made> {
     let mut lib = od_library::Library::open(library)?;
-    let title = tags.title.clone();
     let folder = dir(library);
     std::fs::create_dir_all(&folder)?;
-    let path = file_path(&folder, &title);
+    let path = file_path(&folder, &tags.title);
+    // A second render of the same name is "… 2" in the list too, as its
+    // file is: two equal titles in CREATED read as one track twice.
+    let mut tags = tags;
+    if let Some(stem) = path.file_stem() {
+        if let Some(n) = stem.to_string_lossy().strip_prefix(file_stem(&tags.title).as_str()) {
+            tags.title.push_str(n);
+        }
+    }
+    let title = tags.title.clone();
     crate::track_edit::write_wav(&path, audio, 2, rate)?;
     let id = crate::workers::import_file(&mut lib, &path)?;
     // [76] The CREATED list: marked in the library, not by its tags.
