@@ -34,12 +34,14 @@ fn create_tab_shows_three_views_with_result_and_deck_strip() {
         assert!(!ui.value("create.result.summary").is_empty(), "{view}: the result says what comes there");
         assert!(ui.has("create.strip.deck1") && ui.has("create.strip.deck2"), "{view}: the deck strip");
     }
-    // The later controls are there by name, but disabled.
+    // [82] Never empty: the built-in tone is there to hear and send; a
+    // render waits for notes on the strip.
     ui.click("create.view.melody");
     ui.pump(200);
-    for id in ["create.source.hear", "create.result.send", "create.result.render"] {
-        assert_eq!(ui.get(id).accessible_enabled(), Some(false), "{id} waits for its step");
+    for id in ["create.source.hear", "create.result.send"] {
+        assert_eq!(ui.get(id).accessible_enabled(), Some(true), "{id} plays the built-in tone");
     }
+    assert_eq!(ui.get("create.result.render").accessible_enabled(), Some(false), "nothing on the strip to render");
     // The shortcut and the command reach it from another mode.
     ui.app.ui.invoke_set_mode("prepare".into());
     crate::commands::run(&ui.app, "mode.create");
@@ -158,8 +160,9 @@ fn deck1_at(ui: &Ui, at: f64) -> od_core::TrackId {
 fn a_note_picked_from_a_deck_shows_its_pitch_and_takes_a_correction() {
     let ui = Ui::open((1440, 900));
     let id = deck1_at(&ui, 1.04);
-    assert_eq!(ui.get("create.source.hear").accessible_enabled(), Some(false), "nothing to hear yet");
-    assert!(!ui.has("create.source.pitch"), "no pitch before a pick");
+    // [82] Before a pick: the built-in tone, its pitch known.
+    assert_eq!(note_state(&ui), "BUILT-IN");
+    assert_eq!(ui.value("create.source.pitch"), "A3 0 ct");
     ui.click("create.source.deck1");
     assert!(ui.wait_until(5.0, |u| note_state(u) != "MEASURING" && u.has("create.source.pitch")), "measured");
     let n = crate::create::note(&ui.app).expect("a note");
@@ -262,9 +265,10 @@ fn a_note_from_the_player_and_a_too_short_one() {
 fn pads_play_the_note_at_other_pitches_and_warn_far_from_it() {
     let ui = Ui::open((1440, 900));
     deck1_at(&ui, 1.04);
-    assert_eq!(ui.get("create.notes.pad1").accessible_enabled(), Some(false), "no note: pads off");
-    assert!(ui.value("create.notes.pads-hint").starts_with("Pick a note in SOURCE"), "{}", ui.value("create.notes.pads-hint"));
-    assert_eq!(ui.get("create.notes.octave").accessible_enabled(), Some(false));
+    // [82] Before a pick the built-in tone (A3) is on the pads.
+    assert_eq!(ui.value("create.source.badge"), "BUILT-IN");
+    assert_eq!(ui.get("create.notes.pad1").accessible_enabled(), Some(true), "the tone: pads on");
+    assert_eq!(ui.value("create.notes.pad1"), "A3 0");
     ui.click("create.source.deck1");
     // OUT before the next click (at 1.5 s): only the 220 Hz tone.
     let g = ui.app.ui.global::<crate::Create>();
@@ -475,9 +479,12 @@ fn a_typed_melody_fills_the_strip_and_takes_edits() {
     assert!(ui.value("create.result.summary").ends_with(" BPM · 6 cues"), "{}", ui.value("create.result.summary"));
     assert_eq!(ui.value("create.result.check"), "Stick formats: 6 of 32 hot cues · fits", "said before any render");
     assert_eq!(ui.value("create.arrange.steps"), "A3 C4 E4 D4 - Bb3 _ - G3");
-    for id in ["create.result.send", "create.result.render", "create.result.to-playlist"] {
-        assert_eq!(ui.get(id).accessible_enabled(), Some(false), "{id} comes later");
+    // [82] The built-in tone renders and sends them; TO PLAYLIST waits for
+    // a render.
+    for id in ["create.result.send", "create.result.render"] {
+        assert_eq!(ui.get(id).accessible_enabled(), Some(true), "{id} with the built-in tone");
     }
+    assert_eq!(ui.get("create.result.to-playlist").accessible_enabled(), Some(false), "nothing rendered yet");
     // The grid: 1/4 makes it 3 bars, 1/16 one.
     ui.click("create.arrange.grid.4");
     assert_eq!(ui.value("create.arrange.count"), "6 NOTES · 3 BARS");
@@ -1653,4 +1660,171 @@ fn render_loop_writes_a_bar_exact_loop_with_a_cue_per_sound_into_created() {
     ui.click("create.drums.step1");
     assert!(ui.wait_until(3.0, |u| label(u, "create.result.render-loop") == "RENDER LOOP"));
     assert!(ui.fx.lib().meta(crate::create::META_DRUMS).unwrap().is_some_and(|j| j.contains("\"loop_bars\":4")));
+}
+
+// ── [82] Never empty: the built-in tone, starters, a MIDI keyboard ──────
+
+/// The pitch a rendered pad sounds, in cents from MIDI note `midi`.
+fn cents_off(s: &od_engine::SampleData, midi: i32) -> f64 {
+    let mono: Vec<f32> = s.samples.chunks_exact(2).map(|f| (f[0] + f[1]) * 0.5).collect();
+    let hz = od_analysis::pitch::detect_pitch(&mono, s.sample_rate).hz.expect("a pitch");
+    1200.0 * (hz / od_core::NotePitch::new(midi, 0).hz()).log2()
+}
+
+/// A first open with nothing loaded and nothing made: SOURCE holds the
+/// built-in tone (BUILT-IN), so the pads play at once at their pitch; the
+/// empty strip offers STARTERS (in THEORY too). A starter goes onto the
+/// empty strip in its own key from the tone (STARTER KEY) and reads
+/// STARTER until it is changed; THEORY checks it; it never goes over notes
+/// on the strip, and CLEAR brings the starters back.
+#[test]
+fn the_first_screen_plays_the_built_in_tone_and_offers_starters() {
+    let ui = Ui::open((1440, 900));
+    crate::engine::ensure_engine(&ui.app);
+    ui.click("topbar.mode.create");
+    ui.click("create.view.melody");
+    ui.pump(200);
+    assert_eq!(crate::create::note(&ui.app).map(|n| n.source), Some("tone".to_string()), "nothing picked: the built-in tone");
+    assert_eq!(ui.value("create.source.badge"), "BUILT-IN");
+    assert_eq!(ui.value("create.source.track"), "Built-in tone");
+    assert_eq!(ui.get("create.source.tone").accessible_enabled(), Some(true));
+    assert_eq!(ui.value("create.notes.pad1"), "A3 0");
+    // A pad plays at once, at its pitch, with no track loaded.
+    ui.click("create.notes.pad5");
+    assert!(ui.wait_until(10.0, |u| snapshot(u).auditioning), "pad 5 plays");
+    assert!(ui.wait_until(20.0, |u| crate::create::pad_note(&u.app, 4).is_some()), "rendered");
+    let (c4s, _) = crate::create::pad_note(&ui.app, 4).unwrap();
+    let off = cents_off(&c4s, 61);
+    assert!(off.abs() < 10.0, "pad 5 sounds C#4: {off:+.1} ct");
+    // The starters on the empty strip.
+    assert_eq!(ui.value("create.arrange.count"), "EMPTY");
+    for id in ["rise", "call", "steps", "pulse"] {
+        assert!(ui.has(&format!("create.arrange.starter.{id}")), "{id}");
+    }
+    ui.click("create.arrange.starter.rise");
+    assert_eq!(&steps(&ui)[..5], ["A3", "C4", "E4", "A4", "G4"], "a broken chord in A minor from the tone");
+    assert_eq!(crate::create::choice(&ui.app).key, Some(od_core::ScaleKey::new(9, od_core::Scale::Minor)));
+    assert_eq!(ui.value("create.notes.key-from"), "STARTER KEY");
+    assert_eq!(ui.value("create.arrange.count"), "STARTER RISE · 16 NOTES · 2 BARS");
+    assert!(ui.value("create.result.summary").starts_with("STARTER RISE · 16 notes"), "{}", ui.value("create.result.summary"));
+    assert!(!ui.has("create.arrange.starter.rise"), "no starters over notes");
+    assert!(ui.app.ui.get_status_text().contains("change it freely"), "{}", ui.app.ui.get_status_text());
+    // THEORY checks it.
+    ui.click("create.view.theory");
+    ui.pump(100);
+    assert_eq!(ui.value("create.theory.result"), "All notes fit A minor");
+    assert!(!ui.has("create.theory.starter.rise"));
+    ui.click("create.view.melody");
+    // Changed, it is yours: STARTER goes.
+    ui.click("create.arrange.step2");
+    ui.click("create.arrange.delete");
+    assert_eq!(ui.value("create.arrange.count"), "15 NOTES · 2 BARS");
+    // A starter never replaces notes on the strip.
+    let mine = crate::create::melody(&ui.app);
+    crate::create::use_starter(&ui.app, "pulse");
+    assert_eq!(crate::create::melody(&ui.app), mine, "the strip stays as it was");
+    assert!(ui.app.ui.get_status_text().contains("CLEAR it first"), "{}", ui.app.ui.get_status_text());
+    // CLEAR: the starters are back, in THEORY too; there the key in use
+    // (now the starter's) is kept.
+    ui.click("create.arrange.clear");
+    assert!(ui.has("create.arrange.starter.steps"));
+    ui.click("create.view.theory");
+    ui.pump(100);
+    ui.click("create.theory.starter.steps");
+    assert_eq!(ui.value("create.theory.result"), "All notes fit A minor", "STEPS in the key in use, not its own major");
+    assert_eq!(ui.value("create.theory.melody"), "A3 B3 C4 _ B3 C4 D4 _ C4 D4 E4 _ D4 C4 B3 _");
+    // TONE picked is kept like any note, and the strip with it.
+    ui.click("create.view.melody");
+    ui.click("create.source.tone");
+    assert!(ui.fx.lib().meta(crate::create::META_NOTE).unwrap().is_some_and(|j| j.contains("\"tone\"")), "stored");
+    let Ui { app, fx, .. } = ui;
+    drop(app);
+    let ui = Ui::start(fx, (1440, 900), false);
+    ui.pump(200);
+    assert_eq!(crate::create::note(&ui.app).map(|n| n.source), Some("tone".to_string()));
+    assert_eq!(crate::create::melody(&ui.app).notes(), 12);
+}
+
+/// Empty drum steps offer the drum STARTERS: one goes onto the kit pads
+/// and the RESULT bar says STARTER until a step changes; steps already set
+/// are never replaced; CLEAR brings the starters back.
+#[test]
+fn drum_starters_fill_empty_steps_only() {
+    let ui = Ui::open((1440, 900));
+    drums_open(&ui);
+    for id in ["straight", "broken", "spacious"] {
+        assert!(ui.has(&format!("create.steps.starter.{id}")), "{id}");
+    }
+    ui.click("create.steps.starter.straight");
+    assert!(
+        ui.wait_until(3.0, |u| drum_steps(u, 0) == 0x1111 && drum_steps(u, 1) == 0x1010 && drum_steps(u, 2) == 0x4444),
+        "kick, snare and hat"
+    );
+    assert!(ui.wait_until(2.0, |u| u.value("create.result.summary").starts_with("STARTER STRAIGHT · pattern 1")), "{}", ui.value("create.result.summary"));
+    assert!(ui.wait_until(2.0, |u| !u.has("create.steps.starter.straight")), "no starters over steps");
+    crate::create::use_drum_starter(&ui.app, "broken");
+    ui.pump(300);
+    assert_eq!((drum_steps(&ui, 0), drum_steps(&ui, 2)), (0x1111, 0x4444), "the steps stay");
+    assert!(ui.app.ui.get_status_text().contains("CLEAR them first"), "{}", ui.app.ui.get_status_text());
+    // A step of the kick changed: yours.
+    ui.click("create.drums.step2");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 0) == 0x1113));
+    assert!(ui.wait_until(2.0, |u| u.value("create.result.summary").starts_with("pattern 1")), "{}", ui.value("create.result.summary"));
+    ui.click("create.steps.clear");
+    assert!(ui.wait_until(3.0, |u| u.has("create.steps.starter.spacious")), "starters again");
+    ui.click("create.steps.starter.spacious");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 3) == 0x4000 && drum_steps(u, 0) == 0x0401), "the open hat before the bar");
+}
+
+/// A MIDI keyboard (a fake input at the code level: the controller layer's
+/// note events): nothing outside CREATE; in MELODY a note plays as a key of
+/// the strip and goes into the strip while REC is armed, step by step;
+/// notes outside C1 to C7 are left out; in DRUMS notes 36 to 51 play pads
+/// 1 to 16 and other notes nothing.
+#[test]
+fn a_midi_keyboard_plays_and_records_in_create_only() {
+    let ui = Ui::open((1440, 900));
+    crate::engine::ensure_engine(&ui.app);
+    let note = |ui: &Ui, n: u8| {
+        crate::controller::handle_event(
+            &ui.app,
+            od_controller::io::ControllerEvent::Note { port: "Test keys".into(), note: n, velocity: 90, timestamp_us: 0 },
+        );
+    };
+    ui.click("topbar.mode.create");
+    ui.click("create.view.melody");
+    ui.click("create.notes.rec");
+    // Another mode: a keyboard does nothing.
+    ui.app.ui.invoke_set_mode("perform".into());
+    note(&ui, 60);
+    ui.pump(200);
+    assert_eq!(crate::create::melody(&ui.app).notes(), 0, "outside CREATE a keyboard does nothing");
+    ui.app.ui.invoke_set_mode("create".into());
+    ui.pump(200);
+    for n in [60, 64, 67] {
+        note(&ui, n);
+    }
+    assert_eq!(&notes_of(&ui)[..4], [Some(60), Some(64), Some(67), None], "step by step, as played");
+    assert!(ui.app.ui.get_status_text().contains("Test keys"), "{}", ui.app.ui.get_status_text());
+    assert!(ui.wait_until(10.0, |u| snapshot(u).auditioning), "the note sounds");
+    note(&ui, 10);
+    note(&ui, 120);
+    assert_eq!(crate::create::melody(&ui.app).notes(), 3, "out of range: left out");
+    // REC off: a note only plays.
+    ui.click("create.notes.rec");
+    note(&ui, 62);
+    assert_eq!(crate::create::melody(&ui.app).notes(), 3);
+    // DRUMS: notes 36 to 51 are pads 1 to 16.
+    ui.click("create.view.drums");
+    ui.pump(200);
+    let g = ui.app.ui.global::<crate::Create>();
+    note(&ui, 37);
+    assert_eq!(g.get_drum_selected(), 1, "note 37: pad 2");
+    note(&ui, 51);
+    assert_eq!(g.get_drum_selected(), 15, "note 51: pad 16");
+    note(&ui, 60);
+    assert_eq!(g.get_drum_selected(), 15, "note 60 plays no pad");
+    note(&ui, 36);
+    assert_eq!(g.get_drum_selected(), 0, "note 36: pad 1");
+    assert!(ui.wait_until(5.0, |u| snapshot(u).auditioning), "the kick sounds");
 }

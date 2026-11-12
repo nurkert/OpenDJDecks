@@ -11887,3 +11887,118 @@ msgstr "DRUMS"
 msgctxt "SamplerPanel"
 msgid "Sampler bank DRUMS: CREATE's drum kit on pads 1 to 8, its samples on 9 to 16"
 msgstr "Sampler-Bank DRUMS: das Drum-Kit aus CREATE auf den Pads 1 bis 8, seine Samples auf 9 bis 16"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "RISE"
+msgstr "AUFSTIEG"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "CALL"
+msgstr "RUF"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "STEPS"
+msgstr "STUFEN"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "PULSE"
+msgstr "PULS"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "STRAIGHT"
+msgstr "GERADE"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "BROKEN"
+msgstr "GEBROCHEN"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "SPACIOUS"
+msgstr "LUFTIG"
+
+#: ui/create.slint
+msgctxt "SourceChooser"
+msgid "TONE"
+msgstr "KLANG"
+
+#: ui/create.slint
+msgctxt "SourceChooser"
+msgid "The built-in tone: a plain A3 to start from, without a track"
+msgstr "Der eingebaute Klang: ein schlichtes A3 als Anfang, ohne Track"
+
+#: ui/create.slint
+msgctxt "NoteBadge"
+msgid "BUILT-IN"
+msgstr "EINGEBAUT"
+
+#: ui/create.slint
+msgctxt "KeyFrom"
+msgid "STARTER KEY"
+msgstr "STARTER-TONART"
+
+#: ui/create.slint
+msgctxt "ArrangeHead"
+msgid "STARTER {}"
+msgstr "STARTER {}"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "STARTER {}"
+msgstr "STARTER {}"
+
+#: ui/create.slint
+msgctxt "StarterKey"
+msgid "A starter pattern for the kit pads while no pad has steps: change it freely"
+msgstr "Ein Starter-Pattern für die Kit-Pads, solange kein Pad Schritte hat: frei veränderbar"
+
+#: ui/create.slint
+msgctxt "StarterKey"
+msgid "A starter melody for the empty strip, in the key in use: change it freely"
+msgstr "Eine Starter-Melodie für die leere Leiste, in der gewählten Tonart: frei veränderbar"
+
+#: ui/create.slint
+msgctxt "StarterRow"
+msgid "STARTERS"
+msgstr "STARTER"
+
+#: ui/create.slint
+msgctxt "StarterRow"
+msgid "Straight: the kick on every beat, the snare on two and four, hats between"
+msgstr "Gerade: die Kick auf jedem Schlag, die Snare auf zwei und vier, Hats dazwischen"
+
+#: ui/create.slint
+msgctxt "StarterRow"
+msgid "Broken: the kick off the beat, hats on every eighth"
+msgstr "Gebrochen: die Kick neben dem Schlag, Hats auf jedem Achtel"
+
+#: ui/create.slint
+msgctxt "StarterRow"
+msgid "Spacious: kick and snare far apart, an open hat before the bar"
+msgstr "Luftig: Kick und Snare weit auseinander, eine offene Hat vor dem Takt"
+
+#: ui/create.slint
+msgctxt "StarterRow"
+msgid "Rise: up a broken chord and back"
+msgstr "Aufstieg: einen gebrochenen Akkord hinauf und zurück"
+
+#: ui/create.slint
+msgctxt "StarterRow"
+msgid "Call: a short phrase and its answer"
+msgstr "Ruf: eine kurze Phrase und ihre Antwort"
+
+#: ui/create.slint
+msgctxt "StarterRow"
+msgid "Steps: three notes up the scale, each time a step higher"
+msgstr "Stufen: drei Töne die Tonleiter hinauf, jedes Mal eine Stufe höher"
+
+#: ui/create.slint
+msgctxt "StarterRow"
+msgid "Pulse: a repeated root with its octave and fifth"
+msgstr "Puls: ein wiederholter Grundton mit Oktave und Quinte"

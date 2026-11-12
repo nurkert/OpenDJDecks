@@ -8619,7 +8619,7 @@ mode = "create"
 source = "Roadmap [70], CREATE concept (0.10.0)"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "create"]
-note = "The fourth work mode. The shell of [70]: the view switch centred at the top; SOURCE | NOTES | FITS, each saying what comes there, with the later controls drawn disabled; SOURCE picks a note ([71]: DECK 1, DECK 2, PLAYER, the zoomed waveform, HEAR); the RESULT bar with its disabled actions; the deck strip (play state, tempo, bar and track position, level) at the foot. No browser: CREATE takes its room. Not in the kiosk."
+note = "The fourth work mode. The shell of [70]: the view switch centred at the top; SOURCE | NOTES | FITS, each saying what comes there, with the later controls drawn disabled; SOURCE picks a note ([71]: DECK 1, DECK 2, PLAYER, the zoomed waveform, HEAR); the RESULT bar with its disabled actions; the deck strip (play state, tempo, bar and track position, level) at the foot. No browser: CREATE takes its room. Not in the kiosk. Never empty (roadmap [82]): until a note is picked SOURCE holds the built-in TONE (BUILT-IN), so the pads play at once, and the empty strip offers STARTERS."
 
 [[view.region]]
 id = "topbar.modes"
@@ -8658,12 +8658,13 @@ elements = [
 [[view.region]]
 id = "create.source.from"
 band = "create"
-place = "SOURCE, top: where the note comes from, one segmented control (roadmap [71])"
+place = "SOURCE, top: where the note comes from, one segmented control (roadmap [71]); TONE, the built-in tone, last (roadmap [82])"
 order = "row"
 elements = [
   "create.source.deck1",
   "create.source.deck2",
   "create.source.player",
+  "create.source.tone",
 ]
 
 [[view.region]]
@@ -8709,6 +8710,18 @@ elements = [
   "create.keyboard",
   "create.notes.snap",
   "create.notes.pad1",
+]
+
+[[view.region]]
+id = "create.arrange.starters"
+band = "create"
+place = "ARRANGE, under the empty steps: STARTERS, the starter melodies (roadmap [82])"
+order = "row"
+elements = [
+  "create.arrange.starter.rise",
+  "create.arrange.starter.call",
+  "create.arrange.starter.steps",
+  "create.arrange.starter.pulse",
 ]
 
 [[view.region]]
@@ -8897,6 +8910,17 @@ elements = [
 ]
 
 [[view.region]]
+id = "create.steps.starters"
+band = "create"
+place = "STEPS, under the empty steps: STARTERS, the starter patterns for the kit pads (roadmap [82])"
+order = "row"
+elements = [
+  "create.steps.starter.straight",
+  "create.steps.starter.broken",
+  "create.steps.starter.spacious",
+]
+
+[[view.region]]
 id = "create.result.actions"
 band = "create"
 place = "the RESULT bar"
@@ -8947,6 +8971,18 @@ elements = [
   "create.theory.keys",
   "create.theory.check",
   "create.theory.why",
+]
+
+[[view.region]]
+id = "create.theory.starters"
+band = "create"
+place = "CHECK, under the check of an empty strip: STARTERS, the starter melodies (roadmap [82])"
+order = "row"
+elements = [
+  "create.theory.starter.rise",
+  "create.theory.starter.call",
+  "create.theory.starter.steps",
+  "create.theory.starter.pulse",
 ]
 
 [[view.region]]
