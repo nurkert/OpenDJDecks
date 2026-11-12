@@ -20,7 +20,10 @@
 // saying first what the stick formats take, then READY in green. [76]
 // TO PLAYLIST puts the rendered file into a playlist (the browser's own
 // list of playlists, or a new one); registered sticks get it through the
-// playlists they sync.
+// playlists they sync. [78] FITS and THEORY show what fits: the key's
+// notes and chords against the deck playing now, a chord's notes on the
+// keyboard strip, both decks' keys and the neighbours of the key, a check
+// of the strip's melody, and reasons in plain words while HINTS is on.
 
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
@@ -116,6 +119,70 @@ export struct CreateKeyNote {
     pad: bool,
     // Sounds on the audition voice.
     playing: bool,
+    // [78] A note of the chosen chord.
+    chord: bool,
+}
+
+// [78] One note or chord of the key in FITS: whether it fits the key
+// playing now ("fits", "out" = not in it, "" = nothing to compare with),
+// and the chord chosen (its notes marked on the keyboard strip).
+export struct CreateChip {
+    name: string,
+    fits: string,
+    selected: bool,
+}
+
+// [78] The key playing now, which FITS compares with (create.rs).
+export struct CreateFits {
+    // The deck playing now (0 = none), why there is no key: "none" (no
+    // deck plays), "no-key" (its key is not known) or "".
+    deck: int,
+    why: string,
+    // Its key: root, scale, wheel notation (as `CreateKey`), and in
+    // words ("B major").
+    root: string,
+    scale: string,
+    wheel: string,
+    words: string,
+    // How many of the chosen key's 7 notes and 7 chords fit it.
+    notes: int,
+    chords: int,
+}
+
+// [78] One deck's key in THEORY (create.rs).
+export struct CreateTheoryDeck {
+    deck: int,
+    loaded: bool,
+    playing: bool,
+    // The deck FITS compares with.
+    now: bool,
+    // Its key ("" = none known), as `CreateKey`.
+    root: string,
+    scale: string,
+    wheel: string,
+}
+
+// [78] A key next to the chosen one that moves smoothly (create.rs).
+export struct CreateNeighbour {
+    // "relative" (the same notes), "up" or "down" (a fifth, one note
+    // changes).
+    how: string,
+    root: string,
+    scale: string,
+    wheel: string,
+    // A deck whose track is in this key (0 = none).
+    deck: int,
+}
+
+// [78] The check of the strip's melody against the chosen key.
+export struct CreateCheck {
+    // "fits", "out", "empty" (no notes) or "no-key"; the key in words
+    // ("E major").
+    state: string,
+    key: string,
+    // Its different notes, and the ones out of the key ("F, C").
+    distinct: int,
+    outside: string,
 }
 
 // [74] One step of the arrange strip (create.rs).
@@ -267,6 +334,21 @@ export global Create {
     in-out property <int> open-picker;
     // [77] SEND TO PERFORM: the notes into the sampler's MELODY bank.
     callback send-to-perform();
+    // [78] What fits: the key playing now, the chosen key's notes and
+    // chords against it, the chord marked on the strip (-1 = none); the
+    // decks' keys, the chosen key's neighbours, the check of the strip's
+    // melody; the reasons in plain words (shown with the hints), the
+    // first for FITS.
+    in property <CreateFits> fit;
+    in property <[CreateChip]> fit-notes;
+    in property <[CreateChip]> fit-chords;
+    in property <int> chord: -1;
+    in property <[CreateTheoryDeck]> theory-decks;
+    in property <[CreateNeighbour]> neighbours;
+    in property <CreateCheck> check;
+    in property <[string]> why;
+    in property <string> fit-why;
+    callback choose-chord(int);
     // The selected step holds a note.
     public pure function step-has-note() -> bool {
         return root.selected >= 0 && root.selected < root.steps.length && root.steps[root.selected].note != "";
@@ -279,7 +361,11 @@ export global Create {
     }
     // The key in words: "A MINOR" ("" = none).
     public pure function key-name() -> string {
-        return root.key.chosen ? root.key.root + " " + root.scale-name(root.key.scale) : "";
+        return root.key.chosen ? root.key-of(root.key.root, root.key.scale) : "";
+    }
+    // Any key in words: "E MAJOR" ("" = none).
+    public pure function key-of(r: string, scale: string) -> string {
+        return r == "" ? "" : r + " " + root.scale-name(scale);
     }
     // The distance of a pad from the source note: "+3", "-5", "0".
     public pure function shift-text(s: int) -> string {
@@ -353,7 +439,9 @@ component Slot inherits Rectangle {
 // [73] One key of the strip: the root in bone, the scale's notes filled,
 // the notes out of it dimmed to the ground with a hairline, so the three
 // read by fill against outline and never by hue; sodium while it sounds.
-// A short line at its foot marks a key that is on a pad.
+// A short line at its foot marks a key that is on a pad; a dot ([78]) a
+// note of the chord chosen in FITS or THEORY (at the top of a white key,
+// between the black ones, and at the foot of a black key).
 component StripKey inherits Rectangle {
     in property <CreateKeyNote> note;
     in property <int> index;
@@ -368,7 +456,8 @@ component StripKey inherits Rectangle {
     accessible-id: root.visible ? "create.keyboard.key" + root.index : "";
     accessible-label: root.note.name;
     accessible-value: root.note.name + (root.note.kind == "root" ? " " + @tr("root") : root.note.kind == "scale" ? " " + @tr("in the scale")
-        : root.note.kind == "out" ? " " + @tr("out of the scale") : "") + (root.note.pad ? " " + @tr("on a pad") : "");
+        : root.note.kind == "out" ? " " + @tr("out of the scale") : "") + (root.note.pad ? " " + @tr("on a pad") : "")
+        + (root.note.chord ? " " + @tr("in the chord") : "");
     background: root.lit ? Theme.attention : root.note.kind == "root" ? Theme.bone
         : root.note.kind == "scale" ? (root.black ? Theme.bone-2 : Theme.bone-3)
         : root.note.kind == "out" ? (root.black ? Theme.ground : Theme.ground-band)
@@ -386,6 +475,11 @@ component StripKey inherits Rectangle {
     if root.note.pad: Rectangle {
         x: parent.width * 0.25; y: parent.height - 4px; width: parent.width * 0.5; height: 2px;
         background: root.filled ? Theme.ground : Theme.bone-2;
+    }
+    if root.note.chord: Rectangle {
+        x: (parent.width - self.width) / 2; y: root.black ? parent.height - self.height - 6px : 6px;
+        width: 8px; height: 8px; border-radius: 4px;
+        background: root.filled ? Theme.ground : Theme.bone;
     }
     if root.cursor: Rectangle {
         border-width: Theme.focus-width; border-color: Theme.focus; border-radius: Theme.r-control;
@@ -935,7 +1029,7 @@ component ScaleRow inherits HorizontalLayout {
         horizontal-stretch: 0;
         label: @tr("HINTS");
         checked: Create.hints;
-        tooltip: @tr("Hints: HAPPY and SAD under MAJOR and MINOR");
+        tooltip: @tr("Hints: HAPPY and SAD under MAJOR and MINOR, and the lines on why notes fit");
         toggled(on) => { Create.set-hints(on); }
     }
     Rectangle { horizontal-stretch: 1; }
@@ -975,9 +1069,124 @@ component ModeRow inherits VerticalLayout {
     }
 }
 
-// [73] FITS: the chosen key's notes and chords, as plain text. Which of
-// them fit the track playing now is not checked here yet.
+// [78] A note of the key in FITS: a plate where it fits the key playing
+// now (or with nothing to compare with), hollow and struck through where
+// it is not in it, so the shape says it and the words in FITS name it.
+component FitNote inherits Rectangle {
+    in property <CreateChip> chip;
+    in property <int> index;
+    property <bool> out: root.chip.fits == "out";
+    accessible-role: text;
+    accessible-id: "create.fits.note" + (root.index + 1);
+    accessible-label: root.chip.name;
+    accessible-value: root.chip.name + (root.chip.fits == "fits" ? " " + @tr("fits") : root.out ? " " + @tr("not in {}", Create.fit.words) : "");
+    min-width: 0px;
+    height: 26px;
+    border-radius: Theme.r-control;
+    background: root.out ? transparent : Theme.plate;
+    border-width: root.out ? Theme.hair : 0px;
+    border-color: Theme.rule-strong;
+    Text {
+        width: parent.width; height: parent.height;
+        text: root.chip.name;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-medium;
+        color: root.out ? Theme.bone-3 : Theme.bone;
+        horizontal-alignment: center; vertical-alignment: center; overflow: elide;
+    }
+    if root.out: Rectangle {
+        x: 4px; y: (parent.height - self.height) / 2; width: parent.width - 8px; height: 1px;
+        background: Theme.bone-3;
+    }
+}
+
+// [78] A chord of the key (in FITS and THEORY): a key that marks its notes
+// on the keyboard strip (bone while chosen); hollow and struck through
+// where it is not in the key playing now, like the notes.
+component ChordKey inherits Rectangle {
+    in property <CreateChip> chip;
+    in property <int> index;
+    in property <string> where;
+    property <bool> out: root.chip.fits == "out";
+    property <string> tip: root.chip.selected ? @tr("Clear the marks of {} on the keyboard strip", root.chip.name)
+        : @tr("Mark the notes of {} on the keyboard strip", root.chip.name);
+    accessible-role: button;
+    accessible-id: "create." + root.where + ".chord" + (root.index + 1);
+    accessible-label: TooltipState.name-for(self.accessible-id, root.chip.name, root.tip);
+    accessible-value: (root.chip.fits == "fits" ? @tr("fits") : root.out ? @tr("not in {}", Create.fit.words) : "")
+        + (root.chip.selected ? (root.chip.fits != "" ? " · " : "") + @tr("marked") : "");
+    accessible-description: root.tip;
+    accessible-action-default => { Create.choose-chord(root.index); }
+    min-width: max(Theme.touch-min, 36px);
+    horizontal-stretch: 1;
+    height: Theme.touch-mode ? 44px : 28px;
+    background: root.out && !root.chip.selected ? transparent
+        : Theme.face(true, touch.pressed, touch.has-hover, root.chip.selected, false, Theme.setup-on);
+    border-radius: Theme.r-control;
+    border-width: root.out && !root.chip.selected ? Theme.hair : 0px;
+    border-color: Theme.rule-strong;
+    property <color> ink: root.out && !root.chip.selected ? Theme.bone-3 : Theme.ink(true, touch.pressed, touch.has-hover, root.chip.selected, false);
+    Text {
+        x: 4px; width: parent.width - 8px; height: parent.height;
+        text: root.chip.name;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-medium;
+        color: root.ink; horizontal-alignment: center; vertical-alignment: center; overflow: elide;
+    }
+    if root.out: Rectangle {
+        x: 4px; y: (parent.height - self.height) / 2; width: parent.width - 8px; height: 1px;
+        background: root.ink;
+    }
+    touch := TipArea { tooltip: root.tip; mouse-cursor: pointer; clicked => { Create.choose-chord(root.index); } }
+    KeyFocus { activate => { Create.choose-chord(root.index); } }
+}
+
+// [78] The key's chords: one row of seven where there is room for them
+// (THEORY), else four over three, lined up.
+// Follows the width through a plain property, so it does not feed back
+// into the layout.
+component ChordGrid inherits VerticalLayout {
+    in property <string> where;
+    in property <bool> may-be-one-row;
+    property <length> key-min: max(Theme.touch-min, 36px);
+    property <bool> one-row;
+    init => { self.one-row = self.may-be-one-row && self.width >= 7 * self.key-min + 6 * Theme.key-gap; }
+    changed width => { self.one-row = self.may-be-one-row && self.width >= 7 * self.key-min + 6 * Theme.key-gap; }
+    spacing: Theme.key-gap;
+    HorizontalLayout {
+        spacing: Theme.key-gap;
+        for i in (root.one-row ? 7 : 4): ChordKey { chip: Create.fit-chords[i]; index: i; where: root.where; }
+    }
+    if !root.one-row: HorizontalLayout {
+        spacing: Theme.key-gap;
+        for i in 3: ChordKey { chip: Create.fit-chords[i + 4]; index: i + 4; where: root.where; }
+        // The fourth place stays empty, so the two rows line up.
+        Rectangle { horizontal-stretch: 1; min-width: root.key-min; }
+    }
+}
+
+// [78] The deck playing now, which FITS compares with: its key (the wheel
+// beside), or why there is nothing to compare with.
+component FitsNow inherits HorizontalLayout {
+    spacing: Theme.s2;
+    Caps {
+        accessible-role: text; accessible-id: "create.fits.now"; accessible-value: self.text;
+        horizontal-stretch: 1; min-width: 0px;
+        text: Create.fit.why == "none" ? @tr("NO DECK PLAYS")
+            : Create.fit.why == "no-key" ? @tr("DECK {} PLAYS · KEY NOT KNOWN", Create.fit.deck)
+            : @tr("DECK {} PLAYS {}", Create.fit.deck, Create.key-of(Create.fit.root, Create.fit.scale));
+        color: Create.fit.why == "" ? Theme.bone : Theme.bone-3;
+        font-weight: Theme.weight-semi;
+        vertical-alignment: center; overflow: elide;
+    }
+    if Create.fit.why == "" && Create.fit.wheel != "": Caps { text: Create.fit.wheel; vertical-alignment: center; }
+}
+
+// [78] FITS: the chosen key's notes and chords, and which of them fit the
+// key of the deck playing now (struck where they do not, and said in
+// words); a chord marks its notes on the keyboard strip. With the hints on
+// a line in plain words says why.
 component KeyFits inherits VerticalLayout {
+    // Packed at the top: the zone's filler takes the rest.
+    vertical-stretch: 0;
     spacing: Theme.s2;
     HorizontalLayout {
         spacing: Theme.s2;
@@ -990,13 +1199,34 @@ component KeyFits inherits VerticalLayout {
         if Create.key.wheel != "": Caps { text: Create.key.wheel; vertical-alignment: center; }
     }
     Caps { text: @tr("NOTES"); }
-    Text {
-        accessible-role: text; accessible-id: "create.fits.notes"; accessible-value: self.text;
-        text: Create.key.notes;
-        font-family: Theme.family; font-size: Theme.body; color: Theme.bone; overflow: elide;
+    Rectangle {
+        accessible-role: list; accessible-id: "create.fits.notes"; accessible-label: @tr("NOTES"); accessible-value: Create.key.notes;
+        height: 26px;
+        HorizontalLayout {
+            spacing: Theme.key-gap;
+            for c[i] in Create.fit-notes: FitNote { chip: c; index: i; horizontal-stretch: 1; }
+        }
     }
     Caps { text: @tr("CHORDS"); }
-    Prose { accessible-role: text; accessible-id: "create.fits.chords"; accessible-value: self.text; text: Create.key.chords; color: Theme.bone; }
+    Rectangle {
+        accessible-role: list; accessible-id: "create.fits.chords"; accessible-label: @tr("CHORDS"); accessible-value: Create.key.chords;
+        height: (Theme.touch-mode ? 44px : 28px) * 2 + Theme.key-gap;
+        ChordGrid { where: "fits"; }
+    }
+    Rectangle { height: Theme.s1; }
+    FitsNow { }
+    Prose {
+        accessible-role: text; accessible-id: "create.fits.line"; accessible-value: self.text;
+        text: Create.fit.why == "none" ? @tr("Nothing to compare with: play a track with a known key on a deck.")
+            : Create.fit.why == "no-key" ? @tr("Analyse its track to see which of these fit.")
+            : Create.fit.notes == 7 && Create.fit.chords == 7 ? @tr("All 7 notes and all 7 chords fit.")
+            : @tr("{} of 7 notes and {} of 7 chords fit. The struck ones are not in {}.", Create.fit.notes, Create.fit.chords, Create.fit.words);
+    }
+    if Create.hints && Create.fit-why != "": Prose {
+        accessible-role: text; accessible-id: "create.fits.why"; accessible-value: self.text;
+        text: @tr("Why: {}", Create.fit-why);
+        color: Theme.bone-3;
+    }
 }
 
 // [74] One step of the strip: a hollow slot while empty (a bar's number
@@ -1343,8 +1573,8 @@ component MelodyView inherits HorizontalLayout {
         accessible-id: "create.melody.fits";
         width: 280px;
         title: @tr("FITS");
-        summary: Create.key.chosen ? @tr("The notes and chords of the chosen key. Which of them fit the track playing now comes later.")
-            : @tr("The notes and chords of the chosen key, and which of them fit the track playing now.");
+        // Once a key is chosen its notes, chords and the deck playing say it.
+        summary: Create.key.chosen ? "" : @tr("The notes and chords of the chosen key, and which of them fit the track playing now.");
         if Create.key.chosen: KeyFits { }
         if !Create.key.chosen: Caps { text: @tr("NO KEY CHOSEN YET"); }
     }
@@ -1401,15 +1631,21 @@ component DrumsView inherits HorizontalLayout {
     }
 }
 
-// One deck's key in THEORY: numeral in the deck colour, the key or a dash.
+// [78] One deck's key in THEORY: the numeral in the deck colour, the key
+// as note names with the wheel notation beside, and its state (PLAYING
+// NOW on the deck FITS and the chords compare with).
 component DeckKey inherits Rectangle {
-    in property <CreateDeck> deck;
+    in property <CreateTheoryDeck> deck;
+    property <string> name: Create.key-of(root.deck.root, root.deck.scale);
+    property <string> state: !root.deck.loaded ? @tr("NO TRACK") : root.deck.root == "" ? @tr("NO KEY YET")
+        : root.deck.now ? @tr("PLAYING NOW") : root.deck.playing ? @tr("PLAYING") : "";
     accessible-role: text;
     accessible-id: "create.theory.key.deck\{root.deck.deck}";
     accessible-label: @tr("Deck {}", root.deck.deck);
-    accessible-value: root.deck.key;
+    accessible-value: (root.name != "" ? root.name + (root.deck.wheel != "" ? " " + root.deck.wheel : "") : "—")
+        + (root.state != "" ? " " + root.state : "");
     HorizontalLayout {
-        spacing: Theme.s3;
+        spacing: Theme.s2;
         Text {
             width: 18px;
             text: root.deck.deck;
@@ -1417,15 +1653,83 @@ component DeckKey inherits Rectangle {
             color: Theme.deck-color(root.deck.deck); vertical-alignment: center;
         }
         Text {
-            text: root.deck.key != "" ? root.deck.key : "—";
+            text: root.name != "" ? root.name : "—";
             font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
-            color: root.deck.key != "" ? Theme.bone : Theme.bone-3; vertical-alignment: center;
+            color: root.name != "" ? Theme.bone : Theme.bone-3; vertical-alignment: center;
+            min-width: 0px; overflow: elide;
         }
+        if root.deck.wheel != "": Caps { text: root.deck.wheel; vertical-alignment: center; }
         Caps {
-            horizontal-stretch: 1;
-            text: !root.deck.loaded ? @tr("NO TRACK") : root.deck.key == "" ? @tr("NO KEY YET") : root.deck.playing ? @tr("PLAYING") : "";
+            horizontal-stretch: 1; min-width: 0px;
+            text: root.state; horizontal-alignment: right;
             vertical-alignment: center; overflow: elide;
         }
+    }
+}
+
+// [78] A key next to the chosen one: its name (the wheel beside), how it
+// moves (the same notes, a fifth up or down), and a deck already in it.
+component NeighbourRow inherits Rectangle {
+    in property <CreateNeighbour> n;
+    in property <int> index;
+    property <string> name: Create.key-of(root.n.root, root.n.scale);
+    property <string> how: root.n.how == "relative" ? @tr("SAME NOTES") : root.n.how == "up" ? @tr("A FIFTH UP") : @tr("A FIFTH DOWN");
+    accessible-role: text;
+    accessible-id: "create.theory.neighbour" + (root.index + 1);
+    accessible-label: root.name;
+    accessible-value: root.name + (root.n.wheel != "" ? " " + root.n.wheel : "") + " · " + root.how
+        + (root.n.deck > 0 ? " · " + @tr("DECK {}", root.n.deck) : "");
+    height: 32px;
+    background: Theme.plate;
+    border-radius: Theme.r-control;
+    HorizontalLayout {
+        padding-left: Theme.s2; padding-right: Theme.s2; spacing: Theme.s2;
+        Text {
+            text: root.name;
+            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-semi; color: Theme.bone;
+            vertical-alignment: center; min-width: 0px; overflow: elide;
+        }
+        if root.n.wheel != "": Caps { text: root.n.wheel; vertical-alignment: center; }
+        Caps {
+            horizontal-stretch: 1; min-width: 0px;
+            text: root.how; horizontal-alignment: right; vertical-alignment: center; overflow: elide;
+        }
+        if root.n.deck > 0: Caps {
+            text: @tr("DECK {}", root.n.deck); color: Theme.bone; font-weight: Theme.weight-semi;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// [78] Typing a melody in THEORY: it replaces MELODY's strip, as there.
+component TheoryType inherits Field {
+    accessible-id: "create.theory.type";
+    placeholder: @tr("TYPE A MELODY: A3 C4 E4 D4");
+    accepted(t) => { Create.type-steps(t); }
+}
+
+// [78] The check of the strip's melody: a solid green line and "All
+// notes fit", or a struck red one with the notes out of the key named.
+component CheckLine inherits HorizontalLayout {
+    property <bool> out: Create.check.state == "out";
+    spacing: Theme.s2;
+    // The struck line reaches past its own width.
+    padding-left: Theme.s1;
+    height: 20px;
+    if Create.check.state == "fits" || root.out: VerticalLayout {
+        alignment: center;
+        VLine { height: 14px; form: root.out ? "struck" : "solid"; tone: root.out ? Theme.fault : Theme.live; }
+    }
+    Text {
+        accessible-role: text; accessible-id: "create.theory.result"; accessible-value: self.text;
+        horizontal-stretch: 1; min-width: 0px;
+        text: Create.check.state == "no-key" ? @tr("No key chosen yet: the check needs one.")
+            : Create.check.state == "empty" ? @tr("No melody yet: type one here or play one into ARRANGE.")
+            : root.out ? @tr("Not in {}: {}", Create.check.key, Create.check.outside)
+            : @tr("All notes fit {}", Create.check.key);
+        font-family: Theme.family; font-size: Theme.body; font-weight: root.out ? Theme.weight-semi : Theme.weight-medium;
+        color: root.out || Create.check.state == "fits" ? Theme.bone : Theme.bone-3;
+        vertical-alignment: center; overflow: elide;
     }
 }
 
@@ -1438,20 +1742,80 @@ component TheoryView inherits HorizontalLayout {
         width: root.narrow ? 280px : 320px;
         title: @tr("KEYS");
         summary: @tr("Both decks' keys, and the neighbouring keys that move smoothly.");
-        for d in Create.decks: DeckKey { deck: d; }
+        for d in Create.theory-decks: DeckKey { deck: d; }
+        Rectangle { height: Theme.s1; }
+        Caps {
+            accessible-role: text; accessible-id: "create.theory.neighbours"; accessible-value: self.text;
+            text: Create.key.chosen ? @tr("NEXT TO {}", Create.key-name()) : @tr("NO KEY CHOSEN YET");
+            min-width: 0px; overflow: elide;
+        }
+        for n[i] in Create.neighbours: NeighbourRow { n: n; index: i; }
     }
-    Zone {
+    ScrollZone {
         accessible-id: "create.theory.check";
         horizontal-stretch: 1;
         title: @tr("CHECK");
-        summary: @tr("Type a melody, such as A3 C4 E4 D4, to see whether all its notes fit the key, and which do not.");
+        HorizontalLayout {
+            spacing: Theme.s2;
+            Caps { text: @tr("KEY"); vertical-alignment: center; }
+            Text {
+                accessible-role: text; accessible-id: "create.theory.check.key"; accessible-value: self.text;
+                text: Create.key.chosen ? Create.key-name() : "—";
+                font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi;
+                color: Create.key.chosen ? Theme.bone : Theme.bone-3;
+                vertical-alignment: center; min-width: 0px; overflow: elide;
+            }
+            if Create.key.wheel != "": Caps { text: Create.key.wheel; vertical-alignment: center; }
+            KeyFrom { horizontal-stretch: 1; min-width: 0px; accessible-id: "create.theory.key-from"; }
+        }
         KeyStrip { }
+        if Create.key.chosen: ChordGrid { where: "theory"; may-be-one-row: true; }
+        Rectangle { height: Theme.s1; }
+        HorizontalLayout {
+            spacing: Theme.s2;
+            Caps { text: @tr("MELODY"); vertical-alignment: center; }
+            Text {
+                accessible-role: text; accessible-id: "create.theory.melody"; accessible-value: self.text;
+                horizontal-stretch: 1; min-width: 0px;
+                text: Create.steps-text != "" ? Create.steps-text : "—";
+                font-family: Theme.family; font-size: Theme.body; color: Theme.bone;
+                vertical-alignment: center; overflow: elide;
+            }
+        }
+        HorizontalLayout {
+            TheoryType { horizontal-stretch: 1; min-width: 130px; max-width: 420px; }
+            Rectangle { horizontal-stretch: 1; }
+        }
+        CheckLine { }
     }
     Zone {
         accessible-id: "create.theory.why";
         width: root.narrow ? 220px : 280px;
         title: @tr("WHY");
-        summary: @tr("Three short lines in plain words on why the notes fit.");
+        summary: Create.hints ? @tr("Three short lines in plain words on why the notes fit.") : "";
+        HorizontalLayout {
+            alignment: start;
+            LineToggle {
+                accessible-id: "create.theory.hints";
+                label: @tr("HINTS");
+                checked: Create.hints;
+                tooltip: @tr("Hints: the lines on why notes fit, and HAPPY and SAD under MAJOR and MINOR");
+                toggled(on) => { Create.set-hints(on); }
+            }
+        }
+        // Straight in the zone's column: wrapping text needs its width.
+        for w[i] in Create.hints ? Create.why : []: Prose {
+            accessible-role: text; accessible-id: "create.theory.why" + (i + 1); accessible-value: self.text;
+            text: w; color: Theme.bone;
+        }
+        if Create.hints && Create.why.length == 0: Prose {
+            accessible-role: text; accessible-id: "create.theory.why-none"; accessible-value: self.text;
+            text: @tr("The reasons show once a key is chosen: on a deck, by NEXT TRACK or by you in MELODY.");
+        }
+        if !Create.hints: Prose {
+            accessible-role: text; accessible-id: "create.theory.why-off"; accessible-value: self.text;
+            text: @tr("The hints are off: the notes, chords and the check stay. HINTS brings these lines back.");
+        }
     }
 }
 
@@ -1464,7 +1828,7 @@ component ResultBar inherits Rectangle {
     border-radius: Theme.r-panel;
     property <string> summary: Create.view == "drums"
         ? @tr("No pattern yet. It shows here with its bars and tempo, ready to send to Perform or render as a loop.")
-        : Create.view == "theory" ? @tr("THEORY only shows. What fits goes into MELODY.")
+        : Create.view == "theory" ? @tr("THEORY shows what fits. A melody typed here lands on MELODY's strip.")
         : Create.render.notes > 0 ? root.melody
         : @tr("No melody yet. It shows here with its notes, bars, tempo and cues, and whether the stick formats take it.");
     // [74] [75] What the file holds: "8 notes · 4 bars · 124.0 BPM · 8 cues".

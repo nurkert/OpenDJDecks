@@ -65,6 +65,16 @@
 //! loaded sample. The MELODY pad mode on each deck plays them through the
 //! sampler's own trigger, so QUANT and the slot's controls apply; there is
 //! no second store. RESULT shows SENT while the bank holds these notes.
+//!
+//! [78] What fits ([`show_theory`], from [`od_core::theory`]): FITS marks
+//! which of the key's notes and chords are in the key of the deck playing
+//! now (on air, else the master, else any), struck where they are not and
+//! said in words; a chord marks its notes on the keyboard strip. THEORY
+//! shows both decks' keys as note names with the wheel beside, the key's
+//! neighbours (its relative key, a fifth up and down), a check of the
+//! strip's melody against the key that names the notes out of it, and up
+//! to three reasons in plain words. HINTS hides the reasons (and HAPPY and
+//! SAD); the facts stay.
 
 use crate::app::App;
 use crate::arrange::{self, Grid, Melody, STEPS};
@@ -139,6 +149,8 @@ pub(crate) fn frame(app: &App, state: Option<&EngineState>) {
     }
     // [73] The key follows the other deck; NEXT TRACK says what it would take.
     follow_deck(app, state);
+    // [78] FITS and THEORY follow the decks' keys and what plays.
+    show_theory(app, state);
     // [74] The tempo for RESULT, and where REC puts a note now.
     let master = state.map_or(120.0, |s| s.master_bpm);
     let tempo = crate::format::bpm(Some(master), 1);
@@ -371,6 +383,13 @@ pub(crate) struct Runtime {
     pad_playing: Option<usize>,
     /// [73] The key of the strip that plays (MIDI).
     key_playing: Option<i32>,
+    /// [78] The chord of the key whose notes the strip marks (0..7).
+    chord: Option<usize>,
+    /// What FITS and THEORY were last shown for.
+    theory: Option<TheorySig>,
+    /// The decks' keys and the deck playing now, as staged (tests).
+    #[cfg(test)]
+    staged: Option<(Vec<Option<MusicalKey>>, Option<usize>)>,
     /// The key and scale, where they come from, SNAP TO SCALE.
     choice: KeyChoice,
     /// What NEXT TRACK would take, looked up now and then.
@@ -467,6 +486,10 @@ impl Default for Runtime {
             due: None,
             pad_playing: None,
             key_playing: None,
+            chord: None,
+            theory: None,
+            #[cfg(test)]
+            staged: None,
             choice: KeyChoice::default(),
             next: NextTrack::default(),
             next_at: None,
@@ -544,6 +567,8 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_set_hints(move |on| w(&|a| set_hints(a, on)));
     let w = with.clone();
     g.on_play_key(move |i| w(&|a| play_key(a, i)));
+    let w = with.clone();
+    g.on_choose_chord(move |i| w(&|a| choose_chord(a, i)));
     let w = with.clone();
     g.on_set_grid(move |id| w(&|a| set_grid(a, &id)));
     let w = with.clone();
@@ -1184,6 +1209,7 @@ pub(crate) fn strip_rows(start: i32, key: Option<ScaleKey>, pads: &[i32], playin
             .into(),
             pad: pads.contains(&m),
             playing: playing.contains(&m),
+            chord: false,
         })
         .collect()
 }
@@ -1222,7 +1248,12 @@ fn show_pads(app: &App) {
         if let (Some(t), Some(i)) = (&targets, rt.pad_playing) {
             playing.extend(t.get(i));
         }
-        let keys = strip_rows(start, rt.choice.key, targets.as_ref().map_or(&[][..], |t| &t[..]), &playing);
+        let mut keys = strip_rows(start, rt.choice.key, targets.as_ref().map_or(&[][..], |t| &t[..]), &playing);
+        // [78] The chosen chord's notes, in every octave of the strip.
+        let chord = chord_pcs(rt.choice.key, rt.chord);
+        for (m, k) in (start..).zip(keys.iter_mut()) {
+            k.chord = chord.contains(&(m.rem_euclid(12) as u8));
+        }
         (rows, keys, start, rt.octave, why, nearer, source.is_some())
     };
     let g = app.ui.global::<crate::Create>();
@@ -1588,6 +1619,7 @@ pub(crate) fn set_hints(app: &App, on: bool) {
     app.create.borrow_mut().choice.hints = on;
     show_key(app);
     save_key(app);
+    show_theory(app, engine::snapshot(app).as_ref());
 }
 
 /// The key or how the pads use it changed: shown, kept, the pads rendered.
@@ -1597,6 +1629,7 @@ fn key_changed(app: &App) {
     show_arrange(app);
     save_key(app);
     prepare_pads(app);
+    show_theory(app, engine::snapshot(app).as_ref());
 }
 
 fn save_key(app: &App) {
@@ -1616,7 +1649,7 @@ pub(crate) fn key_view(c: &KeyChoice, notation: KeyNotation) -> crate::CreateKey
     let Some(k) = c.key else {
         return crate::CreateKey { from: c.from.clone().into(), deck: c.deck as i32, ..Default::default() };
     };
-    let wheel = k.musical_key().filter(|_| notation != KeyNotation::Musical).map(|m| m.format(notation)).unwrap_or_default();
+    let wheel = wheel_of(k, notation);
     crate::CreateKey {
         chosen: true,
         root: k.root_name().into(),
@@ -1645,6 +1678,269 @@ fn show_key(app: &App) {
 #[cfg(test)]
 pub(crate) fn choice(app: &App) -> KeyChoice {
     app.create.borrow().choice.clone()
+}
+
+// ── [78] What fits ──────────────────────────────────────────────────────
+
+/// A key in the wheel notation, the small label beside its note names
+/// ("" for the modes, or when keys are shown as note names anyway).
+fn wheel_of(k: ScaleKey, notation: KeyNotation) -> String {
+    k.musical_key().filter(|_| notation != KeyNotation::Musical).map(|m| m.format(notation)).unwrap_or_default()
+}
+
+/// The deck playing now, 0-based: the one on air while it plays, else the
+/// master deck while it plays, else the first that plays.
+pub(crate) fn now_deck(playing: &[bool], on_air: Option<usize>, master: Option<usize>) -> Option<usize> {
+    let plays = |d: usize| playing.get(d) == Some(&true);
+    on_air.filter(|&d| plays(d)).or(master.filter(|&d| plays(d))).or_else(|| (0..playing.len()).find(|&d| plays(d)))
+}
+
+/// The pitch classes of the chosen chord of `key` (none without either).
+fn chord_pcs(key: Option<ScaleKey>, chord: Option<usize>) -> Vec<u8> {
+    match (key, chord) {
+        (Some(k), Some(i)) if i < 7 => {
+            let (root, q) = k.triads()[i];
+            od_core::theory::chord_notes(root, q).to_vec()
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// What FITS and THEORY show depends on: the key in use, each deck's
+/// (loaded, playing, key), the deck playing now, the strip's notes, the
+/// chosen chord, the hints and the notation.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct TheorySig {
+    key: Option<ScaleKey>,
+    decks: Vec<(bool, bool, Option<MusicalKey>)>,
+    now: Option<usize>,
+    melody: Vec<i32>,
+    chord: Option<usize>,
+    hints: bool,
+    notation: KeyNotation,
+}
+
+/// A key in words, as the reasons name it: "E major", "C# minor".
+pub(crate) fn key_words(k: ScaleKey) -> String {
+    let root = k.root_name();
+    match k.scale {
+        Scale::Major => od_i18n::trf("{} major", &[&root]),
+        Scale::Minor => od_i18n::trf("{} minor", &[&root]),
+        Scale::Dorian => od_i18n::trf("{} dorian", &[&root]),
+        Scale::Phrygian => od_i18n::trf("{} phrygian", &[&root]),
+        Scale::Lydian => od_i18n::trf("{} lydian", &[&root]),
+        Scale::Mixolydian => od_i18n::trf("{} mixolydian", &[&root]),
+        Scale::HarmonicMinor => od_i18n::trf("{} harmonic minor", &[&root]),
+    }
+}
+
+/// Pitch classes named as `key` spells them: "F, C".
+fn names_in(key: ScaleKey, pcs: &[u8]) -> String {
+    pcs.iter().map(|&n| key.name_of(i32::from(n))).collect::<Vec<_>>().join(", ")
+}
+
+/// One reason in plain words.
+pub(crate) fn why_text(w: &od_core::Why) -> String {
+    use od_core::Why;
+    match w {
+        Why::SameKey(k) => od_i18n::trf("Both decks are in {}: every note is shared", &[&key_words(*k)]),
+        Why::Relative(a, b) => od_i18n::trf("{} and {} share all seven notes", &[&key_words(*a), &key_words(*b)]),
+        Why::Steps { from, to, steps, shared } if steps.abs() == 1 => {
+            od_i18n::trf("{} is one step round the wheel from {}: {} of 7 notes are shared", &[&key_words(*to), &key_words(*from), shared])
+        }
+        Why::Steps { from, to, steps: 0, shared } => od_i18n::trf("{} and {} share {} of 7 notes", &[&key_words(*from), &key_words(*to), shared]),
+        Why::Steps { from, to, steps, shared } => od_i18n::trf(
+            "{} is {} steps round the wheel from {}: only {} of 7 notes are shared, so the change is heard",
+            &[&key_words(*to), &steps.abs(), &key_words(*from), shared],
+        ),
+        Why::MelodyFits { key, .. } => od_i18n::trf("Your melody uses only notes of {}", &[&key_words(*key)]),
+        Why::MelodyOutside { key, outside } if outside.len() == 1 => od_i18n::trf(
+            "{} is not in {}: a semitone up or down brings it into the key",
+            &[&names_in(*key, outside), &key_words(*key)],
+        ),
+        Why::MelodyOutside { key, outside } => od_i18n::trf(
+            "{} are not in {}: a semitone up or down brings them into the key",
+            &[&names_in(*key, outside), &key_words(*key)],
+        ),
+        Why::Chords { key, other, fit } => od_i18n::trf(
+            "{} of the 7 chords of {} use only notes of {}: they fit the track playing now",
+            &[fit, &key_words(*key), &key_words(*other)],
+        ),
+        Why::Neighbours { key, relative, up, down } => od_i18n::trf(
+            "{}, {} and {} sit next to {} and move smoothly",
+            &[&key_words(*relative), &key_words(*up), &key_words(*down), &key_words(*key)],
+        ),
+        Why::MajorChords { key, roots } => {
+            od_i18n::trf("The major chords of {} are {}: they sound brightest", &[&key_words(*key), &names_in(*key, roots)])
+        }
+    }
+}
+
+/// The key's notes or chords as FITS shows them: whether each one fits
+/// the key playing now ("fits", "out", "" with nothing to compare with),
+/// and the chosen chord.
+fn chips(names: &[String], fits: Option<[bool; 7]>, selected: Option<usize>) -> Vec<crate::CreateChip> {
+    names
+        .iter()
+        .enumerate()
+        .map(|(i, n)| crate::CreateChip {
+            name: n.into(),
+            fits: match fits {
+                Some(f) if f[i] => "fits",
+                Some(_) => "out",
+                None => "",
+            }
+            .into(),
+            selected: selected == Some(i),
+        })
+        .collect()
+}
+
+/// FITS in MELODY and the THEORY view: the decks' keys, the key in use
+/// against the key playing now, its neighbours, the check of the strip's
+/// melody and the reasons. Shown again only when what they show changed.
+fn show_theory(app: &App, state: Option<&EngineState>) {
+    let count = app.decks.borrow().deck_count;
+    let keys: Vec<Option<MusicalKey>> = (0..count).map(|i| crate::decks::musical_key(app, i)).collect();
+    let playing: Vec<bool> = (0..count).map(|i| state.is_some_and(|s| s.decks.get(i).is_some_and(|d| d.playing && d.track.is_some()))).collect();
+    let now = now_deck(&playing, state.and_then(|s| s.audible.dominant), state.and_then(|s| s.master_deck));
+    #[cfg(test)]
+    let (keys, playing, now) = match app.create.borrow().staged.clone() {
+        Some((mut k, n)) => {
+            k.resize(count, None);
+            (k, (0..count).map(|d| Some(d) == n).collect(), n)
+        }
+        None => (keys, playing, now),
+    };
+    let notation = app.state.borrow().settings.key_notation();
+    let sig = {
+        let rt = app.create.borrow();
+        let loaded = |i: usize| app.decks.borrow().loaded_id(i).is_some() || keys[i].is_some();
+        TheorySig {
+            key: rt.choice.key,
+            decks: (0..count).map(|i| (loaded(i), playing[i], keys[i])).collect(),
+            now,
+            melody: rt.melody.steps.iter().flatten().map(|s| s.note).collect(),
+            chord: rt.chord,
+            hints: rt.choice.hints,
+            notation,
+        }
+    };
+    if app.create.borrow().theory.as_ref() == Some(&sig) {
+        return;
+    }
+    let key = sig.key;
+    let now_key = now.and_then(|d| keys[d]).map(ScaleKey::from_key);
+    let g = app.ui.global::<crate::Create>();
+    // FITS: the key's notes and chords against the key playing now.
+    let fit = crate::CreateFits {
+        deck: now.map_or(0, |d| d as i32 + 1),
+        why: match (now, now_key) {
+            (None, _) => "none",
+            (Some(_), None) => "no-key",
+            _ => "",
+        }
+        .into(),
+        root: now_key.map(|k| k.root_name()).unwrap_or_default().into(),
+        scale: now_key.map(|k| k.scale.id()).unwrap_or_default().into(),
+        wheel: now_key.map(|k| wheel_of(k, notation)).unwrap_or_default().into(),
+        words: now_key.map(key_words).unwrap_or_default().into(),
+        notes: match (key, now_key) {
+            (Some(k), Some(n)) => k.notes_in(n).iter().filter(|&&f| f).count() as i32,
+            _ => 0,
+        },
+        chords: match (key, now_key) {
+            (Some(k), Some(n)) => k.chords_in(n).iter().filter(|&&f| f).count() as i32,
+            _ => 0,
+        },
+    };
+    let notes = key.map(|k| chips(&k.note_names(), now_key.map(|n| k.notes_in(n)), None)).unwrap_or_default();
+    let chords = key.map(|k| chips(&k.chord_names(), now_key.map(|n| k.chords_in(n)), sig.chord)).unwrap_or_default();
+    // THEORY: each deck's key as note names, the wheel beside.
+    let decks: Vec<crate::CreateTheoryDeck> = sig
+        .decks
+        .iter()
+        .enumerate()
+        .map(|(i, &(loaded, playing, k))| {
+            let k = k.map(ScaleKey::from_key);
+            crate::CreateTheoryDeck {
+                deck: i as i32 + 1,
+                loaded,
+                playing,
+                now: now == Some(i),
+                root: k.map(|k| k.root_name()).unwrap_or_default().into(),
+                scale: k.map(|k| k.scale.id()).unwrap_or_default().into(),
+                wheel: k.map(|k| wheel_of(k, notation)).unwrap_or_default().into(),
+            }
+        })
+        .collect();
+    // The key's neighbours, and the deck that holds one.
+    let neighbours: Vec<crate::CreateNeighbour> = key
+        .map(|k| k.neighbours())
+        .unwrap_or_default()
+        .into_iter()
+        .map(|(how, n)| crate::CreateNeighbour {
+            how: match how {
+                od_core::Neighbour::Relative => "relative",
+                od_core::Neighbour::FifthUp => "up",
+                od_core::Neighbour::FifthDown => "down",
+            }
+            .into(),
+            root: n.root_name().into(),
+            scale: n.scale.id().into(),
+            wheel: wheel_of(n, notation).into(),
+            deck: keys.iter().position(|d| d.map(ScaleKey::from_key) == Some(n)).map_or(0, |d| d as i32 + 1),
+        })
+        .collect();
+    // The check of the strip's melody against the key in use.
+    let check = key.map(|k| k.check(&sig.melody)).filter(|_| !sig.melody.is_empty());
+    let checked = crate::CreateCheck {
+        state: match (key, &check) {
+            (None, _) => "no-key",
+            (_, None) => "empty",
+            (_, Some(c)) if c.fits() => "fits",
+            _ => "out",
+        }
+        .into(),
+        key: key.map(key_words).unwrap_or_default().into(),
+        distinct: check.as_ref().map_or(0, |c| c.distinct as i32),
+        outside: match (key, &check) {
+            (Some(k), Some(c)) => names_in(k, &c.outside),
+            _ => String::new(),
+        }
+        .into(),
+    };
+    // The reasons (shown while the hints are on).
+    let deck_keys = [keys.first().copied().flatten().map(ScaleKey::from_key), keys.get(1).copied().flatten().map(ScaleKey::from_key)];
+    let why: Vec<slint::SharedString> = od_core::theory::why(key, deck_keys, now_key, check.as_ref()).iter().map(|w| why_text(w).into()).collect();
+    let fit_why = match (key, now_key) {
+        // The same key: not both decks, the key in use and the deck.
+        (Some(k), Some(n)) if k == n => od_i18n::trf("The track playing is in {} too: every note fits", &[&key_words(k)]),
+        (Some(k), Some(n)) => why_text(&od_core::theory::relation(n, k)),
+        _ => why.first().map(|w| w.to_string()).unwrap_or_default(),
+    };
+    g.set_fit(fit);
+    set_rows(g.get_fit_notes(), notes, |m| g.set_fit_notes(m));
+    set_rows(g.get_fit_chords(), chords, |m| g.set_fit_chords(m));
+    set_rows(g.get_theory_decks(), decks, |m| g.set_theory_decks(m));
+    set_rows(g.get_neighbours(), neighbours, |m| g.set_neighbours(m));
+    g.set_check(checked);
+    set_rows(g.get_why(), why, |m| g.set_why(m));
+    g.set_fit_why(fit_why.into());
+    g.set_chord(sig.chord.map_or(-1, |c| c as i32));
+    app.create.borrow_mut().theory = Some(sig);
+}
+
+/// A chord of the key chosen (its notes marked on the strip); again
+/// clears it.
+pub(crate) fn choose_chord(app: &App, i: i32) {
+    {
+        let mut rt = app.create.borrow_mut();
+        let i = usize::try_from(i).ok().filter(|&i| i < 7);
+        rt.chord = if rt.chord == i { None } else { i };
+    }
+    show_pads(app);
+    show_theory(app, engine::snapshot(app).as_ref());
 }
 
 // ── [74] Arrange ────────────────────────────────────────────────────────
@@ -1725,6 +2021,7 @@ fn show_arrange(app: &App) {
     g.set_typed_bad(bad.into());
     g.set_typed_long(long);
     show_result(app);
+    show_theory(app, engine::snapshot(app).as_ref());
 }
 
 fn save_melody(app: &App) {
@@ -2605,6 +2902,40 @@ pub(crate) fn stage_melody(app: &App, track: TrackId) {
     show_arrange(app);
 }
 
+/// [78] FITS and THEORY in their widest state: B major set by hand (sharp
+/// names), a strip with five notes out of it, deck 1 in G# minor (the
+/// relative key, so a neighbour names its deck) and deck 2 in C# major
+/// playing now (notes and chords struck), a chord marked, the hints on.
+#[cfg(test)]
+pub(crate) fn stage_theory(app: &App, track: TrackId) {
+    stage(app, track);
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.octave = 0;
+        rt.choice = KeyChoice { key: Some(ScaleKey::new(11, Scale::Major)), from: "set".into(), ..KeyChoice::default() };
+        let mut m = Melody::default();
+        for (i, n) in [59, 60, 61, 62, 63, 65, 66, 67, 69, 70, 71].into_iter().enumerate() {
+            m.set(i, n);
+        }
+        rt.melody = m;
+        rt.chord = Some(3);
+        rt.staged = Some((vec![MusicalKey::parse("G#m"), MusicalKey::parse("C#")], Some(1)));
+        rt.theory = None;
+    }
+    app.ui.global::<crate::Create>().set_more(false);
+    show_key(app);
+    show_pads(app);
+    show_arrange(app);
+}
+
+/// [78] Back to the decks as they are.
+#[cfg(test)]
+pub(crate) fn unstage_theory(app: &App) {
+    let mut rt = app.create.borrow_mut();
+    rt.staged = None;
+    rt.theory = None;
+}
+
 /// [75] The full strip as rendered: RENDER reads READY (the file is not
 /// written), SINGLE NOTES chosen.
 #[cfg(test)]
@@ -2687,7 +3018,11 @@ pub(crate) fn stage_created(app: &App, track: TrackId) {
 /// `create-to-playlist` opens TO PLAYLIST's menu, or `create-created-list`
 /// opens the CREATED list in PREPARE; `create-send` sends the strip to
 /// Perform (SENT), `create-send-perform` then shows deck 1's MELODY pads in
-/// Perform, and `create-melody-empty` shows them with nothing sent.
+/// Perform, and `create-melody-empty` shows them with nothing sent;
+/// `create-fits` sets the key a fifth below deck 2's by hand (so FITS
+/// strikes what the deck playing does not share) and marks its first chord,
+/// `create-theory` opens THEORY, `create-theory-wrong` types a melody with
+/// notes out of the key and `create-hints-off` turns the hints off.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -2732,6 +3067,21 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         }
         if parts.iter().any(|p| p == "create-send" || p == "create-send-perform") {
             send_to_perform(&a);
+        }
+        if parts.iter().any(|p| p == "create-fits") {
+            for _ in 0..5 {
+                step_root(&a, 1);
+            }
+            choose_chord(&a, 0);
+        }
+        if parts.iter().any(|p| p == "create-theory-wrong") {
+            type_steps(&a, "E4 F4 G#4 C5 B4 _ A4 F4");
+        }
+        if parts.iter().any(|p| p == "create-hints-off") {
+            set_hints(&a, false);
+        }
+        if parts.iter().any(|p| p == "create-theory") {
+            set_view(&a, "theory");
         }
         if parts.iter().any(|p| p == "create-melody-empty") {
             crate::sampler::fill_bank(&a, od_engine::MELODY_BANK, vec![None; od_engine::SAMPLER_SLOTS]);

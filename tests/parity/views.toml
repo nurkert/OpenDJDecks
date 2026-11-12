@@ -8823,7 +8823,7 @@ mode = "create"
 source = "Roadmap [70], CREATE concept (0.10.0)"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "create"]
-note = "KEYS shows both decks' keys from the decks; CHECK and WHY say what comes there."
+note = "KEYS shows both decks' keys from the decks and the neighbours of the chosen key; CHECK the key, the keyboard strip and the check of the strip's melody; WHY the reasons in plain words (roadmap [78])."
 
 [[view.region]]
 id = "create.views"
@@ -9002,6 +9002,123 @@ elements = [
   "create.result.render",
   "create.result.send",
   "create.result.to-playlist",
+]
+
+[[view]]
+id = "create.fits"
+title = "Create: MELODY with FITS against the deck playing now"
+mode = "create"
+source = "Roadmap [78], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+note = "FITS shows the chosen key (as note names, the wheel notation beside), its 7 notes in one row and its 7 chords in two rows, each against the key of the deck playing now (on air, else the master, else any): a plate where it fits, hollow and struck through where it is not in that key, never by hue alone; under them the deck playing and its key, a line in words (how many notes and chords fit, which key the struck ones are not in, or that no deck plays or its key is not known), and with HINTS on a reason in plain words. A chord key marks the chord's notes on the keyboard strip with a dot (bone fill while chosen)."
+
+[[view.region]]
+id = "create.fits.notes"
+band = "create"
+place = "FITS: the key's notes in one row"
+order = "row"
+elements = [
+  "create.fits.note1",
+  "create.fits.note4",
+  "create.fits.note7",
+]
+
+[[view.region]]
+id = "create.fits.chords"
+band = "create"
+place = "FITS: the first row of chords, four keys"
+order = "row"
+elements = [
+  "create.fits.chord1",
+  "create.fits.chord2",
+  "create.fits.chord3",
+  "create.fits.chord4",
+]
+
+[[view.region]]
+id = "create.fits.column"
+band = "create"
+place = "FITS, top to bottom: the key, its notes, its chords, the deck playing now, what fits in words, the reason"
+order = "column"
+elements = [
+  "create.fits.key",
+  "create.fits.note2",
+  "create.fits.chord5",
+  "create.fits.now",
+  "create.fits.line",
+  "create.fits.why",
+]
+
+[[view]]
+id = "create.theory.fits"
+title = "Create: THEORY with both decks' keys, the neighbours, a melody checked and the reasons"
+mode = "create"
+source = "Roadmap [78], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+note = "KEYS: each deck's key as note names with the wheel notation as a small label beside and its state, then the keys next to the chosen key that move smoothly (the relative key with the same notes, a fifth up, a fifth down), each naming a deck already in it. CHECK: the key, the keyboard strip, the key's chords (they mark their notes on the strip), the strip's melody, a field to type one (it replaces MELODY's strip) and the check: a solid green line with all notes fitting, or a struck red one naming the notes out of the key. WHY: the HINTS switch and up to three reasons in plain words worked out from the keys and the melody; with HINTS off the reasons give way to one line saying so, and the facts stay."
+
+[[view.region]]
+id = "create.theory"
+band = "create"
+place = "the three zones, left to right"
+order = "row"
+elements = [
+  "create.theory.keys",
+  "create.theory.check",
+  "create.theory.why",
+]
+
+[[view.region]]
+id = "create.theory.keys.column"
+band = "create"
+place = "KEYS: one line per deck, then the neighbours of the chosen key"
+order = "column"
+elements = [
+  "create.theory.key.deck1",
+  "create.theory.key.deck2",
+  "create.theory.neighbours",
+  "create.theory.neighbour1",
+  "create.theory.neighbour2",
+  "create.theory.neighbour3",
+]
+
+[[view.region]]
+id = "create.theory.check.column"
+band = "create"
+place = "CHECK, top to bottom: the key, the keyboard strip, the chords, the melody, typing, the check"
+order = "column"
+elements = [
+  "create.theory.check.key",
+  "create.keyboard",
+  "create.theory.chord1",
+  "create.theory.melody",
+  "create.theory.type",
+  "create.theory.result",
+]
+
+[[view.region]]
+id = "create.theory.chords"
+band = "create"
+place = "CHECK, under the strip: the key's chords in one row"
+order = "row"
+elements = [
+  "create.theory.chord2",
+  "create.theory.chord4",
+  "create.theory.chord7",
+]
+
+[[view.region]]
+id = "create.theory.why.column"
+band = "create"
+place = "WHY: the hints' switch over the reasons"
+order = "column"
+elements = [
+  "create.theory.hints",
+  "create.theory.why1",
+  "create.theory.why2",
+  "create.theory.why3",
 ]
 
 # ---- Perform: the MELODY pad mode (roadmap [77]) ----

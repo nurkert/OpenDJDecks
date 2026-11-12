@@ -145,7 +145,7 @@ A fourth tab next to PREPARE, PERFORM and LIGHTING for the things DJs today do i
 ### Playing it live
 
 - [x] **[77]** A MELODY pad mode in Perform plays the notes on the deck pads, quantised and in sync, and the notes share the sampler's slots.
-- [ ] **[78]** Help with what fits: the scale and chords of a deck's key on the keyboard, a check of a typed melody, and plain-word hints that can be switched off.
+- [x] **[78]** Help with what fits: the scale and chords of a deck's key on the keyboard, a check of a typed melody, and plain-word hints that can be switched off.
 
 ### Drum machine
 

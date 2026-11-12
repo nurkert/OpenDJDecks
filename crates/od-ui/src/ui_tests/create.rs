@@ -1059,3 +1059,126 @@ fn send_to_perform_fills_the_melody_bank_and_its_pad_mode() {
     ui.pump(100);
     assert_eq!(label(&ui, "create.result.send"), "SEND TO PERFORM");
 }
+
+// ── [78] What fits ──────────────────────────────────────────────────────
+
+/// Loads `tracks` on decks 1 and 2 with their keys set first.
+fn decks_in_keys(ui: &Ui, keys: [&str; 2]) -> [od_core::TrackId; 2] {
+    let ids = [ui.fx.tracks[0].0, ui.fx.tracks[1].0];
+    crate::engine::ensure_engine(&ui.app);
+    for (d, (&id, k)) in ids.iter().zip(keys).enumerate() {
+        set_key(ui, id, k);
+        crate::decks::load_track(&ui.app, d, id, None);
+    }
+    assert!(ui.wait_until(30.0, |u| snapshot(u).decks[0].track == Some(ids[0]) && snapshot(u).decks[1].track == Some(ids[1])), "both decks load");
+    ids
+}
+
+/// A note from deck 2 plays in deck 1's key (E major) while deck 2 plays
+/// in B major: FITS says which deck plays, strikes the note and the chords
+/// not in B major and says so in words, a chord marks its notes on the
+/// keyboard strip, and the reason names the step round the wheel. With
+/// nothing playing FITS says there is nothing to compare with.
+#[test]
+fn fits_marks_what_the_key_shares_with_the_deck_playing_now() {
+    let ui = Ui::open((1440, 900));
+    decks_in_keys(&ui, ["E", "B"]);
+    ui.click("topbar.mode.create");
+    crate::create::set_view(&ui.app, "melody");
+    crate::create::pick(&ui.app, "deck2");
+    assert!(ui.wait_until(5.0, |u| u.value("create.fits.key") == "E MAJOR"), "{}", ui.value("create.fits.key"));
+    assert_eq!(ui.value("create.fits.now"), "NO DECK PLAYS");
+    assert!(ui.value("create.fits.line").starts_with("Nothing to compare with"), "{}", ui.value("create.fits.line"));
+    assert_eq!(ui.value("create.fits.note4"), "A", "nothing struck while nothing plays");
+    crate::engine::deck_cmd(&ui.app, 1, od_engine::DeckCommand::Play);
+    assert!(ui.wait_until(10.0, |u| u.value("create.fits.now") == "DECK 2 PLAYS B MAJOR"), "{}", ui.value("create.fits.now"));
+    assert_eq!(ui.value("create.notes.key-from"), "FROM DECK 1", "the key stays deck 1's");
+    assert_eq!(ui.value("create.fits.note1"), "E fits");
+    assert_eq!(ui.value("create.fits.note4"), "A not in B major", "B major has A#");
+    assert_eq!(ui.value("create.fits.line"), "6 of 7 notes and 4 of 7 chords fit. The struck ones are not in B major.");
+    let chords: Vec<String> = (1..=7).map(|i| ui.value(&format!("create.fits.chord{i}"))).collect();
+    assert_eq!(chords, ["fits", "not in B major", "fits", "not in B major", "fits", "fits", "not in B major"]);
+    assert_eq!(ui.value("create.fits.why"), "Why: E major is one step round the wheel from B major: 6 of 7 notes are shared");
+    // E marks E, G# and B on the strip, in both octaves; again clears it.
+    ui.click("create.fits.chord1");
+    assert_eq!(ui.value("create.fits.chord1"), "fits · marked");
+    let g = ui.app.ui.global::<crate::Create>();
+    let start = g.get_keyboard_start();
+    for (i, k) in g.get_keyboard().iter().enumerate() {
+        let pc = (start + i as i32).rem_euclid(12);
+        assert_eq!(k.chord, [4, 8, 11].contains(&pc), "{}", k.name);
+    }
+    let marked = (0..24).find(|&i| g.get_keyboard().row_data(i).unwrap().chord).unwrap();
+    assert!(ui.value(&format!("create.keyboard.key{marked}")).ends_with("in the chord"), "{}", ui.value(&format!("create.keyboard.key{marked}")));
+    ui.click("create.fits.chord1");
+    assert!(g.get_keyboard().iter().all(|k| !k.chord), "cleared");
+    // Paused: nothing to compare with again.
+    crate::engine::deck_cmd(&ui.app, 1, od_engine::DeckCommand::Pause);
+    assert!(ui.wait_until(10.0, |u| u.value("create.fits.now") == "NO DECK PLAYS"), "{}", ui.value("create.fits.now"));
+}
+
+/// THEORY: both decks' keys as note names with the wheel beside, the
+/// key's neighbours (one names the deck already in it), the check of a
+/// typed melody naming the notes out of the key, and three reasons from
+/// the data. HINTS off hides the reasons (and HAPPY and SAD) but not the
+/// facts, and stays off after a restart.
+#[test]
+fn theory_shows_both_decks_the_neighbours_and_checks_a_melody() {
+    let ui = Ui::open((1440, 900));
+    decks_in_keys(&ui, ["E", "C#m"]);
+    ui.click("topbar.mode.create");
+    ui.click("create.view.theory");
+    assert!(ui.wait_until(5.0, |u| u.value("create.theory.check.key") == "E MAJOR"), "{}", ui.value("create.theory.check.key"));
+    assert_eq!(ui.value("create.theory.key.deck1"), "E MAJOR 12B");
+    assert_eq!(ui.value("create.theory.key.deck2"), "C# MINOR 12A");
+    assert_eq!(ui.value("create.theory.neighbours"), "NEXT TO E MAJOR");
+    assert_eq!(ui.value("create.theory.neighbour1"), "C# MINOR 12A · SAME NOTES · DECK 2");
+    assert_eq!(ui.value("create.theory.neighbour2"), "B MAJOR 1B · A FIFTH UP");
+    assert_eq!(ui.value("create.theory.neighbour3"), "A MAJOR 11B · A FIFTH DOWN");
+    assert!(ui.value("create.theory.result").starts_with("No melody yet"), "{}", ui.value("create.theory.result"));
+    // A melody with F and C: named, in the order they play.
+    ui.click("create.theory.type");
+    ui.type_text("E4 F4 G#4 C5 F4 B4");
+    ui.key(slint::platform::Key::Return);
+    assert_eq!(ui.value("create.theory.melody"), "E4 F4 G#4 C5 F4 B4");
+    assert_eq!(ui.value("create.theory.result"), "Not in E major: F, C");
+    let why = |u: &Ui| (1..=3).map(|i| u.value(&format!("create.theory.why{i}"))).collect::<Vec<_>>();
+    assert_eq!(
+        why(&ui),
+        [
+            "E major and C# minor share all seven notes",
+            "F, C are not in E major: a semitone up or down brings them into the key",
+            "C# minor, B major and A major sit next to E major and move smoothly",
+        ]
+    );
+    assert!(!ui.has("create.theory.why4"), "three lines at most");
+    // It is MELODY's strip too.
+    assert_eq!(crate::create::melody(&ui.app).notes(), 6);
+    ui.app.ui.global::<crate::Create>().invoke_type_steps("E4 G#4 B4".into());
+    assert_eq!(ui.value("create.theory.result"), "All notes fit E major");
+    assert_eq!(ui.value("create.theory.why2"), "Your melody uses only notes of E major");
+    // HINTS off: the reasons go, the facts stay; in MELODY too.
+    ui.click("create.theory.hints");
+    assert!(!crate::create::choice(&ui.app).hints);
+    assert!(!ui.has("create.theory.why1"), "no reasons");
+    assert!(ui.value("create.theory.why-off").starts_with("The hints are off"));
+    for id in ["create.theory.result", "create.theory.neighbour1", "create.theory.key.deck1", "create.theory.chord1"] {
+        assert!(ui.has(id), "{id} stays");
+    }
+    ui.click("create.view.melody");
+    assert!(!ui.has("create.fits.why"), "no reason in FITS");
+    assert!(ui.has("create.fits.line") && ui.has("create.fits.note1"), "the facts stay");
+    assert!(ui.get("create.notes.scale.major").accessible_value().is_none_or(|v| v.is_empty()), "no HAPPY");
+    // Restart: still off.
+    let Ui { app, fx, .. } = ui;
+    drop(app);
+    let ui = Ui::start(fx, (1440, 900), false);
+    ui.app.ui.invoke_set_mode("create".into());
+    crate::create::set_view(&ui.app, "theory");
+    ui.pump(300);
+    assert!(!crate::create::choice(&ui.app).hints, "kept");
+    assert!(!ui.has("create.theory.why1") && ui.has("create.theory.why-off"));
+    ui.click("create.theory.hints");
+    assert!(!ui.has("create.theory.why-off"), "back with HINTS");
+    assert!(ui.value("create.theory.why-none").starts_with("The reasons show once a key is chosen"), "no key after the restart: no decks");
+}

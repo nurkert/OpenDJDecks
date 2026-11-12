@@ -242,6 +242,19 @@ fn views() -> Vec<(&'static str, fn(&Ui))> {
             crate::create::stage_sent(&u.app, u.fx.tracks[0].0);
             u.pump(300);
         }),
+        // [78] What fits: FITS against the deck playing now, and THEORY.
+        ("create (what fits)", |u| {
+            u.app.ui.invoke_set_mode("create".into());
+            crate::create::set_view(&u.app, "melody");
+            crate::create::stage_theory(&u.app, u.fx.tracks[0].0);
+            u.pump(300);
+        }),
+        ("create theory (what fits)", |u| {
+            u.app.ui.invoke_set_mode("create".into());
+            crate::create::set_view(&u.app, "theory");
+            crate::create::stage_theory(&u.app, u.fx.tracks[0].0);
+            u.pump(300);
+        }),
         ("perform (MELODY pads)", |u| {
             crate::create::stage_melody_pads(&u.app, true);
             u.pump(300);
