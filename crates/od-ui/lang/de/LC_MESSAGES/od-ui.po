@@ -11835,8 +11835,33 @@ msgstr "Das Pattern auf einem PATTERN-Pad sichern und den Sampler in Perform auf
 
 #: ui/create.slint
 msgctxt "ResultBar"
-msgid "Write a bar-exact loop with a hot cue per sound (not built yet)"
-msgstr "Einen taktgenauen Loop mit einem Hot Cue pro Klang schreiben (noch nicht gebaut)"
+msgid "1 BAR"
+msgstr "1 TAKT"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "{} BARS"
+msgstr "{} TAKTE"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Bars of the loop file: 1, 2, 4 or 8 (two at least at half time)"
+msgstr "Takte der Loop-Datei: 1, 2, 4 oder 8 (bei HALBES TEMPO mindestens zwei)"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Rendered: the loop is in the library with its beatgrid, a hot cue per sound and a loop over all of it"
+msgstr "Gerendert: Der Loop ist in der Bibliothek, mit Beatgrid, einem Hot Cue pro Klang und einem Loop über die ganze Datei"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Write the pattern as a new file of exactly these bars at the master tempo, with a beatgrid, a hot cue per sound and a loop over all of it"
+msgstr "Das Pattern als neue Datei von genau diesen Takten im Master-Tempo schreiben, mit Beatgrid, einem Hot Cue pro Klang und einem Loop über die ganze Datei"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Set steps on the pads first: then the pattern can be written as a loop file"
+msgstr "Setze zuerst Schritte auf den Pads: Dann lässt sich das Pattern als Loop-Datei schreiben"
 
 #: ui/create.slint
 msgctxt "ResultBar"

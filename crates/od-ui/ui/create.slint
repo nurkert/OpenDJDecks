@@ -258,7 +258,9 @@ export struct CreateDrumStep {
 // selected pad; for RESULT the steps set
 // over all pads, the PATTERN pad it saves to (0: none free), its bars,
 // the master tempo, and whether it is saved as it is (and the sampler on
-// the DRUMS bank: sent).
+// the DRUMS bank: sent). [81] RENDER LOOP: the loop's bars, whether it
+// renders or is READY ("rendering", "ready", ""), whether it can, and what
+// the stick formats take of its cues (as CreateRender's).
 export struct CreateDrumMachine {
     playing: bool,
     waiting: bool,
@@ -273,6 +275,12 @@ export struct CreateDrumMachine {
     bpm: string,
     saved: bool,
     sent: bool,
+    loop-bars: int,
+    loop-state: string,
+    can-loop: bool,
+    cues: int,
+    fits: string,
+    check: string,
 }
 
 export global Create {
@@ -419,7 +427,7 @@ export global Create {
     callback set-drum(string, float);
     // [80] The step row of the selected pad, the sequencer and RESULT.
     in property <[CreateDrumStep]> drum-steps: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}];
-    in property <CreateDrumMachine> drum-machine: { pattern: 1, bars: 1 };
+    in property <CreateDrumMachine> drum-machine: { pattern: 1, bars: 1, loop-bars: 4 };
     callback toggle-drum-step(int);
     callback drum-play();
     callback drum-rec();
@@ -430,6 +438,9 @@ export global Create {
     callback load-sample();
     callback save-pattern();
     callback send-drums();
+    // [81] RENDER LOOP, and its bars a step up or down.
+    callback render-loop();
+    callback step-loop-bars(int);
     // A pad's name: the kit's sound, a sample's name, else its number.
     public pure function drum-pad-name(i: int) -> string {
         return i < 8 ? root.drum-name(i) : i < root.drum-pads.length && root.drum-pads[i].name != "" ? root.drum-pads[i].name : @tr("PAD {}", i + 1);
@@ -2247,6 +2258,10 @@ component ResultBar inherits Rectangle {
         + " · " + root.dm.bpm + " BPM"
         + " · " + @tr("swing {} %", root.dm.swing)
         + (root.dm.half-time ? " · " + @tr("half time") : "");
+    // [75] [81] What the stick formats take of the file MELODY's RENDER or
+    // DRUMS' RENDER LOOP writes.
+    property <string> fits: Create.view == "melody" ? Create.render.fits : Create.view == "drums" ? root.dm.fits : "";
+    property <string> check: Create.view == "melody" ? Create.render.check : root.dm.check;
     property <bool> ready: Create.render.state == "ready";
     property <bool> rendering: Create.render.state == "rendering";
     property <bool> sent: Create.render.send == "sent";
@@ -2274,22 +2289,22 @@ component ResultBar inherits Rectangle {
                 font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
                 vertical-alignment: center; overflow: elide;
             }
-            if Create.view == "melody" && Create.render.fits != "": HorizontalLayout {
+            if root.fits != "": HorizontalLayout {
                 horizontal-stretch: 0; min-width: 0px; spacing: Theme.s2;
                 VerticalLayout {
                     alignment: center;
                     VLine {
                         height: 14px;
-                        form: Create.render.fits == "fits" ? "solid" : "struck";
-                        tone: Create.render.fits == "fits" ? Theme.live : Theme.fault;
+                        form: root.fits == "fits" ? "solid" : "struck";
+                        tone: root.fits == "fits" ? Theme.live : Theme.fault;
                     }
                 }
                 Text {
                     accessible-id: "create.result.check"; accessible-role: text; accessible-value: self.text;
                     min-width: 0px;
-                    text: Create.render.check;
+                    text: root.check;
                     font-family: Theme.family; font-size: Theme.control;
-                    color: Create.render.fits == "fits" ? Theme.bone-2 : Theme.bone;
+                    color: root.fits == "fits" ? Theme.bone-2 : Theme.bone;
                     vertical-alignment: center; overflow: elide;
                 }
             }
@@ -2397,10 +2412,27 @@ component ResultBar inherits Rectangle {
                     : @tr("Save the pattern on a PATTERN pad and put the sampler in Perform on the DRUMS bank");
                 clicked => { Create.send-drums(); }
             }
+            // [81] The loop's bars, then RENDER LOOP: rendered, filled
+            // green with the word READY.
+            Stepper {
+                accessible-id: "create.result.loop-bars";
+                a11y-prev: "create.result.loop-bars.less"; a11y-value: "create.result.loop-bars.value"; a11y-next: "create.result.loop-bars.more";
+                value: root.dm.loop-bars == 1 ? @tr("1 BAR") : @tr("{} BARS", root.dm.loop-bars); template: @tr("{} BARS", 8);
+                size: 26px;
+                tooltip: @tr("Bars of the loop file: 1, 2, 4 or 8 (two at least at half time)");
+                step(d) => { Create.step-loop-bars(d); }
+            }
             PlateButton {
                 accessible-id: "create.result.render-loop"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("RENDER LOOP");
-                tooltip: @tr("Write a bar-exact loop with a hot cue per sound (not built yet)");
+                compact: true;
+                label: root.dm.loop-state == "ready" ? @tr("READY") : root.dm.loop-state == "rendering" ? @tr("RENDERING") : @tr("RENDER LOOP");
+                enabled: root.dm.can-loop || root.dm.loop-state != "";
+                active: root.dm.loop-state != "";
+                tone: root.dm.loop-state == "ready" ? Theme.live : Theme.attention;
+                tooltip: root.dm.loop-state == "ready" ? @tr("Rendered: the loop is in the library with its beatgrid, a hot cue per sound and a loop over all of it")
+                    : root.dm.can-loop ? @tr("Write the pattern as a new file of exactly these bars at the master tempo, with a beatgrid, a hot cue per sound and a loop over all of it")
+                    : @tr("Set steps on the pads first: then the pattern can be written as a loop file");
+                clicked => { Create.render-loop(); }
             }
             PlateButton {
                 accessible-id: "create.result.save-pattern"; accessible-role: button;

@@ -890,6 +890,15 @@ fn a_rendered_track_in_a_synced_playlist_reaches_the_stick_with_cues_and_grid() 
     let stick = test_env().join("volumes").join(name);
     let _ = std::fs::remove_dir_all(&stick);
     std::fs::create_dir_all(&stick).unwrap();
+    // Gone again even when an assertion fails: the volumes are shared by
+    // every UI test of this run.
+    struct Gone(std::path::PathBuf);
+    impl Drop for Gone {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    let _gone = Gone(stick.clone());
     let uuid = format!("uuid-{name}-{}", std::process::id());
     od_format_native::write_marker(
         &stick,
@@ -950,7 +959,6 @@ fn a_rendered_track_in_a_synced_playlist_reaches_the_stick_with_cues_and_grid() 
     let row = g.get_rows().iter().find(|r| r.title == made.title.as_str()).expect("a row for the file");
     assert_eq!(row.file, "ok");
     drop(native);
-    let _ = std::fs::remove_dir_all(&stick);
 }
 
 // ── [77] Into Perform ───────────────────────────────────────────────────
@@ -1548,4 +1556,101 @@ fn load_sample_fills_pad_nine_and_a_restart_keeps_the_drum_machine() {
     assert!(ui.app.sampler.sequences.borrow()[0].is_some(), "the PATTERN pad keeps it");
     assert!(ui.wait_until(2.0, |u| label(u, "create.result.save-pattern") == "SAVED"), "still the saved pattern");
     assert_eq!(ui.value("create.steps.swing.value"), "5 %");
+}
+
+// ── [81] RENDER LOOP ────────────────────────────────────────────────────
+
+/// RENDER LOOP writes the pattern as a new WAV file of exactly the bars
+/// chosen at the master tempo (no deck plays: the master clock's, as the
+/// status line says, without a path) into the library's created folder
+/// and the CREATED list, with a locked grid from sample 0, no key, a
+/// memory loop over the file and one hot cue per sound at its first hit,
+/// named after its pad. It then reads READY until the pattern or the bars
+/// change; the same pattern renders the same bytes again.
+#[test]
+fn render_loop_writes_a_bar_exact_loop_with_a_cue_per_sound_into_created() {
+    let ui = Ui::open((1440, 900));
+    drums_open(&ui);
+    assert_eq!(ui.get("create.result.render-loop").accessible_enabled(), Some(false), "no steps yet");
+    assert!(!ui.has("create.result.check"));
+    assert_eq!(ui.value("create.result.loop-bars.value"), "4 BARS", "four bars at first");
+    // The kick on the beats, the snare on 2 and 4, the open hat on step 16:
+    // it rings over the loop's end.
+    for s in [1, 5, 9, 13] {
+        ui.click(&format!("create.drums.step{s}"));
+    }
+    ui.click("create.drums.pad2");
+    for s in [5, 13] {
+        ui.click(&format!("create.drums.step{s}"));
+    }
+    ui.click("create.drums.pad4");
+    ui.click("create.drums.step16");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 0) == 0x1111 && drum_steps(u, 1) == 0x1010 && drum_steps(u, 3) == 0x8000));
+    assert!(ui.wait_until(2.0, |u| u.has("create.result.check") && u.value("create.result.check") == "Stick formats: 3 of 32 hot cues · fits"));
+    assert_eq!(label(&ui, "create.result.render-loop"), "RENDER LOOP");
+    assert_eq!(ui.get("create.result.render-loop").accessible_enabled(), Some(true));
+    ui.click("create.result.render-loop");
+    assert!(ui.wait_until(20.0, |u| label(u, "create.result.render-loop") == "READY"), "READY: {}", label(&ui, "create.result.render-loop"));
+    let made = crate::create::loop_made(&ui.app).expect("a loop");
+    let bpm = crate::create_render::tempo(snapshot(&ui).master_bpm);
+    assert_eq!(made.path.parent(), Some(ui.fx.root.join("library/created").as_path()));
+    assert_eq!(made.title, format!("Drums (Loop 4 bars {bpm} BPM)"));
+    let status = ui.app.ui.get_status_text().to_string();
+    assert!(status.contains("no deck plays") && status.contains("created folder") && !status.contains('/'), "{status}");
+    // Exactly four bars.
+    let r = hound::WavReader::open(&made.path).unwrap();
+    let (frames, rate) = (r.duration() as usize, r.spec().sample_rate);
+    assert_eq!(frames, od_engine::loop_frames(4, bpm, rate));
+    // A library track in CREATED, its grid from sample 0, no key.
+    let lib = ui.fx.lib();
+    assert!(lib.created_tracks().unwrap().iter().any(|t| t.id == made.track && t.tags.title == made.title), "in CREATED");
+    let grid = lib.beatgrid(made.track).unwrap().expect("a grid");
+    assert!(grid.locked && (grid.first_bpm().unwrap() - bpm).abs() < 1e-9);
+    assert_eq!((grid.beats[0].time, grid.beats[0].bar_position, grid.beats.len()), (0.0, 1, 17), "16 beats from 0, the end included");
+    assert_eq!(lib.key_with_source(made.track).unwrap(), None, "no key");
+    // A loop over the whole file and a hot cue per sound at its first hit.
+    let cues = lib.cues(made.track).unwrap();
+    let memory: Vec<&od_core::Cue> = cues.iter().filter(|c| c.kind == od_core::CueKind::Memory).collect();
+    assert_eq!(memory.len(), 1);
+    assert_eq!(memory[0].start, 0.0);
+    assert!((memory[0].loop_end.unwrap() - frames as f64 / f64::from(rate)).abs() < 1e-9, "over the whole file");
+    let mut hot: Vec<&od_core::Cue> = cues.iter().filter(|c| matches!(c.kind, od_core::CueKind::Hot(_))).collect();
+    hot.sort_by_key(|c| c.kind.hot_slot_letter());
+    assert_eq!(hot.iter().map(|c| c.label.as_str()).collect::<Vec<_>>(), ["KICK", "SNARE", "OPEN HAT"]);
+    for (c, beat) in hot.iter().zip([0usize, 1, 0]) {
+        if c.label == "OPEN HAT" {
+            // Step 16: the last sixteenth of the first bar.
+            let at = crate::create_render::seconds(3.75, bpm);
+            assert!((c.start - at).abs() <= 1.0 / f64::from(rate), "{} at {} vs {at}", c.label, c.start);
+        } else {
+            assert!((c.start - grid.beats[beat].time).abs() <= 1.0 / f64::from(rate), "{} on beat {beat}", c.label);
+        }
+    }
+    // READY again only says where it is.
+    ui.click("create.result.render-loop");
+    assert_eq!(crate::create::loop_made(&ui.app).unwrap().track, made.track, "no second file");
+    ui.pump(200);
+    let wavs = |u: &Ui| std::fs::read_dir(u.fx.root.join("library/created")).unwrap().filter(|e| e.as_ref().unwrap().path().extension().is_some_and(|x| x == "wav")).count();
+    assert_eq!(wavs(&ui), 1, "READY writes nothing");
+    assert_eq!(label(&ui, "create.result.render-loop"), "READY");
+    // Two bars: another file.
+    ui.click("create.result.loop-bars.less");
+    assert_eq!(ui.value("create.result.loop-bars.value"), "2 BARS");
+    assert!(ui.wait_until(2.0, |u| label(u, "create.result.render-loop") == "RENDER LOOP"));
+    ui.click("create.result.render-loop");
+    assert!(ui.wait_until(20.0, |u| label(u, "create.result.render-loop") == "READY"));
+    let two = crate::create::loop_made(&ui.app).unwrap();
+    assert_eq!(hound::WavReader::open(&two.path).unwrap().duration() as usize, od_engine::loop_frames(2, bpm, rate));
+    // Back to four: rendered again, the same bytes as the first.
+    ui.click("create.result.loop-bars.more");
+    ui.click("create.result.render-loop");
+    assert!(ui.wait_until(20.0, |u| label(u, "create.result.render-loop") == "READY"));
+    let again = crate::create::loop_made(&ui.app).unwrap();
+    assert_ne!(again.path, made.path, "a new file, never a replaced one");
+    assert_eq!(again.title, format!("{} 2", made.title), "numbered in the list as its file is");
+    assert_eq!(std::fs::read(&again.path).unwrap(), std::fs::read(&made.path).unwrap(), "the same pattern, the same bytes");
+    // Another step: READY goes. The bars are kept.
+    ui.click("create.drums.step1");
+    assert!(ui.wait_until(3.0, |u| label(u, "create.result.render-loop") == "RENDER LOOP"));
+    assert!(ui.fx.lib().meta(crate::create::META_DRUMS).unwrap().is_some_and(|j| j.contains("\"loop_bars\":4")));
 }

@@ -546,3 +546,90 @@ fn audition_at_starts_and_stops_on_the_master_beat() {
     rig.render(3);
     assert!(!rig.state().auditioning);
 }
+
+// ── [81] A pattern as a loop ────────────────────────────────────────────
+
+fn one_shot(sample: Arc<SampleData>, steps: &[usize]) -> LoopPad {
+    LoopPad { sample, pattern: steps.iter().fold(0u16, |m, s| m | 1 << s), mode: SampleMode::OneShot, gain: 1.0, speed: 1.0 }
+}
+
+/// [81] A loop is exactly its bars long at the tempo (rounded to a frame),
+/// each pad first sounds on its first step, and a sound ringing past the
+/// end wraps to the start: alone it sounds on there, and where the pad
+/// hits step 1 again that hit cuts it with a retrigger's fade.
+#[test]
+fn a_loop_is_its_bars_long_and_a_tail_wraps_to_its_start() {
+    let none = render_loop(&[], 1, 120.0, SR, 0.0, false);
+    assert_eq!(none.audio.len() / 2, 96_000, "one bar at 120 BPM: 2 s");
+    assert_eq!(loop_frames(4, 124.0, SR), (16.0 * 60.0 / 124.0 * f64::from(SR)).round() as usize);
+    assert_eq!(render_loop(&[], 4, 124.0, SR, 0.0, false).audio.len() / 2, 371_613);
+    assert_eq!(loop_frames(2, 0.0, SR), 0, "no tempo, no loop");
+    // 10 000 frames on step 16 (frame 90 000): 6 000 before the end, the
+    // other 4 000 at the start.
+    let long = dc(10_000, 0.5);
+    let l = render_loop(&[one_shot(long.clone(), &[15])], 1, 120.0, SR, 0.0, false);
+    assert_eq!(l.first, [Some(90_000)]);
+    assert_eq!((l.audio[89_999 * 2], l.audio[90_000 * 2], l.audio[95_999 * 2]), (0.0, 0.5, 0.5));
+    assert_eq!((l.audio[0], l.audio[3_999 * 2], l.audio[4_000 * 2]), (0.5, 0.5, 0.0), "the tail at the start");
+    assert!(l.audio.chunks_exact(2).all(|f| f[0] == f[1]));
+    // Step 1 as well: its hit cuts the tail, which fades over 128 frames.
+    let l = render_loop(&[one_shot(long, &[0, 15])], 1, 120.0, SR, 0.0, false);
+    assert_eq!(l.first, [Some(0)]);
+    assert_eq!(l.audio[0], 1.0, "the new hit and the tail at full");
+    assert!((l.audio[64 * 2] - (0.5 + 0.5 * 64.0 / 128.0)).abs() < 1e-6, "half faded");
+    assert_eq!(l.audio[128 * 2], 0.5, "only the new hit after the fade");
+    // Two bars repeat the 16 steps; every pad's first hit is reported.
+    let l = render_loop(&[one_shot(dc(100, 0.5), &[4]), one_shot(dc(100, 0.25), &[]), one_shot(dc(100, 0.25), &[1])], 2, 120.0, SR, 0.0, false);
+    assert_eq!(onsets(&l.audio), [6_000, 24_000, 102_000, 120_000]);
+    assert_eq!(l.first, [Some(24_000), None, Some(6_000)]);
+}
+
+/// [81] Swing and half time put the steps where the sequencer plays them;
+/// half time takes two bars for the 16 steps.
+#[test]
+fn a_loop_swings_and_plays_half_time_like_the_sequencer() {
+    let l = render_loop(&[one_shot(dc(100, 0.5), &[0, 1, 2, 3])], 1, 120.0, SR, 0.5, false);
+    assert_eq!(onsets(&l.audio), [0, 9_000, 12_000, 21_000]);
+    let l = render_loop(&[one_shot(dc(100, 0.5), &[0, 1, 8])], 2, 120.0, SR, 0.25, true);
+    assert_eq!(onsets(&l.audio), [0, 15_000, 96_000]);
+    let l = render_loop(&[one_shot(dc(100, 0.5), &[0, 8])], 4, 120.0, SR, 0.0, true);
+    assert_eq!(onsets(&l.audio), [0, 96_000, 192_000, 288_000], "the steps twice in four bars");
+}
+
+/// [81] The loop is the sequencer's own sound: a bar of the kit played by
+/// the engine, once its first bar's tails ring into the second, is the
+/// rendered bar; the same pattern renders the same samples every time.
+#[test]
+fn a_loop_sounds_as_the_sequencer_plays_it_and_renders_alike_every_time() {
+    let kit = drums::kit("tight").unwrap();
+    let voice = |i: usize| {
+        let mono = drums::render(drums::Voice::ALL[i], kit.pads[i], SR);
+        SampleData::new(od_decode::DecodedAudio { sample_rate: SR, channels: 2, samples: mono.iter().flat_map(|&x| [x * 0.3, x * 0.3]).collect() }, SR)
+    };
+    // Kick on the beats, open hat on the off-beats (rings long), clap on
+    // step 16 (rings over the end), a loop-mode tone on step 3.
+    let tone = sample(5_000, |i| (i as f32 * 0.01).sin() * 0.1);
+    let pads = vec![
+        one_shot(voice(0), &[0, 4, 8, 12]),
+        one_shot(voice(3), &[2, 6, 10, 14]),
+        one_shot(voice(4), &[15]),
+        LoopPad { mode: SampleMode::Loop, gain: 0.5, ..one_shot(tone, &[3]) },
+    ];
+    let swing = 0.25;
+    let l = render_loop(&pads, 1, 120.0, SR, swing, false);
+    assert_eq!(l, render_loop(&pads, 1, 120.0, SR, swing, false), "the same every time");
+    let mut rig = clock_rig();
+    for (i, p) in pads.iter().enumerate() {
+        smp(&mut rig, SamplerCommand::Load { slot: i, sample: p.sample.clone() });
+        smp(&mut rig, SamplerCommand::SeqPattern { slot: i, mask: p.pattern });
+        smp(&mut rig, SamplerCommand::SetGain { slot: i, gain: p.gain });
+        smp(&mut rig, SamplerCommand::SetMode { slot: i, mode: p.mode });
+    }
+    smp(&mut rig, SamplerCommand::SeqSwing(swing as f32));
+    smp(&mut rig, SamplerCommand::SeqPlay(true));
+    let played = rig.render(1_500); // 192 000 frames: two bars
+    let bar2 = &played[96_000 * 2..192_000 * 2];
+    let worst = bar2.iter().zip(&l.audio).map(|(a, b)| (a - b).abs()).fold(0.0f32, f32::max);
+    assert!(worst < 1e-4, "the second bar played is the loop: off by {worst}");
+    assert!(l.audio.iter().map(|x| x.abs()).fold(0.0f32, f32::max) > 0.05, "and it sounds");
+}

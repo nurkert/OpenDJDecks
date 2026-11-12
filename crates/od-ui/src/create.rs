@@ -99,6 +99,15 @@
 //! half time) on a PATTERN pad of Perform, the same one each time; SEND TO
 //! PERFORM also puts the sampler on the DRUMS bank. A kit pad pressed while
 //! nothing runs still plays on the audition voice, as in [79].
+//!
+//! [81] RENDER LOOP writes the pattern (every pad with steps, the kit's
+//! sounds as set and the samples as their slots play them, with swing and
+//! half time) as a new WAV file of exactly the bars chosen (1, 2, 4 or 8,
+//! two at least at half time) at the master tempo, with a locked grid, a
+//! memory loop over the file and one hot cue per sound at its first hit,
+//! named after its pad ([`create_render::write_loop`]). The bars are kept
+//! in `create.drums`; RENDER LOOP reads READY until the pattern, a sound,
+//! the bars or the tempo change.
 
 use crate::app::App;
 use crate::arrange::{self, Grid, Melody, STEPS};
@@ -477,6 +486,12 @@ pub(crate) struct Runtime {
     kit_due: Option<Instant>,
     /// The steps before the last CLEAR (UNDO).
     drum_undo: Option<[u16; DRUM_PADS]>,
+    /// [81] RENDER LOOP runs (for what, and whether a deck played), its
+    /// result comes back here; the last loop rendered, and for what.
+    looping: Option<(LoopSig, bool)>,
+    loop_tx: Sender<Result<create_render::Made, String>>,
+    loop_rx: Receiver<Result<create_render::Made, String>>,
+    loop_made: Option<(LoopSig, create_render::Made)>,
     /// The sequencer as staged for the audits (tests).
     #[cfg(test)]
     staged_seq: Option<od_engine::SequencerState>,
@@ -514,6 +529,7 @@ impl Default for Runtime {
         let (tx, rx) = unbounded();
         let (rendered_tx, rendered_rx) = unbounded();
         let (render_tx, render_rx) = unbounded();
+        let (loop_tx, loop_rx) = unbounded();
         let (send_tx, send_rx) = unbounded();
         Self {
             note: None,
@@ -569,6 +585,10 @@ impl Default for Runtime {
             kit_banked: false,
             kit_due: None,
             drum_undo: None,
+            looping: None,
+            loop_tx,
+            loop_rx,
+            loop_made: None,
             #[cfg(test)]
             staged_seq: None,
         }
@@ -683,6 +703,10 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_save_pattern(move || w(&save_pattern));
     let w = with.clone();
     g.on_send_drums(move || w(&send_drums));
+    let w = with.clone();
+    g.on_render_loop(move || w(&render_loop));
+    let w = with.clone();
+    g.on_step_loop_bars(move |d| w(&|a| step_loop_bars(a, d)));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -1033,6 +1057,7 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
     }
     poll_rendered(app);
     poll_render(app);
+    poll_loop(app);
     poll_send(app);
     tick_play(app, state);
     let ended = {
@@ -2077,12 +2102,21 @@ pub(crate) struct Drums {
     pub selected: usize,
     pub banked: Vec<DrumPad>,
     pub pattern: Option<usize>,
+    /// [81] The bars RENDER LOOP writes.
+    pub loop_bars: u32,
 }
 
 impl Default for Drums {
     fn default() -> Self {
         let kit = &drums::KITS[0];
-        Self { kit: kit.id.into(), pads: kit.pads.iter().map(|&p| p.into()).collect(), selected: 0, banked: Vec::new(), pattern: None }
+        Self {
+            kit: kit.id.into(),
+            pads: kit.pads.iter().map(|&p| p.into()).collect(),
+            selected: 0,
+            banked: Vec::new(),
+            pattern: None,
+            loop_bars: create_render::LOOP_BARS_DEFAULT,
+        }
     }
 }
 
@@ -2109,6 +2143,7 @@ impl Drums {
             self.banked.clear();
         }
         self.pattern = self.pattern.filter(|&p| p < crate::sampler::SEQUENCE_PADS);
+        self.loop_bars = create_render::loop_bars(self.loop_bars, false);
     }
 
     pub fn params(&self, i: usize) -> drums::Params {
@@ -2480,6 +2515,18 @@ fn show_machine(app: &App, state: Option<&EngineState>) {
     let hits: u32 = patterns.iter().map(|m| m.count_ones()).sum();
     let saved = state.is_some_and(|s| pattern_saved(app, s));
     let master = app.create.borrow().master_bpm;
+    let sig = loop_sig(app, &patterns, seq.swing, seq.half_time);
+    let check = create_render::check(sig.pads.len());
+    let loop_state = {
+        let rt = app.create.borrow();
+        if rt.looping.is_some() {
+            "rendering"
+        } else if rt.loop_made.as_ref().is_some_and(|(s, _)| *s == sig) {
+            "ready"
+        } else {
+            ""
+        }
+    };
     let machine = crate::CreateDrumMachine {
         playing: seq.playing,
         waiting: seq.playing && seq.waiting,
@@ -2494,6 +2541,12 @@ fn show_machine(app: &App, state: Option<&EngineState>) {
         bpm: crate::format::bpm(Some(master), 1).into(),
         saved,
         sent: saved && app.sampler.bank.get() == od_engine::DRUMS_BANK,
+        loop_bars: sig.bars as i32,
+        loop_state: loop_state.into(),
+        can_loop: !sig.pads.is_empty() && check.fits && sig.bpm > 0.0,
+        cues: check.cues as i32,
+        fits: if sig.pads.is_empty() { "" } else if check.fits { "fits" } else { "over" }.into(),
+        check: stick_line(check).into(),
     };
     if g.get_drum_machine() != machine {
         g.set_drum_machine(machine);
@@ -2686,6 +2739,171 @@ pub(crate) fn send_drums(app: &App) {
         app.status(od_i18n::trf("Sent to Perform: pattern {} on the PATTERN pads, the kit on the sampler's DRUMS bank", &[&(i + 1)]));
         show_machine(app, engine::snapshot(app).as_ref());
     }
+}
+
+// ── [81] RENDER LOOP ────────────────────────────────────────────────────
+
+/// How one pad sounds in a loop: the kit's settings (a kit pad) or the
+/// sample's file, and how its slot plays it.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct PadSound {
+    kit: Option<drums::Params>,
+    path: Option<PathBuf>,
+    mode: String,
+    gain: f32,
+    sync_bpm: Option<f64>,
+}
+
+/// What a loop is made of: once any of it changes, the loop rendered is
+/// no longer READY. Each pad with steps (a sample pad only with a sample),
+/// as (pad, steps, sound).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct LoopSig {
+    bars: u32,
+    bpm: f64,
+    swing: i32,
+    half_time: bool,
+    pads: Vec<(usize, u16, PadSound)>,
+}
+
+/// The loop RENDER LOOP would write now, from the pads' `patterns` and the
+/// sequencer's swing and half time.
+fn loop_sig(app: &App, patterns: &[u16; DRUM_PADS], swing: f32, half_time: bool) -> LoopSig {
+    let rt = app.create.borrow();
+    let slots = app.sampler.slots.borrow();
+    let pads = (0..DRUM_PADS)
+        .filter(|&p| patterns[p] != 0)
+        .filter_map(|p| {
+            let slot = slots[drum_slot(p)].as_ref();
+            let sound = if p < drums::PADS {
+                // The kit as set, played as its slot plays it (a one-shot at
+                // unity gain until changed in Perform's sampler).
+                PadSound {
+                    kit: Some(rt.drums.params(p)),
+                    path: None,
+                    mode: slot.map_or_else(|| "oneshot".into(), |i| i.mode.clone()),
+                    gain: slot.map_or(1.0, |i| i.gain),
+                    sync_bpm: None,
+                }
+            } else {
+                let i = slot?;
+                PadSound { kit: None, path: Some(i.path.clone()), mode: i.mode.clone(), gain: i.gain, sync_bpm: i.bpm.filter(|_| i.sync) }
+            };
+            Some((p, patterns[p], sound))
+        })
+        .collect();
+    LoopSig {
+        bars: create_render::loop_bars(rt.drums.loop_bars, half_time),
+        bpm: create_render::tempo(rt.master_bpm),
+        swing: swing_percent(swing),
+        half_time,
+        pads,
+    }
+}
+
+/// The name of drum pad `p` as its cue carries it: the kit's sound, or the
+/// sample's name.
+fn drum_pad_name(app: &App, p: usize) -> String {
+    if p < drums::PADS {
+        od_i18n::tr(DRUM_NAMES[p]).to_string()
+    } else {
+        app.sampler.slots.borrow()[drum_slot(p)].as_ref().map(|i| i.name.clone()).filter(|n| !n.trim().is_empty()).unwrap_or_else(|| od_i18n::trf("PAD {}", &[&(p + 1)]))
+    }
+}
+
+/// RENDER LOOP: the pattern as a new loop file of the bars chosen at the
+/// master tempo, on a worker thread, added to the library. READY again
+/// only says where the file is.
+pub(crate) fn render_loop(app: &App) {
+    if app.guard_read_only() || app.create.borrow().looping.is_some() {
+        return;
+    }
+    let state = engine::snapshot(app);
+    let patterns = drum_patterns(app, state.as_ref());
+    let (swing, half_time) = crate::sampler::feel(app);
+    let sig = loop_sig(app, &patterns, swing, half_time);
+    if let Some((_, made)) = app.create.borrow().loop_made.as_ref().filter(|(s, _)| *s == sig) {
+        app.status(od_i18n::trf("Already rendered: {} is in the library", &[&made.title]));
+        return;
+    }
+    if sig.pads.is_empty() {
+        app.status(od_i18n::tr("Nothing to render: set steps on the pads first").to_string());
+        return;
+    }
+    let rate = app.engine.borrow().sample_rate();
+    let sounds = sig
+        .pads
+        .iter()
+        .map(|(p, mask, sound)| create_render::LoopSound {
+            name: drum_pad_name(app, *p),
+            source: match &sound.path {
+                Some(path) => create_render::Source::File(path.clone()),
+                None => create_render::Source::Ready(drum_sound(app, *p)),
+            },
+            pattern: *mask,
+            mode: crate::sampler::mode_from_name(&sound.mode),
+            gain: sound.gain,
+            sync_bpm: sound.sync_bpm,
+        })
+        .collect();
+    let job = create_render::LoopJob {
+        library: app.state.borrow().config.library_path.clone(),
+        sounds,
+        bars: sig.bars,
+        bpm: sig.bpm,
+        rate,
+        swing: sig.swing as f32 / 100.0,
+        half_time: sig.half_time,
+    };
+    let deck = state.as_ref().is_some_and(|s| master_beat(s).is_some());
+    let tx = app.create.borrow().loop_tx.clone();
+    std::thread::spawn(move || {
+        let _ = tx.send(create_render::write_loop(&job).map_err(|e| e.to_string()));
+    });
+    app.create.borrow_mut().looping = Some((sig, deck));
+    app.status(od_i18n::tr("Rendering the pattern into a new loop file…").to_string());
+    show_machine(app, state.as_ref());
+}
+
+/// A loop came back: the track is in the library (READY), or why not. The
+/// status line says which tempo it took.
+fn poll_loop(app: &App) {
+    let Ok(result) = app.create.borrow().loop_rx.try_recv() else { return };
+    let run = app.create.borrow_mut().looping.take();
+    match (result, run) {
+        (Ok(made), Some((sig, deck))) => {
+            let bpm = crate::format::bpm(Some(sig.bpm), 1);
+            app.status(if deck {
+                od_i18n::trf("Rendered as a new track at the master tempo, {} BPM: {}. The file is in the library's created folder", &[&bpm, &made.title])
+            } else {
+                od_i18n::trf("Rendered as a new track at {} BPM, the master clock's tempo, as no deck plays: {}. The file is in the library's created folder", &[&bpm, &made.title])
+            });
+            app.create.borrow_mut().loop_made = Some((sig, made));
+            let _ = app.analysis.wake.send(());
+            app.refresh_library();
+        }
+        (Ok(_), None) => {}
+        (Err(e), _) => app.status(od_i18n::trf("The render failed: {}", &[&e])),
+    }
+    show_machine(app, engine::snapshot(app).as_ref());
+}
+
+/// The bars of the loop, a step of 1, 2, 4 and 8 up or down (two at least
+/// at half time); kept.
+pub(crate) fn step_loop_bars(app: &App, by: i32) {
+    let (_, half_time) = crate::sampler::feel(app);
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.drums.loop_bars = create_render::step_loop_bars(rt.drums.loop_bars, by.signum(), half_time);
+    }
+    save_drums(app);
+    show_machine(app, engine::snapshot(app).as_ref());
+}
+
+/// The loop RENDER LOOP made last (tests).
+#[cfg(test)]
+pub(crate) fn loop_made(app: &App) -> Option<create_render::Made> {
+    app.create.borrow().loop_made.as_ref().map(|(_, m)| m.clone())
 }
 
 /// The kit and the pads' settings (tests).
@@ -3204,15 +3422,7 @@ fn show_result(app: &App) {
     let view = {
         let rt = app.create.borrow();
         let check = create_render::check(sig.plan.cues());
-        let line = if sig.plan.notes.is_empty() {
-            String::new()
-        } else if !check.fits {
-            od_i18n::trf("Stick formats: {} of {} hot cues. Too many: render fewer notes", &[&check.cues, &create_render::CUE_LIMIT])
-        } else if check.later > 0 {
-            od_i18n::trf("Stick formats: {} of {} hot cues · fits, {} on later pad banks", &[&check.cues, &create_render::CUE_LIMIT, &check.later])
-        } else {
-            od_i18n::trf("Stick formats: {} of {} hot cues · fits", &[&check.cues, &create_render::CUE_LIMIT])
-        };
+        let line = if sig.plan.notes.is_empty() { String::new() } else { stick_line(check) };
         let state = if rt.rendering.is_some() {
             "rendering"
         } else if rt.made.as_ref().is_some_and(|(s, _)| *s == sig) {
@@ -3247,6 +3457,19 @@ fn show_result(app: &App) {
     let g = app.ui.global::<crate::Create>();
     if g.get_render() != view {
         g.set_render(view);
+    }
+}
+
+/// What the stick formats take of a file with the cues of `check`.
+fn stick_line(check: create_render::Check) -> String {
+    if check.cues == 0 {
+        String::new()
+    } else if !check.fits {
+        od_i18n::trf("Stick formats: {} of {} hot cues. Too many: render fewer notes", &[&check.cues, &create_render::CUE_LIMIT])
+    } else if check.later > 0 {
+        od_i18n::trf("Stick formats: {} of {} hot cues · fits, {} on later pad banks", &[&check.cues, &create_render::CUE_LIMIT, &check.later])
+    } else {
+        od_i18n::trf("Stick formats: {} of {} hot cues · fits", &[&check.cues, &create_render::CUE_LIMIT])
     }
 }
 
@@ -3831,7 +4054,10 @@ pub(crate) fn stage_created(app: &App, track: TrackId) {
 /// snare, hats, deck 1's track on pad 9) with 20 % swing and plays it,
 /// `create-drums-rec` arms REC, `create-drums-half` turns HALF TIME on,
 /// `create-drums-perform` sends it to Perform and shows deck 1's PATTERN
-/// pads playing it and deck 2's sampler pads on the DRUMS bank.
+/// pads playing it and deck 2's sampler pads on the DRUMS bank; [81]
+/// `create-drums-loop` renders it with RENDER LOOP (READY), and
+/// `create-drums-loop-prepare` then opens the loop in Prepare's player
+/// with its cues listed.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -3903,7 +4129,7 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
             set_drum(&a, "pitch", 5.0);
         }
         // [80] A pattern on the sampler's sequencer, playing.
-        if parts.iter().any(|p| p == "create-drums-steps" || p == "create-drums-perform") {
+        if parts.iter().any(|p| p == "create-drums-steps" || p == "create-drums-perform" || p.starts_with("create-drums-loop")) {
             demo_pattern(&a);
             select_drum(&a, 0);
             set_drum_swing(&a, 20);
@@ -3942,6 +4168,29 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
                 if let Some(st) = engine::snapshot(&a) {
                     crate::sampler::pattern_recall(&a, 0, &st);
                 }
+            }
+            if parts.iter().any(|p| p.starts_with("create-drums-loop")) {
+                render_loop(&a);
+            }
+            if parts.iter().any(|p| p == "create-drums-loop-prepare") {
+                let weak = std::rc::Rc::downgrade(&a);
+                slint::Timer::single_shot(Duration::from_secs(4), move || {
+                    let Some(a) = weak.upgrade() else { return };
+                    let Some(id) = a.create.borrow().loop_made.as_ref().map(|(_, m)| m.track) else { return };
+                    {
+                        let mut st = a.state.borrow_mut();
+                        st.player.current = Some(id);
+                        st.player.cursor = 0.0;
+                    }
+                    a.ui.invoke_set_mode("prepare".into());
+                    crate::shell::set_prepare_layout(&a, "player");
+                    let tabs = a.ui.global::<crate::PlayerTabs>();
+                    tabs.set_tool("cue".into());
+                    tabs.set_list("all".into());
+                    a.ui.invoke_select_section("library".into());
+                    a.ui.invoke_select_node(crate::browser::CREATED);
+                    crate::player::refresh_detail(&a);
+                });
             }
             if parts.iter().any(|p| p == "create-send-perform") {
                 a.ui.invoke_set_mode("perform".into());

@@ -576,6 +576,12 @@ const DE: &[(&str, &str)] = &[
     ("Every PATTERN pad holds a pattern: clear one in Perform first (right click)", "Jedes PATTERN-Pad hält ein Pattern: Leere zuerst eines in Perform (Rechtsklick)"),
     ("Saved as pattern {}: pad S{} of the PATTERN pad mode in Perform plays it", "Als Pattern {} gesichert: Pad S{} des Pad-Modus PATTERN in Perform spielt es"),
     ("Sent to Perform: pattern {} on the PATTERN pads, the kit on the sampler's DRUMS bank", "An Perform gesendet: Pattern {} auf den PATTERN-Pads, das Kit in der Sampler-Bank DRUMS"),
+    // [81] CREATE: RENDER LOOP.
+    ("PAD {}", "PAD {}"),
+    ("Nothing to render: set steps on the pads first", "Nichts zu rendern: Setze zuerst Schritte auf den Pads"),
+    ("Rendering the pattern into a new loop file…", "Das Pattern wird in eine neue Loop-Datei gerendert …"),
+    ("Rendered as a new track at the master tempo, {} BPM: {}. The file is in the library's created folder", "Als neuer Track im Master-Tempo gerendert, {} BPM: {}. Die Datei liegt im Ordner created der Bibliothek"),
+    ("Rendered as a new track at {} BPM, the master clock's tempo, as no deck plays: {}. The file is in the library's created folder", "Als neuer Track mit {} BPM gerendert, dem Tempo der Master-Uhr, da kein Deck spielt: {}. Die Datei liegt im Ordner created der Bibliothek"),
     // [78] CREATE: what fits, in plain words.
     ("{} major", "{}-Dur"),
     ("{} minor", "{}-Moll"),

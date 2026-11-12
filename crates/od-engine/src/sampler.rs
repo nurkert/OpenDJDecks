@@ -6,6 +6,11 @@
 //! (beat 0 unless PLAY set one, e.g. the next bar), may wait for it, swings
 //! the off-beat steps and runs at half time (eighth-note steps).
 //!
+//! [81] [`render_loop`] plays a pattern offline as a loop of whole bars,
+//! on the same step times ([`step_beat`]) and with the same voices (one per
+//! slot, a new hit fading the last one out over [`FADE`] frames) as the
+//! sequencer here.
+//!
 //! Blocks are rendered in segments between events (sequencer steps,
 //! quantize boundaries), so triggers are sample accurate. Restarting or
 //! stopping a voice crossfades it out over [`FADE`] frames (no clicks).
@@ -73,6 +78,18 @@ pub struct Sampler {
     audition_at: Option<(usize, f64, f64)>,
     /// The beat the sounding note stops on.
     audition_until: Option<f64>,
+}
+
+/// Sequencer steps per beat: 16ths, or 8ths at half time.
+fn steps_per_beat(half_time: bool) -> f64 {
+    if half_time { 2.0 } else { 4.0 }
+}
+
+/// The beat step `n` sounds on, counted from step 0 on beat 0: an off-beat
+/// step `swing` (share of a step) late.
+fn step_beat(n: f64, swing: f64, half_time: bool) -> f64 {
+    let late = if (n as i64).rem_euclid(2) == 1 { swing } else { 0.0 };
+    (n + late) / steps_per_beat(half_time)
 }
 
 #[inline]
@@ -226,14 +243,13 @@ impl Sampler {
 
     /// Sequencer steps per beat: 16ths, or 8ths at half time.
     fn rate(&self) -> f64 {
-        if self.half { 2.0 } else { 4.0 }
+        steps_per_beat(self.half)
     }
 
     /// The beat step `n` (counted from the origin) sounds on: an off-beat
     /// step `swing` of a step late.
     fn step_beat(&self, n: f64) -> f64 {
-        let late = if (n as i64).rem_euclid(2) == 1 { self.swing } else { 0.0 };
-        self.origin + (n + late) / self.rate()
+        self.origin + step_beat(n, self.swing, self.half)
     }
 
     /// The first step sounding at or after beat `b`.
@@ -616,5 +632,106 @@ impl Sampler {
                 pattern: s.pattern,
             }
         })
+    }
+}
+
+// ── [81] A pattern as a loop ────────────────────────────────────────────
+
+/// [81] One pad of a pattern for [`render_loop`]: its sound at the
+/// render's rate, its 16 steps, and how its slot plays it (mode, gain, and
+/// speed: the render's tempo over the sample's while the slot syncs, else 1).
+#[derive(Clone)]
+pub struct LoopPad {
+    pub sample: Arc<SampleData>,
+    pub pattern: u16,
+    pub mode: SampleMode,
+    pub gain: f32,
+    pub speed: f64,
+}
+
+/// [81] A pattern rendered as a loop: interleaved stereo, and the frame
+/// where each pad first sounds (none: it has no steps).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Loop {
+    pub audio: Vec<f32>,
+    pub first: Vec<Option<usize>>,
+}
+
+/// [81] Frames of `bars` bars of four beats at `bpm` and `rate`, rounded:
+/// the exact length of a loop.
+pub fn loop_frames(bars: u32, bpm: f64, rate: u32) -> usize {
+    if !(bpm > 0.0) {
+        return 0;
+    }
+    (f64::from(bars) * 4.0 * 60.0 / bpm * f64::from(rate)).round() as usize
+}
+
+/// [81] Plays the pattern of `pads` offline for exactly `bars` bars at
+/// `bpm` (see [`loop_frames`]), step 0 on frame 0, with `swing` and
+/// `half_time` as the sequencer plays them; the 16 steps repeat until the
+/// bars are full.
+///
+/// The file loops seamlessly: it is the sequencer's sound once it has run
+/// for a while. Each pad is one voice, as its slot is: a hit sounds until
+/// its sample ends (one-shot) or on (loop, gate) until the pad's next hit,
+/// which fades it out over [`FADE`] frames as a retrigger does. The next
+/// hit after the last one is the first one of the next time round, and
+/// whatever sounds past the end is added at the start: a tail ringing over
+/// the loop's end wraps to its beginning.
+///
+/// Pure arithmetic in a fixed order, so the same pattern gives the same
+/// samples every time.
+pub fn render_loop(pads: &[LoopPad], bars: u32, bpm: f64, rate: u32, swing: f32, half_time: bool) -> Loop {
+    let frames = loop_frames(bars, bpm, rate);
+    let mut audio = vec![0.0f32; frames * 2];
+    let mut first = vec![None; pads.len()];
+    if frames == 0 {
+        return Loop { audio, first };
+    }
+    let swing = if swing.is_finite() { f64::from(swing.clamp(0.0, SEQ_SWING_MAX)) } else { 0.0 };
+    let steps = (f64::from(bars) * 4.0 * steps_per_beat(half_time)) as u64;
+    let per_beat = 60.0 * f64::from(rate) / bpm;
+    for (p, pad) in pads.iter().enumerate() {
+        if pad.pattern == 0 || pad.sample.frames() == 0 {
+            continue;
+        }
+        // The first frame at or after each step's beat, as a block of the
+        // sequencer starts it.
+        let hits: Vec<usize> = (0..steps)
+            .filter(|n| pad.pattern & (1 << (n % SEQ_STEPS as u64)) != 0)
+            .map(|n| (step_beat(n as f64, swing, half_time) * per_beat - 1e-6).ceil().max(0.0) as usize)
+            .filter(|&f| f < frames)
+            .collect();
+        first[p] = hits.first().copied();
+        for (k, &at) in hits.iter().enumerate() {
+            let next = hits.get(k + 1).copied().unwrap_or(hits[0] + frames);
+            loop_voice(&mut audio, frames, pad, at, next.saturating_sub(at));
+        }
+    }
+    Loop { audio, first }
+}
+
+/// One hit of `pad` from frame `at`: `room` frames until the pad's next
+/// hit, then [`FADE`] frames fading out; added to `out` modulo `frames`.
+fn loop_voice(out: &mut [f32], frames: usize, pad: &LoopPad, at: usize, room: usize) {
+    let d = &pad.sample.samples;
+    let total = pad.sample.frames() as f64;
+    let looping = matches!(pad.mode, SampleMode::Loop | SampleMode::Gate);
+    let fade = FADE as usize;
+    let mut pos = 0.0f64;
+    for i in 0..room + fade {
+        if pos >= total {
+            if looping {
+                pos -= total * (pos / total).floor();
+            } else {
+                break;
+            }
+        }
+        let w = if i < room { 1.0 } else { (fade - (i - room)) as f32 / FADE as f32 };
+        let v = frame_at(d, pos);
+        let k = (at + i) % frames * 2;
+        out[k] += v[0] * pad.gain * w;
+        out[k + 1] += v[1] * pad.gain * w;
+        pos += pad.speed;
     }
 }
