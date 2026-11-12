@@ -24,6 +24,10 @@
 // notes and chords against the deck playing now, a chord's notes on the
 // keyboard strip, both decks' keys and the neighbours of the key, a check
 // of the strip's melody, and reasons in plain words while HINTS is on.
+// [82] The first screen is never empty: SOURCE holds the built-in TONE
+// until a note is picked from a track, an empty strip (also in THEORY)
+// offers STARTERS and empty drum steps the drum STARTERS; each goes only
+// onto an empty strip or empty steps, and reads STARTER while unchanged.
 
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
@@ -50,7 +54,7 @@ export struct CreateDeck {
 // [71] The note picked in SOURCE (create.rs).
 export struct CreateNote {
     picked: bool,
-    // "deck1", "deck2" or "player".
+    // "deck1", "deck2", "player" or [82] "tone" (the built-in tone).
     source: string,
     // "Title · Artist".
     title: string,
@@ -66,7 +70,8 @@ export struct CreateNote {
     // The pitch in use: "A3" and "+12 ct" ("—" and "" = none).
     note: string,
     cents: string,
-    // "detected", "unsure", "set" (by you) or "measuring".
+    // "detected", "unsure", "set" (by you), "measuring" or [82] "builtin"
+    // (the built-in tone: its pitch is known).
     state: string,
     // Why there is no pitch: "short", "silent", "none" ("" = there is one).
     why: string,
@@ -101,7 +106,8 @@ export struct CreateKey {
     // keys are shown as note names anyway).
     wheel: string,
     // Where it comes from: "deck" (the other deck, followed), "next" (the
-    // next track) or "set" (by you); the deck it follows (0 = none).
+    // next track), "set" (by you) or [82] "starter" (set by a starter
+    // melody while no key was chosen); the deck it follows (0 = none).
     from: string,
     deck: int,
     // The scale's notes and its chords: "A B C D E F G", "Am Bdim C …".
@@ -441,6 +447,18 @@ export global Create {
     // [81] RENDER LOOP, and its bars a step up or down.
     callback render-loop();
     callback step-loop-bars(int);
+    // [82] The starter on the strip and on the drum steps while unchanged
+    // ("" = none), and putting one there (only onto an empty strip or empty
+    // steps).
+    in property <string> starter;
+    in property <string> drum-starter;
+    callback use-starter(string);
+    callback use-drum-starter(string);
+    // A starter's name in capitals.
+    public pure function starter-name(id: string) -> string {
+        return id == "rise" ? @tr("RISE") : id == "call" ? @tr("CALL") : id == "steps" ? @tr("STEPS") : id == "pulse" ? @tr("PULSE")
+            : id == "straight" ? @tr("STRAIGHT") : id == "broken" ? @tr("BROKEN") : id == "spacious" ? @tr("SPACIOUS") : "";
+    }
     // A pad's name: the kit's sound, a sample's name, else its number.
     public pure function drum-pad-name(i: int) -> string {
         return i < 8 ? root.drum-name(i) : i < root.drum-pads.length && root.drum-pads[i].name != "" ? root.drum-pads[i].name : @tr("PAD {}", i + 1);
@@ -644,12 +662,13 @@ component KeyStrip inherits Rectangle {
 // source filled. A press picks a new note there, where it stands now.
 component SourceChooser inherits HorizontalLayout {
     alignment: center; spacing: Theme.key-gap;
-    for s in [{ id: "deck1", label: @tr("DECK 1"), deck: 1 }, { id: "deck2", label: @tr("DECK 2"), deck: 2 }, { id: "player", label: @tr("PLAYER"), deck: 0 }]: PlateButton {
+    for s in [{ id: "deck1", label: @tr("DECK 1"), deck: 1 }, { id: "deck2", label: @tr("DECK 2"), deck: 2 }, { id: "player", label: @tr("PLAYER"), deck: 0 }, { id: "tone", label: @tr("TONE"), deck: -1 }]: PlateButton {
         accessible-id: "create.source." + s.id; accessible-role: button;
         compact: true; label: s.label;
         selected: Create.note.picked && Create.note.source == s.id;
-        enabled: s.deck == 0 ? Create.player-ready : Create.decks.length >= s.deck && Create.decks[s.deck - 1].loaded;
-        tooltip: s.deck == 0 ? @tr("Pick a note from the track in the player, at its position")
+        enabled: s.deck < 0 ? true : s.deck == 0 ? Create.player-ready : Create.decks.length >= s.deck && Create.decks[s.deck - 1].loaded;
+        tooltip: s.deck < 0 ? @tr("The built-in tone: a plain A3 to start from, without a track")
+            : s.deck == 0 ? @tr("Pick a note from the track in the player, at its position")
             : @tr("Pick a note from the track on deck {}, where it plays now", s.deck);
         clicked => { Create.pick(s.id); }
     }
@@ -783,11 +802,12 @@ component NoteWave inherits Rectangle {
 }
 
 // How sure the pitch is, in words: DETECTED (raised ash), UNSURE (sodium:
-// it needs you) or SET BY YOU (bone, like a selection).
+// it needs you) or SET BY YOU (bone, like a selection); [82] BUILT-IN
+// (raised ash) for the built-in tone, whose pitch is known.
 component NoteBadge inherits Rectangle {
     property <string> state: Create.note.state;
     property <string> word: root.state == "set" ? @tr("SET BY YOU") : root.state == "detected" ? @tr("DETECTED")
-        : root.state == "measuring" ? @tr("MEASURING") : @tr("UNSURE");
+        : root.state == "builtin" ? @tr("BUILT-IN") : root.state == "measuring" ? @tr("MEASURING") : @tr("UNSURE");
     accessible-role: text;
     accessible-id: "create.source.badge";
     accessible-label: @tr("How sure the pitch is");
@@ -995,6 +1015,7 @@ component PadsLine inherits HorizontalLayout {
 component KeyFrom inherits Text {
     accessible-role: text; accessible-id: "create.notes.key-from"; accessible-value: self.text;
     text: Create.key.from == "set" ? @tr("SET BY YOU") : Create.key.from == "next" ? @tr("NEXT TRACK")
+        : Create.key.from == "starter" ? @tr("STARTER KEY")
         : Create.key.chosen ? @tr("FROM DECK {}", Create.key.deck)
         : Create.key.deck > 0 ? @tr("NO KEY ON DECK {}", Create.key.deck) : @tr("NO KEY ON A DECK");
     font-family: Theme.family; font-size: Theme.label; letter-spacing: Theme.tracking-index;
@@ -1441,7 +1462,8 @@ component ArrangeHead inherits HorizontalLayout {
         accessible-role: text; accessible-id: "create.arrange.count"; accessible-value: self.text;
         horizontal-stretch: 1; min-width: 0px;
         text: Create.notes == 0 ? @tr("EMPTY")
-            : (Create.notes == 1 ? @tr("1 NOTE") : @tr("{} NOTES", Create.notes)) + " · " + (Create.bars == 1 ? @tr("1 BAR") : @tr("{} BARS", Create.bars));
+            : (Create.starter != "" ? @tr("STARTER {}", Create.starter-name(Create.starter)) + " · " : "")
+            + (Create.notes == 1 ? @tr("1 NOTE") : @tr("{} NOTES", Create.notes)) + " · " + (Create.bars == 1 ? @tr("1 BAR") : @tr("{} BARS", Create.bars));
         color: Create.notes > 0 ? Theme.bone-2 : Theme.bone-3;
         vertical-alignment: center; overflow: elide;
     }
@@ -1606,11 +1628,72 @@ component ArrangeLine inherits HorizontalLayout {
     }
 }
 
+// [82] One starter key: its name; the tooltip says what it plays.
+component StarterKey inherits PlateButton {
+    in property <string> id;
+    in property <string> where;
+    in property <string> tip;
+    in property <bool> drums;
+    accessible-id: "create." + root.where + ".starter." + root.id; accessible-role: button;
+    horizontal-stretch: 0;
+    compact: true; label: Create.starter-name(root.id);
+    tooltip: root.tip + ". " + (root.drums ? @tr("A starter pattern for the kit pads while no pad has steps: change it freely")
+        : @tr("A starter melody for the empty strip, in the key in use: change it freely"));
+    clicked => { if (root.drums) { Create.use-drum-starter(root.id); } else { Create.use-starter(root.id); } }
+}
+
+// [82] STARTERS: starter melodies onto the empty strip, in the key in use
+// (or their own, from the source note), or ([`drums`]) starter patterns
+// onto the kit pads. Shown only while the strip or the steps are empty, so
+// a starter never replaces what you made. `where` names the view it is in.
+// Where one row is too narrow the keys go under the word, two by two.
+// Follows the width through a plain property, so it does not feed back
+// into the layout.
+component StarterRow inherits VerticalLayout {
+    in property <string> where;
+    in property <bool> drums;
+    // The keys in two halves: one row, or a row each under the word.
+    property <[{ id: string, tip: string }]> first: root.drums ? [
+        { id: "straight", tip: @tr("Straight: the kick on every beat, the snare on two and four, hats between") },
+        { id: "broken", tip: @tr("Broken: the kick off the beat, hats on every eighth") },
+    ] : [
+        { id: "rise", tip: @tr("Rise: up a broken chord and back") },
+        { id: "call", tip: @tr("Call: a short phrase and its answer") },
+    ];
+    property <[{ id: string, tip: string }]> second: root.drums ? [
+        { id: "spacious", tip: @tr("Spacious: kick and snare far apart, an open hat before the bar") },
+    ] : [
+        { id: "steps", tip: @tr("Steps: three notes up the scale, each time a step higher") },
+        { id: "pulse", tip: @tr("Pulse: a repeated root with its octave and fifth") },
+    ];
+    property <bool> narrow;
+    init => { self.narrow = self.width < 440px; }
+    changed width => { self.narrow = self.width < 440px; }
+    spacing: Theme.key-gap;
+    if !root.narrow: HorizontalLayout {
+        spacing: Theme.key-gap;
+        Caps { text: @tr("STARTERS"); vertical-alignment: center; }
+        for s in root.first: StarterKey { id: s.id; tip: s.tip; where: root.where; drums: root.drums; }
+        for s in root.second: StarterKey { id: s.id; tip: s.tip; where: root.where; drums: root.drums; }
+        Rectangle { horizontal-stretch: 1; }
+    }
+    if root.narrow: Caps { text: @tr("STARTERS"); }
+    if root.narrow: HorizontalLayout {
+        spacing: Theme.key-gap; alignment: start;
+        for s in root.first: StarterKey { id: s.id; tip: s.tip; where: root.where; drums: root.drums; }
+    }
+    if root.narrow: HorizontalLayout {
+        spacing: Theme.key-gap; alignment: start;
+        for s in root.second: StarterKey { id: s.id; tip: s.tip; where: root.where; drums: root.drums; }
+    }
+}
+
 // [74] ARRANGE under the pads.
 component Arrange inherits VerticalLayout {
     spacing: Theme.s1;
     ArrangeHead { }
     ArrangeSteps { }
+    if Create.notes == 0: StarterRow { where: "arrange"; }
     ArrangeEdit { }
     ArrangeLine { }
 }
@@ -2039,6 +2122,7 @@ component DrumsView inherits HorizontalLayout {
             title: @tr("STEPS ({})", Create.drum-pad-name(Create.drum-selected));
             DrumHead { }
             DrumSteps { }
+            if Create.drum-machine.hits == 0: StarterRow { where: "steps"; drums: true; }
         }
     }
 }
@@ -2199,6 +2283,7 @@ component TheoryView inherits HorizontalLayout {
             Rectangle { horizontal-stretch: 1; }
         }
         CheckLine { }
+        if Create.notes == 0: StarterRow { where: "theory"; }
     }
     Zone {
         accessible-id: "create.theory.why";
@@ -2239,10 +2324,10 @@ component ResultBar inherits Rectangle {
     background: Theme.ground-band;
     border-radius: Theme.r-panel;
     property <string> summary: Create.view == "drums"
-        ? (Create.drum-machine.hits > 0 ? root.drums
+        ? (Create.drum-machine.hits > 0 ? (Create.drum-starter != "" ? @tr("STARTER {}", Create.starter-name(Create.drum-starter)) + " · " : "") + root.drums
             : @tr("No pattern yet. It shows here with its bars and tempo, ready to send to Perform or render as a loop."))
         : Create.view == "theory" ? @tr("THEORY shows what fits. A melody typed here lands on MELODY's strip.")
-        : Create.render.notes > 0 ? root.melody
+        : Create.render.notes > 0 ? (Create.starter != "" ? @tr("STARTER {}", Create.starter-name(Create.starter)) + " · " : "") + root.melody
         : @tr("No melody yet. It shows here with its notes, bars, tempo and cues, and whether the stick formats take it.");
     // [74] [75] What the file holds: "8 notes · 4 bars · 124.0 BPM · 8 cues".
     property <string> melody: (Create.render.notes == 1 ? @tr("1 note") : @tr("{} notes", Create.render.notes))

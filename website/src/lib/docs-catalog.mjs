@@ -48,6 +48,7 @@ export const guideGroups = [
     title: { en: 'Performing', de: 'Auflegen' },
     slugs: ['perform-basics', 'mixer', 'stems', 'effects', 'sampler', 'mix-preview', 'club-mode', 'recording', 'set-safety', 'long-run-results'],
   },
+  { key: 'create', title: { en: 'Making sounds', de: 'Klänge machen' }, slugs: ['create'] },
   { key: 'setup', title: { en: 'Setup', de: 'Einrichten' }, slugs: ['controllers', 'light-show', 'raspberry-pi', 'preferences'] },
   { key: 'more', title: { en: 'More', de: 'Mehr' }, slugs: ['mcp', 'troubleshooting'] },
 ];

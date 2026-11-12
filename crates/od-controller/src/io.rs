@@ -63,6 +63,17 @@ pub enum ControllerEvent {
         action: ControlAction,
         timestamp_us: u64,
     },
+    /// A note played on a MIDI input that no mapping knows (roadmap [82]:
+    /// a keyboard for CREATE). Such ports are open only while
+    /// [`ControllerManager::set_open_unmapped`] is on; a port with a
+    /// mapping (a DJ controller, or one given to the lights) never sends
+    /// this, its notes are its mapping's.
+    Note {
+        port: String,
+        note: u8,
+        velocity: u8,
+        timestamp_us: u64,
+    },
     Error(String),
 }
 
@@ -284,7 +295,12 @@ fn run(
                         });
                     }
                 }
-                None => monitor.record(&raw.port, Direction::In, &raw.bytes, Vec::new()),
+                None => {
+                    monitor.record(&raw.port, Direction::In, &raw.bytes, Vec::new());
+                    if let Some(e) = unmapped_note(&raw.port, raw.stamp, &raw.bytes) {
+                        let _ = events.send(e);
+                    }
+                }
             }
         }
 
@@ -335,6 +351,21 @@ fn run(
         }
 
         std::thread::sleep(config.tick);
+    }
+}
+
+/// What a message from a port without a mapping sends on: a note-on as
+/// [`ControllerEvent::Note`] (a note-on at velocity 0 is a note-off, and
+/// like every other message it sends nothing).
+pub fn unmapped_note(port: &str, stamp: u64, bytes: &[u8]) -> Option<ControllerEvent> {
+    match crate::midi::MidiMessage::parse(bytes)? {
+        crate::midi::MidiMessage::NoteOn { note, velocity, .. } => Some(ControllerEvent::Note {
+            port: port.to_string(),
+            note,
+            velocity,
+            timestamp_us: stamp,
+        }),
+        _ => None,
     }
 }
 
@@ -475,4 +506,22 @@ pub(crate) fn connect_output_named(name: &str, as_name: &str) -> Result<MidiOutp
         .find(|p| mo.port_name(p).ok().as_deref() == Some(name))
         .ok_or("port vanished")?;
     mo.connect(&port, as_name).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// [82] A keyboard without a mapping: its note-ons go on as notes, on
+    /// any channel; note-offs (also a note-on at velocity 0), controllers,
+    /// clock and broken messages send nothing.
+    #[test]
+    fn an_unmapped_port_sends_its_note_ons_only() {
+        let n = unmapped_note("Keys", 7, &[0x90, 60, 100]);
+        assert_eq!(n, Some(ControllerEvent::Note { port: "Keys".into(), note: 60, velocity: 100, timestamp_us: 7 }));
+        assert!(matches!(unmapped_note("Keys", 0, &[0x9F, 36, 1]), Some(ControllerEvent::Note { note: 36, .. })), "channel 16");
+        for bytes in [&[0x90u8, 60, 0][..], &[0x80, 60, 64], &[0xB0, 7, 100], &[0xF8], &[0xF0, 1, 0xF7], &[0x90, 60], &[]] {
+            assert_eq!(unmapped_note("Keys", 0, bytes), None, "{bytes:?}");
+        }
+    }
 }

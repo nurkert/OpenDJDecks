@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 333 features; 327 in scope: 327 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 335 features; 329 in scope: 329 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -399,6 +399,8 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Every control reached by Tab, with the focus ring; arrows turn knobs and move faders | DONE | `crates/od-ui/ui/controls.slint::KeyFocus`; (Roadmap [25]) | 1 | P2 |
 | Readable screen reader names and descriptions (tooltip with shortcut); test ids apart | DONE | `crates/od-ui/src/a11y.rs::name_for`; Not tried with a real screen reader.; (Roadmap [25]) | 2 | P2 |
 | No state carried by hue alone: line forms, words and initials beside every colour | DONE | `crates/od-ui/src/render.rs::phrase_short`; (Roadmap [25]) | 1 | P3 |
+| CREATE is never empty: the built-in tone as a source note, starter melodies and drum starters | DONE | `crates/od-ui/src/create.rs::tone_note`, `crates/od-ui/src/create.rs::use_starter`, `crates/od-ui/src/create.rs::use_drum_starter`; Until a note is picked SOURCE holds the built-in TONE (a synthesised A3, BUILT-IN); STARTERS put one of four starter melodies (scale steps written for the app) onto an empty strip, in the key in use or their own (STARTER KEY), and three drum starters onto the kit pads while no pad has steps; a starter never replaces what is there and reads STARTER until changed; (Roadmap [82]) | 5 | P2 |
+| A MIDI keyboard plays CREATE: notes into MELODY's strip, drum pads by note | DONE | `crates/od-controller/src/io.rs::unmapped_note`, `crates/od-ui/src/create.rs::midi_note`; Any MIDI input without a controller mapping (never a mapped DJ controller or the lighting controller), only while CREATE is shown: in MELODY and THEORY a note-on plays that note from the source note and goes into the strip while REC is armed; in DRUMS notes 36 to 51 play pads 1 to 16. Velocity is not used. Tested with simulated note events, not with a hardware keyboard; (Roadmap [82]) | 3 | P3 |
 
 ## 13. DMX lighting
 
@@ -442,13 +444,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 327 |
+| DONE | 329 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **333** |
+| **Total** | **335** |
 
 ## P1 gaps and implementation notes
 

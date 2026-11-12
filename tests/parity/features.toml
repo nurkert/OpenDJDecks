@@ -4924,6 +4924,40 @@ spec = "Roadmap [77]"
 note = "`deck.pad_mode` with `mode = \"melody\"`; a pad is the sampler's own trigger, so QUANT applies; tested against the mapping, not on hardware"
 
 [[feature]]
+id = "create-starters"
+area = "shell"
+name = "CREATE is never empty: the built-in tone as a source note, starter melodies and drum starters"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-ui::create::tests::the_built_in_tone_is_an_a3",
+  "od-ui::create::tests::starters_are_scale_steps_in_the_key",
+  "od-ui::create::tests::drum_starters_and_midi_pads",
+  "od-ui::ui_tests::create::the_first_screen_plays_the_built_in_tone_and_offers_starters",
+  "od-ui::ui_tests::create::drum_starters_fill_empty_steps_only",
+]
+evidence = ["crates/od-ui/src/create.rs::tone_note", "crates/od-ui/src/create.rs::use_starter", "crates/od-ui/src/create.rs::use_drum_starter"]
+spec = "Roadmap [82]"
+note = "Until a note is picked SOURCE holds the built-in TONE (a synthesised A3, BUILT-IN); STARTERS put one of four starter melodies (scale steps written for the app) onto an empty strip, in the key in use or their own (STARTER KEY), and three drum starters onto the kit pads while no pad has steps; a starter never replaces what is there and reads STARTER until changed"
+
+[[feature]]
+id = "create-midi-keyboard"
+area = "shell"
+name = "A MIDI keyboard plays CREATE: notes into MELODY's strip, drum pads by note"
+scope = "in"
+status = "done"
+prio = "P3"
+tests = [
+  "od-controller::io::tests::an_unmapped_port_sends_its_note_ons_only",
+  "od-ui::controller::tests::unmapped_inputs_open_in_create_only",
+  "od-ui::ui_tests::create::a_midi_keyboard_plays_and_records_in_create_only",
+]
+evidence = ["crates/od-controller/src/io.rs::unmapped_note", "crates/od-ui/src/create.rs::midi_note"]
+spec = "Roadmap [82]"
+note = "Any MIDI input without a controller mapping (never a mapped DJ controller or the lighting controller), only while CREATE is shown: in MELODY and THEORY a note-on plays that note from the source note and goes into the strip while REC is armed; in DRUMS notes 36 to 51 play pads 1 to 16. Velocity is not used. Tested with simulated note events, not with a hardware keyboard"
+
+[[feature]]
 id = "cues-edit-perform"
 area = "cues"
 name = "Hot cue edits from Perform: rename, recolour, move to (or store at) the playhead, delete"

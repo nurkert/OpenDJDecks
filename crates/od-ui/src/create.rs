@@ -108,6 +108,19 @@
 //! named after its pad ([`create_render::write_loop`]). The bars are kept
 //! in `create.drums`; RENDER LOOP reads READY until the pattern, a sound,
 //! the bars or the tempo change.
+//!
+//! [82] The first screen is never empty. Without a picked note SOURCE holds
+//! the built-in TONE (a synthesised A3, [`tone_note`]), so the pads and the
+//! keyboard play from the start without a track. An empty strip offers the
+//! STARTERS (four short melodies of scale steps, [`STARTERS`], in the key in
+//! use, else in their own key from the source note, which then reads
+//! STARTER KEY), and empty steps the drum STARTERS ([`DRUM_STARTERS`]) on
+//! the kit pads. A starter only ever goes onto an empty strip or empty
+//! steps, so it never replaces what you made. A MIDI keyboard (any input
+//! without a controller mapping, while CREATE is shown; see
+//! [`crate::controller::wants_unmapped`]) plays notes as the keyboard strip
+//! does, into the strip while REC is armed ([`midi_note`]); in DRUMS notes
+//! 36 to 51 play pads 1 to 16.
 
 use crate::app::App;
 use crate::arrange::{self, Grid, Melody, STEPS};
@@ -123,7 +136,7 @@ use serde::{Deserialize, Serialize};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
@@ -495,6 +508,11 @@ pub(crate) struct Runtime {
     /// The sequencer as staged for the audits (tests).
     #[cfg(test)]
     staged_seq: Option<od_engine::SequencerState>,
+    /// [82] The starter put on the strip, as it was put there (shown as a
+    /// starter while the strip is still that), and the MIDI keyboard heard
+    /// last.
+    starter: Option<(&'static str, Melody)>,
+    midi_port: Option<String>,
 }
 
 /// REC armed: the beat the grid counts from (once a note came in on it),
@@ -591,6 +609,8 @@ impl Default for Runtime {
             loop_made: None,
             #[cfg(test)]
             staged_seq: None,
+            starter: None,
+            midi_port: None,
         }
     }
 }
@@ -707,6 +727,10 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_render_loop(move || w(&render_loop));
     let w = with.clone();
     g.on_step_loop_bars(move |d| w(&|a| step_loop_bars(a, d)));
+    let w = with.clone();
+    g.on_use_starter(move |id| w(&|a| use_starter(a, &id)));
+    let w = with.clone();
+    g.on_use_drum_starter(move |id| w(&|a| use_drum_starter(a, &id)));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -719,14 +743,19 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
 /// Reads the stored note back.
 fn restore(app: &App) {
     let stored = app.state.borrow().lib.meta(META_NOTE).ok().flatten();
-    let note = stored.and_then(|j| serde_json::from_str::<PickedNote>(&j).ok()).filter(|n| n.track.is_some());
+    // [82] A note of a track, or the built-in tone; nothing picked yet (or
+    // its track gone): the tone, so the pads play from the start.
+    let note = stored
+        .and_then(|j| serde_json::from_str::<PickedNote>(&j).ok())
+        .filter(|n| n.track.is_some() || n.source == TONE)
+        .unwrap_or_else(tone_note);
     let choice = app.state.borrow().lib.meta(META_KEY).ok().flatten().and_then(|j| serde_json::from_str::<KeyChoice>(&j).ok());
     let melody = app.state.borrow().lib.meta(META_MELODY).ok().flatten().and_then(|j| serde_json::from_str::<Melody>(&j).ok());
     let render = app.state.borrow().lib.meta(META_RENDER).ok().flatten().and_then(|j| serde_json::from_str::<create_render::Choice>(&j).ok());
     let kit = app.state.borrow().lib.meta(META_DRUMS).ok().flatten().and_then(|j| serde_json::from_str::<Drums>(&j).ok());
     {
         let mut rt = app.create.borrow_mut();
-        rt.note = note;
+        rt.note = Some(note);
         rt.choice = choice.unwrap_or_default();
         rt.melody = melody.unwrap_or_default();
         rt.melody.normalize();
@@ -752,6 +781,10 @@ fn save(app: &App) {
 /// Picks a new note from `source` at where it stands: the deck's playhead,
 /// or the player's cursor in its track. A new pick drops a correction.
 pub(crate) fn pick(app: &App, source: &str) {
+    if source == TONE {
+        pick_tone(app);
+        return;
+    }
     let found = match source {
         "deck1" | "deck2" => {
             let deck = usize::from(source == "deck2");
@@ -894,6 +927,9 @@ fn audio(app: &App) -> Option<Audio> {
     let (id, path) = {
         let rt = app.create.borrow();
         let n = rt.note.as_ref()?;
+        if n.source == TONE {
+            return Some(Audio::File { samples: tone_samples(), rate: TONE_RATE });
+        }
         (n.track?, n.path.clone())
     };
     let mut rt = app.create.borrow_mut();
@@ -1085,7 +1121,10 @@ fn render_wave(app: &App) {
     let scale = app.ui.window().scale_factor();
     let image = {
         let st = app.state.borrow();
-        let a = n.track.and_then(|id| st.src().analysis(id).ok().or_else(|| st.lib.analysis(id).ok())).unwrap_or_default();
+        let mut a = n.track.and_then(|id| st.src().analysis(id).ok().or_else(|| st.lib.analysis(id).ok())).unwrap_or_default();
+        if n.source == TONE {
+            a.waveform = tone_waveform().clone();
+        }
         let w = louder(&a.waveform, n.view, SPAN);
         crate::render::detail_tile(&w, &a.beatgrid, &[], n.view, SPAN, (WAVE_W * scale) as u32, (WAVE_H * scale) as u32)
     };
@@ -1135,7 +1174,14 @@ pub(crate) fn note_view(n: &PickedNote, measuring: bool) -> crate::CreateNote {
         start: crate::format::cue_time(n.start).into(),
         note: name.into(),
         cents: cents.into(),
-        state: if measuring && n.set.is_none() { "measuring" } else { n.badge() }.into(),
+        state: if n.set.is_none() && n.source == TONE {
+            "builtin"
+        } else if measuring && n.set.is_none() {
+            "measuring"
+        } else {
+            n.badge()
+        }
+        .into(),
         why: n.why.clone().into(),
         ..Default::default()
     }
@@ -1170,7 +1216,8 @@ pub(crate) const OCTAVES: i32 = 2;
 /// fades) and the engine rate it is played at.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct RenderKey {
-    pub track: TrackId,
+    /// The track (none for the built-in tone).
+    pub track: Option<TrackId>,
     pub start: f64,
     pub end: f64,
     pub pitch: NotePitch,
@@ -1179,7 +1226,10 @@ pub(crate) struct RenderKey {
 
 impl RenderKey {
     fn of(n: &PickedNote, rate: u32) -> Option<Self> {
-        Some(Self { track: n.track?, start: n.start, end: n.end, pitch: n.pitch()?, rate })
+        if n.track.is_none() && n.source != TONE {
+            return None;
+        }
+        Some(Self { track: n.track, start: n.start, end: n.end, pitch: n.pitch()?, rate })
     }
 }
 
@@ -2551,6 +2601,11 @@ fn show_machine(app: &App, state: Option<&EngineState>) {
     if g.get_drum_machine() != machine {
         g.set_drum_machine(machine);
     }
+    // [82] A drum starter while the steps are still as it put them.
+    let starter = drum_starter_of(&patterns).unwrap_or("");
+    if g.get_drum_starter() != starter {
+        g.set_drum_starter(starter.into());
+    }
 }
 
 /// Every frame while DRUMS is shown: the kit goes into the DRUMS bank once
@@ -3018,12 +3073,15 @@ pub(crate) fn step_rows(
 }
 
 fn show_arrange(app: &App) {
-    let (rows, m, text, rt_sel, rec, rec_grid, playing, undo, bad, long) = {
+    let (rows, m, text, rt_sel, rec, rec_grid, playing, undo, bad, long, starter) = {
         let rt = app.create.borrow();
+        // [82] A starter while the strip's notes are still as it put them
+        // (the grid and LOOP are yours to change).
+        let starter = rt.starter.as_ref().filter(|(_, m)| m.steps == rt.melody.steps).map_or("", |(id, _)| *id);
         let cursor = rt.rec.filter(|_| !rt.rec_grid).map(|r| r.cursor).filter(|&c| c < STEPS);
         let playing = rt.play.and_then(|p| p.step);
         let rows = step_rows(&rt.melody, rt.choice.key, rt.selected, playing, cursor);
-        (rows, rt.melody.clone(), rt.melody.text(rt.choice.key), rt.selected, rt.rec, rt.rec_grid, rt.play.is_some(), rt.undo.is_some(), rt.typed_bad.join(", "), rt.typed_long)
+        (rows, rt.melody.clone(), rt.melody.text(rt.choice.key), rt.selected, rt.rec, rt.rec_grid, rt.play.is_some(), rt.undo.is_some(), rt.typed_bad.join(", "), rt.typed_long, starter)
     };
     let g = app.ui.global::<crate::Create>();
     set_rows(g.get_steps(), rows, |r| g.set_steps(r));
@@ -3040,6 +3098,7 @@ fn show_arrange(app: &App) {
     g.set_can_undo(undo);
     g.set_typed_bad(bad.into());
     g.set_typed_long(long);
+    g.set_starter(starter.into());
     show_result(app);
     show_theory(app, engine::snapshot(app).as_ref());
 }
@@ -3556,7 +3615,12 @@ pub(crate) fn render(app: &App) {
     let Some(n) = note(app) else { return };
     let (title, artist) = {
         let st = app.state.borrow();
-        n.track.and_then(|id| st.src().track(id).ok()).map(|t| (t.tags.title, t.tags.artist)).unwrap_or_default()
+        match n.track.and_then(|id| st.src().track(id).ok()) {
+            Some(t) => (t.tags.title, t.tags.artist),
+            // [82] The built-in tone names its file.
+            None if n.source == TONE => ("Tone".to_string(), String::new()),
+            None => Default::default(),
+        }
     };
     let (text, tx) = {
         let rt = app.create.borrow();
@@ -4029,6 +4093,281 @@ pub(crate) fn stage_created(app: &App, track: TrackId) {
     app.ui.invoke_select_node(crate::browser::CREATED);
 }
 
+// ── [82] The built-in tone, starters, MIDI notes ────────────────────────
+
+/// SOURCE's built-in tone, the source with no track.
+pub(crate) const TONE: &str = "tone";
+/// Its pitch (A3, 220 Hz), length and rate.
+const TONE_MIDI: i32 = 57;
+const TONE_SECONDS: f64 = 1.2;
+const TONE_RATE: u32 = 48_000;
+/// IN to OUT of the tone as picked: its body, with the fade at OUT.
+const TONE_NOTE: f64 = 0.9;
+
+/// The built-in tone: a soft plucked A3 of four harmonics (the higher
+/// ones dying away sooner), mono at [`TONE_RATE`]. Made once.
+pub(crate) fn tone_samples() -> Arc<[f32]> {
+    static TONE_AUDIO: OnceLock<Arc<[f32]>> = OnceLock::new();
+    TONE_AUDIO
+        .get_or_init(|| {
+            let rate = f64::from(TONE_RATE);
+            let n = (TONE_SECONDS * rate) as usize;
+            let hz = NotePitch::new(TONE_MIDI, 0).hz();
+            let parts = [1.0, 0.45, 0.22, 0.1];
+            let fade = (0.05 * rate) as usize;
+            let mut x: Vec<f32> = (0..n)
+                .map(|i| {
+                    let t = i as f64 / rate;
+                    let attack = (t / 0.005).min(1.0);
+                    let body: f64 = parts
+                        .iter()
+                        .enumerate()
+                        .map(|(k, a)| {
+                            let k = k as f64 + 1.0;
+                            a * (-t * (k - 1.0) * 1.5).exp() * (std::f64::consts::TAU * k * hz * t).sin()
+                        })
+                        .sum();
+                    let tail = if i + fade > n { (n - i) as f64 / fade as f64 } else { 1.0 };
+                    (attack * (-t / 0.45).exp() * body * tail) as f32
+                })
+                .collect();
+            let peak = x.iter().fold(0.0f32, |m, v| m.max(v.abs())).max(1e-6);
+            for v in &mut x {
+                *v *= 0.7 / peak;
+            }
+            x.into()
+        })
+        .clone()
+}
+
+/// The tone's waveform, for SOURCE's well.
+fn tone_waveform() -> &'static od_core::Waveform {
+    static WAVE: OnceLock<od_core::Waveform> = OnceLock::new();
+    WAVE.get_or_init(|| od_analysis::waveform::compute_waveform(&tone_samples(), TONE_RATE))
+}
+
+/// The built-in tone as a picked note: its pitch is known, IN to OUT
+/// its body. Needs no track, so MELODY plays before anything is loaded.
+pub(crate) fn tone_note() -> PickedNote {
+    PickedNote {
+        source: TONE.into(),
+        track: None,
+        title: od_i18n::tr("Built-in tone").to_string(),
+        path: PathBuf::new(),
+        duration: TONE_SECONDS,
+        start: 0.0,
+        end: TONE_NOTE,
+        view: TONE_NOTE / 2.0 - SPAN / 2.0,
+        detected: Some(NotePitch::new(TONE_MIDI, 0)),
+        confidence: 1.0,
+        why: String::new(),
+        set: None,
+    }
+}
+
+/// TONE: the built-in tone becomes the source note.
+fn pick_tone(app: &App) {
+    stop_hearing(app);
+    app.create.borrow_mut().note = Some(tone_note());
+    render_wave(app);
+    show(app);
+    save(app);
+    prepare_pads(app);
+    follow_deck(app, engine::snapshot(app).as_ref());
+}
+
+/// A starter melody: its name, the scale it is written in (used when no
+/// key is chosen) and its steps as scale degrees from the root (1 the
+/// root, 8 its octave), "-" a rest and "_" the note before held. Written
+/// for the app: short exercises of steps and broken chords, none taken
+/// from a song.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Starter {
+    pub id: &'static str,
+    pub scale: Scale,
+    pub degrees: &'static str,
+}
+
+/// The starter melodies, as STARTERS offers them.
+pub(crate) const STARTERS: [Starter; 4] = [
+    // Up a broken chord and back.
+    Starter { id: "rise", scale: Scale::Minor, degrees: "1 3 5 8 7 5 3 5 1 3 5 8 9 8 7 5" },
+    // A short phrase and its answer.
+    Starter { id: "call", scale: Scale::Minor, degrees: "5 _ 5 4 3 _ - 1 2 _ 3 _ 1 _ _ _" },
+    // Three notes up the scale, each time a step higher.
+    Starter { id: "steps", scale: Scale::Major, degrees: "1 2 3 _ 2 3 4 _ 3 4 5 _ 4 3 2 _" },
+    // A repeated root with the octave and fifth.
+    Starter { id: "pulse", scale: Scale::Minor, degrees: "1 - 1 8 - 1 5 - 1 - 1 8 - 7 5 3" },
+];
+
+/// A starter's name as the app shows it.
+pub(crate) fn starter_name(id: &str) -> String {
+    match id {
+        "rise" => od_i18n::tr("RISE"),
+        "call" => od_i18n::tr("CALL"),
+        "steps" => od_i18n::tr("STEPS"),
+        "pulse" => od_i18n::tr("PULSE"),
+        "straight" => od_i18n::tr("STRAIGHT"),
+        "broken" => od_i18n::tr("BROKEN"),
+        "spacious" => od_i18n::tr("SPACIOUS"),
+        _ => id.into(),
+    }
+    .to_string()
+}
+
+/// The steps of `starter` in `key`, degree 1 on `root` (MIDI).
+pub(crate) fn starter_steps(starter: &Starter, key: ScaleKey, root: i32) -> Vec<Option<arrange::Step>> {
+    let notes = key.notes_from(root, 15);
+    let mut steps: Vec<Option<arrange::Step>> = Vec::new();
+    let mut last: Option<usize> = None;
+    for tok in starter.degrees.split_whitespace() {
+        match tok {
+            "_" => {
+                if let Some(s) = last.and_then(|i| steps[i].as_mut()) {
+                    s.len += 1;
+                }
+                steps.push(None);
+            }
+            "-" => {
+                steps.push(None);
+                last = None;
+            }
+            d => {
+                let note = d.parse::<usize>().ok().and_then(|d| notes.get(d.saturating_sub(1)).copied());
+                last = note.map(|_| steps.len());
+                steps.push(note.map(arrange::Step::new));
+            }
+        }
+    }
+    steps.resize(STEPS, None);
+    steps
+}
+
+/// STARTERS: starter `id` onto the empty strip, in the key in use (else in
+/// its own scale from the source note, which becomes the key: STARTER
+/// KEY), from the root at or below the source note so it lies over the
+/// pads. A strip with notes is never replaced.
+pub(crate) fn use_starter(app: &App, id: &str) {
+    let Some(starter) = STARTERS.iter().find(|s| s.id == id) else { return };
+    if app.create.borrow().melody.notes() > 0 {
+        app.status(od_i18n::tr("The strip holds your notes: CLEAR it first to try a starter").to_string());
+        return;
+    }
+    let (key, new_key) = {
+        let mut rt = app.create.borrow_mut();
+        let source = rt.note.as_ref().and_then(PickedNote::pitch).map_or(TONE_MIDI, NotePitch::midi);
+        let (key, new_key) = match rt.choice.key {
+            Some(k) => (k, false),
+            None => (ScaleKey::new(source, starter.scale), true),
+        };
+        if new_key {
+            rt.choice.key = Some(key);
+            rt.choice.from = "starter".into();
+            rt.choice.deck = 0;
+        }
+        rt.melody.replace(starter_steps(starter, key, key.root_at_or_below(source)));
+        rt.starter = Some((starter.id, rt.melody.clone()));
+        rt.selected = None;
+        rt.typed_bad.clear();
+        rt.typed_long = false;
+        (key, new_key)
+    };
+    restart_play(app);
+    edited(app, false);
+    if new_key {
+        key_changed(app);
+    }
+    app.status(od_i18n::trf("Starter {} on the strip in {}: change it freely, CLEAR empties it", &[&starter_name(starter.id), &key_words(key)]));
+}
+
+/// A drum starter: its name and its steps on the kit pads (bit `s` is step
+/// `s + 1`).
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct DrumStarter {
+    pub id: &'static str,
+    pub steps: &'static [(usize, u16)],
+}
+
+/// The drum starters, as STARTERS in DRUMS offers them.
+pub(crate) const DRUM_STARTERS: [DrumStarter; 3] = [
+    // The kick on every beat, the snare on two and four, hats between.
+    DrumStarter { id: "straight", steps: &[(0, 0x1111), (1, 0x1010), (2, 0x4444)] },
+    // The kick off the beat after two, hats on every eighth.
+    DrumStarter { id: "broken", steps: &[(0, 0x0441), (1, 0x1010), (2, 0x5555)] },
+    // Kick and snare far apart, an open hat before the bar.
+    DrumStarter { id: "spacious", steps: &[(0, 0x0401), (1, 0x0100), (2, 0x1555), (3, 0x4000)] },
+];
+
+/// The drum starter `patterns` are exactly (none once a step changed).
+pub(crate) fn drum_starter_of(patterns: &[u16; DRUM_PADS]) -> Option<&'static str> {
+    DRUM_STARTERS
+        .iter()
+        .find(|d| (0..DRUM_PADS).all(|p| patterns[p] == d.steps.iter().find(|(q, _)| *q == p).map_or(0, |(_, m)| *m)))
+        .map(|d| d.id)
+}
+
+/// STARTERS in DRUMS: drum starter `id` onto the kit pads while no pad has
+/// steps; pads with steps are never replaced.
+pub(crate) fn use_drum_starter(app: &App, id: &str) {
+    let Some(starter) = DRUM_STARTERS.iter().find(|s| s.id == id) else { return };
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        return;
+    }
+    if drum_patterns(app, engine::snapshot(app).as_ref()).iter().any(|m| *m != 0) {
+        app.status(od_i18n::tr("The pads hold your steps: CLEAR them first to try a starter").to_string());
+        return;
+    }
+    bank_kit(app);
+    for &(pad, mask) in starter.steps {
+        engine::send(app, Command::Sampler(SamplerCommand::SeqPattern { slot: drum_slot(pad), mask }));
+    }
+    crate::sampler::save_soon(app);
+    app.create.borrow_mut().drum_undo = None;
+    app.status(od_i18n::trf("Starter {} on the kit pads: change it freely, CLEAR empties it", &[&starter_name(starter.id)]));
+}
+
+/// [82] The MIDI note that plays drum pad 1; the next 15 play pads 2 to 16.
+pub(crate) const MIDI_FIRST_PAD: u8 = 36;
+/// MIDI notes MELODY and THEORY take (C1 to C7 as the app names them).
+const MIDI_NOTES: std::ops::RangeInclusive<u8> = 24..=96;
+
+/// The drum pad MIDI note `note` plays (36 to 51: pads 1 to 16).
+pub(crate) fn midi_pad(note: u8) -> Option<usize> {
+    note.checked_sub(MIDI_FIRST_PAD).map(usize::from).filter(|&p| p < DRUM_PADS)
+}
+
+/// A note from a MIDI keyboard (an input without a controller mapping):
+/// only while CREATE is shown. In MELODY and THEORY it plays as a key of
+/// the strip does (and goes into the strip while REC is armed), in DRUMS
+/// notes 36 to 51 play pads 1 to 16. The velocity is not used: a note
+/// plays at the level of a pad.
+pub(crate) fn midi_note(app: &App, port: &str, note: u8) {
+    if app.ui.get_mode() != "create" {
+        return;
+    }
+    let first = app.create.borrow_mut().midi_port.replace(port.to_string()).as_deref() != Some(port);
+    if first {
+        app.status(od_i18n::trf("MIDI keyboard {} plays in CREATE", &[&port]));
+    }
+    if app.ui.global::<crate::Create>().get_view() == "drums" {
+        if let Some(p) = midi_pad(note) {
+            play_drum(app, p);
+        }
+        return;
+    }
+    if !MIDI_NOTES.contains(&note) {
+        return;
+    }
+    if app.create.borrow().note.as_ref().and_then(PickedNote::pitch).is_none() {
+        app.status(od_i18n::tr("Pick a note in SOURCE first").to_string());
+        return;
+    }
+    let target = i32::from(note);
+    play_target(app, target, None);
+    record(app, target);
+}
+
 /// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF`, comma separated),
 /// on the demo library with the decks loaded by `OPENDJDECKS_AUTOLOAD`:
 /// `create-note` opens MELODY and picks a note from deck 1;
@@ -4057,7 +4396,11 @@ pub(crate) fn stage_created(app: &App, track: TrackId) {
 /// pads playing it and deck 2's sampler pads on the DRUMS bank; [81]
 /// `create-drums-loop` renders it with RENDER LOOP (READY), and
 /// `create-drums-loop-prepare` then opens the loop in Prepare's player
-/// with its cues listed.
+/// with its cues listed. [82] `create-fresh` picks nothing (the first
+/// open: the built-in tone or what is stored), `create-tone` picks the
+/// built-in tone instead of deck 1, `create-starter` puts the starter RISE
+/// on the strip and `create-starter-play` plays it in a loop;
+/// `create-starter-drums` opens DRUMS with the starter STRAIGHT playing.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -4069,7 +4412,25 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         let Some(a) = weak.upgrade() else { return };
         a.ui.invoke_set_mode("create".into());
         set_view(&a, "melody");
-        pick(&a, "deck1");
+        if parts.iter().any(|p| p == "create-tone") {
+            pick(&a, TONE);
+        } else if !parts.iter().any(|p| p == "create-fresh") {
+            pick(&a, "deck1");
+        }
+        if parts.iter().any(|p| p.starts_with("create-starter") && p != "create-starter-drums") {
+            use_starter(&a, "rise");
+            select_step(&a, 2);
+        }
+        if parts.iter().any(|p| p == "create-starter-play") {
+            set_loop(&a, true);
+            toggle_play(&a);
+        }
+        if parts.iter().any(|p| p == "create-starter-drums") {
+            set_view(&a, "drums");
+            use_drum_starter(&a, "straight");
+            select_drum(&a, 0);
+            toggle_drum_play(&a);
+        }
         if parts.iter().any(|p| p == "create-note-set") {
             correct(&a, |p| p.transpose(1));
         }
@@ -4457,7 +4818,7 @@ mod tests {
 
     #[test]
     fn the_cache_keeps_one_buffer_per_target_until_the_note_changes() {
-        let key = RenderKey { track: TrackId(1), start: 1.0, end: 1.5, pitch: NotePitch::new(57, 0), rate: 48_000 };
+        let key = RenderKey { track: Some(TrackId(1)), start: 1.0, end: 1.5, pitch: NotePitch::new(57, 0), rate: 48_000 };
         let mut c = NoteCache::default();
         assert!(c.select(&key), "a first key");
         assert!(!c.select(&key), "the same key keeps what is there");
@@ -4472,6 +4833,67 @@ mod tests {
         assert!(!c.put(&other, 60, s.clone(), ShiftMethod::Stretch));
         assert!(c.select(&other));
         assert!(c.get(58).is_none() && c.missing(&[57]) == [57]);
+    }
+
+    /// [82] The built-in tone: an A3 the pitch detector reads as A3, short
+    /// and quiet enough, with IN to OUT on its body.
+    #[test]
+    fn the_built_in_tone_is_an_a3() {
+        let x = tone_samples();
+        assert_eq!(x.len(), (TONE_SECONDS * f64::from(TONE_RATE)) as usize);
+        let peak = x.iter().fold(0.0f32, |m, v| m.max(v.abs()));
+        assert!((peak - 0.7).abs() < 1e-3, "{peak}");
+        assert!(x[0].abs() < 1e-3 && x[x.len() - 1].abs() < 1e-3, "starts and ends in silence");
+        let n = tone_note();
+        let body = &x[..(n.end * f64::from(TONE_RATE)) as usize];
+        let hz = pitch::detect_pitch(body, TONE_RATE).hz.expect("a pitch");
+        let cents = 1200.0 * (hz / NotePitch::new(TONE_MIDI, 0).hz()).log2();
+        assert!(cents.abs() < 5.0, "{hz:.2} Hz");
+        assert_eq!((n.source.as_str(), n.track, n.pitch()), (TONE, None, Some(NotePitch::new(57, 0))));
+        assert_eq!(note_view(&n, false).state, "builtin");
+        assert!(RenderKey::of(&n, 48_000).is_some(), "it renders without a track");
+        assert!(RenderKey::of(&PickedNote { source: "deck1".into(), ..n }, 48_000).is_none(), "a track's note needs its track");
+    }
+
+    /// [82] A starter's degrees in a key: holds lengthen the note before,
+    /// rests stay empty, 16 steps; in another key the same shape.
+    #[test]
+    fn starters_are_scale_steps_in_the_key() {
+        let am = ScaleKey::new(9, Scale::Minor);
+        let rise = starter_steps(&STARTERS[0], am, 57);
+        let notes: Vec<i32> = rise.iter().flatten().map(|s| s.note).collect();
+        assert_eq!(&notes[..8], [57, 60, 64, 69, 67, 64, 60, 64]);
+        assert_eq!(rise.len(), STEPS);
+        let call = starter_steps(&STARTERS[1], am, 57);
+        assert_eq!(call[0].map(|s| (s.note, s.len)), Some((64, 2)), "5 held");
+        assert_eq!((call[1], call[6]), (None, None), "the hold and the rest");
+        for s in &STARTERS {
+            let m = Melody { steps: starter_steps(s, am, 57), ..Melody::default() };
+            assert_eq!(m.used(), 16, "{}: two bars of eighths", s.id);
+            assert!(am.check(&m.steps.iter().flatten().map(|x| x.note).collect::<Vec<_>>()).fits(), "{}: in the key", s.id);
+            assert!(!starter_name(s.id).is_empty());
+        }
+        let c = starter_steps(&STARTERS[0], ScaleKey::new(0, Scale::Major), 48);
+        assert_eq!(c.iter().flatten().map(|s| s.note).take(4).collect::<Vec<_>>(), [48, 52, 55, 60]);
+    }
+
+    /// [82] A drum starter reads as one only while the steps are exactly it;
+    /// MIDI notes 36 to 51 are drum pads 1 to 16.
+    #[test]
+    fn drum_starters_and_midi_pads() {
+        let mut p = [0u16; DRUM_PADS];
+        assert_eq!(drum_starter_of(&p), None, "nothing set");
+        for d in &DRUM_STARTERS {
+            p = [0; DRUM_PADS];
+            for &(pad, m) in d.steps {
+                p[pad] = m;
+            }
+            assert_eq!(drum_starter_of(&p), Some(d.id));
+            assert!(d.steps.iter().all(|(pad, _)| *pad < drums::PADS), "{}: kit pads only", d.id);
+        }
+        p[9] = 1;
+        assert_eq!(drum_starter_of(&p), None, "a step more: yours");
+        assert_eq!((midi_pad(36), midi_pad(51), midi_pad(35), midi_pad(52), midi_pad(0)), (Some(0), Some(15), None, None, None));
     }
 
     #[test]

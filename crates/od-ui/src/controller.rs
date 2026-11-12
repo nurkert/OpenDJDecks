@@ -137,15 +137,26 @@ pub(crate) fn light_all(app: &App, device: &str, on: bool) {
 }
 
 /// MIDI learn, the monitor and the guided setup need the controllers no
-/// mapping knows: their ports are open while one of them runs.
+/// mapping knows: their ports are open while one of them runs. [82] So
+/// does CREATE, for a MIDI keyboard: while it is shown.
 pub(crate) fn refresh_unmapped(app: &App) {
-    let want = {
-        let p = app.prefs.borrow();
-        p.midi.learning || p.midi.monitoring
-    } || app.controller_setup.borrow().active();
+    let want = wants_unmapped(
+        {
+            let p = app.prefs.borrow();
+            p.midi.learning || p.midi.monitoring
+        },
+        app.controller_setup.borrow().active(),
+        app.ui.get_mode().as_str(),
+    );
     if let Some(m) = app.controller.borrow().manager.as_ref() {
         m.set_open_unmapped(want);
     }
+}
+
+/// Whether the MIDI inputs no mapping knows are open: while MIDI learn or
+/// the monitor (`learning`) or the guided setup runs, or CREATE is the mode.
+pub(crate) fn wants_unmapped(learning: bool, setup: bool, mode: &str) -> bool {
+    learning || setup || mode == "create"
 }
 
 /// Mapping id of the connected controller.
@@ -193,8 +204,10 @@ pub(crate) fn monitor(app: &App) -> Option<od_controller::monitor::MidiMonitor> 
         .map(|m| m.monitor().clone())
 }
 
-/// Frame tick: controller events.
+/// Frame tick: controller events. [82] The inputs no mapping knows follow
+/// the mode (open while CREATE is shown).
 pub(crate) fn poll(app: &App) {
+    refresh_unmapped(app);
     let events: Vec<ControllerEvent> = app
         .controller
         .borrow()
@@ -203,34 +216,41 @@ pub(crate) fn poll(app: &App) {
         .map(|c| c.events().try_iter().collect())
         .unwrap_or_default();
     for e in events {
-        match e {
-            ControllerEvent::Action { action, .. } => {
-                engine::ensure_engine(app);
-                handle_action(app, action);
-            }
-            ControllerEvent::Connected { device, port, .. } if device == LIGHTING_LAYOUT => {
-                app.status(od_i18n::trf("Lighting controller connected: {}", &[&port]));
-                app.controller.borrow_mut().lighting_connected = Some(port);
-                crate::lighting::refresh(app);
-            }
-            ControllerEvent::Disconnected { device, port } if device == LIGHTING_LAYOUT => {
-                app.status(od_i18n::trf("Lighting controller disconnected: {}", &[&port]));
-                app.controller.borrow_mut().lighting_connected = None;
-                crate::lighting::refresh(app);
-            }
-            ControllerEvent::Connected { device, .. } => {
-                app.status(format!("Controller connected: {device}"));
-                if device.contains("FLX10") || device.contains("flx10") {
-                    app.decks.borrow_mut().deck_count = 4;
-                }
-                app.controller.borrow_mut().name = Some(device);
-            }
-            ControllerEvent::Disconnected { device, .. } => {
-                app.status(format!("Controller disconnected: {device}"));
-                app.controller.borrow_mut().name = None;
-            }
-            ControllerEvent::Error(e) => tracing::warn!(error = %e, "controller"),
+        handle_event(app, e);
+    }
+}
+
+/// One event of the controller layer.
+pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
+    match e {
+        ControllerEvent::Action { action, .. } => {
+            engine::ensure_engine(app);
+            handle_action(app, action);
         }
+        // [82] A note from a MIDI input without a mapping: CREATE's.
+        ControllerEvent::Note { port, note, .. } => crate::create::midi_note(app, &port, note),
+        ControllerEvent::Connected { device, port, .. } if device == LIGHTING_LAYOUT => {
+            app.status(od_i18n::trf("Lighting controller connected: {}", &[&port]));
+            app.controller.borrow_mut().lighting_connected = Some(port);
+            crate::lighting::refresh(app);
+        }
+        ControllerEvent::Disconnected { device, port } if device == LIGHTING_LAYOUT => {
+            app.status(od_i18n::trf("Lighting controller disconnected: {}", &[&port]));
+            app.controller.borrow_mut().lighting_connected = None;
+            crate::lighting::refresh(app);
+        }
+        ControllerEvent::Connected { device, .. } => {
+            app.status(format!("Controller connected: {device}"));
+            if device.contains("FLX10") || device.contains("flx10") {
+                app.decks.borrow_mut().deck_count = 4;
+            }
+            app.controller.borrow_mut().name = Some(device);
+        }
+        ControllerEvent::Disconnected { device, .. } => {
+            app.status(format!("Controller disconnected: {device}"));
+            app.controller.borrow_mut().name = None;
+        }
+        ControllerEvent::Error(e) => tracing::warn!(error = %e, "controller"),
     }
 }
 
@@ -732,6 +752,17 @@ pub(crate) fn pad_led(set: bool, lit: bool) -> LedState {
 mod tests {
     use super::*;
     use crate::pads;
+
+    /// [82] The inputs without a mapping are open for learn, the monitor and
+    /// the guided setup, and while CREATE is shown; else they stay closed.
+    #[test]
+    fn unmapped_inputs_open_in_create_only() {
+        assert!(wants_unmapped(false, false, "create"));
+        assert!(wants_unmapped(true, false, "perform") && wants_unmapped(false, true, "prepare"));
+        for mode in ["perform", "prepare", "lighting"] {
+            assert!(!wants_unmapped(false, false, mode), "{mode}");
+        }
+    }
 
     #[test]
     fn pads() {
