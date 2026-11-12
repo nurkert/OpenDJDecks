@@ -1095,6 +1095,11 @@ export component Stepper inherits Rectangle {
     callback step(int);
     // The ‹ › areas: 44 px on touch.
     property <length> aw: max(root.arrow, Theme.touch-min);
+    // Too narrow for the value between two 44 px areas: the ‹ › glyphs
+    // move to the edges and the value takes the space between them (the
+    // touch areas stay 44 px wide).
+    property <bool> tight: root.width - 2 * root.aw - 2px < value-probe.preferred-width;
+    property <length> gw: 18px;
     callback value-clicked();
     height: max(root.size, Theme.touch-min);
     min-width: probe.preferred-width + 2 * root.aw + 12px;
@@ -1102,6 +1107,7 @@ export component Stepper inherits Rectangle {
     border-radius: Theme.r-control;
     border-width: root.enabled ? 0px : Theme.hair;
     border-color: Theme.rule;
+    value-probe := Text { visible: false; text: root.value; font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px; }
     probe := Text { visible: false; text: root.template; font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px; }
     Rectangle {
         x: 0; width: root.aw;
@@ -1110,23 +1116,25 @@ export component Stepper inherits Rectangle {
         accessible-label: TooltipState.name-for(root.a11y-prev, @tr("Previous"), "") + (root.value != "" ? " (" + root.value + ")" : "");
         background: root.enabled && (prev.pressed || prev.has-hover) ? Theme.plate-raised : transparent;
         border-radius: Theme.r-control;
-        Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "prev"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
+        Glyph { x: root.tight ? (root.gw - 10px) / 2 : (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "prev"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
         prev := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.step(-1); } }
     }
     Rectangle {
-        x: root.aw + 1px; width: parent.width - 2 * root.aw - 2px;
+        x: root.tight ? root.gw : root.aw + 1px;
+        width: parent.width - 2 * (root.tight ? root.gw : root.aw + 1px);
         accessible-role: text;
         accessible-id: root.a11y-value;
         accessible-value: root.value;
         background: mid.has-hover && root.enabled ? Theme.plate-raised : transparent;
         Text {
             text: root.value;
-            font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: 1px;
+            font-family: Theme.family; font-size: root.font-size; font-weight: Theme.weight-semi; letter-spacing: root.tight ? 0.2px : 1px;
             color: !root.enabled ? Theme.bone-3 : root.lit ? Theme.bone : Theme.bone-2;
             horizontal-alignment: center; vertical-alignment: center;
             overflow: elide;
         }
-        mid := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.value-clicked(); } }
+        // The click area stays between the 44 px ‹ › areas.
+        mid := TipArea { x: root.tight ? root.aw + 1px - root.gw : 0px; width: max(0px, root.width - 2 * root.aw - 2px); tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.value-clicked(); } }
     }
     Rectangle {
         x: parent.width - root.aw; width: root.aw;
@@ -1135,7 +1143,7 @@ export component Stepper inherits Rectangle {
         accessible-label: TooltipState.name-for(root.a11y-next, @tr("Next"), "") + (root.value != "" ? " (" + root.value + ")" : "");
         background: root.enabled && (next.pressed || next.has-hover) ? Theme.plate-raised : transparent;
         border-radius: Theme.r-control;
-        Glyph { x: (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "next"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
+        Glyph { x: root.tight ? parent.width - root.gw + (root.gw - 10px) / 2 : (parent.width - 10px) / 2; y: (parent.height - 10px) / 2; kind: "next"; tone: root.enabled ? Theme.bone-2 : Theme.bone-3; }
         next := TipArea { tooltip: root.tooltip; command: root.command; enabled: root.enabled; mouse-cursor: root.enabled ? pointer : default; clicked => { root.step(1); } }
     }
     // Keyboard: the arrows step, Return opens the list.
