@@ -6,6 +6,12 @@ edition.workspace = true
 license.workspace = true
 build = "build.rs"
 
+# No doc tests (the crate has none): `cargo test` then builds only the test
+# build of this crate, never the library beside it. Each takes about 14 GB
+# to compile; both at once is more than the free CI runners have.
+[lib]
+doctest = false
+
 [features]
 default = ["separation"]
 # Stem separation on this machine (ONNX Runtime). Without it, stems that were
