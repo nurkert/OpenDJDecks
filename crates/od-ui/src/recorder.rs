@@ -47,9 +47,8 @@ pub(crate) struct RecorderState {
     candidate: Option<(Option<usize>, f64)>,
     /// Start automatically when sound starts (Preferences > Recording).
     armed: bool,
-    /// Deck that was audible last (play history), and this run's history
-    /// session ("Session 2026-11-07 21:30"), named at the first play.
-    last_played: Option<usize>,
+    /// This run's history session ("Session 2026-11-07 21:30"), named at
+    /// the first play.
     history_session: Option<String>,
     /// Silence detection while armed.
     detector: SilenceDetector,
@@ -91,7 +90,6 @@ impl Default for RecorderState {
             last_dominant: None,
             candidate: None,
             armed: false,
-            last_played: None,
             history_session: None,
             detector: SilenceDetector::new(SILENCE_DB, START_AFTER, STOP_AFTER),
             last_frame: None,
@@ -244,22 +242,25 @@ pub(crate) fn session_name(now: &str) -> String {
 }
 
 /// Play history: every track that becomes the audible one is logged in this
-/// run's session (SPEC §5.5: every performance session is a history list).
+/// run's session (SPEC §5.5: every performance session is a history list),
+/// once per load. Two decks at the same level swap the lead back and forth
+/// within a mix; a load already in the history is not entered again, and
+/// the tree (HISTORIES) is rebuilt only when an entry was added.
 fn log_play(app: &App, state: &EngineState) {
-    let dom = state.audible.dominant;
-    if dom == app.recorder.borrow().last_played {
-        return;
-    }
-    app.recorder.borrow_mut().last_played = dom;
-    let Some(d) = dom else { return };
+    let Some(d) = state.audible.dominant else { return };
     let id = {
-        let decks = app.decks.borrow();
+        let mut decks = app.decks.borrow_mut();
         if decks.source_is_stick() {
             return;
         }
-        decks.loaded(d).map(|m| m.id)
+        match decks.loaded_mut(d) {
+            Some(m) if !m.in_history => {
+                m.in_history = true;
+                m.id
+            }
+            _ => return,
+        }
     };
-    let Some(id) = id else { return };
     if app.state.borrow().read_only() {
         return;
     }

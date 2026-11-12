@@ -10,7 +10,7 @@ pub(crate) mod navigate;
 mod sources;
 pub(crate) mod sub;
 mod tracks;
-mod tree;
+pub(crate) mod tree;
 
 pub(crate) use columns::sanitize as sanitize_columns;
 pub(crate) use columns::{refresh as apply_columns, toggle as toggle_column};

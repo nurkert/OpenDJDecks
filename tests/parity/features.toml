@@ -461,9 +461,10 @@ prio = "P2"
 tests = [
   "od-ui::recorder::tests::names_and_details",
   "od-ui::ui_tests::browser::histories_list_play_sessions",
+  "od-ui::ui_tests::browser::on_air_flips_enter_each_load_once",
 ]
 evidence = ["recorder.rs::log_play", "browser/sources.rs"]
-note = "Every track that becomes the audible deck is logged in the run's session (\"Session 2026-11-07 21:30\"), recording or not; HISTORIES in the tree lists the sessions, each opens its plays in order"
+note = "Every track that becomes the audible deck is logged in the run's session (\"Session 2026-11-07 21:30\"), recording or not, once per load (the on-air deck flipping back and forth does not log it again); HISTORIES in the tree lists the sessions, each opens its plays in order"
 
 [[feature]]
 id = "browser-track-preview"

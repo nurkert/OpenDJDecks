@@ -61,6 +61,9 @@ pub(crate) struct Loaded {
     source: TrackSource,
     /// Your correction of the auto gain (dB, stored per track).
     pub gain_adjust: f32,
+    /// This load has been entered in the play history (once per load:
+    /// the on-air deck flipping back and forth does not enter it again).
+    pub in_history: bool,
     /// How sure key and grid analysis were ([`crate::key_mix`]).
     confidence: Option<od_core::AnalysisConfidence>,
 }
@@ -678,6 +681,7 @@ pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Opti
         vocals: Vec::new(),
         source: source.clone(),
         gain_adjust: crate::deck_grid::stored_gain(st.src(), track),
+        in_history: false,
         confidence: analysis.confidence,
     };
     let read_only = st.read_only();

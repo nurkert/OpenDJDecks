@@ -114,7 +114,15 @@ fn walk(
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    /// How often the tree was rebuilt on this thread (UI tests).
+    pub(crate) static REBUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 pub(crate) fn refresh_tree(app: &App) {
+    #[cfg(test)]
+    REBUILDS.with(|n| n.set(n.get() + 1));
     refresh_menu_targets(app);
     super::auto::check(app);
     super::auto::refresh_rows(app);
