@@ -155,7 +155,7 @@ A fourth tab next to PREPARE, PERFORM and LIGHTING for the things DJs today do i
 
 ### Finish
 
-- [ ] **[82]** Starter melodies and kits so the first screen is never empty, MIDI keyboard input for notes, and the CREATE guide, German text and media.
+- [x] **[82]** Starter melodies and kits so the first screen is never empty, MIDI keyboard input for notes, and the CREATE guide, German text and media.
 
 Live coding stays out until real users ask for it. Whether rendered files with many hot cues play as intended on club players stays open until it has been tried on real players.
 
