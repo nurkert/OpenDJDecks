@@ -109,7 +109,11 @@ impl StemCache {
     pub fn store(&self, hash: &ContentHash, stems: &Stems) -> Result<PathBuf, Error> {
         fs::create_dir_all(&self.dir)?;
         let path = self.path(hash);
-        let tmp = path.with_extension("odstem.part");
+        // Each write its own part file: two writers of the same track (two
+        // separations, two tests) must not rename each other's away.
+        static WRITES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let n = WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let tmp = path.with_extension(format!("{}-{n}.odstem.part", std::process::id()));
         {
             let mut f = io::BufWriter::new(fs::File::create(&tmp)?);
             f.write_all(&encode(stems)?)?;
@@ -286,6 +290,27 @@ mod tests {
         }
         cache.remove(&h).unwrap();
         assert!(!cache.exists(&h));
+    }
+
+    /// Two writers of the same track at once both succeed (each its own
+    /// part file), and the file read back is whole.
+    #[test]
+    fn same_track_stored_twice_at_once() {
+        let dir = tempfile::tempdir().unwrap();
+        let cache = std::sync::Arc::new(StemCache::new(dir.path().join("stems")));
+        let h = ContentHash("same".into());
+        let writers: Vec<_> = (0..8)
+            .map(|_| {
+                let (cache, h) = (cache.clone(), h.clone());
+                std::thread::spawn(move || cache.store(&h, &stems(20_000)).map(|_| ()))
+            })
+            .collect();
+        for w in writers {
+            w.join().unwrap().unwrap();
+        }
+        assert_eq!(cache.load(&h).unwrap().unwrap().vocals.len(), 40_000);
+        let left: Vec<_> = std::fs::read_dir(dir.path().join("stems")).unwrap().map(|e| e.unwrap().file_name()).collect();
+        assert_eq!(left.len(), 1, "no part files left: {left:?}");
     }
 
     #[test]
