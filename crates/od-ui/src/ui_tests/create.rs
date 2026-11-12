@@ -1715,6 +1715,10 @@ fn the_first_screen_plays_the_built_in_tone_and_offers_starters() {
     assert_eq!(ui.value("create.theory.result"), "All notes fit A minor");
     assert!(!ui.has("create.theory.starter.rise"));
     ui.click("create.view.melody");
+    // LOOP and the grid keep it a starter; a changed note makes it yours.
+    ui.click("create.arrange.loop");
+    assert!(ui.value("create.arrange.count").starts_with("STARTER RISE"));
+    ui.click("create.arrange.loop");
     // Changed, it is yours: STARTER goes.
     ui.click("create.arrange.step2");
     ui.click("create.arrange.delete");

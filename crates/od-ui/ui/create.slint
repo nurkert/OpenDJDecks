@@ -1635,6 +1635,7 @@ component StarterKey inherits PlateButton {
     in property <string> tip;
     in property <bool> drums;
     accessible-id: "create." + root.where + ".starter." + root.id; accessible-role: button;
+    horizontal-stretch: 0;
     compact: true; label: Create.starter-name(root.id);
     tooltip: root.tip + ". " + (root.drums ? @tr("A starter pattern for the kit pads while no pad has steps: change it freely")
         : @tr("A starter melody for the empty strip, in the key in use: change it freely"));

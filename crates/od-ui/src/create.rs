@@ -3075,8 +3075,9 @@ pub(crate) fn step_rows(
 fn show_arrange(app: &App) {
     let (rows, m, text, rt_sel, rec, rec_grid, playing, undo, bad, long, starter) = {
         let rt = app.create.borrow();
-        // [82] A starter while the strip is still as it was put there.
-        let starter = rt.starter.as_ref().filter(|(_, m)| *m == rt.melody).map_or("", |(id, _)| *id);
+        // [82] A starter while the strip's notes are still as it put them
+        // (the grid and LOOP are yours to change).
+        let starter = rt.starter.as_ref().filter(|(_, m)| m.steps == rt.melody.steps).map_or("", |(id, _)| *id);
         let cursor = rt.rec.filter(|_| !rt.rec_grid).map(|r| r.cursor).filter(|&c| c < STEPS);
         let playing = rt.play.and_then(|p| p.step);
         let rows = step_rows(&rt.melody, rt.choice.key, rt.selected, playing, cursor);
