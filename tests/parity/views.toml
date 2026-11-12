@@ -8752,7 +8752,7 @@ mode = "create"
 source = "Roadmap [70], CREATE concept (0.10.0)"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "create"]
-note = "KIT beside PADS over STEPS. KIT: the built-in kits as one segmented control (TIGHT, WARM, DUSTY; the chosen one filled bone), the selected pad's name and length, and its PITCH, DECAY and TONE knobs with their values under them (a double-click brings back the kit's setting), a line on what the knobs set, and LOAD SAMPLE (disabled until own samples come). PADS: bank 1's eight synthesised sounds by name (KICK, SNARE, HAT, OPEN HAT, CLAP, TOM 1, TOM 2, RIDE), the selected one filled bone, the one sounding sodium, CHANGED under one set away from its kit; pads 9 to 16 as hollow slots and the sixteen steps until the drum machine arrives (roadmap [79]); the RESULT bar with SEND TO PERFORM, RENDER LOOP and SAVE PATTERN (disabled)."
+note = "KIT beside PADS over STEPS. KIT: the built-in kits as one segmented control (TIGHT, WARM, DUSTY; the chosen one filled bone), the kit pad's name and length, and its PITCH, DECAY and TONE knobs with their values under them (a double-click brings back the kit's setting), a line on what the knobs set, and LOAD SAMPLE. PADS (the sampler's DRUMS bank): the eight synthesised sounds by name (KICK, SNARE, HAT, OPEN HAT, CLAP, TOM 1, TOM 2, RIDE) over pads 9 to 16 for samples from the library (hollow with their number while empty), the selected one filled bone, the one sounding sodium, CHANGED under one set away from its kit, a short line under a pad with steps (roadmap [79]). STEPS (and the selected pad's name): SWING and HALF TIME, PLAY, REC, CLEAR and UNDO, then the selected pad's 16 steps in one row, a little apart at each beat (one Tab stop, the arrow keys move along it); the RESULT bar with SEND TO PERFORM, RENDER LOOP (disabled) and SAVE PATTERN (roadmap [80])."
 
 [[view.region]]
 id = "create.views"
@@ -8825,6 +8825,22 @@ elements = [
 ]
 
 [[view.region]]
+id = "create.drums.pad.row2"
+band = "create"
+place = "PADS, under the kit's sounds: pads 9 to 16 for samples, a little apart after four"
+order = "row"
+elements = [
+  "create.drums.pad9",
+  "create.drums.pad10",
+  "create.drums.pad11",
+  "create.drums.pad12",
+  "create.drums.pad13",
+  "create.drums.pad14",
+  "create.drums.pad15",
+  "create.drums.pad16",
+]
+
+[[view.region]]
 id = "create.drums.centre"
 band = "create"
 place = "the steps under the pads, the result under them"
@@ -8835,13 +8851,49 @@ elements = [
 ]
 
 [[view.region]]
+id = "create.drums.feel"
+band = "create"
+place = "STEPS, top left: SWING and HALF TIME"
+order = "row"
+elements = [
+  "create.steps.swing",
+  "create.steps.half",
+]
+
+[[view.region]]
 id = "create.drums.keys"
 band = "create"
-place = "under STEPS: their (disabled) keys"
+place = "STEPS, top right: PLAY, REC, CLEAR, UNDO"
 order = "row"
 elements = [
   "create.steps.play",
   "create.steps.rec",
+  "create.steps.clear",
+  "create.steps.undo",
+]
+
+[[view.region]]
+id = "create.drums.step.row"
+band = "create"
+place = "STEPS: the selected pad's 16 steps in one row"
+order = "row"
+elements = [
+  "create.drums.step1",
+  "create.drums.step2",
+  "create.drums.step3",
+  "create.drums.step4",
+  "create.drums.step5",
+  "create.drums.step6",
+  "create.drums.step7",
+  "create.drums.step8",
+  "create.drums.step9",
+  "create.drums.step10",
+  "create.drums.step11",
+  "create.drums.step12",
+  "create.drums.step13",
+  "create.drums.step14",
+  "create.drums.step15",
+  "create.drums.step16",
 ]
 
 [[view.region]]
@@ -9051,6 +9103,51 @@ elements = [
   "create.result.render",
   "create.result.send",
   "create.result.to-playlist",
+]
+
+[[view]]
+id = "create.drums.machine"
+title = "Create: DRUMS with a pattern playing, REC armed, swing and half time"
+mode = "create"
+source = "Roadmap [80], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+features = ["sampler-sequencer"]
+note = "The drum machine in its widest state: a sample's long name on pad 9, steps on several pads (a line under each), the step that sounds in sodium, REC ON in red, NEXT BAR or STOP, SWING at its most (75 %), HALF TIME on, UNDO after a CLEAR; RESULT reads pattern, 16 steps, 2 bars, the master tempo, the swing and half time on one line."
+
+[[view.region]]
+id = "create.drums.machine.keys"
+band = "create"
+place = "STEPS, top: SWING, HALF TIME, then PLAY, REC, CLEAR, UNDO"
+order = "row"
+elements = [
+  "create.steps.swing",
+  "create.steps.half",
+  "create.steps.play",
+  "create.steps.rec",
+  "create.steps.clear",
+  "create.steps.undo",
+]
+
+[[view.region]]
+id = "create.drums.machine.pads"
+band = "create"
+place = "PADS: the kit's first sound, then the sample pad"
+order = "column"
+elements = [
+  "create.drums.pad1",
+  "create.drums.pad9",
+]
+
+[[view.region]]
+id = "create.drums.machine.result"
+band = "create"
+place = "the steps, then RESULT's line and its actions"
+order = "column"
+elements = [
+  "create.drums.steps.row",
+  "create.result.summary",
+  "create.result.save-pattern",
 ]
 
 [[view]]

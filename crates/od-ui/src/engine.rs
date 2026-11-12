@@ -495,6 +495,8 @@ fn frame(app: &App) {
         return;
     };
     player::follow_preview(app, &state);
+    // [80] The sampler's store comes back and is kept in every mode.
+    sampler::tick(app);
     crate::routing::frame(&state);
     recorder::frame(app, &state);
     crate::queue::frame(app, &state);

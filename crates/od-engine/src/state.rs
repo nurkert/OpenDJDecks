@@ -195,6 +195,12 @@ pub struct SequencerState {
     pub step: u8,
     /// Sampler trigger quantize in beats.
     pub quantize: Option<f64>,
+    /// [80] Playing, but step 1 waits for its beat (PLAY from the next bar).
+    pub waiting: bool,
+    /// [80] Swing, `0..=SEQ_SWING_MAX` of a step on the off-beat steps.
+    pub swing: f32,
+    /// [80] Half time: a step is an eighth note.
+    pub half_time: bool,
 }
 
 /// Microphone / aux input channel.

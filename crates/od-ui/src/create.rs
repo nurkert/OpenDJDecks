@@ -81,9 +81,24 @@
 //! PITCH, DECAY and TONE; a kit sets all eight. A pad press selects the pad
 //! for the knobs and plays its sound on the audition voice, like a MELODY
 //! pad, rendered at the engine's rate and kept until its settings change.
-//! The pads do not take sampler slots yet: [80] puts the kit into the
-//! sampler's store with the steps and Perform. The kit and the settings are
-//! kept in `create.drums`.
+//! The kit and the settings are kept in `create.drums`.
+//!
+//! [80] DRUMS is a drum machine on the sampler's own store and sequencer;
+//! there is no second one. Its 16 pads are the sampler's sixth bank,
+//! DRUMS ([`od_engine::DRUMS_BANK`]): pads 1–8 the kit, rendered and
+//! written to `created/drums` ([`bank_kit`], again once the knobs rest after
+//! a change, each slot keeping its steps), pads 9–16 samples from the
+//! library through LOAD SAMPLE (the sampler's own loading). The step row
+//! shows the selected pad's slot pattern in the sampler's 16-step
+//! sequencer, other pads' steps marked; a tap sets a step there. PLAY runs
+//! that sequencer, step 1 on the next bar while a deck plays (sample
+//! accurate in the engine); REC is the sequencer's recording, so a pad
+//! pressed while it plays lands on the nearest step. SWING and HALF TIME
+//! are the sequencer's (kept with the sampler). CLEAR empties the bank's
+//! steps with one UNDO. SAVE PATTERN stores the sequencer (with swing and
+//! half time) on a PATTERN pad of Perform, the same one each time; SEND TO
+//! PERFORM also puts the sampler on the DRUMS bank. A kit pad pressed while
+//! nothing runs still plays on the audition voice, as in [79].
 
 use crate::app::App;
 use crate::arrange::{self, Grid, Melody, STEPS};
@@ -181,12 +196,21 @@ pub(crate) fn frame(app: &App, state: Option<&EngineState>) {
     if due {
         refresh_next(app);
     }
+    // [80] The drum machine follows the sequencer.
+    if g.get_view() == "drums" {
+        drums_frame(app, state);
+    }
 }
 
 /// Sets the view (MELODY, DRUMS or THEORY); unknown names are ignored.
 pub(crate) fn set_view(app: &App, view: &str) {
     if VIEWS.contains(&view) {
         app.ui.global::<crate::Create>().set_view(view.into());
+        if view == "drums" {
+            // [80] DRUMS checks the kit in the sampler's DRUMS bank again.
+            app.create.borrow_mut().kit_banked = false;
+            show_drums(app);
+        }
     }
 }
 
@@ -447,6 +471,15 @@ pub(crate) struct Runtime {
     drums: Drums,
     drum_cache: [Option<DrumSound>; drums::PADS],
     drum_playing: Option<usize>,
+    /// [80] The kit is in the DRUMS bank as set (checked again when DRUMS
+    /// opens), and since when a change waits for the knobs to rest.
+    kit_banked: bool,
+    kit_due: Option<Instant>,
+    /// The steps before the last CLEAR (UNDO).
+    drum_undo: Option<[u16; DRUM_PADS]>,
+    /// The sequencer as staged for the audits (tests).
+    #[cfg(test)]
+    staged_seq: Option<od_engine::SequencerState>,
 }
 
 /// REC armed: the beat the grid counts from (once a note came in on it),
@@ -533,6 +566,11 @@ impl Default for Runtime {
             drums: Drums::default(),
             drum_cache: Default::default(),
             drum_playing: None,
+            kit_banked: false,
+            kit_due: None,
+            drum_undo: None,
+            #[cfg(test)]
+            staged_seq: None,
         }
     }
 }
@@ -625,6 +663,26 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_choose_kit(move |id| w(&|a| choose_kit(a, &id)));
     let w = with.clone();
     g.on_set_drum(move |which, v| w(&|a| set_drum(a, &which, v)));
+    let w = with.clone();
+    g.on_toggle_drum_step(move |i| w(&|a| toggle_drum_step(a, i.max(0) as usize)));
+    let w = with.clone();
+    g.on_drum_play(move || w(&toggle_drum_play));
+    let w = with.clone();
+    g.on_drum_rec(move || w(&toggle_drum_rec));
+    let w = with.clone();
+    g.on_drum_clear(move || w(&clear_drum_steps));
+    let w = with.clone();
+    g.on_drum_undo(move || w(&undo_drum_steps));
+    let w = with.clone();
+    g.on_set_swing(move |p| w(&|a| set_drum_swing(a, p)));
+    let w = with.clone();
+    g.on_set_half_time(move |on| w(&|a| set_drum_half_time(a, on)));
+    let w = with.clone();
+    g.on_load_sample(move || w(&load_drum_sample));
+    let w = with.clone();
+    g.on_save_pattern(move || w(&save_pattern));
+    let w = with.clone();
+    g.on_send_drums(move || w(&send_drums));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -1979,6 +2037,13 @@ pub(crate) fn choose_chord(app: &App, i: i32) {
 /// Library meta key of the kit and the pads' settings (JSON).
 pub(crate) const META_DRUMS: &str = "create.drums";
 
+/// [80] Pads of the drum machine: the kit's eight, then eight for samples
+/// from the library (pads 1–16 of the sampler's DRUMS bank).
+pub(crate) const DRUM_PADS: usize = 16;
+
+/// The kit's sounds by name, as the pads say them.
+const DRUM_NAMES: [&str; drums::PADS] = ["KICK", "SNARE", "HAT", "OPEN HAT", "CLAP", "TOM 1", "TOM 2", "RIDE"];
+
 /// One pad's settings as stored (see [`drums::Params`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct DrumPad {
@@ -1999,20 +2064,25 @@ impl From<DrumPad> for drums::Params {
     }
 }
 
-/// The kit chosen, the 8 pads' settings (the kit's, then as turned) and
-/// the pad the knobs set.
+/// The kit chosen, the 8 kit pads' settings (the kit's, then as turned)
+/// and the pad selected (0..16: the knobs set a kit pad, the step row shows
+/// the selected pad's steps). [80] Also the settings the kit's files in the
+/// sampler's DRUMS bank were rendered with, and the PATTERN pad SAVE
+/// PATTERN writes to.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct Drums {
     pub kit: String,
     pub pads: Vec<DrumPad>,
     pub selected: usize,
+    pub banked: Vec<DrumPad>,
+    pub pattern: Option<usize>,
 }
 
 impl Default for Drums {
     fn default() -> Self {
         let kit = &drums::KITS[0];
-        Self { kit: kit.id.into(), pads: kit.pads.iter().map(|&p| p.into()).collect(), selected: 0 }
+        Self { kit: kit.id.into(), pads: kit.pads.iter().map(|&p| p.into()).collect(), selected: 0, banked: Vec::new(), pattern: None }
     }
 }
 
@@ -2022,7 +2092,8 @@ impl Drums {
         drums::kit(&self.kit).unwrap_or(&drums::KITS[0])
     }
 
-    /// A stored value read back: a known kit, 8 pads in range.
+    /// A stored value read back: a known kit, 8 pads in range, a pad of
+    /// the 16, a PATTERN pad there is.
     pub fn normalize(&mut self) {
         let kit = self.kit();
         self.kit = kit.id.into();
@@ -2033,11 +2104,20 @@ impl Drums {
         for p in &mut self.pads {
             *p = drums::Params::from(*p).into();
         }
-        self.selected = self.selected.min(drums::PADS - 1);
+        self.selected = self.selected.min(DRUM_PADS - 1);
+        if self.banked.len() != drums::PADS {
+            self.banked.clear();
+        }
+        self.pattern = self.pattern.filter(|&p| p < crate::sampler::SEQUENCE_PADS);
     }
 
     pub fn params(&self, i: usize) -> drums::Params {
-        self.pads[i].into()
+        self.pads[i.min(drums::PADS - 1)].into()
+    }
+
+    /// The kit pad the knobs set: the selected pad, if it is one of the kit.
+    pub fn kit_pad(&self) -> Option<usize> {
+        (self.selected < drums::PADS).then_some(self.selected)
     }
 }
 
@@ -2071,10 +2151,19 @@ fn drum_sound(app: &App, i: usize) -> Arc<SampleData> {
     sample
 }
 
-/// A pad pressed: it becomes the one the knobs set, and plays on the
-/// audition voice (to the headphones while a deck plays, as HEAR).
+/// [80] The sampler slot of drum pad `pad` (the DRUMS bank).
+pub(crate) fn drum_slot(pad: usize) -> usize {
+    crate::sampler::slot_of(od_engine::DRUMS_BANK, pad)
+}
+
+/// A pad pressed: it becomes the selected one (the knobs set a kit pad,
+/// the step row shows its steps) and plays. A kit pad plays on the
+/// audition voice (to the headphones while a deck plays, as HEAR); [80]
+/// while the steps run or REC is armed it plays through its sampler slot
+/// instead, in time with the steps, and REC puts it on the nearest step.
+/// A sample pad plays its slot; an empty one says how to fill it.
 pub(crate) fn play_drum(app: &App, i: usize) {
-    if i >= drums::PADS {
+    if i >= DRUM_PADS {
         return;
     }
     let moved = std::mem::replace(&mut app.create.borrow_mut().drums.selected, i) != i;
@@ -2083,6 +2172,30 @@ pub(crate) fn play_drum(app: &App, i: usize) {
     }
     if !engine::ensure_engine(app) {
         engine::show_message(app);
+        show_drums(app);
+        return;
+    }
+    let slot = drum_slot(i);
+    let seq = engine::snapshot(app).map(|s| s.sequencer).unwrap_or_default();
+    if i >= drums::PADS {
+        if app.sampler.slots.borrow()[slot].is_none() {
+            app.status(od_i18n::tr("An empty pad: LOAD SAMPLE puts the track open in Prepare's player on it").to_string());
+        } else {
+            crate::sampler::trigger(app, slot, true);
+            if seq.recording {
+                crate::sampler::save_soon(app);
+            }
+        }
+        show_drums(app);
+        return;
+    }
+    if seq.playing || seq.recording {
+        bank_kit(app);
+        crate::sampler::trigger(app, slot, true);
+        if seq.recording {
+            crate::sampler::save_soon(app);
+            app.create.borrow_mut().drum_undo = None;
+        }
         show_drums(app);
         return;
     }
@@ -2099,9 +2212,9 @@ pub(crate) fn play_drum(app: &App, i: usize) {
     show(app);
 }
 
-/// A pad selected for the knobs without playing it (the demo, tests).
+/// A pad selected without playing it (the demo, tests).
 pub(crate) fn select_drum(app: &App, i: usize) {
-    if i < drums::PADS {
+    if i < DRUM_PADS {
         app.create.borrow_mut().drums.selected = i;
         save_drums(app);
         show_drums(app);
@@ -2113,20 +2226,21 @@ pub(crate) fn choose_kit(app: &App, id: &str) {
     let Some(kit) = drums::kit(id) else { return };
     {
         let mut rt = app.create.borrow_mut();
-        let selected = rt.drums.selected;
-        rt.drums = Drums { kit: kit.id.into(), pads: kit.pads.iter().map(|&p| p.into()).collect(), selected };
+        let old = std::mem::take(&mut rt.drums);
+        rt.drums = Drums { kit: kit.id.into(), pads: kit.pads.iter().map(|&p| p.into()).collect(), ..old };
     }
+    kit_changed(app);
     save_drums(app);
     show_drums(app);
 }
 
-/// A knob of the selected pad turned: "pitch" (semitones), "decay" or
+/// A knob of the selected kit pad turned: "pitch" (semitones), "decay" or
 /// "tone" (0..100), rounded to whole steps. The pad renders anew on its
-/// next press.
+/// next press, and [80] in the DRUMS bank once the knob rests.
 pub(crate) fn set_drum(app: &App, which: &str, v: f32) {
     let changed = {
         let mut rt = app.create.borrow_mut();
-        let i = rt.drums.selected;
+        let Some(i) = rt.drums.kit_pad() else { return };
         let old = rt.drums.pads[i];
         let mut p = old;
         let v = v.round();
@@ -2140,6 +2254,7 @@ pub(crate) fn set_drum(app: &App, which: &str, v: f32) {
         p != old
     };
     if changed {
+        kit_changed(app);
         save_drums(app);
     }
     // Shown either way: the knob snaps to the whole step.
@@ -2156,14 +2271,22 @@ fn save_drums(app: &App) {
     }
 }
 
-/// The pads (selected, playing) and the knobs of the selected pad.
-pub(crate) fn drum_rows(d: &Drums, playing: Option<usize>) -> Vec<crate::CreateDrumPad> {
+/// The 16 pads: selected, sounding (on the audition voice or in its slot),
+/// set away from the kit, a sample pad's name and whether it holds one,
+/// and whether the pad has steps.
+pub(crate) fn drum_rows(d: &Drums, names: &[String], playing: &[bool], patterns: &[u16; DRUM_PADS]) -> Vec<crate::CreateDrumPad> {
     let kit = d.kit();
-    (0..drums::PADS)
-        .map(|i| crate::CreateDrumPad {
-            selected: d.selected == i,
-            playing: playing == Some(i),
-            set: d.params(i) != kit.pads[i],
+    (0..DRUM_PADS)
+        .map(|i| {
+            let name = names.get(i).cloned().unwrap_or_default();
+            crate::CreateDrumPad {
+                selected: d.selected == i,
+                playing: playing.get(i).copied().unwrap_or(false),
+                set: i < drums::PADS && d.params(i) != kit.pads[i],
+                loaded: i < drums::PADS || !name.is_empty(),
+                name: name.into(),
+                steps: patterns[i] != 0,
+            }
         })
         .collect()
 }
@@ -2174,18 +2297,18 @@ pub(crate) fn drum_length(d: &Drums, i: usize) -> String {
     format!("{:.2} s", frames as f64 / 48_000.0)
 }
 
+/// The kit, the knobs of the selected kit pad, and the pads and steps as
+/// they are now.
 fn show_drums(app: &App) {
-    let (d, playing) = {
-        let rt = app.create.borrow();
-        (rt.drums.clone(), rt.drum_playing)
-    };
+    let d = app.create.borrow().drums.clone();
     let g = app.ui.global::<crate::Create>();
-    set_rows(g.get_drum_pads(), drum_rows(&d, playing), |m| g.set_drum_pads(m));
-    let i = d.selected;
+    // The knobs keep the last kit pad's values while a sample pad is selected.
+    let i = d.kit_pad().unwrap_or_else(|| g.get_drum_knob_pad().clamp(0, drums::PADS as i32 - 1) as usize);
     let p = d.params(i);
     let k = d.kit().pads[i];
     g.set_kit(d.kit.as_str().into());
-    g.set_drum_selected(i as i32);
+    g.set_drum_selected(d.selected as i32);
+    g.set_drum_knob_pad(i as i32);
     g.set_drum_pitch(f32::from(p.pitch));
     g.set_drum_decay(f32::from(p.decay));
     g.set_drum_tone(f32::from(p.tone));
@@ -2193,6 +2316,376 @@ fn show_drums(app: &App) {
     g.set_kit_decay(f32::from(k.decay));
     g.set_kit_tone(f32::from(k.tone));
     g.set_drum_length(drum_length(&d, i).into());
+    show_machine(app, engine::snapshot(app).as_ref());
+}
+
+// ── [80] The drum machine: the kit in the sampler, the step row ─────────
+
+/// The kit's file of pad `i` in `created/drums`.
+fn drum_file(i: usize) -> String {
+    format!("drum-{:02}.wav", i + 1)
+}
+
+/// The kit or a pad's settings changed: the DRUMS bank takes them once
+/// the knobs rest.
+fn kit_changed(app: &App) {
+    let mut rt = app.create.borrow_mut();
+    rt.kit_banked = false;
+    rt.kit_due = Some(Instant::now());
+}
+
+/// Puts the kit into the sampler's DRUMS bank (pads 1–8) where it is not
+/// there as set: each pad rendered for its settings, written to
+/// `created/drums` (so the bank comes back after a restart like any
+/// loaded sample) and loaded with its steps kept. False while the sampler
+/// still loads its store, or when the files could not be written.
+fn bank_kit(app: &App) -> bool {
+    if !crate::sampler::settled(app) || !engine::ensure_engine(app) {
+        return false;
+    }
+    let folder = create_render::dir(&app.state.borrow().config.library_path).join("drums");
+    let todo: Vec<usize> = {
+        let rt = app.create.borrow();
+        let slots = app.sampler.slots.borrow();
+        (0..drums::PADS)
+            .filter(|&i| {
+                let path = folder.join(drum_file(i));
+                rt.drums.banked.get(i) != Some(&rt.drums.pads[i])
+                    || !path.exists()
+                    || slots[drum_slot(i)].as_ref().is_none_or(|s| s.path != path)
+            })
+            .collect()
+    };
+    if todo.is_empty() {
+        let mut rt = app.create.borrow_mut();
+        rt.kit_banked = true;
+        rt.kit_due = None;
+        return true;
+    }
+    if app.state.borrow().read_only() {
+        return false;
+    }
+    let written = (|| -> anyhow::Result<Vec<(usize, crate::sampler::SlotInfo, Arc<SampleData>)>> {
+        std::fs::create_dir_all(&folder)?;
+        let mut out = Vec::new();
+        for i in todo {
+            let sample = drum_sound(app, i);
+            let path = folder.join(drum_file(i));
+            // Written beside and moved over, so a reader never sees half a file.
+            let part = folder.join(format!("{}.part", drum_file(i)));
+            crate::track_edit::write_wav(&part, &sample.samples, 2, sample.sample_rate)?;
+            std::fs::rename(&part, &path)?;
+            let info = crate::sampler::SlotInfo { path, name: od_i18n::tr(DRUM_NAMES[i]).into(), mode: "oneshot".into(), gain: 1.0, ..Default::default() };
+            out.push((i, info, sample));
+        }
+        Ok(out)
+    })();
+    match written {
+        Ok(pads) => {
+            crate::sampler::put_pads(app, od_engine::DRUMS_BANK, pads);
+            {
+                let mut rt = app.create.borrow_mut();
+                rt.drums.banked = rt.drums.pads.clone();
+                rt.kit_banked = true;
+                rt.kit_due = None;
+            }
+            save_drums(app);
+            true
+        }
+        Err(e) => {
+            app.create.borrow_mut().kit_due = None;
+            app.status(od_i18n::trf("The kit could not be put into the sampler: {}", &[&e]));
+            false
+        }
+    }
+}
+
+/// The DRUMS bank's 16 step patterns: the engine's, else as stored.
+fn drum_patterns(app: &App, state: Option<&EngineState>) -> [u16; DRUM_PADS] {
+    #[cfg(test)]
+    let state = state.filter(|_| app.create.borrow().staged_seq.is_none());
+    let slots = app.sampler.slots.borrow();
+    std::array::from_fn(|p| {
+        let slot = drum_slot(p);
+        match state {
+            Some(s) => s.sampler[slot].pattern,
+            None => slots[slot].as_ref().map_or(0, |i| i.pattern),
+        }
+    })
+}
+
+/// The step row of pad `pad`: each step set or not, set on another pad
+/// (a mark at its foot), and the step that sounds.
+pub(crate) fn drum_step_rows(patterns: &[u16; DRUM_PADS], pad: usize, playing: Option<usize>) -> Vec<crate::CreateDrumStep> {
+    (0..od_engine::SEQ_STEPS)
+        .map(|s| crate::CreateDrumStep {
+            on: patterns.get(pad).is_some_and(|m| m & (1 << s) != 0),
+            others: patterns.iter().enumerate().any(|(p, m)| p != pad && m & (1 << s) != 0),
+            playing: playing == Some(s),
+        })
+        .collect()
+}
+
+/// SWING as a whole percentage in steps of 5 (`0..=75`).
+pub(crate) fn swing_percent(swing: f32) -> i32 {
+    ((swing * 100.0 / 5.0).round() as i32 * 5).clamp(0, (od_engine::SEQ_SWING_MAX * 100.0) as i32)
+}
+
+/// The sequencer as the step row shows it: from the engine, with the swing
+/// and half time as set.
+fn sequencer(app: &App, state: Option<&EngineState>) -> od_engine::SequencerState {
+    #[cfg(test)]
+    if let Some(s) = app.create.borrow().staged_seq {
+        return s;
+    }
+    // Swing and half time as set (the engine follows a moment later).
+    let (swing, half_time) = crate::sampler::feel(app);
+    od_engine::SequencerState { swing, half_time, ..state.map(|s| s.sequencer).unwrap_or_default() }
+}
+
+/// The saved pattern on its PATTERN pad is the sequencer as it is now.
+fn pattern_saved(app: &App, state: &EngineState) -> bool {
+    let Some(i) = app.create.borrow().drums.pattern else { return false };
+    app.sampler.sequences.borrow().get(i).cloned().flatten() == Some(crate::sampler::Sequence::of(state))
+}
+
+/// The PATTERN pad SAVE PATTERN writes to: the one it wrote to, else the
+/// first free one.
+fn pattern_pad(app: &App) -> Option<usize> {
+    app.create.borrow().drums.pattern.or_else(|| app.sampler.sequences.borrow().iter().position(Option::is_none))
+}
+
+/// The pads, the step row, PLAY, REC, SWING, HALF TIME and RESULT as the
+/// engine has them now.
+fn show_machine(app: &App, state: Option<&EngineState>) {
+    let patterns = drum_patterns(app, state);
+    let seq = sequencer(app, state);
+    let (d, audition, undo) = {
+        let rt = app.create.borrow();
+        (rt.drums.clone(), rt.drum_playing, rt.drum_undo.is_some())
+    };
+    let names: Vec<String> = {
+        let slots = app.sampler.slots.borrow();
+        (0..DRUM_PADS)
+            .map(|p| if p < drums::PADS { String::new() } else { slots[drum_slot(p)].as_ref().map(|i| i.name.clone()).unwrap_or_default() })
+            .collect()
+    };
+    let playing: Vec<bool> = (0..DRUM_PADS)
+        .map(|p| audition == Some(p) || state.is_some_and(|s| s.sampler[drum_slot(p)].playing))
+        .collect();
+    let step = (seq.playing && !seq.waiting).then_some(usize::from(seq.step));
+    let g = app.ui.global::<crate::Create>();
+    set_rows(g.get_drum_pads(), drum_rows(&d, &names, &playing, &patterns), |m| g.set_drum_pads(m));
+    set_rows(g.get_drum_steps(), drum_step_rows(&patterns, d.selected, step), |m| g.set_drum_steps(m));
+    let hits: u32 = patterns.iter().map(|m| m.count_ones()).sum();
+    let saved = state.is_some_and(|s| pattern_saved(app, s));
+    let master = app.create.borrow().master_bpm;
+    let machine = crate::CreateDrumMachine {
+        playing: seq.playing,
+        waiting: seq.playing && seq.waiting,
+        rec: seq.recording,
+        swing: swing_percent(seq.swing),
+        half_time: seq.half_time,
+        can_undo: undo,
+        steps_set: patterns[d.selected.min(DRUM_PADS - 1)].count_ones() as i32,
+        hits: hits as i32,
+        pattern: pattern_pad(app).map_or(0, |i| i as i32 + 1),
+        bars: if seq.half_time { 2 } else { 1 },
+        bpm: crate::format::bpm(Some(master), 1).into(),
+        saved,
+        sent: saved && app.sampler.bank.get() == od_engine::DRUMS_BANK,
+    };
+    if g.get_drum_machine() != machine {
+        g.set_drum_machine(machine);
+    }
+}
+
+/// Every frame while DRUMS is shown: the kit goes into the DRUMS bank once
+/// the sampler's store is in and the knobs rest; the pads and steps follow
+/// the engine.
+fn drums_frame(app: &App, state: Option<&EngineState>) {
+    #[cfg(test)]
+    if app.create.borrow().staged_seq.is_some() {
+        show_machine(app, state);
+        return;
+    }
+    let due = {
+        let rt = app.create.borrow();
+        !rt.kit_banked && rt.kit_due.is_none_or(|t| t.elapsed() > Duration::from_millis(300))
+    };
+    if due && state.is_some() {
+        bank_kit(app);
+    }
+    show_machine(app, state);
+}
+
+/// A step of the selected pad's row tapped: set or cleared in the
+/// sampler's sequencer (the same pattern Perform's sequencer plays). A
+/// kit pad's sound goes into the DRUMS bank first; a sample pad needs its
+/// sample.
+pub(crate) fn toggle_drum_step(app: &App, step: usize) {
+    if step >= od_engine::SEQ_STEPS {
+        return;
+    }
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        return;
+    }
+    let pad = app.create.borrow().drums.selected;
+    let slot = drum_slot(pad);
+    if pad < drums::PADS {
+        bank_kit(app);
+    } else if app.sampler.slots.borrow()[slot].is_none() {
+        app.status(od_i18n::tr("Load a sample on this pad first: LOAD SAMPLE puts the track open in Prepare's player on it").to_string());
+        return;
+    }
+    let on = drum_patterns(app, engine::snapshot(app).as_ref())[pad] & (1 << step) == 0;
+    engine::send(app, Command::Sampler(SamplerCommand::SeqStep { slot, step, on }));
+    crate::sampler::save_soon(app);
+    app.create.borrow_mut().drum_undo = None;
+}
+
+/// PLAY: the sequencer on the master tempo, step 1 on the next bar while a
+/// deck plays, else at once; again stops it.
+pub(crate) fn toggle_drum_play(app: &App) {
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        return;
+    }
+    let Some(s) = engine::snapshot(app) else { return };
+    if s.sequencer.playing {
+        engine::send(app, Command::Sampler(SamplerCommand::SeqPlay(false)));
+    } else {
+        bank_kit(app);
+        let from = master_beat(&s).map(|_| play_start(&s));
+        engine::send(app, Command::Sampler(SamplerCommand::SeqPlayFrom(from)));
+    }
+}
+
+/// REC: armed, a pad pressed while the steps run lands on the nearest step;
+/// again disarms it.
+pub(crate) fn toggle_drum_rec(app: &App) {
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        return;
+    }
+    let on = engine::snapshot(app).is_some_and(|s| s.sequencer.recording);
+    if !on {
+        bank_kit(app);
+    }
+    engine::send(app, Command::Sampler(SamplerCommand::SeqRecord(!on)));
+}
+
+/// CLEAR: every pad's steps empty; UNDO brings them back.
+pub(crate) fn clear_drum_steps(app: &App) {
+    if !engine::ensure_engine(app) {
+        return;
+    }
+    let patterns = drum_patterns(app, engine::snapshot(app).as_ref());
+    if patterns.iter().all(|m| *m == 0) {
+        return;
+    }
+    for p in 0..DRUM_PADS {
+        engine::send(app, Command::Sampler(SamplerCommand::SeqPattern { slot: drum_slot(p), mask: 0 }));
+    }
+    app.create.borrow_mut().drum_undo = Some(patterns);
+    crate::sampler::save_soon(app);
+}
+
+/// UNDO: the steps as they were before the last CLEAR.
+pub(crate) fn undo_drum_steps(app: &App) {
+    let Some(patterns) = app.create.borrow_mut().drum_undo.take() else { return };
+    engine::ensure_engine(app);
+    for (p, mask) in patterns.into_iter().enumerate() {
+        engine::send(app, Command::Sampler(SamplerCommand::SeqPattern { slot: drum_slot(p), mask }));
+    }
+    crate::sampler::save_soon(app);
+}
+
+/// SWING in percent of a step (`0..=75`, in fives), the sequencer's own.
+pub(crate) fn set_drum_swing(app: &App, percent: i32) {
+    crate::sampler::set_swing(app, percent.clamp(0, 75) as f32 / 100.0);
+    crate::sampler::save_soon(app);
+    show_machine(app, engine::snapshot(app).as_ref());
+}
+
+/// HALF TIME, the sequencer's own.
+pub(crate) fn set_drum_half_time(app: &App, on: bool) {
+    crate::sampler::set_half_time(app, on);
+    crate::sampler::save_soon(app);
+    show_machine(app, engine::snapshot(app).as_ref());
+}
+
+/// LOAD SAMPLE: the track open in Prepare's player (or the file selected
+/// in a folder) onto the selected sample pad, else the first empty one of
+/// 9–16; its steps stay.
+pub(crate) fn load_drum_sample(app: &App) {
+    if app.guard_read_only() {
+        return;
+    }
+    let pad = {
+        let selected = app.create.borrow().drums.selected;
+        let slots = app.sampler.slots.borrow();
+        if selected >= drums::PADS { Some(selected) } else { (drums::PADS..DRUM_PADS).find(|&p| slots[drum_slot(p)].is_none()) }
+    };
+    let Some(pad) = pad else {
+        app.status(od_i18n::tr("Pads 9 to 16 all hold samples: select one to replace it").to_string());
+        return;
+    };
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        return;
+    }
+    match crate::sampler::load_onto(app, od_engine::DRUMS_BANK, pad) {
+        Some(name) => {
+            app.create.borrow_mut().drums.selected = pad;
+            save_drums(app);
+            app.status(od_i18n::trf("Loading {} onto pad {} …", &[&name, &(pad + 1)]));
+        }
+        None => app.status(od_i18n::tr("Open a track in Prepare's player first: LOAD SAMPLE puts it on a pad").to_string()),
+    }
+    show_drums(app);
+}
+
+/// Stores the sequencer as it is now on its PATTERN pad (the one saved to
+/// before, else the first free one); the pad, or none (said why).
+fn store_pattern(app: &App) -> Option<usize> {
+    if app.guard_read_only() {
+        return None;
+    }
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        return None;
+    }
+    bank_kit(app);
+    let state = engine::snapshot(app)?;
+    let Some(i) = pattern_pad(app) else {
+        app.status(od_i18n::tr("Every PATTERN pad holds a pattern: clear one in Perform first (right click)").to_string());
+        return None;
+    };
+    crate::sampler::store_sequence(app, i, crate::sampler::Sequence::of(&state));
+    app.create.borrow_mut().drums.pattern = Some(i);
+    save_drums(app);
+    show_machine(app, Some(&state));
+    Some(i)
+}
+
+/// SAVE PATTERN: the steps (with swing and half time) into the sampler's
+/// store, on a PATTERN pad in Perform.
+pub(crate) fn save_pattern(app: &App) {
+    if let Some(i) = store_pattern(app) {
+        app.status(od_i18n::trf("Saved as pattern {}: pad S{} of the PATTERN pad mode in Perform plays it", &[&(i + 1), &(i + 1)]));
+    }
+}
+
+/// SEND TO PERFORM: the pattern saved, and the sampler on its DRUMS bank,
+/// so Perform's sampler pads play the kit and the PATTERN pads the steps.
+pub(crate) fn send_drums(app: &App) {
+    if let Some(i) = store_pattern(app) {
+        crate::sampler::set_bank(app, od_engine::DRUMS_BANK);
+        app.status(od_i18n::trf("Sent to Perform: pattern {} on the PATTERN pads, the kit on the sampler's DRUMS bank", &[&(i + 1)]));
+        show_machine(app, engine::snapshot(app).as_ref());
+    }
 }
 
 /// The kit and the pads' settings (tests).
@@ -2207,9 +2700,11 @@ pub(crate) fn drum_now(app: &App, i: usize) -> Arc<SampleData> {
     drum_sound(app, i)
 }
 
-/// DRUMS for the audits in its widest state: every pad set away from
+/// DRUMS for the audits in its widest state: every kit pad set away from
 /// the kit (CHANGED), OPEN HAT (the longest name) shown as playing
-/// without sound, the snare selected.
+/// without sound, the snare selected; [80] a long sample name on pad 9, a
+/// pattern on the kick, snare and hat with the steps running (step 5
+/// lit), REC armed, the most swing, half time, a pattern to undo.
 #[cfg(test)]
 pub(crate) fn stage_drums(app: &App) {
     for i in 0..drums::PADS {
@@ -2217,16 +2712,36 @@ pub(crate) fn stage_drums(app: &App) {
         set_drum(app, "pitch", -12.0);
     }
     {
+        let mut slots = app.sampler.slots.borrow_mut();
+        for (p, mask) in [(0usize, 0x1111u16), (1, 0x1010), (2, 0xffff), (8, 0x8080)] {
+            let name = if p < drums::PADS { DRUM_NAMES[p].to_string() } else { "Vocal chop from the long intro".to_string() };
+            slots[drum_slot(p)] = Some(crate::sampler::SlotInfo { path: PathBuf::from(format!("{name}.wav")), name, pattern: mask, ..Default::default() });
+        }
+    }
+    {
         let mut rt = app.create.borrow_mut();
         rt.drums.selected = 1;
         rt.drum_playing = Some(3);
+        rt.drum_undo = Some([0x0101; DRUM_PADS]);
+        rt.staged_seq = Some(od_engine::SequencerState { playing: true, recording: true, step: 4, swing: od_engine::SEQ_SWING_MAX, half_time: true, ..Default::default() });
     }
     show_drums(app);
 }
 
 #[cfg(test)]
 pub(crate) fn unstage_drums(app: &App) {
-    app.create.borrow_mut().drum_playing = None;
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.drum_playing = None;
+        rt.drum_undo = None;
+        rt.staged_seq = None;
+    }
+    {
+        let mut slots = app.sampler.slots.borrow_mut();
+        for p in [0, 1, 2, 8] {
+            slots[drum_slot(p)] = None;
+        }
+    }
     choose_kit(app, drums::KITS[0].id);
 }
 
@@ -3312,7 +3827,11 @@ pub(crate) fn stage_created(app: &App, track: TrackId) {
 /// notes out of the key and `create-hints-off` turns the hints off;
 /// `create-drums` opens DRUMS with the snare set and selected,
 /// `create-drums-warm` with the WARM kit, `create-drums-play` plays the
-/// ride again and again.
+/// ride again and again; [80] `create-drums-steps` sets a pattern (kick,
+/// snare, hats, deck 1's track on pad 9) with 20 % swing and plays it,
+/// `create-drums-rec` arms REC, `create-drums-half` turns HALF TIME on,
+/// `create-drums-perform` sends it to Perform and shows deck 1's PATTERN
+/// pads playing it and deck 2's sampler pads on the DRUMS bank.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -3383,6 +3902,19 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
             select_drum(&a, 1);
             set_drum(&a, "pitch", 5.0);
         }
+        // [80] A pattern on the sampler's sequencer, playing.
+        if parts.iter().any(|p| p == "create-drums-steps" || p == "create-drums-perform") {
+            demo_pattern(&a);
+            select_drum(&a, 0);
+            set_drum_swing(&a, 20);
+            if parts.iter().any(|p| p == "create-drums-half") {
+                set_drum_half_time(&a, true);
+            }
+            toggle_drum_play(&a);
+            if parts.iter().any(|p| p == "create-drums-rec") {
+                toggle_drum_rec(&a);
+            }
+        }
         if parts.iter().any(|p| p == "create-drums-play") {
             let weak = std::rc::Rc::downgrade(&a);
             let timer = slint::Timer::default();
@@ -3402,6 +3934,15 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         let weak = std::rc::Rc::downgrade(&a);
         slint::Timer::single_shot(Duration::from_secs(8), move || {
             let Some(a) = weak.upgrade() else { return };
+            if parts.iter().any(|p| p == "create-drums-perform") {
+                send_drums(&a);
+                a.ui.invoke_set_mode("perform".into());
+                crate::decks::set_pad_mode(&a, 0, od_controller::PadMode::PatternRecall);
+                crate::decks::set_pad_mode(&a, 1, od_controller::PadMode::Sampler);
+                if let Some(st) = engine::snapshot(&a) {
+                    crate::sampler::pattern_recall(&a, 0, &st);
+                }
+            }
             if parts.iter().any(|p| p == "create-send-perform") {
                 a.ui.invoke_set_mode("perform".into());
                 crate::decks::set_pad_mode(&a, 0, od_controller::PadMode::Melody);
@@ -3422,6 +3963,30 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
             }
         });
     });
+}
+
+/// [80] The demo's pattern: four to the floor, the snare on 2 and 4,
+/// hats on the off-beats, a clap before the bar, and deck 1's track on
+/// pad 9 with two hits.
+fn demo_pattern(app: &App) {
+    if !engine::ensure_engine(app) {
+        return;
+    }
+    bank_kit(app);
+    for (pad, mask) in [(0usize, 0x1111u16), (1, 0x1010), (2, 0x4444), (4, 0x8000), (8, 0x0202)] {
+        engine::send(app, Command::Sampler(SamplerCommand::SeqPattern { slot: drum_slot(pad), mask }));
+    }
+    let track = engine::snapshot(app).and_then(|s| s.decks.first().and_then(|d| d.track));
+    if let Some(id) = track {
+        let found = {
+            let st = app.state.borrow();
+            st.src().track(id).ok().map(|t| (st.resolve(&t.path), if t.tags.title.is_empty() { "Deck 1".to_string() } else { t.tags.title.clone() }))
+        };
+        if let Some((path, name)) = found {
+            crate::sampler::load_file(app, od_engine::DRUMS_BANK, 8, path, name, None);
+        }
+    }
+    crate::sampler::save_soon(app);
 }
 
 #[cfg(test)]

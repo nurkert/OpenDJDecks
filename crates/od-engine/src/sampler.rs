@@ -2,6 +2,10 @@
 //! quantised triggering, tempo sync, and a 16-step sequencer locked to the
 //! master beat clock.
 //!
+//! [80] The sequencer counts its steps from an origin on the master clock
+//! (beat 0 unless PLAY set one, e.g. the next bar), may wait for it, swings
+//! the off-beat steps and runs at half time (eighth-note steps).
+//!
 //! Blocks are rendered in segments between events (sequencer steps,
 //! quantize boundaries), so triggers are sample accurate. Restarting or
 //! stopping a voice crossfades it out over [`FADE`] frames (no clicks).
@@ -10,7 +14,7 @@ use std::sync::Arc;
 
 use crate::tempofx::BeatClock;
 use crate::command::{SampleMode, SamplerCommand};
-use crate::config::{SAMPLER_TOTAL, SEQ_STEPS};
+use crate::config::{SAMPLER_TOTAL, SEQ_STEPS, SEQ_SWING_MAX};
 use crate::dsp::smooth::Smoothed;
 use crate::rt::RtCtx;
 use crate::state::{SamplerSlotState, SequencerState};
@@ -45,9 +49,17 @@ pub struct Sampler {
     seq_recording: bool,
     /// Master beat at the end of the last block.
     last_beat: f64,
-    /// Last sequencer boundary triggered (16th-note index).
+    /// Last sequencer boundary triggered (step index from the origin).
     last_step: f64,
     step: u8,
+    /// [80] The beat step 0 counts from, whether step 0 has yet to come
+    /// (PLAY from a beat), whether the origin is the next block's beat,
+    /// swing (share of a step) and half time.
+    origin: f64,
+    waiting: bool,
+    origin_now: bool,
+    swing: f64,
+    half: bool,
     /// Two voices outside the slots: CREATE plays a picked note on one of
     /// them once (its fades are in the sample), to the master or the cue. A
     /// new note starts on the other one while the old one fades out.
@@ -204,26 +216,68 @@ impl Sampler {
             last_beat: 0.0,
             last_step: -1e9,
             step: 0,
+            origin: 0.0,
+            waiting: false,
+            origin_now: false,
+            swing: 0.0,
+            half: false,
         }
+    }
+
+    /// Sequencer steps per beat: 16ths, or 8ths at half time.
+    fn rate(&self) -> f64 {
+        if self.half { 2.0 } else { 4.0 }
+    }
+
+    /// The beat step `n` (counted from the origin) sounds on: an off-beat
+    /// step `swing` of a step late.
+    fn step_beat(&self, n: f64) -> f64 {
+        let late = if (n as i64).rem_euclid(2) == 1 { self.swing } else { 0.0 };
+        self.origin + (n + late) / self.rate()
+    }
+
+    /// The first step sounding at or after beat `b`.
+    fn first_step_from(&self, b: f64) -> f64 {
+        let x = (b - self.origin) * self.rate();
+        let k = (x - 1e-9).ceil();
+        let prev = k - 1.0;
+        let swung = (prev as i64).rem_euclid(2) == 1 && prev + self.swing >= x - 1e-9;
+        if self.swing > 0.0 && swung { prev } else { k }
+    }
+
+    /// The step (and its beat) nearest to beat `b`; while step 0 is still
+    /// to come, no step before it.
+    fn nearest_step(&self, b: f64) -> (f64, f64) {
+        let x = ((b - self.origin) * self.rate()).floor();
+        let low = if self.waiting { x.max(0.0) } else { x - 1.0 };
+        let mut best = (low, self.step_beat(low));
+        for n in [low + 1.0, low + 2.0] {
+            let at = self.step_beat(n);
+            if (at - b).abs() < (best.1 - b).abs() {
+                best = (n, at);
+            }
+        }
+        best
     }
 
     fn trigger(&mut self, slot: usize) {
         let quantize = self.quantize;
-        let s = &mut self.slots[slot];
-        if s.data.is_none() {
+        if self.slots[slot].data.is_none() {
             return;
         }
         if self.seq_recording && self.seq_playing {
-            let pos = self.last_beat * 4.0;
-            let nearest = pos.round();
-            s.pattern |= 1 << (nearest as i64).rem_euclid(SEQ_STEPS as i64);
-            if nearest > pos {
+            let now = self.last_beat;
+            let (n, at) = self.nearest_step(now);
+            let s = &mut self.slots[slot];
+            s.pattern |= 1 << (n as i64).rem_euclid(SEQ_STEPS as i64);
+            if at > now {
                 // The sequencer plays the upcoming step itself.
                 return;
             }
             s.start();
             return;
         }
+        let s = &mut self.slots[slot];
         if quantize.is_some() {
             s.pending = true;
         } else {
@@ -324,7 +378,33 @@ impl Sampler {
                 if on && !self.seq_playing {
                     self.last_step = -1e9;
                 }
+                if !on {
+                    self.waiting = false;
+                    self.origin_now = false;
+                }
                 self.seq_playing = on;
+            }
+            SamplerCommand::SeqPlayFrom(beat) => {
+                match beat.filter(|b| b.is_finite()) {
+                    Some(b) => {
+                        self.origin = b;
+                        self.origin_now = false;
+                    }
+                    None => self.origin_now = true,
+                }
+                self.waiting = true;
+                self.last_step = -1e9;
+                self.seq_playing = true;
+            }
+            SamplerCommand::SeqSwing(swing) => {
+                self.swing = if swing.is_finite() { f64::from(swing.clamp(0.0, SEQ_SWING_MAX)) } else { 0.0 };
+            }
+            SamplerCommand::SeqHalfTime(on) => {
+                if on != self.half {
+                    // The steps count anew at the other length.
+                    self.last_step = -1e9;
+                    self.half = on;
+                }
             }
             SamplerCommand::SeqRecord(on) => self.seq_recording = on,
             SamplerCommand::Audition { sample, cue } => {
@@ -427,7 +507,19 @@ impl Sampler {
         let n = out.len() / 2;
         let bpf = clock.beats_per_frame;
         let timed = bpf > 0.0 && bpf.is_finite();
-        let mut next_step = (clock.beat * 4.0 - 1e-9).ceil();
+        if self.origin_now && self.seq_playing {
+            self.origin = clock.beat;
+            self.origin_now = false;
+        }
+        // A jump far back before step 0 (a deck cued) stops the waiting:
+        // the steps go on from where the clock is, in the origin's phase.
+        if self.waiting && self.origin - clock.beat > 8.0 {
+            self.waiting = false;
+        }
+        let mut next_step = self.first_step_from(clock.beat);
+        if self.waiting {
+            next_step = next_step.max(0.0);
+        }
         // Never trigger a step twice when the master beat jitters backwards
         // across a boundary (sync phase correction); a real jump back resets.
         if next_step <= self.last_step && next_step > self.last_step - 2.0 {
@@ -436,7 +528,7 @@ impl Sampler {
         let mut cursor = 0;
         loop {
             let step_off = if timed && self.seq_playing {
-                Self::offset_of(next_step / 4.0, clock).max(cursor)
+                Self::offset_of(self.step_beat(next_step), clock).max(cursor)
             } else {
                 usize::MAX
             };
@@ -476,6 +568,7 @@ impl Sampler {
                     }
                 }
                 self.last_step = next_step;
+                self.waiting = false;
                 next_step += 1.0;
             }
             if quant_ev {
@@ -487,7 +580,8 @@ impl Sampler {
             }
         }
         self.last_beat = clock.beat + n as f64 * bpf;
-        self.step = ((self.last_beat * 4.0).floor() as i64).rem_euclid(SEQ_STEPS as i64) as u8;
+        let now = self.first_step_from(self.last_beat + 1e-9) - 1.0;
+        self.step = (now as i64).rem_euclid(SEQ_STEPS as i64) as u8;
     }
 
     pub fn sequencer(&self) -> SequencerState {
@@ -496,6 +590,9 @@ impl Sampler {
             recording: self.seq_recording,
             step: self.step,
             quantize: self.quantize,
+            waiting: self.seq_playing && self.waiting,
+            swing: self.swing as f32,
+            half_time: self.half,
         }
     }
 

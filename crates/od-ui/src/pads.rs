@@ -199,6 +199,7 @@ pub(crate) fn param_label(s: &DeckState, ctx: &PadCtx) -> String {
         PadMode::HoldFx2 => "PAGE 2".into(),
         PadMode::BeatJump => format!("JUMP {}", beats_label(s.beat_jump_size)),
         PadMode::Sampler if ctx.sampler_bank == od_engine::MELODY_BANK => "MELODY".into(),
+        PadMode::Sampler if ctx.sampler_bank == od_engine::DRUMS_BANK => "DRUMS".into(),
         PadMode::Sampler => format!("BANK {}", ctx.sampler_bank + 1),
         // Nothing sent: the bar says where the notes come from instead.
         PadMode::Melody if !melody_sent(ctx.sampler_slots) => String::new(),
@@ -772,6 +773,15 @@ mod tests {
         assert!(matches!(
             up[..],
             [Command::Sampler(SamplerCommand::Release { slot: 27 })]
+        ));
+        // [80] The DRUMS bank by its name; deck 2 plays its pads 9–16 (the
+        // samples), deck 1 the kit.
+        c.sampler_bank = od_engine::DRUMS_BANK;
+        assert_eq!(param_label(&DeckState::default(), &c), "DRUMS");
+        let kick = od_engine::DRUMS_BANK * 16 + 8;
+        assert!(matches!(
+            press_commands(&DeckState::default(), &c, 0, true)[..],
+            [Command::Sampler(SamplerCommand::Trigger { slot })] if slot == kick
         ));
     }
 

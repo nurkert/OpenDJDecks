@@ -89,7 +89,7 @@ fn quantised_trigger_starts_on_the_grid() {
 /// pitch (no tempo, so SYNC does not change their speed).
 #[test]
 fn melody_bank_slots_trigger_on_the_grid() {
-    assert_eq!(MELODY_BANK, SAMPLER_BANKS - 1);
+    assert_eq!(MELODY_BANK, SAMPLER_BANKS - 2);
     let first = MELODY_BANK * SAMPLER_SLOTS;
     let octave = first + 8;
     assert!(octave < SAMPLER_TOTAL);
@@ -296,6 +296,132 @@ fn sequencer_pattern_recording() {
     assert_eq!(rig.state().sampler[1].pattern, (1 << 4) | (1 << 5));
     // Not doubled: only the sequencer plays it, exactly at 30 000.
     assert_eq!(onsets(&out), vec![30_000 - 28_800]);
+}
+
+/// Loads a short DC one-shot on `slot` with the given steps set.
+fn stepped(rig: &mut Rig, slot: usize, steps: &[usize]) {
+    smp(rig, SamplerCommand::Load { slot, sample: dc(100, 0.5) });
+    let mask = steps.iter().fold(0u16, |m, s| m | 1 << s);
+    smp(rig, SamplerCommand::SeqPattern { slot, mask });
+}
+
+/// [80] Swing moves every off-beat step (the second 16th of each eighth)
+/// later by its share of a step; the on-beat steps stay on the grid.
+#[test]
+fn swing_delays_the_off_beat_steps_by_its_share_of_a_step() {
+    let mut rig = clock_rig();
+    stepped(&mut rig, 0, &[0, 1, 2, 3]);
+    smp(&mut rig, SamplerCommand::SeqSwing(0.5));
+    smp(&mut rig, SamplerCommand::SeqPlay(true));
+    let out = rig.render(200); // 25 600 frames: a step is 6 000 at 120 BPM
+    // Steps 1 and 3 half a step (3 000 frames) late.
+    assert_eq!(onsets(&out), vec![0, 9_000, 12_000, 21_000]);
+    let st = rig.state().sequencer;
+    assert!((st.swing - 0.5).abs() < 1e-6 && !st.half_time);
+    // Out of range is clamped to the most swing there is.
+    smp(&mut rig, SamplerCommand::SeqSwing(3.0));
+    rig.render(1);
+    assert_eq!(rig.state().sequencer.swing, SEQ_SWING_MAX);
+    // Without swing the steps are straight again.
+    let mut rig = clock_rig();
+    stepped(&mut rig, 0, &[0, 1, 2, 3]);
+    smp(&mut rig, SamplerCommand::SeqPlay(true));
+    assert_eq!(onsets(&rig.render(200)), vec![0, 6_000, 12_000, 18_000]);
+}
+
+/// [80] Half time: a step lasts an eighth note, so the bar of steps takes
+/// two bars of the master and the swing scales with it.
+#[test]
+fn half_time_doubles_the_step_length() {
+    let mut rig = clock_rig();
+    stepped(&mut rig, 0, &[0, 1, 2, 8]);
+    smp(&mut rig, SamplerCommand::SeqHalfTime(true));
+    smp(&mut rig, SamplerCommand::SeqPlay(true));
+    let out = rig.render(1600); // 204 800 frames = 8.53 beats
+    // Steps are 12 000 frames apart; step 8 on beat 4, steps 0 and 1 again
+    // from beat 8.
+    assert_eq!(onsets(&out), vec![0, 12_000, 24_000, 96_000, 192_000, 204_000]);
+    assert!(rig.state().sequencer.half_time);
+    assert_eq!(rig.state().sequencer.step, 1);
+    // With swing a quarter of the (longer) step: 3 000 frames late.
+    let mut rig = clock_rig();
+    stepped(&mut rig, 0, &[0, 1]);
+    smp(&mut rig, SamplerCommand::SeqHalfTime(true));
+    smp(&mut rig, SamplerCommand::SeqSwing(0.25));
+    smp(&mut rig, SamplerCommand::SeqPlay(true));
+    assert_eq!(onsets(&rig.render(200)), vec![0, 15_000]);
+}
+
+/// [80] PLAY from a beat: nothing sounds before it, step 1 lands on it
+/// and the steps count from there; from "now" step 1 is the next block.
+/// Recording while waiting lands on step 1 at the earliest.
+#[test]
+fn play_from_a_beat_starts_step_one_there() {
+    let mut rig = clock_rig();
+    stepped(&mut rig, 0, &[0, 4]);
+    rig.render(100); // 12 800 frames: beat 0.53
+    smp(&mut rig, SamplerCommand::SeqPlayFrom(Some(4.0)));
+    rig.render(1);
+    let st = rig.state().sequencer;
+    assert!(st.playing && st.waiting, "waits for its beat");
+    let out = rig.render(800); // to frame 115 328
+    // Beat 4 = frame 96 000 (step 0), beat 5 = 120 000 (step 4) is later.
+    assert_eq!(onsets(&out), vec![96_000 - 12_928]);
+    assert!(!rig.state().sequencer.waiting);
+    // From now: step 1 on the next block, wherever the beat is.
+    let mut rig = clock_rig();
+    stepped(&mut rig, 0, &[0, 4]);
+    rig.render(77); // 9 856 frames
+    smp(&mut rig, SamplerCommand::SeqPlayFrom(None));
+    let out = rig.render(200);
+    assert_eq!(onsets(&out), vec![0, 6_000 * 4]);
+    // Recording while step 1 waits: a press lands on step 1.
+    let mut rig = clock_rig();
+    smp(&mut rig, SamplerCommand::Load { slot: 2, sample: dc(100, 0.5) });
+    rig.render(10);
+    smp(&mut rig, SamplerCommand::SeqPlayFrom(Some(4.0)));
+    smp(&mut rig, SamplerCommand::SeqRecord(true));
+    rig.render(1);
+    smp(&mut rig, SamplerCommand::Trigger { slot: 2 });
+    rig.render(1);
+    assert_eq!(rig.state().sampler[2].pattern, 1);
+}
+
+/// [80] The DRUMS bank's slots hold the synthesised kit; the sequencer
+/// plays their patterns on the master grid (a four-to-the-floor kick, the
+/// snare on 2 and 4), each sound starting on its step.
+#[test]
+fn the_sequencer_plays_the_kit_slots_on_the_master_grid() {
+    let mut rig = clock_rig();
+    let base = DRUMS_BANK * SAMPLER_SLOTS;
+    assert!(base + SAMPLER_SLOTS <= SAMPLER_TOTAL);
+    let kit = drums::kit("tight").unwrap();
+    for (i, voice) in [(0, drums::Voice::ALL[0]), (1, drums::Voice::ALL[1])] {
+        let mono = drums::render(voice, kit.pads[i], SR);
+        let data = SampleData::new(
+            od_decode::DecodedAudio { sample_rate: SR, channels: 2, samples: mono.iter().flat_map(|&x| [x, x]).collect() },
+            SR,
+        );
+        smp(&mut rig, SamplerCommand::Load { slot: base + i, sample: data });
+    }
+    smp(&mut rig, SamplerCommand::SeqPattern { slot: base, mask: 0b0001_0001_0001_0001 });
+    smp(&mut rig, SamplerCommand::SeqPattern { slot: base + 1, mask: 0b0001_0000_0001_0000 });
+    smp(&mut rig, SamplerCommand::SeqPlay(true));
+    let out = rig.render(750); // 96 000 frames: one bar
+    // Energy right after each beat: the kick on every beat, louder where
+    // the snare joins it (beats 2 and 4).
+    let energy = |at: usize| out[at * 2..(at + 2_000) * 2].iter().map(|x| x * x).sum::<f32>();
+    let beats: Vec<f32> = (0..4).map(|b| energy(b * 24_000)).collect();
+    assert!(beats.iter().all(|e| *e > 1.0), "a kick on every beat: {beats:?}");
+    assert!(beats[1] > beats[0] && beats[3] > beats[2], "the snare on 2 and 4: {beats:?}");
+    // Silent just before each beat, sounding within a few frames of it.
+    for b in 1..4 {
+        let at = b * 24_000;
+        assert!(out[(at - 200) * 2..at * 2].iter().all(|x| x.abs() < 1e-3), "quiet before beat {b}");
+        assert!(out[at * 2..(at + 40) * 2].iter().any(|x| x.abs() > 1e-3), "sounds on beat {b}");
+    }
+    let st = rig.state();
+    assert!(st.sampler[base].loaded && st.sampler[base + 1].loaded);
 }
 
 #[test]

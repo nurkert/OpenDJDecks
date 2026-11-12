@@ -230,12 +230,49 @@ export struct CreateRender {
     can-send: bool,
 }
 
-// [79] One pad of DRUMS (create.rs): the pad the knobs set, sounding on
-// the audition voice, and set away from the kit's own settings.
+// [79] One pad of DRUMS (create.rs): the pad selected (the knobs set a
+// kit pad, the step row shows its steps), sounding (on the audition voice
+// or in its sampler slot), and set away from the kit's own settings. [80]
+// Pads 9 to 16: the sample's name and whether one is loaded; any pad:
+// whether it has steps.
 export struct CreateDrumPad {
     selected: bool,
     playing: bool,
     set: bool,
+    name: string,
+    loaded: bool,
+    steps: bool,
+}
+
+// [80] One step of the drum machine's row: set for the selected pad, set
+// for another pad (a mark at its foot), sounding now.
+export struct CreateDrumStep {
+    on: bool,
+    others: bool,
+    playing: bool,
+}
+
+// [80] The drum machine as the sampler's sequencer has it: PLAY (and
+// whether step 1 waits for the next bar), REC, SWING in percent, HALF
+// TIME, whether UNDO has steps to bring back, the steps set on the
+// selected pad; for RESULT the steps set
+// over all pads, the PATTERN pad it saves to (0: none free), its bars,
+// the master tempo, and whether it is saved as it is (and the sampler on
+// the DRUMS bank: sent).
+export struct CreateDrumMachine {
+    playing: bool,
+    waiting: bool,
+    rec: bool,
+    swing: int,
+    half-time: bool,
+    can-undo: bool,
+    steps-set: int,
+    hits: int,
+    pattern: int,
+    bars: int,
+    bpm: string,
+    saved: bool,
+    sent: bool,
 }
 
 export global Create {
@@ -363,8 +400,11 @@ export global Create {
     // settings for it (a double-click on a knob brings them back) and how
     // long it sounds ("0.35 s").
     in property <string> kit: "tight";
-    in property <[CreateDrumPad]> drum-pads: [{}, {}, {}, {}, {}, {}, {}, {}];
+    in property <[CreateDrumPad]> drum-pads: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}];
     in property <int> drum-selected;
+    // [80] The kit pad the knobs show (the last one selected while a
+    // sample pad is).
+    in property <int> drum-knob-pad;
     in-out property <float> drum-pitch;
     in-out property <float> drum-decay: 50;
     in-out property <float> drum-tone: 50;
@@ -377,6 +417,23 @@ export global Create {
     callback play-drum(int);
     callback choose-kit(string);
     callback set-drum(string, float);
+    // [80] The step row of the selected pad, the sequencer and RESULT.
+    in property <[CreateDrumStep]> drum-steps: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}];
+    in property <CreateDrumMachine> drum-machine: { pattern: 1, bars: 1 };
+    callback toggle-drum-step(int);
+    callback drum-play();
+    callback drum-rec();
+    callback drum-clear();
+    callback drum-undo();
+    callback set-swing(int);
+    callback set-half-time(bool);
+    callback load-sample();
+    callback save-pattern();
+    callback send-drums();
+    // A pad's name: the kit's sound, a sample's name, else its number.
+    public pure function drum-pad-name(i: int) -> string {
+        return i < 8 ? root.drum-name(i) : i < root.drum-pads.length && root.drum-pads[i].name != "" ? root.drum-pads[i].name : @tr("PAD {}", i + 1);
+    }
     // A pad's sound in capitals.
     public pure function drum-name(i: int) -> string {
         return i == 0 ? @tr("KICK") : i == 1 ? @tr("SNARE") : i == 2 ? @tr("HAT") : i == 3 ? @tr("OPEN HAT")
@@ -466,15 +523,6 @@ component ScrollZone inherits Rectangle {
             }
         }
     }
-}
-
-// An empty slot (a pad or a step): a hollow outline with its legend.
-component Slot inherits Rectangle {
-    in property <string> legend;
-    border-radius: Theme.r-control;
-    border-width: Theme.hair; border-color: Theme.rule-strong;
-    min-width: 0px;
-    Caps { width: parent.width; height: parent.height; text: root.legend; horizontal-alignment: center; vertical-alignment: center; overflow: elide; }
 }
 
 // [73] One key of the strip: the root in bone, the scale's notes filled,
@@ -578,17 +626,6 @@ component KeyStrip inherits Rectangle {
         enabled: Create.keyboard-on; arrows: true;
         activate => { Create.play-key(root.at); }
         step(d) => { root.at = clamp(root.at + d, 0, Create.keyboard.length - 1); }
-    }
-}
-
-// A row of hollow slots, one per legend, a little apart every four.
-component SlotRow inherits HorizontalLayout {
-    in property <[string]> legends;
-    spacing: Theme.key-gap;
-    height: Theme.touch-mode ? 44px : 36px;
-    for l[i] in root.legends: HorizontalLayout {
-        padding-left: i > 0 && Math.mod(i, 4) == 0 ? Theme.s2 : 0px;
-        Slot { legend: l; }
     }
 }
 
@@ -1674,7 +1711,7 @@ component DrumKnobs inherits VerticalLayout {
     spacing: Theme.s2;
     Text {
         accessible-role: text; accessible-id: "create.kit.pad"; accessible-value: self.text;
-        text: Create.drum-name(Create.drum-selected) + " · " + Create.drum-length;
+        text: Create.drum-name(Create.drum-knob-pad) + " · " + Create.drum-length;
         font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; color: Theme.bone-2;
         letter-spacing: 1.2px;
         horizontal-alignment: center; overflow: elide;
@@ -1706,34 +1743,45 @@ component DrumKnobs inherits VerticalLayout {
 }
 
 // [79] One drum pad: its sound's name, played on press (sodium fill while
-// it sounds). The pad the knobs set is filled bone; one set away from the
-// kit says so under its name.
+// it sounds). The selected pad (the knobs set it, the steps are its) is
+// filled bone; one set away from the kit says so under its name. [80]
+// Pads 9 to 16 hold samples from the library: an empty one is a hollow
+// slot with its number (a press selects it for LOAD SAMPLE). A short line
+// at the foot marks a pad with steps.
 component DrumPad inherits Rectangle {
     in property <CreateDrumPad> pad;
     in property <int> index;
-    property <string> name: Create.drum-name(root.index);
+    property <bool> sample: root.index >= 8;
+    property <bool> empty: root.sample && !root.pad.loaded;
+    property <string> name: Create.drum-pad-name(root.index);
     property <bool> lit: root.pad.playing;
-    property <string> tip: @tr("Play {} and set it with the knobs in KIT", root.name);
+    property <bool> chosen: root.pad.selected && !root.lit;
+    property <string> tip: root.empty ? @tr("Pad {}: empty. Select it, then LOAD SAMPLE puts the track open in Prepare's player on it", root.index + 1)
+        : root.sample ? @tr("Play {}; STEPS shows its steps. LOAD SAMPLE replaces it", root.name)
+        : @tr("Play {}; the knobs in KIT set it and STEPS shows its steps", root.name);
     accessible-role: button;
     accessible-id: "create.drums.pad" + (root.index + 1);
     accessible-label: TooltipState.name-for(self.accessible-id, root.name, root.tip);
-    accessible-value: root.lit ? @tr("PLAYING") : root.pad.selected ? @tr("SELECTED") : "";
+    accessible-value: root.lit ? @tr("PLAYING") : root.pad.selected ? @tr("SELECTED") : root.empty ? @tr("EMPTY") : "";
     accessible-description: root.tip;
     accessible-action-default => { Create.play-drum(root.index); }
-    // All alike wide, whatever the name, so they line up with 9 to 16.
+    // All alike wide, whatever the name, so the two rows line up.
     min-width: Theme.touch-min;
     preferred-width: Theme.touch-min;
     horizontal-stretch: 1;
     height: Theme.touch-mode ? 52px : 44px;
-    background: Theme.face(true, touch.pressed, touch.has-hover, root.pad.selected && !root.lit, root.lit, Theme.attention);
+    background: root.empty ? (root.chosen ? Theme.bone : touch.has-hover ? Theme.plate-raised : transparent)
+        : Theme.face(true, touch.pressed, touch.has-hover, root.chosen, root.lit, Theme.attention);
     border-radius: Theme.r-control;
-    property <color> ink: Theme.ink(true, touch.pressed, touch.has-hover, root.pad.selected && !root.lit, root.lit);
+    border-width: root.empty && !root.chosen ? Theme.hair : 0px;
+    border-color: Theme.rule-strong;
+    property <color> ink: root.empty && !root.chosen ? Theme.bone-3 : Theme.ink(true, touch.pressed, touch.has-hover, root.chosen, root.lit);
     VerticalLayout {
         padding-left: Theme.s1; padding-right: Theme.s1;
         alignment: center; spacing: 0px;
         Text {
-            text: root.name;
-            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+            text: root.empty ? root.index + 1 : root.name;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi; letter-spacing: root.sample ? 0px : 1.2px;
             color: root.ink; horizontal-alignment: center; overflow: elide;
         }
         if root.pad.set: Caps {
@@ -1741,6 +1789,15 @@ component DrumPad inherits Rectangle {
             color: root.lit || root.pad.selected ? root.ink : Theme.bone-3;
             horizontal-alignment: center; overflow: elide;
         }
+        if root.sample && root.pad.loaded: Caps {
+            text: @tr("SAMPLE");
+            color: root.lit || root.pad.selected ? root.ink : Theme.bone-3;
+            horizontal-alignment: center; overflow: elide;
+        }
+    }
+    if root.pad.steps: Rectangle {
+        x: parent.width * 0.3; y: parent.height - 4px; width: parent.width * 0.4; height: 2px;
+        background: root.lit || root.chosen ? Theme.ground : Theme.bone-3;
     }
     // A pad plays on press, as on an instrument.
     touch := TipArea {
@@ -1753,31 +1810,178 @@ component DrumPad inherits Rectangle {
     KeyFocus { activate => { Create.play-drum(root.index); } }
 }
 
-// [79] The 8 pads of bank 1, a little apart after four; in two rows of
-// four where one row would leave a pad too narrow for its name. Follows
-// the width through a plain property, so it does not feed back into the
-// layout.
+// [79] [80] The 16 pads of the DRUMS bank: the kit's 8 over the 8 sample
+// pads, a little apart after four; in four rows of four where a row of
+// eight would leave a pad too narrow for its name. Follows the width
+// through a plain property, so it does not feed back into the layout.
 component DrumPads inherits VerticalLayout {
-    property <bool> two-rows;
+    property <bool> narrow;
+    property <int> per-row: root.narrow ? 4 : 8;
     vertical-stretch: 0;
-    init => { self.two-rows = self.width < 520px; }
-    changed width => { self.two-rows = self.width < 520px; }
+    init => { self.narrow = self.width < 520px; }
+    changed width => { self.narrow = self.width < 520px; }
     spacing: Theme.key-gap;
-    if !root.two-rows: HorizontalLayout {
+    for r in 16 / root.per-row: HorizontalLayout {
         spacing: Theme.key-gap;
-        for p[i] in Create.drum-pads: HorizontalLayout {
+        for i in root.per-row: HorizontalLayout {
             padding-left: i > 0 && Math.mod(i, 4) == 0 ? Theme.s2 : 0px;
-            DrumPad { pad: p; index: i; }
+            DrumPad { pad: Create.drum-pads[r * root.per-row + i]; index: r * root.per-row + i; }
         }
     }
-    if root.two-rows: HorizontalLayout {
-        spacing: Theme.key-gap;
-        for i in 4: DrumPad { pad: Create.drum-pads[i]; index: i; }
+}
+
+// [80] One step of the row: hollow while unset, bone where the selected
+// pad plays, sodium while it sounds (a sodium outline on an unset step); a
+// short line at its foot where another pad plays. The keyboard's cursor
+// carries the focus ring. A tap sets or clears it.
+component DrumStep inherits Rectangle {
+    in property <CreateDrumStep> step;
+    in property <int> index;
+    in property <bool> cursor;
+    callback tapped();
+    property <bool> lit: root.step.playing;
+    property <string> tip: @tr("Set or clear step {} of the selected pad; the arrow keys move along the steps, Return sets one", root.index + 1);
+    // Read as a cell of the row: the row is the Tab stop.
+    accessible-role: text;
+    accessible-id: "create.drums.step" + (root.index + 1);
+    accessible-label: TooltipState.name-for(self.accessible-id, @tr("STEP {}", root.index + 1), root.tip);
+    accessible-value: (root.step.on ? @tr("set") : @tr("empty")) + (root.lit ? " " + @tr("playing") : "")
+        + (root.step.others ? " " + @tr("other pads") : "");
+    accessible-description: root.tip;
+    accessible-action-default => { root.tapped(); }
+    min-width: Theme.touch-min;
+    height: Theme.touch-mode ? 44px : 40px;
+    background: root.lit && root.step.on ? Theme.attention : root.step.on ? Theme.bone-2
+        : touch.has-hover ? Theme.plate-raised : transparent;
+    border-radius: Theme.r-control;
+    border-width: root.step.on && !root.lit ? 0px : root.lit ? 2px : Theme.hair;
+    border-color: root.lit ? Theme.attention : Theme.rule-strong;
+    if root.step.others: Rectangle {
+        x: parent.width * 0.3; y: parent.height - 5px; width: parent.width * 0.4; height: 2px;
+        background: root.step.on ? Theme.ground : Theme.bone-3;
     }
-    if root.two-rows: HorizontalLayout {
-        spacing: Theme.key-gap;
-        for i in 4: DrumPad { pad: Create.drum-pads[i + 4]; index: i + 4; }
+    if root.cursor: Rectangle {
+        border-width: Theme.focus-width; border-color: Theme.focus; border-radius: Theme.r-control;
     }
+    touch := TipArea {
+        tooltip: root.tip;
+        mouse-cursor: pointer;
+        clicked => { root.tapped(); }
+    }
+}
+
+// [80] The 16 steps of the selected pad: one row, a little apart at each
+// beat; two rows of 8 where one would be too narrow (and on touch, for
+// 44 px targets). One Tab stop: the arrow keys move the cursor, Return or
+// Space sets or clears its step. Follows the width through a plain
+// property, so it does not feed back into the layout.
+component DrumSteps inherits Rectangle {
+    property <bool> wide;
+    property <int> per-row: Theme.touch-mode || !root.wide ? 8 : 16;
+    property <int> at: 0;
+    init => { self.wide = self.width >= 480px; }
+    changed width => { self.wide = self.width >= 480px; }
+    property <string> tip: @tr("The steps of the selected pad: a tap or Return sets or clears one, the arrow keys move along them");
+    accessible-role: list;
+    accessible-id: "create.drums.steps.row";
+    accessible-label: TooltipState.name-for(self.accessible-id, @tr("Steps"), root.tip);
+    accessible-value: @tr("{} of 16 set", Create.drum-machine.steps-set);
+    accessible-description: root.tip;
+    vertical-stretch: 0;
+    VerticalLayout {
+        spacing: Theme.key-gap;
+        for r in 16 / root.per-row: HorizontalLayout {
+            spacing: Theme.key-gap;
+            for i in root.per-row: HorizontalLayout {
+                padding-left: i > 0 && Math.mod(i, 4) == 0 ? Theme.s2 : 0px;
+                DrumStep {
+                    step: Create.drum-steps[r * root.per-row + i]; index: r * root.per-row + i;
+                    cursor: focus.focused && root.at == r * root.per-row + i;
+                    tapped => { root.at = r * root.per-row + i; Create.toggle-drum-step(r * root.per-row + i); }
+                }
+            }
+        }
+    }
+    focus := KeyFocus {
+        arrows: true;
+        activate => { Create.toggle-drum-step(root.at); }
+        step(d) => { root.at = clamp(root.at + d, 0, 15); }
+    }
+}
+
+// [80] SWING and HALF TIME, the sequencer's own (Perform's sequencer
+// plays with them too).
+component DrumFeel inherits HorizontalLayout {
+    spacing: Theme.key-gap;
+    alignment: start;
+    Caps { text: @tr("SWING"); vertical-alignment: center; }
+    Stepper {
+        accessible-id: "create.steps.swing";
+        a11y-prev: "create.steps.swing.less"; a11y-value: "create.steps.swing.value"; a11y-next: "create.steps.swing.more";
+        value: Create.drum-machine.swing + " %"; template: "00 %"; lit: Create.drum-machine.swing > 0;
+        size: 26px;
+        tooltip: @tr("Swing: every off-beat step that share of a step late (33 % is a triplet shuffle)");
+        step(d) => { Create.set-swing(Create.drum-machine.swing + d * 5); }
+    }
+    PlateButton {
+        accessible-id: "create.steps.half"; accessible-role: checkbox;
+        accessible-checkable: true; accessible-checked: Create.drum-machine.half-time;
+        compact: true; label: @tr("HALF TIME");
+        selected: Create.drum-machine.half-time;
+        tooltip: @tr("Half time: a step is an eighth note, so the 16 steps take two bars (for material read at half the tempo)");
+        clicked => { Create.set-half-time(!Create.drum-machine.half-time); }
+    }
+}
+
+// [80] PLAY, REC, CLEAR and UNDO of the step row.
+component DrumKeys inherits HorizontalLayout {
+    spacing: Theme.key-gap;
+    PlateButton {
+        accessible-id: "create.steps.play"; accessible-role: button;
+        compact: true; label: Create.drum-machine.waiting ? @tr("NEXT BAR") : Create.drum-machine.playing ? @tr("STOP") : @tr("PLAY");
+        active: Create.drum-machine.playing; tone: Theme.attention;
+        tooltip: @tr("Play the steps on the master tempo, from the next bar while a deck plays (through the sampler); again to stop");
+        clicked => { Create.drum-play(); }
+    }
+    PlateButton {
+        accessible-id: "create.steps.rec"; accessible-role: checkbox;
+        accessible-checkable: true; accessible-checked: Create.drum-machine.rec;
+        compact: true; label: Create.drum-machine.rec ? @tr("REC ON") : @tr("REC");
+        active: Create.drum-machine.rec; tone: Theme.fault;
+        tooltip: @tr("Record: pads pressed while the steps play land on the nearest step; again to stop");
+        clicked => { Create.drum-rec(); }
+    }
+    PlateButton {
+        accessible-id: "create.steps.clear"; accessible-role: button;
+        compact: true; label: @tr("CLEAR"); tone: Theme.fault;
+        enabled: Create.drum-machine.hits > 0;
+        tooltip: @tr("Empty every pad's steps (UNDO brings them back)");
+        clicked => { Create.drum-clear(); }
+    }
+    PlateButton {
+        accessible-id: "create.steps.undo"; accessible-role: button;
+        compact: true; label: @tr("UNDO");
+        enabled: Create.drum-machine.can-undo;
+        tooltip: @tr("Bring back the steps as they were before the last CLEAR");
+        clicked => { Create.drum-undo(); }
+    }
+}
+
+// [80] STEPS' head: SWING and HALF TIME on the left, the keys on the
+// right; on two rows where one would be too narrow. Follows the width
+// through a plain property, so it does not feed back into the layout.
+component DrumHead inherits VerticalLayout {
+    property <bool> wide;
+    init => { self.wide = self.width >= 620px; }
+    changed width => { self.wide = self.width >= 620px; }
+    spacing: Theme.key-gap;
+    if root.wide: HorizontalLayout {
+        spacing: Theme.s3;
+        DrumFeel { horizontal-stretch: 1; }
+        DrumKeys { horizontal-stretch: 0; }
+    }
+    if !root.wide: DrumFeel { }
+    if !root.wide: DrumKeys { alignment: start; }
 }
 
 // DRUMS: KIT | PADS over STEPS.
@@ -1790,50 +1994,40 @@ component DrumsView inherits HorizontalLayout {
         title: @tr("KIT");
         KitChooser { }
         DrumKnobs { }
-        Prose { text: @tr("A pad pressed is the one the knobs set. A double-click on a knob brings back the kit's setting. The kits are synthesised, so they sound the same on every computer."); }
+        Prose { text: @tr("The knobs set the kit pad selected last. A double-click on a knob brings back the kit's setting. The kits are synthesised, so they sound the same on every computer."); }
         HorizontalLayout {
             alignment: center;
             PlateButton {
                 accessible-id: "create.kit.load"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("LOAD SAMPLE");
-                tooltip: @tr("Put a sound from the library on a pad (comes with the drum machine)");
+                compact: true; label: @tr("LOAD SAMPLE");
+                tooltip: @tr("Put the track open in Prepare's player (or the file selected in a folder) on the selected pad of 9 to 16, else the first empty one");
+                clicked => { Create.load-sample(); }
             }
         }
     }
     VerticalLayout {
         horizontal-stretch: 1;
         spacing: Theme.key-gap;
+        // The pads as tall as they are; the steps take the rest.
         Zone {
             accessible-id: "create.drums.pads";
-            title: @tr("PADS");
+            vertical-stretch: 0;
+            title: @tr("PADS · DRUMS BANK");
             DrumPads { }
-            SlotRow { legends: ["9", "10", "11", "12", "13", "14", "15", "16"]; }
             Text {
                 accessible-role: text; accessible-id: "create.drums.hint"; accessible-value: self.text;
                 min-width: 0px;
-                text: @tr("Press a pad to hear it. Pads 9 to 16 come with the steps.");
+                text: @tr("A pad plays and shows its steps below. Pads 9 to 16 take samples from the library: LOAD SAMPLE.");
                 font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
                 overflow: elide;
             }
         }
         Zone {
             accessible-id: "create.drums.steps";
-            title: @tr("STEPS");
-            summary: @tr("Sixteen steps on the master tempo, shared with the sampler's sequencer in Perform.");
-            SlotRow { legends: ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]; }
-            HorizontalLayout {
-                alignment: center; spacing: Theme.key-gap;
-                PlateButton {
-                    accessible-id: "create.steps.play"; accessible-role: button;
-                    compact: true; enabled: false; label: @tr("PLAY");
-                    tooltip: @tr("Play the pattern on the master tempo (comes with the drum machine)");
-                }
-                PlateButton {
-                    accessible-id: "create.steps.rec"; accessible-role: button;
-                    compact: true; enabled: false; label: @tr("REC");
-                    tooltip: @tr("Record the pads into the steps (comes with the drum machine)");
-                }
-            }
+            vertical-stretch: 1;
+            title: @tr("STEPS ({})", Create.drum-pad-name(Create.drum-selected));
+            DrumHead { }
+            DrumSteps { }
         }
     }
 }
@@ -2034,7 +2228,8 @@ component ResultBar inherits Rectangle {
     background: Theme.ground-band;
     border-radius: Theme.r-panel;
     property <string> summary: Create.view == "drums"
-        ? @tr("No pattern yet. It shows here with its bars and tempo, ready to send to Perform or render as a loop.")
+        ? (Create.drum-machine.hits > 0 ? root.drums
+            : @tr("No pattern yet. It shows here with its bars and tempo, ready to send to Perform or render as a loop."))
         : Create.view == "theory" ? @tr("THEORY shows what fits. A melody typed here lands on MELODY's strip.")
         : Create.render.notes > 0 ? root.melody
         : @tr("No melody yet. It shows here with its notes, bars, tempo and cues, and whether the stick formats take it.");
@@ -2043,6 +2238,15 @@ component ResultBar inherits Rectangle {
         + " · " + (Create.render.bars == 1 ? @tr("1 bar") : @tr("{} bars", Create.render.bars))
         + " · " + (Create.render.bpm == "" ? "—" : Create.render.bpm) + " BPM"
         + " · " + (Create.render.cues == 1 ? @tr("1 cue") : @tr("{} cues", Create.render.cues));
+    // [80] The drum pattern: "pattern 1 · 16 steps · 1 bar · 124.0 BPM ·
+    // swing 20 % · half time".
+    property <CreateDrumMachine> dm: Create.drum-machine;
+    property <string> drums: (root.dm.pattern > 0 ? @tr("pattern {}", root.dm.pattern) : @tr("every PATTERN pad taken"))
+        + " · " + @tr("16 steps")
+        + " · " + (root.dm.bars == 1 ? @tr("1 bar") : @tr("{} bars", root.dm.bars))
+        + " · " + root.dm.bpm + " BPM"
+        + " · " + @tr("swing {} %", root.dm.swing)
+        + (root.dm.half-time ? " · " + @tr("half time") : "");
     property <bool> ready: Create.render.state == "ready";
     property <bool> rendering: Create.render.state == "rendering";
     property <bool> sent: Create.render.send == "sent";
@@ -2180,22 +2384,33 @@ component ResultBar inherits Rectangle {
                 }
             }
         }
+        // [80] Saved and sent: filled green with the word (SAVED, SENT).
         if Create.view == "drums": HorizontalLayout {
             alignment: center; spacing: Theme.s3;
             PlateButton {
                 accessible-id: "create.result.send"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("SEND TO PERFORM");
-                tooltip: @tr("Play the pattern from the sampler in Perform (comes with the drum machine)");
+                compact: true;
+                label: root.dm.sent ? @tr("SENT") : @tr("SEND TO PERFORM");
+                enabled: root.dm.hits > 0 || root.dm.sent;
+                active: root.dm.sent; tone: root.dm.sent ? Theme.live : Theme.attention;
+                tooltip: root.dm.sent ? @tr("Sent: the PATTERN pads in Perform play this pattern, the sampler's DRUMS bank holds the kit")
+                    : @tr("Save the pattern on a PATTERN pad and put the sampler in Perform on the DRUMS bank");
+                clicked => { Create.send-drums(); }
             }
             PlateButton {
                 accessible-id: "create.result.render-loop"; accessible-role: button;
                 compact: true; enabled: false; label: @tr("RENDER LOOP");
-                tooltip: @tr("Write a bar-exact loop with a hot cue per sound (comes with the drum machine)");
+                tooltip: @tr("Write a bar-exact loop with a hot cue per sound (not built yet)");
             }
             PlateButton {
                 accessible-id: "create.result.save-pattern"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("SAVE PATTERN");
-                tooltip: @tr("Keep the pattern in the sampler's store (comes with the drum machine)");
+                compact: true;
+                label: root.dm.saved ? @tr("SAVED") : @tr("SAVE PATTERN");
+                enabled: root.dm.hits > 0 || root.dm.saved;
+                active: root.dm.saved; tone: root.dm.saved ? Theme.live : Theme.attention;
+                tooltip: root.dm.saved ? @tr("Saved: pad S{} of the PATTERN pad mode in Perform plays it", root.dm.pattern)
+                    : @tr("Keep the steps, swing and half time in the sampler's store, on a PATTERN pad in Perform");
+                clicked => { Create.save-pattern(); }
             }
         }
     }

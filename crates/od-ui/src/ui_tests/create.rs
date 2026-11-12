@@ -1211,7 +1211,7 @@ fn drum_pads_play_the_kit_and_their_knobs_change_the_sound() {
     }
     assert_eq!(ui.value("create.drums.pad1"), "SELECTED", "KICK is selected at first");
     assert!(ui.value("create.kit.pad").starts_with("KICK · "), "{}", ui.value("create.kit.pad"));
-    assert_eq!(ui.get("create.kit.load").accessible_enabled(), Some(false), "own samples come with [80]");
+    assert_eq!(ui.get("create.kit.load").accessible_enabled(), Some(true), "[80] own samples on pads 9–16");
 
     // A press: the snare plays on the audition voice and is selected.
     ui.click("create.drums.pad2");
@@ -1284,4 +1284,268 @@ fn drum_pads_play_the_kit_and_their_knobs_change_the_sound() {
 fn ring_of(ui: &Ui, id: &str) -> slint::LogicalPosition {
     let r = Rect::of(&ui.get(id));
     slint::LogicalPosition::new(r.x + r.w / 2.0, r.y + 20.0)
+}
+
+// ── [80] The drum machine ───────────────────────────────────────────────
+
+/// The engine's steps of drum pad `pad` (0..16).
+fn drum_steps(ui: &Ui, pad: usize) -> u16 {
+    snapshot(ui).sampler[crate::create::drum_slot(pad)].pattern
+}
+
+/// DRUMS open with audio running and the kit in the sampler's DRUMS bank.
+fn drums_open(ui: &Ui) {
+    crate::engine::ensure_engine(&ui.app);
+    ui.click("topbar.mode.create");
+    ui.click("create.view.drums");
+    assert!(
+        ui.wait_until(10.0, |u| (0..8).all(|p| snapshot(u).sampler[crate::create::drum_slot(p)].loaded)),
+        "the kit goes into the DRUMS bank"
+    );
+}
+
+/// The step lit in the row (none: -1).
+fn lit_step(ui: &Ui) -> i32 {
+    (1..=16).find(|i| ui.value(&format!("create.drums.step{i}")).contains("playing")).map_or(-1, |i| i - 1)
+}
+
+/// The kit goes into the sampler's DRUMS bank as files in created/drums.
+/// A tapped step is a step of the sampler's sequencer for that pad's slot
+/// (the selected pad's row, other pads marked); PLAY runs the sequencer on
+/// the master tempo and lights the steps in order; again stops it.
+#[test]
+fn drum_steps_are_the_sequencers_pattern_and_play_in_order() {
+    let ui = Ui::open((1440, 900));
+    drums_open(&ui);
+    let folder = ui.fx.root.join("library/created/drums");
+    assert!(folder.join("drum-01.wav").exists() && folder.join("drum-08.wav").exists());
+    let names: Vec<String> = ui.app.sampler.slots.borrow()[crate::create::drum_slot(0)..crate::create::drum_slot(8)]
+        .iter()
+        .map(|s| s.as_ref().map(|s| s.name.clone()).unwrap_or_default())
+        .collect();
+    assert_eq!(names, ["KICK", "SNARE", "HAT", "OPEN HAT", "CLAP", "TOM 1", "TOM 2", "RIDE"]);
+    assert_eq!(ui.value("create.drums.pad9"), "EMPTY", "pads 9–16 wait for samples");
+    assert_eq!(label(&ui, "create.drums.steps"), "STEPS (KICK)");
+    assert_eq!(ui.value("create.result.summary").contains("No pattern yet"), true);
+    // Four on the floor for the kick.
+    for s in [1, 5, 9, 13] {
+        ui.click(&format!("create.drums.step{s}"));
+    }
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 0) == 0x1111), "the sequencer has them: {:#x}", drum_steps(&ui, 0));
+    assert!(ui.wait_until(2.0, |u| u.value("create.drums.step5").starts_with("set")));
+    ui.click("create.drums.step5");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 0) == 0x1101), "a second tap clears it");
+    ui.click("create.drums.step5");
+    // The snare's row: its own steps, the kick's marked.
+    ui.click("create.drums.pad2");
+    assert_eq!(label(&ui, "create.drums.steps"), "STEPS (SNARE)");
+    assert!(ui.wait_until(2.0, |u| u.value("create.drums.step5") == "empty other pads"), "{}", ui.value("create.drums.step5"));
+    ui.click("create.drums.step5");
+    ui.click("create.drums.step13");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 1) == 0x1010));
+    assert!(ui.wait_until(2.0, |u| u.value("create.result.summary").starts_with("pattern 1 · 16 steps · 1 bar")), "{}", ui.value("create.result.summary"));
+    assert!(ui.app.ui.global::<crate::Create>().get_drum_pads().row_data(0).unwrap().steps, "the kick is marked as having steps");
+    // The arrow keys move along the row, Return sets the step.
+    assert!(ui.wait_until(2.0, |u| u.value("create.drums.steps.row") == "2 of 16 set"), "{}", ui.value("create.drums.steps.row"));
+    // PLAY: nothing on a deck, so step 1 starts at once; the lit step goes
+    // round in order.
+    ui.click("create.steps.play");
+    assert!(ui.wait_until(3.0, |u| snapshot(u).sequencer.playing), "the sampler's sequencer runs");
+    assert!(ui.wait_until(2.0, |u| label(u, "create.steps.play") == "STOP"));
+    let mut seen: Vec<i32> = Vec::new();
+    let start = std::time::Instant::now();
+    while start.elapsed().as_secs_f32() < 3.0 {
+        ui.pump(15);
+        let s = lit_step(&ui);
+        if s >= 0 && seen.last() != Some(&s) {
+            seen.push(s);
+        }
+    }
+    assert!(seen.len() >= 8, "steps lit: {seen:?}");
+    for w in seen.windows(2) {
+        let d = (w[1] - w[0]).rem_euclid(16);
+        assert!((1..=3).contains(&d), "in order: {seen:?}");
+    }
+    let kick = crate::create::drum_slot(0);
+    assert!(ui.wait_until(3.0, |u| snapshot(u).sampler[kick].playing), "the kick sounds from its slot");
+    ui.click("create.steps.play");
+    assert!(ui.wait_until(3.0, |u| !snapshot(u).sequencer.playing), "stopped");
+    assert!(ui.wait_until(2.0, |u| lit_step(u) == -1), "no step lit");
+}
+
+/// REC (armed in red, with the word) puts a pad pressed while the steps
+/// play on the nearest step; CLEAR empties every pad's steps and UNDO
+/// brings them back.
+#[test]
+fn rec_quantises_pad_presses_and_clear_has_an_undo() {
+    let ui = Ui::open((1440, 900));
+    drums_open(&ui);
+    ui.click("create.steps.play");
+    assert!(ui.wait_until(3.0, |u| snapshot(u).sequencer.playing && !snapshot(u).sequencer.waiting));
+    ui.click("create.steps.rec");
+    assert!(ui.wait_until(2.0, |u| snapshot(u).sequencer.recording));
+    assert!(ui.wait_until(2.0, |u| label(u, "create.steps.rec") == "REC ON"), "armed, with the word");
+    assert_eq!(ui.get("create.steps.rec").accessible_checked(), Some(true));
+    // A clap: it lands on the step sounding now or the next.
+    let before = snapshot(&ui).sequencer.step as i32;
+    ui.click("create.drums.pad5");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 4) != 0), "recorded");
+    let steps = drum_steps(&ui, 4);
+    assert_eq!(steps.count_ones(), 1, "{steps:#b}");
+    let got = steps.trailing_zeros() as i32;
+    let off = (got - before).rem_euclid(16);
+    assert!(off <= 2, "nearest step: {got} after {before}");
+    assert!(ui.wait_until(3.0, |u| u.value(&format!("create.drums.step{}", got + 1)).starts_with("set")), "the clap's row shows it");
+    ui.click("create.steps.rec");
+    assert!(ui.wait_until(2.0, |u| !snapshot(u).sequencer.recording));
+    ui.click("create.drums.pad5");
+    ui.pump(300);
+    assert_eq!(drum_steps(&ui, 4), steps, "disarmed: the pads only play");
+    ui.click("create.steps.play");
+    // CLEAR, then UNDO.
+    ui.click("create.drums.pad1");
+    ui.click("create.drums.step1");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 0) == 1));
+    assert_eq!(ui.get("create.steps.undo").accessible_enabled(), Some(false));
+    ui.click("create.steps.clear");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 0) == 0 && drum_steps(u, 4) == 0), "every pad empty");
+    assert!(ui.wait_until(2.0, |u| u.get("create.steps.undo").accessible_enabled() == Some(true)));
+    ui.click("create.steps.undo");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 0) == 1 && drum_steps(u, 4) == steps), "back as they were");
+    assert!(ui.wait_until(2.0, |u| u.get("create.steps.undo").accessible_enabled() == Some(false)), "one UNDO");
+}
+
+/// SWING and HALF TIME are the sequencer's; SAVE PATTERN stores the steps
+/// with them on a PATTERN pad (SAVED), SEND TO PERFORM puts the sampler on
+/// the DRUMS bank (SENT). In Perform the PATTERN pad plays the pattern
+/// back and the sampler pads play the kit.
+#[test]
+fn a_saved_pattern_plays_from_the_pattern_pads_in_perform() {
+    use od_controller::PadMode;
+    let ui = Ui::open((1440, 900));
+    drums_open(&ui);
+    for s in [1, 9] {
+        ui.click(&format!("create.drums.step{s}"));
+    }
+    for _ in 0..4 {
+        ui.click("create.steps.swing.more");
+    }
+    ui.click("create.steps.half");
+    assert!(ui.wait_until(3.0, |u| {
+        let q = snapshot(u).sequencer;
+        (q.swing - 0.2).abs() < 1e-6 && q.half_time && drum_steps(u, 0) == 0x0101
+    }), "swing 20 % and half time in the sequencer");
+    assert_eq!(ui.value("create.steps.swing.value"), "20 %");
+    assert!(ui.wait_until(2.0, |u| u.value("create.result.summary").ends_with("· 2 bars · 120.0 BPM · swing 20 % · half time")), "{}", ui.value("create.result.summary"));
+    ui.click("create.result.save-pattern");
+    assert!(ui.wait_until(2.0, |u| label(u, "create.result.save-pattern") == "SAVED"), "{}", label(&ui, "create.result.save-pattern"));
+    let status = ui.app.ui.get_status_text().to_string();
+    assert!(status.starts_with("Saved as pattern 1"), "{status}");
+    let seq = ui.app.sampler.sequences.borrow()[0].clone().expect("on PATTERN pad 1");
+    assert!(seq.half_time && (seq.swing - 0.2).abs() < 1e-6 && seq.patterns[crate::create::drum_slot(0)] == 0x0101);
+    assert_eq!(label(&ui, "create.result.send"), "SEND TO PERFORM");
+    ui.click("create.result.send");
+    assert!(ui.wait_until(2.0, |u| label(u, "create.result.send") == "SENT"));
+    assert_eq!(ui.app.sampler.bank.get(), od_engine::DRUMS_BANK);
+    assert!(!ui.app.ui.get_status_text().contains('/'));
+    // A change: no longer saved as it is.
+    ui.click("create.drums.step5");
+    assert!(ui.wait_until(2.0, |u| label(u, "create.result.save-pattern") == "SAVE PATTERN"));
+    // Steps cleared and the feel reset here; Perform's PATTERN pad brings
+    // the pattern back with its swing and half time, and plays it.
+    ui.click("create.steps.clear");
+    ui.click("create.steps.half");
+    for _ in 0..4 {
+        ui.click("create.steps.swing.less");
+    }
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 0) == 0 && !snapshot(u).sequencer.half_time));
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::decks::set_pad_mode(&ui.app, 0, PadMode::PatternRecall);
+    ui.pump(200);
+    assert_eq!(ui.value("deck1.pad-mode"), "PATTERN");
+    let pattern_pads = |u: &Ui| {
+        let st = snapshot(u);
+        let mut rows = crate::decks::pad_rows(&u.app, 0, &st);
+        crate::sampler::seq_pads(&u.app, &st, &mut rows);
+        rows
+    };
+    let pads = pattern_pads(&ui);
+    assert!(pads[0].set && pads[0].sub.as_str() == "2 STEPS", "{:?}", pads[0].sub);
+    crate::decks::pad(&ui.app, 0, 0, true);
+    assert!(ui.wait_until(3.0, |u| {
+        let s = snapshot(u);
+        s.sequencer.playing && s.sequencer.half_time && (s.sequencer.swing - 0.2).abs() < 1e-6 && drum_steps(u, 0) == 0x0101
+    }), "the PATTERN pad plays it back");
+    let kick = crate::create::drum_slot(0);
+    assert!(ui.wait_until(5.0, |u| snapshot(u).sampler[kick].playing), "the kick sounds");
+    assert!(pattern_pads(&ui)[0].lit, "lit while it plays");
+    crate::decks::pad(&ui.app, 0, 0, false);
+    // The sampler pads on the DRUMS bank play the kit.
+    crate::engine::send(&ui.app, od_engine::Command::Sampler(od_engine::SamplerCommand::SeqPlay(false)));
+    crate::decks::set_pad_mode(&ui.app, 0, PadMode::Sampler);
+    ui.pump(200);
+    assert_eq!(ui.value("deck1.pad-mode"), "SAMPLER");
+    let pads = crate::decks::pad_rows(&ui.app, 0, &snapshot(&ui));
+    assert_eq!(pads[1].sub.as_str(), "SNARE");
+    crate::decks::pad(&ui.app, 0, 1, true);
+    assert!(ui.wait_until(3.0, |u| snapshot(u).sampler[crate::create::drum_slot(1)].playing), "the snare from deck 1's pad");
+    crate::decks::pad(&ui.app, 0, 1, false);
+}
+
+/// LOAD SAMPLE puts the track in Prepare's player on pad 9 (its steps are
+/// the sequencer's too); the kit, the steps, the sample, swing, half time
+/// and the saved pattern are all back after a restart.
+#[test]
+fn load_sample_fills_pad_nine_and_a_restart_keeps_the_drum_machine() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("prepare".into());
+    ui.app.ui.invoke_select_section("library".into());
+    ui.app.ui.invoke_row_clicked(0, false, false);
+    ui.pump(200);
+    assert!(ui.app.state.borrow().player.current.is_some(), "a track in the player");
+    drums_open(&ui);
+    // Nothing on pad 9 yet: its steps wait for a sample.
+    ui.click("create.drums.pad9");
+    assert_eq!(label(&ui, "create.drums.steps"), "STEPS (PAD 9)");
+    ui.click("create.drums.step3");
+    assert!(ui.app.ui.get_status_text().contains("LOAD SAMPLE"), "{}", ui.app.ui.get_status_text());
+    ui.click("create.kit.load");
+    let slot = crate::create::drum_slot(8);
+    assert!(ui.wait_until(20.0, |u| snapshot(u).sampler[slot].loaded), "decoded onto pad 9");
+    let title = ui.app.sampler.slots.borrow()[slot].as_ref().map(|s| s.name.clone()).unwrap_or_default();
+    assert!(!title.is_empty());
+    assert!(ui.wait_until(2.0, |u| label(u, "create.drums.pad9") == title), "{} vs {title}", label(&ui, "create.drums.pad9"));
+    assert_eq!(ui.value("create.drums.pad9"), "SELECTED");
+    assert_eq!(label(&ui, "create.drums.steps"), format!("STEPS ({title})"));
+    assert!(!ui.app.ui.get_status_text().contains('/'), "{}", ui.app.ui.get_status_text());
+    ui.click("create.drums.step3");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 8) == 0b100));
+    ui.click("create.drums.pad1");
+    ui.click("create.drums.step1");
+    ui.click("create.steps.swing.more");
+    ui.click("create.steps.half");
+    assert!(ui.wait_until(3.0, |u| drum_steps(u, 0) == 1 && snapshot(u).sequencer.half_time));
+    ui.click("create.result.save-pattern");
+    assert!(ui.wait_until(2.0, |u| label(u, "create.result.save-pattern") == "SAVED"));
+    let stored = |u: &Ui| u.fx.lib().meta(crate::sampler::META_SAMPLER).unwrap().unwrap_or_default();
+    assert!(ui.wait_until(5.0, |u| {
+        let j = stored(u);
+        j.contains("drum-01.wav") && j.contains("\"half_time\":true") && j.contains("\"pattern\":4") && j.contains("\"sequences\":[{")
+    }), "kept in the sampler's store: {}", stored(&ui));
+    let kit = crate::create::drum_kit(&ui.app);
+    assert_eq!(kit.pattern, Some(0));
+
+    // Restart.
+    let Ui { app, fx, .. } = ui;
+    drop(app);
+    let ui = Ui::start(fx, (1440, 900), false);
+    drums_open(&ui);
+    assert_eq!(crate::create::drum_kit(&ui.app), kit);
+    assert!(ui.wait_until(10.0, |u| snapshot(u).sampler[slot].loaded && drum_steps(u, 8) == 0b100 && drum_steps(u, 0) == 1), "the sample and the steps are back");
+    let q = snapshot(&ui).sequencer;
+    assert!((q.swing - 0.05).abs() < 1e-6 && q.half_time, "swing and half time are back");
+    assert_eq!(label(&ui, "create.drums.pad9"), title);
+    assert!(ui.app.sampler.sequences.borrow()[0].is_some(), "the PATTERN pad keeps it");
+    assert!(ui.wait_until(2.0, |u| label(u, "create.result.save-pattern") == "SAVED"), "still the saved pattern");
+    assert_eq!(ui.value("create.steps.swing.value"), "5 %");
 }
