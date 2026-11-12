@@ -667,7 +667,8 @@ impl Library {
 
     /// Stores an analysis result. Beatgrid and key are only replaced when the
     /// stored data has the same or lower priority than `source` and the grid
-    /// is not locked. Waveform, phrases, loudness and energy are always
+    /// is not locked; a track rendered from CREATE never takes a key from
+    /// analysis. Waveform, phrases, loudness and energy are always
     /// replaced. Not journaled (not a user edit).
     pub fn store_analysis(
         &mut self,
@@ -686,7 +687,14 @@ impl Library {
                 write_grid(tx, id, Some(&(a.beatgrid.clone(), source)))?;
             }
             let existing_key = read_key(tx, id)?;
-            if a.key.is_some() && existing_key.is_none_or(|(_, s)| s <= source) {
+            // [81] A track rendered from CREATE keeps the key CREATE gave it,
+            // or none: a key analysed from a few notes or a drum loop is a guess.
+            let created: bool = tx.query_row(
+                "SELECT EXISTS (SELECT 1 FROM created_track WHERE track_id = ?1)",
+                [id.0],
+                |r| r.get(0),
+            )?;
+            if a.key.is_some() && !created && existing_key.is_none_or(|(_, s)| s <= source) {
                 write_key(tx, id, a.key.map(|k| (k, source)))?;
             }
             tx.execute(
@@ -1173,5 +1181,21 @@ mod tests {
         assert_ne!(ids, [b]);
         lib.remove_track(a).unwrap();
         assert!(lib.created_tracks().unwrap().is_empty(), "gone with the track");
+    }
+
+    /// [81] Analysis gives a CREATE track no key: it keeps the one CREATE
+    /// set, or none (a drum loop); other tracks take the analysed key.
+    #[test]
+    fn analysis_leaves_the_key_of_a_created_track_alone() {
+        let mut lib = Library::open_in_memory().unwrap();
+        let made = track(&mut lib, "Loop", Some(120.0), None);
+        let bought = track(&mut lib, "Bought", Some(120.0), None);
+        lib.mark_created(made).unwrap();
+        let am = MusicalKey::parse("Am").unwrap();
+        let analysed = TrackAnalysis { key: Some(am), ..Default::default() };
+        lib.store_analysis(made, &analysed, DataSource::Analysis).unwrap();
+        lib.store_analysis(bought, &analysed, DataSource::Analysis).unwrap();
+        assert_eq!(lib.key_with_source(made).unwrap(), None, "left empty");
+        assert_eq!(lib.key_with_source(bought).unwrap(), Some((am, DataSource::Analysis)));
     }
 }

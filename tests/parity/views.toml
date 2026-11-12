@@ -8752,7 +8752,7 @@ mode = "create"
 source = "Roadmap [70], CREATE concept (0.10.0)"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "create"]
-note = "KIT beside PADS over STEPS. KIT: the built-in kits as one segmented control (TIGHT, WARM, DUSTY; the chosen one filled bone), the kit pad's name and length, and its PITCH, DECAY and TONE knobs with their values under them (a double-click brings back the kit's setting), a line on what the knobs set, and LOAD SAMPLE. PADS (the sampler's DRUMS bank): the eight synthesised sounds by name (KICK, SNARE, HAT, OPEN HAT, CLAP, TOM 1, TOM 2, RIDE) over pads 9 to 16 for samples from the library (hollow with their number while empty), the selected one filled bone, the one sounding sodium, CHANGED under one set away from its kit, a short line under a pad with steps (roadmap [79]). STEPS (and the selected pad's name): SWING and HALF TIME, PLAY, REC, CLEAR and UNDO, then the selected pad's 16 steps in one row, a little apart at each beat (one Tab stop, the arrow keys move along it); the RESULT bar with SEND TO PERFORM, RENDER LOOP (disabled) and SAVE PATTERN (roadmap [80])."
+note = "KIT beside PADS over STEPS. KIT: the built-in kits as one segmented control (TIGHT, WARM, DUSTY; the chosen one filled bone), the kit pad's name and length, and its PITCH, DECAY and TONE knobs with their values under them (a double-click brings back the kit's setting), a line on what the knobs set, and LOAD SAMPLE. PADS (the sampler's DRUMS bank): the eight synthesised sounds by name (KICK, SNARE, HAT, OPEN HAT, CLAP, TOM 1, TOM 2, RIDE) over pads 9 to 16 for samples from the library (hollow with their number while empty), the selected one filled bone, the one sounding sodium, CHANGED under one set away from its kit, a short line under a pad with steps (roadmap [79]). STEPS (and the selected pad's name): SWING and HALF TIME, PLAY, REC, CLEAR and UNDO, then the selected pad's 16 steps in one row, a little apart at each beat (one Tab stop, the arrow keys move along it); the RESULT bar with SEND TO PERFORM, SAVE PATTERN (roadmap [80]) and, between them, the loop's bars (1, 2, 4 or 8) and RENDER LOOP (READY in green once rendered), with the stick formats' check of its cues on the right of the RESULT line (roadmap [81])."
 
 [[view.region]]
 id = "create.views"
@@ -8903,6 +8903,7 @@ place = "the RESULT bar"
 order = "row"
 elements = [
   "create.result.send",
+  "create.result.loop-bars",
   "create.result.render-loop",
   "create.result.save-pattern",
 ]

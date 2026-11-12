@@ -17,7 +17,11 @@
 //! What the stick formats take ([`check`]) is what this app's own code
 //! carries: [`CUE_LIMIT`] hot cues.
 //!
-//! The model here is pure but for [`write`]; create.rs wires it to the
+//! [81] RENDER LOOP: a drum pattern as a loop of whole bars ([`write_loop`])
+//! from the engine's own offline sequencer ([`od_engine::render_loop`]),
+//! with a memory loop over the file and one hot cue per sound.
+//!
+//! The model here is pure but for [`write`] and [`write_loop`]; create.rs wires it to the
 //! RESULT bar, the note render cache and the library.
 
 use crate::arrange::{self, BEATS_PER_BAR, Melody};
@@ -294,32 +298,196 @@ pub(crate) fn write(job: &Job) -> anyhow::Result<Made> {
     if !check(job.plan.cues()).fits {
         anyhow::bail!("{} hot cues are more than the {} the stick formats hold", job.plan.cues(), CUE_LIMIT);
     }
-    let mut lib = od_library::Library::open(&job.library)?;
     let audio = mix(&job.plan, job.bpm, job.rate, &job.notes);
     let title = title(&job.title, job.layout, job.bpm);
-    let folder = dir(&job.library);
-    std::fs::create_dir_all(&folder)?;
-    let path = file_path(&folder, &title);
-    crate::track_edit::write_wav(&path, &audio, 2, job.rate)?;
-    let id = crate::workers::import_file(&mut lib, &path)?;
-    // [76] The CREATED list: marked in the library, not by its tags.
-    lib.mark_created(id)?;
     let tags = od_core::TrackTags {
         title: title.clone(),
         artist: job.artist.clone(),
         comment: format!("CREATE: {}", job.text),
         ..Default::default()
     };
+    let key = job.key.and_then(ScaleKey::musical_key);
+    add(&job.library, &audio, job.rate, tags, grid(&job.plan, job.bpm), cues(&job.plan, job.bpm, job.key), key, "Render notes")
+}
+
+/// Writes `audio` (stereo at `rate`) as a new WAV file named after the
+/// title of `tags` into [`dir`], and adds it to the library, marked as
+/// created ([76]), with its tags, grid, cues and key (none: left empty) as
+/// one edit named `edit` (one undo step).
+#[allow(clippy::too_many_arguments)]
+fn add(
+    library: &Path,
+    audio: &[f32],
+    rate: u32,
+    tags: od_core::TrackTags,
+    grid: Beatgrid,
+    cues: Vec<Cue>,
+    key: Option<od_core::MusicalKey>,
+    edit: &str,
+) -> anyhow::Result<Made> {
+    let mut lib = od_library::Library::open(library)?;
+    let title = tags.title.clone();
+    let folder = dir(library);
+    std::fs::create_dir_all(&folder)?;
+    let path = file_path(&folder, &title);
+    crate::track_edit::write_wav(&path, audio, 2, rate)?;
+    let id = crate::workers::import_file(&mut lib, &path)?;
+    // [76] The CREATED list: marked in the library, not by its tags.
+    lib.mark_created(id)?;
     let mut states = vec![
         od_library::EntityState::Tags { track: id, tags },
-        od_library::EntityState::Grid { track: id, grid: Some((grid(&job.plan, job.bpm), DataSource::Manual)) },
-        od_library::EntityState::Cues { track: id, cues: cues(&job.plan, job.bpm, job.key) },
+        od_library::EntityState::Grid { track: id, grid: Some((grid, DataSource::Manual)) },
+        od_library::EntityState::Cues { track: id, cues },
     ];
-    if let Some(k) = job.key.and_then(ScaleKey::musical_key) {
+    if let Some(k) = key {
         states.push(od_library::EntityState::Key { track: id, key: Some((k, DataSource::Manual)) });
     }
-    lib.edit("Render notes", states)?;
+    lib.edit(edit, states)?;
     Ok(Made { track: id, title, path })
+}
+
+// ── [81] A drum pattern as a loop ───────────────────────────────────────
+
+/// The bars RENDER LOOP offers.
+pub(crate) const LOOP_BARS: [u32; 4] = [1, 2, 4, 8];
+/// The bars chosen at first.
+pub(crate) const LOOP_BARS_DEFAULT: u32 = 4;
+/// The memory loop over the whole file.
+const LOOP_LABEL: &str = "LOOP";
+/// The loudest a loop may peak at: louder is turned down as a whole.
+const LOOP_PEAK: f32 = 0.99;
+
+/// The loop's bars: the choice of [`LOOP_BARS`] at or above `chosen`, and
+/// never fewer than the 16 steps take (two bars at half time).
+pub(crate) fn loop_bars(chosen: u32, half_time: bool) -> u32 {
+    let least = chosen.max(if half_time { 2 } else { 1 });
+    LOOP_BARS.into_iter().find(|&b| b >= least).unwrap_or(LOOP_BARS[LOOP_BARS.len() - 1])
+}
+
+/// The choice `by` steps from `bars` (‹ ›), within what half time allows.
+pub(crate) fn step_loop_bars(bars: u32, by: i32, half_time: bool) -> u32 {
+    let now = loop_bars(bars, half_time);
+    let i = LOOP_BARS.iter().position(|&b| b == now).unwrap_or(0) as i32;
+    loop_bars(LOOP_BARS[(i + by).clamp(0, LOOP_BARS.len() as i32 - 1) as usize], half_time)
+}
+
+/// Where a sound of the loop comes from: the kit's, rendered; a sample
+/// pad's file, read on the worker.
+#[derive(Clone)]
+pub(crate) enum Source {
+    Ready(Arc<SampleData>),
+    File(PathBuf),
+}
+
+/// One pad of the pattern: its name (the cue's), its sound, its steps, and
+/// how its slot plays it (mode, gain, and the tempo it syncs from).
+#[derive(Clone)]
+pub(crate) struct LoopSound {
+    pub name: String,
+    pub source: Source,
+    pub pattern: u16,
+    pub mode: od_engine::SampleMode,
+    pub gain: f32,
+    pub sync_bpm: Option<f64>,
+}
+
+/// The pattern as a loop of `bars` at `bpm` and `rate` (see
+/// [`od_engine::render_loop`]), turned down as a whole where it would peak
+/// above [`LOOP_PEAK`].
+pub(crate) fn loop_audio(pads: &[od_engine::LoopPad], bars: u32, bpm: f64, rate: u32, swing: f32, half_time: bool) -> od_engine::Loop {
+    let mut l = od_engine::render_loop(pads, bars, bpm, rate, swing, half_time);
+    let peak = l.audio.iter().fold(0.0f32, |m, x| m.max(x.abs()));
+    if peak > LOOP_PEAK {
+        let g = LOOP_PEAK / peak;
+        for x in &mut l.audio {
+            *x *= g;
+        }
+    }
+    l
+}
+
+/// The loop's beatgrid: constant at `bpm` from the first downbeat at 0,
+/// over its bars, locked.
+pub(crate) fn loop_grid(bars: u32, bpm: f64) -> Beatgrid {
+    let mut g = Beatgrid::constant(bpm, 0.0, 1, seconds(f64::from(bars * BEATS_PER_BAR), bpm));
+    g.locked = true;
+    g
+}
+
+/// The loop's cues: first a memory loop over the whole file (`frames` at
+/// `rate`), then one hot cue per sound that plays, A, B, C … in pad order,
+/// at its first hit and named after its pad; never more than [`CUE_LIMIT`].
+pub(crate) fn loop_cues(names: &[String], first: &[Option<usize>], frames: usize, rate: u32) -> Vec<Cue> {
+    let at = |f: usize| f as f64 / f64::from(rate);
+    let mut out = vec![Cue { loop_end: Some(at(frames)), label: LOOP_LABEL.into(), ..Cue::memory(0.0) }];
+    out.extend(
+        names
+            .iter()
+            .zip(first)
+            .filter_map(|(n, f)| f.map(|f| (n, f)))
+            .take(CUE_LIMIT)
+            .enumerate()
+            .map(|(i, (n, f))| Cue { label: n.clone(), source: DataSource::Manual, ..Cue::hot(i as u8, at(f)) }),
+    );
+    out
+}
+
+/// "Drums (Loop 4 bars 124 BPM)".
+pub(crate) fn loop_title(bars: u32, bpm: f64) -> String {
+    let bars = if bars == 1 { "1 bar".to_string() } else { format!("{bars} bars") };
+    format!("Drums (Loop {bars} {} BPM)", bpm_text(bpm))
+}
+
+/// Everything RENDER LOOP needs, handed to its worker thread.
+pub(crate) struct LoopJob {
+    pub library: PathBuf,
+    pub sounds: Vec<LoopSound>,
+    pub bars: u32,
+    pub bpm: f64,
+    pub rate: u32,
+    pub swing: f32,
+    pub half_time: bool,
+}
+
+impl LoopJob {
+    /// "CREATE: KICK SNARE HAT · swing 20 % · half time", for the comment.
+    fn text(&self) -> String {
+        let names: Vec<&str> = self.sounds.iter().map(|s| s.name.as_str()).collect();
+        let mut t = format!("CREATE: {} · swing {} %", names.join(" "), (self.swing * 100.0).round());
+        if self.half_time {
+            t.push_str(" · half time");
+        }
+        t
+    }
+}
+
+/// Reads the sample pads' files, plays the pattern as a loop, writes it as
+/// a new WAV file into [`dir`] and adds it to the library with its grid,
+/// cues and no key as one edit. Runs on a worker thread.
+pub(crate) fn write_loop(job: &LoopJob) -> anyhow::Result<Made> {
+    if job.sounds.is_empty() {
+        anyhow::bail!("there are no steps to render");
+    }
+    if !check(job.sounds.len()).fits {
+        anyhow::bail!("{} hot cues are more than the {} the stick formats hold", job.sounds.len(), CUE_LIMIT);
+    }
+    let pads = job
+        .sounds
+        .iter()
+        .map(|s| {
+            let sample = match &s.source {
+                Source::Ready(d) => d.clone(),
+                Source::File(p) => SampleData::load(p, job.rate)?,
+            };
+            let speed = s.sync_bpm.filter(|b| *b > 1.0).map_or(1.0, |b| job.bpm / b);
+            Ok(od_engine::LoopPad { sample, pattern: s.pattern, mode: s.mode, gain: s.gain, speed })
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    let l = loop_audio(&pads, job.bars, job.bpm, job.rate, job.swing, job.half_time);
+    let names: Vec<String> = job.sounds.iter().map(|s| s.name.clone()).collect();
+    let tags = od_core::TrackTags { title: loop_title(job.bars, job.bpm), comment: job.text(), ..Default::default() };
+    let cues = loop_cues(&names, &l.first, l.audio.len() / 2, job.rate);
+    add(&job.library, &l.audio, job.rate, tags, loop_grid(job.bars, job.bpm), cues, None, "Render loop")
 }
 
 #[cfg(test)]
@@ -448,5 +616,66 @@ mod tests {
         assert_eq!(file_path(d.path(), "A/B: C"), d.path().join("A-B- C.wav"));
         std::fs::write(d.path().join("A-B- C.wav"), b"x").unwrap();
         assert_eq!(file_path(d.path(), "A/B: C"), d.path().join("A-B- C 2.wav"));
+    }
+
+    // ── [81] Loops ──────────────────────────────────────────────────────
+
+    #[test]
+    fn loop_bars_are_a_choice_of_whole_bars_never_shorter_than_the_steps() {
+        assert_eq!(LOOP_BARS_DEFAULT, 4);
+        assert_eq!([1, 2, 3, 4, 8, 9].map(|b| loop_bars(b, false)), [1, 2, 4, 4, 8, 8]);
+        assert_eq!(loop_bars(1, true), 2, "half time takes two bars for the 16 steps");
+        assert_eq!(step_loop_bars(4, 1, false), 8);
+        assert_eq!(step_loop_bars(8, 1, false), 8);
+        assert_eq!(step_loop_bars(2, -1, false), 1);
+        assert_eq!(step_loop_bars(2, -1, true), 2);
+        assert_eq!(loop_title(4, 124.0), "Drums (Loop 4 bars 124 BPM)");
+        assert_eq!(loop_title(1, 123.456), "Drums (Loop 1 bar 123.46 BPM)");
+    }
+
+    #[test]
+    fn a_loop_has_a_memory_loop_over_it_and_a_hot_cue_per_sound_that_plays() {
+        let names: Vec<String> = ["KICK", "SNARE", "HAT", "Vocal"].map(String::from).to_vec();
+        let c = loop_cues(&names, &[Some(0), None, Some(6_000), Some(48_000)], 96_000, 48_000);
+        assert_eq!((c[0].kind, c[0].start, c[0].loop_end, c[0].label.as_str()), (od_core::CueKind::Memory, 0.0, Some(2.0), "LOOP"));
+        let hot: Vec<(od_core::CueKind, f64, &str)> = c[1..].iter().map(|c| (c.kind, c.start, c.label.as_str())).collect();
+        use od_core::CueKind::Hot;
+        assert_eq!(hot, [(Hot(0), 0.0, "KICK"), (Hot(1), 0.125, "HAT"), (Hot(2), 1.0, "Vocal")], "in pad order, the silent one left out");
+        let many: Vec<String> = (0..40).map(|i| i.to_string()).collect();
+        let c = loop_cues(&many, &vec![Some(0); 40], 96_000, 48_000);
+        assert_eq!(c.len(), 1 + CUE_LIMIT, "never more hot cues than the formats hold");
+    }
+
+    #[test]
+    fn a_loop_written_twice_is_the_same_bytes_and_its_bars_long() {
+        let d = tempfile::tempdir().unwrap();
+        let rate = 48_000;
+        let kick = crate::create::drum_sample(0, od_engine::drums::KITS[0].pads[0], rate);
+        let job = LoopJob {
+            library: d.path().join("library.sqlite"),
+            sounds: vec![LoopSound {
+                name: "KICK".into(),
+                source: Source::Ready(kick),
+                pattern: 0x1111,
+                mode: od_engine::SampleMode::OneShot,
+                gain: 1.0,
+                sync_bpm: None,
+            }],
+            bars: 2,
+            bpm: 124.0,
+            rate,
+            swing: 0.2,
+            half_time: false,
+        };
+        let a = write_loop(&job).unwrap();
+        let b = write_loop(&job).unwrap();
+        assert_ne!(a.path, b.path, "a render never replaces a file");
+        assert_eq!(std::fs::read(&a.path).unwrap(), std::fs::read(&b.path).unwrap(), "the same bytes");
+        let r = hound::WavReader::open(&a.path).unwrap();
+        assert_eq!(r.duration() as usize, od_engine::loop_frames(2, 124.0, rate));
+        assert_eq!(a.title, "Drums (Loop 2 bars 124 BPM)");
+        let lib = od_library::Library::open(&job.library).unwrap();
+        assert!(lib.key_with_source(a.track).unwrap().is_none(), "no key");
+        assert_eq!(lib.created_tracks().unwrap().len(), 2);
     }
 }

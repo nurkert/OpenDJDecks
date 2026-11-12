@@ -2414,9 +2414,14 @@ tests = [
   "od-ui::ui_tests::create::drum_steps_are_the_sequencers_pattern_and_play_in_order",
   "od-ui::ui_tests::create::rec_quantises_pad_presses_and_clear_has_an_undo",
   "od-ui::ui_tests::create::load_sample_fills_pad_nine_and_a_restart_keeps_the_drum_machine",
+  "od-engine::sampler::a_loop_is_its_bars_long_and_a_tail_wraps_to_its_start",
+  "od-engine::sampler::a_loop_swings_and_plays_half_time_like_the_sequencer",
+  "od-engine::sampler::a_loop_sounds_as_the_sequencer_plays_it_and_renders_alike_every_time",
+  "od-ui::create_render::tests::a_loop_written_twice_is_the_same_bytes_and_its_bars_long",
+  "od-ui::ui_tests::create::render_loop_writes_a_bar_exact_loop_with_a_cue_per_sound_into_created",
 ]
-evidence = ["sampler.slint::SamplerPanel", "crates/od-ui/src/create.rs::toggle_drum_step"]
-note = "Footer row of the sampler panel: REC / PLAY / SAVE (onto the next free Pattern Recall pad), the 16 steps of the selected slot, the playing step and CLR; patterns saved with the slots. CREATE's DRUMS edits the same sequencer (roadmap [80]): the kit and samples in a sixth bank, DRUMS; SWING (0–75 % of a step on the off-beat steps) and HALF TIME (eighth-note steps) apply to every slot; PLAY from CREATE starts step 1 on the next bar while a deck plays"
+evidence = ["sampler.slint::SamplerPanel", "crates/od-ui/src/create.rs::toggle_drum_step", "crates/od-ui/src/create.rs::render_loop"]
+note = "Footer row of the sampler panel: REC / PLAY / SAVE (onto the next free Pattern Recall pad), the 16 steps of the selected slot, the playing step and CLR; patterns saved with the slots. CREATE's DRUMS edits the same sequencer (roadmap [80]): the kit and samples in a sixth bank, DRUMS; SWING (0–75 % of a step on the off-beat steps) and HALF TIME (eighth-note steps) apply to every slot; PLAY from CREATE starts step 1 on the next bar while a deck plays. RENDER LOOP writes the pattern as a new loop file of 1, 2, 4 or 8 bars at the master tempo, with a grid, a memory loop over it and a hot cue per sound (roadmap [81])"
 
 [[feature]]
 id = "sampler-panel"

@@ -54,4 +54,5 @@ pub use dsp::meter::MeterReading;
 pub use engine::{CommandSender, Engine, EngineError, EngineProcessor, Outputs, RecordTap};
 pub use state::*;
 pub use stems::{Stem, StemData, StemInput};
+pub use sampler::{Loop, LoopPad, loop_frames, render_loop};
 pub use track::{AUTO_CUE_THRESHOLD, HotCue, SampleData, TrackData};
