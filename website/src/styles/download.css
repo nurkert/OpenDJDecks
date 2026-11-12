@@ -265,6 +265,29 @@
   font-size: 0.9rem;
 }
 
+.dl__new {
+  display: flex;
+  gap: 0.7rem;
+  align-items: baseline;
+  max-width: 34rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--bone-2);
+  font-size: 0.95rem;
+}
+.dl__new-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--sodium);
+  box-shadow: 0 0 10px rgb(245 206 74 / 0.5);
+  transform: translateY(-0.05rem);
+}
+.dl__new a {
+  color: var(--bone);
+}
+
 .dl__win {
   position: relative;
   margin: 0;
