@@ -327,3 +327,110 @@ fn pads_play_the_note_at_other_pitches_and_warn_far_from_it() {
     }
     assert_eq!(ui.value("create.notes.octave.value"), "-2");
 }
+
+// ── [73] Key and scale ──────────────────────────────────────────────────
+
+fn set_key(ui: &Ui, track: od_core::TrackId, key: &str) {
+    ui.app.state.borrow_mut().lib.set_key(track, od_core::MusicalKey::parse(key)).unwrap();
+}
+
+fn pad_names(ui: &Ui) -> Vec<String> {
+    (1..=8).map(|i| ui.value(&format!("create.notes.pad{i}")).split(' ').next().unwrap_or_default().to_string()).collect()
+}
+
+/// A note from deck 1 plays in deck 2's key (C major): the pads hold the
+/// scale from the C below the note, the strip lights root, scale and the
+/// notes out of it, a key of the strip plays; SNAP TO SCALE off brings the
+/// semitones back. NEXT TRACK is off until the queue holds a track, then
+/// takes its key; the root and the scale set by hand say SET BY YOU, OTHER
+/// DECK follows the deck again; the choice survives a restart.
+#[test]
+fn the_key_comes_from_the_other_deck_or_the_next_track_and_fills_pads_and_strip() {
+    let ui = Ui::open((1440, 900));
+    let (a, b, c) = (ui.fx.tracks[0].0, ui.fx.tracks[1].0, ui.fx.tracks[2].0);
+    set_key(&ui, a, "8A");
+    set_key(&ui, b, "8B");
+    set_key(&ui, c, "11A");
+    crate::engine::ensure_engine(&ui.app);
+    crate::decks::load_track(&ui.app, 1, b, None);
+    assert!(ui.wait_until(30.0, |u| snapshot(u).decks[1].track == Some(b)), "deck 2 loads");
+    deck1_at(&ui, 1.04);
+    ui.click("create.source.deck1");
+    let g = ui.app.ui.global::<crate::Create>();
+    let n = crate::create::note(&ui.app).expect("a note");
+    g.invoke_drag_handle("out".into(), ((1.42 - n.view) / crate::create::SPAN) as f32);
+    g.invoke_drag_done();
+    assert!(ui.wait_until(5.0, |u| note_state(u) == "DETECTED"), "{}", note_state(&ui));
+    // Deck 2's key: C major, as a note name with the wheel beside.
+    assert!(ui.wait_until(3.0, |u| u.value("create.notes.key-from") == "FROM DECK 2"), "{}", ui.value("create.notes.key-from"));
+    assert_eq!(ui.value("create.notes.root.value"), "C");
+    assert_eq!(ui.value("create.notes.wheel"), "8B");
+    assert_eq!(ui.get("create.notes.scale.major").accessible_value().map(|s| s.to_string()), Some("HAPPY".into()));
+    assert_eq!(ui.value("create.fits.notes"), "C D E F G A B");
+    assert_eq!(ui.value("create.fits.chords"), "C Dm Em F G Am Bdim");
+    // Snapped: from A3 the C below, C3 to C4.
+    assert_eq!(pad_names(&ui), ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4"]);
+    assert!(ui.value("create.notes.pad1").ends_with("FAR"), "C3 is 9 semitones down: {}", ui.value("create.notes.pad1"));
+    // The strip from C3: the root, the scale and the rest as the key says.
+    let key = od_core::ScaleKey::new(0, od_core::Scale::Major);
+    let keys: Vec<crate::CreateKeyNote> = g.get_keyboard().iter().collect();
+    assert_eq!((keys.len(), keys[0].name.as_str()), (24, "C3"));
+    for (i, k) in keys.iter().enumerate() {
+        let m = 48 + i as i32;
+        let want = if m % 12 == 0 { "root" } else if key.contains(m) { "scale" } else { "out" };
+        assert_eq!(k.kind, want, "{}", k.name);
+        assert_eq!(k.pad, (48..=60).contains(&m) && key.contains(m), "{} on a pad", k.name);
+    }
+    assert_eq!(ui.value("create.keyboard.key0"), "C3 root on a pad");
+    assert_eq!(ui.value("create.keyboard.key1"), "Db3 out of the scale");
+    // A key of the strip (E3) plays on the audition voice.
+    let e3 = Rect::of(&ui.get("create.keyboard.key4"));
+    ui.click_at(slint::LogicalPosition::new(e3.x + e3.w / 2.0, e3.y + e3.h - 20.0), slint::platform::PointerEventButton::Left);
+    assert!(ui.wait_until(10.0, |u| snapshot(u).auditioning), "the key plays");
+    assert!(g.get_keyboard().row_data(4).unwrap().playing, "E3 shows it plays");
+    assert!(!g.get_note().hearing, "HEAR is not lit by a key");
+    // SNAP TO SCALE off: every semitone from the source note again.
+    ui.click("create.notes.snap");
+    assert!(!crate::create::choice(&ui.app).snap);
+    assert_eq!(pad_names(&ui), ["A3", "Bb3", "B3", "C4", "Db4", "D4", "Eb4", "E4"]);
+    ui.click("create.notes.snap");
+    assert_eq!(pad_names(&ui)[0], "C3");
+    // NEXT TRACK: off with nothing next, then the queue's next track.
+    assert_eq!(ui.get("create.notes.next-track").accessible_enabled(), Some(false));
+    let tip = ui.get("create.notes.next-track").accessible_description().unwrap_or_default();
+    assert!(tip.contains("No next track"), "{tip}");
+    crate::queue::add(&ui.app, &[c]);
+    assert!(ui.wait_until(3.0, |u| u.get("create.notes.next-track").accessible_enabled() == Some(true)), "a next track");
+    ui.click("create.notes.next-track");
+    assert_eq!(ui.value("create.notes.key-from"), "NEXT TRACK");
+    assert_eq!(ui.value("create.notes.root.value"), "F#", "11A is F# minor");
+    assert_eq!(crate::create::choice(&ui.app).key, Some(od_core::ScaleKey::new(6, od_core::Scale::Minor)));
+    assert_eq!(pad_names(&ui)[0], "F#3", "the F# at or below A3");
+    // By hand: a semitone up, then a mode under MORE.
+    ui.click("create.notes.root.up");
+    assert_eq!((ui.value("create.notes.root.value").as_str(), ui.value("create.notes.key-from").as_str()), ("G", "SET BY YOU"));
+    ui.click("create.notes.scale.more");
+    ui.click("create.notes.scale.dorian");
+    assert_eq!(crate::create::choice(&ui.app).key, Some(od_core::ScaleKey::new(7, od_core::Scale::Dorian)));
+    assert!(!ui.has("create.notes.wheel"), "a mode has no wheel label");
+    assert_eq!(ui.value("create.fits.key"), "G DORIAN");
+    // OTHER DECK: deck 2's key again.
+    ui.click("create.notes.from-deck");
+    assert_eq!((ui.value("create.notes.key-from").as_str(), ui.value("create.notes.root.value").as_str()), ("FROM DECK 2", "C"));
+    // Kept: a mode by hand, the hints and SNAP TO SCALE off.
+    ui.click("create.notes.scale.lydian");
+    ui.click("create.notes.snap");
+    ui.click("create.notes.hints");
+    assert!(ui.get("create.notes.scale.major").accessible_value().is_none_or(|v| v.is_empty()), "no HAPPY without the hints");
+    let kept = crate::create::choice(&ui.app);
+    assert_eq!((kept.from.as_str(), kept.snap, kept.hints), ("set", false, false));
+    let Ui { app, fx, .. } = ui;
+    drop(app);
+    let ui = Ui::start(fx, (1440, 900), false);
+    ui.app.ui.invoke_set_mode("create".into());
+    crate::create::set_view(&ui.app, "melody");
+    ui.pump(300);
+    assert_eq!(crate::create::choice(&ui.app), kept, "the key survives a restart");
+    assert_eq!(ui.value("create.notes.key-from"), "SET BY YOU");
+    assert_eq!(ui.value("create.fits.key"), "C LYDIAN");
+}

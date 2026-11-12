@@ -8631,12 +8631,46 @@ elements = [
 [[view.region]]
 id = "create.melody.keys"
 band = "create"
-place = "under SOURCE and NOTES: their (disabled) keys"
+place = "under SOURCE and NOTES: HEAR, and the (disabled) REC beside ARRANGE"
 order = "row"
 elements = [
   "create.source.hear",
-  "create.notes.next-track",
   "create.notes.rec",
+]
+
+[[view.region]]
+id = "create.notes.key"
+band = "create"
+place = "NOTES, top: the root, where the key comes from, OTHER DECK and NEXT TRACK (roadmap [73])"
+order = "row"
+elements = [
+  "create.notes.root",
+  "create.notes.key-from",
+  "create.notes.from-deck",
+  "create.notes.next-track",
+]
+
+[[view.region]]
+id = "create.notes.scale"
+band = "create"
+place = "NOTES, under the key: MAJOR, MINOR, MORE, and the hints' switch on the right"
+order = "row"
+elements = [
+  "create.notes.scale.major",
+  "create.notes.scale.minor",
+  "create.notes.scale.more",
+  "create.notes.hints",
+]
+
+[[view.region]]
+id = "create.notes.column"
+band = "create"
+place = "NOTES: the keyboard strip under the key and scale, over the pads"
+order = "column"
+elements = [
+  "create.keyboard",
+  "create.notes.snap",
+  "create.notes.pad1",
 ]
 
 [[view.region]]
@@ -8792,4 +8826,35 @@ order = "row"
 elements = [
   "create.strip.deck1",
   "create.strip.deck2",
+]
+
+[[view]]
+id = "create.scale"
+title = "Create: MELODY with a note picked and a key set by hand (a mode under MORE)"
+mode = "create"
+source = "Roadmap [73], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["topbar", "create"]
+note = "The key and scale over the keyboard strip: the root as a stepper, where the key comes from (SET BY YOU), OTHER DECK and NEXT TRACK; MAJOR and MINOR with HAPPY and SAD, the modes under MORE; the strip lights the root, the scale and the notes out of it over the pads' two octaves; SNAP TO SCALE beside the octave switch; FITS lists the key's notes and chords."
+
+[[view.region]]
+id = "create.notes.modes"
+band = "create"
+place = "NOTES, under the scale: the modes, from the left"
+order = "row"
+elements = [
+  "create.notes.scale.dorian",
+  "create.notes.scale.phrygian",
+  "create.notes.scale.lydian",
+]
+
+[[view.region]]
+id = "create.fits.key"
+band = "create"
+place = "FITS: the key, its notes and its chords"
+order = "column"
+elements = [
+  "create.fits.key",
+  "create.fits.notes",
+  "create.fits.chords",
 ]

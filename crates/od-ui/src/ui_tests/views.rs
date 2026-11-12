@@ -145,6 +145,15 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             w.invoke_set_mode("create".into());
             crate::create::set_view(&ui.app, id.strip_prefix("create.").unwrap_or("melody"));
         }
+        // [73] A note picked and a key set by hand, the modes shown.
+        "create.scale" => {
+            if kiosk {
+                return Err("CREATE is not part of the kiosk".into());
+            }
+            w.invoke_set_mode("create".into());
+            crate::create::set_view(&ui.app, "melody");
+            crate::create::stage_scale(&ui.app, ui.fx.tracks[0].0);
+        }
         "recordings.tracklist" | "panel.queue" | "devices.emergency" => {
             if kiosk {
                 return Err("not part of the kiosk".into());

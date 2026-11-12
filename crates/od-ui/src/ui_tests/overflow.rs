@@ -1212,6 +1212,16 @@ fn main_states() -> Vec<State> {
             },
             teardown: None,
         },
+        // [73] A key set by hand: a mode with MORE open, the hints on.
+        State {
+            id: "create.melody (a scale chosen)",
+            setup: |u| {
+                create(u, "melody");
+                crate::create::stage_scale(&u.app, u.fx.tracks[0].0);
+                u.pump(200);
+            },
+            teardown: Some(|u| u.app.ui.global::<crate::Create>().set_more(false)),
+        },
         State {
             id: "create.melody (audio running, four decks)",
             setup: |u| {

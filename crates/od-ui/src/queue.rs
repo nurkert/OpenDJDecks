@@ -100,6 +100,12 @@ pub(crate) fn next_playable(items: &[Item], dnp: impl Fn(TrackId) -> bool) -> Op
         .position(|i| i.track.is_some_and(|t| !dnp(t)))
 }
 
+/// [73] The track LOAD NEXT and auto-play would take next.
+pub(crate) fn next_track(app: &App) -> Option<TrackId> {
+    let items = with(|s| s.items.clone());
+    next_playable(&items, |t| is_dnp(app, t)).and_then(|i| items[i].track)
+}
+
 /// Moves item `i` by `delta` within the list; returns the new index (pure).
 pub(crate) fn move_item(items: &mut [Item], i: usize, delta: i32) -> Option<usize> {
     let j = i as i64 + delta as i64;

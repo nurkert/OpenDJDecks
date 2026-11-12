@@ -144,6 +144,15 @@ fn now_of_day(app: &App) -> f64 {
     (unix + offset as f64).rem_euclid(86_400.0)
 }
 
+/// [73] The track that comes next in the plan: the one after the track on
+/// air (or last on air), else the set's first; `None` without a plan or
+/// past its end.
+pub(crate) fn next_track(app: &App) -> Option<TrackId> {
+    let node = app.plan.node.get().filter(|_| !app.plan.closed.get())?;
+    let entries = app.state.borrow().lib.entries(node).ok()?;
+    entries.get(app.plan.pos.get().map_or(0, |p| p + 1)).map(|e| e.track)
+}
+
 /// The plan line, from the library and the engine.
 pub(crate) fn tick(app: &App) {
     let g = app.ui.global::<crate::SetPlan>();
