@@ -13,7 +13,8 @@
 //! | `peak`, `energy` | this module |
 //!
 //! [`transients`] (attacks for the grid editor) is not stored; the editor
-//! computes it from decoded samples.
+//! computes it from decoded samples. [`pitch`] (one picked note's pitch,
+//! for CREATE) runs on a region the user picks, not on the whole track.
 //!
 //! Tempo, key and phrase analysis run on a mono mixdown decimated to
 //! ≈ 11 kHz (≈ 8 kHz in lite mode); waveform and loudness use the full
@@ -24,6 +25,7 @@ mod dsp;
 pub mod key;
 pub mod loudness;
 pub mod phrase;
+pub mod pitch;
 pub mod tempo;
 pub mod transients;
 pub mod waveform;

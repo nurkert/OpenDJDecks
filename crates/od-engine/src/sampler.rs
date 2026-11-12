@@ -48,6 +48,10 @@ pub struct Sampler {
     /// Last sequencer boundary triggered (16th-note index).
     last_step: f64,
     step: u8,
+    /// A voice outside the slots: CREATE's HEAR plays a picked note on it
+    /// once (its fades are in the sample), to the master or the cue.
+    audition: Slot,
+    audition_cue: bool,
 }
 
 #[inline]
@@ -166,19 +170,22 @@ impl Slot {
 impl Sampler {
     pub fn new(sample_rate: u32) -> Self {
         let ramp = (sample_rate as f32 * 0.01) as u32;
+        let slot = || Slot {
+            data: None,
+            playing: false,
+            pending: false,
+            pos: 0.0,
+            mode: SampleMode::OneShot,
+            gain: Smoothed::new(1.0, ramp),
+            bpm: None,
+            sync: false,
+            tail: Tail::default(),
+            pattern: 0,
+        };
         Self {
-            slots: std::array::from_fn(|_| Slot {
-                data: None,
-                playing: false,
-                pending: false,
-                pos: 0.0,
-                mode: SampleMode::OneShot,
-                gain: Smoothed::new(1.0, ramp),
-                bpm: None,
-                sync: false,
-                tail: Tail::default(),
-                pattern: 0,
-            }),
+            slots: std::array::from_fn(|_| slot()),
+            audition: slot(),
+            audition_cue: false,
             quantize: None,
             seq_playing: false,
             seq_recording: false,
@@ -308,7 +315,38 @@ impl Sampler {
                 self.seq_playing = on;
             }
             SamplerCommand::SeqRecord(on) => self.seq_recording = on,
+            SamplerCommand::Audition { sample, cue } => {
+                let a = &mut self.audition;
+                if let Some(old) = a.data.replace(sample) {
+                    ctx.dispose_sample(old);
+                }
+                a.tail.remaining = 0;
+                a.playing = false;
+                a.start();
+                self.audition_cue = cue;
+            }
+            SamplerCommand::StopAudition => {
+                let a = &mut self.audition;
+                a.stop();
+                // The tail plays the last frames out over the declick fade.
+            }
         }
+    }
+
+    /// Mixes the audition voice into the master (or, while it is on the
+    /// cue, into the cue only) at unity gain.
+    pub fn mix_audition(&mut self, master: &mut [f32], cue: &mut [f32]) {
+        let a = &mut self.audition;
+        if !a.playing && a.tail.remaining == 0 {
+            return;
+        }
+        let out = if self.audition_cue { cue } else { master };
+        a.render(out, 1.0, 1.0);
+    }
+
+    /// The audition voice is playing.
+    pub fn auditioning(&self) -> bool {
+        self.audition.playing
     }
 
     /// Frames from the block start until beat `b` (rounded up), if within

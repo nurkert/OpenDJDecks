@@ -906,6 +906,7 @@ impl EngineProcessor {
                 *c += *s;
             }
         }
+        self.sampler.mix_audition(master_buf, cue_buf);
         // Mic / aux after the decks and sampler (talkover ducks them).
         self.input
             .process(&mut self.input_buf[..len], master_buf, cue_buf);
@@ -1061,6 +1062,7 @@ impl EngineProcessor {
         s.tempo_fx_multi = self.tempo_fx_multi;
         s.sampler = self.sampler.state();
         s.sequencer = self.sampler.sequencer();
+        s.auditioning = self.sampler.auditioning();
         s.input = self.input.state();
         s.record_tap = self.record_enabled;
         s.record_dropped = self.record_dropped;

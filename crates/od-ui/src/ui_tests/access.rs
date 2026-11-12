@@ -204,6 +204,12 @@ fn views() -> Vec<(&'static str, fn(&Ui))> {
             u.app.ui.invoke_set_mode("create".into());
             u.pump(300);
         }),
+        ("create (a note picked)", |u| {
+            u.app.ui.invoke_set_mode("create".into());
+            crate::create::set_view(&u.app, "melody");
+            crate::create::stage(&u.app, u.fx.tracks[0].0);
+            u.pump(300);
+        }),
     ]
 }
 

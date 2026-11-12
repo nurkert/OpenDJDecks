@@ -4,13 +4,15 @@
 // then down: its zones, the RESULT bar, and a slim deck strip so the decks
 // stay in view (they keep playing; CREATE only changes what is shown).
 //
-// This is the shell: every zone says what comes there and what you will do
+// The shell ([70]): every zone says what comes there and what you will do
 // in it. Controls that are not there yet are drawn disabled with their
 // later names, never as working keys. State lives in the `Create` global.
+// [71] fills MELODY's SOURCE: a note picked on a zoomed waveform, its pitch
+// and a correction, and HEAR.
 
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
-import { Caps, PlateButton } from "controls.slint";
+import { Caps, PlateButton, Stepper, Field, KeyFocus, TipArea, TooltipState } from "controls.slint";
 
 // One deck in the strip (create.rs, from the engine's deck state).
 export struct CreateDeck {
@@ -29,10 +31,54 @@ export struct CreateDeck {
     level: float,
 }
 
+// [71] The note picked in SOURCE (create.rs).
+export struct CreateNote {
+    picked: bool,
+    // "deck1", "deck2" or "player".
+    source: string,
+    // "Title · Artist".
+    title: string,
+    // Where IN is in the track ("1:10.2") and the note's length ("0.50 s").
+    start: string,
+    length: string,
+    // The zoomed waveform, and IN, OUT and the start of the fade at OUT
+    // across it (0..1).
+    wave: image,
+    in-at: float,
+    out-at: float,
+    fade-at: float,
+    // The pitch in use: "A3" and "+12 ct" ("—" and "" = none).
+    note: string,
+    cents: string,
+    // "detected", "unsure", "set" (by you) or "measuring".
+    state: string,
+    // Why there is no pitch: "short", "silent", "none" ("" = there is one).
+    why: string,
+    // HEAR plays.
+    hearing: bool,
+}
+
 export global Create {
     // The view: "melody", "drums" or "theory" (remembered, shell.rs).
     in-out property <string> view: "melody";
     in property <[CreateDeck]> decks;
+    // [71] SOURCE: the picked note, and whether the player holds a track.
+    in property <CreateNote> note;
+    in property <bool> player-ready;
+    // Picks a note from "deck1", "deck2" or "player" where it stands.
+    callback pick(string);
+    // IN or OUT ("in", "out") dragged to a share of the waveform, let go,
+    // or moved a step by the arrow keys.
+    callback drag-handle(string, float);
+    callback drag-done();
+    callback nudge(string, int);
+    // The waveform dragged by a share of its width.
+    callback pan(float);
+    callback hear();
+    // Corrections: semitones, cents, a typed name (false: not a note).
+    callback step-note(int);
+    callback step-cents(int);
+    callback type-note(string) -> bool;
 }
 
 // Prose in a zone: wraps to the width its column gives it.
@@ -54,7 +100,7 @@ component Zone inherits Rectangle {
     VerticalLayout {
         padding: Theme.s3; spacing: Theme.s3;
         Caps { text: root.title; color: Theme.bone-2; font-weight: Theme.weight-semi; }
-        Prose { text: root.summary; }
+        if root.summary != "": Prose { text: root.summary; }
         @children
         Rectangle { vertical-stretch: 1; }
     }
@@ -103,28 +149,237 @@ component SlotRow inherits HorizontalLayout {
     }
 }
 
+// [71] Where the note comes from: one segmented control, the current
+// source filled. A press picks a new note there, where it stands now.
+component SourceChooser inherits HorizontalLayout {
+    alignment: center; spacing: Theme.key-gap;
+    for s in [{ id: "deck1", label: @tr("DECK 1"), deck: 1 }, { id: "deck2", label: @tr("DECK 2"), deck: 2 }, { id: "player", label: @tr("PLAYER"), deck: 0 }]: PlateButton {
+        accessible-id: "create.source." + s.id; accessible-role: button;
+        compact: true; label: s.label;
+        selected: Create.note.picked && Create.note.source == s.id;
+        enabled: s.deck == 0 ? Create.player-ready : Create.decks.length >= s.deck && Create.decks[s.deck - 1].loaded;
+        tooltip: s.deck == 0 ? @tr("Pick a note from the track in the player, at its position")
+            : @tr("Pick a note from the track on deck {}, where it plays now", s.deck);
+        clicked => { Create.pick(s.id); }
+    }
+}
+
+// The picked note's track, and where and how long the note is (or why it
+// has no pitch). One line: a wrapping text here would be measured at no
+// width and stretch the zone.
+component NoteLine inherits HorizontalLayout {
+    spacing: Theme.s2;
+    Text {
+        accessible-role: text; accessible-id: "create.source.track"; accessible-value: self.text;
+        horizontal-stretch: 1; min-width: 0px;
+        text: Create.note.title;
+        font-family: Theme.family; font-size: Theme.body; color: Theme.bone-2;
+        vertical-alignment: center; overflow: elide;
+    }
+    Text {
+        accessible-role: text; accessible-id: "create.source.length"; accessible-value: self.text;
+        horizontal-stretch: 0;
+        text: Create.note.start + " · " + Create.note.length
+            + (Create.note.why == "short" ? " · " + @tr("too short")
+            : Create.note.why == "silent" ? " · " + @tr("silent")
+            : Create.note.why == "none" ? " · " + @tr("no clear pitch") : "");
+        font-family: Theme.family; font-size: Theme.control; color: Theme.bone-3;
+        vertical-alignment: center;
+    }
+}
+
+// IN or OUT on the waveform: a bone line with its legend, dragged by a
+// strip beside it on the note's side (44 px on touch), or moved in steps
+// of 10 ms by the arrow keys.
+component NoteHandle inherits Rectangle {
+    in property <string> which;
+    in property <length> line-x;
+    in property <length> well-w;
+    in property <float> at;
+    property <length> hw: Theme.touch-mode ? 44px : 14px;
+    property <length> grab;
+    property <float> from;
+    accessible-role: slider;
+    accessible-id: "create.source." + root.which;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.which == "in" ? @tr("IN") : @tr("OUT"), "");
+    accessible-value: root.which == "in" ? Create.note.start : Create.note.start + " + " + Create.note.length;
+    accessible-description: tip.tooltip;
+    // IN's strip lies left of its line, OUT's right of it: they never cross.
+    x: root.which == "in" ? clamp(root.line-x - root.hw, 0px, root.well-w - root.hw) : clamp(root.line-x, 0px, root.well-w - root.hw);
+    width: root.hw;
+    background: tip.has-hover || tip.pressed ? Theme.bone.with-alpha(0.12) : transparent;
+    Rectangle {
+        x: clamp(root.line-x - parent.x - Theme.line / 2, 0px, parent.width - Theme.line);
+        width: Theme.line;
+        background: Theme.bone;
+    }
+    tip := TipArea {
+        tooltip: root.which == "in" ? @tr("IN: where the note starts; drag it, or use the arrow keys") : @tr("OUT: where the note ends, with a short fade; drag it, or use the arrow keys");
+        mouse-cursor: ew-resize;
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down) {
+                root.from = root.at;
+                root.grab = self.absolute-position.x + self.mouse-x;
+            }
+            if (ev.kind == PointerEventKind.up) { Create.drag-done(); }
+        }
+        moved => {
+            if (self.pressed && root.well-w > 0) {
+                Create.drag-handle(root.which, root.from + (self.absolute-position.x + self.mouse-x - root.grab) / root.well-w);
+            }
+        }
+    }
+    KeyFocus { arrows: true;
+        step(d) => { Create.nudge(root.which, d); }
+    }
+}
+
+// The zoomed waveform of the note's surroundings: outside IN and OUT
+// dimmed, the fade at OUT drawn as a ramp. Dragging the waveform moves the
+// view; dragging a handle moves the note's edge.
+component NoteWave inherits Rectangle {
+    property <length> in-x: clamp(Create.note.in-at, 0, 1) * self.width;
+    property <length> out-x: clamp(Create.note.out-at, 0, 1) * self.width;
+    property <length> fade-x: clamp(Create.note.fade-at, 0, 1) * self.width;
+    accessible-role: image;
+    accessible-id: "create.source.wave";
+    accessible-label: @tr("Zoomed waveform");
+    height: 64px;
+    background: Theme.ground;
+    clip: true;
+    if !Create.note.picked: Caps {
+        width: parent.width; height: parent.height;
+        text: @tr("NO NOTE PICKED"); horizontal-alignment: center; vertical-alignment: center; overflow: elide;
+    }
+    if Create.note.picked: Image {
+        width: parent.width; height: parent.height;
+        source: Create.note.wave; image-fit: fill;
+    }
+    if Create.note.picked: Rectangle { x: 0; width: root.in-x; background: Theme.ground.with-alpha(0.65); }
+    if Create.note.picked: Rectangle { x: root.out-x; width: parent.width - root.out-x; background: Theme.ground.with-alpha(0.65); }
+    // The fade: what it takes away dimmed, under a hairline ramp.
+    if Create.note.picked && root.out-x > root.fade-x: Path {
+        width: parent.width; height: parent.height;
+        viewbox-width: self.width / 1px; viewbox-height: self.height / 1px;
+        fill: Theme.ground.with-alpha(0.5);
+        MoveTo { x: root.fade-x / 1px; y: 0; }
+        LineTo { x: root.out-x / 1px; y: 0; }
+        LineTo { x: root.out-x / 1px; y: root.height / 1px; }
+        Close { }
+    }
+    if Create.note.picked && root.out-x > root.fade-x: Path {
+        width: parent.width; height: parent.height;
+        viewbox-width: self.width / 1px; viewbox-height: self.height / 1px;
+        stroke: Theme.bone-2; stroke-width: 1px;
+        MoveTo { x: root.fade-x / 1px; y: 0; }
+        LineTo { x: root.out-x / 1px; y: root.height / 1px; }
+    }
+    if Create.note.picked: TouchArea {
+        property <length> last;
+        mouse-cursor: grab;
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down) { self.last = self.mouse-x; }
+        }
+        moved => {
+            if (self.pressed && root.width > 0) {
+                Create.pan((self.mouse-x - self.last) / root.width);
+                self.last = self.mouse-x;
+            }
+        }
+    }
+    if Create.note.picked: NoteHandle { which: "in"; at: Create.note.in-at; line-x: root.in-x; well-w: root.width; height: parent.height; }
+    if Create.note.picked: NoteHandle { which: "out"; at: Create.note.out-at; line-x: root.out-x; well-w: root.width; height: parent.height; }
+}
+
+// How sure the pitch is, in words: DETECTED (raised ash), UNSURE (sodium:
+// it needs you) or SET BY YOU (bone, like a selection).
+component NoteBadge inherits Rectangle {
+    property <string> state: Create.note.state;
+    property <string> word: root.state == "set" ? @tr("SET BY YOU") : root.state == "detected" ? @tr("DETECTED")
+        : root.state == "measuring" ? @tr("MEASURING") : @tr("UNSURE");
+    accessible-role: text;
+    accessible-id: "create.source.badge";
+    accessible-label: @tr("How sure the pitch is");
+    accessible-value: root.word;
+    height: 22px;
+    width: t.preferred-width + 16px;
+    border-radius: Theme.r-control;
+    background: root.state == "set" ? Theme.bone : root.state == "unsure" ? Theme.attention : Theme.plate-raised;
+    t := Text {
+        x: 8px; height: parent.height;
+        text: root.word;
+        font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; letter-spacing: 1.2px;
+        color: root.state == "set" || root.state == "unsure" ? Theme.ground : Theme.bone-2;
+        vertical-alignment: center;
+    }
+}
+
+// The pitch: the note with its octave and the cents, each a stepper that
+// corrects it (a semitone, a cent).
+component PitchRow inherits Rectangle {
+    accessible-role: text;
+    accessible-id: "create.source.pitch";
+    accessible-label: @tr("Pitch");
+    accessible-value: Create.note.note + (Create.note.cents != "" ? " " + Create.note.cents : "");
+    HorizontalLayout {
+        alignment: center; spacing: Theme.s2;
+        Stepper {
+            accessible-id: "create.source.note";
+            a11y-prev: "create.source.note.down"; a11y-value: "create.source.note.value"; a11y-next: "create.source.note.up";
+            tooltip: @tr("Note: a semitone down or up");
+            value: Create.note.note; template: "C#-1"; size: 32px;
+            font-size: Theme.heading; lit: true;
+            step(d) => { Create.step-note(d); }
+        }
+        Stepper {
+            accessible-id: "create.source.cents";
+            a11y-prev: "create.source.cents.down"; a11y-value: "create.source.cents.value"; a11y-next: "create.source.cents.up";
+            tooltip: @tr("Cents: a cent lower or higher");
+            value: Create.note.cents != "" ? Create.note.cents : "—"; template: "+50 ct"; size: 32px;
+            lit: true;
+            step(d) => { Create.step-cents(d); }
+        }
+    }
+}
+
+// A typed correction ("A3", "F#2", "Bb4 +12").
+component TypeRow inherits HorizontalLayout {
+    alignment: center;
+    Field {
+        accessible-id: "create.source.type";
+        width: 150px;
+        placeholder: @tr("TYPE A NOTE");
+        accepted(t) => {
+            if (Create.type-note(t)) { self.text = ""; }
+        }
+    }
+}
+
 // MELODY: SOURCE | NOTES | FITS.
 component MelodyView inherits HorizontalLayout {
     in property <bool> narrow;
     spacing: Theme.key-gap;
     Zone {
         accessible-id: "create.melody.source";
-        width: root.narrow ? 250px : 320px;
+        width: root.narrow ? 280px : 320px;
         title: @tr("SOURCE");
-        summary: @tr("Pick one note from a track on a deck or in the library. Drag IN and OUT around it, then hear it.");
-        // The zoomed waveform comes here; empty until a note is picked.
-        Rectangle {
-            height: 72px;
-            background: Theme.ground; border-radius: Theme.r-control;
-            Caps { width: parent.width; height: parent.height; text: @tr("NO NOTE PICKED"); horizontal-alignment: center; vertical-alignment: center; }
-        }
-        Prose { text: @tr("Its pitch shows as a note name and cents, and you can correct it."); }
+        // Once a note is picked its controls say what to do.
+        summary: Create.note.picked ? "" : @tr("Pick one note from a track on a deck or in the player. Drag IN and OUT around it, then hear it.");
+        SourceChooser { }
+        if Create.note.picked: NoteLine { }
+        NoteWave { }
+        if Create.note.picked: PitchRow { }
+        if Create.note.picked: TypeRow { }
+        // How sure the pitch is, beside HEAR.
         HorizontalLayout {
-            alignment: center;
+            alignment: center; spacing: Theme.s3;
+            if Create.note.picked: VerticalLayout { alignment: center; NoteBadge { } }
             PlateButton {
                 accessible-id: "create.source.hear"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("HEAR");
-                tooltip: @tr("Play the picked note (comes with the note picker)");
+                compact: true; enabled: Create.note.picked; label: @tr("HEAR");
+                active: Create.note.hearing; tone: Theme.attention;
+                tooltip: @tr("Play the note from IN to OUT, with its fade (on the headphones while a deck plays)");
+                clicked => { Create.hear(); }
             }
         }
     }
@@ -168,7 +423,7 @@ component DrumsView inherits HorizontalLayout {
     spacing: Theme.key-gap;
     Zone {
         accessible-id: "create.drums.kit";
-        width: root.narrow ? 250px : 320px;
+        width: root.narrow ? 280px : 320px;
         title: @tr("KIT");
         summary: @tr("Built-in kits, made from synthesised sounds, or your own samples from the library.");
         Prose { text: @tr("Each pad gets three knobs: PITCH, DECAY and TONE."); }
@@ -247,7 +502,7 @@ component TheoryView inherits HorizontalLayout {
     spacing: Theme.key-gap;
     Zone {
         accessible-id: "create.theory.keys";
-        width: root.narrow ? 250px : 320px;
+        width: root.narrow ? 280px : 320px;
         title: @tr("KEYS");
         summary: @tr("Both decks' keys, and the neighbouring keys that move smoothly.");
         for d in Create.decks: DeckKey { deck: d; }

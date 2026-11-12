@@ -135,7 +135,7 @@ A fourth tab next to PREPARE, PERFORM and LIGHTING for the things DJs today do i
 ### Melody from one note
 
 - [x] **[70]** The CREATE tab: MELODY, DRUMS and THEORY, a result bar, and a slim deck strip so the decks stay in view and keep playing.
-- [ ] **[71]** Pick one note on a track's waveform, hear it, and see its pitch as a note and cents, with a correction when the detection is wrong or unsure.
+- [x] **[71]** Pick one note on a track's waveform, hear it, and see its pitch as a note and cents, with a correction when the detection is wrong or unsure.
 - [ ] **[72]** Pitch the note to every note it needs with a clean start and tail, with a warning on large shifts and a hint to pick another source note.
 - [ ] **[73]** Key and scale from the analysis (the other deck's or the next track's key in one press), and the scale's notes on pads and on a keyboard strip, with snap to scale and octaves.
 - [ ] **[74]** An arrange strip of up to 32 steps on the master grid, played in or typed as note names, with move and delete.
