@@ -2,7 +2,7 @@
 //! deck strip that keeps the decks in view while they play.
 
 use super::harness::*;
-use slint::ComponentHandle;
+use slint::{ComponentHandle, Model};
 
 fn snapshot(ui: &Ui) -> od_engine::EngineState {
     crate::engine::snapshot(&ui.app).expect("engine runs")
@@ -250,4 +250,80 @@ fn a_note_from_the_player_and_a_too_short_one() {
     ui.pump(100);
     assert_eq!(note_state(&ui), "UNSURE");
     assert!(ui.value("create.source.length").contains("too short"), "{}", ui.value("create.source.length"));
+}
+
+// ── [72] The note on pads ───────────────────────────────────────────────
+
+/// Picking a note enables the pads (the source note and 7 semitones up),
+/// rendered in the background; a pad plays its note on the audition voice
+/// at the right pitch, the same buffer every time; the octave switch beyond
+/// ±7 semitones shows FAR with the hint; deck 1 is never touched.
+#[test]
+fn pads_play_the_note_at_other_pitches_and_warn_far_from_it() {
+    let ui = Ui::open((1440, 900));
+    deck1_at(&ui, 1.04);
+    assert_eq!(ui.get("create.notes.pad1").accessible_enabled(), Some(false), "no note: pads off");
+    assert!(ui.value("create.notes.pads-hint").starts_with("Pick a note in SOURCE"), "{}", ui.value("create.notes.pads-hint"));
+    assert_eq!(ui.get("create.notes.octave").accessible_enabled(), Some(false));
+    ui.click("create.source.deck1");
+    // OUT before the next click (at 1.5 s): only the 220 Hz tone.
+    let g = ui.app.ui.global::<crate::Create>();
+    let n = crate::create::note(&ui.app).expect("a note");
+    g.invoke_drag_handle("out".into(), ((1.42 - n.view) / crate::create::SPAN) as f32);
+    g.invoke_drag_done();
+    assert!(ui.wait_until(5.0, |u| note_state(u) == "DETECTED"), "{}", note_state(&ui));
+    assert_eq!(ui.get("create.notes.pad1").accessible_enabled(), Some(true), "a note: pads on");
+    assert_eq!(ui.value("create.notes.pad1"), "A3 0");
+    assert_eq!(ui.value("create.notes.pad8"), "E4 +7");
+    assert!(!ui.value("create.notes.pads-hint").contains("FAR"));
+    // All eight rendered off the UI thread.
+    assert!(
+        ui.wait_until(20.0, |u| (0..8).all(|i| crate::create::pad_note(&u.app, i).is_some())),
+        "the pads are rendered"
+    );
+    // The method by the rule: 0.38 s a semitone up is resampled, a fifth
+    // up stretched (where the stretcher is built in).
+    let (_, m1) = crate::create::pad_note(&ui.app, 1).unwrap();
+    assert_eq!(m1, od_engine::noteshift::ShiftMethod::Resample);
+    let (e4, m7) = crate::create::pad_note(&ui.app, 7).unwrap();
+    if od_engine::keylock::Stretcher::AVAILABLE {
+        assert_eq!(m7, od_engine::noteshift::ShiftMethod::Stretch);
+    }
+    let mono: Vec<f32> = e4.samples.chunks_exact(2).map(|f| (f[0] + f[1]) * 0.5).collect();
+    let hz = od_analysis::pitch::detect_pitch(&mono, e4.sample_rate).hz.expect("a pitch");
+    let cents = 1200.0 * (hz / od_core::NotePitch::new(64, 0).hz()).log2();
+    assert!(cents.abs() < 5.0, "pad 8 sounds E4: {hz:.2} Hz ({cents:+.1} ct)");
+    // A pad plays at once, the same buffer as before, beside the paused deck.
+    let before = snapshot(&ui).decks[0];
+    let (a, _) = crate::create::pad_note(&ui.app, 2).unwrap();
+    ui.click("create.notes.pad3");
+    assert!(ui.wait_until(2.0, |u| snapshot(u).auditioning), "the pad plays");
+    assert!(!ui.app.ui.global::<crate::Create>().get_note().hearing, "HEAR is not lit by a pad");
+    assert!(ui.app.ui.global::<crate::Create>().get_pads().row_data(2).unwrap().playing, "pad 3 shows it plays");
+    let (b, _) = crate::create::pad_note(&ui.app, 2).unwrap();
+    assert!(std::sync::Arc::ptr_eq(&a, &b), "the cached buffer");
+    assert!(ui.wait_until(3.0, |u| !snapshot(u).auditioning), "and ends");
+    let after = snapshot(&ui).decks[0];
+    assert!(!after.playing && (after.position - before.position).abs() < 1e-6, "deck 1 untouched");
+    // An octave up: +12 … +19, every pad FAR, with the hint.
+    ui.click("create.notes.octave.up");
+    assert_eq!(ui.value("create.notes.octave.value"), "+1");
+    assert_eq!(ui.value("create.notes.pad1"), "A4 +12 FAR");
+    assert!(ui.value("create.notes.pads-hint").contains("FAR") && ui.value("create.notes.pads-hint").contains("C5"), "{}", ui.value("create.notes.pads-hint"));
+    let tip = ui.get("create.notes.pad1").accessible_description().unwrap_or_default();
+    assert!(tip.contains("Pick a source note nearer"), "{tip}");
+    // A FAR pad plays too (rendered when pressed if not yet in).
+    ui.click("create.notes.pad1");
+    assert!(ui.wait_until(10.0, |u| snapshot(u).auditioning), "a FAR pad plays");
+    // An octave down: -12 … -5, FAR up to -8.
+    ui.click("create.notes.octave.down");
+    ui.click("create.notes.octave.down");
+    assert_eq!(ui.value("create.notes.pad1"), "A2 -12 FAR");
+    assert_eq!(ui.value("create.notes.pad5"), "Db3 -8 FAR");
+    assert_eq!(ui.value("create.notes.pad6"), "D3 -7");
+    // Keys: the octave switch stops at ±2.
+    for _ in 0..4 {
+        ui.click("create.notes.octave.down");
+    }
+    assert_eq!(ui.value("create.notes.octave.value"), "-2");
 }

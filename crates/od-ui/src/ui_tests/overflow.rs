@@ -1202,6 +1202,16 @@ fn main_states() -> Vec<State> {
             },
             teardown: None,
         },
+        // [72] The pads an octave up: every pad FAR, with the hint.
+        State {
+            id: "create.melody (pads far from the note)",
+            setup: |u| {
+                create(u, "melody");
+                crate::create::stage_far(&u.app, u.fx.tracks[0].0);
+                u.pump(200);
+            },
+            teardown: None,
+        },
         State {
             id: "create.melody (audio running, four decks)",
             setup: |u| {

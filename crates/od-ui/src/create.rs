@@ -14,17 +14,27 @@
 //! fade at OUT on the sampler's audition voice, to the headphones while a
 //! deck plays, so the decks are never touched. The picked note is kept in
 //! the library meta (`create.note`).
+//!
+//! [72] NOTES plays the note on 8 pads at other pitches: the chromatic notes
+//! from the source note up (source, +1 … +7 semitones, until [73] maps them
+//! to a scale), an octave switch, and a FAR warning on shifts over 7
+//! semitones. [`od_engine::noteshift`] renders each target (resampled or
+//! stretched, with a clean start and tail) on a worker thread into a cache
+//! per target, so a pad plays at once on the audition voice.
 
 use crate::app::App;
 use crate::engine;
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use od_analysis::pitch::{self, PitchOutcome};
 use od_core::{NotePitch, TrackId};
+use od_engine::noteshift::{self, ShiftMethod};
 use od_engine::{Command, DeckState, EngineState, SampleData, SamplerCommand, TrackData};
 use serde::{Deserialize, Serialize};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 /// The views of CREATE, in the order of their tabs.
@@ -273,15 +283,29 @@ pub(crate) struct Runtime {
     /// Measure (and play) once the audio is in.
     measure_due: bool,
     hear_due: bool,
-    /// HEAR plays, since when.
+    /// HEAR (or a pad) plays, since when.
     hearing: Option<Instant>,
     /// The zoomed waveform as drawn, for the view it shows.
     wave: slint::Image,
+    /// [72] The pads: their octave, the rendered notes, the worker.
+    octave: i32,
+    cache: NoteCache,
+    rendered_tx: Sender<Rendered>,
+    rendered_rx: Receiver<Rendered>,
+    /// The current render's number: a worker of an older one stops.
+    generation: Arc<AtomicU64>,
+    /// Render the pads once the audio is in.
+    pads_due: bool,
+    /// A pad pressed before its note was rendered: play it when it is in.
+    pad_due: Option<i32>,
+    /// The pad that plays (on the audition voice).
+    pad_playing: Option<usize>,
 }
 
 impl Default for Runtime {
     fn default() -> Self {
         let (tx, rx) = unbounded();
+        let (rendered_tx, rendered_rx) = unbounded();
         Self {
             note: None,
             audio: None,
@@ -292,6 +316,14 @@ impl Default for Runtime {
             hear_due: false,
             hearing: None,
             wave: slint::Image::default(),
+            octave: 0,
+            cache: NoteCache::default(),
+            rendered_tx,
+            rendered_rx,
+            generation: Arc::new(AtomicU64::new(0)),
+            pads_due: false,
+            pad_due: None,
+            pad_playing: None,
         }
     }
 }
@@ -326,6 +358,10 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_step_note(move |d| w(&|a| correct(a, |p| p.transpose(d))));
     let w = with.clone();
     g.on_step_cents(move |d| w(&|a| correct(a, |p| p.detune(d))));
+    let w = with.clone();
+    g.on_play_pad(move |i| w(&|a| play_pad(a, i.max(0) as usize)));
+    let w = with.clone();
+    g.on_step_octave(move |d| w(&|a| step_octave(a, d)));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -471,6 +507,7 @@ fn correct(app: &App, f: impl Fn(NotePitch) -> NotePitch) {
     }
     show(app);
     save(app);
+    prepare_pads(app);
 }
 
 /// A typed note name ("A3", "F#2", "Bb4 +12"); false when it is none.
@@ -535,12 +572,17 @@ fn measure(app: &App) {
     }
     show(app);
     save(app);
+    prepare_pads(app);
 }
 
 /// HEAR: plays IN to OUT with its fades on the sampler's audition voice, to
 /// the headphones while a deck plays, else to the master; again stops it.
 pub(crate) fn hear(app: &App) {
-    if app.create.borrow().hearing.is_some() {
+    let hearing = {
+        let rt = app.create.borrow();
+        rt.hearing.is_some() && rt.pad_playing.is_none()
+    };
+    if hearing {
         stop_hearing(app);
         return;
     }
@@ -561,18 +603,31 @@ pub(crate) fn hear(app: &App) {
     apply_fades(&mut samples, rate, n.fade());
     let engine_rate = app.engine.borrow().sample_rate();
     let sample = SampleData::new(od_decode::DecodedAudio { sample_rate: rate, channels: 2, samples }, engine_rate);
-    // A deck playing on air: the note goes to the headphones only.
+    audition(app, sample, None);
+}
+
+/// Plays `sample` on the audition voice: to the headphones while a deck
+/// plays on air, else to the master. `pad` says which pad it is (HEAR: none).
+fn audition(app: &App, sample: Arc<SampleData>, pad: Option<usize>) {
     let cue = engine::snapshot(app).is_some_and(|s| {
         let count = app.decks.borrow().deck_count.min(s.decks.len());
         s.decks[..count].iter().any(|d| d.playing)
     });
     engine::send(app, Command::Sampler(SamplerCommand::Audition { sample, cue }));
-    app.create.borrow_mut().hearing = Some(Instant::now());
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.hearing = Some(Instant::now());
+        rt.pad_playing = pad;
+    }
     show(app);
 }
 
 fn stop_hearing(app: &App) {
-    let was = app.create.borrow_mut().hearing.take().is_some();
+    let was = {
+        let mut rt = app.create.borrow_mut();
+        rt.pad_playing = None;
+        rt.hearing.take().is_some()
+    };
     if was {
         engine::send(app, Command::Sampler(SamplerCommand::StopAudition));
         show(app);
@@ -583,7 +638,7 @@ fn stop_hearing(app: &App) {
 pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
     let got: Vec<(TrackId, Option<Audio>)> = app.create.borrow().rx.try_iter().collect();
     for (id, a) in got {
-        let (measure_due, hear_due) = {
+        let (measure_due, hear_due, pads_due) = {
             let mut rt = app.create.borrow_mut();
             if rt.loading == Some(id) {
                 rt.loading = None;
@@ -598,26 +653,36 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
                     }
                     rt.measure_due = false;
                     rt.hear_due = false;
+                    rt.pads_due = false;
+                    rt.pad_due = None;
                 }
                 _ => {}
             }
-            (rt.measure_due && current, std::mem::take(&mut rt.hear_due) && current)
+            (rt.measure_due && current, std::mem::take(&mut rt.hear_due) && current, std::mem::take(&mut rt.pads_due) && current)
         };
         if measure_due {
+            // Measuring renders the pads too.
             measure(app);
         } else {
             show(app);
+            if pads_due {
+                prepare_pads(app);
+            }
         }
         if hear_due {
             hear(app);
         }
     }
+    poll_rendered(app);
     let ended = {
         let rt = app.create.borrow();
         rt.hearing.is_some_and(|t| t.elapsed() > Duration::from_millis(150) && !state.is_some_and(|s| s.auditioning))
     };
     if ended {
-        app.create.borrow_mut().hearing = None;
+        let mut rt = app.create.borrow_mut();
+        rt.hearing = None;
+        rt.pad_playing = None;
+        drop(rt);
         show(app);
     }
 }
@@ -694,12 +759,292 @@ fn show(app: &App) {
         rt.note.as_ref().map(|n| {
             let mut v = note_view(n, rt.measure_due);
             v.wave = rt.wave.clone();
-            v.hearing = rt.hearing.is_some();
+            v.hearing = rt.hearing.is_some() && rt.pad_playing.is_none();
             v
         })
     };
     let g = app.ui.global::<crate::Create>();
     g.set_note(view.unwrap_or_default());
+    show_pads(app);
+}
+
+// ── [72] The note on pads ───────────────────────────────────────────────
+
+/// Pads in NOTES.
+pub(crate) const PADS: usize = 8;
+/// The octave switch goes this many octaves down and up.
+pub(crate) const OCTAVES: i32 = 2;
+
+/// What a rendered note depends on: the region, its pitch (and so its
+/// fades) and the engine rate it is played at.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct RenderKey {
+    pub track: TrackId,
+    pub start: f64,
+    pub end: f64,
+    pub pitch: NotePitch,
+    pub rate: u32,
+}
+
+impl RenderKey {
+    fn of(n: &PickedNote, rate: u32) -> Option<Self> {
+        Some(Self { track: n.track?, start: n.start, end: n.end, pitch: n.pitch()?, rate })
+    }
+}
+
+/// The notes rendered for one [`RenderKey`], by target (MIDI note): a pad
+/// plays the same buffer every time, at once. A new key empties it.
+#[derive(Default)]
+pub(crate) struct NoteCache {
+    key: Option<RenderKey>,
+    notes: HashMap<i32, (Arc<SampleData>, ShiftMethod)>,
+    /// Asked of the worker and not in yet.
+    pending: HashSet<i32>,
+}
+
+impl NoteCache {
+    /// Makes `key` the current one; true when that dropped what was there.
+    pub fn select(&mut self, key: &RenderKey) -> bool {
+        if self.key.as_ref() == Some(key) {
+            return false;
+        }
+        self.key = Some(key.clone());
+        self.notes.clear();
+        self.pending.clear();
+        true
+    }
+
+    pub fn get(&self, target: i32) -> Option<Arc<SampleData>> {
+        self.notes.get(&target).map(|(s, _)| s.clone())
+    }
+
+    #[cfg(test)]
+    pub fn method(&self, target: i32) -> Option<ShiftMethod> {
+        self.notes.get(&target).map(|(_, m)| *m)
+    }
+
+    /// Keeps a rendered note if it is of the current key.
+    pub fn put(&mut self, key: &RenderKey, target: i32, sample: Arc<SampleData>, method: ShiftMethod) -> bool {
+        if self.key.as_ref() != Some(key) {
+            return false;
+        }
+        self.pending.remove(&target);
+        self.notes.insert(target, (sample, method));
+        true
+    }
+
+    /// Of `targets`, the ones neither rendered nor asked for (now asked for).
+    fn missing(&mut self, targets: &[i32]) -> Vec<i32> {
+        let out: Vec<i32> = targets.iter().copied().filter(|t| !self.notes.contains_key(t) && !self.pending.contains(t)).collect();
+        self.pending.extend(&out);
+        out
+    }
+}
+
+/// A note rendered by the worker.
+struct Rendered {
+    key: RenderKey,
+    target: i32,
+    sample: Arc<SampleData>,
+    method: ShiftMethod,
+}
+
+/// The pads' notes (MIDI): the source note and the 7 semitones above it,
+/// moved by `octave` octaves.
+pub(crate) fn pad_targets(source: NotePitch, octave: i32) -> [i32; PADS] {
+    std::array::from_fn(|i| source.midi() + 12 * octave + i as i32)
+}
+
+/// The semitones from the source pitch (with its cents) to `target`.
+pub(crate) fn shift_to(source: NotePitch, target: i32) -> f64 {
+    f64::from(target * 100 - source.total_cents()) / 100.0
+}
+
+/// What the pads show: each target's name, its distance from the source
+/// note in semitones and the FAR warning beyond 7, whether it is rendered
+/// and whether it plays. Disabled without a pitch.
+pub(crate) fn pad_rows(source: Option<NotePitch>, octave: i32, cache: &NoteCache, playing: Option<usize>) -> Vec<crate::CreatePad> {
+    let Some(p) = source else {
+        return vec![crate::CreatePad::default(); PADS];
+    };
+    pad_targets(p, octave)
+        .iter()
+        .enumerate()
+        .map(|(i, &t)| {
+            let shift = t - p.midi();
+            crate::CreatePad {
+                enabled: true,
+                note: NotePitch::new(t, 0).name().into(),
+                shift,
+                far: noteshift::far(shift),
+                ready: cache.get(t).is_some(),
+                playing: playing == Some(i),
+            }
+        })
+        .collect()
+}
+
+fn show_pads(app: &App) {
+    let (rows, octave, why, nearer) = {
+        let rt = app.create.borrow();
+        let source = rt.note.as_ref().and_then(PickedNote::pitch);
+        let rows = pad_rows(source, rt.octave, &rt.cache, rt.pad_playing);
+        let why = match &rt.note {
+            None => "none",
+            Some(_) if source.is_none() => "pitch",
+            Some(_) => "",
+        };
+        // FAR pads: a source note near the octave they sit in is better.
+        let nearer = match source {
+            Some(p) if rows.iter().any(|r| r.far) => NotePitch::new(p.midi() + 12 * rt.octave + 3, 0).name(),
+            _ => String::new(),
+        };
+        (rows, rt.octave, why, nearer)
+    };
+    let g = app.ui.global::<crate::Create>();
+    g.set_octave(octave);
+    g.set_pads_why(why.into());
+    g.set_pads_nearer(nearer.into());
+    let model = g.get_pads();
+    if model.row_count() == rows.len() {
+        for (i, row) in rows.into_iter().enumerate() {
+            if model.row_data(i).as_ref() != Some(&row) {
+                model.set_row_data(i, row);
+            }
+        }
+    } else {
+        g.set_pads(ModelRc::new(VecModel::from(rows)));
+    }
+}
+
+/// Renders the pads' notes that are not in the cache yet, on a worker
+/// thread (once the audio is in). A changed note or pitch starts afresh
+/// and stops the worker of the old one.
+fn prepare_pads(app: &App) {
+    let rate = app.engine.borrow().sample_rate();
+    let Some((key, octave, n)) = ({
+        let rt = app.create.borrow();
+        rt.note.as_ref().and_then(|n| RenderKey::of(n, rate).map(|k| (k, rt.octave, n.clone())))
+    }) else {
+        return;
+    };
+    let Some(a) = audio(app) else {
+        app.create.borrow_mut().pads_due = true;
+        return;
+    };
+    let (targets, tx, generation, my) = {
+        let mut rt = app.create.borrow_mut();
+        if rt.cache.select(&key) {
+            rt.generation.fetch_add(1, Ordering::SeqCst);
+        }
+        // The pad pressed first, then the rest.
+        let mut want = pad_targets(key.pitch, octave).to_vec();
+        if let Some(t) = rt.pad_due {
+            want.insert(0, t);
+        }
+        let targets = rt.cache.missing(&want);
+        (targets, rt.rendered_tx.clone(), rt.generation.clone(), rt.generation.load(Ordering::SeqCst))
+    };
+    show_pads(app);
+    if targets.is_empty() {
+        return;
+    }
+    let src_rate = a.rate();
+    let fade = n.fade();
+    let (start, end) = (n.start, n.end);
+    std::thread::spawn(move || {
+        let mut note = a.stereo(start, end);
+        if note.is_empty() {
+            return;
+        }
+        apply_fades(&mut note, src_rate, fade);
+        for target in targets {
+            if generation.load(Ordering::SeqCst) != my {
+                return;
+            }
+            let shifted = noteshift::shift_note(&note, src_rate, shift_to(key.pitch, target), fade);
+            let audio = od_decode::DecodedAudio { sample_rate: src_rate, channels: 2, samples: shifted.samples };
+            let sample = SampleData::new(audio, key.rate);
+            let r = Rendered { key: key.clone(), target, sample, method: shifted.method };
+            if tx.send(r).is_err() {
+                return;
+            }
+        }
+    });
+}
+
+/// Rendered notes come in: kept, and a pad waiting for one plays it.
+fn poll_rendered(app: &App) {
+    let got: Vec<Rendered> = app.create.borrow().rendered_rx.try_iter().collect();
+    if got.is_empty() {
+        return;
+    }
+    let mut play = None;
+    {
+        let mut rt = app.create.borrow_mut();
+        let octave = rt.octave;
+        for r in got {
+            if rt.cache.put(&r.key, r.target, r.sample.clone(), r.method) && rt.pad_due == Some(r.target) {
+                rt.pad_due = None;
+                let i = pad_targets(r.key.pitch, octave).iter().position(|&t| t == r.target);
+                play = Some((r.sample, i));
+            }
+        }
+    }
+    match play {
+        Some((sample, i)) => audition(app, sample, i),
+        None => show_pads(app),
+    }
+}
+
+/// A pad pressed: its note plays at once when rendered, else as soon as it
+/// is. Again restarts it.
+pub(crate) fn play_pad(app: &App, i: usize) {
+    let target = {
+        let rt = app.create.borrow();
+        let Some(p) = rt.note.as_ref().and_then(PickedNote::pitch) else { return };
+        match pad_targets(p, rt.octave).get(i) {
+            Some(&t) => t,
+            None => return,
+        }
+    };
+    if !engine::ensure_engine(app) {
+        engine::show_message(app);
+        return;
+    }
+    let rate = app.engine.borrow().sample_rate();
+    let cached = {
+        let rt = app.create.borrow();
+        let current = rt.note.as_ref().and_then(|n| RenderKey::of(n, rate)) == rt.cache.key;
+        if current { rt.cache.get(target) } else { None }
+    };
+    match cached {
+        Some(sample) => audition(app, sample, Some(i)),
+        None => {
+            app.create.borrow_mut().pad_due = Some(target);
+            prepare_pads(app);
+        }
+    }
+}
+
+/// The octave switch: the pads an octave down or up (within ±2).
+pub(crate) fn step_octave(app: &App, d: i32) {
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.octave = (rt.octave + d.signum()).clamp(-OCTAVES, OCTAVES);
+        rt.pad_due = None;
+    }
+    show_pads(app);
+    prepare_pads(app);
+}
+
+/// The rendered note of pad `i` and how it was made, if it is in (tests).
+#[cfg(test)]
+pub(crate) fn pad_note(app: &App, i: usize) -> Option<(Arc<SampleData>, ShiftMethod)> {
+    let rt = app.create.borrow();
+    let p = rt.note.as_ref()?.pitch()?;
+    let t = *pad_targets(p, rt.octave).get(i)?;
+    Some((rt.cache.get(t)?, rt.cache.method(t)?))
 }
 
 /// A picked note for the audits, in its widest state: a correction
@@ -729,10 +1074,20 @@ pub(crate) fn stage(app: &App, track: TrackId) {
     render_wave(app);
 }
 
+/// [72] The staged note with the pads an octave up: every pad but none
+/// within 7 semitones, so all of them show FAR.
+#[cfg(test)]
+pub(crate) fn stage_far(app: &App, track: TrackId) {
+    stage(app, track);
+    app.create.borrow_mut().octave = 1;
+    show_pads(app);
+}
+
 /// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF`, comma separated),
 /// on the demo library with the decks loaded by `OPENDJDECKS_AUTOLOAD`:
 /// `create-note` opens MELODY and picks a note from deck 1;
-/// `create-note-set` corrects it a semitone up as well (SET BY YOU).
+/// `create-note-set` corrects it a semitone up as well (SET BY YOU);
+/// `create-note-far` puts the pads an octave up (FAR on every pad).
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -747,6 +1102,9 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         pick(&a, "deck1");
         if parts.iter().any(|p| p == "create-note-set") {
             correct(&a, |p| p.transpose(1));
+        }
+        if parts.iter().any(|p| p == "create-note-far") {
+            step_octave(&a, 1);
         }
     });
 }
@@ -859,6 +1217,45 @@ mod tests {
             assert!(v <= prev + 1e-6, "falls steadily");
             prev = v;
         }
+    }
+
+    #[test]
+    fn pads_run_up_from_the_source_and_warn_beyond_seven() {
+        let src = NotePitch::new(57, 12);
+        assert_eq!(pad_targets(src, 0), [57, 58, 59, 60, 61, 62, 63, 64]);
+        assert_eq!(pad_targets(src, -1)[0], 45);
+        assert!((shift_to(src, 57) + 0.12).abs() < 1e-9, "the source pad corrects the cents");
+        assert!((shift_to(src, 69) - 11.88).abs() < 1e-9);
+        let cache = NoteCache::default();
+        let rows = pad_rows(Some(src), 0, &cache, Some(2));
+        assert_eq!((rows[0].note.as_str(), rows[0].shift, rows[7].note.as_str(), rows[7].shift), ("A3", 0, "E4", 7));
+        assert!(rows.iter().all(|r| r.enabled && !r.far && !r.ready), "within 7 semitones");
+        assert!(rows[2].playing && !rows[1].playing);
+        let up = pad_rows(Some(src), 1, &cache, None);
+        assert!(up.iter().all(|r| r.far), "an octave up: +12 … +19");
+        let down = pad_rows(Some(src), -1, &cache, None);
+        let far: Vec<bool> = down.iter().map(|r| r.far).collect();
+        assert_eq!(far, [true, true, true, true, true, false, false, false], "-12 … -8 warn, -7 … -5 do not");
+        assert!(pad_rows(None, 0, &cache, None).iter().all(|r| !r.enabled), "no pitch: off");
+    }
+
+    #[test]
+    fn the_cache_keeps_one_buffer_per_target_until_the_note_changes() {
+        let key = RenderKey { track: TrackId(1), start: 1.0, end: 1.5, pitch: NotePitch::new(57, 0), rate: 48_000 };
+        let mut c = NoteCache::default();
+        assert!(c.select(&key), "a first key");
+        assert!(!c.select(&key), "the same key keeps what is there");
+        assert_eq!(c.missing(&[57, 58]), [57, 58]);
+        assert!(c.missing(&[57, 58, 59]) == [59], "asked once");
+        let s = Arc::new(SampleData { samples: vec![0.0; 8].into(), sample_rate: 48_000 });
+        assert!(c.put(&key, 58, s.clone(), ShiftMethod::Resample));
+        let (a, b) = (c.get(58).unwrap(), c.get(58).unwrap());
+        assert!(Arc::ptr_eq(&a, &b) && Arc::ptr_eq(&a, &s), "the same buffer every time");
+        // A late note of another key is dropped; a new key empties it.
+        let other = RenderKey { pitch: NotePitch::new(58, 0), ..key.clone() };
+        assert!(!c.put(&other, 60, s.clone(), ShiftMethod::Stretch));
+        assert!(c.select(&other));
+        assert!(c.get(58).is_none() && c.missing(&[57]) == [57]);
     }
 
     #[test]

@@ -25,3 +25,4 @@ pkg-config = "0.3"
 vcpkg = "0.2"
 
 [dev-dependencies]
+od-analysis.workspace = true
