@@ -127,6 +127,11 @@ pub(crate) fn key_text(app: &App, i: usize, track: Option<TrackId>) -> String {
         .unwrap_or_default()
 }
 
+/// [73] The key of the track loaded on deck `i` (as analysed or set).
+pub(crate) fn musical_key(app: &App, i: usize) -> Option<od_core::MusicalKey> {
+    app.decks.borrow().loaded.get(i).and_then(|l| l.as_ref()).and_then(|m| m.musical_key)
+}
+
 /// Next Perform layout (standard → vertical → browse → standard).
 pub(crate) fn cycle_perform_layout(app: &App) {
     let cur = app.ui.global::<crate::PerformLayout>().get_layout();

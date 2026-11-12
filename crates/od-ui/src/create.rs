@@ -21,12 +21,21 @@
 //! semitones. [`od_engine::noteshift`] renders each target (resampled or
 //! stretched, with a clean start and tail) on a worker thread into a cache
 //! per target, so a pad plays at once on the audition voice.
+//!
+//! [73] NOTES plays in a key: a root and a scale ([`od_core::ScaleKey`]).
+//! It follows the other deck's key until NEXT TRACK takes the next track's
+//! (from the queue, else the set plan) or the root or scale is set by hand.
+//! With SNAP TO SCALE on (the default) the pads hold the scale's notes from
+//! the root at or below the source note (see [`pad_targets`]); off brings
+//! back the chromatic pads of [72]. The keyboard strip shows the root, the
+//! scale and the notes out of it over the pads' two octaves, and plays a
+//! key on the audition voice. The choice is kept in `create.key`.
 
 use crate::app::App;
 use crate::engine;
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use od_analysis::pitch::{self, PitchOutcome};
-use od_core::{NotePitch, TrackId};
+use od_core::{KeyNotation, MusicalKey, NotePitch, Scale, ScaleKey, TrackId};
 use od_engine::noteshift::{self, ShiftMethod};
 use od_engine::{Command, DeckState, EngineState, SampleData, SamplerCommand, TrackData};
 use serde::{Deserialize, Serialize};
@@ -90,6 +99,12 @@ pub(crate) fn frame(app: &App, state: Option<&EngineState>) {
         }
     } else {
         g.set_decks(ModelRc::new(VecModel::from(rows)));
+    }
+    // [73] The key follows the other deck; NEXT TRACK says what it would take.
+    follow_deck(app, state);
+    let due = app.create.borrow().next_at.is_none_or(|t| t.elapsed() > NEXT_EVERY);
+    if due {
+        refresh_next(app);
     }
 }
 
@@ -296,10 +311,25 @@ pub(crate) struct Runtime {
     generation: Arc<AtomicU64>,
     /// Render the pads once the audio is in.
     pads_due: bool,
-    /// A pad pressed before its note was rendered: play it when it is in.
-    pad_due: Option<i32>,
+    /// A pad or key pressed before its note was rendered: play it when it
+    /// is in.
+    due: Option<Due>,
     /// The pad that plays (on the audition voice).
     pad_playing: Option<usize>,
+    /// [73] The key of the strip that plays (MIDI).
+    key_playing: Option<i32>,
+    /// The key and scale, where they come from, SNAP TO SCALE.
+    choice: KeyChoice,
+    /// What NEXT TRACK would take, looked up now and then.
+    next: NextTrack,
+    next_at: Option<Instant>,
+}
+
+/// A note asked for before it was rendered: a pad, or a key of the strip.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Due {
+    target: i32,
+    pad: Option<usize>,
 }
 
 impl Default for Runtime {
@@ -322,8 +352,12 @@ impl Default for Runtime {
             rendered_rx,
             generation: Arc::new(AtomicU64::new(0)),
             pads_due: false,
-            pad_due: None,
+            due: None,
             pad_playing: None,
+            key_playing: None,
+            choice: KeyChoice::default(),
+            next: NextTrack::default(),
+            next_at: None,
         }
     }
 }
@@ -362,6 +396,20 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_play_pad(move |i| w(&|a| play_pad(a, i.max(0) as usize)));
     let w = with.clone();
     g.on_step_octave(move |d| w(&|a| step_octave(a, d)));
+    let w = with.clone();
+    g.on_step_root(move |d| w(&|a| step_root(a, d)));
+    let w = with.clone();
+    g.on_choose_scale(move |id| w(&|a| choose_scale(a, &id)));
+    let w = with.clone();
+    g.on_key_from_deck(move || w(&key_from_deck));
+    let w = with.clone();
+    g.on_key_from_next(move || w(&key_from_next));
+    let w = with.clone();
+    g.on_set_snap(move |on| w(&|a| set_snap(a, on)));
+    let w = with.clone();
+    g.on_set_hints(move |on| w(&|a| set_hints(a, on)));
+    let w = with.clone();
+    g.on_play_key(move |i| w(&|a| play_key(a, i)));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -375,7 +423,12 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
 fn restore(app: &App) {
     let stored = app.state.borrow().lib.meta(META_NOTE).ok().flatten();
     let note = stored.and_then(|j| serde_json::from_str::<PickedNote>(&j).ok()).filter(|n| n.track.is_some());
-    app.create.borrow_mut().note = note;
+    let choice = app.state.borrow().lib.meta(META_KEY).ok().flatten().and_then(|j| serde_json::from_str::<KeyChoice>(&j).ok());
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.note = note;
+        rt.choice = choice.unwrap_or_default();
+    }
     render_wave(app);
     show(app);
 }
@@ -447,6 +500,8 @@ pub(crate) fn pick(app: &App, source: &str) {
     }
     render_wave(app);
     measure(app);
+    // [73] The other deck is another one now.
+    follow_deck(app, engine::snapshot(app).as_ref());
 }
 
 /// A handle dragged to `at` (0..1 across the waveform).
@@ -580,7 +635,7 @@ fn measure(app: &App) {
 pub(crate) fn hear(app: &App) {
     let hearing = {
         let rt = app.create.borrow();
-        rt.hearing.is_some() && rt.pad_playing.is_none()
+        rt.hearing.is_some() && rt.pad_playing.is_none() && rt.key_playing.is_none()
     };
     if hearing {
         stop_hearing(app);
@@ -603,12 +658,13 @@ pub(crate) fn hear(app: &App) {
     apply_fades(&mut samples, rate, n.fade());
     let engine_rate = app.engine.borrow().sample_rate();
     let sample = SampleData::new(od_decode::DecodedAudio { sample_rate: rate, channels: 2, samples }, engine_rate);
-    audition(app, sample, None);
+    audition(app, sample, None, None);
 }
 
 /// Plays `sample` on the audition voice: to the headphones while a deck
-/// plays on air, else to the master. `pad` says which pad it is (HEAR: none).
-fn audition(app: &App, sample: Arc<SampleData>, pad: Option<usize>) {
+/// plays on air, else to the master. `pad` says which pad it is, `key`
+/// which key of the strip (HEAR: neither).
+fn audition(app: &App, sample: Arc<SampleData>, pad: Option<usize>, key: Option<i32>) {
     let cue = engine::snapshot(app).is_some_and(|s| {
         let count = app.decks.borrow().deck_count.min(s.decks.len());
         s.decks[..count].iter().any(|d| d.playing)
@@ -618,6 +674,7 @@ fn audition(app: &App, sample: Arc<SampleData>, pad: Option<usize>) {
         let mut rt = app.create.borrow_mut();
         rt.hearing = Some(Instant::now());
         rt.pad_playing = pad;
+        rt.key_playing = key;
     }
     show(app);
 }
@@ -626,6 +683,7 @@ fn stop_hearing(app: &App) {
     let was = {
         let mut rt = app.create.borrow_mut();
         rt.pad_playing = None;
+        rt.key_playing = None;
         rt.hearing.take().is_some()
     };
     if was {
@@ -654,7 +712,7 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
                     rt.measure_due = false;
                     rt.hear_due = false;
                     rt.pads_due = false;
-                    rt.pad_due = None;
+                    rt.due = None;
                 }
                 _ => {}
             }
@@ -682,6 +740,7 @@ pub(crate) fn poll(app: &App, state: Option<&EngineState>) {
         let mut rt = app.create.borrow_mut();
         rt.hearing = None;
         rt.pad_playing = None;
+        rt.key_playing = None;
         drop(rt);
         show(app);
     }
@@ -759,12 +818,13 @@ fn show(app: &App) {
         rt.note.as_ref().map(|n| {
             let mut v = note_view(n, rt.measure_due);
             v.wave = rt.wave.clone();
-            v.hearing = rt.hearing.is_some() && rt.pad_playing.is_none();
+            v.hearing = rt.hearing.is_some() && rt.pad_playing.is_none() && rt.key_playing.is_none();
             v
         })
     };
     let g = app.ui.global::<crate::Create>();
     g.set_note(view.unwrap_or_default());
+    show_key(app);
     show_pads(app);
 }
 
@@ -849,10 +909,22 @@ struct Rendered {
     method: ShiftMethod,
 }
 
-/// The pads' notes (MIDI): the source note and the 7 semitones above it,
-/// moved by `octave` octaves.
-pub(crate) fn pad_targets(source: NotePitch, octave: i32) -> [i32; PADS] {
-    std::array::from_fn(|i| source.midi() + 12 * octave + i as i32)
+/// The pads' notes (MIDI), moved by `octave` octaves.
+///
+/// Without a key to snap to (`key` is `None`: SNAP TO SCALE off, or no key
+/// chosen) the source note and the 7 semitones above it. With one, the
+/// scale's notes from the root at or below the source note: the source note
+/// lies on the root or up to 11 semitones above it, and the 8 pads run from
+/// that root up the scale to its octave (A minor from F#3: A2 B2 C3 D3 E3
+/// F3 G3 A3).
+pub(crate) fn pad_targets(source: NotePitch, octave: i32, key: Option<ScaleKey>) -> [i32; PADS] {
+    match key {
+        None => std::array::from_fn(|i| source.midi() + 12 * octave + i as i32),
+        Some(k) => {
+            let notes = k.notes_from(k.root_at_or_below(source.midi()) + 12 * octave, PADS);
+            std::array::from_fn(|i| notes[i])
+        }
+    }
 }
 
 /// The semitones from the source pitch (with its cents) to `target`.
@@ -860,21 +932,34 @@ pub(crate) fn shift_to(source: NotePitch, target: i32) -> f64 {
     f64::from(target * 100 - source.total_cents()) / 100.0
 }
 
-/// What the pads show: each target's name, its distance from the source
-/// note in semitones and the FAR warning beyond 7, whether it is rendered
-/// and whether it plays. Disabled without a pitch.
-pub(crate) fn pad_rows(source: Option<NotePitch>, octave: i32, cache: &NoteCache, playing: Option<usize>) -> Vec<crate::CreatePad> {
+/// A note's name with its octave: as `key` spells it, else as the app does.
+pub(crate) fn note_name(key: Option<ScaleKey>, midi: i32) -> String {
+    key.map_or_else(|| NotePitch::new(midi, 0).name(), |k| k.note_name(midi))
+}
+
+/// What the pads show: each target's name (spelled as the key in use,
+/// `spell`), its distance from the source note in semitones and the FAR
+/// warning beyond 7, whether it is rendered and whether it plays. Disabled
+/// without a pitch.
+pub(crate) fn pad_rows(
+    source: Option<NotePitch>,
+    octave: i32,
+    key: Option<ScaleKey>,
+    spell: Option<ScaleKey>,
+    cache: &NoteCache,
+    playing: Option<usize>,
+) -> Vec<crate::CreatePad> {
     let Some(p) = source else {
         return vec![crate::CreatePad::default(); PADS];
     };
-    pad_targets(p, octave)
+    pad_targets(p, octave, key)
         .iter()
         .enumerate()
         .map(|(i, &t)| {
             let shift = t - p.midi();
             crate::CreatePad {
                 enabled: true,
-                note: NotePitch::new(t, 0).name().into(),
+                note: note_name(spell, t).into(),
                 shift,
                 far: noteshift::far(shift),
                 ready: cache.get(t).is_some(),
@@ -884,28 +969,34 @@ pub(crate) fn pad_rows(source: Option<NotePitch>, octave: i32, cache: &NoteCache
         .collect()
 }
 
-fn show_pads(app: &App) {
-    let (rows, octave, why, nearer) = {
-        let rt = app.create.borrow();
-        let source = rt.note.as_ref().and_then(PickedNote::pitch);
-        let rows = pad_rows(source, rt.octave, &rt.cache, rt.pad_playing);
-        let why = match &rt.note {
-            None => "none",
-            Some(_) if source.is_none() => "pitch",
-            Some(_) => "",
-        };
-        // FAR pads: a source note near the octave they sit in is better.
-        let nearer = match source {
-            Some(p) if rows.iter().any(|r| r.far) => NotePitch::new(p.midi() + 12 * rt.octave + 3, 0).name(),
-            _ => String::new(),
-        };
-        (rows, rt.octave, why, nearer)
-    };
-    let g = app.ui.global::<crate::Create>();
-    g.set_octave(octave);
-    g.set_pads_why(why.into());
-    g.set_pads_nearer(nearer.into());
-    let model = g.get_pads();
+/// The first key of the strip: the C at or below the lowest pad (C3
+/// without a pitch). Its two octaves hold every pad.
+pub(crate) fn strip_start(targets: Option<&[i32; PADS]>) -> i32 {
+    targets.map_or(48, |t| t[0] - t[0].rem_euclid(12))
+}
+
+/// The keys of the strip from `start`: each note's name (spelled as the
+/// key), whether it is the
+/// root, in the scale or out of it ("" without a key), on a pad, and
+/// whether it plays.
+pub(crate) fn strip_rows(start: i32, key: Option<ScaleKey>, pads: &[i32], playing: &[i32]) -> Vec<crate::CreateKeyNote> {
+    (start..start + STRIP_KEYS as i32)
+        .map(|m| crate::CreateKeyNote {
+            name: note_name(key, m).into(),
+            kind: match key {
+                None => "",
+                Some(k) if m.rem_euclid(12) == i32::from(k.root) => "root",
+                Some(k) if k.contains(m) => "scale",
+                Some(_) => "out",
+            }
+            .into(),
+            pad: pads.contains(&m),
+            playing: playing.contains(&m),
+        })
+        .collect()
+}
+
+fn set_rows<T: Clone + PartialEq + 'static>(model: ModelRc<T>, rows: Vec<T>, set: impl FnOnce(ModelRc<T>)) {
     if model.row_count() == rows.len() {
         for (i, row) in rows.into_iter().enumerate() {
             if model.row_data(i).as_ref() != Some(&row) {
@@ -913,8 +1004,43 @@ fn show_pads(app: &App) {
             }
         }
     } else {
-        g.set_pads(ModelRc::new(VecModel::from(rows)));
+        set(ModelRc::new(VecModel::from(rows)));
     }
+}
+
+fn show_pads(app: &App) {
+    let (rows, keys, start, octave, why, nearer, on) = {
+        let rt = app.create.borrow();
+        let source = rt.note.as_ref().and_then(PickedNote::pitch);
+        let key = rt.choice.pad_key();
+        let rows = pad_rows(source, rt.octave, key, rt.choice.key, &rt.cache, rt.pad_playing);
+        let targets = source.map(|p| pad_targets(p, rt.octave, key));
+        let why = match &rt.note {
+            None => "none",
+            Some(_) if source.is_none() => "pitch",
+            Some(_) => "",
+        };
+        // FAR pads: a source note in the middle of them is better.
+        let nearer = match &targets {
+            Some(t) if rows.iter().any(|r| r.far) => note_name(rt.choice.key, (t[0] + t[PADS - 1]) / 2),
+            _ => String::new(),
+        };
+        let start = strip_start(targets.as_ref());
+        let mut playing: Vec<i32> = rt.key_playing.into_iter().collect();
+        if let (Some(t), Some(i)) = (&targets, rt.pad_playing) {
+            playing.extend(t.get(i));
+        }
+        let keys = strip_rows(start, rt.choice.key, targets.as_ref().map_or(&[][..], |t| &t[..]), &playing);
+        (rows, keys, start, rt.octave, why, nearer, source.is_some())
+    };
+    let g = app.ui.global::<crate::Create>();
+    g.set_octave(octave);
+    g.set_pads_why(why.into());
+    g.set_pads_nearer(nearer.into());
+    g.set_keyboard_on(on);
+    g.set_keyboard_start(start);
+    set_rows(g.get_pads(), rows, |m| g.set_pads(m));
+    set_rows(g.get_keyboard(), keys, |m| g.set_keyboard(m));
 }
 
 /// Renders the pads' notes that are not in the cache yet, on a worker
@@ -922,9 +1048,9 @@ fn show_pads(app: &App) {
 /// and stops the worker of the old one.
 fn prepare_pads(app: &App) {
     let rate = app.engine.borrow().sample_rate();
-    let Some((key, octave, n)) = ({
+    let Some((key, octave, scale, n)) = ({
         let rt = app.create.borrow();
-        rt.note.as_ref().and_then(|n| RenderKey::of(n, rate).map(|k| (k, rt.octave, n.clone())))
+        rt.note.as_ref().and_then(|n| RenderKey::of(n, rate).map(|k| (k, rt.octave, rt.choice.pad_key(), n.clone())))
     }) else {
         return;
     };
@@ -937,10 +1063,10 @@ fn prepare_pads(app: &App) {
         if rt.cache.select(&key) {
             rt.generation.fetch_add(1, Ordering::SeqCst);
         }
-        // The pad pressed first, then the rest.
-        let mut want = pad_targets(key.pitch, octave).to_vec();
-        if let Some(t) = rt.pad_due {
-            want.insert(0, t);
+        // The pad or key pressed first, then the rest.
+        let mut want = pad_targets(key.pitch, octave, scale).to_vec();
+        if let Some(d) = rt.due {
+            want.insert(0, d.target);
         }
         let targets = rt.cache.missing(&want);
         (targets, rt.rendered_tx.clone(), rt.generation.clone(), rt.generation.load(Ordering::SeqCst))
@@ -973,7 +1099,7 @@ fn prepare_pads(app: &App) {
     });
 }
 
-/// Rendered notes come in: kept, and a pad waiting for one plays it.
+/// Rendered notes come in: kept, and a pad or key waiting for one plays it.
 fn poll_rendered(app: &App) {
     let got: Vec<Rendered> = app.create.borrow().rendered_rx.try_iter().collect();
     if got.is_empty() {
@@ -982,32 +1108,24 @@ fn poll_rendered(app: &App) {
     let mut play = None;
     {
         let mut rt = app.create.borrow_mut();
-        let octave = rt.octave;
         for r in got {
-            if rt.cache.put(&r.key, r.target, r.sample.clone(), r.method) && rt.pad_due == Some(r.target) {
-                rt.pad_due = None;
-                let i = pad_targets(r.key.pitch, octave).iter().position(|&t| t == r.target);
-                play = Some((r.sample, i));
+            if rt.cache.put(&r.key, r.target, r.sample.clone(), r.method)
+                && let Some(d) = rt.due.filter(|d| d.target == r.target)
+            {
+                rt.due = None;
+                play = Some((r.sample, d));
             }
         }
     }
     match play {
-        Some((sample, i)) => audition(app, sample, i),
+        Some((sample, d)) => audition(app, sample, d.pad, d.pad.is_none().then_some(d.target)),
         None => show_pads(app),
     }
 }
 
-/// A pad pressed: its note plays at once when rendered, else as soon as it
-/// is. Again restarts it.
-pub(crate) fn play_pad(app: &App, i: usize) {
-    let target = {
-        let rt = app.create.borrow();
-        let Some(p) = rt.note.as_ref().and_then(PickedNote::pitch) else { return };
-        match pad_targets(p, rt.octave).get(i) {
-            Some(&t) => t,
-            None => return,
-        }
-    };
+/// Plays `target` (MIDI) for pad `pad` or a key of the strip: at once when
+/// rendered, else as soon as it is.
+fn play_target(app: &App, target: i32, pad: Option<usize>) {
     if !engine::ensure_engine(app) {
         engine::show_message(app);
         return;
@@ -1019,12 +1137,39 @@ pub(crate) fn play_pad(app: &App, i: usize) {
         if current { rt.cache.get(target) } else { None }
     };
     match cached {
-        Some(sample) => audition(app, sample, Some(i)),
+        Some(sample) => audition(app, sample, pad, pad.is_none().then_some(target)),
         None => {
-            app.create.borrow_mut().pad_due = Some(target);
+            app.create.borrow_mut().due = Some(Due { target, pad });
             prepare_pads(app);
         }
     }
+}
+
+/// A pad pressed: its note plays at once when rendered, else as soon as it
+/// is. Again restarts it.
+pub(crate) fn play_pad(app: &App, i: usize) {
+    let target = {
+        let rt = app.create.borrow();
+        let Some(p) = rt.note.as_ref().and_then(PickedNote::pitch) else { return };
+        match pad_targets(p, rt.octave, rt.choice.pad_key()).get(i) {
+            Some(&t) => t,
+            None => return,
+        }
+    };
+    play_target(app, target, Some(i));
+}
+
+/// [73] Key `i` of the strip pressed: its note plays as a pad's would.
+pub(crate) fn play_key(app: &App, i: i32) {
+    let target = {
+        let rt = app.create.borrow();
+        let Some(p) = rt.note.as_ref().and_then(PickedNote::pitch) else { return };
+        if !(0..STRIP_KEYS as i32).contains(&i) {
+            return;
+        }
+        strip_start(Some(&pad_targets(p, rt.octave, rt.choice.pad_key()))) + i
+    };
+    play_target(app, target, None);
 }
 
 /// The octave switch: the pads an octave down or up (within ±2).
@@ -1032,7 +1177,7 @@ pub(crate) fn step_octave(app: &App, d: i32) {
     {
         let mut rt = app.create.borrow_mut();
         rt.octave = (rt.octave + d.signum()).clamp(-OCTAVES, OCTAVES);
-        rt.pad_due = None;
+        rt.due = None;
     }
     show_pads(app);
     prepare_pads(app);
@@ -1043,8 +1188,260 @@ pub(crate) fn step_octave(app: &App, d: i32) {
 pub(crate) fn pad_note(app: &App, i: usize) -> Option<(Arc<SampleData>, ShiftMethod)> {
     let rt = app.create.borrow();
     let p = rt.note.as_ref()?.pitch()?;
-    let t = *pad_targets(p, rt.octave).get(i)?;
+    let t = *pad_targets(p, rt.octave, rt.choice.pad_key()).get(i)?;
     Some((rt.cache.get(t)?, rt.cache.method(t)?))
+}
+
+// ── [73] Key and scale ──────────────────────────────────────────────────
+
+/// Library meta key of the key and scale (JSON).
+pub(crate) const META_KEY: &str = "create.key";
+/// Keys of the strip: two octaves from a C.
+pub(crate) const STRIP_KEYS: usize = 24;
+/// How often NEXT TRACK looks up the next track while CREATE is shown.
+const NEXT_EVERY: Duration = Duration::from_millis(500);
+
+/// The key NOTES plays in, where it comes from, and how the pads use it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub(crate) struct KeyChoice {
+    /// The key in use (`None`: none found or chosen yet).
+    pub key: Option<ScaleKey>,
+    /// "deck" (follows the other deck), "next" (taken by NEXT TRACK) or
+    /// "set" (by you).
+    pub from: String,
+    /// The deck the key follows, 1-based (0: none).
+    pub deck: usize,
+    /// SNAP TO SCALE: the pads hold the scale's notes.
+    pub snap: bool,
+    /// HAPPY and SAD beside MAJOR and MINOR.
+    pub hints: bool,
+}
+
+impl Default for KeyChoice {
+    fn default() -> Self {
+        Self { key: None, from: "deck".into(), deck: 0, snap: true, hints: true }
+    }
+}
+
+impl KeyChoice {
+    /// The key the pads snap to (none with SNAP TO SCALE off).
+    pub fn pad_key(&self) -> Option<ScaleKey> {
+        self.key.filter(|_| self.snap)
+    }
+}
+
+/// The deck whose key is the default, 0-based: for a note from deck 1 or 2
+/// the other one; for a note from the player (or none) the deck playing
+/// on air, else any deck playing, else the first with a key.
+pub(crate) fn key_deck(source: &str, keys: &[Option<MusicalKey>], playing: &[bool], on_air: Option<usize>) -> Option<usize> {
+    let has = |d: usize| keys.get(d).is_some_and(Option::is_some);
+    let plays = |d: usize| playing.get(d) == Some(&true);
+    match source {
+        "deck1" => Some(1),
+        "deck2" => Some(0),
+        _ => on_air
+            .filter(|&d| plays(d) && has(d))
+            .or_else(|| (0..keys.len()).find(|&d| plays(d) && has(d)))
+            .or_else(|| (0..keys.len()).find(|&d| has(d))),
+    }
+}
+
+/// While the key follows a deck: the other deck's key, as it is now.
+fn follow_deck(app: &App, state: Option<&EngineState>) {
+    let source = {
+        let rt = app.create.borrow();
+        if rt.choice.from != "deck" {
+            return;
+        }
+        rt.note.as_ref().map(|n| n.source.clone()).unwrap_or_default()
+    };
+    let count = app.decks.borrow().deck_count;
+    let keys: Vec<Option<MusicalKey>> = (0..count).map(|i| crate::decks::musical_key(app, i)).collect();
+    let playing: Vec<bool> = (0..count).map(|i| state.is_some_and(|s| s.decks.get(i).is_some_and(|d| d.playing))).collect();
+    let deck = key_deck(&source, &keys, &playing, state.and_then(|s| s.audible.dominant));
+    let key = deck.and_then(|d| keys.get(d).copied().flatten()).map(ScaleKey::from_key);
+    let deck = deck.map_or(0, |d| d + 1);
+    let changed = {
+        let mut rt = app.create.borrow_mut();
+        let c = &mut rt.choice;
+        let changed = c.key != key || c.deck != deck;
+        c.key = key;
+        c.deck = deck;
+        changed
+    };
+    if changed {
+        key_changed(app);
+    }
+}
+
+/// What NEXT TRACK would take: the next track in the queue, else in the
+/// set plan, with its key.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub(crate) struct NextTrack {
+    pub title: String,
+    pub key: Option<MusicalKey>,
+    /// "" (it has a key), "none" (no next track) or "no-key".
+    pub why: &'static str,
+}
+
+fn next_track(app: &App) -> NextTrack {
+    let Some(id) = crate::queue::next_track(app).or_else(|| crate::set_plan::next_track(app)) else {
+        return NextTrack { why: "none", ..Default::default() };
+    };
+    let st = app.state.borrow();
+    let Ok(t) = st.lib.track(id) else {
+        return NextTrack { why: "none", ..Default::default() };
+    };
+    NextTrack { title: t.tags.title.clone(), key: t.key, why: if t.key.is_some() { "" } else { "no-key" } }
+}
+
+fn refresh_next(app: &App) {
+    let next = next_track(app);
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.next_at = Some(Instant::now());
+        if rt.next == next {
+            return;
+        }
+        rt.next = next.clone();
+    }
+    let g = app.ui.global::<crate::Create>();
+    g.set_next_why(next.why.into());
+    g.set_next_title(next.title.into());
+}
+
+/// NEXT TRACK: the next track's key (it stays when the queue moves on).
+pub(crate) fn key_from_next(app: &App) {
+    refresh_next(app);
+    let next = app.create.borrow().next.clone();
+    let Some(k) = next.key else {
+        app.status(if next.why == "none" {
+            od_i18n::tr("No next track: add one to the queue or open a set").to_string()
+        } else {
+            od_i18n::trf("{} has no key yet: analyse it first", &[&next.title])
+        });
+        return;
+    };
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.choice.key = Some(ScaleKey::from_key(k));
+        rt.choice.from = "next".into();
+        rt.choice.deck = 0;
+    }
+    key_changed(app);
+}
+
+/// Back to the other deck's key.
+pub(crate) fn key_from_deck(app: &App) {
+    app.create.borrow_mut().choice.from = "deck".into();
+    follow_deck(app, engine::snapshot(app).as_ref());
+    key_changed(app);
+}
+
+/// A key chosen by hand starts from the source note (else A) in minor.
+fn hand_key(rt: &Runtime) -> ScaleKey {
+    rt.choice.key.unwrap_or_else(|| {
+        let root = rt.note.as_ref().and_then(PickedNote::pitch).map_or(9, NotePitch::midi);
+        ScaleKey::new(root, Scale::Minor)
+    })
+}
+
+/// The root a semitone down or up (SET BY YOU).
+pub(crate) fn step_root(app: &App, d: i32) {
+    {
+        let mut rt = app.create.borrow_mut();
+        let k = hand_key(&rt);
+        rt.choice.key = Some(ScaleKey::new(i32::from(k.root) + d.signum(), k.scale));
+        rt.choice.from = "set".into();
+    }
+    key_changed(app);
+}
+
+/// A scale chosen (SET BY YOU); the one in use again changes nothing.
+pub(crate) fn choose_scale(app: &App, id: &str) {
+    let Some(scale) = Scale::from_id(id) else { return };
+    {
+        let mut rt = app.create.borrow_mut();
+        let k = hand_key(&rt);
+        if rt.choice.key.is_some_and(|k| k.scale == scale) {
+            return;
+        }
+        rt.choice.key = Some(ScaleKey { scale, ..k });
+        rt.choice.from = "set".into();
+    }
+    key_changed(app);
+}
+
+pub(crate) fn set_snap(app: &App, on: bool) {
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.choice.snap = on;
+        rt.due = None;
+    }
+    key_changed(app);
+}
+
+pub(crate) fn set_hints(app: &App, on: bool) {
+    app.create.borrow_mut().choice.hints = on;
+    show_key(app);
+    save_key(app);
+}
+
+/// The key or how the pads use it changed: shown, kept, the pads rendered.
+fn key_changed(app: &App) {
+    show_key(app);
+    show_pads(app);
+    save_key(app);
+    prepare_pads(app);
+}
+
+fn save_key(app: &App) {
+    if app.state.borrow().read_only() {
+        return;
+    }
+    let json = serde_json::to_string(&app.create.borrow().choice).unwrap_or_default();
+    if let Err(e) = app.state.borrow_mut().lib.set_meta(META_KEY, &json) {
+        tracing::warn!(error = %e, "key and scale not saved");
+    }
+}
+
+/// What NOTES and FITS show of the key: the root and scale, the wheel
+/// notation as a small label beside (none for the modes, or when keys are
+/// shown as note names anyway), where it comes from, its notes and chords.
+pub(crate) fn key_view(c: &KeyChoice, notation: KeyNotation) -> crate::CreateKey {
+    let Some(k) = c.key else {
+        return crate::CreateKey { from: c.from.clone().into(), deck: c.deck as i32, ..Default::default() };
+    };
+    let wheel = k.musical_key().filter(|_| notation != KeyNotation::Musical).map(|m| m.format(notation)).unwrap_or_default();
+    crate::CreateKey {
+        chosen: true,
+        root: k.root_name().into(),
+        scale: k.scale.id().into(),
+        wheel: wheel.into(),
+        from: c.from.clone().into(),
+        deck: c.deck as i32,
+        notes: k.note_names().join(" ").into(),
+        chords: k.chord_names().join(" ").into(),
+    }
+}
+
+fn show_key(app: &App) {
+    let notation = app.state.borrow().settings.key_notation();
+    let (view, snap, hints) = {
+        let rt = app.create.borrow();
+        (key_view(&rt.choice, notation), rt.choice.snap, rt.choice.hints)
+    };
+    let g = app.ui.global::<crate::Create>();
+    g.set_key(view);
+    g.set_snap(snap);
+    g.set_hints(hints);
+}
+
+/// The key and scale in use (tests).
+#[cfg(test)]
+pub(crate) fn choice(app: &App) -> KeyChoice {
+    app.create.borrow().choice.clone()
 }
 
 /// A picked note for the audits, in its widest state: a correction
@@ -1079,7 +1476,27 @@ pub(crate) fn stage(app: &App, track: TrackId) {
 #[cfg(test)]
 pub(crate) fn stage_far(app: &App, track: TrackId) {
     stage(app, track);
-    app.create.borrow_mut().octave = 1;
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.octave = 1;
+        rt.choice = KeyChoice::default();
+    }
+    show_key(app);
+    show_pads(app);
+}
+
+/// [73] The staged note in a key set by hand, in its widest state: a mode
+/// (the modes shown under MORE), with the hints, the pads an octave down.
+#[cfg(test)]
+pub(crate) fn stage_scale(app: &App, track: TrackId) {
+    stage(app, track);
+    {
+        let mut rt = app.create.borrow_mut();
+        rt.octave = -1;
+        rt.choice = KeyChoice { key: Some(ScaleKey::new(6, Scale::HarmonicMinor)), from: "set".into(), ..KeyChoice::default() };
+    }
+    app.ui.global::<crate::Create>().set_more(true);
+    show_key(app);
     show_pads(app);
 }
 
@@ -1087,11 +1504,13 @@ pub(crate) fn stage_far(app: &App, track: TrackId) {
 /// on the demo library with the decks loaded by `OPENDJDECKS_AUTOLOAD`:
 /// `create-note` opens MELODY and picks a note from deck 1;
 /// `create-note-set` corrects it a semitone up as well (SET BY YOU);
-/// `create-note-far` puts the pads an octave up (FAR on every pad).
+/// `create-note-far` puts the pads an octave up (FAR on every pad);
+/// `create-scale-set` chooses a mode by hand (MORE open, SET BY YOU);
+/// `create-scale-off` turns SNAP TO SCALE off.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
-    if !parts.iter().any(|p| p.starts_with("create-note")) {
+    if !parts.iter().any(|p| p.starts_with("create-")) {
         return;
     }
     let weak = std::rc::Rc::downgrade(app);
@@ -1105,6 +1524,13 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         }
         if parts.iter().any(|p| p == "create-note-far") {
             step_octave(&a, 1);
+        }
+        if parts.iter().any(|p| p == "create-scale-set") {
+            a.ui.global::<crate::Create>().set_more(true);
+            choose_scale(&a, "dorian");
+        }
+        if parts.iter().any(|p| p == "create-scale-off") {
+            set_snap(&a, false);
         }
     });
 }
@@ -1222,21 +1648,108 @@ mod tests {
     #[test]
     fn pads_run_up_from_the_source_and_warn_beyond_seven() {
         let src = NotePitch::new(57, 12);
-        assert_eq!(pad_targets(src, 0), [57, 58, 59, 60, 61, 62, 63, 64]);
-        assert_eq!(pad_targets(src, -1)[0], 45);
+        assert_eq!(pad_targets(src, 0, None), [57, 58, 59, 60, 61, 62, 63, 64]);
+        assert_eq!(pad_targets(src, -1, None)[0], 45);
         assert!((shift_to(src, 57) + 0.12).abs() < 1e-9, "the source pad corrects the cents");
         assert!((shift_to(src, 69) - 11.88).abs() < 1e-9);
         let cache = NoteCache::default();
-        let rows = pad_rows(Some(src), 0, &cache, Some(2));
+        let rows = pad_rows(Some(src), 0, None, None, &cache, Some(2));
         assert_eq!((rows[0].note.as_str(), rows[0].shift, rows[7].note.as_str(), rows[7].shift), ("A3", 0, "E4", 7));
         assert!(rows.iter().all(|r| r.enabled && !r.far && !r.ready), "within 7 semitones");
         assert!(rows[2].playing && !rows[1].playing);
-        let up = pad_rows(Some(src), 1, &cache, None);
+        let up = pad_rows(Some(src), 1, None, None, &cache, None);
         assert!(up.iter().all(|r| r.far), "an octave up: +12 … +19");
-        let down = pad_rows(Some(src), -1, &cache, None);
+        let down = pad_rows(Some(src), -1, None, None, &cache, None);
         let far: Vec<bool> = down.iter().map(|r| r.far).collect();
         assert_eq!(far, [true, true, true, true, true, false, false, false], "-12 … -8 warn, -7 … -5 do not");
-        assert!(pad_rows(None, 0, &cache, None).iter().all(|r| !r.enabled), "no pitch: off");
+        assert!(pad_rows(None, 0, None, None, &cache, None).iter().all(|r| !r.enabled), "no pitch: off");
+    }
+
+    #[test]
+    fn snapped_pads_run_up_the_scale_from_the_root_at_or_below_the_note() {
+        let am = ScaleKey::new(9, Scale::Minor);
+        // From A3 itself: A3 to A4.
+        assert_eq!(pad_targets(NotePitch::new(57, 0), 0, Some(am)), [57, 59, 60, 62, 64, 65, 67, 69]);
+        // From F#3 (out of the scale): the A below, A2 to A3.
+        let fs = NotePitch::new(54, 30);
+        assert_eq!(pad_targets(fs, 0, Some(am)), [45, 47, 48, 50, 52, 53, 55, 57]);
+        assert_eq!(pad_targets(fs, 1, Some(am))[0], 57, "the octave switch moves them");
+        // Every pad in the scale, and FAR where the shift is over 7.
+        let rows = pad_rows(Some(fs), 0, Some(am), Some(am), &NoteCache::default(), None);
+        let names: Vec<&str> = rows.iter().map(|r| r.note.as_str()).collect();
+        assert_eq!(names, ["A2", "B2", "C3", "D3", "E3", "F3", "G3", "A3"]);
+        let far: Vec<bool> = rows.iter().map(|r| r.far).collect();
+        assert_eq!(far, [true, false, false, false, false, false, false, false], "A2 -9 warns, B2 -7 does not");
+        // A major scale from its root: C to C.
+        let c = ScaleKey::new(0, Scale::Major);
+        assert_eq!(pad_targets(NotePitch::new(60, 0), 0, Some(c)), [60, 62, 64, 65, 67, 69, 71, 72]);
+        // SNAP TO SCALE off: the chromatic pads of [72].
+        let off = KeyChoice { key: Some(am), snap: false, ..KeyChoice::default() };
+        assert_eq!(pad_targets(fs, 0, off.pad_key()), [54, 55, 56, 57, 58, 59, 60, 61]);
+    }
+
+    #[test]
+    fn the_strip_covers_the_pads_and_marks_root_scale_and_out() {
+        let am = ScaleKey::new(9, Scale::Minor);
+        let pads = pad_targets(NotePitch::new(54, 0), 0, Some(am));
+        let start = strip_start(Some(&pads));
+        assert_eq!(start, 36, "C2: the C at or below A2");
+        assert!(pads.iter().all(|&p| (start..start + STRIP_KEYS as i32).contains(&p)), "every pad on the strip");
+        assert_eq!(strip_start(None), 48, "C3 without a pitch");
+        let rows = strip_rows(start, Some(am), &pads, &[57]);
+        assert_eq!(rows.len(), STRIP_KEYS);
+        assert_eq!((rows[9].name.as_str(), rows[9].kind.as_str(), rows[9].pad), ("A2", "root", true));
+        assert_eq!((rows[11].kind.as_str(), rows[10].kind.as_str()), ("scale", "out"), "B in, Bb out");
+        assert!(!rows[0].pad && rows[0].kind == "scale", "C2 is in A minor, not on a pad");
+        assert!(rows[21].playing && !rows[9].playing, "A3 plays");
+        let kinds = |k: &str| rows.iter().filter(|r| r.kind == k).count();
+        assert_eq!((kinds("root"), kinds("scale"), kinds("out")), (2, 12, 10));
+        assert!(strip_rows(start, None, &[], &[]).iter().all(|r| r.kind.is_empty()), "no key: quiet");
+        // Spelled as the key: E major writes its black keys as sharps.
+        let e = ScaleKey::new(4, Scale::Major);
+        let rows = strip_rows(48, Some(e), &[], &[]);
+        assert_eq!((rows[1].name.as_str(), rows[3].name.as_str(), rows[10].name.as_str()), ("C#3", "D#3", "A#3"));
+        assert_eq!(strip_rows(48, None, &[], &[])[1].name, "Db3", "no key: the app's spelling");
+        let pads = pad_rows(Some(NotePitch::new(64, 0)), 0, Some(e), Some(e), &NoteCache::default(), None);
+        let names: Vec<&str> = pads.iter().map(|r| r.note.as_str()).collect();
+        assert_eq!(names, ["E4", "F#4", "G#4", "A4", "B4", "C#5", "D#5", "E5"]);
+    }
+
+    #[test]
+    fn the_default_key_is_the_other_decks() {
+        let k = |s: &str| MusicalKey::parse(s);
+        let keys = [k("8A"), k("5B"), None, k("1A")];
+        let none = [false; 4];
+        assert_eq!(key_deck("deck1", &keys, &none, None), Some(1));
+        assert_eq!(key_deck("deck2", &keys, &none, None), Some(0));
+        // From the player: the deck on air, else one playing, else the first with a key.
+        let playing = [false, true, false, true];
+        assert_eq!(key_deck("player", &keys, &playing, Some(3)), Some(3));
+        assert_eq!(key_deck("player", &keys, &playing, None), Some(1));
+        assert_eq!(key_deck("player", &keys, &[false, false, true, false], Some(2)), Some(0), "deck 3 has no key");
+        assert_eq!(key_deck("", &[None, None], &[false, false], None), None);
+        // A note from deck 1 follows deck 2 even while it has no key.
+        assert_eq!(key_deck("deck1", &[k("8A"), None], &none, None), Some(1));
+    }
+
+    #[test]
+    fn the_key_shows_as_note_names_with_the_wheel_beside() {
+        let c = KeyChoice { key: Some(ScaleKey::from_key(MusicalKey::parse("8A").unwrap())), deck: 2, ..KeyChoice::default() };
+        let v = key_view(&c, KeyNotation::Camelot);
+        assert_eq!((v.root.as_str(), v.scale.as_str(), v.wheel.as_str()), ("A", "minor", "8A"));
+        assert_eq!((v.from.as_str(), v.deck), ("deck", 2));
+        assert_eq!(v.notes, "A B C D E F G");
+        assert_eq!(v.chords, "Am Bdim C Dm Em F G");
+        assert_eq!(key_view(&c, KeyNotation::OpenKey).wheel, "1m");
+        assert_eq!(key_view(&c, KeyNotation::Musical).wheel, "", "note names already");
+        let mode = KeyChoice { key: Some(ScaleKey::new(2, Scale::Dorian)), from: "set".into(), ..KeyChoice::default() };
+        assert_eq!(key_view(&mode, KeyNotation::Camelot).wheel, "", "a mode has no place on the wheel");
+        assert!(!key_view(&KeyChoice::default(), KeyNotation::Camelot).chosen);
+        // Stored and read back; what is missing takes the defaults (snap on).
+        let back: KeyChoice = serde_json::from_str(&serde_json::to_string(&mode).unwrap()).unwrap();
+        assert_eq!(back, mode);
+        let old: KeyChoice = serde_json::from_str("{}").unwrap();
+        assert!(old.snap && old.hints && old.from == "deck" && old.key.is_none());
     }
 
     #[test]

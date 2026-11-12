@@ -12,6 +12,7 @@ pub mod ids;
 pub mod key;
 pub mod note;
 pub mod phrase;
+pub mod scale;
 pub mod track;
 pub mod waveform;
 
@@ -22,5 +23,6 @@ pub use ids::*;
 pub use key::{KeyNotation, KeyRelation, Mode, MusicalKey};
 pub use note::NotePitch;
 pub use phrase::{Phrase, PhraseKind, PhraseMood, mark_drop, normalize_phrases};
+pub use scale::{Scale, ScaleKey, Triad};
 pub use track::{AnalysisConfidence, AudioFormat, DataSource, TrackAnalysis, TrackTags};
 pub use waveform::{Waveform, WaveformColumn};

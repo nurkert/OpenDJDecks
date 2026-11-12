@@ -530,6 +530,9 @@ const DE: &[(&str, &str)] = &[
     ("No track in the player: select one in the library", "Kein Track im Player: wähle einen in der Bibliothek"),
     ("No track on deck {}", "Kein Track auf Deck {}"),
     ("Not a note: {}. Type one such as A3, F#2 or Bb4", "Kein Ton: {}. Gib einen wie A3, F#2 oder Bb4 ein"),
+    // [73] CREATE: the key of the next track.
+    ("No next track: add one to the queue or open a set", "Kein nächster Track: Füge einen zur Warteschlange hinzu oder öffne ein Set"),
+    ("{} has no key yet: analyse it first", "{} hat noch keine Tonart: Analysiere den Track zuerst"),
     ("Club mode on / off", "Club-Modus an / aus"),
     ("Load tracks on two decks", "Tracks auf zwei Decks laden"),
     (

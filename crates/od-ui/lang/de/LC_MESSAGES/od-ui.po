@@ -10408,11 +10408,6 @@ msgctxt "MelodyView"
 msgid "NOTES"
 msgstr "NOTEN"
 
-#: ui/create.slint:135
-msgctxt "MelodyView"
-msgid "The key and scale come from the other deck or the next track. The scale's notes fill the pads; play or type the melody into the steps."
-msgstr "Tonart und Skala kommen vom anderen Deck oder vom nächsten Track. Die Töne der Skala liegen auf den Pads; spiel oder tippe die Melodie in die Schritte."
-
 #: ui/create.slint
 msgctxt "PadsHead"
 msgid "PADS"
@@ -10422,16 +10417,6 @@ msgstr "PADS"
 msgctxt "MelodyView"
 msgid "ARRANGE"
 msgstr "ANORDNEN"
-
-#: ui/create.slint:145
-msgctxt "MelodyView"
-msgid "NEXT TRACK"
-msgstr "NÄCHSTER TRACK"
-
-#: ui/create.slint:146
-msgctxt "MelodyView"
-msgid "Take the key of the next track in the set (comes with keys and scales)"
-msgstr "Die Tonart des nächsten Tracks im Set übernehmen (kommt mit Tonarten und Skalen)"
 
 #: ui/create.slint:150
 msgctxt "MelodyView"
@@ -10802,3 +10787,263 @@ msgstr "WEIT: Über 7 Halbtöne entfernt klingt es womöglich unnatürlich. Ein 
 msgctxt "PadsLine"
 msgid "The source note and the 7 semitones above it. The octave switch moves them."
 msgstr "Der Ausgangston und die 7 Halbtöne darüber. Der Oktavschalter verschiebt sie."
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "MAJOR"
+msgstr "DUR"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "MINOR"
+msgstr "MOLL"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "DORIAN"
+msgstr "DORISCH"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "PHRYGIAN"
+msgstr "PHRYGISCH"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "LYDIAN"
+msgstr "LYDISCH"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "MIXOLYDIAN"
+msgstr "MIXOLYDISCH"
+
+#: ui/create.slint
+msgctxt "Create"
+msgid "HARMONIC MINOR"
+msgstr "HARMONISCH MOLL"
+
+#: ui/create.slint
+msgctxt "StripKey"
+msgid "root"
+msgstr "Grundton"
+
+#: ui/create.slint
+msgctxt "StripKey"
+msgid "in the scale"
+msgstr "in der Skala"
+
+#: ui/create.slint
+msgctxt "StripKey"
+msgid "out of the scale"
+msgstr "außerhalb der Skala"
+
+#: ui/create.slint
+msgctxt "StripKey"
+msgid "on a pad"
+msgstr "auf einem Pad"
+
+#: ui/create.slint
+msgctxt "KeyStrip"
+msgid "Play a note: press a key, or use the arrow keys and Return"
+msgstr "Einen Ton spielen: eine Taste drücken, oder Pfeiltasten und Eingabe"
+
+#: ui/create.slint
+msgctxt "KeyStrip"
+msgid "Pick a note with a pitch in SOURCE to play the keys"
+msgstr "Wähle in QUELLE einen Ton mit Tonhöhe, um die Tasten zu spielen"
+
+#: ui/create.slint
+msgctxt "PadsHead"
+msgid "SNAP TO SCALE"
+msgstr "AN SKALA AUSRICHTEN"
+
+#: ui/create.slint
+msgctxt "PadsHead"
+msgid "Snap to scale: the pads hold the scale's notes; off, every semitone from the source note"
+msgstr "An Skala ausrichten: Die Pads tragen die Töne der Skala; aus, jeden Halbton ab dem Ausgangston"
+
+#: ui/create.slint
+msgctxt "PadsLine"
+msgid "The scale's notes from the root at or below the source note. The octave switch moves them."
+msgstr "Die Töne der Skala ab dem Grundton auf oder unter dem Ausgangston. Der Oktavschalter verschiebt sie."
+
+#: ui/create.slint
+msgctxt "PadsLine"
+msgid "No key yet: the source note and the 7 semitones above it. The octave switch moves them."
+msgstr "Noch keine Tonart: der Ausgangston und die 7 Halbtöne darüber. Der Oktavschalter verschiebt sie."
+
+#: ui/create.slint
+msgctxt "KeyFrom"
+msgid "SET BY YOU"
+msgstr "VON DIR GESETZT"
+
+#: ui/create.slint
+msgctxt "KeyFrom"
+msgid "NEXT TRACK"
+msgstr "NÄCHSTER TRACK"
+
+#: ui/create.slint
+msgctxt "KeyFrom"
+msgid "FROM DECK {}"
+msgstr "VON DECK {}"
+
+#: ui/create.slint
+msgctxt "KeyFrom"
+msgid "NO KEY ON DECK {}"
+msgstr "KEINE TONART AUF DECK {}"
+
+#: ui/create.slint
+msgctxt "KeyFrom"
+msgid "NO KEY ON A DECK"
+msgstr "KEINE TONART AUF EINEM DECK"
+
+#: ui/create.slint
+msgctxt "KeyRow"
+msgid "KEY"
+msgstr "TONART"
+
+#: ui/create.slint
+msgctxt "KeyRow"
+msgid "Key: the root a semitone down or up"
+msgstr "Tonart: der Grundton einen Halbton tiefer oder höher"
+
+#: ui/create.slint
+msgctxt "KeyRow"
+msgid "OTHER DECK"
+msgstr "ANDERES DECK"
+
+#: ui/create.slint
+msgctxt "KeyRow"
+msgid "Follow the key of the other deck (for a note from the player, the deck playing)"
+msgstr "Der Tonart des anderen Decks folgen (bei einem Ton aus dem Player dem Deck, das spielt)"
+
+#: ui/create.slint
+msgctxt "KeyRow"
+msgid "NEXT TRACK"
+msgstr "NÄCHSTER TRACK"
+
+#: ui/create.slint
+msgctxt "KeyRow"
+msgid "No next track: add one to the queue or open a set to take its key"
+msgstr "Kein nächster Track: Füge einen zur Warteschlange hinzu oder öffne ein Set, um seine Tonart zu übernehmen"
+
+#: ui/create.slint
+msgctxt "KeyRow"
+msgid "The next track, {}, has no key yet: analyse it first"
+msgstr "Der nächste Track, {}, hat noch keine Tonart: Analysiere ihn zuerst"
+
+#: ui/create.slint
+msgctxt "KeyRow"
+msgid "Take the key of the next track: {}"
+msgstr "Die Tonart des nächsten Tracks übernehmen: {}"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "SCALE"
+msgstr "SKALA"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "MAJOR"
+msgstr "DUR"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "HAPPY"
+msgstr "FRÖHLICH"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "MINOR"
+msgstr "MOLL"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "SAD"
+msgstr "TRAURIG"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "MORE"
+msgstr "MEHR"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "MODE"
+msgstr "MODUS"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "Major: often heard as bright or happy"
+msgstr "Dur: klingt oft hell oder fröhlich"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "Minor: often heard as dark or sad"
+msgstr "Moll: klingt oft dunkel oder traurig"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "Hide the modes"
+msgstr "Die Modi ausblenden"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "Show the modes: dorian, phrygian, lydian, mixolydian and harmonic minor"
+msgstr "Die Modi zeigen: dorisch, phrygisch, lydisch, mixolydisch und harmonisch Moll"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "HINTS"
+msgstr "HINWEISE"
+
+#: ui/create.slint
+msgctxt "ScaleRow"
+msgid "Hints: HAPPY and SAD under MAJOR and MINOR"
+msgstr "Hinweise: FRÖHLICH und TRAURIG unter DUR und MOLL"
+
+#: ui/create.slint
+msgctxt "ModeKey"
+msgid "Play in {}"
+msgstr "In {} spielen"
+
+#: ui/create.slint
+msgctxt "ModeRow"
+msgid "DORIAN"
+msgstr "DORISCH"
+
+#: ui/create.slint
+msgctxt "ModeRow"
+msgid "PHRYGIAN"
+msgstr "PHRYGISCH"
+
+#: ui/create.slint
+msgctxt "ModeRow"
+msgid "LYDIAN"
+msgstr "LYDISCH"
+
+#: ui/create.slint
+msgctxt "ModeRow"
+msgid "MIXOLYDIAN"
+msgstr "MIXOLYDISCH"
+
+#: ui/create.slint
+msgctxt "ModeRow"
+msgid "HARMONIC MINOR"
+msgstr "HARMONISCH MOLL"
+
+#: ui/create.slint
+msgctxt "KeyFits"
+msgid "NOTES"
+msgstr "TÖNE"
+
+#: ui/create.slint
+msgctxt "KeyFits"
+msgid "CHORDS"
+msgstr "AKKORDE"
+
+#: ui/create.slint
+msgctxt "MelodyView"
+msgid "The notes and chords of the chosen key. Which of them fit the track playing now comes later."
+msgstr "Die Töne und Akkorde der gewählten Tonart. Welche davon zum laufenden Track passen, kommt später."

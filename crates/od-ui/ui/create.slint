@@ -9,11 +9,13 @@
 // later names, never as working keys. State lives in the `Create` global.
 // [71] fills MELODY's SOURCE: a note picked on a zoomed waveform, its pitch
 // and a correction, and HEAR. [72] puts the note on NOTES' pads at other
-// pitches, with an octave switch and a FAR warning on large shifts.
+// pitches, with an octave switch and a FAR warning on large shifts. [73]
+// plays them in a key: the root and scale from the other deck, the next
+// track or by hand, on the pads (SNAP TO SCALE) and the keyboard strip.
 
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
-import { Caps, PlateButton, Stepper, Field, KeyFocus, TipArea, TooltipState } from "controls.slint";
+import { Caps, PlateButton, Stepper, Field, KeyFocus, LineToggle, TipArea, TooltipState } from "controls.slint";
 
 // One deck in the strip (create.rs, from the engine's deck state).
 export struct CreateDeck {
@@ -75,6 +77,37 @@ export struct CreatePad {
     playing: bool,
 }
 
+// [73] The key NOTES plays in (create.rs).
+export struct CreateKey {
+    // A key is chosen or found.
+    chosen: bool,
+    // The root's name ("A") and the scale ("major", "minor", "dorian" …).
+    root: string,
+    scale: string,
+    // The key in the wheel notation, a small label beside ("" = a mode, or
+    // keys are shown as note names anyway).
+    wheel: string,
+    // Where it comes from: "deck" (the other deck, followed), "next" (the
+    // next track) or "set" (by you); the deck it follows (0 = none).
+    from: string,
+    deck: int,
+    // The scale's notes and its chords: "A B C D E F G", "Am Bdim C …".
+    notes: string,
+    chords: string,
+}
+
+// [73] One key of the keyboard strip (create.rs).
+export struct CreateKeyNote {
+    // "A3".
+    name: string,
+    // "root", "scale" (in it), "out" (out of it), "" (no key).
+    kind: string,
+    // On a pad.
+    pad: bool,
+    // Sounds on the audition voice.
+    playing: bool,
+}
+
 export global Create {
     // The view: "melody", "drums" or "theory" (remembered, shell.rs).
     in-out property <string> view: "melody";
@@ -105,6 +138,38 @@ export global Create {
     in property <string> pads-nearer;
     callback play-pad(int);
     callback step-octave(int);
+    // [73] The key and scale; SNAP TO SCALE; HAPPY and SAD beside MAJOR
+    // and MINOR; the modes under MORE shown.
+    in property <CreateKey> key;
+    in property <bool> snap: true;
+    in property <bool> hints: true;
+    in-out property <bool> more;
+    // What NEXT TRACK takes: "" (a key), "none" (no next track in the
+    // queue or the set), "no-key" (its key is not known); its title.
+    in property <string> next-why: "none";
+    in property <string> next-title;
+    // The keyboard strip: 24 keys from a C (MIDI `keyboard-start`), played
+    // once a note with a pitch is picked.
+    in property <[CreateKeyNote]> keyboard;
+    in property <int> keyboard-start: 48;
+    in property <bool> keyboard-on;
+    callback step-root(int);
+    callback choose-scale(string);
+    callback key-from-deck();
+    callback key-from-next();
+    callback set-snap(bool);
+    callback set-hints(bool);
+    callback play-key(int);
+    // A scale's name in capitals.
+    public pure function scale-name(id: string) -> string {
+        return id == "major" ? @tr("MAJOR") : id == "minor" ? @tr("MINOR") : id == "dorian" ? @tr("DORIAN")
+            : id == "phrygian" ? @tr("PHRYGIAN") : id == "lydian" ? @tr("LYDIAN") : id == "mixolydian" ? @tr("MIXOLYDIAN")
+            : id == "harmonic_minor" ? @tr("HARMONIC MINOR") : "";
+    }
+    // The key in words: "A MINOR" ("" = none).
+    public pure function key-name() -> string {
+        return root.key.chosen ? root.key.root + " " + root.scale-name(root.key.scale) : "";
+    }
     // The distance of a pad from the source note: "+3", "-5", "0".
     public pure function shift-text(s: int) -> string {
         return s > 0 ? "+" + s : "" + s;
@@ -145,26 +210,99 @@ component Slot inherits Rectangle {
     Caps { width: parent.width; height: parent.height; text: root.legend; horizontal-alignment: center; vertical-alignment: center; overflow: elide; }
 }
 
-// The keyboard strip, two octaves from C. Drawn quiet until a key is
-// chosen; then the root, the scale and the chord notes light up ([73]).
-component KeyStrip inherits Rectangle {
-    accessible-role: image;
-    accessible-label: @tr("Keyboard strip");
-    height: 56px;
-    property <length> key-w: (root.width - 13 * Theme.key-gap) / 14;
-    for i in 14: Rectangle {
-        x: i * (root.key-w + Theme.key-gap); y: 0; width: root.key-w; height: root.height;
-        background: Theme.plate; border-radius: Theme.r-control;
-        if Math.mod(i, 7) == 0: Caps {
-            y: parent.height - self.height - Theme.s1; width: parent.width;
-            text: i == 0 ? "C3" : "C4"; horizontal-alignment: center;
+// [73] One key of the strip: the root in bone, the scale's notes filled,
+// the notes out of it dimmed to the ground with a hairline, so the three
+// read by fill against outline and never by hue; sodium while it sounds.
+// A short line at its foot marks a key that is on a pad.
+component StripKey inherits Rectangle {
+    in property <CreateKeyNote> note;
+    in property <int> index;
+    in property <bool> black;
+    // The keyboard's cursor is here (the strip has the focus).
+    in property <bool> cursor;
+    callback pressed();
+    property <bool> lit: root.note.playing;
+    property <bool> filled: root.lit || root.note.kind == "root" || root.note.kind == "scale";
+    property <color> ink: root.filled ? Theme.ground : Theme.bone-3;
+    accessible-role: text;
+    accessible-id: root.visible ? "create.keyboard.key" + root.index : "";
+    accessible-label: root.note.name;
+    accessible-value: root.note.name + (root.note.kind == "root" ? " " + @tr("root") : root.note.kind == "scale" ? " " + @tr("in the scale")
+        : root.note.kind == "out" ? " " + @tr("out of the scale") : "") + (root.note.pad ? " " + @tr("on a pad") : "");
+    background: root.lit ? Theme.attention : root.note.kind == "root" ? Theme.bone
+        : root.note.kind == "scale" ? (root.black ? Theme.bone-2 : Theme.bone-3)
+        : root.note.kind == "out" ? (root.black ? Theme.ground : Theme.ground-band)
+        : root.black ? Theme.ground : Theme.plate;
+    border-radius: Theme.r-control;
+    // Black keys keep a ground edge against the white ones they sit on.
+    border-width: root.black || root.note.kind == "out" ? Theme.hair : 0px;
+    border-color: root.note.kind == "out" ? Theme.rule-strong : Theme.ground;
+    // The note's name on the Cs and on the root (white keys only).
+    if !root.black && (Math.mod(root.index, 12) == 0 || root.note.kind == "root"): Caps {
+        y: parent.height - self.height - Theme.s2; width: parent.width;
+        text: root.note.name; horizontal-alignment: center; overflow: elide;
+        color: root.ink; font-weight: root.note.kind == "root" ? Theme.weight-semi : Theme.weight-medium;
+    }
+    if root.note.pad: Rectangle {
+        x: parent.width * 0.25; y: parent.height - 4px; width: parent.width * 0.5; height: 2px;
+        background: root.filled ? Theme.ground : Theme.bone-2;
+    }
+    if root.cursor: Rectangle {
+        border-width: Theme.focus-width; border-color: Theme.focus; border-radius: Theme.r-control;
+    }
+    TouchArea {
+        enabled: Create.keyboard-on;
+        mouse-cursor: Create.keyboard-on ? pointer : default;
+        // A key plays on press, as on an instrument.
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) { root.pressed(); }
         }
     }
-    // Black keys after C, D, F, G and A of each octave.
-    for i in [0, 1, 3, 4, 5, 7, 8, 10, 11, 12]: Rectangle {
-        x: (i + 1) * (root.key-w + Theme.key-gap) - root.key-w * 0.3 - Theme.key-gap / 2; y: 0;
+}
+
+// [73] The keyboard strip: two octaves from a C over the pads' notes,
+// following the octave switch. Drawn quiet until a key is chosen; then the
+// root, the scale and the notes out of it show. Once a note with a pitch
+// is picked a key plays it on press; with the focus the arrows move along
+// the keys and Return or Space plays one.
+component KeyStrip inherits Rectangle {
+    property <length> key-w: (root.width - 13 * Theme.key-gap) / 14;
+    // The white key of each semitone of the octave, and which are black.
+    property <[int]> white-of: [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6];
+    property <[bool]> black: [false, true, false, true, false, false, true, false, true, false, true, false];
+    property <int> at: 0;
+    property <CreateKeyNote> here: Create.keyboard[root.at];
+    property <string> tip: Create.keyboard-on ? @tr("Play a note: press a key, or use the arrow keys and Return")
+        : @tr("Pick a note with a pitch in SOURCE to play the keys");
+    accessible-role: slider;
+    accessible-id: "create.keyboard";
+    accessible-label: TooltipState.name-for(self.accessible-id, @tr("Keyboard strip"), root.tip);
+    accessible-value: root.here.name;
+    accessible-description: root.tip;
+    accessible-enabled: Create.keyboard-on;
+    accessible-action-default => { Create.play-key(root.at); }
+    height: 56px;
+    for k[i] in Create.keyboard: StripKey {
+        visible: !root.black[Math.mod(i, 12)];
+        x: (Math.floor(i / 12) * 7 + root.white-of[Math.mod(i, 12)]) * (root.key-w + Theme.key-gap); y: 0;
+        width: root.key-w; height: root.height;
+        note: k; index: i; black: false;
+        cursor: focus.focused && root.at == i;
+        pressed => { root.at = i; Create.play-key(i); }
+    }
+    // Black keys over the white ones: after C, D, F, G and A.
+    for k[i] in Create.keyboard: StripKey {
+        visible: root.black[Math.mod(i, 12)];
+        x: (Math.floor(i / 12) * 7 + root.white-of[Math.mod(i, 12)] + 1) * (root.key-w + Theme.key-gap) - root.key-w * 0.3 - Theme.key-gap / 2; y: 0;
         width: root.key-w * 0.6; height: root.height * 0.58;
-        background: Theme.ground; border-radius: Theme.r-control;
+        note: k; index: i; black: true;
+        cursor: focus.focused && root.at == i;
+        pressed => { root.at = i; Create.play-key(i); }
+    }
+    focus := KeyFocus {
+        enabled: Create.keyboard-on; arrows: true;
+        activate => { Create.play-key(root.at); }
+        step(d) => { root.at = clamp(root.at + d, 0, Create.keyboard.length - 1); }
     }
 }
 
@@ -454,11 +592,20 @@ component NotePad inherits Rectangle {
     KeyFocus { enabled: root.pad.enabled; activate => { Create.play-pad(root.index); } }
 }
 
-// [72] The pads' heading: PADS, and the octave switch on the right.
+// [72] The pads' heading: PADS, and on the right SNAP TO SCALE ([73]) and
+// the octave switch.
 component PadsHead inherits HorizontalLayout {
     spacing: Theme.s2;
     Caps { text: @tr("PADS"); vertical-alignment: center; }
     Rectangle { horizontal-stretch: 1; }
+    LineToggle {
+        accessible-id: "create.notes.snap";
+        horizontal-stretch: 0;
+        label: @tr("SNAP TO SCALE");
+        checked: Create.snap;
+        tooltip: @tr("Snap to scale: the pads hold the scale's notes; off, every semitone from the source note");
+        toggled(on) => { Create.set-snap(on); }
+    }
     Caps { text: @tr("OCTAVE"); vertical-alignment: center; }
     Stepper {
         accessible-id: "create.notes.octave";
@@ -511,11 +658,205 @@ component PadsLine inherits HorizontalLayout {
         text: Create.pads-why == "none" ? @tr("Pick a note in SOURCE: the pads play it at other pitches.")
             : Create.pads-why == "pitch" ? @tr("No pitch yet: set the note in SOURCE to play it on the pads.")
             : root.far ? @tr("FAR: over 7 semitones away may sound unnatural. A source note near {} sounds cleaner.", Create.pads-nearer)
+            : Create.snap && Create.key.chosen ? @tr("The scale's notes from the root at or below the source note. The octave switch moves them.")
+            : Create.snap ? @tr("No key yet: the source note and the 7 semitones above it. The octave switch moves them.")
             : @tr("The source note and the 7 semitones above it. The octave switch moves them.");
         font-family: Theme.family; font-size: Theme.control;
         color: root.far ? Theme.bone : Theme.bone-3;
         vertical-alignment: center; overflow: elide;
     }
+}
+
+// [73] Where the key comes from, in words: FROM DECK 2, NEXT TRACK, SET
+// BY YOU, or why there is none.
+component KeyFrom inherits Text {
+    accessible-role: text; accessible-id: "create.notes.key-from"; accessible-value: self.text;
+    text: Create.key.from == "set" ? @tr("SET BY YOU") : Create.key.from == "next" ? @tr("NEXT TRACK")
+        : Create.key.chosen ? @tr("FROM DECK {}", Create.key.deck)
+        : Create.key.deck > 0 ? @tr("NO KEY ON DECK {}", Create.key.deck) : @tr("NO KEY ON A DECK");
+    font-family: Theme.family; font-size: Theme.label; letter-spacing: Theme.tracking-index;
+    font-weight: Theme.weight-semi;
+    color: Create.key.from == "set" ? Theme.bone : Theme.bone-3;
+    vertical-alignment: center; overflow: elide;
+}
+
+// [73] The key: KEY, the root as a stepper (a semitone down or up, SET BY
+// YOU), the wheel notation as a small label beside, where it comes from,
+// and the two places it can come from: the other deck (followed) and the
+// next track in the queue or the set (taken once).
+component KeyRow inherits HorizontalLayout {
+    spacing: Theme.s2;
+    Caps { text: @tr("KEY"); vertical-alignment: center; }
+    Stepper {
+        accessible-id: "create.notes.root";
+        horizontal-stretch: 0;
+        a11y-prev: "create.notes.root.down"; a11y-value: "create.notes.root.value"; a11y-next: "create.notes.root.up";
+        tooltip: @tr("Key: the root a semitone down or up");
+        value: Create.key.chosen ? Create.key.root : "—"; template: "Db"; size: 26px;
+        lit: Create.key.chosen;
+        step(d) => { Create.step-root(d); }
+    }
+    if Create.key.wheel != "": Caps {
+        accessible-role: text; accessible-id: "create.notes.wheel"; accessible-value: self.text;
+        text: Create.key.wheel; vertical-alignment: center;
+    }
+    KeyFrom { horizontal-stretch: 1; min-width: 0px; }
+    HorizontalLayout {
+        horizontal-stretch: 0; spacing: Theme.key-gap;
+        PlateButton {
+            accessible-id: "create.notes.from-deck"; accessible-role: button;
+            compact: true; label: @tr("OTHER DECK");
+            selected: Create.key.from == "deck";
+            tooltip: @tr("Follow the key of the other deck (for a note from the player, the deck playing)");
+            clicked => { Create.key-from-deck(); }
+        }
+        PlateButton {
+            accessible-id: "create.notes.next-track"; accessible-role: button;
+            compact: true; label: @tr("NEXT TRACK");
+            selected: Create.key.from == "next";
+            enabled: Create.next-why == "";
+            tooltip: Create.next-why == "none" ? @tr("No next track: add one to the queue or open a set to take its key")
+                : Create.next-why == "no-key" ? @tr("The next track, {}, has no key yet: analyse it first", Create.next-title)
+                : @tr("Take the key of the next track: {}", Create.next-title);
+            clicked => { Create.key-from-next(); }
+        }
+    }
+}
+
+// [73] A scale key: its name, and while the hints are on a small word
+// under it (HAPPY, SAD). Off is plate, the scale in use a bone fill.
+component ScaleKeyButton inherits Rectangle {
+    in property <string> id;
+    in property <string> label;
+    in property <string> hint;
+    in property <bool> selected;
+    in property <string> tooltip;
+    callback clicked();
+    accessible-role: button;
+    accessible-id: "create.notes.scale." + root.id;
+    accessible-label: TooltipState.name-for(self.accessible-id, root.label, root.tooltip);
+    accessible-value: root.hint;
+    accessible-description: root.tooltip;
+    accessible-action-default => { root.clicked(); }
+    min-width: max(Theme.touch-min, max(t.preferred-width, h.preferred-width) + 28px);
+    height: Theme.touch-mode ? 44px : 32px;
+    background: Theme.face(true, touch.pressed, touch.has-hover, root.selected, false, Theme.setup-on);
+    border-radius: Theme.r-control;
+    property <color> ink: Theme.ink(true, touch.pressed, touch.has-hover, root.selected, false);
+    VerticalLayout {
+        alignment: center; spacing: 0px;
+        t := Text {
+            text: root.label;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-medium; letter-spacing: 1.4px;
+            color: root.ink; horizontal-alignment: center;
+        }
+        h := Text {
+            visible: root.hint != "";
+            height: root.hint != "" ? self.preferred-height : 0px;
+            text: root.hint;
+            font-family: Theme.family; font-size: Theme.label; letter-spacing: 1px;
+            color: root.selected ? root.ink : Theme.bone-3; horizontal-alignment: center;
+        }
+    }
+    touch := TipArea { tooltip: root.tooltip; mouse-cursor: pointer; clicked => { root.clicked(); } }
+    KeyFocus { activate => { root.clicked(); } }
+}
+
+// [73] The scale: MAJOR and MINOR (with HAPPY and SAD while the hints are
+// on), MORE for the modes, and the hints' switch beside them.
+component ScaleRow inherits HorizontalLayout {
+    property <bool> mode: Create.key.chosen && Create.key.scale != "major" && Create.key.scale != "minor";
+    spacing: Theme.s2;
+    Caps { text: @tr("SCALE"); vertical-alignment: center; }
+    HorizontalLayout {
+        horizontal-stretch: 0; spacing: Theme.key-gap;
+        ScaleKeyButton {
+            id: "major"; label: @tr("MAJOR"); hint: Create.hints ? @tr("HAPPY") : "";
+            selected: Create.key.chosen && Create.key.scale == "major";
+            tooltip: @tr("Major: often heard as bright or happy");
+            clicked => { Create.more = false; Create.choose-scale("major"); }
+        }
+        ScaleKeyButton {
+            id: "minor"; label: @tr("MINOR"); hint: Create.hints ? @tr("SAD") : "";
+            selected: Create.key.chosen && Create.key.scale == "minor";
+            tooltip: @tr("Minor: often heard as dark or sad");
+            clicked => { Create.more = false; Create.choose-scale("minor"); }
+        }
+        ScaleKeyButton {
+            id: "more"; label: root.mode ? Create.scale-name(Create.key.scale) : @tr("MORE");
+            hint: Create.hints && root.mode ? @tr("MODE") : "";
+            selected: root.mode;
+            tooltip: Create.more ? @tr("Hide the modes") : @tr("Show the modes: dorian, phrygian, lydian, mixolydian and harmonic minor");
+            clicked => { Create.more = !Create.more; }
+        }
+    }
+    LineToggle {
+        accessible-id: "create.notes.hints";
+        horizontal-stretch: 0;
+        label: @tr("HINTS");
+        checked: Create.hints;
+        tooltip: @tr("Hints: HAPPY and SAD under MAJOR and MINOR");
+        toggled(on) => { Create.set-hints(on); }
+    }
+    Rectangle { horizontal-stretch: 1; }
+}
+
+// [73] One mode under MORE.
+component ModeKey inherits PlateButton {
+    in property <string> id;
+    accessible-id: "create.notes.scale." + root.id; accessible-role: button;
+    compact: true;
+    selected: Create.key.chosen && Create.key.scale == root.id;
+    tooltip: @tr("Play in {}", root.label);
+    clicked => { Create.choose-scale(root.id); }
+}
+
+// [73] The modes under MORE, from the left like the scale keys above:
+// one row, or two where one would not fit.
+// Follows the width through a plain property, so it does not feed back
+// into the layout.
+component ModeRow inherits VerticalLayout {
+    property <bool> two-rows;
+    init => { self.two-rows = self.width < 600px; }
+    changed width => { self.two-rows = self.width < 600px; }
+    spacing: Theme.key-gap;
+    HorizontalLayout {
+        alignment: start; spacing: Theme.key-gap;
+        ModeKey { id: "dorian"; label: @tr("DORIAN"); }
+        ModeKey { id: "phrygian"; label: @tr("PHRYGIAN"); }
+        ModeKey { id: "lydian"; label: @tr("LYDIAN"); }
+        if !root.two-rows: ModeKey { id: "mixolydian"; label: @tr("MIXOLYDIAN"); }
+        if !root.two-rows: ModeKey { id: "harmonic_minor"; label: @tr("HARMONIC MINOR"); }
+    }
+    if root.two-rows: HorizontalLayout {
+        alignment: start; spacing: Theme.key-gap;
+        ModeKey { id: "mixolydian"; label: @tr("MIXOLYDIAN"); }
+        ModeKey { id: "harmonic_minor"; label: @tr("HARMONIC MINOR"); }
+    }
+}
+
+// [73] FITS: the chosen key's notes and chords, as plain text. Which of
+// them fit the track playing now is not checked here yet.
+component KeyFits inherits VerticalLayout {
+    spacing: Theme.s2;
+    HorizontalLayout {
+        spacing: Theme.s2;
+        Text {
+            accessible-role: text; accessible-id: "create.fits.key"; accessible-value: self.text;
+            text: Create.key-name();
+            font-family: Theme.family; font-size: Theme.heading; font-weight: Theme.weight-semi; color: Theme.bone;
+            vertical-alignment: center; overflow: elide; min-width: 0px; horizontal-stretch: 1;
+        }
+        if Create.key.wheel != "": Caps { text: Create.key.wheel; vertical-alignment: center; }
+    }
+    Caps { text: @tr("NOTES"); }
+    Text {
+        accessible-role: text; accessible-id: "create.fits.notes"; accessible-value: self.text;
+        text: Create.key.notes;
+        font-family: Theme.family; font-size: Theme.body; color: Theme.bone; overflow: elide;
+    }
+    Caps { text: @tr("CHORDS"); }
+    Prose { accessible-role: text; accessible-id: "create.fits.chords"; accessible-value: self.text; text: Create.key.chords; color: Theme.bone; }
 }
 
 // MELODY: SOURCE | NOTES | FITS.
@@ -550,34 +891,35 @@ component MelodyView inherits HorizontalLayout {
         accessible-id: "create.melody.notes";
         horizontal-stretch: 1;
         title: @tr("NOTES");
-        summary: @tr("The key and scale come from the other deck or the next track. The scale's notes fill the pads; play or type the melody into the steps.");
+        // No summary: the key row and the line under the pads say what to do.
+        KeyRow { }
+        ScaleRow { }
+        if Create.more: ModeRow { }
         KeyStrip { }
         PadsHead { }
         PadRow { }
         PadsLine { }
-        Caps { text: @tr("ARRANGE"); }
-        SlotRow { legends: ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]; }
         HorizontalLayout {
-            alignment: center; spacing: Theme.key-gap;
-            PlateButton {
-                accessible-id: "create.notes.next-track"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("NEXT TRACK");
-                tooltip: @tr("Take the key of the next track in the set (comes with keys and scales)");
-            }
+            spacing: Theme.s2;
+            Caps { text: @tr("ARRANGE"); vertical-alignment: center; }
+            Rectangle { horizontal-stretch: 1; }
             PlateButton {
                 accessible-id: "create.notes.rec"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("REC");
+                horizontal-stretch: 0; compact: true; enabled: false; label: @tr("REC");
                 tooltip: @tr("Record the pads into the steps (comes with the arranger)");
             }
         }
+        SlotRow { legends: ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]; }
     }
     // FITS folds away in a narrow window; THEORY has it too.
     if !root.narrow: Zone {
         accessible-id: "create.melody.fits";
         width: 280px;
         title: @tr("FITS");
-        summary: @tr("The notes and chords of the chosen key, and which of them fit the track playing now.");
-        Caps { text: @tr("NO KEY CHOSEN YET"); }
+        summary: Create.key.chosen ? @tr("The notes and chords of the chosen key. Which of them fit the track playing now comes later.")
+            : @tr("The notes and chords of the chosen key, and which of them fit the track playing now.");
+        if Create.key.chosen: KeyFits { }
+        if !Create.key.chosen: Caps { text: @tr("NO KEY CHOSEN YET"); }
     }
 }
 
