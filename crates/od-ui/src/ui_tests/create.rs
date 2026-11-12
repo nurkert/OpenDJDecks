@@ -739,3 +739,216 @@ fn render_writes_a_new_track_with_grid_and_cues_and_leaves_the_source() {
     assert_eq!(std::fs::metadata(&source).unwrap().modified().unwrap(), mtime, "and its time");
     assert!(ui.fx.lib().track(id).unwrap().path == source);
 }
+
+// ── [76] Into the set ───────────────────────────────────────────────────
+
+/// Four notes picked and rendered from deck 1's track: the file READY.
+fn rendered(ui: &Ui) -> crate::create_render::Made {
+    super::perform_craft::with_grid(ui, ui.fx.tracks[0].0);
+    picked_on_deck1(ui);
+    ui.app.ui.global::<crate::Create>().invoke_type_steps("A3 C4 _ - E4 A3".into());
+    ui.pump(100);
+    ui.click("create.result.render");
+    assert!(ui.wait_until(20.0, |u| label(u, "create.result.render") == "READY"), "READY: {}", label(ui, "create.result.render"));
+    crate::create::made(&ui.app).expect("a render")
+}
+
+/// Titles of the browser's list, in order.
+fn list_titles(ui: &Ui) -> Vec<String> {
+    ui.app.ui.get_tracks().iter().map(|r| r.title.to_string()).collect()
+}
+
+/// CREATED in the browser tree lists the tracks rendered from CREATE and
+/// nothing else, sorts like any list and loads onto a deck; a comment
+/// edited by hand does not take a track out of it.
+#[test]
+fn the_created_list_shows_rendered_tracks_only() {
+    let ui = Ui::open((1440, 900));
+    assert_eq!(ui.app.ui.get_created_count(), 0, "nothing rendered yet");
+    let made = rendered(&ui);
+    assert!(ui.wait_until(5.0, |u| u.app.ui.get_created_count() == 1), "counted in the tree");
+    // A second render, then an ordinary track tagged like a rendered one.
+    ui.click("create.result.single-notes");
+    ui.click("create.result.render");
+    assert!(ui.wait_until(20.0, |u| label(u, "create.result.render") == "READY"));
+    let single = crate::create::made(&ui.app).unwrap();
+    {
+        let mut lib = ui.fx.lib();
+        let mut tags = lib.track(ui.fx.tracks[1].0).unwrap().tags;
+        tags.comment = "CREATE: A3 C4".into();
+        lib.set_tags(ui.fx.tracks[1].0, tags).unwrap();
+        let mut tags = lib.track(made.track).unwrap().tags;
+        tags.comment = "edited by hand".into();
+        lib.set_tags(made.track, tags).unwrap();
+    }
+    ui.app.ui.invoke_set_mode("prepare".into());
+    ui.pump(100);
+    let row = ui.scroll_into_view("browser.tree", |u| u.find("browser.tree.created")).expect("CREATED in the tree");
+    ui.click_el(&row);
+    assert!(ui.wait_until(5.0, |u| u.app.ui.get_node_kind() == "created"));
+    assert_eq!(ui.app.ui.get_selected_node(), crate::browser::CREATED);
+    assert_eq!(ui.app.ui.get_node_title(), "Created");
+    assert_eq!(ui.app.ui.get_created_count(), 2);
+    let mut both = vec![made.title.clone(), single.title.clone()];
+    let mut shown = list_titles(&ui);
+    shown.sort();
+    both.sort();
+    assert_eq!(shown, both, "the rendered tracks only");
+    // Sortable like any list.
+    ui.app.ui.invoke_sort("title".into());
+    ui.pump(100);
+    let sorted = list_titles(&ui);
+    ui.app.ui.invoke_sort("title".into());
+    ui.pump(100);
+    let mut reversed = list_titles(&ui);
+    reversed.reverse();
+    assert_eq!(sorted, reversed, "sorted by title, both ways");
+    // Loads onto a deck.
+    let first = list_titles(&ui)[0].clone();
+    let id = if first == made.title { made.track } else { single.track };
+    // The row menu's "Load to deck › Deck 2" (submenus open on hover, which
+    // the testing backend times poorly under load).
+    ui.app.ui.invoke_row_menu(0, "deck:2".into());
+    assert!(
+        ui.wait_until(10.0, |u| crate::engine::snapshot(&u.app).is_some_and(|s| s.decks[1].track == Some(id))),
+        "on deck 2"
+    );
+}
+
+/// TO PLAYLIST waits for a render; then it offers the browser's own
+/// playlists (the one added to last inline) or a new playlist named after
+/// the file. Each is one undo step.
+#[test]
+fn to_playlist_adds_to_an_existing_or_a_new_playlist_undoably() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("create".into());
+    crate::create::set_view(&ui.app, "melody");
+    ui.pump(100);
+    assert_eq!(ui.get("create.result.to-playlist").accessible_enabled(), Some(false), "nothing rendered");
+    crate::create::to_playlist(&ui.app, ui.fx.playlist.0 as i32);
+    assert!(ui.app.ui.get_status_text().contains("RENDER first"), "{}", ui.app.ui.get_status_text());
+    let made = rendered(&ui);
+    assert_eq!(ui.get("create.result.to-playlist").accessible_enabled(), Some(true), "READY");
+    let entries = |ui: &Ui, n: od_library::NodeId| -> Vec<od_core::TrackId> {
+        ui.fx.lib().entries(n).unwrap_or_default().iter().map(|e| e.track).collect()
+    };
+    // An existing playlist, from the menu.
+    let before = entries(&ui, ui.fx.playlist);
+    // The browser's playlists, in the submenu's model; picking one runs
+    // `to-playlist` with its id (the submenu itself opens on hover, which
+    // the testing backend times poorly under load).
+    let g = ui.app.ui.global::<crate::Create>();
+    let warm = g.get_playlists().iter().find(|p| p.name == "Warm-up").expect("Warm-up offered");
+    assert_eq!(warm.id as i64, ui.fx.playlist.0);
+    g.invoke_to_playlist(warm.id);
+    let mut want = before.clone();
+    want.push(made.track);
+    assert!(ui.wait_until(5.0, |u| entries(u, u.fx.playlist) == want), "added at the end");
+    let status = ui.app.ui.get_status_text().to_string();
+    assert!(status.starts_with(&format!("Added {} to Warm-up.", made.title)), "{status}");
+    assert!(status.contains("No registered stick"), "{status}");
+    assert!(!status.contains(&ui.fx.root.to_string_lossy().to_string()), "no local path: {status}");
+    ui.app.undo();
+    assert_eq!(entries(&ui, ui.fx.playlist), before, "undone");
+    // The list added to last comes inline now.
+    ui.click("create.result.to-playlist");
+    assert!(ui.click_menu_item("Add to “Warm-up”"), "the recent list inline");
+    assert!(ui.wait_until(5.0, |u| entries(u, u.fx.playlist) == want));
+    ui.app.undo();
+    // A new playlist, named after the file.
+    let lists = |ui: &Ui| ui.fx.lib().all_nodes().unwrap().len();
+    let n = lists(&ui);
+    ui.click("create.result.to-playlist");
+    assert!(ui.click_menu_item("Add to a new playlist"));
+    let node = ui
+        .fx
+        .lib()
+        .all_nodes()
+        .unwrap()
+        .into_iter()
+        .find(|x| x.name == made.title)
+        .expect("a new playlist named after the file");
+    assert_eq!(node.kind, od_library::NodeKind::Playlist);
+    assert_eq!(entries(&ui, node.id), [made.track]);
+    assert_eq!(ui.fx.lib().journal(1).unwrap()[0].label, "Add to a new playlist", "one step");
+    ui.app.undo();
+    assert_eq!(lists(&ui), n, "the new playlist goes with one undo");
+    // The track itself stays in the library and in CREATED.
+    assert!(ui.fx.lib().track(made.track).is_ok());
+    assert_eq!(ui.fx.lib().created_tracks().unwrap().len(), 1);
+}
+
+/// Sticks get a rendered track like any other: through a playlist they
+/// sync. The status line names the stick; its sync plan holds the track,
+/// and after the sync the stick's library has the file with its hot cues
+/// and its grid.
+#[test]
+fn a_rendered_track_in_a_synced_playlist_reaches_the_stick_with_cues_and_grid() {
+    let _volumes = volumes_lock();
+    let ui = Ui::open((1440, 900));
+    let name = "CREATE-STICK";
+    let stick = test_env().join("volumes").join(name);
+    let _ = std::fs::remove_dir_all(&stick);
+    std::fs::create_dir_all(&stick).unwrap();
+    let uuid = format!("uuid-{name}-{}", std::process::id());
+    od_format_native::write_marker(
+        &stick,
+        &od_format_native::DeviceMarker {
+            format_version: od_format_native::FORMAT_VERSION,
+            device_uuid: uuid.clone(),
+            name: name.into(),
+            created_by: "test".into(),
+        },
+    )
+    .unwrap();
+    let (device, set) = {
+        let mut lib = ui.fx.lib();
+        let device = lib
+            .register_device(&uuid, name, od_library::DeviceFormats { club_usb: true, opendjdecks: true, club_usb_compat: false })
+            .unwrap();
+        let set = lib.create_node(None, od_library::NodeKind::Playlist, "For the stick").unwrap();
+        lib.set_device_nodes(device, &[set]).unwrap();
+        (device, set)
+    };
+    ui.app.refresh_library();
+    let made = rendered(&ui);
+    let lib = ui.fx.lib();
+    assert!(lib.device_tracks(device).unwrap().is_empty(), "not on the stick before");
+    crate::create::to_playlist(&ui.app, set.0 as i32);
+    let status = ui.app.ui.get_status_text().to_string();
+    assert!(status.contains(&format!("It goes to {name} with the next sync")), "{status}");
+    let plan: Vec<od_core::TrackId> = lib.device_tracks(device).unwrap().iter().map(|t| t.id).collect();
+    assert_eq!(plan, [made.track], "in the stick's sync plan");
+    let cues = lib.cues(made.track).unwrap();
+    assert_eq!(cues.len(), 4);
+    ui.app.device_manager.send(od_devices::Command::Refresh);
+    assert!(ui.wait_until(10.0, |u| u.app.state.borrow().devices.statuses.iter().any(|s| s.device.id == device && s.volume.is_some())));
+    ui.app.device_manager.send(od_devices::Command::SyncNow(device));
+    assert!(ui.wait_until(40.0, |_| lib.device(device).unwrap().last_sync.is_some()), "the stick is synced");
+    let native = od_format_native::Stick::open(&stick).unwrap().expect("the stick's library");
+    let on = native.library.track(made.track).expect("the rendered track on the stick");
+    assert_eq!(on.tags.title, made.title);
+    assert!(native.resolve(&on.path).exists(), "its file");
+    let stick_cues = native.library.cues(made.track).unwrap();
+    assert_eq!(
+        stick_cues.iter().map(|c| (c.label.as_str(), c.kind)).collect::<Vec<_>>(),
+        cues.iter().map(|c| (c.label.as_str(), c.kind)).collect::<Vec<_>>(),
+        "its hot cues"
+    );
+    let grid = native.library.beatgrid(made.track).unwrap().expect("its grid");
+    assert_eq!(Some(grid), lib.beatgrid(made.track).unwrap());
+    let lists = native.library.all_nodes().unwrap();
+    assert!(lists.iter().any(|n| n.name == "For the stick"), "in its playlist");
+    // The club stick format gets it too: the stick check reads its cues back.
+    let g = ui.app.ui.global::<crate::StickCheck>();
+    ui.app.ui.invoke_set_mode("prepare".into());
+    ui.app.ui.invoke_open_device(device.0 as i32);
+    ui.pump(200);
+    ui.click("devices.check");
+    assert!(ui.wait_until(20.0, |_| !g.get_running()), "the check finishes");
+    assert!(g.get_ready(), "{} | {}", g.get_summary(), g.get_problems());
+    let row = g.get_rows().iter().find(|r| r.title == made.title.as_str()).expect("a row for the file");
+    assert_eq!(row.file, "ok");
+    drop(native);
+    let _ = std::fs::remove_dir_all(&stick);
+}

@@ -104,6 +104,9 @@ Every control has to pass one test: does it help a melody from one note, a live 
    - The limit is the 32 hot cues (pads A–H in four banks) the library, the engine and both stick formats we write carry; a full strip of 32 notes fits. Cues after H sit on later pad banks, and the line says how many. How players show them is untested on real players.
    - Files go to `created` beside the library and into the library as tracks with their grid and cues. RENDER then reads READY in green until the notes, layout or tempo change.
 7. **Into the set.** TO PLAYLIST and TO STICK use the normal library and sync. The file also lands in a CREATED list. SEND TO PERFORM puts the notes on the MELODY pad mode and into a sampler bank of the same name.
+   - As built ([76]): every rendered track is marked in the library (not by its tags or comment, which stay yours to edit) and listed under CREATED in the browser tree, newest first; it sorts, searches and loads onto decks like any list.
+   - TO PLAYLIST is enabled once RENDER reads READY (before that its tooltip says to render first). It opens the browser's own add-to-playlist menu: the list added to last, every playlist and set, or a new playlist named after the file. Each is one undo step.
+   - There is no separate TO STICK: a stick gets the file like any track, through a playlist it syncs. After adding, the status line names the registered sticks that take it with their next sync, or says that none does.
 
 ## Drums
 

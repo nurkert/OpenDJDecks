@@ -586,6 +586,27 @@ impl Library {
         self.edit(label, vec![EntityState::Drop { track: id, at }])
     }
 
+    /// Marks the track as rendered from CREATE (the CREATED list). Not an
+    /// edit: the mark goes with the track, never with its tags.
+    pub fn mark_created(&mut self, id: TrackId) -> Result<()> {
+        self.conn.execute(
+            "INSERT OR IGNORE INTO created_track (track_id) VALUES (?1)",
+            [id.0],
+        )?;
+        Ok(())
+    }
+
+    /// The tracks rendered from CREATE, newest first.
+    pub fn created_tracks(&self) -> Result<Vec<TrackRecord>> {
+        let mut stmt = self.conn.prepare_cached(&format!(
+            "SELECT {TRACK_COLUMNS} FROM track WHERE id IN (SELECT track_id FROM created_track) \
+             ORDER BY date_added DESC, id DESC"
+        ))?;
+        Ok(stmt
+            .query_map([], track_from_row)?
+            .collect::<rusqlite::Result<_>>()?)
+    }
+
     pub fn beatgrid(&self, id: TrackId) -> Result<Option<Beatgrid>> {
         Ok(read_grid(&self.conn, id)?.map(|(g, _)| g))
     }
@@ -1132,5 +1153,25 @@ mod tests {
         assert_eq!(lib.drop_marker(t).unwrap(), Some(32.0));
         lib.undo().unwrap();
         assert_eq!(lib.drop_marker(t).unwrap(), None, "undo clears the mark");
+    }
+
+    /// [76] Only marked tracks are created ones; the mark survives tag
+    /// edits and goes with the track.
+    #[test]
+    fn created_tracks_are_the_marked_ones() {
+        let mut lib = Library::open_in_memory().unwrap();
+        let a = track(&mut lib, "Made", Some(120.0), None);
+        let b = track(&mut lib, "Bought", Some(120.0), None);
+        assert!(lib.created_tracks().unwrap().is_empty());
+        lib.mark_created(a).unwrap();
+        lib.mark_created(a).unwrap();
+        let mut tags = lib.track(a).unwrap().tags;
+        tags.comment = "changed by hand".into();
+        lib.set_tags(a, tags).unwrap();
+        let ids: Vec<TrackId> = lib.created_tracks().unwrap().iter().map(|t| t.id).collect();
+        assert_eq!(ids, [a]);
+        assert_ne!(ids, [b]);
+        lib.remove_track(a).unwrap();
+        assert!(lib.created_tracks().unwrap().is_empty(), "gone with the track");
     }
 }

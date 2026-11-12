@@ -234,6 +234,10 @@ fn views() -> Vec<(&'static str, fn(&Ui))> {
             crate::create::stage_rendered(&u.app, u.fx.tracks[0].0);
             u.pump(300);
         }),
+        ("prepare (the CREATED list)", |u| {
+            crate::create::stage_created(&u.app, u.fx.tracks[0].0);
+            u.pump(300);
+        }),
     ]
 }
 

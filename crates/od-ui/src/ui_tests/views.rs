@@ -423,6 +423,12 @@ pub(crate) fn open_view(ui: &Ui, view: &View, kiosk: bool) -> Result<(), String>
             click_if("browser.rail.histories");
             click_if("browser.tree.history0");
         }
+        // [76] The CREATED list with a rendered track.
+        "browser.created" => {
+            prepare_library();
+            ui.pump(200);
+            crate::create::stage_created(&ui.app, ui.fx.tracks[0].0);
+        }
         "browser.tag-list" => {
             // The rail's TAG source: opens the tag list and scrolls the tree to it.
             prepare_library();

@@ -5,7 +5,7 @@ use crate::app::App;
 use crate::state::AppState;
 use crate::{TreeRow, format, models::model};
 use od_library::{NodeId, NodeKind};
-use slint::SharedString;
+use slint::{ComponentHandle, SharedString};
 use std::collections::HashSet;
 
 /// Tree ids: stick roots are `STICK_ROOT - i`, nodes inside stick `i` are
@@ -130,6 +130,8 @@ pub(crate) fn refresh_tree(app: &App) {
     app.ui.set_history_year_count(years.len() as i32);
     let st = app.state.borrow();
     let b = &st.browser;
+    // [76] The CREATED list's count (the main library's; a stick has none).
+    app.ui.set_created_count(st.lib.created_tracks().map_or(0, |t| t.len() as i32));
     let all = st.lib.all_nodes().unwrap_or_default();
     let device_nodes: HashSet<NodeId> = st
         .lib
@@ -191,6 +193,7 @@ pub(crate) fn refresh_tree(app: &App) {
             super::Special::TagList => super::sources::TAG_LIST,
             super::Special::Similar => super::sources::SIMILAR,
             super::Special::Duplicates => super::sources::DUPLICATES,
+            super::Special::Created => super::sources::CREATED,
             super::Special::Auto(key) => {
                 super::auto::list_id(&b.auto.lists, key).unwrap_or(ALL_TRACKS)
             }
@@ -285,6 +288,10 @@ fn refresh_menu_targets(app: &App) {
         .iter()
         .filter_map(|id| targets.iter().find(|t| t.id as i64 == *id).cloned())
         .collect();
+    // [76] CREATE's TO PLAYLIST offers the same lists.
+    let create = app.ui.global::<crate::Create>();
+    create.set_recent(crate::models::model(recent.clone()));
+    create.set_playlists(crate::models::model(targets.clone()));
     app.ui.set_menu_recent(crate::models::model(recent));
     app.ui.set_menu_playlists(crate::models::model(targets));
 }

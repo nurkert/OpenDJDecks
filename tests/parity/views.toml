@@ -7115,6 +7115,44 @@ elements = [
 ]
 note = "UX §1.6 status bar: list summary at the right; our activity (analysis / sync / separation) at the left (SPEC §12); the audio output line (device, latency, dropouts) at the far right (roadmap [10])"
 
+# ---- Browser source: CREATED ----
+[[view]]
+id = "browser.created"
+title = "Browser source: CREATED (tracks rendered from CREATE)"
+mode = "prepare"
+source = "Roadmap [76], CREATE concept (0.10.0)"
+sizes = ["desktop", "laptop"]
+bands = ["browser"]
+note = "Every track rendered from CREATE, newest first, marked in the library when it is rendered (not by a tag the user can edit). Its own heading and row in the tree under the tag list; the list sorts, searches and loads onto decks like any other."
+
+[[view.region]]
+id = "browser.tree"
+band = "browser"
+place = "tree pane: the CREATED heading and its row, under the tag list"
+order = "column"
+elements = [
+  "browser.tree.created",
+]
+
+[[view.region]]
+id = "browser.title"
+band = "browser"
+place = "list area, title row"
+order = "row"
+elements = [
+  "browser.list-title",
+  "browser.search",
+]
+
+[[view.region]]
+id = "browser.list"
+band = "browser"
+place = "list area, rows"
+order = "column"
+elements = [
+  "browser.rows",
+]
+
 # ---- Browser source: Sampler source ----
 [[view]]
 id = "browser.sampler"
@@ -8918,7 +8956,7 @@ mode = "create"
 source = "Roadmap [75], CREATE concept (0.10.0)"
 sizes = ["desktop", "laptop"]
 bands = ["topbar", "create"]
-note = "RESULT under the zones, compact: one line with what the file holds (notes, bars, tempo, cues) and, on the right, what the stick formats take (the cue count against the 32 hot cues the formats we write store, and whether it fits; a solid green line when it does, a struck red one when not), shown before any render; under it SINGLE NOTES | MELODY, the tempo (MASTER or the source TRACK, each with its BPM), RENDER, then the later SEND TO PERFORM and TO PLAYLIST. After a render RENDER is filled green with the word READY until the notes, layout or tempo change."
+note = "RESULT under the zones, compact: one line with what the file holds (notes, bars, tempo, cues) and, on the right, what the stick formats take (the cue count against the 32 hot cues the formats we write store, and whether it fits; a solid green line when it does, a struck red one when not), shown before any render; under it SINGLE NOTES | MELODY, the tempo (MASTER or the source TRACK, each with its BPM), RENDER, then the later SEND TO PERFORM and TO PLAYLIST. After a render RENDER is filled green with the word READY until the notes, layout or tempo change; TO PLAYLIST then opens the browser's add-to-playlist menu (the list added to last, every playlist and set, or a new playlist) (roadmap [76])."
 
 [[view.region]]
 id = "create.render.line"

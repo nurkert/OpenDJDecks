@@ -17,10 +17,14 @@
 // plays the strip on the audition voice in time with the master. [75]
 // RESULT renders the notes into a new file with a beatgrid and a hot cue
 // per note (SINGLE NOTES or MELODY, at the master or the track's tempo),
-// saying first what the stick formats take, then READY in green.
+// saying first what the stick formats take, then READY in green. [76]
+// TO PLAYLIST puts the rendered file into a playlist (the browser's own
+// list of playlists, or a new one); registered sticks get it through the
+// playlists they sync.
 
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
+import { MenuTarget } from "structs.slint";
 import { Caps, PlateButton, Stepper, Field, KeyFocus, LineToggle, TipArea, TooltipState, FocusRing, ArmedOutline } from "controls.slint";
 
 // One deck in the strip (create.rs, from the engine's deck state).
@@ -249,6 +253,14 @@ export global Create {
     callback set-layout(string);
     callback set-tempo-from(string);
     callback render-file();
+    // [76] TO PLAYLIST: the playlists and sets the browser's row menu offers
+    // (the ones added to last, and all), and adding the rendered track to
+    // one (its id; 0 = a new playlist). Raising `open-picker` opens the
+    // menu (demo screenshots).
+    in property <[MenuTarget]> playlists;
+    in property <[MenuTarget]> recent;
+    callback to-playlist(int);
+    in-out property <int> open-picker;
     // The selected step holds a note.
     public pure function step-has-note() -> bool {
         return root.selected >= 0 && root.selected < root.steps.length && root.steps[root.selected].note != "";
@@ -1554,10 +1566,30 @@ component ResultBar inherits Rectangle {
                 compact: true; enabled: false; label: @tr("SEND TO PERFORM");
                 tooltip: @tr("Put the notes on the pads in Perform (comes with the melody pad mode)");
             }
-            PlateButton {
-                accessible-id: "create.result.to-playlist"; accessible-role: button;
-                compact: true; enabled: false; label: @tr("TO PLAYLIST");
-                tooltip: @tr("Add the rendered file to a playlist (comes with the created list)");
+            // [76] The browser's add-to-playlist menu, for the file READY:
+            // the lists added to last, every playlist and set, or a new
+            // playlist. Before a render there is nothing to add.
+            picker := ContextMenuArea {
+                // The demo hook opens it.
+                property <int> asked: Create.open-picker;
+                changed asked => { self.show({ x: 0, y: self.height }); }
+                Menu {
+                    for p in Create.recent: MenuItem { title: @tr("Add to “{}”", p.name); activated => { Create.to-playlist(p.id); } }
+                    Menu {
+                        title: @tr("Add to playlist");
+                        for p in Create.playlists: MenuItem { title: p.name; activated => { Create.to-playlist(p.id); } }
+                    }
+                    MenuItem { title: @tr("Add to a new playlist"); activated => { Create.to-playlist(0); } }
+                }
+                HorizontalLayout {
+                    to-playlist := PlateButton {
+                        accessible-id: "create.result.to-playlist"; accessible-role: button;
+                        compact: true; enabled: root.ready; label: @tr("TO PLAYLIST");
+                        tooltip: root.ready ? @tr("Add the rendered file to a playlist; sticks that sync the playlist get it")
+                            : @tr("RENDER first: then the file goes into a playlist");
+                        clicked => { picker.show({ x: to-playlist.x, y: to-playlist.y + to-playlist.height }); }
+                    }
+                }
             }
         }
         if Create.view == "drums": HorizontalLayout {

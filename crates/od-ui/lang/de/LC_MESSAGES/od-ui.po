@@ -10613,8 +10613,28 @@ msgstr "IN PLAYLIST"
 
 #: ui/create.slint:323
 msgctxt "ResultBar"
-msgid "Add the rendered file to a playlist (comes with the created list)"
-msgstr "Die gerenderte Datei zu einer Playlist hinzufügen (kommt mit der Liste des Erstellten)"
+msgid "Add the rendered file to a playlist; sticks that sync the playlist get it"
+msgstr "Die gerenderte Datei zu einer Playlist hinzufügen; Sticks, die die Playlist synchronisieren, bekommen sie"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "RENDER first: then the file goes into a playlist"
+msgstr "Zuerst RENDERN: Dann kommt die Datei in eine Playlist"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Add to “{}”"
+msgstr "Zu „{}“ hinzufügen"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Add to playlist"
+msgstr "Zu Playlist hinzufügen"
+
+#: ui/create.slint
+msgctxt "ResultBar"
+msgid "Add to a new playlist"
+msgstr "Zu einer neuen Playlist hinzufügen"
 
 #: ui/create.slint:331
 msgctxt "ResultBar"
@@ -11312,3 +11332,18 @@ msgstr "RENDERT"
 msgctxt "ResultBar"
 msgid "Rendered: the file is in the library with its beatgrid and cues"
 msgstr "Gerendert: Die Datei ist mit Beatgrid und Cues in der Bibliothek"
+
+#: ui/sidebar.slint
+msgctxt "Sidebar"
+msgid "CREATED"
+msgstr "ERSTELLT"
+
+#: ui/sidebar.slint
+msgctxt "Sidebar"
+msgid "Created"
+msgstr "Erstellt"
+
+#: ui/app.slint
+msgctxt "AppWindow"
+msgid "Nothing rendered yet. Notes you RENDER in CREATE land here."
+msgstr "Noch nichts gerendert. Töne, die du in CREATE RENDERST, landen hier."

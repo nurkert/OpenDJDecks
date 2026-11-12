@@ -21,6 +21,7 @@ pub(crate) use tracks::{
     same_row, sort_key_known, sort_rows, KeyOrder,
 };
 pub(crate) use tree::{refresh_tree, stick_root_id};
+pub(crate) use sources::CREATED;
 
 /// The column headers (the Explorer shows its own reduced set).
 pub(crate) fn refresh_columns(app: &App) {
@@ -128,6 +129,8 @@ pub(crate) enum Special {
     Duplicates,
     /// A list of AUTO SORT (its key, e.g. "tempo:124-130").
     Auto(String),
+    /// [76] The tracks rendered from CREATE, newest first.
+    Created,
 }
 
 impl Default for BrowserState {

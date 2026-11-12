@@ -1243,6 +1243,15 @@ fn main_states() -> Vec<State> {
             },
             teardown: Some(|u| u.app.ui.global::<crate::Create>().set_more(false)),
         },
+        // [76] The CREATED list open in PREPARE.
+        State {
+            id: "prepare.created list",
+            setup: |u| {
+                crate::create::stage_created(&u.app, u.fx.tracks[0].0);
+                u.pump(200);
+            },
+            teardown: Some(|u| u.app.ui.invoke_select_node(-1)),
+        },
         State {
             id: "create.melody (audio running, four decks)",
             setup: |u| {
