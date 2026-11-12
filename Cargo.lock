@@ -4410,6 +4410,7 @@ dependencies = [
 name = "od-engine"
 version = "0.9.0"
 dependencies = [
+ "od-analysis",
  "od-core",
  "od-decode",
  "pkg-config",

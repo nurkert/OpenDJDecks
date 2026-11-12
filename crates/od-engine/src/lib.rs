@@ -38,6 +38,7 @@ mod engine;
 mod input;
 pub mod keylock;
 pub mod mixer;
+pub mod noteshift;
 mod rt;
 mod sampler;
 pub mod state;

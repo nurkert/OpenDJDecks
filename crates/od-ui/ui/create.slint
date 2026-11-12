@@ -8,7 +8,8 @@
 // in it. Controls that are not there yet are drawn disabled with their
 // later names, never as working keys. State lives in the `Create` global.
 // [71] fills MELODY's SOURCE: a note picked on a zoomed waveform, its pitch
-// and a correction, and HEAR.
+// and a correction, and HEAR. [72] puts the note on NOTES' pads at other
+// pitches, with an octave switch and a FAR warning on large shifts.
 
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
@@ -58,6 +59,22 @@ export struct CreateNote {
     hearing: bool,
 }
 
+// [72] One pad of NOTES: the picked note at another pitch (create.rs).
+export struct CreatePad {
+    // Off without a picked note with a pitch.
+    enabled: bool,
+    // The target note, "C4".
+    note: string,
+    // Semitones from the source note.
+    shift: int,
+    // More than 7 semitones away: it may not sound natural.
+    far: bool,
+    // Rendered: plays at once.
+    ready: bool,
+    // Plays on the audition voice.
+    playing: bool,
+}
+
 export global Create {
     // The view: "melody", "drums" or "theory" (remembered, shell.rs).
     in-out property <string> view: "melody";
@@ -79,6 +96,19 @@ export global Create {
     callback step-note(int);
     callback step-cents(int);
     callback type-note(string) -> bool;
+    // [72] The pads, their octave (-2..2), why they are off ("none": no
+    // note, "pitch": no pitch, "" = on), and a source note nearer the FAR
+    // pads ("" = none is FAR).
+    in property <[CreatePad]> pads: [{}, {}, {}, {}, {}, {}, {}, {}];
+    in property <int> octave;
+    in property <string> pads-why: "none";
+    in property <string> pads-nearer;
+    callback play-pad(int);
+    callback step-octave(int);
+    // The distance of a pad from the source note: "+3", "-5", "0".
+    public pure function shift-text(s: int) -> string {
+        return s > 0 ? "+" + s : "" + s;
+    }
 }
 
 // Prose in a zone: wraps to the width its column gives it.
@@ -355,6 +385,139 @@ component TypeRow inherits HorizontalLayout {
     }
 }
 
+// [72] The warning mark of a FAR pad: a small triangle (the shape says it
+// with the word FAR beside it, never the colour alone).
+component FarMark inherits Path {
+    in property <color> tone: Theme.attention;
+    width: 10px; height: 9px;
+    viewbox-width: 10; viewbox-height: 9;
+    fill: root.tone;
+    commands: "M 5 0 L 10 9 L 0 9 Z";
+}
+
+// [72] One pad: the target note over its distance from the source note.
+// Played on press (sodium fill while it sounds); a FAR pad carries the
+// triangle and the word. Off (a hollow slot with its number) until a note
+// with a pitch is picked.
+component NotePad inherits Rectangle {
+    in property <CreatePad> pad;
+    in property <int> index;
+    property <bool> lit: root.pad.enabled && root.pad.playing;
+    property <string> tip: !root.pad.enabled ? @tr("Pick a note with a pitch in SOURCE to play it here")
+        : root.pad.far ? @tr("Play the note as {}: {} semitones from the source note, which may not sound natural. Pick a source note nearer it for a cleaner sound", root.pad.note, Create.shift-text(root.pad.shift))
+        : @tr("Play the note as {} ({} semitones from the source note)", root.pad.note, Create.shift-text(root.pad.shift));
+    accessible-role: button;
+    accessible-id: "create.notes.pad" + (root.index + 1);
+    accessible-label: TooltipState.name-for(self.accessible-id, @tr("PAD {}", root.index + 1), root.tip);
+    accessible-value: !root.pad.enabled ? "" : root.pad.note + " " + Create.shift-text(root.pad.shift) + (root.pad.far ? " " + @tr("FAR") : "");
+    accessible-enabled: root.pad.enabled;
+    accessible-description: root.tip;
+    accessible-action-default => { Create.play-pad(root.index); }
+    min-width: Theme.touch-min;
+    height: Theme.touch-mode ? 52px : 44px;
+    background: Theme.face(root.pad.enabled, touch.pressed, touch.has-hover, false, root.lit, Theme.attention);
+    border-radius: Theme.r-control;
+    border-width: root.pad.enabled ? 0px : Theme.hair;
+    border-color: Theme.rule-strong;
+    property <color> ink: Theme.ink(root.pad.enabled, touch.pressed, touch.has-hover, false, root.lit);
+    if !root.pad.enabled: Caps {
+        width: parent.width; height: parent.height;
+        text: root.index + 1; horizontal-alignment: center; vertical-alignment: center;
+    }
+    if root.pad.enabled: VerticalLayout {
+        padding-left: Theme.s1; padding-right: Theme.s1;
+        alignment: center; spacing: 0px;
+        Text {
+            text: root.pad.note;
+            font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+            color: root.ink; horizontal-alignment: center; overflow: elide;
+        }
+        HorizontalLayout {
+            alignment: center; spacing: Theme.s1;
+            if root.pad.far: VerticalLayout { alignment: center; FarMark { tone: root.lit ? root.ink : Theme.attention; } }
+            Caps {
+                text: root.pad.far ? @tr("FAR") + " " + Create.shift-text(root.pad.shift) : Create.shift-text(root.pad.shift);
+                color: root.pad.far ? root.ink : root.lit ? root.ink : Theme.bone-3;
+                font-weight: root.pad.far ? Theme.weight-semi : Theme.weight-medium;
+                overflow: elide;
+            }
+        }
+    }
+    // A pad plays on press, as on an instrument.
+    touch := TipArea {
+        tooltip: root.tip; enabled: root.pad.enabled;
+        mouse-cursor: root.pad.enabled ? pointer : default;
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down && ev.button == PointerEventButton.left) { Create.play-pad(root.index); }
+        }
+    }
+    KeyFocus { enabled: root.pad.enabled; activate => { Create.play-pad(root.index); } }
+}
+
+// [72] The pads' heading: PADS, and the octave switch on the right.
+component PadsHead inherits HorizontalLayout {
+    spacing: Theme.s2;
+    Caps { text: @tr("PADS"); vertical-alignment: center; }
+    Rectangle { horizontal-stretch: 1; }
+    Caps { text: @tr("OCTAVE"); vertical-alignment: center; }
+    Stepper {
+        accessible-id: "create.notes.octave";
+        a11y-prev: "create.notes.octave.down"; a11y-value: "create.notes.octave.value"; a11y-next: "create.notes.octave.up";
+        tooltip: @tr("Octave: the pads an octave down or up");
+        enabled: Create.pads-why == "";
+        value: Create.shift-text(Create.octave); template: "+2"; size: 26px;
+        lit: Create.octave != 0;
+        step(d) => { Create.step-octave(d); }
+    }
+}
+
+// [72] The 8 pads, a little apart after four; in two rows of four where
+// one row would leave a pad too narrow for its note and FAR with the
+// distance. Follows the width through a plain property, so it does not
+// feed back into the layout.
+component PadRow inherits VerticalLayout {
+    property <bool> two-rows;
+    init => { self.two-rows = self.width < 760px; }
+    changed width => { self.two-rows = self.width < 760px; }
+    spacing: Theme.key-gap;
+    if !root.two-rows: HorizontalLayout {
+        spacing: Theme.key-gap;
+        for p[i] in Create.pads: HorizontalLayout {
+            padding-left: i > 0 && Math.mod(i, 4) == 0 ? Theme.s2 : 0px;
+            NotePad { pad: p; index: i; }
+        }
+    }
+    if root.two-rows: HorizontalLayout {
+        spacing: Theme.key-gap;
+        for i in 4: NotePad { pad: Create.pads[i]; index: i; }
+    }
+    if root.two-rows: HorizontalLayout {
+        spacing: Theme.key-gap;
+        for i in 4: NotePad { pad: Create.pads[i + 4]; index: i + 4; }
+    }
+}
+
+// [72] Under the pads, one line: why they are off, or what FAR means and
+// which source note would be nearer. One line, elided: a wrapping text
+// here would be measured at no width and stretch the zone.
+component PadsLine inherits HorizontalLayout {
+    property <bool> far: Create.pads-why == "" && Create.pads-nearer != "";
+    spacing: Theme.s2;
+    height: 18px;
+    if root.far: VerticalLayout { alignment: center; FarMark { } }
+    Text {
+        accessible-role: text; accessible-id: "create.notes.pads-hint"; accessible-value: self.text;
+        horizontal-stretch: 1; min-width: 0px;
+        text: Create.pads-why == "none" ? @tr("Pick a note in SOURCE: the pads play it at other pitches.")
+            : Create.pads-why == "pitch" ? @tr("No pitch yet: set the note in SOURCE to play it on the pads.")
+            : root.far ? @tr("FAR: over 7 semitones away may sound unnatural. A source note near {} sounds cleaner.", Create.pads-nearer)
+            : @tr("The source note and the 7 semitones above it. The octave switch moves them.");
+        font-family: Theme.family; font-size: Theme.control;
+        color: root.far ? Theme.bone : Theme.bone-3;
+        vertical-alignment: center; overflow: elide;
+    }
+}
+
 // MELODY: SOURCE | NOTES | FITS.
 component MelodyView inherits HorizontalLayout {
     in property <bool> narrow;
@@ -389,8 +552,9 @@ component MelodyView inherits HorizontalLayout {
         title: @tr("NOTES");
         summary: @tr("The key and scale come from the other deck or the next track. The scale's notes fill the pads; play or type the melody into the steps.");
         KeyStrip { }
-        Caps { text: @tr("PADS"); }
-        SlotRow { legends: ["1", "2", "3", "4", "5", "6", "7", "8"]; }
+        PadsHead { }
+        PadRow { }
+        PadsLine { }
         Caps { text: @tr("ARRANGE"); }
         SlotRow { legends: ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]; }
         HorizontalLayout {

@@ -10413,8 +10413,8 @@ msgctxt "MelodyView"
 msgid "The key and scale come from the other deck or the next track. The scale's notes fill the pads; play or type the melody into the steps."
 msgstr "Tonart und Skala kommen vom anderen Deck oder vom nächsten Track. Die Töne der Skala liegen auf den Pads; spiel oder tippe die Melodie in die Schritte."
 
-#: ui/create.slint:137
-msgctxt "MelodyView"
+#: ui/create.slint
+msgctxt "PadsHead"
 msgid "PADS"
 msgstr "PADS"
 
@@ -10747,3 +10747,58 @@ msgstr "CREATE"
 msgctxt "TopBar"
 msgid "Create: a melody from one note, drums, and which notes fit"
 msgstr "Create: eine Melodie aus einem Ton, Drums und welche Töne passen"
+
+#: ui/create.slint
+msgctxt "NotePad"
+msgid "Pick a note with a pitch in SOURCE to play it here"
+msgstr "Wähle in QUELLE einen Ton mit Tonhöhe, um ihn hier zu spielen"
+
+#: ui/create.slint
+msgctxt "NotePad"
+msgid "Play the note as {}: {} semitones from the source note, which may not sound natural. Pick a source note nearer it for a cleaner sound"
+msgstr "Den Ton als {} spielen: {} Halbtöne vom Ausgangston, das klingt womöglich unnatürlich. Ein Ausgangston näher daran klingt sauberer"
+
+#: ui/create.slint
+msgctxt "NotePad"
+msgid "Play the note as {} ({} semitones from the source note)"
+msgstr "Den Ton als {} spielen ({} Halbtöne vom Ausgangston)"
+
+#: ui/create.slint
+msgctxt "NotePad"
+msgid "PAD {}"
+msgstr "PAD {}"
+
+#: ui/create.slint
+msgctxt "NotePad"
+msgid "FAR"
+msgstr "WEIT"
+
+#: ui/create.slint
+msgctxt "PadsHead"
+msgid "OCTAVE"
+msgstr "OKTAVE"
+
+#: ui/create.slint
+msgctxt "PadsHead"
+msgid "Octave: the pads an octave down or up"
+msgstr "Oktave: die Pads eine Oktave tiefer oder höher"
+
+#: ui/create.slint
+msgctxt "PadsLine"
+msgid "Pick a note in SOURCE: the pads play it at other pitches."
+msgstr "Wähle einen Ton in QUELLE: Die Pads spielen ihn in anderen Tonhöhen."
+
+#: ui/create.slint
+msgctxt "PadsLine"
+msgid "No pitch yet: set the note in SOURCE to play it on the pads."
+msgstr "Noch keine Tonhöhe: Leg den Ton in QUELLE fest, um ihn auf den Pads zu spielen."
+
+#: ui/create.slint
+msgctxt "PadsLine"
+msgid "FAR: over 7 semitones away may sound unnatural. A source note near {} sounds cleaner."
+msgstr "WEIT: Über 7 Halbtöne entfernt klingt es womöglich unnatürlich. Ein Ausgangston nahe {} klingt sauberer."
+
+#: ui/create.slint
+msgctxt "PadsLine"
+msgid "The source note and the 7 semitones above it. The octave switch moves them."
+msgstr "Der Ausgangston und die 7 Halbtöne darüber. Der Oktavschalter verschiebt sie."
