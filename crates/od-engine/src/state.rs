@@ -254,6 +254,9 @@ pub struct EngineState {
     pub master_deck: Option<usize>,
     /// Tempo of the sync master (or the last known), BPM.
     pub master_bpm: f64,
+    /// The master beat clock at the end of the last block: the master
+    /// deck's beat while it plays, else a clock running on at `master_bpm`.
+    pub clock_beat: f64,
     /// An EQ swap waiting for its beat or bar.
     pub pending_swap: Option<crate::command::PendingSwap>,
     pub tempo_fx: [TempoFxState; TEMPO_FX_UNITS],
@@ -299,6 +302,7 @@ impl Default for EngineState {
             quantize: true,
             master_deck: None,
             master_bpm: 120.0,
+            clock_beat: 0.0,
             pending_swap: None,
             tempo_fx: [TempoFxState::default(); TEMPO_FX_UNITS],
             tempo_fx_slots: [[TempoFxState::default(); TEMPO_FX_SLOTS - 1]; TEMPO_FX_UNITS],

@@ -434,3 +434,206 @@ fn the_key_comes_from_the_other_deck_or_the_next_track_and_fills_pads_and_strip(
     assert_eq!(ui.value("create.notes.key-from"), "SET BY YOU");
     assert_eq!(ui.value("create.fits.key"), "C LYDIAN");
 }
+
+// ── [74] Arrange ────────────────────────────────────────────────────────
+
+fn steps(ui: &Ui) -> Vec<String> {
+    (1..=32).map(|i| ui.value(&format!("create.arrange.step{i}"))).collect()
+}
+
+fn notes_of(ui: &Ui) -> Vec<Option<i32>> {
+    crate::create::melody(&ui.app).steps.iter().map(|s| s.map(|s| s.note)).collect()
+}
+
+/// Typed notes fill the strip from step 1 (rests and holds too) and RESULT
+/// counts them; what is not a note is reported beside the field and the
+/// rest stays; a step is selected, moved (key and arrows), changed and
+/// deleted; CLEAR empties it and UNDO brings it back; the grid sets the
+/// bars; all of it survives a restart.
+#[test]
+fn a_typed_melody_fills_the_strip_and_takes_edits() {
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("create".into());
+    crate::create::set_view(&ui.app, "melody");
+    ui.pump(300);
+    assert_eq!(ui.value("create.arrange.count"), "EMPTY");
+    assert!(ui.value("create.result.summary").starts_with("No melody yet"));
+    assert_eq!(ui.get("create.arrange.play").accessible_enabled(), Some(false), "nothing to play");
+    assert_eq!(ui.get("create.arrange.clear").accessible_enabled(), Some(false));
+    assert!(ui.value("create.arrange.hint").contains("replaces the strip from step 1"), "{}", ui.value("create.arrange.hint"));
+    ui.click("create.arrange.type");
+    ui.type_text("A3 C4 E4 D4 - Bb3 _ H4 G3");
+    ui.key(slint::platform::Key::Return);
+    let s = steps(&ui);
+    assert_eq!(&s[..4], ["A3", "C4", "E4", "D4"]);
+    assert_eq!((s[4].as_str(), s[5].as_str(), s[6].as_str()), ("empty", "Bb3", "held"));
+    assert_eq!((s[7].as_str(), s[8].as_str()), ("empty", "G3"), "H4 is not a note: its step stays a rest, G3 keeps its place");
+    assert!(s[9..].iter().all(|v| v == "empty"));
+    assert!(ui.value("create.arrange.hint").starts_with("Not read: H4"), "{}", ui.value("create.arrange.hint"));
+    assert_eq!(ui.value("create.arrange.count"), "6 NOTES · 2 BARS", "9 steps of 1/8");
+    assert!(ui.value("create.result.summary").starts_with("6 notes · 2 bars · "), "{}", ui.value("create.result.summary"));
+    assert!(ui.value("create.result.summary").ends_with(" BPM"));
+    assert_eq!(ui.value("create.arrange.steps"), "A3 C4 E4 D4 - Bb3 _ - G3");
+    for id in ["create.result.send", "create.result.render", "create.result.to-playlist"] {
+        assert_eq!(ui.get(id).accessible_enabled(), Some(false), "{id} comes later");
+    }
+    // The grid: 1/4 makes it 3 bars, 1/16 one.
+    ui.click("create.arrange.grid.4");
+    assert_eq!(ui.value("create.arrange.count"), "6 NOTES · 3 BARS");
+    ui.click("create.arrange.grid.16");
+    assert_eq!(ui.value("create.arrange.count"), "6 NOTES · 1 BAR");
+    ui.click("create.arrange.grid.8");
+    // Select C4; the edit keys wake up; it moves right (swapped with E4).
+    assert_eq!(ui.get("create.arrange.right").accessible_enabled(), Some(false), "nothing selected");
+    ui.click("create.arrange.step2");
+    assert!(ui.value("create.arrange.step2").ends_with("selected"));
+    ui.click("create.arrange.right");
+    assert_eq!(&steps(&ui)[..3], ["A3", "E4", "C4 selected"]);
+    // The keys: Left moves it back, Up a scale step (no key: a semitone),
+    // Shift+Right selects the step after it, Delete empties that.
+    ui.key(slint::platform::Key::LeftArrow);
+    assert_eq!(notes_of(&ui)[1], Some(60), "C4 back on step 2");
+    ui.key(slint::platform::Key::UpArrow);
+    assert_eq!(notes_of(&ui)[1], Some(61));
+    ui.click("create.arrange.down");
+    assert_eq!(notes_of(&ui)[1], Some(60));
+    ui.key(slint::platform::Key::RightArrow);
+    assert_eq!(notes_of(&ui)[2], Some(60), "moved right again");
+    ui.key(slint::platform::Key::LeftArrow);
+    ui.key(slint::platform::Key::Delete);
+    assert_eq!(notes_of(&ui)[1], None, "deleted");
+    assert_eq!(ui.value("create.arrange.count"), "5 NOTES · 2 BARS");
+    // CLEAR, then UNDO.
+    assert_eq!(ui.get("create.arrange.undo").accessible_enabled(), Some(false));
+    ui.click("create.arrange.clear");
+    assert!(steps(&ui).iter().all(|v| v == "empty"));
+    assert!(ui.value("create.result.summary").starts_with("No melody yet"));
+    ui.click("create.arrange.undo");
+    assert_eq!(ui.value("create.arrange.count"), "5 NOTES · 2 BARS", "back");
+    assert_eq!(ui.get("create.arrange.undo").accessible_enabled(), Some(false), "once");
+    // Typing again replaces it; UNDO brings the old one back.
+    ui.click("create.arrange.type");
+    ui.app.ui.global::<crate::Create>().invoke_type_steps("F4 F4".into());
+    assert_eq!(ui.value("create.arrange.count"), "2 NOTES · 1 BAR");
+    ui.click("create.arrange.undo");
+    assert_eq!(ui.value("create.arrange.count"), "5 NOTES · 2 BARS");
+    ui.click("create.arrange.loop");
+    ui.click("create.arrange.grid.16");
+    let kept = crate::create::melody(&ui.app);
+    assert!(kept.looped);
+    assert!(ui.fx.lib().meta(crate::create::META_MELODY).unwrap().is_some(), "stored");
+    // Restart: the strip, the grid and LOOP are back.
+    let Ui { app, fx, .. } = ui;
+    drop(app);
+    let ui = Ui::start(fx, (1440, 900), false);
+    ui.app.ui.invoke_set_mode("create".into());
+    crate::create::set_view(&ui.app, "melody");
+    ui.pump(300);
+    assert_eq!(crate::create::melody(&ui.app), kept, "the strip survives a restart");
+    assert_eq!(ui.value("create.arrange.count"), "5 NOTES · 1 BAR");
+    assert_eq!(ui.value("create.arrange.step1"), "A3");
+}
+
+/// A note picked from deck 1 with its pads measured and rendered.
+fn picked_on_deck1(ui: &Ui) {
+    deck1_at(ui, 1.04);
+    ui.click("create.source.deck1");
+    let g = ui.app.ui.global::<crate::Create>();
+    let n = crate::create::note(&ui.app).expect("a note");
+    g.invoke_drag_handle("out".into(), ((1.42 - n.view) / crate::create::SPAN) as f32);
+    g.invoke_drag_done();
+    assert!(ui.wait_until(5.0, |u| note_state(u) == "DETECTED"), "{}", note_state(ui));
+    assert!(ui.wait_until(20.0, |u| (0..8).all(|i| crate::create::pad_note(&u.app, i).is_some())), "the pads are rendered");
+}
+
+/// REC with nothing playing fills step by step from the cursor (pads and
+/// keys); with deck 1 playing a pad lands on the nearest step of its grid,
+/// and the deck plays on untouched; again disarms it.
+#[test]
+fn rec_fills_steps_one_by_one_or_on_the_master_grid() {
+    let ui = Ui::open((1440, 900));
+    let id = ui.fx.tracks[0].0;
+    super::perform_craft::with_grid(&ui, id);
+    picked_on_deck1(&ui);
+    ui.click("create.notes.rec");
+    assert!(ui.app.ui.global::<crate::Create>().get_rec());
+    assert_eq!(ui.get("create.notes.rec").accessible_label().map(|s| s.to_string()), Some("REC ON".into()), "armed, with the word");
+    assert!(ui.value("create.arrange.step1").ends_with("records next"));
+    assert!(ui.value("create.arrange.hint").contains("now step 1"), "{}", ui.value("create.arrange.hint"));
+    let pads: Vec<i32> = (0..3).map(|i| crate::create::pad_targets(crate::create::note(&ui.app).unwrap().pitch().unwrap(), 0, crate::create::choice(&ui.app).pad_key())[i]).collect();
+    ui.click("create.notes.pad1");
+    ui.click("create.notes.pad3");
+    ui.click("create.notes.pad2");
+    assert_eq!(&notes_of(&ui)[..4], [Some(pads[0]), Some(pads[2]), Some(pads[1]), None], "step by step");
+    assert!(ui.value("create.arrange.step4").ends_with("records next"));
+    // A tapped step moves the cursor there.
+    ui.click("create.arrange.step10");
+    ui.click("create.notes.pad1");
+    assert_eq!(notes_of(&ui)[9], Some(pads[0]));
+    // Deck 1 plays on a grid: the cursor goes, pads land on the grid.
+    ui.click("create.arrange.clear");
+    assert!(snapshot(&ui).decks[0].track == Some(id) && snapshot(&ui).decks[0].beat_in_bar > 0, "deck 1 with a grid");
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::Play);
+    assert!(ui.wait_until(5.0, |u| snapshot(u).decks[0].playing), "deck 1 plays");
+    assert!(ui.wait_until(2.0, |u| u.app.ui.global::<crate::Create>().get_rec_mode() == "grid"), "REC follows the master grid");
+    assert!(ui.value("create.arrange.hint").contains("nearest step of the master grid"));
+    let before = snapshot(&ui);
+    let origin = crate::arrange::bar_start(before.decks[0].beat, before.decks[0].beat_in_bar);
+    ui.click("create.notes.pad1");
+    let first = notes_of(&ui).iter().position(Option::is_some).expect("a note on the grid");
+    let want = crate::arrange::nearest_step(before.decks[0].beat, origin, crate::arrange::Grid::Eighth);
+    let near = |a: usize, b: usize| (a as i64 - b as i64).rem_euclid(32).min((b as i64 - a as i64).rem_euclid(32)) <= 1;
+    assert!(near(first, want), "the nearest step: {first}, near {want}");
+    // Two beats later: four steps on (1/8), not the next one.
+    let at = snapshot(&ui).decks[0].beat;
+    assert!(ui.wait_until(3.0, |u| snapshot(u).decks[0].beat >= at + 2.0));
+    let later = snapshot(&ui).decks[0].beat;
+    ui.click("create.notes.pad2");
+    let second = (0..32).find(|&i| i != first && notes_of(&ui)[i].is_some()).expect("a second note");
+    let want = crate::arrange::nearest_step(later, origin, crate::arrange::Grid::Eighth);
+    assert!(near(second, want), "{second} near {want}");
+    let s = snapshot(&ui);
+    assert!(s.decks[0].playing && s.decks[0].track == Some(id), "deck 1 plays on");
+    ui.click("create.notes.rec");
+    assert!(!ui.app.ui.global::<crate::Create>().get_rec());
+    let n = crate::create::melody(&ui.app).notes();
+    ui.click("create.notes.pad1");
+    assert_eq!(crate::create::melody(&ui.app).notes(), n, "disarmed: the pads only play");
+}
+
+/// PLAY sends the notes in order to the audition voice on the running
+/// clock, lights the step that sounds, ends after the last bar (LOOP goes
+/// round) and stops at once when pressed again.
+#[test]
+fn play_sends_the_steps_in_order_and_lights_the_step() {
+    let ui = Ui::open((1440, 900));
+    picked_on_deck1(&ui);
+    ui.app.ui.global::<crate::Create>().invoke_type_steps("A3 B3 - C4 D4".into());
+    assert!(ui.wait_until(20.0, |u| [57, 59, 60, 62].iter().all(|&t| crate::create::rendered(&u.app, t))), "the strip's notes are rendered");
+    crate::create::take_sent(&ui.app);
+    ui.click("create.arrange.play");
+    assert!(ui.app.ui.global::<crate::Create>().get_playing());
+    assert_eq!(ui.get("create.arrange.play").accessible_label().map(|s| s.to_string()), Some("STOP".into()));
+    let mut lit = std::collections::BTreeSet::new();
+    let mut heard = false;
+    let done = ui.wait_until(10.0, |u| {
+        lit.extend((1..=8).filter(|i| u.value(&format!("create.arrange.step{i}")).ends_with("playing")));
+        heard |= snapshot(u).auditioning;
+        !u.app.ui.global::<crate::Create>().get_playing()
+    });
+    assert!(done, "PLAY ends after the bar");
+    assert!(heard, "on the audition voice");
+    assert_eq!(crate::create::take_sent(&ui.app), [(0, 57), (1, 59), (3, 60), (4, 62)], "in order, on their steps");
+    assert!(lit.len() >= 4 && lit.contains(&1), "the playing step lights: {lit:?}");
+    assert!(!snapshot(&ui).decks[0].playing, "deck 1 untouched");
+    // LOOP goes round until stopped; a stop is at once.
+    ui.click("create.arrange.loop");
+    ui.click("create.arrange.play");
+    assert!(ui.wait_until(8.0, |u| crate::create::take_sent(&u.app).iter().filter(|s| s.0 == 0).count() >= 1 && u.app.ui.global::<crate::Create>().get_playing()));
+    ui.pump(2500);
+    assert!(ui.app.ui.global::<crate::Create>().get_playing(), "still going round");
+    ui.click("create.arrange.play");
+    assert!(!ui.app.ui.global::<crate::Create>().get_playing());
+    assert!(ui.wait_until(1.0, |u| !snapshot(u).auditioning), "stopped at once");
+    assert!(steps(&ui).iter().all(|v| !v.ends_with("playing")));
+}

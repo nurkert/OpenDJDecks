@@ -533,6 +533,11 @@ const DE: &[(&str, &str)] = &[
     // [73] CREATE: the key of the next track.
     ("No next track: add one to the queue or open a set", "Kein nächster Track: Füge einen zur Warteschlange hinzu oder öffne ein Set"),
     ("{} has no key yet: analyse it first", "{} hat noch keine Tonart: Analysiere den Track zuerst"),
+    // [74] CREATE: the arrange strip.
+    (
+        "The strip is full: select a step to record from there, or CLEAR it",
+        "Die Leiste ist voll: Wähle einen Schritt, um ab dort aufzunehmen, oder leere sie",
+    ),
     ("Club mode on / off", "Club-Modus an / aus"),
     ("Load tracks on two decks", "Tracks auf zwei Decks laden"),
     (

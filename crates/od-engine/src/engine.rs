@@ -906,7 +906,7 @@ impl EngineProcessor {
                 *c += *s;
             }
         }
-        self.sampler.mix_audition(master_buf, cue_buf);
+        self.sampler.mix_audition(master_buf, cue_buf, &clock);
         // Mic / aux after the decks and sampler (talkover ducks them).
         self.input
             .process(&mut self.input_buf[..len], master_buf, cue_buf);
@@ -1052,6 +1052,7 @@ impl EngineProcessor {
         s.quantize = self.quantize;
         s.master_deck = self.master;
         s.master_bpm = self.master_bpm;
+        s.clock_beat = self.free_beat;
         s.pending_swap = self.pending_swap.map(|(p, _)| p);
         for u in 0..TEMPO_FX_UNITS {
             s.tempo_fx[u] = self.tempo_fx[u * TEMPO_FX_SLOTS].state();

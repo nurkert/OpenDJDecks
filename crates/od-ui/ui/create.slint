@@ -12,10 +12,13 @@
 // pitches, with an octave switch and a FAR warning on large shifts. [73]
 // plays them in a key: the root and scale from the other deck, the next
 // track or by hand, on the pads (SNAP TO SCALE) and the keyboard strip.
+// [74] ARRANGE puts the notes in order on 32 steps of the master grid:
+// played in with REC, or typed; a tapped step moves, changes or goes; PLAY
+// plays the strip on the audition voice in time with the master.
 
 import { Theme } from "tokens.slint";
 import { VLine } from "lines.slint";
-import { Caps, PlateButton, Stepper, Field, KeyFocus, LineToggle, TipArea, TooltipState } from "controls.slint";
+import { Caps, PlateButton, Stepper, Field, KeyFocus, LineToggle, TipArea, TooltipState, FocusRing, ArmedOutline } from "controls.slint";
 
 // One deck in the strip (create.rs, from the engine's deck state).
 export struct CreateDeck {
@@ -108,6 +111,23 @@ export struct CreateKeyNote {
     playing: bool,
 }
 
+// [74] One step of the arrange strip (create.rs).
+export struct CreateStep {
+    // The note that starts here, spelled as the key ("" = none).
+    note: string,
+    // The note before still sounds here.
+    held: bool,
+    // The gap before it: 0 inside a beat, 1 a new beat, 2 a new bar.
+    gap: int,
+    // The bar it starts, from 1 (0 = not a bar's first step).
+    bar: int,
+    selected: bool,
+    // PLAY is on this step.
+    playing: bool,
+    // REC fills this step next (step by step).
+    cursor: bool,
+}
+
 export global Create {
     // The view: "melody", "drums" or "theory" (remembered, shell.rs).
     in-out property <string> view: "melody";
@@ -160,6 +180,47 @@ export global Create {
     callback set-snap(bool);
     callback set-hints(bool);
     callback play-key(int);
+    // [74] The arrange strip: 32 steps, the grid ("1/4", "1/8", "1/16"),
+    // the notes and whole bars it holds, the selected step (-1 = none).
+    in property <[CreateStep]> steps;
+    in property <string> grid: "1/8";
+    in property <int> notes;
+    in property <int> bars;
+    in property <int> selected: -1;
+    // REC armed, and where a note goes now: "grid" (the nearest step while
+    // PLAY or the master deck plays) or "steps" (from the cursor on).
+    in property <bool> rec;
+    in property <string> rec-mode: "steps";
+    in property <int> rec-cursor;
+    // PLAY runs; LOOP; UNDO can bring back what CLEAR or typing replaced.
+    in property <bool> playing;
+    in property <bool> looped;
+    in property <bool> can-undo;
+    // What the last typing could not read ("H4, X"), and whether it had
+    // more than 32 steps.
+    in property <string> typed-bad;
+    in property <bool> typed-long;
+    // The master tempo ("124.0"); the strip as it could be typed.
+    in property <string> tempo: "120.0";
+    in property <string> steps-text;
+    callback set-grid(string);
+    callback toggle-rec();
+    callback toggle-play();
+    callback set-loop(bool);
+    callback clear-steps();
+    callback undo-steps();
+    callback select-step(int);
+    // The selected note a step left or right; a scale step (or with the
+    // modifier a semitone) up or down; deleted.
+    callback move-step(int);
+    callback shift-step(int, bool);
+    callback delete-step();
+    // Typed note names: they replace the strip from step 1.
+    callback type-steps(string);
+    // The selected step holds a note.
+    public pure function step-has-note() -> bool {
+        return root.selected >= 0 && root.selected < root.steps.length && root.steps[root.selected].note != "";
+    }
     // A scale's name in capitals.
     public pure function scale-name(id: string) -> string {
         return id == "major" ? @tr("MAJOR") : id == "minor" ? @tr("MINOR") : id == "dorian" ? @tr("DORIAN")
@@ -198,6 +259,35 @@ component Zone inherits Rectangle {
         if root.summary != "": Prose { text: root.summary; }
         @children
         Rectangle { vertical-stretch: 1; }
+    }
+}
+
+// [74] A zone whose parts scroll under its name where the window is too
+// short for them (the wheel scrolls; a drag stays with the control under
+// the pointer), so the RESULT bar and the deck strip stay in view.
+component ScrollZone inherits Rectangle {
+    in property <string> title;
+    accessible-role: groupbox;
+    accessible-label: root.title;
+    background: Theme.ground-band;
+    border-radius: Theme.r-panel;
+    VerticalLayout {
+        padding: Theme.s3; spacing: Theme.s3;
+        padding-bottom: Theme.s1;
+        Caps { text: root.title; color: Theme.bone-2; font-weight: Theme.weight-semi; }
+        fl := Flickable {
+            vertical-stretch: 1;
+            min-height: 0px;
+            mouse-drag-pan-enabled: false;
+            content-width: self.width;
+            content-height: max(self.height, body.min-height);
+            body := VerticalLayout {
+                width: fl.width; height: fl.content-height;
+                spacing: Theme.s3;
+                @children
+                Rectangle { vertical-stretch: 1; }
+            }
+        }
     }
 }
 
@@ -859,6 +949,303 @@ component KeyFits inherits VerticalLayout {
     Prose { accessible-role: text; accessible-id: "create.fits.chords"; accessible-value: self.text; text: Create.key.chords; color: Theme.bone; }
 }
 
+// [74] One step of the strip: a hollow slot while empty (a bar's number
+// faint on its first step), a plate with the note's name, or a plate with
+// a line where the note before still sounds; the selected step in bone,
+// the step that sounds in sodium. REC's next step (step by step) carries
+// the armed outline in red. A tap selects it.
+component ArrangeStep inherits Rectangle {
+    in property <CreateStep> step;
+    in property <int> index;
+    callback tapped();
+    property <bool> note: root.step.note != "";
+    property <bool> filled: root.note || root.step.held;
+    property <bool> lit: root.step.playing;
+    property <color> ink: root.lit || root.step.selected ? Theme.ground : Theme.bone;
+    property <string> tip: @tr("Select the step; its note plays. The arrow keys move the note, up and down change it, Delete empties it");
+    // Read as a cell of the strip: the strip is the Tab stop (as the
+    // keyboard strip's keys are).
+    accessible-role: text;
+    accessible-id: "create.arrange.step" + (root.index + 1);
+    accessible-label: TooltipState.name-for(self.accessible-id, @tr("STEP {}", root.index + 1), root.tip);
+    accessible-value: (root.note ? root.step.note : root.step.held ? @tr("held") : @tr("empty"))
+        + (root.step.selected ? " " + @tr("selected") : "") + (root.lit ? " " + @tr("playing") : "")
+        + (root.step.cursor ? " " + @tr("records next") : "");
+    accessible-description: root.tip;
+    accessible-action-default => { root.tapped(); }
+    min-width: Theme.touch-min;
+    height: Theme.touch-mode ? 44px : 28px;
+    background: root.lit ? Theme.attention : root.step.selected ? Theme.bone
+        : touch.has-hover ? Theme.plate-raised : root.filled ? Theme.plate : transparent;
+    border-radius: Theme.r-control;
+    border-width: root.filled || root.lit || root.step.selected ? 0px : Theme.hair;
+    border-color: Theme.rule-strong;
+    if root.note: Text {
+        x: 2px; width: parent.width - 4px; height: parent.height;
+        text: root.step.note;
+        font-family: Theme.family; font-size: Theme.control; font-weight: Theme.weight-semi;
+        color: root.ink; horizontal-alignment: center; vertical-alignment: center; overflow: elide;
+    }
+    if root.step.held: Rectangle {
+        x: 0; y: (parent.height - 2px) / 2; width: parent.width - Theme.s1; height: 2px;
+        background: root.lit || root.step.selected ? Theme.ground : Theme.bone-3;
+    }
+    if !root.filled && root.step.bar > 0: Caps {
+        width: parent.width; height: parent.height;
+        text: root.step.bar; horizontal-alignment: center; vertical-alignment: center;
+        color: root.lit || root.step.selected ? Theme.ground : Theme.bone-3;
+    }
+    if root.step.cursor: ArmedOutline { width: parent.width; height: parent.height; show: true; tone: Theme.fault; }
+    touch := TipArea {
+        tooltip: root.tip;
+        mouse-cursor: pointer;
+        clicked => { root.tapped(); }
+    }
+}
+
+// [74] `count` steps of the strip from `from`: a little apart at each beat,
+// more at each bar.
+component ArrangeRow inherits HorizontalLayout {
+    in property <int> from;
+    in property <int> count;
+    callback tapped(int);
+    spacing: Theme.key-gap;
+    for i in root.count: HorizontalLayout {
+        padding-left: i == 0 ? 0px : Create.steps[root.from + i].gap == 2 ? Theme.s2 : Create.steps[root.from + i].gap == 1 ? Theme.s1 : 0px;
+        ArrangeStep {
+            step: Create.steps[root.from + i]; index: root.from + i;
+            tapped => { root.tapped(root.from + i); }
+        }
+    }
+}
+
+// [74] The 32 steps: one row where there is room, else two rows of 16 (four
+// of 8 on touch, for 44 px targets). With the focus the arrow keys move the
+// selected note (with Shift, or on an empty step, the selection), up and
+// down change it a scale step (with Shift a semitone), Delete or Backspace
+// empties it, Return plays it. Follows the width through a plain property,
+// so it does not feed back into the layout.
+component ArrangeSteps inherits Rectangle {
+    property <bool> wide;
+    property <int> per-row: Theme.touch-mode ? 8 : root.wide ? 32 : 16;
+    init => { self.wide = self.width >= 1000px; }
+    changed width => { self.wide = self.width >= 1000px; }
+    accessible-role: list;
+    accessible-id: "create.arrange.steps";
+    accessible-label: @tr("Steps");
+    accessible-value: Create.steps-text;
+    VerticalLayout {
+        spacing: Theme.key-gap;
+        for r in Math.floor(32 / root.per-row): ArrangeRow {
+            from: r * root.per-row; count: root.per-row;
+            tapped(i) => { fs.focus(); Create.select-step(i); }
+        }
+    }
+    fs := FocusScope {
+        x: 0; y: 0; width: 0; height: 0;
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.modifiers.control || e.modifiers.meta || e.modifiers.alt) { return reject; }
+            if (e.text == Key.LeftArrow || e.text == Key.RightArrow) {
+                if (e.modifiers.shift || !Create.step-has-note()) {
+                    Create.select-step(clamp(Create.selected + (e.text == Key.LeftArrow ? -1 : 1), 0, Create.steps.length - 1));
+                } else {
+                    Create.move-step(e.text == Key.LeftArrow ? -1 : 1);
+                }
+                return accept;
+            }
+            if (e.text == Key.UpArrow || e.text == Key.DownArrow) { Create.shift-step(e.text == Key.UpArrow ? 1 : -1, e.modifiers.shift); return accept; }
+            if (e.text == Key.Delete || e.text == Key.Backspace) { Create.delete-step(); return accept; }
+            if ((e.text == Key.Return || e.text == " ") && Create.selected >= 0) { Create.select-step(Create.selected); return accept; }
+            reject
+        }
+    }
+    FocusRing { show: fs.has-focus; }
+}
+
+// [74] The strip's head: ARRANGE and what it holds, then REC, PLAY and
+// LOOP, then CLEAR and UNDO.
+component ArrangeHead inherits HorizontalLayout {
+    spacing: Theme.s2;
+    Caps { text: @tr("ARRANGE"); vertical-alignment: center; }
+    Caps {
+        accessible-role: text; accessible-id: "create.arrange.count"; accessible-value: self.text;
+        horizontal-stretch: 1; min-width: 0px;
+        text: Create.notes == 0 ? @tr("EMPTY")
+            : (Create.notes == 1 ? @tr("1 NOTE") : @tr("{} NOTES", Create.notes)) + " · " + (Create.bars == 1 ? @tr("1 BAR") : @tr("{} BARS", Create.bars));
+        color: Create.notes > 0 ? Theme.bone-2 : Theme.bone-3;
+        vertical-alignment: center; overflow: elide;
+    }
+    HorizontalLayout {
+        horizontal-stretch: 0; spacing: Theme.key-gap;
+        PlateButton {
+            accessible-id: "create.notes.rec"; accessible-role: checkbox;
+            accessible-checkable: true; accessible-checked: Create.rec;
+            compact: true; label: Create.rec ? @tr("REC ON") : @tr("REC");
+            active: Create.rec; tone: Theme.fault;
+            tooltip: @tr("Record: play the pads or the keys into the steps, on the master grid while it plays, else step by step; again to stop");
+            clicked => { Create.toggle-rec(); }
+        }
+        PlateButton {
+            accessible-id: "create.arrange.play"; accessible-role: button;
+            compact: true; label: Create.playing ? @tr("STOP") : @tr("PLAY");
+            enabled: Create.notes > 0 || Create.playing;
+            active: Create.playing; tone: Theme.attention;
+            tooltip: @tr("Play the steps on the master tempo, from the next bar while a deck plays (on the headphones); again to stop");
+            clicked => { Create.toggle-play(); }
+        }
+        PlateButton {
+            accessible-id: "create.arrange.loop"; accessible-role: checkbox;
+            accessible-checkable: true; accessible-checked: Create.looped;
+            compact: true; label: @tr("LOOP");
+            selected: Create.looped;
+            tooltip: @tr("Loop: PLAY goes round the strip's bars until stopped");
+            clicked => { Create.set-loop(!Create.looped); }
+        }
+    }
+    HorizontalLayout {
+        horizontal-stretch: 0; spacing: Theme.key-gap;
+        PlateButton {
+            accessible-id: "create.arrange.clear"; accessible-role: button;
+            compact: true; label: @tr("CLEAR"); tone: Theme.fault;
+            enabled: Create.notes > 0;
+            tooltip: @tr("Empty every step (UNDO brings them back)");
+            clicked => { Create.clear-steps(); }
+        }
+        PlateButton {
+            accessible-id: "create.arrange.undo"; accessible-role: button;
+            compact: true; label: @tr("UNDO");
+            enabled: Create.can-undo;
+            tooltip: @tr("Bring back the steps as they were before the last CLEAR or typed notes");
+            clicked => { Create.undo-steps(); }
+        }
+    }
+}
+
+// [74] Under the steps: the selected step's keys (move its note, change
+// it, empty it), typing, and the grid on the right; where one row would be
+// too narrow, typing goes on a row of its own below. Follows the width
+// through a plain property, so it does not feed back into the layout.
+component EditKeys inherits HorizontalLayout {
+    spacing: Theme.s3;
+    VerticalLayout {
+        alignment: center;
+        HorizontalLayout {
+            spacing: Theme.key-gap;
+            PlateButton {
+                accessible-id: "create.arrange.left"; accessible-role: button;
+                compact: true; glyph: "prev"; enabled: Create.step-has-note();
+                tooltip: @tr("Move the selected note a step left (Left arrow)");
+                clicked => { Create.move-step(-1); }
+            }
+            PlateButton {
+                accessible-id: "create.arrange.right"; accessible-role: button;
+                compact: true; glyph: "next"; enabled: Create.step-has-note();
+                tooltip: @tr("Move the selected note a step right (Right arrow)");
+                clicked => { Create.move-step(1); }
+            }
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        HorizontalLayout {
+            spacing: Theme.key-gap;
+            PlateButton {
+                accessible-id: "create.arrange.down"; accessible-role: button;
+                compact: true; glyph: "down"; enabled: Create.step-has-note();
+                tooltip: @tr("The selected note a step of the scale down (Down arrow; with Shift a semitone)");
+                clicked => { Create.shift-step(-1, false); }
+            }
+            PlateButton {
+                accessible-id: "create.arrange.up"; accessible-role: button;
+                compact: true; glyph: "up"; enabled: Create.step-has-note();
+                tooltip: @tr("The selected note a step of the scale up (Up arrow; with Shift a semitone)");
+                clicked => { Create.shift-step(1, false); }
+            }
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        PlateButton {
+            accessible-id: "create.arrange.delete"; accessible-role: button;
+            compact: true; glyph: "close"; tone: Theme.fault;
+            enabled: Create.step-has-note();
+            tooltip: @tr("Empty the selected step (Delete)");
+            clicked => { Create.delete-step(); }
+        }
+    }
+}
+
+component GridKeys inherits VerticalLayout {
+    alignment: center;
+    HorizontalLayout {
+        spacing: Theme.key-gap;
+        for g in [{ id: "1/4", a11y: "4" }, { id: "1/8", a11y: "8" }, { id: "1/16", a11y: "16" }]: PlateButton {
+            accessible-id: "create.arrange.grid." + g.a11y; accessible-role: button;
+            compact: true; label: g.id;
+            selected: Create.grid == g.id;
+            tooltip: g.id == "1/4" ? @tr("A step is a quarter note: 32 steps make 8 bars")
+                : g.id == "1/8" ? @tr("A step is an eighth note: 32 steps make 4 bars")
+                : @tr("A step is a sixteenth note: 32 steps make 2 bars");
+            clicked => { Create.set-grid(g.id); }
+        }
+    }
+}
+
+// Typing: the field fills from step 1; what it replaces UNDO brings back.
+component TypeSteps inherits Field {
+    accessible-id: "create.arrange.type";
+    placeholder: @tr("TYPE: A3 C4 - E4");
+    accepted(t) => { Create.type-steps(t); }
+}
+
+component ArrangeEdit inherits VerticalLayout {
+    property <bool> two-rows;
+    init => { self.two-rows = self.width < 530px; }
+    changed width => { self.two-rows = self.width < 530px; }
+    spacing: Theme.s1;
+    HorizontalLayout {
+        spacing: Theme.s3;
+        EditKeys { horizontal-stretch: 0; }
+        if !root.two-rows: TypeSteps { horizontal-stretch: 1; min-width: 130px; max-width: 360px; }
+        Rectangle { horizontal-stretch: 1; }
+        GridKeys { horizontal-stretch: 0; }
+    }
+    if root.two-rows: TypeSteps { }
+}
+
+// [74] One line under the row: what typing could not read, or what typing
+// and REC do. One line, elided: a wrapping text here would be measured at
+// no width and stretch the zone.
+component ArrangeLine inherits HorizontalLayout {
+    property <bool> wrong: Create.typed-bad != "" || Create.typed-long;
+    spacing: Theme.s2;
+    height: 16px;
+    if root.wrong: VerticalLayout { alignment: center; FarMark { } }
+    Text {
+        accessible-role: text; accessible-id: "create.arrange.hint"; accessible-value: self.text;
+        horizontal-stretch: 1; min-width: 0px;
+        text: Create.typed-bad != "" ? @tr("Not read: {}. Each took its step as a rest.", Create.typed-bad)
+            : Create.typed-long ? @tr("Only 32 steps fit: the rest was left out.")
+            : Create.rec && Create.rec-mode == "grid" ? @tr("REC: each note lands on the nearest step of the master grid.")
+            : Create.rec && Create.rec-cursor >= 32 ? @tr("REC: the strip is full. Select a step to record from there.")
+            : Create.rec ? @tr("REC: each note fills the next step, now step {}.", Create.rec-cursor + 1)
+            : @tr("Typing replaces the strip from step 1: - is a rest, _ holds the note before.");
+        font-family: Theme.family; font-size: Theme.control;
+        color: root.wrong ? Theme.bone : Theme.bone-3;
+        vertical-alignment: center; overflow: elide;
+    }
+}
+
+// [74] ARRANGE under the pads.
+component Arrange inherits VerticalLayout {
+    spacing: Theme.s1;
+    ArrangeHead { }
+    ArrangeSteps { }
+    ArrangeEdit { }
+    ArrangeLine { }
+}
+
 // MELODY: SOURCE | NOTES | FITS.
 component MelodyView inherits HorizontalLayout {
     in property <bool> narrow;
@@ -887,7 +1274,7 @@ component MelodyView inherits HorizontalLayout {
             }
         }
     }
-    Zone {
+    ScrollZone {
         accessible-id: "create.melody.notes";
         horizontal-stretch: 1;
         title: @tr("NOTES");
@@ -899,17 +1286,7 @@ component MelodyView inherits HorizontalLayout {
         PadsHead { }
         PadRow { }
         PadsLine { }
-        HorizontalLayout {
-            spacing: Theme.s2;
-            Caps { text: @tr("ARRANGE"); vertical-alignment: center; }
-            Rectangle { horizontal-stretch: 1; }
-            PlateButton {
-                accessible-id: "create.notes.rec"; accessible-role: button;
-                horizontal-stretch: 0; compact: true; enabled: false; label: @tr("REC");
-                tooltip: @tr("Record the pads into the steps (comes with the arranger)");
-            }
-        }
-        SlotRow { legends: ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]; }
+        Arrange { }
     }
     // FITS folds away in a narrow window; THEORY has it too.
     if !root.narrow: Zone {
@@ -1038,7 +1415,11 @@ component ResultBar inherits Rectangle {
     property <string> summary: Create.view == "drums"
         ? @tr("No pattern yet. It shows here with its bars and tempo, ready to send to Perform or render as a loop.")
         : Create.view == "theory" ? @tr("THEORY only shows. What fits goes into MELODY.")
+        : Create.notes > 0 ? root.melody
         : @tr("No melody yet. It shows here with its notes, bars, tempo and cues, and whether the stick formats take it.");
+    // [74] The melody: "8 notes · 4 bars · 124.0 BPM".
+    property <string> melody: (Create.notes == 1 ? @tr("1 note") : @tr("{} notes", Create.notes))
+        + " · " + (Create.bars == 1 ? @tr("1 bar") : @tr("{} bars", Create.bars)) + " · " + Create.tempo + " BPM";
     // Only as tall as its line and its actions; the views take the rest.
     vertical-stretch: 0;
     VerticalLayout {

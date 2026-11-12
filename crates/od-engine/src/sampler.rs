@@ -48,10 +48,19 @@ pub struct Sampler {
     /// Last sequencer boundary triggered (16th-note index).
     last_step: f64,
     step: u8,
-    /// A voice outside the slots: CREATE's HEAR plays a picked note on it
-    /// once (its fades are in the sample), to the master or the cue.
-    audition: Slot,
+    /// Two voices outside the slots: CREATE plays a picked note on one of
+    /// them once (its fades are in the sample), to the master or the cue. A
+    /// new note starts on the other one while the old one fades out.
+    audition: [Slot; 2],
+    /// The voice that sounds now.
+    voice: usize,
     audition_cue: bool,
+    /// A note waiting for its beat of the master clock (CREATE's arrange
+    /// strip): the voice it is loaded on, the beat it starts on and the beat
+    /// it stops on.
+    audition_at: Option<(usize, f64, f64)>,
+    /// The beat the sounding note stops on.
+    audition_until: Option<f64>,
 }
 
 #[inline]
@@ -184,8 +193,11 @@ impl Sampler {
         };
         Self {
             slots: std::array::from_fn(|_| slot()),
-            audition: slot(),
+            audition: [slot(), slot()],
+            voice: 0,
             audition_cue: false,
+            audition_at: None,
+            audition_until: None,
             quantize: None,
             seq_playing: false,
             seq_recording: false,
@@ -316,37 +328,89 @@ impl Sampler {
             }
             SamplerCommand::SeqRecord(on) => self.seq_recording = on,
             SamplerCommand::Audition { sample, cue } => {
-                let a = &mut self.audition;
-                if let Some(old) = a.data.replace(sample) {
-                    ctx.dispose_sample(old);
-                }
-                a.tail.remaining = 0;
-                a.playing = false;
-                a.start();
+                let v = self.load_audition(sample, ctx);
+                self.audition[self.voice].stop();
+                self.audition[v].start();
+                self.voice = v;
+                self.audition_at = None;
+                self.audition_until = None;
+                self.audition_cue = cue;
+            }
+            SamplerCommand::AuditionAt { sample, cue, beat, until } => {
+                let v = self.load_audition(sample, ctx);
+                self.audition_at = Some((v, beat, until));
                 self.audition_cue = cue;
             }
             SamplerCommand::StopAudition => {
-                let a = &mut self.audition;
-                a.stop();
-                // The tail plays the last frames out over the declick fade.
+                // The tails play the last frames out over the declick fade.
+                self.audition.iter_mut().for_each(Slot::stop);
+                self.audition_at = None;
+                self.audition_until = None;
             }
         }
     }
 
-    /// Mixes the audition voice into the master (or, while it is on the
-    /// cue, into the cue only) at unity gain.
-    pub fn mix_audition(&mut self, master: &mut [f32], cue: &mut [f32]) {
-        let a = &mut self.audition;
-        if !a.playing && a.tail.remaining == 0 {
+    /// Loads `sample` on the audition voice that is not sounding (a note
+    /// waiting there is dropped) and returns it.
+    fn load_audition(&mut self, sample: Arc<SampleData>, ctx: &mut RtCtx) -> usize {
+        let v = 1 - self.voice;
+        let a = &mut self.audition[v];
+        if let Some(old) = a.data.replace(sample) {
+            ctx.dispose_sample(old);
+        }
+        a.tail.remaining = 0;
+        a.playing = false;
+        self.audition_at = None;
+        v
+    }
+
+    /// Mixes the audition voices into the master (or, while they are on
+    /// the cue, into the cue only) at unity gain. A waiting note starts on
+    /// its beat of `clock` and the sounding one stops on its own, sample
+    /// accurately.
+    pub fn mix_audition(&mut self, master: &mut [f32], cue: &mut [f32], clock: &BeatClock) {
+        if self.audition.iter().all(|a| !a.playing && a.tail.remaining == 0) && self.audition_at.is_none() {
             return;
         }
         let out = if self.audition_cue { cue } else { master };
-        a.render(out, 1.0, 1.0);
+        let n = out.len() / 2;
+        let timed = clock.beats_per_frame > 0.0 && clock.beats_per_frame.is_finite();
+        let at = |b: f64, cursor: usize| if timed { Self::offset_of(b, clock).max(cursor) } else { cursor };
+        let mut cursor = 0;
+        loop {
+            let start_off = self.audition_at.map_or(usize::MAX, |(_, b, _)| at(b, cursor));
+            let stop_off = self.audition_until.filter(|_| timed).map_or(usize::MAX, |b| at(b, cursor));
+            let ev = n.min(start_off).min(stop_off);
+            if ev > cursor {
+                let seg = &mut out[cursor * 2..ev * 2];
+                for a in &mut self.audition {
+                    if a.playing || a.tail.remaining > 0 {
+                        a.render(seg, 1.0, 1.0);
+                    }
+                }
+            }
+            if ev >= n {
+                break;
+            }
+            cursor = ev;
+            if stop_off == ev {
+                self.audition[self.voice].stop();
+                self.audition_until = None;
+            }
+            if start_off == ev
+                && let Some((v, _, until)) = self.audition_at.take()
+            {
+                self.audition[self.voice].stop();
+                self.audition[v].start();
+                self.voice = v;
+                self.audition_until = Some(until);
+            }
+        }
     }
 
-    /// The audition voice is playing.
+    /// An audition voice is playing, or a note waits for its beat.
     pub fn auditioning(&self) -> bool {
-        self.audition.playing
+        self.audition.iter().any(|a| a.playing) || self.audition_at.is_some()
     }
 
     /// Frames from the block start until beat `b` (rounded up), if within
