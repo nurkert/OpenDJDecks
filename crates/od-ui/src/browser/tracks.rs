@@ -849,6 +849,7 @@ fn refresh_list(app: &App) {
         super::Special::History(name) => (name.clone(), "history"),
         super::Special::Duplicates => (od_i18n::tr("Duplicate tracks").to_string(), "duplicates"),
         super::Special::Auto(key) => (super::auto::list_name(&b.auto.lists, key), "auto"),
+        super::Special::Created => (od_i18n::tr("Created").to_string(), "created"),
     });
     if b.special == Some(super::Special::Duplicates) {
         ui.set_duplicate_groups(

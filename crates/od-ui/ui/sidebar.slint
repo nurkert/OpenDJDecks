@@ -284,6 +284,8 @@ export component Sidebar inherits Rectangle {
     callback history-year-step(int);
     in property <int> tag-list-count;
     in property <int> similar-count;
+    // [76] Tracks rendered from CREATE.
+    in property <int> created-count;
     // AUTO SORT: groups (folder rows) and their lists, computed from the
     // analysis (browser::auto).
     in property <[TreeRow]> auto-sort;
@@ -366,6 +368,7 @@ export component Sidebar inherits Rectangle {
         if (self.selected-node == -1) { root.show(coll-h.y, coll-h.y + 2 * root.tree-row); }
         if (self.selected-node == -4) { root.show(rel-h.y, rel-h.y + 2 * root.tree-row); }
         if (self.selected-node == -3) { root.show(tag-h.y, tag-h.y + 2 * root.tree-row); }
+        if (self.selected-node == -6) { root.show(cre-h.y, cre-h.y + 2 * root.tree-row); }
     }
 
     VerticalLayout {
@@ -642,6 +645,15 @@ export component Sidebar inherits Rectangle {
                     item: { id: -3, name: @tr("Tag list"), kind: "taglist", count: root.tag-list-count };
                     selected: root.selected-node == -3 && root.section == "library";
                     clicked => { root.select-node(-3); }
+                }
+                // [76] CREATED: every track rendered from CREATE, newest
+                // first (marked in the library when it is rendered).
+                cre-h := Heading { label: @tr("CREATED"); }
+                TreeItem {
+                    label: "browser.tree.created";
+                    item: { id: -6, name: @tr("Created"), kind: "created", count: root.created-count };
+                    selected: root.selected-node == -6 && root.section == "library";
+                    clicked => { root.select-node(-6); }
                 }
                 // AUTO SORT: the collection sorted by its analysis — tempo,
                 // energy, mood, character and genre; a group opens on click.

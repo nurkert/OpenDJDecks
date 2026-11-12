@@ -552,6 +552,13 @@ const DE: &[(&str, &str)] = &[
     ("Rendered as a new track: {}. The file is in the library's created folder", "Als neuer Track gerendert: {}. Die Datei liegt im Ordner created der Bibliothek"),
     ("The render failed: {}", "Das Rendern ist fehlgeschlagen: {}"),
     ("Render notes", "Töne rendern"),
+    // [76] CREATE: the rendered file into playlists, the CREATED list, sticks.
+    ("Created", "Erstellt"),
+    ("Add to a new playlist", "Zu einer neuen Playlist hinzufügen"),
+    ("RENDER first: then the file goes into a playlist", "Zuerst RENDERN: Dann kommt die Datei in eine Playlist"),
+    ("The rendered track is no longer in the library: RENDER again", "Der gerenderte Track ist nicht mehr in der Bibliothek: RENDERE erneut"),
+    ("Added {} to {}. No registered stick syncs this list — ⌘Z to undo", "{} zu {} hinzugefügt. Kein registrierter Stick synchronisiert diese Liste — ⌘Z macht es rückgängig"),
+    ("Added {} to {}. It goes to {} with the next sync — ⌘Z to undo", "{} zu {} hinzugefügt. Beim nächsten Sync kommt er auf {} — ⌘Z macht es rückgängig"),
     ("Club mode on / off", "Club-Modus an / aus"),
     ("Load tracks on two decks", "Tracks auf zwei Decks laden"),
     (

@@ -16,6 +16,7 @@ use std::rc::Rc;
 pub(crate) const TAG_LIST: i32 = -3;
 pub(crate) const SIMILAR: i32 = -4;
 pub(crate) const DUPLICATES: i32 = -5;
+pub(crate) const CREATED: i32 = -6;
 pub(crate) const HISTORY_BASE: i32 = -2000;
 const HISTORY_MAX: usize = 900_000;
 
@@ -31,6 +32,7 @@ pub(crate) fn decode(id: i32, sessions: &[String]) -> Option<Special> {
         TAG_LIST => Some(Special::TagList),
         SIMILAR => Some(Special::Similar),
         DUPLICATES => Some(Special::Duplicates),
+        CREATED => Some(Special::Created),
         _ if id <= HISTORY_BASE && id > HISTORY_BASE - HISTORY_MAX as i32 => sessions
             .get((HISTORY_BASE - id) as usize)
             .cloned()
@@ -75,6 +77,7 @@ pub(crate) fn rows(
             lib,
             &duplicate_ids(&lib.find_duplicates().unwrap_or_default()),
         ),
+        Special::Created => lib.created_tracks().unwrap_or_default(),
     }
 }
 

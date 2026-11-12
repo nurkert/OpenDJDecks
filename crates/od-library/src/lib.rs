@@ -40,7 +40,7 @@ use std::cell::Cell;
 use std::path::{Path, PathBuf};
 
 /// Version 2 adds the `my_tag` table.
-pub const SCHEMA_VERSION: i64 = 5;
+pub const SCHEMA_VERSION: i64 = 6;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LibraryError {
@@ -219,6 +219,12 @@ impl Library {
             "CREATE TABLE IF NOT EXISTS drop_marker (
                 track_id INTEGER PRIMARY KEY REFERENCES track (id) ON DELETE CASCADE,
                 at       REAL    NOT NULL
+             );",
+        )?;
+        // Version 6: the tracks rendered from CREATE.
+        tx.execute_batch(
+            "CREATE TABLE IF NOT EXISTS created_track (
+                track_id INTEGER PRIMARY KEY REFERENCES track (id) ON DELETE CASCADE
              );",
         )?;
         tx.execute(

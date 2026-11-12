@@ -302,6 +302,8 @@ pub(crate) fn write(job: &Job) -> anyhow::Result<Made> {
     let path = file_path(&folder, &title);
     crate::track_edit::write_wav(&path, &audio, 2, job.rate)?;
     let id = crate::workers::import_file(&mut lib, &path)?;
+    // [76] The CREATED list: marked in the library, not by its tags.
+    lib.mark_created(id)?;
     let tags = od_core::TrackTags {
         title: title.clone(),
         artist: job.artist.clone(),

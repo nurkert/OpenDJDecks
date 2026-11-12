@@ -85,6 +85,13 @@ fn views() -> Vec<(&'static str, fn(&Ui))> {
             crate::create::stage_rendered(&u.app, u.fx.tracks[0].0);
             u.pump(400);
         }),
+        // [76] The CREATED list in Perform's browser (PREPARE's top bar is
+        // not part of the touch layout).
+        ("perform with the CREATED list", |u| {
+            crate::create::stage_created(&u.app, u.fx.tracks[0].0);
+            u.app.ui.invoke_set_mode("perform".into());
+            u.pump(400);
+        }),
     ]
 }
 

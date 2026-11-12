@@ -102,6 +102,11 @@ CREATE TABLE drop_marker (
     at       REAL    NOT NULL
 );
 
+-- Tracks rendered from CREATE: the CREATED list (schema 6).
+CREATE TABLE created_track (
+    track_id INTEGER PRIMARY KEY REFERENCES track (id) ON DELETE CASCADE
+);
+
 -- Folders, playlists, smart playlists and sets form one tree.
 CREATE TABLE node (
     id         INTEGER PRIMARY KEY,

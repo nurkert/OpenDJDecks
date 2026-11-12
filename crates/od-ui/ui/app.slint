@@ -467,6 +467,8 @@ export component AppWindow inherits Window {
     in property <[TreeRow]> auto-sort;
     in property <int> tag-list-count;
     in property <int> similar-count;
+    // [76] Tracks rendered from CREATE (the CREATED list).
+    in property <int> created-count;
     // Similar tracks list: "master" or the deck number it follows.
     in property <string> similar-source: "master";
     in-out property <bool> user-tag-open;
@@ -1017,6 +1019,7 @@ export component AppWindow inherits Window {
                         history-year-step(d) => { root.history-year-step(d); }
                         tag-list-count: root.tag-list-count;
                         similar-count: root.similar-count;
+                        created-count: root.created-count;
                         add-to-tag-list => { root.add-to-tag-list(); }
                         node-dropped(s, t) => { root.node-dropped(s, t); }
                         node-kind: root.node-kind;
@@ -1302,6 +1305,8 @@ export component AppWindow inherits Window {
                                 ? @tr("The tag list is empty. Collect tracks here with + next to TAG LIST or the row menu.")
                                 : root.node-kind == "duplicates"
                                 ? @tr("No duplicates: every track is in the collection once.")
+                                : root.node-kind == "created"
+                                ? @tr("Nothing rendered yet. Notes you RENDER in CREATE land here.")
                                 : root.filter.active
                                 ? @tr("No track matches the filter.")
                                 : @tr("No tracks here yet. Select tracks in All tracks and press + next to this list in the sidebar.");

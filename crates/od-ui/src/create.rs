@@ -51,6 +51,12 @@
 //! READY until the notes, tempo or layout change. The file goes to
 //! `created` beside the library and into the library as a track with its
 //! grid and cues. The choices are kept in `create.render`.
+//!
+//! [76] Rendered tracks are marked in the library and listed under CREATED
+//! in the browser. TO PLAYLIST (once READY) offers the browser's own
+//! add-to-playlist menu, or a new playlist, as one undo step; sticks get
+//! the file through the playlists they sync, like any track, and the
+//! status line says which.
 
 use crate::app::App;
 use crate::arrange::{self, Grid, Melody, STEPS};
@@ -544,6 +550,8 @@ pub(crate) fn wire(app: &std::rc::Rc<App>) {
     g.on_set_tempo_from(move |id| w(&|a| set_tempo_from(a, &id)));
     let w = with.clone();
     g.on_render_file(move || w(&render));
+    let w = with.clone();
+    g.on_to_playlist(move |id| w(&|a| to_playlist(a, id)));
     let w = with;
     g.on_type_note(move |t| {
         let ok = std::cell::Cell::new(false);
@@ -2244,6 +2252,71 @@ fn poll_render(app: &App) {
     show_result(app);
 }
 
+// ── [76] Into the set ───────────────────────────────────────────────────
+
+/// The file RENDER made for what RESULT shows now (READY), if any.
+fn ready(app: &App) -> Option<create_render::Made> {
+    let sig = render_sig(app);
+    app.create.borrow().made.as_ref().filter(|(s, _)| *s == sig).map(|(_, m)| m.clone())
+}
+
+/// TO PLAYLIST: the track READY into playlist or set `id`, or into a new
+/// playlist named after it (`id` 0), as one undo step. The status line
+/// says which registered sticks get it with their next sync.
+pub(crate) fn to_playlist(app: &App, id: i32) {
+    if app.guard_read_only() {
+        return;
+    }
+    let Some(made) = ready(app) else {
+        app.status(od_i18n::tr("RENDER first: then the file goes into a playlist").to_string());
+        return;
+    };
+    if app.state.borrow().lib.track(made.track).is_err() {
+        app.status(od_i18n::tr("The rendered track is no longer in the library: RENDER again").to_string());
+        return;
+    }
+    let node = if id > 0 {
+        let node = od_library::NodeId(i64::from(id));
+        let r = app.state.borrow_mut().lib.add_to_node(node, &[made.track], None);
+        app.report(r).map(|()| node)
+    } else {
+        let r = app.state.borrow_mut().lib.edit_with("Add to a new playlist", |l| {
+            let node = l.new_node(None, od_library::NodeKind::Playlist, &made.title)?;
+            let id = node.id;
+            let tree = od_library::Subtree {
+                nodes: vec![node],
+                entries: vec![(id, vec![od_library::Entry::new(made.track)])],
+                device_links: vec![],
+            };
+            Ok((vec![od_library::EntityState::Subtree { root: id, tree: Some(tree) }], id))
+        });
+        app.report(r)
+    };
+    let Some(node) = node else { return };
+    crate::browser::remember_recent_list(app, node);
+    app.after_edit(&placed(app, node, &made.title));
+}
+
+/// What adding `title` to `node` did, and whether a registered stick gets
+/// it: the sticks that sync the list, by name.
+fn placed(app: &App, node: od_library::NodeId, title: &str) -> String {
+    let st = app.state.borrow();
+    let name = st.lib.node(node).map(|n| n.name).unwrap_or_default();
+    let sticks: Vec<String> = st
+        .lib
+        .devices()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|d| st.lib.device_node_closure(d.id).is_ok_and(|c| c.contains(&node)))
+        .map(|d| d.name)
+        .collect();
+    if sticks.is_empty() {
+        od_i18n::trf("Added {} to {}. No registered stick syncs this list — ⌘Z to undo", &[&title, &name])
+    } else {
+        od_i18n::trf("Added {} to {}. It goes to {} with the next sync — ⌘Z to undo", &[&title, &name, &sticks.join(", ")])
+    }
+}
+
 /// The last file rendered (tests).
 #[cfg(test)]
 pub(crate) fn made(app: &App) -> Option<create_render::Made> {
@@ -2362,6 +2435,16 @@ pub(crate) fn stage_rendered(app: &App, track: TrackId) {
     show_result(app);
 }
 
+/// [76] `track` marked as rendered from CREATE, and the CREATED list open
+/// in PREPARE.
+#[cfg(test)]
+pub(crate) fn stage_created(app: &App, track: TrackId) {
+    let _ = app.state.borrow_mut().lib.mark_created(track);
+    app.ui.invoke_set_mode("prepare".into());
+    app.ui.invoke_select_section("library".into());
+    app.ui.invoke_select_node(crate::browser::CREATED);
+}
+
 /// Documentation screenshots (`OPENDJDECKS_DEMO_PROOF`, comma separated),
 /// on the demo library with the decks loaded by `OPENDJDECKS_AUTOLOAD`:
 /// `create-note` opens MELODY and picks a note from deck 1;
@@ -2372,7 +2455,9 @@ pub(crate) fn stage_rendered(app: &App, track: TrackId) {
 /// `create-melody` types a melody into the strip and selects a step;
 /// `create-melody-rec` arms REC as well; `create-melody-play` plays the
 /// strip in a loop; `create-render-single` chooses SINGLE NOTES and
-/// `create-render` renders the strip into a new file (READY).
+/// `create-render` renders the strip into a new file (READY); then
+/// `create-to-playlist` opens TO PLAYLIST's menu, or `create-created-list`
+/// opens the CREATED list in PREPARE.
 pub(crate) fn demo(app: &std::rc::Rc<App>) {
     let Some(v) = od_core::env::var("DEMO_PROOF") else { return };
     let parts: Vec<String> = v.split(',').map(str::to_string).collect();
@@ -2415,6 +2500,25 @@ pub(crate) fn demo(app: &std::rc::Rc<App>) {
         if parts.iter().any(|p| p == "create-render") {
             render(&a);
         }
+        // Once the render is in.
+        let weak = std::rc::Rc::downgrade(&a);
+        slint::Timer::single_shot(Duration::from_secs(8), move || {
+            let Some(a) = weak.upgrade() else { return };
+            if parts.iter().any(|p| p == "create-to-playlist") {
+                let g = a.ui.global::<crate::Create>();
+                g.set_open_picker(g.get_open_picker() + 1);
+            }
+            if parts.iter().any(|p| p == "create-created-list") {
+                a.ui.invoke_set_mode("prepare".into());
+                // Once PREPARE's tree is laid out, so it scrolls to the row.
+                let weak = std::rc::Rc::downgrade(&a);
+                slint::Timer::single_shot(Duration::from_secs(1), move || {
+                    if let Some(a) = weak.upgrade() {
+                        a.ui.invoke_select_node(crate::browser::CREATED);
+                    }
+                });
+            }
+        });
     });
 }
 
