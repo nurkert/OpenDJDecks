@@ -632,6 +632,7 @@ mod tests {
             page_url: "https://github.com/nurkert/OpenDJDecks/releases/tag/v0.2.0".into(),
             asset: None,
             sums: None,
+            sums_sig: None,
             strategy: Strategy::OpenReleasePage,
         }
     }

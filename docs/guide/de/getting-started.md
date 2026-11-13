@@ -31,6 +31,17 @@ Das sind vorsichtige Angaben von einem gemessenen Rechner. Langsamere Rechner, �
 
 Die Oberfläche ist Deutsch oder Englisch und folgt deinem System. Selbst wählen kannst du sie unter **Einstellungen** (Zahnrad oben oder `⌘,` auf dem Mac und `Strg+,` auf Windows und Linux), dann **Ansicht › Sprache**.
 
+### Einen Download kontrollieren
+
+Jedes Release enthält `SHA256SUMS.txt` mit den Prüfsummen aller Dateien und `SHA256SUMS.txt.sig`, eine Signatur über diese Liste, gemacht mit dem Release-Schlüssel des Projekts. Ab 0.11.0 prüft die App beides, bevor sie ein Update installiert, und installiert kein Release, dessen Liste nicht mit diesem Schlüssel signiert ist. Um einen Download selbst zu prüfen, ohne dem Download-Server vertrauen zu müssen, brauchst du OpenSSL 3 oder neuer und den öffentlichen Schlüssel von dieser Website, [release-key.pub.pem](/release-key.pub.pem). Lege die drei Dateien neben deinen Download und führe aus:
+
+```sh
+openssl pkeyutl -verify -rawin -pubin -inkey release-key.pub.pem -in SHA256SUMS.txt -sigfile SHA256SUMS.txt.sig
+shasum -a 256 -c SHA256SUMS.txt --ignore-missing
+```
+
+Die erste Zeile muss `Signature Verified Successfully` ausgeben, die zweite `OK` hinter deiner Datei. Unter Linux macht `sha256sum -c` dasselbe wie `shasum -a 256 -c`; unter Windows gibt `certutil -hashfile`, gefolgt vom Dateinamen und `SHA256`, die Prüfsumme aus, die du mit der Liste vergleichst.
+
 ## 2. Musik hinzufügen
 
 Die App verweist auf deine Musik dort, wo sie schon liegt. Dateien werden nie kopiert oder verändert.

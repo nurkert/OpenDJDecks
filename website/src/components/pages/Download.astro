@@ -290,6 +290,8 @@ const hasCreate = major > 0 || minor >= 10;
           <p class="dl__foot">
             <a href={releasesUrl}>{d.allReleases}</a>
             {release.checksumsUrl && <a href={release.checksumsUrl}>{d.checksums}</a>}
+            {release.signatureUrl && <a href={release.signatureUrl}>{d.signature}</a>}
+            {release.signatureUrl && <a href={`${guideHref('getting-started', lang)}#${d.verifyAnchor}`}>{d.verify}</a>}
           </p>
         )
       }

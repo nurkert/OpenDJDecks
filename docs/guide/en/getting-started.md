@@ -31,6 +31,17 @@ These are cautious figures from one measured computer. Slower computers, older s
 
 The interface is in English or German and follows your system. To choose it yourself, open **Preferences** (the gear at the top, or `⌘,` on the Mac and `Ctrl+,` on Windows and Linux), then **View › Language**.
 
+### Checking a download
+
+Every release carries `SHA256SUMS.txt`, the checksums of all its files, and `SHA256SUMS.txt.sig`, a signature over that list made with the project's release key. From 0.11.0 on the app checks both before it installs an update and does not install a release whose list is not signed with that key. To check a download yourself, without having to trust the download host, you need OpenSSL 3 or newer and the public key from this website, [release-key.pub.pem](/release-key.pub.pem). Put the three files next to your download and run:
+
+```sh
+openssl pkeyutl -verify -rawin -pubin -inkey release-key.pub.pem -in SHA256SUMS.txt -sigfile SHA256SUMS.txt.sig
+shasum -a 256 -c SHA256SUMS.txt --ignore-missing
+```
+
+The first line must print `Signature Verified Successfully`, the second `OK` after your file. On Linux, `sha256sum -c` does the same as `shasum -a 256 -c`; on Windows, `certutil -hashfile` followed by the file name and `SHA256` prints the checksum to compare with the list.
+
 ## 2. Add your music
 
 The app references your music where it already lies. Files are never copied or changed.

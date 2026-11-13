@@ -1,6 +1,6 @@
 [package]
 name = "od-update"
-description = "Update check and installer for OpenDJDecks (GitHub releases, SHA-256 verified)"
+description = "Update check and installer for OpenDJDecks (GitHub releases, signed and SHA-256 verified)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -12,6 +12,8 @@ serde.workspace = true
 serde_json.workspace = true
 semver = "1"
 sha2 = "0.10"
+# Ed25519 for the signed checksum list; already built for rustls.
+ring = "0.17"
 # rustls (ureq's default TLS) with bundled roots: no system TLS library needed.
 ureq = "3"
 
