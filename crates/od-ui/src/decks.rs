@@ -685,7 +685,16 @@ pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Opti
         confidence: analysis.confidence,
     };
     let read_only = st.read_only();
+    // A library track without a current analysis: analysed now, even while
+    // other decks play (the automatic batch waits then), so the deck gets its
+    // waveform, grid and key ([`refresh_analysis`]).
+    let analyse = st.browser.stick.is_none()
+        && !read_only
+        && t.analysis_version < od_analysis::ANALYSIS_VERSION;
     drop(st);
+    if analyse {
+        request_analysis(app, track);
+    }
     app.ui
         .set_engine_message(format!("Loading {} …", meta.title).into());
     // Tracks from a stick use the parts separated on the desktop and carried
@@ -1166,6 +1175,22 @@ pub(crate) fn redraw_overviews(app: &App) {
         );
         d.views.lanes[i].track = None;
     }
+}
+
+/// Asks the analysis worker for `track` first, also while decks play and when
+/// automatic analysis is off.
+pub(crate) fn request_analysis(app: &App, track: TrackId) {
+    {
+        let mut c = app
+            .analysis
+            .control
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        if !c.requested.contains(&track) {
+            c.requested.push(track);
+        }
+    }
+    let _ = app.analysis.wake.send(());
 }
 
 /// After analysis: tracks that were loaded before their analysis existed

@@ -8343,7 +8343,7 @@ mode = "perform"
 source = "Roadmap [30]"
 sizes = ["desktop"]
 bands = ["deck-row", "global"]
-features = ["deck-reverse", "deck-cut-in", "mixer-split-cue", "mixer-crossfader-curve-key"]
+features = ["deck-reverse", "deck-cut-in", "mixer-split-cue", "mixer-crossfader-curve-key", "mixer-crossfader-toggle"]
 note = "Where six keys fit the platter's height (1440 × 900 and larger) its key block holds REV, the setup keys and CUT IN; shorter decks keep the four setup keys. SPLIT stands after the PHONES knobs, the curve key right of the B assign keys (from 1000 px)"
 
 [[view.region]]

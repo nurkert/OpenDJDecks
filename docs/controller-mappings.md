@@ -204,6 +204,7 @@ release.
 | `crossfader`, `master_level`, `booth_level`, `headphone_mix`, `headphone_level` | absolute | | |
 | `master_cue` | press | | |
 | `split_cue` | press | | `SplitCue`: split cue on / off (the cue in mono on the left, the master in mono on the right) |
+| `crossfader_toggle` | press | | `CrossfaderToggle`: crossfader on / off (off: every channel plays wherever the crossfader stands) |
 | `crossfader_curve` | press | optional `curve` = `constant_power` / `linear` / `cut` | `CrossfaderCurve(curve)`: sets the curve, or steps to the next one without `curve`; the same setting as Preferences › Controller › Mixer |
 | `eq_swap` | press | `band` = `low` / `mid` / `high` | `EqSwap(band)`: swaps that band (knob and kill) between the two decks being mixed, at the swap timing set on the mixer (now, next beat, next bar); a second press while it waits cancels it |
 | `tempo_fx.toggle`, `tempo_fx.beat_down`, `tempo_fx.beat_up`, `tempo_fx.auto_beat`, `tempo_fx.tap`, `tempo_fx.select_next`, `tempo_fx.select_prev` | press | `unit` (default 1) | |

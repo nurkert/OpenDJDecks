@@ -5,7 +5,7 @@ use crate::action::{ControlAction, DeckAction, ParamTarget};
 use crate::device_module::{DeviceModule, ModuleContext, module_for};
 use crate::feedback::ControlFeedback;
 use crate::mapping::{InputMode, LayerMode, Mapping};
-use crate::midi::MidiMessage;
+use crate::midi::{MidiMessage, MsgKind};
 use crate::output::OutputEngine;
 use crate::takeover::SoftTakeover;
 use crate::templates::InputValue;
@@ -43,7 +43,14 @@ pub struct ControllerSession {
     /// Active deck per side (from `[layers]`).
     active: HashMap<u8, u8>,
     keepalive_due: Vec<Option<Instant>>,
+    /// The last deck message (status kind, number, value, side, deck, when)
+    /// for [`Self::is_mirror`].
+    last_deck_button: Option<(u8, u8, u8, usize, u8, Instant)>,
 }
+
+/// How close a copy of a button for the other deck of the same side must
+/// follow to count as the hardware's mirror ([`ControllerSession::is_mirror`]).
+const MIRROR_WINDOW: Duration = Duration::from_millis(15);
 
 impl ControllerSession {
     pub fn new(mapping: Arc<Mapping>) -> Self {
@@ -67,6 +74,7 @@ impl ControllerSession {
             msb: HashMap::new(),
             shift: HashMap::new(),
             active,
+            last_deck_button: None,
         }
     }
 
@@ -135,6 +143,9 @@ impl ControllerSession {
         let Some((addr, value)) = res.message.as_ref().and_then(MidiMessage::addr_value) else {
             return res;
         };
+        if addr.kind == MsgKind::Note {
+            self.output.touched(addr);
+        }
         for &idx in mapping.inputs_at(addr) {
             let b = &mapping.inputs[idx];
             let iv = match b.mode {
@@ -172,6 +183,18 @@ impl ControllerSession {
             let Some(action) = b.template.produce(deck, iv) else {
                 continue;
             };
+            if !matches!(action, ControlAction::Mixer { .. })
+                && let Some(slot) = b.slot
+                && self.is_mirror(bytes, slot)
+            {
+                res.hits.push(MappingHit {
+                    binding: b.name.clone(),
+                    action: Some(action),
+                    suppressed: Some("same button on the other deck of this side"),
+                    verify: b.verify,
+                });
+                continue;
+            }
             if b.template.is_shift
                 && let (Some(slot), InputValue::Button { pressed, .. }) = (b.slot, iv)
             {
@@ -208,6 +231,35 @@ impl ControllerSession {
             self.module.on_action(&ctx, a, &mut res.actions);
         }
         res
+    }
+
+    /// Whether this deck message is the copy a four-deck unit with hardware
+    /// layers sends for the other deck of the same side: the DDJ-FLX10 sends
+    /// SHIFT combinations, and in some states every button and jog step, on
+    /// both deck channels of a side at once (captured on the owner's unit,
+    /// active deck first). Only the first one counts; mixer controls are never
+    /// mirrors.
+    fn is_mirror(&mut self, bytes: &[u8], deck: u8) -> bool {
+        let Some(layers) = &self.mapping.file.layers else {
+            return false;
+        };
+        if layers.mode != LayerMode::Hardware || bytes.len() < 3 {
+            return false;
+        }
+        let Some(side) = layers.sides.iter().position(|s| s.contains(&deck)) else {
+            return false;
+        };
+        let now = Instant::now();
+        let (kind, note, value) = (bytes[0] & 0xF0, bytes[1], bytes[2]);
+        let mirror = self.last_deck_button.is_some_and(|(k, n, v, s, d, t)| {
+            (k, n, v, s) == (kind, note, value, side)
+                && d != deck
+                && now.duration_since(t) <= MIRROR_WINDOW
+        });
+        if !mirror {
+            self.last_deck_button = Some((kind, note, value, side, deck, now));
+        }
+        mirror
     }
 
     /// Makes `deck` the active deck of its side.

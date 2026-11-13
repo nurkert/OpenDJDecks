@@ -424,6 +424,43 @@ fn scratch_follows_jog() {
     assert!((st.speed - 1.0).abs() < 1e-9);
 }
 
+/// A spinback: the platter is let go while it still spins backwards; the
+/// track follows it until it stops sending, then plays on.
+#[test]
+fn spinback_follows_the_platter_after_letting_go() {
+    let mut rig = Rig::new(2);
+    rig.deck(0, DeckCommand::Load(ramp_track(1, 30.0, 120.0)));
+    rig.deck(0, DeckCommand::Seek { seconds: 10.0 });
+    rig.deck(0, DeckCommand::Play);
+    rig.deck(0, DeckCommand::JogTouch(true));
+    // Spin backwards: a quarter revolution per 10 ms block.
+    for _ in 0..10 {
+        rig.deck(0, DeckCommand::JogTurn(-0.25));
+        rig.render(10);
+    }
+    let p0 = rig.state().decks[0].position;
+    rig.deck(0, DeckCommand::JogTouch(false));
+    // Still spinning after the hand is off: the track keeps going back.
+    for _ in 0..10 {
+        rig.deck(0, DeckCommand::JogTurn(-0.2));
+        rig.render(10);
+    }
+    let st = rig.state().decks[0];
+    assert!(st.scratching, "spinning out");
+    assert!(st.position < p0 - 2.0, "p0 {p0} now {}", st.position);
+    // The platter stopped: normal play again.
+    rig.render(300);
+    let st = rig.state().decks[0];
+    assert!(st.playing && !st.scratching);
+    assert!((st.speed - 1.0).abs() < 1e-9);
+    // Letting go of a platter held still (the usual scratch) plays at once.
+    rig.deck(0, DeckCommand::JogTouch(true));
+    rig.render(50);
+    rig.deck(0, DeckCommand::JogTouch(false));
+    rig.render(10);
+    assert!(!rig.state().decks[0].scratching);
+}
+
 #[test]
 fn eq_kill_attenuates_more_than_40db() {
     let mut rig = Rig::new(2);
@@ -516,6 +553,18 @@ fn crossfader_assign_and_curves() {
     rig.send(Command::Mixer(MixerCommand::SetCrossfader(1.0)));
     rig.render(10);
     assert_eq!(rig.state().channels[0].gain_to_master, 1.0);
+
+    // Crossfader off: deck 2 on B plays fully with the crossfader on A, and
+    // back on, the crossfader counts again.
+    rig.send(Command::Mixer(MixerCommand::SetCrossfader(-1.0)));
+    rig.send(Command::Mixer(MixerCommand::SetCrossfaderOn(false)));
+    rig.render(10);
+    let st = rig.state();
+    assert!(!st.crossfader_on);
+    assert_eq!(st.channels[1].gain_to_master, 1.0);
+    rig.send(Command::Mixer(MixerCommand::SetCrossfaderOn(true)));
+    rig.render(10);
+    assert!(rig.state().channels[1].gain_to_master.abs() < 1e-6);
 }
 
 #[test]

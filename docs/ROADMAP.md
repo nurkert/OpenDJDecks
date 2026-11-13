@@ -60,7 +60,7 @@ These come first because every later screen builds on them.
 
 These need the real devices. They do not hold up any release: until one is confirmed, the release notes and guides say it is unconfirmed.
 
-- [ ] **[H1] Controller mappings** confirmed on a real DDJ-FLX10, with unconfirmed entries resolved.
+- [ ] **[H1] Controller mappings** confirmed on a real DDJ-FLX10, with unconfirmed entries resolved. Started on the owner's unit on 2026-11-13: 12 controls confirmed (browsing, LOAD, PLAY, headphone CUE, channel fader, platter, deck switch); the unit's habit of sending a control for both decks of a side is handled, a controller plugged in while the app runs is found, the physical fader position wins after connecting and the platter resolution was measured. Stems buttons, pads in their modes and the LEDs are still to check.
 - [ ] **[H2] Club player USB** confirmed on real players, including the WAV conversion for older ones.
 - [ ] **[H3] Several sticks at once** and eject confirmed on physical sticks.
 

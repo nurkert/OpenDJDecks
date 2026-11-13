@@ -13,13 +13,13 @@ When you move a knob after a preset jumped, soft takeover makes sure the value o
 
 ## Controller list
 
-Which controllers OpenDJDecks knows and how far each is confirmed. A model counts as **verified** only when every one of its controls has been confirmed on a real unit with OpenDJDecks. None has been yet, so every row says **not confirmed**. Vendor and model names only say which hardware a mapping is meant to be compatible with.
+Which controllers OpenDJDecks knows and how far each is confirmed. A model counts as **verified** only when every one of its controls has been confirmed on a real unit with OpenDJDecks. None has been yet: the DDJ-FLX10 row says **partly confirmed** for the controls checked on one unit, the others say **not confirmed**. Vendor and model names only say which hardware a mapping is meant to be compatible with.
 
 <!-- controller-list:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->
 
 | Controller | Decks | Mapping | Recognised by | Status |
 |---|---|---|---|---|
-| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | not confirmed: 0 verified, 125 partial, 135 untested |
+| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 12 verified, 117 partial, 147 untested |
 | compatible with DDJ-FLX4 | 2 | built in | MIDI port name `DDJ-FLX4` | not confirmed: 0 verified, 126 partial, 47 untested |
 | Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (46 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
 | Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (44 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
@@ -32,7 +32,7 @@ Any other controller can be set up with the guided setup below, from one of thre
 
 ![The controller setup under the top bar, asking for the tempo fader of deck 1](../img/controller-setup.png)
 
-For a controller without a mapping, press **SET UP A CONTROLLER** in **Preferences › Controller** (or **View › Controller Setup**). A band opens under the top bar:
+For a controller without a mapping, press **SET UP A CONTROLLER** in **Preferences › Controller** (or **View › Controller Setup**). When you plug in a MIDI device OpenDJDecks has no mapping for, the status line names it and points here (not in CREATE, where a MIDI keyboard plays as it is). A band opens under the top bar:
 
 1. Connect the controller by USB and choose what it is closest to: **2 DECKS · ENTRY LEVEL**, **2 DECKS · BATTLE** or **4 DECKS**. Press **START**.
 2. The band asks for one control at a time: PLAY, CUE and SYNC, the jog wheel (touch, then turn), the tempo fader and LOAD of each deck, then the hot cue pads, the channel faders, TRIM and the EQ knobs, headphone CUE, the crossfader, the browse knob and the master and headphone levels. The matching control on screen gets the guide outline.
@@ -81,33 +81,33 @@ Each mapped control has one of three states:
 - **partial**: the MIDI message comes from a public source, another project's working mapping, but nobody has tried it with OpenDJDecks on a unit yet.
 - **untested**: there is no public source and no confirmation yet (`verify = true` in the mapping file).
 
-No control is verified yet: the checks on real units are still open. For the four-deck mapping, the public source covers related models of the same family. The list below is generated from the mapping files, so it changes with them. The self-test above is how you find out for your own unit.
+A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, headphone CUE, the channel fader, the platter and the deck switch. The other checks on real units are still open. For the four-deck mapping, the public source covers related models of the same family. The list below is generated from the mapping files, so it changes with them. The self-test above is how you find out for your own unit.
 
 <!-- hardware-status:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->
 
 | Model | Controls | Verified | Partial | Untested |
 |---|---|---|---|---|
-| DDJ-FLX10 | 260 | 0 | 125 | 135 |
+| DDJ-FLX10 | 276 | 12 | 117 | 147 |
 | DDJ-FLX4 | 173 | 0 | 126 | 47 |
 
 ### DDJ-FLX10
 
 | Control | Kind | Status |
 |---|---|---|
-| Browse rotate | input | untested |
-| Browse rotate (shift) | input | untested |
+| Browse rotate | input | verified |
+| Browse rotate (shift) | input | verified |
 | Browse press | input | untested |
-| Back | input | partial |
+| Back | input | verified |
 | Back (shift) | input | untested |
 | Browse view | input | partial |
 | Browse view (long press) | input | untested |
 | Browse view (shift) | input | untested |
-| Load deck 1 | input | partial |
-| Load deck 2 | input | partial |
+| Load deck 1 | input | verified |
+| Load deck 2 | input | verified |
 | Load deck 3 | input | partial |
 | Load deck 4 | input | partial |
-| Deck select | input | untested |
-| Play/Pause | input | partial |
+| Deck select | input | verified |
+| Play/Pause | input | verified |
 | Play/Pause (shift) | input | untested |
 | Cue | input | partial |
 | Cue (shift) | input | untested |
@@ -137,16 +137,16 @@ No control is verified yet: the checks on real units are still open. For the fou
 | Memory cue call back (shift) | input | partial |
 | Memory cue call forward (shift) | input | partial |
 | Mix point / part buttons | input | partial |
-| Mix point / part buttons 1 | input | partial |
-| Mix point / part buttons 2 | input | partial |
-| Mix point / part buttons 3 | input | partial |
+| Stem button 1 | input | untested |
+| Stem button 2 | input | untested |
+| Stem button 3 | input | untested |
 | Tempo fader | input | untested |
 | Tempo fader (shift) | input | untested |
-| Jog touch | input | untested |
+| Jog touch | input | verified |
 | Jog touch (shift) | input | untested |
 | Jog scratch | input | untested |
-| Jog top bend | input | untested |
-| Jog side bend | input | untested |
+| Jog top bend | input | verified |
+| Jog side bend | input | verified |
 | Jog search (shift) | input | untested |
 | Loop in | input | partial |
 | Loop in (loop active) | input | untested |
@@ -162,14 +162,14 @@ No control is verified yet: the checks on real units are still open. For the fou
 | Part isolator vocals | input | untested |
 | Part isolator inst | input | untested |
 | Part isolator drums | input | untested |
-| Channel fader | input | untested |
+| Channel fader | input | verified |
 | CH FX knob | input | partial |
 | Crossfader | input | untested |
 | Master level | input | untested |
 | Booth level | input | untested |
 | Headphone mix | input | untested |
 | Headphone level | input | untested |
-| Headphone cue | input | partial |
+| Headphone cue | input | verified |
 | Headphone cue (shift) | input | untested |
 | Master cue | input | untested |
 | Master cue (shift) | input | untested |
@@ -287,6 +287,14 @@ No control is verified yet: the checks on real units are still open. For the fou
 | Sampler pad 6 | input | untested |
 | Sampler pad 7 | input | untested |
 | Sampler pad 8 | input | untested |
+| Sampler pad 9 | input | untested |
+| Sampler pad 10 | input | untested |
+| Sampler pad 11 | input | untested |
+| Sampler pad 12 | input | untested |
+| Sampler pad 13 | input | untested |
+| Sampler pad 14 | input | untested |
+| Sampler pad 15 | input | untested |
+| Sampler pad 16 | input | untested |
 | Sampler pad (shift) 1 | input | untested |
 | Sampler pad (shift) 2 | input | untested |
 | Sampler pad (shift) 3 | input | untested |
@@ -295,6 +303,14 @@ No control is verified yet: the checks on real units are still open. For the fou
 | Sampler pad (shift) 6 | input | untested |
 | Sampler pad (shift) 7 | input | untested |
 | Sampler pad (shift) 8 | input | untested |
+| Sampler pad (shift) 9 | input | untested |
+| Sampler pad (shift) 10 | input | untested |
+| Sampler pad (shift) 11 | input | untested |
+| Sampler pad (shift) 12 | input | untested |
+| Sampler pad (shift) 13 | input | untested |
+| Sampler pad (shift) 14 | input | untested |
+| Sampler pad (shift) 15 | input | untested |
+| Sampler pad (shift) 16 | input | untested |
 | Keyboard pad 1 | input | untested |
 | Keyboard pad 2 | input | untested |
 | Keyboard pad 3 | input | untested |

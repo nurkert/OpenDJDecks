@@ -178,9 +178,18 @@ impl AnalysisWorker {
                     let (opts, detect_key, auto_cues, todo) = {
                         let mut c = control2.lock().unwrap_or_else(|e| e.into_inner());
                         let requested = std::mem::take(&mut c.requested);
+                        // Asked-for tracks (a deck loaded them) come first.
                         let todo = if c.auto && !hold {
-                            lib.tracks_needing_analysis(od_analysis::ANALYSIS_VERSION)
+                            let mut todo = requested;
+                            for id in lib
+                                .tracks_needing_analysis(od_analysis::ANALYSIS_VERSION)
                                 .unwrap_or_default()
+                            {
+                                if !todo.contains(&id) {
+                                    todo.push(id);
+                                }
+                            }
+                            todo
                         } else {
                             requested
                         };
@@ -200,13 +209,28 @@ impl AnalysisWorker {
                     let mut done = 0;
                     // The cue pattern, learned once per batch when needed.
                     let mut pattern: Option<Option<od_library::autocue::CuePattern>> = None;
-                    for chunk in todo.chunks(threads * 2) {
+                    let per = threads * 2;
+                    for (n, chunk) in todo.chunks(per).enumerate() {
                         if stop2.load(Ordering::Relaxed) {
                             return;
                         }
-                        // Decks started: an automatic batch stops here.
+                        // Decks started: an automatic batch stops here. So
+                        // does any batch when a deck asks for a track: it is
+                        // taken first in the next round.
                         if !hold && paused2.load(Ordering::Relaxed) {
                             break;
+                        }
+                        if done > 0 {
+                            let mut c = control2.lock().unwrap_or_else(|e| e.into_inner());
+                            if !c.requested.is_empty() {
+                                // The rest of this batch follows them.
+                                for id in &todo[n * per..] {
+                                    if !c.requested.contains(id) {
+                                        c.requested.push(*id);
+                                    }
+                                }
+                                break;
+                            }
                         }
                         let paths: Vec<_> = chunk
                             .iter()

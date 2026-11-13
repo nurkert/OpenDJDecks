@@ -289,7 +289,7 @@ fn jog_relative_values() {
             [0x90, 0x36, 0x00], // release
             [0xB1, 0x21, 0x3E], // side ring -2 on deck 2
             [0xB1, 0x23, 0x41], // top +1 untouched
-            [0xB0, 0x29, 0x42], // shift: search +2 (× module gain 8)
+            [0xB0, 0x29, 0x42], // shift: search +2 (the app speeds search up)
             [0xB0, 0x22, 0x40], // zero movement: nothing
         ],
     );
@@ -329,7 +329,7 @@ fn jog_relative_values() {
             deck(
                 1,
                 DeckAction::JogTurn {
-                    ticks: 16,
+                    ticks: 2,
                     mode: JogMode::Search
                 }
             ),
@@ -499,9 +499,29 @@ fn ignored_controls_produce_ignored() {
 
 // ------------------------------------------------------------------ soft takeover
 
+/// [H1] On the owner's DDJ-FLX10 the software had channel 1 open while the
+/// physical fader was down: the first fader message closes the channel at
+/// once instead of waiting until the fader is pushed all the way up.
+#[test]
+fn flx10_fader_position_wins_after_connecting() {
+    let mut s = flx10();
+    s.feedback(&ControlFeedback::Parameter {
+        target: ParamTarget::Fader { channel: 1 },
+        value: 1.0,
+    });
+    let a = feed(&mut s, &[[0xB0, 0x13, 0x00], [0xB0, 0x33, 0x05]]);
+    assert_eq!(a.len(), 1, "{a:?}");
+    assert!(matches!(
+        a[0],
+        ControlAction::Mixer { channel: 1, action: MixerAction::Fader(v) } if v < 0.01
+    ));
+}
+
 #[test]
 fn soft_takeover_on_knob() {
     let mut s = flx4();
+    // The knob reports where it is (0.09), then the software moves the value.
+    assert_eq!(feed(&mut s, &[[0xB0, 0x07, 0x0C], [0xB0, 0x27, 0x00]]).len(), 1);
     s.feedback(&ControlFeedback::Parameter {
         target: ParamTarget::EqHigh { channel: 1 },
         value: 0.5,
@@ -602,6 +622,11 @@ fn software_deck_layers_redirect_inputs_and_outputs() {
     assert_eq!(
         feed(&mut s, &[[0x90, 0x01, 0x7F]]),
         vec![deck(1, DeckAction::PlayPause)]
+    );
+    // The pressed button's LED goes out again with deck 1's state.
+    assert_eq!(
+        s.poll_output(t0 + Duration::from_millis(5)),
+        vec![vec![0x90, 0x01, 0x00]]
     );
 
     // Deck 3 plays while hidden: nothing is sent.
@@ -846,12 +871,29 @@ fn the_published_hardware_status_matches_the_mapping_files() {
              cargo run -p od-controller --example hardware_status -- --write"
         );
     }
-    // Nothing is confirmed on a unit yet; a confirmation is a deliberate
-    // `confirmed = true` in a mapping file.
+    // A confirmation is a deliberate `confirmed = true` in a mapping file,
+    // listed here. DDJ-FLX10: the owner's unit, 2026-11-13 (used in
+    // OpenDJDecks, messages recorded with the MIDI monitor).
+    let flx10: HashSet<&str> = [
+        "Browse rotate", "Browse rotate (shift)", "Back", "Load deck 1", "Load deck 2",
+        "Deck select", "Play/Pause", "Jog touch", "Jog top bend", "Jog side bend",
+        "Channel fader", "Headphone cue",
+    ]
+    .into_iter()
+    .collect();
     for m in &mappings {
-        assert!(
-            m.inputs.iter().all(|b| !b.confirmed) && m.outputs.iter().all(|b| !b.confirmed),
-            "{} has confirmed entries: update this test with the confirmation",
+        let mut confirmed: HashSet<&str> = m
+            .file
+            .inputs
+            .iter()
+            .filter(|i| i.confirmed)
+            .filter_map(|i| i.name.as_deref())
+            .collect();
+        confirmed.extend(m.file.outputs.iter().filter(|o| o.confirmed).map(|_| "an output"));
+        let expected = if m.file.device.id == "ddj-flx10" { flx10.clone() } else { HashSet::new() };
+        assert_eq!(
+            confirmed, expected,
+            "{}: confirmed entries changed; update this test with the confirmation",
             m.file.device.name
         );
     }
@@ -923,5 +965,120 @@ fn a_port_can_be_given_to_the_lights() {
     assert_eq!(
         Mapping::for_port(&all, &assigned, "DDJ-FLX4 MIDI 1").map(|m| m.device().id.clone()).as_deref(),
         Some("lighting-operator")
+    );
+}
+
+/// [H1] Captured on the owner's DDJ-FLX10 with deck 3 active: SHIFT + beat
+/// jump back arrives for deck 3 and, in the same millisecond, for deck 1.
+/// Only deck 3 acts; deck 1 on its own still works, and so do mixer
+/// buttons on the deck channels.
+#[test]
+fn flx10_layer_mirror_acts_on_one_deck_only() {
+    let mut s = flx10();
+    let a = feed(
+        &mut s,
+        &[
+            [0x92, 0x61, 0x7F],
+            [0x90, 0x61, 0x7F],
+            [0x92, 0x61, 0x00],
+            [0x90, 0x61, 0x00],
+        ],
+    );
+    assert_eq!(a, vec![deck(3, DeckAction::BeatJump { beats: -16.0 })]);
+    // Later, deck 1 alone (the layer switched back).
+    std::thread::sleep(Duration::from_millis(30));
+    let a = feed(&mut s, &[[0x90, 0x61, 0x7F], [0x90, 0x61, 0x00]]);
+    assert_eq!(a, vec![deck(1, DeckAction::BeatJump { beats: -16.0 })]);
+    // Jog steps mirrored the same way (deck 1 active, captured too).
+    std::thread::sleep(Duration::from_millis(30));
+    let a = feed(&mut s, &[[0xB0, 0x21, 0x49], [0xB2, 0x21, 0x49]]);
+    assert_eq!(a.len(), 1, "{a:?}");
+    assert_eq!(a[0].deck(), Some(1));
+    // Headphone cue on channels 1 and 3 together: both are mixer buttons.
+    let a = feed(&mut s, &[[0x90, 0x54, 0x7F], [0x92, 0x54, 0x7F]]);
+    assert_eq!(a.len(), 2, "{a:?}");
+}
+
+/// [H1] The owner's DDJ-FLX10 sent about 4800 steps for one revolution of the
+/// platter (offset-64 messages of a few steps each); the application gets
+/// one revolution's worth (720), so the track no longer moves several times
+/// as far as the platter.
+#[test]
+fn flx10_jog_revolution_moves_one_revolution() {
+    let mut s = flx10();
+    let mut total = 0;
+    // 800 messages of +6 steps on the side of deck 1's platter.
+    for _ in 0..800 {
+        for a in s.handle_midi(&[0xB0, 0x21, 64 + 6]).actions {
+            if let ControlAction::Deck {
+                action: DeckAction::JogTurn { ticks, .. },
+                ..
+            } = a
+            {
+                total += ticks;
+            }
+        }
+    }
+    assert_eq!(total, 720);
+}
+
+/// [H1] On the owner's DDJ-FLX10 the headphone CUE light could stay dark
+/// while the cue was on, and a second press set things straight: a unit that
+/// changes a pressed button's light itself left the app thinking the LED was
+/// right. After a press or release the button's LED is sent again.
+#[test]
+fn flx10_pressed_button_gets_its_led_again() {
+    let mut s = flx10();
+    let t0 = Instant::now();
+    s.output_mut().set_epoch(t0);
+    s.connect_messages();
+    drain(&mut s, t0);
+    let t = |ms| t0 + Duration::from_millis(ms);
+    let cue_on = ControlFeedback::led(
+        FeedbackTarget::Mixer {
+            channel: 1,
+            element: MixerElement::Cue,
+        },
+        true,
+    );
+    s.feedback(&cue_on);
+    assert_eq!(leds(s.poll_output(t(1))), vec![vec![0x90, 0x54, 0x7F]]);
+    // Same state, nothing new.
+    s.feedback(&cue_on);
+    assert!(leds(s.poll_output(t(2))).is_empty());
+    // The release of the CUE button: the LED goes out again with the state.
+    s.handle_midi(&[0x90, 0x54, 0x00]);
+    s.feedback(&cue_on);
+    assert_eq!(leds(s.poll_output(t(3))), vec![vec![0x90, 0x54, 0x7F]]);
+}
+
+/// [H1] Captured on the owner's DDJ-FLX10 in sampler mode on deck 3 after a
+/// pad page switch: the eight pads sent 0x38-0x3F on deck 3's pad channel.
+#[test]
+fn flx10_sampler_pads_on_the_second_page() {
+    let mut s = flx10();
+    let a = feed(&mut s, &[[0x9B, 0x38, 0x7F], [0x9B, 0x3F, 0x7F]]);
+    let slots: Vec<u8> = a
+        .iter()
+        .filter_map(|a| match a {
+            ControlAction::Sampler(SamplerAction::Pad { slot, pressed: true, .. }) => Some(*slot),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(slots, vec![8, 15], "{a:?}");
+}
+
+/// [H1] The row of three stem buttons on the owner's DDJ-FLX10 (0x0D-0x0F on
+/// the deck channel) mutes parts instead of being ignored.
+#[test]
+fn flx10_stem_buttons_mute_parts() {
+    let mut s = flx10();
+    let a = feed(&mut s, &[[0x90, 0x0D, 0x7F], [0x91, 0x0F, 0x7F]]);
+    assert_eq!(
+        a,
+        vec![
+            deck(1, DeckAction::StemMuteToggle { stem: StemPart::Vocals }),
+            deck(2, DeckAction::StemMuteToggle { stem: StemPart::Drums }),
+        ]
     );
 }

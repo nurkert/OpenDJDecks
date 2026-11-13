@@ -1564,6 +1564,16 @@ const DE: &[(&str, &str)] = &[
     ("Lighting: the show runs unattended. LOCK closes it.", "Licht: die Show läuft unbeaufsichtigt. SPERREN schließt sie ab."),
     ("Lighting: unattended mode off", "Licht: unbeaufsichtigter Betrieb aus"),
     ("Lighting controller connected: {}", "Licht-Controller verbunden: {}"),
+    ("Crossfader on", "Crossfader an"),
+    (
+        "{} has no controller mapping: set it up with View › Controller Setup",
+        "{} hat kein Controller-Mapping: Richte es unter Ansicht › Controller einrichten ein",
+    ),
+    ("Crossfader off: every channel plays", "Crossfader aus: alle Kanäle spielen"),
+    (
+        "Controller connected: {}. Channels stay silent until you move their faders",
+        "Controller verbunden: {}. Die Kanäle bleiben stumm, bis du ihre Fader bewegst",
+    ),
     ("Lighting controller disconnected: {}", "Licht-Controller getrennt: {}"),
     ("TRIGGER · {} · {}", "TRIGGER · {} · {}"),
     ("Recording saved: {} · true peak {} · {} clips", "Aufnahme gesichert: {} · True Peak {} · {} Clips"),

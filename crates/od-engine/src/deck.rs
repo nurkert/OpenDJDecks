@@ -20,6 +20,12 @@ use crate::track::{HotCue, TrackData};
 pub const SECONDS_PER_REVOLUTION: f64 = 1.8;
 /// Time constant with which scratch movement follows the jog.
 const SCRATCH_SMOOTHING_S: f64 = 0.012;
+/// A platter let go while it still turns this far from the play speed (as a
+/// fraction of it, either way) spins out: the track follows it until it is
+/// back near the play speed or stops (a spinback, a brake).
+const SPIN_OUT_MARGIN: f64 = 0.3;
+/// A spinning-out platter that sends nothing for this long has stopped.
+const SPIN_OUT_IDLE_S: f64 = 0.08;
 /// Maximum continuous phase-correction speed offset while synced.
 const MAX_PHASE_CORRECTION: f64 = 0.03;
 
@@ -87,6 +93,9 @@ pub(crate) struct Deck {
     jog_touched: bool,
     jog_pending: f64,
     scratch_speed: f64,
+    /// Let go while still spinning ([`SPIN_OUT_MARGIN`]): the track keeps
+    /// following the platter; seconds since its last movement.
+    spin_out: Option<f64>,
     reverse: bool,
     speed: f64,
 
@@ -249,6 +258,7 @@ impl Deck {
             jog_touched: false,
             jog_pending: 0.0,
             scratch_speed: 0.0,
+            spin_out: None,
             reverse: false,
             speed: 0.0,
             keylock: false,
@@ -493,6 +503,7 @@ impl Deck {
             || self.roll
             || self.reverse
             || (self.jog_touched && self.jog_mode == JogMode::Vinyl)
+            || self.spin_out.is_some()
     }
 
     /// Call before and after any state change that may start or end a slip
@@ -783,18 +794,31 @@ impl Deck {
             DeckCommand::SetJogMode(m) => self.jog_mode = m,
             DeckCommand::JogTouch(t) => {
                 let was = self.slip_action_active();
+                let vinyl = self.jog_mode == JogMode::Vinyl;
+                if !t && self.jog_touched && vinyl && self.playing {
+                    // Let go: still spinning away from the play speed (a
+                    // spinback), the platter keeps the track until it settles.
+                    let play = self.tempo().max(0.01);
+                    let moving = self.scratch_speed.abs() > 0.2 * play;
+                    let off = (self.scratch_speed - play).abs() > SPIN_OUT_MARGIN * play;
+                    self.spin_out = (moving && off).then_some(0.0);
+                }
                 self.jog_touched = t;
-                if t && self.jog_mode == JogMode::Vinyl {
+                if t && vinyl {
                     self.jog_pending = 0.0;
                     self.scratch_speed = 0.0;
                     self.kl_active = false;
+                    self.spin_out = None;
                 }
                 self.update_slip(was);
             }
             DeckCommand::JogTurn(rev) => {
                 let rev = rev as f64;
                 let scratch = self.jog_touched && self.jog_mode == JogMode::Vinyl;
-                if scratch {
+                if scratch || self.spin_out.is_some() {
+                    if let Some(idle) = self.spin_out.as_mut() {
+                        *idle = 0.0;
+                    }
                     self.jog_pending += rev * SECONDS_PER_REVOLUTION * self.sr;
                 } else if !self.playing {
                     // Search while paused.
@@ -1001,6 +1025,7 @@ impl Deck {
         self.slicer = None;
         self.jog_pending = 0.0;
         self.scratch_speed = 0.0;
+        self.spin_out = None;
         self.pending_jump = None;
         self.kl_active = false;
         self.sync_tempo = None;
@@ -1577,7 +1602,23 @@ impl Deck {
             self.tempo_fader = (((t - 1.0) / r) as f32).clamp(-1.0, 1.0);
         }
 
-        let scratching = self.jog_touched && self.jog_mode == JogMode::Vinyl;
+        // A spinning-out platter hands back once it nears the play speed
+        // going forward, or stops sending.
+        if let Some(idle) = self.spin_out {
+            let idle = idle + block_s;
+            self.spin_out = Some(idle);
+            let play = self.tempo().max(0.01);
+            let settled = self.scratch_speed > 0.0
+                && (self.scratch_speed - play).abs() <= SPIN_OUT_MARGIN * play;
+            if settled || idle > SPIN_OUT_IDLE_S || !self.playing {
+                let was = self.slip_action_active();
+                self.spin_out = None;
+                self.jog_pending = 0.0;
+                self.update_slip(was);
+            }
+        }
+        let scratching =
+            (self.jog_touched && self.jog_mode == JogMode::Vinyl) || self.spin_out.is_some();
         if self.search != 0.0 {
             self.scratch_speed = 0.0;
             self.speed = self.search;
@@ -2254,7 +2295,8 @@ impl Deck {
             slip_position: self.slip_diverged.then(|| self.slip_pos / sr),
             reverse: self.reverse,
             censor: self.censor,
-            scratching: self.jog_touched && self.jog_mode == JogMode::Vinyl,
+            scratching: (self.jog_touched && self.jog_mode == JogMode::Vinyl)
+                || self.spin_out.is_some(),
             jog_mode: self.jog_mode,
             cue_point: self.cue_point / sr,
             auto_cue: self.auto_cue,

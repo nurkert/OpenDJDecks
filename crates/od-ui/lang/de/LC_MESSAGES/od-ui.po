@@ -4332,6 +4332,11 @@ msgctxt "GlobalBar"
 msgid "Auto Fader: the crossfader also swaps the basses and keeps the decks in sync"
 msgstr "Auto Fader: Der Crossfader tauscht auch die Bässe und hält die Decks synchron"
 
+#: ui/perform.slint
+msgctxt "GlobalBar"
+msgid "Crossfader on or off: off, every channel plays wherever the crossfader stands"
+msgstr "Crossfader an oder aus: Aus spielt jeder Kanal, egal wo der Crossfader steht"
+
 msgctxt "AppWindow"
 msgid "Sub Browser"
 msgstr "Sub-Browser"

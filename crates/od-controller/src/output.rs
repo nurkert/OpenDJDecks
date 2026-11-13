@@ -170,6 +170,16 @@ impl OutputEngine {
         }
     }
 
+    /// A button at `addr` was pressed or released on the unit. Some units
+    /// light or darken a pressed button themselves; its LED is sent again on
+    /// the next poll so it shows the application's state, not the unit's.
+    pub fn touched(&mut self, addr: MidiAddr) {
+        if let Some(st) = self.addrs.get_mut(&addr) {
+            st.sent = None;
+            st.sent_at = None;
+        }
+    }
+
     /// Software deck layer switch: `side` now shows `deck`.
     pub fn set_active_deck(&mut self, side: u8, deck: u8) {
         if self.active.insert(side, deck) == Some(deck) {

@@ -2224,6 +2224,9 @@ export global MixerParts {
     // Split cue: cue left, master right on the headphones.
     in property <bool> split-cue;
     callback toggle-split-cue();
+    // The crossfader in use; off, every channel plays as if THRU.
+    in property <bool> xf-on: true;
+    callback toggle-xf();
     // Crossfader curve ("constant_power", "linear", "cut"), its spoken
     // name, and the step to the next.
     in property <string> xf-curve: "constant_power";
@@ -2748,8 +2751,17 @@ component GlobalBar inherits Rectangle {
                 alignment: center;
                 Crossfader { accessible-role: slider; accessible-id: "global.xfader"; guide: "global.xfader"; accessible-value: root.crossfader; value: root.crossfader; changed(v) => { root.set-crossfader(v); } }
             }
+            // XF over AUTO, two rows like the assign keys beside them.
             VerticalLayout {
                 alignment: center;
+                spacing: Theme.key-gap;
+                Toggle {
+                    accessible-role: checkbox; accessible-checkable: true; accessible-checked: MixerParts.xf-on;
+                    accessible-id: "global.xf-on";
+                    size: 22px; width: 52px; label: "XF"; on: MixerParts.xf-on; tone: Theme.setup-on;
+                    tooltip: @tr("Crossfader on or off: off, every channel plays wherever the crossfader stands");
+                    clicked => { MixerParts.toggle-xf(); }
+                }
                 Toggle {
                     accessible-role: checkbox; accessible-checkable: true; accessible-checked: MixerParts.auto-fader;
                     accessible-id: "global.auto-fader";

@@ -481,6 +481,9 @@ pub enum MixerCommand {
     /// Split cue: the headphones carry the cue bus in mono on the left and
     /// the master in mono on the right (the headphone mix is set aside).
     SetSplitCue(bool),
+    /// Crossfader in use (the default); off, every channel plays as if
+    /// assigned THRU, wherever the crossfader stands.
+    SetCrossfaderOn(bool),
     /// External mixer ([67]): the internal mixer is bypassed. The decks
     /// sound only on their own outputs ([`crate::Outputs::decks`], the deck
     /// as it plays, before trim, EQ, fader and crossfader); the master bus

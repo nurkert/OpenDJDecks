@@ -95,6 +95,13 @@ fn reverse_cut_in_split_cue_and_curve_key() {
     assert!(ui.wait_until(5.0, |u| u.get("global.phones.split").accessible_checked() == Some(true)));
     ui.click("global.phones.split");
     assert!(ui.wait_until(5.0, |u| !snapshot(u).split_cue));
+    // XF beside AUTO: the crossfader out of use and back.
+    assert_eq!(ui.get("global.xf-on").accessible_checked(), Some(true));
+    ui.click("global.xf-on");
+    assert!(ui.wait_until(5.0, |u| !snapshot(u).crossfader_on), "crossfader off");
+    assert!(ui.wait_until(5.0, |u| u.get("global.xf-on").accessible_checked() == Some(false)));
+    ui.click("global.xf-on");
+    assert!(ui.wait_until(5.0, |u| snapshot(u).crossfader_on), "and on again");
     // The curve key steps constant power → linear → cut → constant power.
     let curve = |u: &Ui| u.app.state.borrow().settings.mixer.crossfader_curve.clone();
     assert_eq!(curve(&ui), "constant_power");
@@ -260,4 +267,24 @@ fn the_set_plan_in_perform() {
     // × hides it until another set is opened.
     ui.click("plan.close");
     assert!(ui.wait_until(5.0, |u| !u.has("plan.line")));
+}
+
+/// A MIDI device without a mapping is pointed to the guided setup, except in
+/// CREATE (where a keyboard plays as it is).
+#[test]
+fn an_unknown_midi_device_is_pointed_to_the_setup() {
+    let ui = Ui::open((1440, 900));
+    let unknown = |ui: &Ui| {
+        crate::controller::handle_event(
+            &ui.app,
+            od_controller::io::ControllerEvent::Unmapped { port: "Some Controller".into() },
+        );
+    };
+    unknown(&ui);
+    let text = ui.app.ui.get_status_text().to_string();
+    assert!(text.contains("Some Controller") && text.contains("Controller Setup"), "{text}");
+    ui.app.status("");
+    ui.click("topbar.mode.create");
+    unknown(&ui);
+    assert!(!ui.app.ui.get_status_text().contains("Some Controller"));
 }

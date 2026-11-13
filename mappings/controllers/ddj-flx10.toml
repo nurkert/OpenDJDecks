@@ -9,9 +9,16 @@
 # (offset-64 jog encoding, 14-bit LSB = MSB + 0x20, pad note blocks per pad
 # mode).
 #
-# The unit was not connected while this file was written, so nothing here
-# has been confirmed live. Entries marked `verify = true` are not backed by a
-# public source yet and need a check on real hardware.
+# The unit was not connected while this file was written. Entries with
+# `confirmed = true` were checked on the owner's unit on 2026-11-13 (the
+# controls were used in OpenDJDecks and their messages recorded with the MIDI
+# monitor); everything else is not confirmed live yet. Entries marked
+# `verify = true` are not backed by a public source yet and need a check on
+# real hardware.
+#
+# Seen on that unit: with deck 3 or 4 active (and with SHIFT), the unit sends
+# a deck control on both deck channels of its side at once, the active deck
+# first; the controller layer keeps the first (`ControllerSession::is_mirror`).
 # Confirm everything with:
 #   cargo run -p od-controller --example midi_monitor -- --mapping mappings/controllers/ddj-flx10.toml
 #
@@ -52,7 +59,9 @@ sides = [[1, 3], [2, 4]]
 [options]
 soft_takeover = true
 takeover_threshold = 0.03
-jog_ticks_per_revolution = 720   # verify on hardware
+# About 4800 steps for one hand-turned revolution on the owner's unit (side
+# of the platter, 2026-11-13); still to confirm with more turns.
+jog_ticks_per_revolution = 4800
 meter_interval_ms = 33
 
 # Placeholder pad colour palette (velocity value -> colour). The real
@@ -92,7 +101,7 @@ cc = 0x40
 channel = 6
 action = "browse.rotate"
 encoding = "twos_complement"
-verify = true
+confirmed = true
 
 [[input]]
 name = "Browse rotate (shift)"
@@ -101,7 +110,7 @@ channel = 6
 action = "browse.rotate"
 args = { shifted = true }
 encoding = "twos_complement"
-verify = true
+confirmed = true
 
 [[input]]
 name = "Browse press"
@@ -115,6 +124,7 @@ name = "Back"
 note = 0x65
 channel = 6
 action = "browse.back"
+confirmed = true
 
 [[input]]
 verify = true
@@ -150,6 +160,7 @@ note = 0x46
 channel = 6
 deck = 1
 action = "deck.load"
+confirmed = true
 
 [[input]]
 name = "Load deck 2"
@@ -157,6 +168,7 @@ note = 0x47
 channel = 6
 deck = 2
 action = "deck.load"
+confirmed = true
 
 [[input]]
 name = "Load deck 3"
@@ -180,7 +192,7 @@ name = "Deck select"
 note = 0x72
 channel = "deck"
 action = "deck.select"
-verify = true
+confirmed = true
 
 # ---------------------------------------------------------------- transport
 [[input]]
@@ -188,6 +200,7 @@ name = "Play/Pause"
 note = 0x0B
 channel = "deck"
 action = "deck.play_pause"
+confirmed = true
 
 [[input]]
 verify = true
@@ -370,7 +383,7 @@ note = 0x3E
 channel = "deck"
 action = "deck.memory_cue_delete"
 
-# Mix point and stem part buttons: no OpenDJDecks function in v1.
+# Mix point buttons: no OpenDJDecks function yet.
 [[input]]
 verify = true
 name = "Mix point / part buttons"
@@ -406,12 +419,32 @@ name = "Mix point / part buttons"
 note = 0x43
 channel = "deck"
 action = "ignore"
+# The row of three stem buttons per deck (notes 0x0D-0x0F, left to right on
+# the owner's unit, 2026-11-13). Each mutes or brings back one part; which
+# part each button names on the unit is still to confirm.
 [[input]]
-name = "Mix point / part buttons"
+verify = true
+name = "Stem button 1"
 note = 0x0D
-repeat = 3
 channel = "deck"
-action = "ignore"
+action = "deck.stem_mute"
+args = { stem = "vocals" }
+
+[[input]]
+verify = true
+name = "Stem button 2"
+note = 0x0E
+channel = "deck"
+action = "deck.stem_mute"
+args = { stem = "inst" }
+
+[[input]]
+verify = true
+name = "Stem button 3"
+note = 0x0F
+channel = "deck"
+action = "deck.stem_mute"
+args = { stem = "drums" }
 
 # ---------------------------------------------------------------- tempo / jog
 [[input]]
@@ -439,7 +472,7 @@ name = "Jog touch"
 note = 0x36
 channel = "deck"
 action = "deck.jog_touch"
-verify = true
+confirmed = true
 
 [[input]]
 name = "Jog touch (shift)"
@@ -464,7 +497,7 @@ channel = "deck"
 action = "deck.jog_turn"
 args = { mode = "bend" }
 encoding = "offset64"
-verify = true
+confirmed = true
 
 [[input]]
 name = "Jog side bend"
@@ -473,7 +506,7 @@ channel = "deck"
 action = "deck.jog_turn"
 args = { mode = "bend" }
 encoding = "offset64"
-verify = true
+confirmed = true
 
 [[input]]
 name = "Jog search (shift)"
@@ -594,7 +627,7 @@ cc = 0x13
 lsb = 0x33
 channel = "deck"
 action = "mixer.fader"
-verify = true
+confirmed = true
 
 [[input]]
 name = "CH FX knob"
@@ -678,6 +711,7 @@ name = "Headphone cue"
 note = 0x54
 channel = "deck"
 action = "mixer.cue"
+confirmed = true
 
 [[input]]
 verify = true
@@ -1012,11 +1046,14 @@ channel = "pad"
 action = "deck.beat_jump"
 args = { beats = [-1.0, 1.0, -2.0, 2.0, -4.0, 4.0, -8.0, 8.0] }
 
+# Sampler pads: the sixteen-note block of the sampler pad mode. On the
+# owner's unit the eight pads sent 0x38-0x3F after the pad page buttons
+# moved to the second page (2026-11-13): slots 9-16 of the bank.
 [[input]]
 verify = true
 name = "Sampler pad"
 note = 0x30
-repeat = 8
+repeat = 16
 index_arg = "slot"
 channel = "pad"
 action = "sampler.pad"
@@ -1025,7 +1062,7 @@ action = "sampler.pad"
 verify = true
 name = "Sampler pad (shift)"
 note = 0x30
-repeat = 8
+repeat = 16
 index_arg = "slot"
 channel = "pad_shift"
 action = "sampler.stop"
