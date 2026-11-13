@@ -383,7 +383,7 @@ note = 0x3E
 channel = "deck"
 action = "deck.memory_cue_delete"
 
-# Mix point and stem part buttons: no OpenDJDecks function in v1.
+# Mix point buttons: no OpenDJDecks function yet.
 [[input]]
 verify = true
 name = "Mix point / part buttons"
@@ -419,12 +419,32 @@ name = "Mix point / part buttons"
 note = 0x43
 channel = "deck"
 action = "ignore"
+# The row of three stem buttons per deck (notes 0x0D-0x0F, left to right on
+# the owner's unit, 2026-11-13). Each mutes or brings back one part; which
+# part each button names on the unit is still to confirm.
 [[input]]
-name = "Mix point / part buttons"
+verify = true
+name = "Stem button 1"
 note = 0x0D
-repeat = 3
 channel = "deck"
-action = "ignore"
+action = "deck.stem_mute"
+args = { stem = "vocals" }
+
+[[input]]
+verify = true
+name = "Stem button 2"
+note = 0x0E
+channel = "deck"
+action = "deck.stem_mute"
+args = { stem = "inst" }
+
+[[input]]
+verify = true
+name = "Stem button 3"
+note = 0x0F
+channel = "deck"
+action = "deck.stem_mute"
+args = { stem = "drums" }
 
 # ---------------------------------------------------------------- tempo / jog
 [[input]]

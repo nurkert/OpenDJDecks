@@ -19,7 +19,7 @@ Which controllers OpenDJDecks knows and how far each is confirmed. A model count
 
 | Controller | Decks | Mapping | Recognised by | Status |
 |---|---|---|---|---|
-| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 12 verified, 120 partial, 144 untested |
+| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 12 verified, 117 partial, 147 untested |
 | compatible with DDJ-FLX4 | 2 | built in | MIDI port name `DDJ-FLX4` | not confirmed: 0 verified, 126 partial, 47 untested |
 | Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (46 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
 | Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (44 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
@@ -87,7 +87,7 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 
 | Model | Controls | Verified | Partial | Untested |
 |---|---|---|---|---|
-| DDJ-FLX10 | 276 | 12 | 120 | 144 |
+| DDJ-FLX10 | 276 | 12 | 117 | 147 |
 | DDJ-FLX4 | 173 | 0 | 126 | 47 |
 
 ### DDJ-FLX10
@@ -137,9 +137,9 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 | Memory cue call back (shift) | input | partial |
 | Memory cue call forward (shift) | input | partial |
 | Mix point / part buttons | input | partial |
-| Mix point / part buttons 1 | input | partial |
-| Mix point / part buttons 2 | input | partial |
-| Mix point / part buttons 3 | input | partial |
+| Stem button 1 | input | untested |
+| Stem button 2 | input | untested |
+| Stem button 3 | input | untested |
 | Tempo fader | input | untested |
 | Tempo fader (shift) | input | untested |
 | Jog touch | input | verified |

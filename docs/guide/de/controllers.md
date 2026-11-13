@@ -19,7 +19,7 @@ Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Model
 
 | Controller | Decks | Mapping | Erkannt an | Status |
 |---|---|---|---|---|
-| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 12 bestätigt, 120 teilweise, 144 ungetestet |
+| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 12 bestätigt, 117 teilweise, 147 ungetestet |
 | kompatibel mit DDJ-FLX4 | 2 | eingebaut | MIDI-Portname `DDJ-FLX4` | nicht bestätigt: 0 bestätigt, 126 teilweise, 47 ungetestet |
 | Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (46 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
 | Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (44 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
@@ -87,7 +87,7 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 
 | Modell | Bedienelemente | Bestätigt | Teilweise | Ungetestet |
 |---|---|---|---|---|
-| DDJ-FLX10 | 276 | 12 | 120 | 144 |
+| DDJ-FLX10 | 276 | 12 | 117 | 147 |
 | DDJ-FLX4 | 173 | 0 | 126 | 47 |
 
 ### DDJ-FLX10
@@ -137,9 +137,9 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 | Memory cue call back (shift) | Eingabe | teilweise |
 | Memory cue call forward (shift) | Eingabe | teilweise |
 | Mix point / part buttons | Eingabe | teilweise |
-| Mix point / part buttons 1 | Eingabe | teilweise |
-| Mix point / part buttons 2 | Eingabe | teilweise |
-| Mix point / part buttons 3 | Eingabe | teilweise |
+| Stem button 1 | Eingabe | ungetestet |
+| Stem button 2 | Eingabe | ungetestet |
+| Stem button 3 | Eingabe | ungetestet |
 | Tempo fader | Eingabe | ungetestet |
 | Tempo fader (shift) | Eingabe | ungetestet |
 | Jog touch | Eingabe | bestätigt |

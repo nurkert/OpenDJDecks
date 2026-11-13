@@ -1067,3 +1067,18 @@ fn flx10_sampler_pads_on_the_second_page() {
         .collect();
     assert_eq!(slots, vec![8, 15], "{a:?}");
 }
+
+/// [H1] The row of three stem buttons on the owner's DDJ-FLX10 (0x0D-0x0F on
+/// the deck channel) mutes parts instead of being ignored.
+#[test]
+fn flx10_stem_buttons_mute_parts() {
+    let mut s = flx10();
+    let a = feed(&mut s, &[[0x90, 0x0D, 0x7F], [0x91, 0x0F, 0x7F]]);
+    assert_eq!(
+        a,
+        vec![
+            deck(1, DeckAction::StemMuteToggle { stem: StemPart::Vocals }),
+            deck(2, DeckAction::StemMuteToggle { stem: StemPart::Drums }),
+        ]
+    );
+}
