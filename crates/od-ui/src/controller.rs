@@ -271,6 +271,18 @@ pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
             app.status(format!("Controller disconnected: {device}"));
             app.controller.borrow_mut().name = None;
         }
+        // A MIDI device without a mapping: say once how to make it a DJ
+        // controller. Not in CREATE, where keyboards are welcome as they are,
+        // and not for the input given to the lights.
+        ControllerEvent::Unmapped { port } => {
+            let lights = app.controller.borrow().lighting_port == port;
+            if !lights && app.ui.get_mode().as_str() != "create" {
+                app.status(od_i18n::trf(
+                    "{} has no controller mapping: set it up with View › Controller Setup",
+                    &[&port],
+                ));
+            }
+        }
         ControllerEvent::Error(e) => tracing::warn!(error = %e, "controller"),
     }
 }

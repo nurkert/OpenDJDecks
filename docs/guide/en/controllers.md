@@ -32,7 +32,7 @@ Any other controller can be set up with the guided setup below, from one of thre
 
 ![The controller setup under the top bar, asking for the tempo fader of deck 1](../img/controller-setup.png)
 
-For a controller without a mapping, press **SET UP A CONTROLLER** in **Preferences › Controller** (or **View › Controller Setup**). A band opens under the top bar:
+For a controller without a mapping, press **SET UP A CONTROLLER** in **Preferences › Controller** (or **View › Controller Setup**). When you plug in a MIDI device OpenDJDecks has no mapping for, the status line names it and points here (not in CREATE, where a MIDI keyboard plays as it is). A band opens under the top bar:
 
 1. Connect the controller by USB and choose what it is closest to: **2 DECKS · ENTRY LEVEL**, **2 DECKS · BATTLE** or **4 DECKS**. Press **START**.
 2. The band asks for one control at a time: PLAY, CUE and SYNC, the jog wheel (touch, then turn), the tempo fader and LOAD of each deck, then the hot cue pads, the channel faders, TRIM and the EQ knobs, headphone CUE, the crossfader, the browse knob and the master and headphone levels. The matching control on screen gets the guide outline.

@@ -104,6 +104,9 @@ pub enum ControllerEvent {
         velocity: u8,
         timestamp_us: u64,
     },
+    /// A MIDI input no mapping knows appeared (once until it is unplugged):
+    /// it can be set up with the guided setup or MIDI learn.
+    Unmapped { port: String },
     Error(String),
 }
 
@@ -288,6 +291,7 @@ fn run(
 ) {
     let (raw_tx, raw_rx) = crossbeam_channel::unbounded::<RawIn>();
     let mut conns: HashMap<String, Connected> = HashMap::new();
+    let mut announced: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut last_scan: Option<Instant> = None;
 
     while !stop.load(Ordering::Relaxed) {
@@ -307,6 +311,7 @@ fn run(
                 &assigned,
                 open_unmapped,
                 &mut conns,
+                &mut announced,
                 &raw_tx,
                 &events,
                 &monitor,
@@ -413,6 +418,7 @@ fn rescan(
     assigned: &[(String, String)],
     open_unmapped: bool,
     conns: &mut HashMap<String, Connected>,
+    announced: &mut std::collections::HashSet<String>,
     raw_tx: &Sender<RawIn>,
     events: &Sender<ControllerEvent>,
     monitor: &MidiMonitor,
@@ -426,6 +432,8 @@ fn rescan(
             return;
         }
     };
+    // An unplugged unknown input is announced again when it comes back.
+    announced.retain(|p| ports.inputs.contains(p));
     // Unplugged ports, and ports whose mapping changed (assigned to the
     // lights or given back): they are opened again below.
     let gone: Vec<String> = conns
@@ -454,6 +462,9 @@ fn rescan(
             continue;
         }
         let mapping = Mapping::for_port(mappings, assigned, name).cloned();
+        if mapping.is_none() && !name.starts_with(CLIENT) && announced.insert(name.clone()) {
+            let _ = events.send(ControllerEvent::Unmapped { port: name.clone() });
+        }
         if mapping.is_none() && !open_unmapped {
             continue;
         }

@@ -268,3 +268,23 @@ fn the_set_plan_in_perform() {
     ui.click("plan.close");
     assert!(ui.wait_until(5.0, |u| !u.has("plan.line")));
 }
+
+/// A MIDI device without a mapping is pointed to the guided setup, except in
+/// CREATE (where a keyboard plays as it is).
+#[test]
+fn an_unknown_midi_device_is_pointed_to_the_setup() {
+    let ui = Ui::open((1440, 900));
+    let unknown = |ui: &Ui| {
+        crate::controller::handle_event(
+            &ui.app,
+            od_controller::io::ControllerEvent::Unmapped { port: "Some Controller".into() },
+        );
+    };
+    unknown(&ui);
+    let text = ui.app.ui.get_status_text().to_string();
+    assert!(text.contains("Some Controller") && text.contains("Controller Setup"), "{text}");
+    ui.app.status("");
+    ui.click("topbar.mode.create");
+    unknown(&ui);
+    assert!(!ui.app.ui.get_status_text().contains("Some Controller"));
+}

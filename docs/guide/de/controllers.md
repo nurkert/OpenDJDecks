@@ -32,7 +32,7 @@ Jeder andere Controller lässt sich mit der geführten Einrichtung unten einrich
 
 ![Die Controller-Einrichtung unter der oberen Leiste fragt nach dem Tempo-Fader von Deck 1](../img/controller-setup.png)
 
-Für einen Controller ohne Mapping drückst du **CONTROLLER EINRICHTEN** unter **Einstellungen › Controller** (oder **Ansicht › Controller einrichten**). Unter der oberen Leiste öffnet sich ein Band:
+Für einen Controller ohne Mapping drückst du **CONTROLLER EINRICHTEN** unter **Einstellungen › Controller** (oder **Ansicht › Controller einrichten**). Steckst du ein MIDI-Gerät ein, für das OpenDJDecks kein Mapping hat, nennt die Statuszeile es und verweist hierher (nicht in CREATE, wo ein MIDI-Keyboard so spielt, wie es ist). Unter der oberen Leiste öffnet sich ein Band:
 
 1. Schließe den Controller per USB an und wähle, was ihm am nächsten kommt: **2 DECKS · EINSTEIGER**, **2 DECKS · BATTLE** oder **4 DECKS**. Drücke **START**.
 2. Das Band fragt nach einem Bedienelement nach dem anderen: PLAY, CUE und SYNC, das Jogwheel (berühren, dann drehen), Tempo-Fader und LOAD jedes Decks, dann die Hot-Cue-Pads, die Kanalfader, TRIM und die EQ-Regler, Kopfhörer-CUE, den Crossfader, den Browse-Regler sowie Master- und Kopfhörerpegel. Das passende Element auf dem Bildschirm bekommt den Rahmen der Anleitung.
