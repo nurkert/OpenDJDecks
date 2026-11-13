@@ -19,7 +19,7 @@ Which controllers OpenDJDecks knows and how far each is confirmed. A model count
 
 | Controller | Decks | Mapping | Recognised by | Status |
 |---|---|---|---|---|
-| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 12 verified, 120 partial, 128 untested |
+| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 12 verified, 120 partial, 144 untested |
 | compatible with DDJ-FLX4 | 2 | built in | MIDI port name `DDJ-FLX4` | not confirmed: 0 verified, 126 partial, 47 untested |
 | Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (46 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
 | Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (44 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
@@ -87,7 +87,7 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 
 | Model | Controls | Verified | Partial | Untested |
 |---|---|---|---|---|
-| DDJ-FLX10 | 260 | 12 | 120 | 128 |
+| DDJ-FLX10 | 276 | 12 | 120 | 144 |
 | DDJ-FLX4 | 173 | 0 | 126 | 47 |
 
 ### DDJ-FLX10
@@ -287,6 +287,14 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 | Sampler pad 6 | input | untested |
 | Sampler pad 7 | input | untested |
 | Sampler pad 8 | input | untested |
+| Sampler pad 9 | input | untested |
+| Sampler pad 10 | input | untested |
+| Sampler pad 11 | input | untested |
+| Sampler pad 12 | input | untested |
+| Sampler pad 13 | input | untested |
+| Sampler pad 14 | input | untested |
+| Sampler pad 15 | input | untested |
+| Sampler pad 16 | input | untested |
 | Sampler pad (shift) 1 | input | untested |
 | Sampler pad (shift) 2 | input | untested |
 | Sampler pad (shift) 3 | input | untested |
@@ -295,6 +303,14 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 | Sampler pad (shift) 6 | input | untested |
 | Sampler pad (shift) 7 | input | untested |
 | Sampler pad (shift) 8 | input | untested |
+| Sampler pad (shift) 9 | input | untested |
+| Sampler pad (shift) 10 | input | untested |
+| Sampler pad (shift) 11 | input | untested |
+| Sampler pad (shift) 12 | input | untested |
+| Sampler pad (shift) 13 | input | untested |
+| Sampler pad (shift) 14 | input | untested |
+| Sampler pad (shift) 15 | input | untested |
+| Sampler pad (shift) 16 | input | untested |
 | Keyboard pad 1 | input | untested |
 | Keyboard pad 2 | input | untested |
 | Keyboard pad 3 | input | untested |

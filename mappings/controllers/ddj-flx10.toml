@@ -1026,11 +1026,14 @@ channel = "pad"
 action = "deck.beat_jump"
 args = { beats = [-1.0, 1.0, -2.0, 2.0, -4.0, 4.0, -8.0, 8.0] }
 
+# Sampler pads: the sixteen-note block of the sampler pad mode. On the
+# owner's unit the eight pads sent 0x38-0x3F after the pad page buttons
+# moved to the second page (2026-11-13): slots 9-16 of the bank.
 [[input]]
 verify = true
 name = "Sampler pad"
 note = 0x30
-repeat = 8
+repeat = 16
 index_arg = "slot"
 channel = "pad"
 action = "sampler.pad"
@@ -1039,7 +1042,7 @@ action = "sampler.pad"
 verify = true
 name = "Sampler pad (shift)"
 note = 0x30
-repeat = 8
+repeat = 16
 index_arg = "slot"
 channel = "pad_shift"
 action = "sampler.stop"

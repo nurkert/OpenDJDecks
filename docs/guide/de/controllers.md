@@ -19,7 +19,7 @@ Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Model
 
 | Controller | Decks | Mapping | Erkannt an | Status |
 |---|---|---|---|---|
-| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 12 bestätigt, 120 teilweise, 128 ungetestet |
+| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 12 bestätigt, 120 teilweise, 144 ungetestet |
 | kompatibel mit DDJ-FLX4 | 2 | eingebaut | MIDI-Portname `DDJ-FLX4` | nicht bestätigt: 0 bestätigt, 126 teilweise, 47 ungetestet |
 | Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (46 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
 | Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (44 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
@@ -87,7 +87,7 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 
 | Modell | Bedienelemente | Bestätigt | Teilweise | Ungetestet |
 |---|---|---|---|---|
-| DDJ-FLX10 | 260 | 12 | 120 | 128 |
+| DDJ-FLX10 | 276 | 12 | 120 | 144 |
 | DDJ-FLX4 | 173 | 0 | 126 | 47 |
 
 ### DDJ-FLX10
@@ -287,6 +287,14 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 | Sampler pad 6 | Eingabe | ungetestet |
 | Sampler pad 7 | Eingabe | ungetestet |
 | Sampler pad 8 | Eingabe | ungetestet |
+| Sampler pad 9 | Eingabe | ungetestet |
+| Sampler pad 10 | Eingabe | ungetestet |
+| Sampler pad 11 | Eingabe | ungetestet |
+| Sampler pad 12 | Eingabe | ungetestet |
+| Sampler pad 13 | Eingabe | ungetestet |
+| Sampler pad 14 | Eingabe | ungetestet |
+| Sampler pad 15 | Eingabe | ungetestet |
+| Sampler pad 16 | Eingabe | ungetestet |
 | Sampler pad (shift) 1 | Eingabe | ungetestet |
 | Sampler pad (shift) 2 | Eingabe | ungetestet |
 | Sampler pad (shift) 3 | Eingabe | ungetestet |
@@ -295,6 +303,14 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 | Sampler pad (shift) 6 | Eingabe | ungetestet |
 | Sampler pad (shift) 7 | Eingabe | ungetestet |
 | Sampler pad (shift) 8 | Eingabe | ungetestet |
+| Sampler pad (shift) 9 | Eingabe | ungetestet |
+| Sampler pad (shift) 10 | Eingabe | ungetestet |
+| Sampler pad (shift) 11 | Eingabe | ungetestet |
+| Sampler pad (shift) 12 | Eingabe | ungetestet |
+| Sampler pad (shift) 13 | Eingabe | ungetestet |
+| Sampler pad (shift) 14 | Eingabe | ungetestet |
+| Sampler pad (shift) 15 | Eingabe | ungetestet |
+| Sampler pad (shift) 16 | Eingabe | ungetestet |
 | Keyboard pad 1 | Eingabe | ungetestet |
 | Keyboard pad 2 | Eingabe | ungetestet |
 | Keyboard pad 3 | Eingabe | ungetestet |

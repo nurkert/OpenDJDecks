@@ -1051,3 +1051,19 @@ fn flx10_pressed_button_gets_its_led_again() {
     s.feedback(&cue_on);
     assert_eq!(leds(s.poll_output(t(3))), vec![vec![0x90, 0x54, 0x7F]]);
 }
+
+/// [H1] Captured on the owner's DDJ-FLX10 in sampler mode on deck 3 after a
+/// pad page switch: the eight pads sent 0x38-0x3F on deck 3's pad channel.
+#[test]
+fn flx10_sampler_pads_on_the_second_page() {
+    let mut s = flx10();
+    let a = feed(&mut s, &[[0x9B, 0x38, 0x7F], [0x9B, 0x3F, 0x7F]]);
+    let slots: Vec<u8> = a
+        .iter()
+        .filter_map(|a| match a {
+            ControlAction::Sampler(SamplerAction::Pad { slot, pressed: true, .. }) => Some(*slot),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(slots, vec![8, 15], "{a:?}");
+}
