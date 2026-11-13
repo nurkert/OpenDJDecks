@@ -78,13 +78,10 @@ fn start_engine(app: &App) -> bool {
     let audio = app.state.borrow().settings.audio.clone();
     let mut cfg = audio_config(&audio, crate::low_cpu::on(app));
     if cfg.device.is_none() {
-        cfg.device = od_audio_io::list_devices(od_audio_io::Backend::Default)
-            .ok()
-            .and_then(|devs| {
-                devs.into_iter()
-                    .find(|d| d.name.contains("DDJ") || d.name.contains("FLX"))
-                    .map(|d| d.name)
-            });
+        let devices: Vec<String> = od_audio_io::list_devices(od_audio_io::Backend::Default)
+            .map(|devs| devs.into_iter().map(|d| d.name).collect())
+            .unwrap_or_default();
+        cfg.device = controller_audio(&devices, &crate::controller::midi_inputs(app));
     }
     let negotiated = match od_audio_io::AudioHost::negotiate(&cfg) {
         Ok(n) => n,
@@ -118,6 +115,28 @@ fn start_engine(app: &App) -> bool {
             false
         }
     }
+}
+
+/// The audio device built into a connected controller: the one whose name
+/// matches a MIDI input's ("XYZ MIDI 1" → "XYZ"), whatever the brand; else a
+/// device named like the bundled four-deck and two-deck controllers.
+pub(crate) fn controller_audio(devices: &[String], midi_inputs: &[String]) -> Option<String> {
+    let base = |s: &str| {
+        let s = s.to_lowercase();
+        let s = s.split(" midi").next().unwrap_or(&s).trim().to_string();
+        s
+    };
+    let by_port = devices.iter().find(|d| {
+        let d = base(d);
+        d.len() >= 3
+            && midi_inputs.iter().any(|p| {
+                let p = base(p);
+                p.len() >= 3 && (d.contains(&p) || p.contains(&d))
+            })
+    });
+    by_port
+        .or_else(|| devices.iter().find(|d| d.contains("DDJ") || d.contains("FLX")))
+        .cloned()
 }
 
 /// "Interface · 48000 Hz · master 1/2 · headphones 3/4" (and what else is
@@ -650,5 +669,30 @@ mod tests {
         assert_eq!(c.buffer_frames, Some(512));
         assert_eq!(c.sample_rate, Some(44_100));
         assert_eq!(c.routing.unwrap().headphones, None);
+    }
+}
+
+#[cfg(test)]
+mod controller_audio_tests {
+    use super::controller_audio;
+
+    fn v(a: &[&str]) -> Vec<String> {
+        a.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn the_connected_controllers_interface_is_preferred() {
+        let devices = v(&["MacBook Pro Speakers", "Acme Mixstation 2", "USB Audio CODEC"]);
+        assert_eq!(
+            controller_audio(&devices, &v(&["Acme Mixstation 2 MIDI 1"])).as_deref(),
+            Some("Acme Mixstation 2")
+        );
+        // No controller: the speakers stay the system's choice.
+        assert_eq!(controller_audio(&devices, &[]), None);
+        // The bundled models by name, also before their MIDI port shows.
+        assert_eq!(
+            controller_audio(&v(&["Speakers", "DDJ-FLX10"]), &[]).as_deref(),
+            Some("DDJ-FLX10")
+        );
     }
 }
