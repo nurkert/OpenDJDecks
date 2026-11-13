@@ -161,9 +161,9 @@ Live coding stays out until real users ask for it. Whether rendered files with m
 
 ## 0.11.0: connections and hardware
 
-- [ ] **[68]** Signed desktop builds, stated minimum requirements, and a low-CPU mode.
+- [ ] **[68]** Signed desktop builds, stated minimum requirements, and a low-CPU mode. Done so far: the minimum requirements are stated and measured, and the low-CPU mode is built (Preferences, always on in the Lite profile). Open: signed desktop builds, which need paid certificates.
 - [ ] **[39]** Controller settings and jog displays, built only from USB captures on the owner's own device.
-- [ ] **[40]** OneLibrary sticks, once it is clear whether the format needs a key.
+- [x] **[40]** OneLibrary sticks, once it is clear whether the format needs a key. Settled, not built: public descriptions of the format say its database is encrypted and opens only with a key. OpenDJDecks never adds, derives or fetches such a key, so sticks keep the existing stick format.
 - [ ] **[41]** Network connection to club players, read-only first and limited to the user's own network.
 - [ ] **[42]** Signed updates, so that a release can be verified independently of GitHub.
 
