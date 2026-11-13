@@ -34,6 +34,8 @@ pub enum ControlAction {
     MasterCue,
     /// Split cue on / off (cue left, master right on the headphones).
     SplitCue,
+    /// Crossfader in use or not (off: every channel plays as THRU).
+    CrossfaderToggle,
     /// Crossfader curve by name (`constant_power`, `linear`, `cut`), or the
     /// next one when `None`.
     CrossfaderCurve(Option<String>),

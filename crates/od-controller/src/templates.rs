@@ -214,6 +214,7 @@ pub const ACTION_NAMES: &[&str] = &[
     "headphone_level",
     "master_cue",
     "split_cue",
+    "crossfader_toggle",
     "crossfader_curve",
     "eq_swap",
     "tempo_fx.toggle",
@@ -580,6 +581,7 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
         ),
         "master_cue" => (Button, on_press(|_| ControlAction::MasterCue)),
         "split_cue" => (Button, on_press(|_| ControlAction::SplitCue)),
+        "crossfader_toggle" => (Button, on_press(|_| ControlAction::CrossfaderToggle)),
         "crossfader_curve" => {
             let curve = match a.t.get("curve") {
                 None => None,

@@ -371,6 +371,19 @@ pub(crate) fn toggle_split_cue(app: &App) {
     app.ui.global::<crate::MixerParts>().set_split_cue(on);
 }
 
+/// Crossfader in use or not (off: every channel plays as if THRU).
+pub(crate) fn toggle_crossfader(app: &App) {
+    engine::ensure_engine(app);
+    let on = !engine::snapshot(app).is_none_or(|s| s.crossfader_on);
+    engine::send(app, Command::Mixer(MixerCommand::SetCrossfaderOn(on)));
+    app.ui.global::<crate::MixerParts>().set_xf_on(on);
+    app.status(if on {
+        od_i18n::tr("Crossfader on")
+    } else {
+        od_i18n::tr("Crossfader off: every channel plays")
+    });
+}
+
 /// The spoken name of a crossfader curve setting.
 pub(crate) fn curve_name(curve: &str) -> String {
     match curve {
@@ -541,6 +554,8 @@ pub(crate) fn wire(app: &Rc<App>) {
     }));
     ui.global::<crate::MixerParts>()
         .on_toggle_auto_fader(handler!(app, |a| toggle_auto_fader(&a)));
+    ui.global::<crate::MixerParts>()
+        .on_toggle_xf(handler!(app, |a| toggle_crossfader(&a)));
     ui.global::<crate::MixerParts>()
         .on_toggle(handler!(app, |a, c: i32| {
             let i = (c as usize).saturating_sub(1).min(decks::DECKS - 1);

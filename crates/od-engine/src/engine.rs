@@ -310,6 +310,7 @@ pub struct EngineProcessor {
     booth_gain: Smoothed,
     master_cue: bool,
     split_cue: bool,
+    crossfader_on: bool,
     external_mixer: bool,
     frames_total: u64,
     state: EngineState,
@@ -395,6 +396,7 @@ impl EngineProcessor {
             booth_gain: Smoothed::new(1.0, ramp),
             master_cue: false,
             split_cue: false,
+            crossfader_on: true,
             external_mixer: false,
             frames_total: 0,
             state: EngineState {
@@ -537,6 +539,7 @@ impl EngineProcessor {
                 MixerCommand::SetBoothLevel(l) => self.booth_level = l.clamp(0.0, 1.5),
                 MixerCommand::SetMasterCue(on) => self.master_cue = on,
                 MixerCommand::SetSplitCue(on) => self.split_cue = on,
+                MixerCommand::SetCrossfaderOn(on) => self.crossfader_on = on,
                 MixerCommand::SetExternalMixer(on) => self.external_mixer = on,
                 MixerCommand::SetLimiter(on) => self.limiter_on = on,
                 MixerCommand::ResetClipIndicators => {
@@ -812,7 +815,11 @@ impl EngineProcessor {
         let cue_buf = &mut self.cue_buf[..len];
         master_buf.fill(0.0);
         cue_buf.fill(0.0);
-        let xf = crossfader_gains(self.crossfader, self.xf_curve);
+        let xf = if self.crossfader_on {
+            crossfader_gains(self.crossfader, self.xf_curve)
+        } else {
+            (1.0, 1.0)
+        };
         let master_lin = level_gain(self.master_level);
         self.master_gain.set(master_lin);
         let block_s = n as f32 / sr as f32;
@@ -1048,6 +1055,7 @@ impl EngineProcessor {
         s.booth_level = self.booth_level;
         s.master_cue = self.master_cue;
         s.split_cue = self.split_cue;
+        s.crossfader_on = self.crossfader_on;
         s.external_mixer = self.external_mixer;
         s.quantize = self.quantize;
         s.master_deck = self.master;

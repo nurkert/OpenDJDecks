@@ -4834,6 +4834,21 @@ spec = "Roadmap [30]"
 note = "CUT IN at the foot of the platter's key block, momentary (`deck.cut_in` in mappings, a step of the battle template). The channel fader still counts. Not tried on a hardware controller or at a gig"
 
 [[feature]]
+id = "mixer-crossfader-toggle"
+area = "mixer"
+name = "Crossfader on / off: off, every channel plays wherever the crossfader stands"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-engine::render::crossfader_assign_and_curves",
+  "od-ui::ui_tests::perform_craft::reverse_cut_in_split_cue_and_curve_key",
+]
+evidence = ["MixerCommand::SetCrossfaderOn", "crates/od-ui/src/mixer.rs::toggle_crossfader"]
+spec = "Owner request 2026-11-13"
+note = "XF beside AUTO under the crossfader (and `crossfader_toggle` in mappings). Not persisted: every start has the crossfader on"
+
+[[feature]]
 id = "mixer-split-cue"
 area = "mixer"
 name = "Split cue: the cue in mono on the left ear, the master in mono on the right"

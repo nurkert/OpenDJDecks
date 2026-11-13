@@ -253,6 +253,8 @@ pub struct EngineState {
     pub master_cue: bool,
     /// Split cue: cue left, master right on the headphones.
     pub split_cue: bool,
+    /// The crossfader is in use ([`crate::MixerCommand::SetCrossfaderOn`]).
+    pub crossfader_on: bool,
     /// External mixer mode ([`crate::MixerCommand::SetExternalMixer`]).
     pub external_mixer: bool,
     pub quantize: bool,
@@ -304,6 +306,7 @@ impl Default for EngineState {
             booth_level: 1.0,
             master_cue: false,
             split_cue: false,
+            crossfader_on: true,
             external_mixer: false,
             quantize: true,
             master_deck: None,

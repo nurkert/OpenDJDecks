@@ -22,6 +22,36 @@ use std::time::{Duration, Instant};
 
 const CLIENT: &str = "OpenDJDecks";
 
+/// CoreMIDI tells a process about devices plugged in or out through the run
+/// loop of the thread that created the process's first MIDI client; until
+/// that run loop runs, every port list stays as it was at that first client.
+/// The controller thread creates the first client and runs its run loop
+/// before each rescan, so a controller plugged in later is found.
+#[cfg(target_os = "macos")]
+mod run_loop {
+    use std::ffi::c_void;
+
+    #[link(name = "CoreFoundation", kind = "framework")]
+    unsafe extern "C" {
+        static kCFRunLoopDefaultMode: *const c_void;
+        fn CFRunLoopRunInMode(mode: *const c_void, seconds: f64, return_after_source: u8) -> i32;
+    }
+
+    /// Handles what is pending on this thread's run loop, without waiting.
+    pub(super) fn pump() {
+        // SAFETY: the mode is a CoreFoundation constant; a zero-second run of
+        // the current thread's run loop has no other preconditions.
+        unsafe {
+            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.0, 0);
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+mod run_loop {
+    pub(super) fn pump() {}
+}
+
 /// MIDI port names currently present.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct PortList {
@@ -136,6 +166,7 @@ impl ControllerManager {
         let unmapped = Arc::new(AtomicBool::new(config.monitor_unmapped_ports));
         let rescan_now = Arc::new(AtomicBool::new(false));
         let assigned = Arc::new(Mutex::new(Vec::new()));
+        let (ready_tx, ready_rx) = crossbeam_channel::bounded::<()>(1);
         let thread = {
             let monitor = monitor.clone();
             let learn = learn.clone();
@@ -144,10 +175,16 @@ impl ControllerManager {
             std::thread::Builder::new()
                 .name("od-controller".into())
                 .spawn(move || {
+                    // The process's first MIDI client, kept while the thread
+                    // runs: plug events then reach this thread (`run_loop`).
+                    let _first = MidiInput::new(CLIENT).ok();
+                    let _ = ready_tx.send(());
                     run(mappings, config, ev_tx, fb_rx, lights_rx, monitor, learn, stop, flags)
                 })
                 .expect("spawn controller thread")
         };
+        // No other thread lists ports before the first client exists.
+        let _ = ready_rx.recv_timeout(Duration::from_secs(2));
         Self {
             events: ev_rx,
             feedback: fb_tx,
@@ -259,6 +296,7 @@ fn run(
             || last_scan.is_none_or(|t| now.duration_since(t) >= config.rescan_interval)
         {
             last_scan = Some(now);
+            run_loop::pump();
             let open_unmapped = unmapped.load(Ordering::Relaxed);
             if !open_unmapped {
                 conns.retain(|_, c| c.session.is_some());

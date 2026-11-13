@@ -159,6 +159,13 @@ pub(crate) fn wants_unmapped(learning: bool, setup: bool, mode: &str) -> bool {
     learning || setup || mode == "create"
 }
 
+/// Whether the mapping of `device` (by id) has physical channel faders.
+fn has_channel_faders(app: &App, device: &str) -> bool {
+    test_mappings(app).iter().any(|m| {
+        m.device().id == device && m.inputs.iter().any(|b| b.template.name == "mixer.fader")
+    })
+}
+
 /// Mapping id of the connected controller.
 pub(crate) fn connected_id(app: &App) -> Option<String> {
     app.controller.borrow().name.clone()
@@ -240,9 +247,23 @@ pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
             crate::lighting::refresh(app);
         }
         ControllerEvent::Connected { device, .. } => {
-            app.status(format!("Controller connected: {device}"));
             if device.contains("FLX10") || device.contains("flx10") {
                 app.decks.borrow_mut().deck_count = 4;
+            }
+            // [H1] The app cannot know where the physical channel faders are
+            // until they move: its channels close instead of playing at the
+            // level the software had, and each fader sets its channel on its
+            // first move (soft takeover lets the first position through).
+            if has_channel_faders(app, &device) && engine::ensure_engine(app) {
+                for c in 0..decks::DECKS {
+                    engine::send(app, Command::Channel(c, ChannelCommand::SetFader(0.0)));
+                }
+                app.status(od_i18n::trf(
+                    "Controller connected: {}. Channels stay silent until you move their faders",
+                    &[&device],
+                ));
+            } else {
+                app.status(format!("Controller connected: {device}"));
             }
             app.controller.borrow_mut().name = Some(device);
         }
@@ -335,6 +356,7 @@ pub(crate) fn handle_action(app: &App, action: ControlAction) {
         ControlAction::EqSwap(band) => crate::mixer::swap(app, band.index()),
         ControlAction::FxPanic => fx::panic(app),
         ControlAction::SplitCue => crate::mixer::toggle_split_cue(app),
+        ControlAction::CrossfaderToggle => crate::mixer::toggle_crossfader(app),
         ControlAction::CrossfaderCurve(c) => crate::mixer::set_crossfader_curve(app, c.as_deref()),
         ControlAction::MasterCue => {
             let on = engine::snapshot(app).map(|s| s.master_cue).unwrap_or(false);
@@ -510,20 +532,22 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
             None
         }
         DeckAction::JogTouch(t) => Some(DeckCommand::JogTouch(t)),
+        // Which surface of the platter turned does not change the deck's jog
+        // mode (VINYL / bend is the deck's setting): the engine scratches while
+        // a vinyl-mode platter is touched and bends otherwise. Ticks come in
+        // the common unit of the controller layer.
         DeckAction::JogTurn { ticks, mode } => {
-            let jm = match mode {
-                od_controller::JogMode::Scratch => JogMode::Vinyl,
-                _ => JogMode::Bend,
-            };
-            if jm != s.jog_mode {
-                engine::deck_cmd(app, d, DeckCommand::SetJogMode(jm));
-            }
-            let scale = if matches!(mode, od_controller::JogMode::Search) {
-                8.0
+            let per_rev = od_controller::device_module::JOG_TICKS_PER_REVOLUTION as f32;
+            let rev = ticks as f32 / per_rev;
+            if matches!(mode, od_controller::JogMode::Search) {
+                // SHIFT + platter: eight times as far, playing or not.
+                let by = rev as f64 * 8.0 * od_engine::SECONDS_PER_REVOLUTION;
+                Some(DeckCommand::Seek {
+                    seconds: (s.position + by).max(0.0),
+                })
             } else {
-                1.0
-            };
-            Some(DeckCommand::JogTurn(ticks as f32 / 720.0 * scale))
+                Some(DeckCommand::JogTurn(rev))
+            }
         }
         DeckAction::HotCue { slot, pressed } => Some(DeckCommand::HotCue {
             slot: slot as usize,

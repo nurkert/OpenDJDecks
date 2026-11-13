@@ -2,7 +2,7 @@
 title: Der Mixer
 description: Trim, EQ, Channel FX, Fader, Crossfader, Kopfhörer und Master und ihre Optionen.
 keywords: [mixer, externes mischpult, eq, kill, bass swap, basswechsel, tauschen, clip, übersteuerung, trim, gain, fader, kanalfader, crossfader, kopfhörer, phones, cue, master, pegel, limiter, anzeige, vu, booth, mikrofon, mic, talkover, auto fader, stem taste, auto gain]
-features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-external-mode, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
+features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-crossfader-toggle, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-external-mode, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
 ---
 
 Der Mixer steht zwischen den Decks. Drücke **MIXER** in der oberen Leiste (`⌥⌘M`), um ihn auszublenden, wenn dein Controller das übernimmt; die Decks treffen sich dann in der Mitte.
@@ -47,6 +47,8 @@ Ein Controller kann beides: Lege `mixer.eq_kill` (mit `band = "low"`, `"mid"` od
 Unter dem Mixer blendet der Crossfader zwischen seinen Seiten. Die kleinen Tasten **1** / **2** / **3** / **4** links und rechts legen ein Deck auf Seite A oder B; ein erneuter Druck legt es wieder durch.
 
 **AUTO** neben dem Crossfader schaltet Auto Fader ein: Der Crossfader tauscht auch die Bässe der beiden Seiten und hält die Decks darauf im Master-Tempo.
+
+**XF** über AUTO nimmt den Crossfader aus dem Spiel: Solange die Taste dunkel ist, spielt jeder Kanal, egal wo der Crossfader steht, als wäre jedes Deck durchgelegt. Ein erneuter Druck nimmt den Crossfader wieder in Betrieb; eine Controller-Taste schafft es mit `crossfader_toggle`.
 
 Die Taste rechts neben der Seite B zeigt die **Crossfader-Kurve** als kleine Zeichnung: zwei Bögen für konstante Leistung (weiche Übergänge), zwei gerade Linien für linear und zwei steile Ecken für Cut (Scratchen: beide Seiten voll bis auf die letzten Prozent). Ein Klick schaltet zur nächsten Kurve. Es ist dieselbe Einstellung wie die **Crossfader-Kurve** in **Einstellungen › Controller › Mixer**, wo auch die **Kanalfader-Kurve** (linear, weich, steil) liegt; eine Controller-Taste schafft es mit `crossfader_curve`. In schmalen Fenstern unter 1000 px bleibt die Kurve den Einstellungen überlassen.
 

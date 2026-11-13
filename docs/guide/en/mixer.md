@@ -2,7 +2,7 @@
 title: The mixer
 description: Trim, EQ, channel FX, faders, crossfader, headphones and master, and the options for each.
 keywords: [mixer, external mixer, eq, kill, bass swap, swap, clip, trim, gain, fader, crossfader, headphones, phones, cue, master, level, limiter, meter, vu, booth, mic, microphone, talkover, auto fader, stem button, auto gain]
-features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-external-mode, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
+features: [mixer-trim, mixer-eq, mixer-eq-mode, mixer-channel-fx-knob, mixer-channel-fader, mixer-fader-curve, mixer-crossfader, mixer-crossfader-curve, mixer-crossfader-assign, mixer-crossfader-toggle, mixer-headphones, mixer-master-meters-limiter, mixer-master-cue, mixer-booth, mixer-auto-channel-fx-fader, mixer-mic-aux, mixer-auto-gain-toggle, mixer-stem-button, mixer-eq-kill, mixer-eq-swap, mixer-split-cue, mixer-external-mode, mixer-crossfader-curve-key, mixer-eq-values, mixer-clip-indicator, mixer-control-anatomy]
 ---
 
 The mixer stands between the decks. Press **MIXER** in the top bar (`⌥⌘M`) to hide it when your controller does the job; the decks then meet in the middle.
@@ -47,6 +47,8 @@ A controller can do both: map `mixer.eq_kill` (with `band = "low"`, `"mid"` or `
 Below the mixer, the crossfader blends between its sides. The small **1** / **2** / **3** / **4** keys left and right send a deck to side A or B; press again to put the deck straight through.
 
 **AUTO** beside the crossfader turns on Auto Fader: the crossfader also swaps the basses of the two sides and keeps the decks on it in tempo with the master.
+
+**XF** above AUTO takes the crossfader out of use: while it is dark, every channel plays wherever the crossfader stands, as if each deck were put straight through. Press it again to use the crossfader; a controller button can do it with `crossfader_toggle`.
 
 The key right of the B side shows the **crossfader curve** as a small drawing: two arcs for constant power (smooth blends), two straight lines for linear, and two steep corners for cut (scratching: both sides full until the last few percent). Click it to step to the next curve. It is the same setting as the **Crossfader curve** in **Preferences › Controller › Mixer**, where the **Channel fader curve** (linear, smooth, sharp) also lives; a controller button can do it with `crossfader_curve`.
 

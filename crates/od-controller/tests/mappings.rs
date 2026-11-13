@@ -289,7 +289,7 @@ fn jog_relative_values() {
             [0x90, 0x36, 0x00], // release
             [0xB1, 0x21, 0x3E], // side ring -2 on deck 2
             [0xB1, 0x23, 0x41], // top +1 untouched
-            [0xB0, 0x29, 0x42], // shift: search +2 (× module gain 8)
+            [0xB0, 0x29, 0x42], // shift: search +2 (the app speeds search up)
             [0xB0, 0x22, 0x40], // zero movement: nothing
         ],
     );
@@ -329,7 +329,7 @@ fn jog_relative_values() {
             deck(
                 1,
                 DeckAction::JogTurn {
-                    ticks: 16,
+                    ticks: 2,
                     mode: JogMode::Search
                 }
             ),
@@ -499,9 +499,29 @@ fn ignored_controls_produce_ignored() {
 
 // ------------------------------------------------------------------ soft takeover
 
+/// [H1] On the owner's DDJ-FLX10 the software had channel 1 open while the
+/// physical fader was down: the first fader message closes the channel at
+/// once instead of waiting until the fader is pushed all the way up.
+#[test]
+fn flx10_fader_position_wins_after_connecting() {
+    let mut s = flx10();
+    s.feedback(&ControlFeedback::Parameter {
+        target: ParamTarget::Fader { channel: 1 },
+        value: 1.0,
+    });
+    let a = feed(&mut s, &[[0xB0, 0x13, 0x00], [0xB0, 0x33, 0x05]]);
+    assert_eq!(a.len(), 1, "{a:?}");
+    assert!(matches!(
+        a[0],
+        ControlAction::Mixer { channel: 1, action: MixerAction::Fader(v) } if v < 0.01
+    ));
+}
+
 #[test]
 fn soft_takeover_on_knob() {
     let mut s = flx4();
+    // The knob reports where it is (0.09), then the software moves the value.
+    assert_eq!(feed(&mut s, &[[0xB0, 0x07, 0x0C], [0xB0, 0x27, 0x00]]).len(), 1);
     s.feedback(&ControlFeedback::Parameter {
         target: ParamTarget::EqHigh { channel: 1 },
         value: 0.5,
@@ -846,12 +866,29 @@ fn the_published_hardware_status_matches_the_mapping_files() {
              cargo run -p od-controller --example hardware_status -- --write"
         );
     }
-    // Nothing is confirmed on a unit yet; a confirmation is a deliberate
-    // `confirmed = true` in a mapping file.
+    // A confirmation is a deliberate `confirmed = true` in a mapping file,
+    // listed here. DDJ-FLX10: the owner's unit, 2026-11-13 (used in
+    // OpenDJDecks, messages recorded with the MIDI monitor).
+    let flx10: HashSet<&str> = [
+        "Browse rotate", "Browse rotate (shift)", "Back", "Load deck 1", "Load deck 2",
+        "Deck select", "Play/Pause", "Jog touch", "Jog top bend", "Jog side bend",
+        "Channel fader", "Headphone cue",
+    ]
+    .into_iter()
+    .collect();
     for m in &mappings {
-        assert!(
-            m.inputs.iter().all(|b| !b.confirmed) && m.outputs.iter().all(|b| !b.confirmed),
-            "{} has confirmed entries: update this test with the confirmation",
+        let mut confirmed: HashSet<&str> = m
+            .file
+            .inputs
+            .iter()
+            .filter(|i| i.confirmed)
+            .filter_map(|i| i.name.as_deref())
+            .collect();
+        confirmed.extend(m.file.outputs.iter().filter(|o| o.confirmed).map(|_| "an output"));
+        let expected = if m.file.device.id == "ddj-flx10" { flx10.clone() } else { HashSet::new() };
+        assert_eq!(
+            confirmed, expected,
+            "{}: confirmed entries changed; update this test with the confirmation",
             m.file.device.name
         );
     }
@@ -924,4 +961,58 @@ fn a_port_can_be_given_to_the_lights() {
         Mapping::for_port(&all, &assigned, "DDJ-FLX4 MIDI 1").map(|m| m.device().id.clone()).as_deref(),
         Some("lighting-operator")
     );
+}
+
+/// [H1] Captured on the owner's DDJ-FLX10 with deck 3 active: SHIFT + beat
+/// jump back arrives for deck 3 and, in the same millisecond, for deck 1.
+/// Only deck 3 acts; deck 1 on its own still works, and so do mixer
+/// buttons on the deck channels.
+#[test]
+fn flx10_layer_mirror_acts_on_one_deck_only() {
+    let mut s = flx10();
+    let a = feed(
+        &mut s,
+        &[
+            [0x92, 0x61, 0x7F],
+            [0x90, 0x61, 0x7F],
+            [0x92, 0x61, 0x00],
+            [0x90, 0x61, 0x00],
+        ],
+    );
+    assert_eq!(a, vec![deck(3, DeckAction::BeatJump { beats: -16.0 })]);
+    // Later, deck 1 alone (the layer switched back).
+    std::thread::sleep(Duration::from_millis(30));
+    let a = feed(&mut s, &[[0x90, 0x61, 0x7F], [0x90, 0x61, 0x00]]);
+    assert_eq!(a, vec![deck(1, DeckAction::BeatJump { beats: -16.0 })]);
+    // Jog steps mirrored the same way (deck 1 active, captured too).
+    std::thread::sleep(Duration::from_millis(30));
+    let a = feed(&mut s, &[[0xB0, 0x21, 0x49], [0xB2, 0x21, 0x49]]);
+    assert_eq!(a.len(), 1, "{a:?}");
+    assert_eq!(a[0].deck(), Some(1));
+    // Headphone cue on channels 1 and 3 together: both are mixer buttons.
+    let a = feed(&mut s, &[[0x90, 0x54, 0x7F], [0x92, 0x54, 0x7F]]);
+    assert_eq!(a.len(), 2, "{a:?}");
+}
+
+/// [H1] The owner's DDJ-FLX10 sent about 4800 steps for one revolution of the
+/// platter (offset-64 messages of a few steps each); the application gets
+/// one revolution's worth (720), so the track no longer moves several times
+/// as far as the platter.
+#[test]
+fn flx10_jog_revolution_moves_one_revolution() {
+    let mut s = flx10();
+    let mut total = 0;
+    // 800 messages of +6 steps on the side of deck 1's platter.
+    for _ in 0..800 {
+        for a in s.handle_midi(&[0xB0, 0x21, 64 + 6]).actions {
+            if let ControlAction::Deck {
+                action: DeckAction::JogTurn { ticks, .. },
+                ..
+            } = a
+            {
+                total += ticks;
+            }
+        }
+    }
+    assert_eq!(total, 720);
 }

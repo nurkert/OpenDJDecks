@@ -13,13 +13,13 @@ When you move a knob after a preset jumped, soft takeover makes sure the value o
 
 ## Controller list
 
-Which controllers OpenDJDecks knows and how far each is confirmed. A model counts as **verified** only when every one of its controls has been confirmed on a real unit with OpenDJDecks. None has been yet, so every row says **not confirmed**. Vendor and model names only say which hardware a mapping is meant to be compatible with.
+Which controllers OpenDJDecks knows and how far each is confirmed. A model counts as **verified** only when every one of its controls has been confirmed on a real unit with OpenDJDecks. None has been yet: the DDJ-FLX10 row says **partly confirmed** for the controls checked on one unit, the others say **not confirmed**. Vendor and model names only say which hardware a mapping is meant to be compatible with.
 
 <!-- controller-list:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->
 
 | Controller | Decks | Mapping | Recognised by | Status |
 |---|---|---|---|---|
-| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | not confirmed: 0 verified, 125 partial, 135 untested |
+| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 12 verified, 120 partial, 128 untested |
 | compatible with DDJ-FLX4 | 2 | built in | MIDI port name `DDJ-FLX4` | not confirmed: 0 verified, 126 partial, 47 untested |
 | Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (46 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
 | Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (44 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
@@ -81,33 +81,33 @@ Each mapped control has one of three states:
 - **partial**: the MIDI message comes from a public source, another project's working mapping, but nobody has tried it with OpenDJDecks on a unit yet.
 - **untested**: there is no public source and no confirmation yet (`verify = true` in the mapping file).
 
-No control is verified yet: the checks on real units are still open. For the four-deck mapping, the public source covers related models of the same family. The list below is generated from the mapping files, so it changes with them. The self-test above is how you find out for your own unit.
+A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, headphone CUE, the channel fader, the platter and the deck switch. The other checks on real units are still open. For the four-deck mapping, the public source covers related models of the same family. The list below is generated from the mapping files, so it changes with them. The self-test above is how you find out for your own unit.
 
 <!-- hardware-status:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->
 
 | Model | Controls | Verified | Partial | Untested |
 |---|---|---|---|---|
-| DDJ-FLX10 | 260 | 0 | 125 | 135 |
+| DDJ-FLX10 | 260 | 12 | 120 | 128 |
 | DDJ-FLX4 | 173 | 0 | 126 | 47 |
 
 ### DDJ-FLX10
 
 | Control | Kind | Status |
 |---|---|---|
-| Browse rotate | input | untested |
-| Browse rotate (shift) | input | untested |
+| Browse rotate | input | verified |
+| Browse rotate (shift) | input | verified |
 | Browse press | input | untested |
-| Back | input | partial |
+| Back | input | verified |
 | Back (shift) | input | untested |
 | Browse view | input | partial |
 | Browse view (long press) | input | untested |
 | Browse view (shift) | input | untested |
-| Load deck 1 | input | partial |
-| Load deck 2 | input | partial |
+| Load deck 1 | input | verified |
+| Load deck 2 | input | verified |
 | Load deck 3 | input | partial |
 | Load deck 4 | input | partial |
-| Deck select | input | untested |
-| Play/Pause | input | partial |
+| Deck select | input | verified |
+| Play/Pause | input | verified |
 | Play/Pause (shift) | input | untested |
 | Cue | input | partial |
 | Cue (shift) | input | untested |
@@ -142,11 +142,11 @@ No control is verified yet: the checks on real units are still open. For the fou
 | Mix point / part buttons 3 | input | partial |
 | Tempo fader | input | untested |
 | Tempo fader (shift) | input | untested |
-| Jog touch | input | untested |
+| Jog touch | input | verified |
 | Jog touch (shift) | input | untested |
 | Jog scratch | input | untested |
-| Jog top bend | input | untested |
-| Jog side bend | input | untested |
+| Jog top bend | input | verified |
+| Jog side bend | input | verified |
 | Jog search (shift) | input | untested |
 | Loop in | input | partial |
 | Loop in (loop active) | input | untested |
@@ -162,14 +162,14 @@ No control is verified yet: the checks on real units are still open. For the fou
 | Part isolator vocals | input | untested |
 | Part isolator inst | input | untested |
 | Part isolator drums | input | untested |
-| Channel fader | input | untested |
+| Channel fader | input | verified |
 | CH FX knob | input | partial |
 | Crossfader | input | untested |
 | Master level | input | untested |
 | Booth level | input | untested |
 | Headphone mix | input | untested |
 | Headphone level | input | untested |
-| Headphone cue | input | partial |
+| Headphone cue | input | verified |
 | Headphone cue (shift) | input | untested |
 | Master cue | input | untested |
 | Master cue (shift) | input | untested |

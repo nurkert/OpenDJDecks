@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 336 features; 330 in scope: 330 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 337 features; 331 in scope: 331 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -247,6 +247,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Auto gain toggle | DONE | `ChannelCommand::SetAutoGain`; Preferences > Controller > Mixer: auto gain on / off for every channel | 2 |  |
 | STEM button per mixer channel | DONE | STEM per mixer channel switches its HI / MID / LOW knobs to part isolation (vocals / inst / drums), centre = full level; the channel EQ stays as it was; (UX §1.3, §2.4) | 1 | P2 |
 | Knobs, faders and meters that feel physical: value arcs, centre marks, drag readouts, fader caps and detent, peak hold | DONE | `crates/od-ui/ui/controls.slint::Knob`, `crates/od-ui/ui/controls.slint::Fader`, `crates/od-ui/src/mixer.rs::channel_view`; Sizes unchanged at 1440 x 900 and 1280 x 800. Tried with the mouse only, not on a touch screen.; (Roadmap [46]) | 5 | P2 |
+| Crossfader on / off: off, every channel plays wherever the crossfader stands | DONE | `MixerCommand::SetCrossfaderOn`, `crates/od-ui/src/mixer.rs::toggle_crossfader`; XF beside AUTO under the crossfader (and `crossfader_toggle` in mappings). Not persisted: every start has the crossfader on; (Owner request 2026-11-13) | 2 | P2 |
 | Split cue: the cue in mono on the left ear, the master in mono on the right | DONE | `MixerCommand::SetSplitCue`, `crates/od-ui/src/mixer.rs::toggle_split_cue`; SPLIT after the PHONES knobs (and `split_cue` in mappings); MIX has no effect while it is on, LEVEL does. Tested with generated signals; on a single stereo output see `audio-split-cue-one-output`; (Roadmap [30]) | 2 | P2 |
 | Crossfader curve on the mixer: a key that draws the curve and steps through constant power, linear and cut | DONE | `crates/od-ui/src/mixer.rs::set_crossfader_curve`, `crates/od-ui/ui/perform.slint::XfCurveKey`; Right of the B assign keys from 1000 px window width; the same setting as Preferences › Controller › Mixer, and `crossfader_curve` (optional `curve`) in mappings; (Roadmap [30]) | 2 | P3 |
 | External-mixer mode: each deck to its own outputs, the internal mixer bypassed, the mixer column says so | DONE | `MixerCommand::SetExternalMixer`, `crates/od-ui/ui/perform.slint::ExternalMixerPlate`; Each deck as it comes off the deck (stems, keylock, Stem FX), before trim, EQ, fader and crossfader. The master pair keeps the sampler and microphone, so the recorder records those only; the decks still count as on air for the tracklist. Not tried with a real external mixer; (Roadmap [67]) | 3 | P2 |
@@ -445,13 +446,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 330 |
+| DONE | 331 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **336** |
+| **Total** | **337** |
 
 ## P1 gaps and implementation notes
 

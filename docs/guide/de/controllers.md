@@ -13,13 +13,13 @@ Bewegst du nach einem Sprung im Preset einen Regler, sorgt Soft Takeover dafür,
 
 ## Controller-Liste
 
-Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Modell gilt erst dann als **bestätigt**, wenn jedes seiner Bedienelemente mit OpenDJDecks auf einem echten Gerät bestätigt wurde. Das ist noch bei keinem der Fall, darum steht in jeder Zeile **nicht bestätigt**. Hersteller- und Modellnamen sagen nur, mit welcher Hardware ein Mapping kompatibel sein soll.
+Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Modell gilt erst dann als **bestätigt**, wenn jedes seiner Bedienelemente mit OpenDJDecks auf einem echten Gerät bestätigt wurde. Das ist noch bei keinem der Fall: In der Zeile des DDJ-FLX10 steht **teilweise bestätigt** für die an einem Gerät geprüften Elemente, in den anderen **nicht bestätigt**. Hersteller- und Modellnamen sagen nur, mit welcher Hardware ein Mapping kompatibel sein soll.
 
 <!-- controller-list:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->
 
 | Controller | Decks | Mapping | Erkannt an | Status |
 |---|---|---|---|---|
-| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | nicht bestätigt: 0 bestätigt, 125 teilweise, 135 ungetestet |
+| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 12 bestätigt, 120 teilweise, 128 ungetestet |
 | kompatibel mit DDJ-FLX4 | 2 | eingebaut | MIDI-Portname `DDJ-FLX4` | nicht bestätigt: 0 bestätigt, 126 teilweise, 47 ungetestet |
 | Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (46 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
 | Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (44 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
@@ -81,33 +81,33 @@ Jedes zugeordnete Bedienelement hat einen von drei Zuständen:
 - **teilweise**: Die MIDI-Nachricht stammt aus einer öffentlichen Quelle, dem funktionierenden Mapping eines anderen Projekts, aber noch niemand hat sie mit OpenDJDecks auf einem Gerät ausprobiert.
 - **ungetestet**: Es gibt noch keine öffentliche Quelle und keine Bestätigung (`verify = true` in der Mapping-Datei).
 
-Noch kein Element ist bestätigt: Die Prüfungen an echten Geräten stehen noch aus. Beim Vier-Deck-Mapping deckt die öffentliche Quelle verwandte Modelle derselben Familie ab. Die Liste unten wird aus den Mapping-Dateien erzeugt und ändert sich mit ihnen. Mit dem Selbsttest oben findest du es für dein eigenes Gerät heraus.
+Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden, PLAY, Kopfhörer-CUE, der Kanalfader, der Jog-Teller und die Deck-Umschaltung. Die übrigen Prüfungen an echten Geräten stehen noch aus. Beim Vier-Deck-Mapping deckt die öffentliche Quelle verwandte Modelle derselben Familie ab. Die Liste unten wird aus den Mapping-Dateien erzeugt und ändert sich mit ihnen. Mit dem Selbsttest oben findest du es für dein eigenes Gerät heraus.
 
 <!-- hardware-status:start (generated: cargo run -p od-controller --example hardware_status -- --write) -->
 
 | Modell | Bedienelemente | Bestätigt | Teilweise | Ungetestet |
 |---|---|---|---|---|
-| DDJ-FLX10 | 260 | 0 | 125 | 135 |
+| DDJ-FLX10 | 260 | 12 | 120 | 128 |
 | DDJ-FLX4 | 173 | 0 | 126 | 47 |
 
 ### DDJ-FLX10
 
 | Bedienelement | Art | Status |
 |---|---|---|
-| Browse rotate | Eingabe | ungetestet |
-| Browse rotate (shift) | Eingabe | ungetestet |
+| Browse rotate | Eingabe | bestätigt |
+| Browse rotate (shift) | Eingabe | bestätigt |
 | Browse press | Eingabe | ungetestet |
-| Back | Eingabe | teilweise |
+| Back | Eingabe | bestätigt |
 | Back (shift) | Eingabe | ungetestet |
 | Browse view | Eingabe | teilweise |
 | Browse view (long press) | Eingabe | ungetestet |
 | Browse view (shift) | Eingabe | ungetestet |
-| Load deck 1 | Eingabe | teilweise |
-| Load deck 2 | Eingabe | teilweise |
+| Load deck 1 | Eingabe | bestätigt |
+| Load deck 2 | Eingabe | bestätigt |
 | Load deck 3 | Eingabe | teilweise |
 | Load deck 4 | Eingabe | teilweise |
-| Deck select | Eingabe | ungetestet |
-| Play/Pause | Eingabe | teilweise |
+| Deck select | Eingabe | bestätigt |
+| Play/Pause | Eingabe | bestätigt |
 | Play/Pause (shift) | Eingabe | ungetestet |
 | Cue | Eingabe | teilweise |
 | Cue (shift) | Eingabe | ungetestet |
@@ -142,11 +142,11 @@ Noch kein Element ist bestätigt: Die Prüfungen an echten Geräten stehen noch 
 | Mix point / part buttons 3 | Eingabe | teilweise |
 | Tempo fader | Eingabe | ungetestet |
 | Tempo fader (shift) | Eingabe | ungetestet |
-| Jog touch | Eingabe | ungetestet |
+| Jog touch | Eingabe | bestätigt |
 | Jog touch (shift) | Eingabe | ungetestet |
 | Jog scratch | Eingabe | ungetestet |
-| Jog top bend | Eingabe | ungetestet |
-| Jog side bend | Eingabe | ungetestet |
+| Jog top bend | Eingabe | bestätigt |
+| Jog side bend | Eingabe | bestätigt |
 | Jog search (shift) | Eingabe | ungetestet |
 | Loop in | Eingabe | teilweise |
 | Loop in (loop active) | Eingabe | ungetestet |
@@ -162,14 +162,14 @@ Noch kein Element ist bestätigt: Die Prüfungen an echten Geräten stehen noch 
 | Part isolator vocals | Eingabe | ungetestet |
 | Part isolator inst | Eingabe | ungetestet |
 | Part isolator drums | Eingabe | ungetestet |
-| Channel fader | Eingabe | ungetestet |
+| Channel fader | Eingabe | bestätigt |
 | CH FX knob | Eingabe | teilweise |
 | Crossfader | Eingabe | ungetestet |
 | Master level | Eingabe | ungetestet |
 | Booth level | Eingabe | ungetestet |
 | Headphone mix | Eingabe | ungetestet |
 | Headphone level | Eingabe | ungetestet |
-| Headphone cue | Eingabe | teilweise |
+| Headphone cue | Eingabe | bestätigt |
 | Headphone cue (shift) | Eingabe | ungetestet |
 | Master cue | Eingabe | ungetestet |
 | Master cue (shift) | Eingabe | ungetestet |
