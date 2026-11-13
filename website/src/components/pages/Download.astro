@@ -61,6 +61,9 @@ const hasVideo = existsSync(new URL('perform.webm', publicDir)) && existsSync(ne
 
 const counts = release ? order.map((id) => ({ id, name: d.platforms[id], count: release.downloads[id] })).filter((p) => p.count > 0) : [];
 const total = counts.reduce((sum, p) => sum + p.count, 0);
+// The CREATE line names 0.10: only shown once the release it describes is out.
+const [major = 0, minor = 0] = (release?.version ?? '0.0').split('.').map(Number);
+const hasCreate = major > 0 || minor >= 10;
 ---
 
 <Base lang={lang} page="download" title={d.metaTitle} description={d.metaDescription}>
@@ -168,6 +171,17 @@ const total = counts.reduce((sum, p) => sum + p.count, 0);
             )
           }
           {total > 0 && <p class="dl__note">{d.downloadsNote}</p>}
+          <p class="dl__new">
+            <span class="dl__new-dot" aria-hidden="true"></span>
+            <span>
+              {hasCreate && (
+                <>
+                  {d.newIn} <a href={guideHref('create', lang)}>{d.newInLink}</a>.{' '}
+                </>
+              )}
+              {d.beta}
+            </span>
+          </p>
         </div>
 
         <figure class="dl__win">
