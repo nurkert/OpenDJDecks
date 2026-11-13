@@ -1566,6 +1566,10 @@ const DE: &[(&str, &str)] = &[
     ("Lighting controller connected: {}", "Licht-Controller verbunden: {}"),
     ("Crossfader on", "Crossfader an"),
     (
+        "Channel {} is silent until you move its fader once",
+        "Kanal {} bleibt stumm, bis du seinen Fader einmal bewegst",
+    ),
+    (
         "{} has no controller mapping: set it up with View › Controller Setup",
         "{} hat kein Controller-Mapping: Richte es unter Ansicht › Controller einrichten ein",
     ),

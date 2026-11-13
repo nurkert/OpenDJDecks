@@ -25,6 +25,9 @@ pub(crate) struct Controllers {
     /// connected.
     lighting_port: String,
     lighting_connected: Option<String>,
+    /// Channels closed on connecting whose physical fader has not moved yet
+    /// (their level is unknown until it does).
+    pub fader_unknown: [bool; crate::decks::DECKS],
 }
 
 /// Mapping id of the default layout for a lighting controller
@@ -159,13 +162,6 @@ pub(crate) fn wants_unmapped(learning: bool, setup: bool, mode: &str) -> bool {
     learning || setup || mode == "create"
 }
 
-/// Whether the mapping of `device` (by id) has physical channel faders.
-fn has_channel_faders(app: &App, device: &str) -> bool {
-    test_mappings(app).iter().any(|m| {
-        m.device().id == device && m.inputs.iter().any(|b| b.template.name == "mixer.fader")
-    })
-}
-
 /// Mapping id of the connected controller.
 pub(crate) fn connected_id(app: &App) -> Option<String> {
     app.controller.borrow().name.clone()
@@ -246,7 +242,11 @@ pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
             app.controller.borrow_mut().lighting_connected = None;
             crate::lighting::refresh(app);
         }
-        ControllerEvent::Connected { device, .. } => {
+        ControllerEvent::Connected {
+            device,
+            channel_faders,
+            ..
+        } => {
             if device.contains("FLX10") || device.contains("flx10") {
                 app.decks.borrow_mut().deck_count = 4;
             }
@@ -254,10 +254,11 @@ pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
             // until they move: its channels close instead of playing at the
             // level the software had, and each fader sets its channel on its
             // first move (soft takeover lets the first position through).
-            if has_channel_faders(app, &device) && engine::ensure_engine(app) {
+            if channel_faders && engine::ensure_engine(app) {
                 for c in 0..decks::DECKS {
                     engine::send(app, Command::Channel(c, ChannelCommand::SetFader(0.0)));
                 }
+                app.controller.borrow_mut().fader_unknown = [true; decks::DECKS];
                 app.status(od_i18n::trf(
                     "Controller connected: {}. Channels stay silent until you move their faders",
                     &[&device],
@@ -269,7 +270,9 @@ pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
         }
         ControllerEvent::Disconnected { device, .. } => {
             app.status(format!("Controller disconnected: {device}"));
-            app.controller.borrow_mut().name = None;
+            let mut c = app.controller.borrow_mut();
+            c.name = None;
+            c.fader_unknown = [false; decks::DECKS];
         }
         // A MIDI device without a mapping: say once how to make it a DJ
         // controller. Not in CREATE, where keyboards are welcome as they are,
@@ -329,7 +332,10 @@ pub(crate) fn handle_action(app: &App, action: ControlAction) {
                     crate::mixer::toggle_kill(app, c, band.index());
                     return;
                 }
-                MixerAction::Fader(v) => ChannelCommand::SetFader(v),
+                MixerAction::Fader(v) => {
+                    app.controller.borrow_mut().fader_unknown[c] = false;
+                    ChannelCommand::SetFader(v)
+                }
                 MixerAction::CueToggle => {
                     let on = engine::snapshot(app)
                         .map(|s| s.channels[c].cue)
@@ -455,12 +461,26 @@ fn stem_of(p: StemPart) -> Stem {
 fn deck_action(app: &App, d: usize, action: DeckAction) {
     let Some(s) = engine::snapshot(app).map(|st| st.decks[d]) else {
         if matches!(action, DeckAction::Load) {
-            decks::load_selected(app, d);
+            if crate::browser::navigate::in_lists(app) {
+                crate::browser::navigate::enter(app);
+            } else {
+                decks::load_selected(app, d);
+            }
         }
         return;
     };
     let cmd = match action {
-        DeckAction::PlayPause => Some(DeckCommand::TogglePlay),
+        DeckAction::PlayPause => {
+            // Starting a deck whose channel is still closed from connecting:
+            // say why it is silent.
+            if !s.playing && app.controller.borrow().fader_unknown[d] {
+                app.status(od_i18n::trf(
+                    "Channel {} is silent until you move its fader once",
+                    &[&(d + 1)],
+                ));
+            }
+            Some(DeckCommand::TogglePlay)
+        }
         DeckAction::CuePress => Some(DeckCommand::Cue(true)),
         DeckAction::CueRelease => Some(DeckCommand::Cue(false)),
         DeckAction::JumpToStart => Some(DeckCommand::Seek { seconds: 0.0 }),
@@ -621,6 +641,12 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
         // Every pad mode: hot cues, Hold FX, keyboard, key shift, slicer, …
         DeckAction::Pad { index, pressed, .. } => {
             decks::pad(app, d, index as usize, pressed);
+            None
+        }
+        // In the lists column LOAD goes in (opens a folder, enters a list),
+        // as the encoder's press does; in the track list it loads.
+        DeckAction::Load if crate::browser::navigate::in_lists(app) => {
+            crate::browser::navigate::enter(app);
             None
         }
         DeckAction::Load => {

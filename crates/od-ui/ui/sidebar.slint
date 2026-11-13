@@ -364,6 +364,14 @@ export component Sidebar inherits Rectangle {
     function show(y: length, end: length) {
         if (y < -tree.content-y || end > -tree.content-y + tree.height) { root.reveal(y); }
     }
+    // A row selected anywhere (the encoder, the menu) at window position
+    // `top` and `h` high comes into view; rows hidden by a filter do not move
+    // the tree.
+    function show-row(top: length, h: length) {
+        if (h > 0) {
+            root.show(top - tree-rows.absolute-position.y, top - tree-rows.absolute-position.y + h);
+        }
+    }
     changed selected-node => {
         if (self.selected-node == -1) { root.show(coll-h.y, coll-h.y + 2 * root.tree-row); }
         if (self.selected-node == -4) { root.show(rel-h.y, rel-h.y + 2 * root.tree-row); }
@@ -460,6 +468,7 @@ export component Sidebar inherits Rectangle {
                     height: r.kind == "all" ? root.tree-row : 0px;
                     item: r;
                     selected: root.selected-node == r.id && root.section == "library";
+                    changed selected => { if (self.selected) { root.show-row(self.absolute-position.y, self.height); } }
                     can-add: false;
                     clicked => { root.select-node(r.id); }
                 }
@@ -470,6 +479,7 @@ export component Sidebar inherits Rectangle {
                     height: r.kind != "all" && r.kind != "stick" && r.id > -100 ? root.tree-row : 0px;
                     item: r;
                     selected: root.selected-node == r.id && root.section == "library";
+                    changed selected => { if (self.selected) { root.show-row(self.absolute-position.y, self.height); } }
                     can-add: root.can-add;
                     clicked => { root.select-node(r.id); }
                     toggled => { root.toggle-node(r.id); }
@@ -532,6 +542,7 @@ export component Sidebar inherits Rectangle {
                     index: i;
                     device: d;
                     selected: root.section == "devices" && root.device-selected == d.id;
+                    changed selected => { if (self.selected) { root.show-row(self.absolute-position.y, self.height); } }
                     open => { root.open-device(d.id); }
                     sync => { root.sync-device(d.id); }
                     eject => { root.eject-device(d.id); }
@@ -543,6 +554,7 @@ export component Sidebar inherits Rectangle {
                     height: r.kind == "stick" || r.id <= -1000000 ? root.tree-row : 0px;
                     item: r;
                     selected: root.selected-node == r.id && root.section == "library";
+                    changed selected => { if (self.selected) { root.show-row(self.absolute-position.y, self.height); } }
                     can-add: false;
                     clicked => { root.select-node(r.id); }
                 }
@@ -615,12 +627,15 @@ export component Sidebar inherits Rectangle {
                         label: "browser.tree.history\{i}";
                         item: h;
                         selected: root.selected-node == h.id && root.section == "library";
+                        changed selected => { if (self.selected) { root.show-row(self.absolute-position.y, self.height); } }
                         clicked => { root.select-node(h.id); }
                     }
                 }
                 rec-h := Heading { label: @tr("RECORDINGS"); }
                 Rectangle {
                     accessible-id: "browser.tree.recordings"; accessible-role: list-item;
+                    property <bool> current: root.section == "recordings";
+                    changed current => { if (self.current) { root.show-row(self.absolute-position.y, self.height); } }
                     accessible-value: root.recordings-count;
                     accessible-item-selectable: true; accessible-item-selected: root.section == "recordings";
                     height: root.tree-row;
@@ -671,6 +686,7 @@ export component Sidebar inherits Rectangle {
                         label: "browser.tree.auto\{i}";
                         item: r;
                         selected: root.selected-node == r.id && root.section == "library";
+                        changed selected => { if (self.selected) { root.show-row(self.absolute-position.y, self.height); } }
                         can-add: false;
                         clicked => { root.select-node(r.id); }
                         toggled => { root.toggle-node(r.id); }

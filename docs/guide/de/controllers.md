@@ -44,7 +44,9 @@ Die Datei ist eine gewöhnliche Mapping-Datei, die du weitergeben kannst. Jeder 
 
 ## Am Controller stöbern
 
-Drehe den Browse-Encoder, um durch die Liste zu gehen. **BACK** verschiebt den Fokus in den Baum, wo Drehen durch die Listen geht (mit Shift um acht) und ein Druck einen Ordner öffnet oder in die Trackliste wechselt. In der Liste lädt ein Druck auf ein freies Deck, Shift-Druck fügt der Tag-Liste hinzu. **VIEW** schaltet in Prepare den ganzen Browser und in Perform das Browse-Layout.
+Drehe den Browse-Encoder, um durch die Liste zu gehen. **BACK** verschiebt den Fokus in die Listenspalte, wo Drehen von oben nach unten durch alles darin geht: die Sammlung, Playlists, die Ordner des Explorers, ähnliche Tracks, Sticks, Verläufe, Aufnahmen, die Tag-Liste, erstellte Tracks und AUTO SORT (mit Shift um acht). Die Spalte scrollt mit. Ein Druck oder **LOAD** an einem Deck geht eine Ebene hinein: Ein Ordner öffnet sich und sein erster Eintrag wird gewählt, eine Liste übergibt an ihre Tracks. **BACK** geht jedes Mal eine Ebene hinaus: von den Tracks zu ihrer Liste, von einem Eintrag zum Ordner, der ihn enthält, und ein offener Ordner schließt sich. In der Trackliste lädt ein Druck auf ein freies Deck, **LOAD** auf sein Deck, und Shift-Druck fügt der Tag-Liste hinzu. Ein Track, den du mit der Maus anklickst, ist der, den **LOAD** lädt. **VIEW** schaltet in Prepare den ganzen Browser und in Perform das Browse-Layout.
+
+Verbindet sich ein Controller mit Kanalfadern, starten seine Kanäle geschlossen, weil die App nicht wissen kann, wo die Fader stehen, bis sie sich bewegen: Bewege jeden Fader einmal. **PLAY** auf einem Deck, dessen Fader sich noch nicht bewegt hat, sagt das in der Statuszeile.
 
 ## MIDI-Learn
 

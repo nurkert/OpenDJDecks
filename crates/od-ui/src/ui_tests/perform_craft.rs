@@ -288,3 +288,42 @@ fn an_unknown_midi_device_is_pointed_to_the_setup() {
     unknown(&ui);
     assert!(!ui.app.ui.get_status_text().contains("Some Controller"));
 }
+
+/// [H1] After connecting a controller with channel faders the channels are
+/// closed until each fader moves; PLAY on such a deck says why it is
+/// silent, and once the fader moved it no longer does.
+#[test]
+fn play_on_a_closed_channel_says_why_it_is_silent() {
+    use od_controller::{ControlAction, DeckAction, MixerAction};
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    crate::engine::ensure_engine(&ui.app);
+    crate::controller::handle_event(
+        &ui.app,
+        od_controller::io::ControllerEvent::Connected {
+            device: "ddj-flx10".into(),
+            port: "DDJ-FLX10".into(),
+            usb: None,
+            channel_faders: true,
+        },
+    );
+    assert!(ui.wait_until(5.0, |u| snapshot(u).channels[0].fader < 0.01), "closed on connecting");
+    let play = |ui: &Ui| {
+        crate::controller::handle_action(
+            &ui.app,
+            ControlAction::Deck { deck: 1, action: DeckAction::PlayPause },
+        );
+    };
+    ui.app.status("");
+    play(&ui);
+    let text = ui.app.ui.get_status_text().to_string();
+    assert!(text.contains("Channel 1") && text.contains("fader"), "{text}");
+    play(&ui);
+    crate::controller::handle_action(
+        &ui.app,
+        ControlAction::Mixer { channel: 1, action: MixerAction::Fader(0.8) },
+    );
+    ui.app.status("");
+    play(&ui);
+    assert!(!ui.app.ui.get_status_text().contains("Channel 1"));
+}

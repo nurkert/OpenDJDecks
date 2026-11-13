@@ -800,6 +800,9 @@ pub(crate) fn wire(app: &Rc<App>) {
     sources::wire(app);
     sub::wire(app);
     ui.on_row_clicked(handler!(app, |a, i: i32, toggle: bool, range: bool| {
+        // A track picked by hand: a deck's LOAD loads it, even when the
+        // encoder was last in the lists column.
+        navigate::to_list(&a);
         select_row(&a, i as usize, toggle, range)
     }));
     ui.on_toggle_full_screen(handler!(app, |a| {

@@ -662,10 +662,12 @@ prio = "P2"
 tests = [
   "od-controller::mappings::browser_and_load",
   "od-ui::ui_tests::prepare::controller_browses_tree_and_list",
-  "od-ui::browser::navigate::tests::tree_steps_clamp_at_the_ends",
+  "od-ui::ui_tests::prepare::controller_reaches_every_list_and_goes_in_and_out",
+  "od-ui::browser::navigate::tests::steps_clamp_at_the_ends",
+  "od-ui::browser::navigate::tests::the_parent_is_one_level_up_of_the_same_kind",
 ]
 evidence = ["crates/od-ui/src/browser/navigate.rs"]
-note = "`browser::navigate`: BACK moves the encoder into the tree, turning steps through the lists (⇧ by eight), a press opens a folder / steps into it or moves into the track list; there turning steps rows, a press loads into a free deck, ⇧-press adds to the tag list; VIEW toggles the full browser (Prepare) or the Perform browse layout; SIMILAR opens the similar tracks. The tree marks the encoder focus"
+note = "`browser::navigate`: BACK moves the encoder into the lists column, turning steps through everything in it as drawn (collection, playlists, Explorer folders, similar, sticks, histories, recordings, tag list, created, AUTO SORT; ⇧ by eight) and the column scrolls along; a press or a deck's LOAD goes one level in (a folder opens and its first entry is taken, a list hands over to its tracks), BACK one level out (an open folder closes); there turning steps rows, a press loads into a free deck, ⇧-press adds to the tag list; VIEW toggles the full browser (Prepare) or the Perform browse layout; SIMILAR opens the similar tracks. The tree marks the encoder focus"
 
 [[feature]]
 id = "browser-explorer"

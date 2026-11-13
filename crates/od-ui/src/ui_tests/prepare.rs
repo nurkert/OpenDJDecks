@@ -618,6 +618,95 @@ fn controller_browses_tree_and_list() {
     );
 }
 
+/// [H1] On the owner's DDJ-FLX10 the encoder could not reach the Explorer's
+/// folders, LOAD loaded instead of going into a folder, and BACK did not
+/// always go one level up. Now the encoder steps through the whole lists
+/// column, LOAD goes in there as a press does, BACK goes out level by level
+/// (an open folder closes), and a track picked with the mouse gives the
+/// focus back to the tracks.
+#[test]
+fn controller_reaches_every_list_and_goes_in_and_out() {
+    use od_controller::{BrowseAction as B, ControlAction, DeckAction};
+    let ui = Ui::open((1440, 900));
+    let go = |a: B| {
+        crate::browser::navigate::controller(&ui.app, &a);
+        ui.pump(100);
+    };
+    let load = |deck: u8| {
+        crate::controller::handle_action(
+            &ui.app,
+            ControlAction::Deck {
+                deck,
+                action: DeckAction::Load,
+            },
+        );
+        ui.pump(100);
+    };
+    let one = B::Rotate {
+        delta: 1,
+        shifted: false,
+    };
+    ui.click("topbar.mode.perform");
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
+    // Down to the Explorer's root folder.
+    for _ in 0..30 {
+        if ui.app.ui.get_node_kind() == "explorer" {
+            break;
+        }
+        go(one.clone());
+    }
+    assert_eq!(ui.app.ui.get_node_kind(), "explorer", "the encoder reaches the Explorer");
+    let root = ui.app.ui.get_explorer_selected();
+    // LOAD in the lists column goes in: the folder opens, its sub-folder is next.
+    load(1);
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
+    let crate_dir = ui.app.ui.get_explorer_selected();
+    assert_ne!(crate_dir, root, "one level in");
+    // BACK: up to the folder holding it, then the open folder closes.
+    let rows = ui.app.ui.get_explorer().row_count();
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_explorer_selected(), root, "one level up");
+    go(B::Back);
+    assert!(ui.app.ui.get_explorer().row_count() < rows, "the open folder closes");
+    // In again, and LOAD on a folder without sub-folders enters its tracks.
+    load(1);
+    assert_eq!(ui.app.ui.get_explorer_selected(), crate_dir);
+    load(1);
+    assert!(
+        ui.wait_until(10.0, |u| u.app.ui.get_browse_focus() == "list"),
+        "into the folder's tracks"
+    );
+    // Now LOAD loads the file onto the deck.
+    load(1);
+    assert!(
+        ui.wait_until(20.0, |u| deck_title(u, 1).contains("Outside Loop")),
+        "deck 1: {}",
+        deck_title(&ui, 1)
+    );
+    // Further down: the recordings are an entry too.
+    go(B::Back);
+    for _ in 0..30 {
+        if ui.app.ui.get_section() == "recordings" {
+            break;
+        }
+        go(one.clone());
+    }
+    assert_eq!(ui.app.ui.get_section(), "recordings", "the encoder reaches the recordings");
+    // A track picked with the mouse: LOAD loads it, not into the lists.
+    go(B::Back);
+    while ui.app.ui.get_section() != "library" || ui.app.ui.get_node_kind() != "all" {
+        go(B::Rotate {
+            delta: -1,
+            shifted: false,
+        });
+    }
+    ui.app.ui.invoke_row_clicked(1, false, false);
+    ui.pump(100);
+    assert_eq!(ui.app.ui.get_browse_focus(), "list");
+}
+
+
 fn prefs_el(w: &crate::PreferencesWindow, label: &str) -> i_slint_backend_testing::ElementHandle {
     super::harness::find_all(w, label)
         .next()

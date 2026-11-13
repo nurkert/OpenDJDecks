@@ -575,11 +575,12 @@ pub(crate) fn wire(app: &Rc<App>) {
         c,
         ChannelCommand::SetChannelFxAmount(v)
     )));
-    ui.on_mixer_fader(handler!(app, |a, c: i32, v: f32| ch(
-        &a,
-        c,
-        ChannelCommand::SetFader(v)
-    )));
+    ui.on_mixer_fader(handler!(app, |a, c: i32, v: f32| {
+        // Set on screen: the channel's level is known again.
+        let i = (c.max(1) as usize - 1).min(decks::DECKS - 1);
+        a.controller.borrow_mut().fader_unknown[i] = false;
+        ch(&a, c, ChannelCommand::SetFader(v))
+    }));
     ui.on_mixer_cue(handler!(app, |a, c: i32| {
         engine::ensure_engine(&a);
         let i = (c as usize).saturating_sub(1).min(decks::DECKS - 1);

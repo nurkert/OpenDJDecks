@@ -44,7 +44,9 @@ The file is an ordinary mapping file you can share. Every entry in it is marked 
 
 ## Browse from the controller
 
-Turn the browse encoder to move through the list. **BACK** moves the focus into the tree, where turning steps through the lists (hold shift to jump by eight), and a press opens a folder or moves into the track list. In the list, a press loads into a free deck and shift-press adds to the tag list. **VIEW** toggles the full browser in Prepare and the Browse layout in Perform.
+Turn the browse encoder to move through the list. **BACK** moves the focus into the lists column, where turning steps through everything in it from top to bottom: the collection, playlists, the Explorer's folders, similar tracks, sticks, histories, recordings, the tag list, created tracks and AUTO SORT (hold shift to jump by eight). The column scrolls along. A press, or a deck's **LOAD**, goes one level in: a folder opens and its first entry is selected, a list hands over to its tracks. **BACK** goes one level out each time: from the tracks to their list, from an entry to the folder holding it, and an open folder closes. In the track list a press loads into a free deck, **LOAD** onto its deck, and shift-press adds to the tag list. A track you click with the mouse is the one **LOAD** loads. **VIEW** toggles the full browser in Prepare and the Browse layout in Perform.
+
+When a controller with channel faders connects, its channels start closed, because the app cannot know where the faders are until they move: move each fader once. **PLAY** on a deck whose fader has not moved yet says so in the status line.
 
 ## MIDI learn
 
