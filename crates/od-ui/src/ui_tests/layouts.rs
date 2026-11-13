@@ -403,6 +403,14 @@ fn guided_controller_setup_learns_controls_and_saves_a_mapping() {
     while ui.has("app.controller-setup.skip") {
         ui.click("app.controller-setup.skip");
     }
+    // After the core controls: the further ones are offered.
+    assert!(ui.wait_until(10.0, |u| u.has("app.controller-setup.more")));
+    ui.click("app.controller-setup.more");
+    assert!(ui.wait_until(10.0, |u| u.value("app.controller-setup.step") == "47/76"));
+    assert_eq!(ui.value("app.controller-setup.prompt"), "Press SHIFT on deck 1");
+    while ui.has("app.controller-setup.skip") {
+        ui.click("app.controller-setup.skip");
+    }
     assert!(ui.wait_until(10.0, |u| u.has("app.controller-setup.save")));
     pick(&ui, "app.controller-setup.save");
     assert!(ui.wait_until(10.0, |u| u.has("app.controller-setup.saved")));

@@ -272,6 +272,9 @@ fn args_text(s: &od_controller::guided::Step) -> String {
         }
         .into();
     }
+    if let Some(b) = s.args.get("beats").and_then(|v| v.as_float().or(v.as_integer().map(|i| i as f64))) {
+        return if b < 0.0 { "back" } else { "forward" }.into();
+    }
     match s.args.get("slot").and_then(|v| v.as_integer()) {
         Some(i) => crate::pads::hot_letter(i as usize),
         None => String::new(),
@@ -314,11 +317,16 @@ pub(crate) fn refresh(app: &App) {
         g.set_heard("".into());
         return;
     };
-    g.set_total(s.template.steps.len() as i32);
     g.set_index(s.index as i32);
     g.set_learned(s.learned_count() as i32);
     g.set_curve(s.template.crossfader_curve.clone().into());
+    g.set_total(s.total() as i32);
     match s.step() {
+        Some(_) if s.at_more_choice() => {
+            g.set_stage("more".into());
+            g.set_target("".into());
+            g.set_heard("".into());
+        }
         Some(step) => {
             g.set_stage("learn".into());
             g.set_action(step.action.clone().into());
@@ -402,6 +410,7 @@ pub(crate) fn wire(app: &Rc<App>) {
     g.on_skip(handler!(app, |a| with_setup(&a, |s| s.skip())));
     g.on_back(handler!(app, |a| with_setup(&a, |s| s.back())));
     g.on_retry(handler!(app, |a| with_setup(&a, |s| s.retry())));
+    g.on_more(handler!(app, |a, yes: bool| with_setup(&a, |s| s.choose_more(yes))));
     g.on_save(handler!(app, |a, n: SharedString| save(&a, &n)));
     g.on_close(handler!(app, |a| close(&a)));
     refresh(app);

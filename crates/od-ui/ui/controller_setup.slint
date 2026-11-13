@@ -40,6 +40,19 @@ export component ControllerSetupBar inherits Rectangle {
         : ControllerSetup.action == "browse.press" ? @tr("Press the browse knob")
         : ControllerSetup.action == "master_level" ? @tr("Turn the master level knob")
         : ControllerSetup.action == "headphone_level" ? @tr("Turn the headphone level knob")
+        : ControllerSetup.action == "deck.shift" ? @tr("Press SHIFT on deck {}", root.d)
+        : ControllerSetup.action == "deck.loop_in" ? @tr("Press LOOP IN on deck {}", root.d)
+        : ControllerSetup.action == "deck.loop_out" ? @tr("Press LOOP OUT on deck {}", root.d)
+        : ControllerSetup.action == "deck.auto_loop" ? @tr("Press the 4-beat loop key on deck {}", root.d)
+        : ControllerSetup.action == "deck.beat_jump" && ControllerSetup.args == "back" ? @tr("Press beat jump back on deck {}", root.d)
+        : ControllerSetup.action == "deck.beat_jump" ? @tr("Press beat jump forward on deck {}", root.d)
+        : ControllerSetup.action == "deck.keylock" ? @tr("Press KEY LOCK on deck {}", root.d)
+        : ControllerSetup.action == "deck.slip" ? @tr("Press SLIP on deck {}", root.d)
+        : ControllerSetup.action == "mixer.channel_fx" ? @tr("Turn the CH FX knob of channel {}", root.d)
+        : ControllerSetup.action == "headphone_mix" ? @tr("Turn the headphone mix knob")
+        : ControllerSetup.action == "browse.back" ? @tr("Press the browse back key")
+        : ControllerSetup.action == "tempo_fx.toggle" ? @tr("Press the effect on / off key")
+        : ControllerSetup.action == "tempo_fx.level" ? @tr("Turn the effect level knob")
         : ControllerSetup.action;
 
     HorizontalLayout {
@@ -142,6 +155,37 @@ export component ControllerSetupBar inherits Rectangle {
                 compact: true; label: @tr("SKIP");
                 tooltip: @tr("The controller has no such control: go on without it");
                 clicked => { ControllerSetup.skip(); }
+            } }
+        }
+
+        // ── 2b. The further controls, or save ──
+        if ControllerSetup.stage == "more": Text {
+            accessible-role: text; accessible-id: "app.controller-setup.prompt"; accessible-value: self.text;
+            horizontal-stretch: 1; min-width: 120px;
+            vertical-alignment: center; wrap: word-wrap; overflow: elide;
+            font-family: Theme.family; font-size: Theme.body; font-weight: Theme.weight-medium; color: Theme.bone;
+            text: @tr("{} of {} core controls learned. Go on with SHIFT, more pads, loops, beat jump, key lock, slip and effects?", ControllerSetup.learned, ControllerSetup.index);
+        }
+        if ControllerSetup.stage == "more": HorizontalLayout {
+            alignment: center;
+            spacing: Theme.key-gap;
+            VerticalLayout { alignment: center; PlateButton {
+                accessible-role: button; accessible-id: "app.controller-setup.back";
+                compact: true; label: @tr("BACK");
+                tooltip: @tr("Back one control, to learn it again");
+                clicked => { ControllerSetup.back(); }
+            } }
+            VerticalLayout { alignment: center; PlateButton {
+                accessible-role: button; accessible-id: "app.controller-setup.more";
+                compact: true; label: @tr("MORE CONTROLS"); tone: Theme.live; active: true;
+                tooltip: @tr("Learn the further controls too; each can be skipped");
+                clicked => { ControllerSetup.more(true); }
+            } }
+            VerticalLayout { alignment: center; PlateButton {
+                accessible-role: button; accessible-id: "app.controller-setup.finish";
+                compact: true; label: @tr("SAVE NOW");
+                tooltip: @tr("Save with the core controls; the rest works from the screen and the keyboard");
+                clicked => { ControllerSetup.more(false); }
             } }
         }
 

@@ -82,6 +82,9 @@ pub enum ControllerEvent {
         device: String,
         port: String,
         usb: Option<(u16, u16)>,
+        /// The mapping has physical channel faders (their positions are
+        /// unknown until they move).
+        channel_faders: bool,
     },
     Disconnected {
         device: String,
@@ -495,10 +498,12 @@ fn rescan(
                     .find(|d| m.matches_usb(d.vendor_id, d.product_id))
                     .map(|d| (d.vendor_id, d.product_id));
                 let device = m.device().id.clone();
+                let channel_faders = m.inputs.iter().any(|b| b.template.name == "mixer.fader");
                 let _ = events.send(ControllerEvent::Connected {
                     device: device.clone(),
                     port: name.clone(),
                     usb: ids,
+                    channel_faders,
                 });
                 tracing::info!("controller connected: {device} on {name}");
                 (Some(session), output, device)

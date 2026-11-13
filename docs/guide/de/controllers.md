@@ -21,9 +21,9 @@ Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Model
 |---|---|---|---|---|
 | kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 12 bestätigt, 117 teilweise, 147 ungetestet |
 | kompatibel mit DDJ-FLX4 | 2 | eingebaut | MIDI-Portname `DDJ-FLX4` | nicht bestätigt: 0 bestätigt, 126 teilweise, 47 ungetestet |
-| Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (46 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
-| Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (44 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
-| Jeder Controller mit vier Decks | 4 | geführte Einrichtung, Vorlage `four-deck` (78 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
+| Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (76 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
+| Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (74 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
+| Jeder Controller mit vier Decks | 4 | geführte Einrichtung, Vorlage `four-deck` (134 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
 <!-- controller-list:end -->
 
 Jeder andere Controller lässt sich mit der geführten Einrichtung unten einrichten, ausgehend von einer von drei allgemeinen Vorlagen. Weitere Modell-Mappings, auch für Einsteiger- und Battle-Controller, kommen von Besitzern, die ihr eigenes Gerät mit der geführten Einrichtung aufnehmen und die Datei weitergeben. Keines davon ist schon für andere Geräte bestätigt. OpenDJDecks leitet keine Mappings aus Herstellerhandbüchern, MIDI-Tabellen, Herstellersoftware oder Mapping-Dateien anderer Projekte ab.
@@ -37,13 +37,16 @@ Für einen Controller ohne Mapping drückst du **CONTROLLER EINRICHTEN** unter *
 1. Schließe den Controller per USB an und wähle, was ihm am nächsten kommt: **2 DECKS · EINSTEIGER**, **2 DECKS · BATTLE** oder **4 DECKS**. Drücke **START**.
 2. Das Band fragt nach einem Bedienelement nach dem anderen: PLAY, CUE und SYNC, das Jogwheel (berühren, dann drehen), Tempo-Fader und LOAD jedes Decks, dann die Hot-Cue-Pads, die Kanalfader, TRIM und die EQ-Regler, Kopfhörer-CUE, den Crossfader, den Browse-Regler sowie Master- und Kopfhörerpegel. Das passende Element auf dem Bildschirm bekommt den Rahmen der Anleitung.
 3. Bewege das Element. **Empfangen** zeigt, was ankam; sobald das Element einen Moment ruht, ist der Schritt übernommen und der nächste kommt. Ein Element, das ein früherer Schritt schon benutzt, wird mit der Nummer dieses Schritts abgelehnt. **ÜBERSPRINGEN** lässt weg, was dein Controller nicht hat, **ZURÜCK** geht einen Schritt zurück, um ihn neu zu lernen, **NOCHMAL** vergisst, was ankam.
-4. Am Ende gibst du dem Controller einen Namen und drückst **MAPPING SPEICHERN**. Die Datei landet neben deiner Bibliothek in `mappings/`, wird deine eigene Mapping-Datei und gilt ab dem nächsten Start. Die Battle-Vorlage stellt außerdem die Crossfader-Kurve auf **CUT**.
+4. Nach den Grund-Bedienelementen fragt das Band, ob es weitergehen soll: **WEITERE ELEMENTE** lernt SHIFT, die Hot-Cue-Pads E bis H, LOOP IN und OUT, die 4-Beat-Loop, Beat Jump zurück und vor, KEY LOCK und SLIP jedes Decks, die CH-FX-Regler, den Kopfhörer-Mix, Browse zurück sowie eine Effekt-an/aus-Taste und einen Effekt-Pegel, jedes davon überspringbar. **JETZT SPEICHERN** geht direkt zum Speichern mit den Grund-Bedienelementen.
+5. Am Ende gibst du dem Controller einen Namen und drückst **MAPPING SPEICHERN**. Die Datei landet neben deiner Bibliothek in `mappings/`, wird deine eigene Mapping-Datei und gilt ab dem nächsten Start. Die Battle-Vorlage stellt außerdem die Crossfader-Kurve auf **CUT**.
 
 Die Datei ist eine gewöhnliche Mapping-Datei, die du weitergeben kannst. Jeder Eintrag darin ist als nicht bestätigt markiert (`verify = true`), denn gehört wurde nur dein Gerät. Solange die Einrichtung, MIDI-Learn oder der Monitor läuft, öffnet OpenDJDecks auch MIDI-Eingänge, die kein Mapping kennt; auf manchen Systemen kann ein anderes Programm einen solchen Port dann nicht gleichzeitig benutzen. Die geführte Einrichtung wurde mit simulierten MIDI-Nachrichten getestet, noch nicht mit einem echten Controller.
 
 ## Am Controller stöbern
 
-Drehe den Browse-Encoder, um durch die Liste zu gehen. **BACK** verschiebt den Fokus in den Baum, wo Drehen durch die Listen geht (mit Shift um acht) und ein Druck einen Ordner öffnet oder in die Trackliste wechselt. In der Liste lädt ein Druck auf ein freies Deck, Shift-Druck fügt der Tag-Liste hinzu. **VIEW** schaltet in Prepare den ganzen Browser und in Perform das Browse-Layout.
+Drehe den Browse-Encoder, um durch die Liste zu gehen. **BACK** verschiebt den Fokus in die Listenspalte, wo Drehen von oben nach unten durch alles darin geht: die Sammlung, Playlists, die Ordner des Explorers, ähnliche Tracks, Sticks, Verläufe, Aufnahmen, die Tag-Liste, erstellte Tracks und AUTO SORT (mit Shift um acht). Die Spalte scrollt mit. Ein Druck oder **LOAD** an einem Deck geht eine Ebene hinein: Ein Ordner öffnet sich und sein erster Eintrag wird gewählt, eine Liste übergibt an ihre Tracks. **BACK** geht jedes Mal eine Ebene hinaus: von den Tracks zu ihrer Liste, von einem Eintrag zum Ordner, der ihn enthält, und ein offener Ordner schließt sich. In der Trackliste lädt ein Druck auf ein freies Deck, **LOAD** auf sein Deck, und Shift-Druck fügt der Tag-Liste hinzu. Ein Track, den du mit der Maus anklickst, ist der, den **LOAD** lädt. **VIEW** schaltet in Prepare den ganzen Browser und in Perform das Browse-Layout.
+
+Verbindet sich ein Controller mit Kanalfadern, starten seine Kanäle geschlossen, weil die App nicht wissen kann, wo die Fader stehen, bis sie sich bewegen: Bewege jeden Fader einmal. **PLAY** auf einem Deck, dessen Fader sich noch nicht bewegt hat, sagt das in der Statuszeile.
 
 ## MIDI-Learn
 

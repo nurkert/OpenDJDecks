@@ -547,3 +547,443 @@ action = "split_cue"
 expect = "button"
 name = "Split cue"
 screen = "global.phones.split"
+
+# ---------------------------------------------------------------- further controls
+# Offered after the core ones; the person chooses whether to go on.
+
+[[step]]
+action = "deck.shift"
+deck = 1
+expect = "button"
+name = "Shift (deck 1)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 4 }
+expect = "button"
+name = "Hot cue E (deck 1)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 5 }
+expect = "button"
+name = "Hot cue F (deck 1)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 6 }
+expect = "button"
+name = "Hot cue G (deck 1)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 1
+args = { slot = 7 }
+expect = "button"
+name = "Hot cue H (deck 1)"
+more = true
+
+[[step]]
+action = "deck.loop_in"
+deck = 1
+expect = "button"
+name = "Loop in (deck 1)"
+more = true
+
+[[step]]
+action = "deck.loop_out"
+deck = 1
+expect = "button"
+name = "Loop out (deck 1)"
+more = true
+
+[[step]]
+action = "deck.auto_loop"
+deck = 1
+args = { beats = 4 }
+expect = "button"
+name = "4-beat loop (deck 1)"
+screen = "deck1.loop.auto"
+more = true
+
+[[step]]
+action = "deck.beat_jump"
+deck = 1
+args = { beats = -4 }
+expect = "button"
+name = "Beat jump back (deck 1)"
+screen = "deck1.jump.back"
+more = true
+
+[[step]]
+action = "deck.beat_jump"
+deck = 1
+args = { beats = 4 }
+expect = "button"
+name = "Beat jump forward (deck 1)"
+screen = "deck1.jump.forward"
+more = true
+
+[[step]]
+action = "deck.keylock"
+deck = 1
+expect = "button"
+name = "Key lock (deck 1)"
+screen = "deck1.keylock"
+more = true
+
+[[step]]
+action = "deck.slip"
+deck = 1
+expect = "button"
+name = "Slip (deck 1)"
+screen = "deck1.slip"
+more = true
+
+[[step]]
+action = "deck.shift"
+deck = 2
+expect = "button"
+name = "Shift (deck 2)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 4 }
+expect = "button"
+name = "Hot cue E (deck 2)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 5 }
+expect = "button"
+name = "Hot cue F (deck 2)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 6 }
+expect = "button"
+name = "Hot cue G (deck 2)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 2
+args = { slot = 7 }
+expect = "button"
+name = "Hot cue H (deck 2)"
+more = true
+
+[[step]]
+action = "deck.loop_in"
+deck = 2
+expect = "button"
+name = "Loop in (deck 2)"
+more = true
+
+[[step]]
+action = "deck.loop_out"
+deck = 2
+expect = "button"
+name = "Loop out (deck 2)"
+more = true
+
+[[step]]
+action = "deck.auto_loop"
+deck = 2
+args = { beats = 4 }
+expect = "button"
+name = "4-beat loop (deck 2)"
+screen = "deck2.loop.auto"
+more = true
+
+[[step]]
+action = "deck.beat_jump"
+deck = 2
+args = { beats = -4 }
+expect = "button"
+name = "Beat jump back (deck 2)"
+screen = "deck2.jump.back"
+more = true
+
+[[step]]
+action = "deck.beat_jump"
+deck = 2
+args = { beats = 4 }
+expect = "button"
+name = "Beat jump forward (deck 2)"
+screen = "deck2.jump.forward"
+more = true
+
+[[step]]
+action = "deck.keylock"
+deck = 2
+expect = "button"
+name = "Key lock (deck 2)"
+screen = "deck2.keylock"
+more = true
+
+[[step]]
+action = "deck.slip"
+deck = 2
+expect = "button"
+name = "Slip (deck 2)"
+screen = "deck2.slip"
+more = true
+
+[[step]]
+action = "deck.shift"
+deck = 3
+expect = "button"
+name = "Shift (deck 3)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 3
+args = { slot = 4 }
+expect = "button"
+name = "Hot cue E (deck 3)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 3
+args = { slot = 5 }
+expect = "button"
+name = "Hot cue F (deck 3)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 3
+args = { slot = 6 }
+expect = "button"
+name = "Hot cue G (deck 3)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 3
+args = { slot = 7 }
+expect = "button"
+name = "Hot cue H (deck 3)"
+more = true
+
+[[step]]
+action = "deck.loop_in"
+deck = 3
+expect = "button"
+name = "Loop in (deck 3)"
+more = true
+
+[[step]]
+action = "deck.loop_out"
+deck = 3
+expect = "button"
+name = "Loop out (deck 3)"
+more = true
+
+[[step]]
+action = "deck.auto_loop"
+deck = 3
+args = { beats = 4 }
+expect = "button"
+name = "4-beat loop (deck 3)"
+screen = "deck3.loop.auto"
+more = true
+
+[[step]]
+action = "deck.beat_jump"
+deck = 3
+args = { beats = -4 }
+expect = "button"
+name = "Beat jump back (deck 3)"
+screen = "deck3.jump.back"
+more = true
+
+[[step]]
+action = "deck.beat_jump"
+deck = 3
+args = { beats = 4 }
+expect = "button"
+name = "Beat jump forward (deck 3)"
+screen = "deck3.jump.forward"
+more = true
+
+[[step]]
+action = "deck.keylock"
+deck = 3
+expect = "button"
+name = "Key lock (deck 3)"
+screen = "deck3.keylock"
+more = true
+
+[[step]]
+action = "deck.slip"
+deck = 3
+expect = "button"
+name = "Slip (deck 3)"
+screen = "deck3.slip"
+more = true
+
+[[step]]
+action = "deck.shift"
+deck = 4
+expect = "button"
+name = "Shift (deck 4)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 4
+args = { slot = 4 }
+expect = "button"
+name = "Hot cue E (deck 4)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 4
+args = { slot = 5 }
+expect = "button"
+name = "Hot cue F (deck 4)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 4
+args = { slot = 6 }
+expect = "button"
+name = "Hot cue G (deck 4)"
+more = true
+
+[[step]]
+action = "deck.hot_cue"
+deck = 4
+args = { slot = 7 }
+expect = "button"
+name = "Hot cue H (deck 4)"
+more = true
+
+[[step]]
+action = "deck.loop_in"
+deck = 4
+expect = "button"
+name = "Loop in (deck 4)"
+more = true
+
+[[step]]
+action = "deck.loop_out"
+deck = 4
+expect = "button"
+name = "Loop out (deck 4)"
+more = true
+
+[[step]]
+action = "deck.auto_loop"
+deck = 4
+args = { beats = 4 }
+expect = "button"
+name = "4-beat loop (deck 4)"
+screen = "deck4.loop.auto"
+more = true
+
+[[step]]
+action = "deck.beat_jump"
+deck = 4
+args = { beats = -4 }
+expect = "button"
+name = "Beat jump back (deck 4)"
+screen = "deck4.jump.back"
+more = true
+
+[[step]]
+action = "deck.beat_jump"
+deck = 4
+args = { beats = 4 }
+expect = "button"
+name = "Beat jump forward (deck 4)"
+screen = "deck4.jump.forward"
+more = true
+
+[[step]]
+action = "deck.keylock"
+deck = 4
+expect = "button"
+name = "Key lock (deck 4)"
+screen = "deck4.keylock"
+more = true
+
+[[step]]
+action = "deck.slip"
+deck = 4
+expect = "button"
+name = "Slip (deck 4)"
+screen = "deck4.slip"
+more = true
+
+[[step]]
+action = "mixer.channel_fx"
+deck = 1
+expect = "fader"
+name = "CH FX knob (channel 1)"
+more = true
+
+[[step]]
+action = "mixer.channel_fx"
+deck = 2
+expect = "fader"
+name = "CH FX knob (channel 2)"
+more = true
+
+[[step]]
+action = "mixer.channel_fx"
+deck = 3
+expect = "fader"
+name = "CH FX knob (channel 3)"
+more = true
+
+[[step]]
+action = "mixer.channel_fx"
+deck = 4
+expect = "fader"
+name = "CH FX knob (channel 4)"
+more = true
+
+[[step]]
+action = "headphone_mix"
+expect = "fader"
+name = "Headphone mix"
+screen = "global.phones.mix"
+more = true
+
+[[step]]
+action = "browse.back"
+expect = "button"
+name = "Browse back"
+more = true
+
+[[step]]
+action = "tempo_fx.toggle"
+expect = "button"
+name = "Effect on / off"
+more = true
+
+[[step]]
+action = "tempo_fx.level"
+expect = "fader"
+name = "Effect level"
+more = true
