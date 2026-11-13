@@ -196,8 +196,8 @@ const en = {
       pi: 'OpenDJDecks for the Raspberry Pi',
     },
     reqs: {
-      macos: 'macOS 13 or newer. Free, no account.',
-      windows: 'For Windows 10 and 11. Free, no account.',
+      macos: 'macOS 13 or newer, Apple silicon or Intel, 8 GB of memory. Free, no account.',
+      windows: 'For Windows 10 and 11, 64-bit, 8 GB of memory. Free, no account.',
     },
     more: 'Other versions',
     unknownOs: 'OpenDJDecks runs on computers, not on phones or tablets. Choose your system here:',
@@ -258,7 +258,7 @@ const en = {
       },
     ],
     linuxTitle: 'Install on Linux',
-    linuxIntro: 'The simplest way on Ubuntu or Debian is the .deb package. On anything else the AppImage runs without installing.',
+    linuxIntro: 'For Ubuntu 24.04, Debian 13 or newer, 64-bit, 8 GB of memory. The simplest way on Ubuntu or Debian is the .deb package. On anything else the AppImage runs without installing.',
     linuxDeb: {
       title: '.deb package',
       steps: [

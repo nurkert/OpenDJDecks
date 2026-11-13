@@ -164,7 +164,8 @@ pub(crate) fn apply_theme(theme: &crate::Theme<'_>, settings: &Settings, lite: b
     theme.set_text_scale(settings.browser.font_size as f32 / 14.0);
     theme.set_colorblind_safe(settings.view.colorblind_safe);
     theme.set_high_contrast(settings.view.high_contrast);
-    theme.set_motion(!settings.view.reduced_motion && !lite);
+    // Low-CPU mode (and with it the Lite profile) has no decorative motion.
+    theme.set_motion(!settings.view.reduced_motion && !lite && !settings.view.low_cpu);
     theme.set_phrase_names(settings.view.phrase_types != "colors");
     crate::appearance::apply(theme, &settings.view.appearance);
     crate::render::set_colorblind_safe(settings.view.colorblind_safe);

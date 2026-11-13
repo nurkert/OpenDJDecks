@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 335 features; 329 in scope: 329 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 336 features; 330 in scope: 330 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -58,7 +58,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Track compatibility at a glance (MATCH column) | DONE | `browser/filter.rs::match_with`, `browser/sources.rs::match_reference`, `ui/table.slint`; MATCH column (default on): every row rated against the master deck, else a playing deck, else the selected track — Camelot distance (≤ 1 good, 2 workable) and tempo (±3 % good, ±6 % workable, half / double time counted) as 0–3 lit lines, the reason on hover; sortable (best fit first, then the closer tempo); follows the master deck while you play | 3 | P2 |
 | Track suggestion / harmonic matching | DONE | `ui/user_tags.slint::SuggestionPanel`, `browser/sources.rs`; SIMILAR panel: what fits after the selected track (tempo ±6 %, compatible key), double-click loads into a free deck, SHOW AS LIST opens it as the Similar list; key-distance marks in the KEY column | 3 | P2 |
 | Intelligent (smart) playlists | DONE | `od-library/src/smart.rs`, text rule editor `od-ui/src/smart_text.rs`, `on_set_smart_rule` | 4 |  |
-| Histories: own play history | DONE | `recorder.rs::log_play`, `browser/sources.rs`; Every track that becomes the audible deck is logged in the run's session ("Session 2026-11-07 21:30"), recording or not; HISTORIES in the tree lists the sessions, each opens its plays in order | 2 | P2 |
+| Histories: own play history | DONE | `recorder.rs::log_play`, `browser/sources.rs`; Every track that becomes the audible deck is logged in the run's session ("Session 2026-11-07 21:30"), recording or not, once per load (the on-air deck flipping back and forth does not log it again); HISTORIES in the tree lists the sessions, each opens its plays in order | 3 | P2 |
 | Track preview (Prepare) | DONE | `perform.rs::toggle_preview` on a preview deck; Space key | 1 |  |
 | Loaded-on-deck indicator | DONE | `TrackRow.deck` | 1 |  |
 | Duplicate track check | DONE | `crates/od-ui/src/browser/sources.rs::duplicates_action`; File ▸ Find Duplicate Tracks (⌥⌘Y) lists the groups in the browser; REMOVE SELECTED and KEEP ONE OF EACH remove copies from the collection (files stay on disk) | 3 |  |
@@ -390,6 +390,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Colour-blind palette and high-contrast theme | DONE | Preferences > View switches (and the CLI flags) set the colour-blind-safe palette and the high-contrast theme live; stored in the settings; (SPEC §12) | 1 |  |
 | English and German UI | DONE | `crates/od-i18n`; (SPEC §2) | 2 |  |
 | Lite / Full performance profiles | DONE | (SPEC §3.2) | 2 |  |
+| Low-CPU mode: 30 frames a second, stepped waveforms, no decorative motion, larger automatic buffer | DONE | `crates/od-ui/src/low_cpu.rs`, `crates/od-ui/ui/wave.slint::WaveLane`; Preferences › View › Computer load, stored; always on in the Lite profile (Raspberry Pi). The waveform lanes keep their tile textures while the playhead is stepped. Measured on one Apple M1 Max only (debug build); not measured on a Raspberry Pi or older computers.; (Roadmap [68]) | 6 |  |
 | Raspberry Pi kiosk (linuxkms, Perform, controller browsing) | DONE (beyond the usual) | Built and driven headless on CI (`packaging/ci/headless-e2e.sh`); the kiosk configuration (Perform, browse screen, 44 px touch rows and keys) is driven by a UI test; (SPEC §3.3) | 1 |  |
 | Keyboard shortcuts for layouts and a View menu | DONE | `crates/od-ui/ui/app.slint::MenuBar`; View menu (modes, Prepare layout, info / similar / Tags / filter panels, sections) and keys ⌥⌘4 / ⌥⌘5 (layouts), ⌥⌘I / ⌥⌘E / ⌥⌘G (panels); the menu bar is native on macOS, elsewhere its actions are reached by the keys; (UX §1.9, §4 P3.7) | 3 |  |
 | Perform view menu (2 / 4 decks, horizontal / vertical, Browse) | DONE | `ui/topbar.slint::ViewMenu`, `decks.rs::set_perform_view`; One menu in the top bar with a picture per view; the deck count is kept across starts | 1 | P2 |
@@ -444,13 +445,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 329 |
+| DONE | 330 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **335** |
+| **Total** | **336** |
 
 ## P1 gaps and implementation notes
 

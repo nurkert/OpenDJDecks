@@ -178,6 +178,7 @@ impl App {
         crate::lane_drag::wire(&app);
         sampler::wire(&app);
         preferences::wire(&app);
+        crate::low_cpu::demo(&app);
         crate::appearance::wire(&app);
         crate::gig::wire(&app);
         update::wire(&app);

@@ -479,6 +479,11 @@ pub(crate) fn refresh(app: &App) {
         w.set_incoming_overlay(s.view.incoming_overlay);
         w.set_calm_waveform(s.view.calm_waveform);
         w.set_touch_layout(s.view.touch_layout);
+        {
+            let st = app.state.borrow();
+            w.set_low_cpu(crate::low_cpu::active(&st.settings, &st.config));
+            w.set_low_cpu_locked(st.config.lite);
+        }
         w.set_phrases_overview(s.view.phrases_overview);
         w.set_phrase_types(index_of(
             &crate::settings::PHRASE_TYPES,
@@ -1073,6 +1078,8 @@ const PAGE_TERMS: &[(&str, &[&str])] = &[
             "color",
             "contrast",
             "motion",
+            "cpu",
+            "processor",
             "scale",
             "ansicht",
             "sprache",
@@ -1083,6 +1090,8 @@ const PAGE_TERMS: &[(&str, &[&str])] = &[
             "farbe",
             "kontrast",
             "skalierung",
+            "prozessor",
+            "rechenlast",
         ],
     ),
     (
@@ -1190,6 +1199,7 @@ pub(crate) fn demo_page(app: &App, page: &str, y: f32) {
     refresh(app);
     with_window(app, |w| {
         w.set_controller_scroll(-y);
+        w.set_view_scroll(-y);
         w.window().set_size(slint::LogicalSize::new(1440.0, 900.0));
     });
 }
@@ -1317,6 +1327,7 @@ fn apply_live(app: &App) {
         c.requested = requested;
     }
     let _ = app.analysis.wake.send(());
+    crate::low_cpu::apply(app);
     crate::engine::show_message(app);
     app.refresh_all();
     crate::decks::refresh_analysis(app);
@@ -1640,6 +1651,14 @@ fn flag(app: &App, key: &str, v: bool) {
         }
         "view.contrast" => change(app, |s| s.view.high_contrast = v),
         "view.motion" => change(app, |s| s.view.reduced_motion = v),
+        "view.low-cpu" => {
+            change(app, |s| s.view.low_cpu = v);
+            app.status(if crate::low_cpu::on(app) {
+                od_i18n::tr("Low-CPU mode on: fewer redraws, no decorative motion")
+            } else {
+                od_i18n::tr("Low-CPU mode off")
+            });
+        }
         "analysis.key" => change(app, |s| s.analysis.detect_key = v),
         "analysis.phrases" => change(app, |s| s.analysis.detect_phrases = v),
         "analysis.auto" => change(app, |s| s.analysis.auto_analyse = v),

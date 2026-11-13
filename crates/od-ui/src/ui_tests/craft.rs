@@ -74,6 +74,83 @@ fn reduced_motion_stops_every_named_timing() {
     assert_eq!(timings(&ui.app.ui.global::<crate::Theme>()), on, "back on");
 }
 
+/// [68] Low-CPU mode: a switch with its description in Preferences ›
+/// View, like the other on/off rows there, stored; it halves the frame
+/// tick, turns decorative motion off and steps the playing waveform (rate
+/// 0, moved on each tick) instead of letting it glide on the display clock.
+/// Off again restores all three. In the Lite profile it is on, cannot be
+/// switched off and says why.
+#[test]
+fn low_cpu_mode_throttles_redraws_and_is_stored() {
+    use slint::Model;
+    use std::time::Duration;
+    let ui = Ui::open((1440, 900));
+    ui.app.ui.invoke_set_mode("perform".into());
+    crate::engine::ensure_engine(&ui.app);
+    ui.pump(300);
+    crate::decks::load_track(&ui.app, 0, ui.fx.tracks[0].0, None);
+    assert!(
+        ui.wait_until(30.0, |u| super::flows::deck_views(u).first().is_some_and(|d| d.loaded && !d.loading)),
+        "deck 1 loads"
+    );
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::Play);
+    let lane = |u: &Ui| u.app.ui.get_lane_motion().row_data(0).unwrap_or_default();
+    assert!(ui.wait_until(5.0, |u| lane(u).rate > 0.0), "the lane glides at full rate");
+    assert_eq!(crate::engine::frame_period(&ui.app), Duration::from_millis(16));
+    assert!(ui.app.ui.global::<crate::Theme>().get_motion());
+
+    let w = prefs(&ui, "view");
+    let key = prefs_el(&w, "prefs.view.low-cpu");
+    let neighbour = prefs_el(&w, "prefs.view.touch");
+    assert_eq!(key.size().height, neighbour.size().height, "the same switch as its neighbours");
+    assert_eq!(key.accessible_role(), neighbour.accessible_role());
+    assert!(
+        key.accessible_label().is_some_and(|l| l.contains("decorative motion")),
+        "described like the others: {:?}",
+        key.accessible_label()
+    );
+    let checked = |w: &crate::PreferencesWindow| prefs_el(w, "prefs.view.low-cpu").accessible_checked();
+    assert_eq!(checked(&w), Some(false), "off by default");
+    assert_eq!(key.accessible_enabled(), Some(true));
+    assert!(super::harness::find_all(&w, "prefs.view.low-cpu.locked").next().is_none(), "no lock outside the Lite profile");
+    key.mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert!(stored(&ui).view.low_cpu, "stored");
+    assert_eq!(checked(&w), Some(true));
+    assert_eq!(crate::engine::frame_period(&ui.app), Duration::from_millis(33), "30 frames a second");
+    assert!(!ui.app.ui.global::<crate::Theme>().get_motion(), "no decorative motion");
+    assert!(ui.wait_until(2.0, |u| lane(u).rate == 0.0), "the lane is stepped");
+    let (at, tiles) = (lane(&ui).pos, lane(&ui).tiles);
+    assert!(ui.wait_until(2.0, |u| lane(u).pos > at + 0.05), "and still moves with the deck");
+    // Moving the playhead keeps the tiles (no new textures every frame);
+    // at most one tile step may fall in between.
+    assert!(lane(&ui).tiles - tiles <= 1, "tiles kept while stepping: {tiles} → {}", lane(&ui).tiles);
+
+    prefs_el(&w, "prefs.view.low-cpu").mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert!(!stored(&ui).view.low_cpu);
+    assert_eq!(crate::engine::frame_period(&ui.app), Duration::from_millis(16));
+    assert!(ui.app.ui.global::<crate::Theme>().get_motion());
+    assert!(ui.wait_until(2.0, |u| lane(u).rate > 0.0), "gliding again");
+    assert_eq!(checked(&w), Some(false));
+
+    // The Lite profile (Raspberry Pi): on, locked, and the reason beside it.
+    ui.app.state.borrow_mut().config.lite = true;
+    crate::preferences::refresh(&ui.app);
+    ui.pump(100);
+    let key = prefs_el(&w, "prefs.view.low-cpu");
+    assert_eq!(key.accessible_checked(), Some(true), "on in the Lite profile");
+    assert_eq!(key.accessible_enabled(), Some(false), "and cannot be switched off");
+    assert_eq!(
+        prefs_el(&w, "prefs.view.low-cpu.locked").accessible_value().as_deref(),
+        Some("ALWAYS ON · LITE PROFILE")
+    );
+    key.mock_single_click(PointerEventButton::Left);
+    ui.pump(100);
+    assert!(!stored(&ui).view.low_cpu, "a click changes nothing");
+    assert!(crate::low_cpu::on(&ui.app), "still on");
+}
+
 /// [46] Knobs: bipolar knobs (trim, EQ, CH FX) carry a centre mark, a
 /// unipolar one (headphone level) does not; the value arc appears once a
 /// bipolar knob leaves the centre; dragging shows the value above the ring

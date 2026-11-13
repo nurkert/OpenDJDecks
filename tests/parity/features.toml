@@ -461,9 +461,10 @@ prio = "P2"
 tests = [
   "od-ui::recorder::tests::names_and_details",
   "od-ui::ui_tests::browser::histories_list_play_sessions",
+  "od-ui::ui_tests::browser::on_air_flips_enter_each_load_once",
 ]
 evidence = ["recorder.rs::log_play", "browser/sources.rs"]
-note = "Every track that becomes the audible deck is logged in the run's session (\"Session 2026-11-07 21:30\"), recording or not; HISTORIES in the tree lists the sessions, each opens its plays in order"
+note = "Every track that becomes the audible deck is logged in the run's session (\"Session 2026-11-07 21:30\"), recording or not, once per load (the on-air deck flipping back and forth does not log it again); HISTORIES in the tree lists the sessions, each opens its plays in order"
 
 [[feature]]
 id = "browser-track-preview"
@@ -3233,6 +3234,24 @@ tests = [
   "od-analysis::tempo::tests::lite_mode_is_close",
 ]
 spec = "SPEC §3.2"
+
+[[feature]]
+id = "shell-low-cpu"
+area = "shell"
+name = "Low-CPU mode: 30 frames a second, stepped waveforms, no decorative motion, larger automatic buffer"
+scope = "in"
+status = "done"
+tests = [
+  "od-ui::ui_tests::craft::low_cpu_mode_throttles_redraws_and_is_stored",
+  "od-ui::low_cpu::tests::the_setting_or_the_lite_profile_turns_it_on",
+  "od-ui::low_cpu::tests::it_halves_the_frame_rate_and_doubles_the_automatic_buffer",
+  "od-ui::low_cpu::tests::separation_keeps_half_the_cores_free",
+  "od-ui::low_cpu::tests::the_player_detail_is_drawn_less_often",
+  "od-ui::low_cpu::tests::the_setting_is_stored_and_read_back",
+]
+evidence = ["crates/od-ui/src/low_cpu.rs", "crates/od-ui/ui/wave.slint::WaveLane"]
+spec = "Roadmap [68]"
+note = "Preferences › View › Computer load, stored; always on in the Lite profile (Raspberry Pi). The waveform lanes keep their tile textures while the playhead is stepped. Measured on one Apple M1 Max only (debug build); not measured on a Raspberry Pi or older computers."
 
 [[feature]]
 id = "shell-kiosk"

@@ -110,6 +110,18 @@ Stunde für Stunde:
 - **Was das für dich heißt:** Mit vier Decks, Stems und Effekten bei 5,3 ms Puffer schließt du am besten alles andere auf dem Rechner oder wählst einen größeren Puffer. Zwei Decks liefen auch neben schwerer Arbeit stabil.
 - **Noch offen:** Diese Läufe liefen auf einem Rechner, der gleichzeitig benutzt wurde. Ein Lauf auf einem ruhigen Rechner und Läufe über acht Stunden fehlen noch. Sie kommen hier dazu, auf dieselbe Weise gemessen.
 
+## Die ganze App mit ihrem Fenster
+
+Die Läufe oben messen nur die Engine. Dieser misst die ganze App samt Fensterzeichnen auf demselben Rechner: MacBookPro18,2 (Apple M1 Max, 10 Kerne), 32 GB, macOS 27.0.1, eingebauter 120-Hz-Bildschirm, Fenster 1440 × 900, Perform mit der Demo-Bibliothek (Tracks von 2 min 35 s). Es wurde kein Audiogerät geöffnet (der virtuelle Ausgang der App, wie in den Tests). Nach 20 s zum Laden wurde die Prozessorzeit der App über 30 s gelesen; 100 % ist ein voll beschäftigter Kern. Speicher ist die belegte Größe am Ende.
+
+| | Leerlauf in Perform | Ein Deck spielt | Zwei Decks spielen | Speicher, zwei Decks |
+|---|---|---|---|---|
+| 0.9.0 wie veröffentlicht (optimiert) | 4 % | 59–61 % | 98–99 % | 0,47 GB |
+| Entwicklungs-Build, CPU-Sparmodus aus | 5–7 % | 100–101 % | 99–100 % | 0,50 GB |
+| Entwicklungs-Build, CPU-Sparmodus an | 6 % | 70–71 % | 89–90 % | 0,50 GB |
+
+Je zwei Läufe; die Spannen sind die beiden Ergebnisse. Der Entwicklungs-Build ist nicht optimiert und kostet daher mehr als eine veröffentlichte App; ohne den Modus bremst ihn das Zeichnen, das schon einen Kern füllt. Mit CPU-Sparmodus brauchte ein spielendes Deck im selben Build etwa 30 % weniger von einem Kern, zwei Decks etwa 10 % weniger. Wie viel der Modus in einem optimierten Build spart, wurde noch nicht gemessen, ebenso wenig langsamere Rechner, Windows, Linux oder ein Raspberry Pi.
+
 ## Auf deinem Rechner wiederholen
 
 Du brauchst den Quellcode und die Rust-Toolchain. Baue die Messung optimiert (ein Debug-Build würde unterschätzen, was die Engine kann):

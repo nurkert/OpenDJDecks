@@ -185,7 +185,7 @@ pub(crate) enum Target {
 /// The audio configuration from Preferences (the device chosen there).
 fn configured(app: &App) -> od_audio_io::AudioConfig {
     let st = app.state.borrow();
-    crate::engine::audio_config(&st.settings.audio, st.config.lite)
+    crate::engine::audio_config(&st.settings.audio, crate::low_cpu::active(&st.settings, &st.config))
 }
 
 /// Moves the engine onto `target`: the running output stops (its processor

@@ -19,6 +19,16 @@ Bei einer leeren Bibliothek erscheint unter der oberen Leiste eine Checkliste: *
 
 Lade die App für deinen Rechner von der [Download-Seite](/download/) und folge dort der kurzen Anleitung für dein System. Auf dem Mac braucht der erste Start eine einmalige Bestätigung, weil die App nicht von Apple signiert ist.
 
+### Was dein Rechner braucht
+
+- **System:** macOS 13 oder neuer, mit Apple-Chip oder Intel. Windows 10 oder 11, 64 Bit (x86-64). Linux auf x86-64 oder 64-Bit-ARM: Ubuntu 24.04, Debian 13 oder neuer (die Pakete brauchen glibc 2.38). Ein Raspberry Pi 4 oder 5 mit 64-Bit Raspberry Pi OS (trixie oder neuer), siehe [Raspberry Pi Standalone](raspberry-pi.md).
+- **Prozessor:** 64 Bit mit vier oder mehr Kernen. Mit zwei spielenden Decks hielt die App auf dem einen Rechner, auf dem gemessen wurde (ein Apple M1 Max, siehe unten), etwa einen Kern beschäftigt. Auf einem älteren oder langsameren Rechner schalte den **CPU-Sparmodus** unter **Einstellungen › Ansicht** ein.
+- **Arbeitsspeicher:** 8 GB. Die App brauchte etwa 0,5 GB mit zwei kurzen spielenden Tracks; lange Tracks, vier Decks und Stems brauchen mehr, und das Trennen von Stems braucht etwa 1 GB zusätzlich, solange es läuft.
+- **Speicherplatz:** etwa 150 MB für die App, etwa 170 MB mehr für das Stem-Modell, wenn du Stems trennst, und Platz für deine Musik und ihre getrennten Stems.
+- **Bildschirm:** 1280 × 800 oder größer. Das Fenster lässt sich bis auf 800 × 640 verkleinern, die kleinste Größe, auf die die App geprüft wird; die Decks werden dann kompakt. Der Raspberry-Pi-Kiosk hat ein eigenes Layout für 800 × 480 große Touchscreens.
+
+Das sind vorsichtige Angaben von einem gemessenen Rechner. Langsamere Rechner, ältere Systeme und der Raspberry Pi wurden noch nicht gemessen. Was gemessen wurde und wie, steht unter [Langlauf-Ergebnisse](long-run-results.md#die-ganze-app-mit-ihrem-fenster).
+
 Die Oberfläche ist Deutsch oder Englisch und folgt deinem System. Selbst wählen kannst du sie unter **Einstellungen** (Zahnrad oben oder `⌘,` auf dem Mac und `Strg+,` auf Windows und Linux), dann **Ansicht › Sprache**.
 
 ## 2. Musik hinzufügen

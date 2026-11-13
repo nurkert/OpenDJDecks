@@ -345,6 +345,51 @@ fn histories_list_play_sessions() {
     assert_eq!(ui.app.ui.get_node_kind(), "history");
 }
 
+/// The on-air deck flipping between two playing decks at the same level
+/// enters each load once in the history (not on every flip) and rebuilds
+/// the tree only when an entry is added; loading a track again is a new
+/// entry.
+#[test]
+fn on_air_flips_enter_each_load_once() {
+    let ui = Ui::open((1440, 900));
+    crate::engine::ensure_engine(&ui.app);
+    ui.pump(300);
+    let (a, b) = (ui.fx.tracks[0].0, ui.fx.tracks[1].0);
+    let loaded = |u: &Ui, d: usize, id: od_core::TrackId| {
+        u.app.decks.borrow().loaded(d).is_some_and(|m| m.id == id)
+    };
+    crate::decks::load_track(&ui.app, 0, a, None);
+    crate::decks::load_track(&ui.app, 1, b, None);
+    assert!(
+        ui.wait_until(30.0, |u| loaded(u, 0, a) && loaded(u, 1, b)),
+        "both decks load"
+    );
+    let plays = |u: &Ui| u.fx.lib().history(None, 1000).unwrap();
+    let flip = |u: &Ui, times: usize| {
+        let mut st = od_engine::EngineState::default();
+        for i in 0..times {
+            st.audible.dominant = Some(i % 2);
+            crate::recorder::frame(&u.app, &st);
+        }
+    };
+    let rebuilds = || crate::browser::tree::REBUILDS.with(|n| n.get());
+    let before = rebuilds();
+    flip(&ui, 200);
+    let session = plays(&ui).first().map(|p| p.session.clone()).unwrap_or_default();
+    let tracks: Vec<_> = ui.fx.lib().history(Some(&session), 1000).unwrap().iter().map(|p| p.track).collect();
+    assert_eq!(tracks, [Some(a), Some(b)], "one entry per track, in order");
+    assert_eq!(rebuilds() - before, 2, "the tree is rebuilt once per entry");
+    assert_eq!(ui.fx.lib().track(a).unwrap().play_count, 1);
+
+    // A new load of the same track is a new play.
+    crate::decks::load_track(&ui.app, 0, a, None);
+    assert!(ui.wait_until(30.0, |u| u.app.decks.borrow().loaded(0).is_some_and(|m| m.id == a && !m.in_history)));
+    let before = rebuilds();
+    flip(&ui, 200);
+    assert_eq!(plays(&ui).len(), 3, "the reload is entered once");
+    assert_eq!(rebuilds() - before, 1);
+}
+
 /// Dragging a row onto a playlist in the tree adds it; inside the playlist
 /// dragging a row onto another reorders the entries (one undo step).
 #[test]

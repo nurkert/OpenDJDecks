@@ -61,6 +61,9 @@ pub(crate) struct Loaded {
     source: TrackSource,
     /// Your correction of the auto gain (dB, stored per track).
     pub gain_adjust: f32,
+    /// This load has been entered in the play history (once per load:
+    /// the on-air deck flipping back and forth does not enter it again).
+    pub in_history: bool,
     /// How sure key and grid analysis were ([`crate::key_mix`]).
     confidence: Option<od_core::AnalysisConfidence>,
 }
@@ -439,6 +442,9 @@ struct LaneScroll {
     sent_rate: f64,
     sent_at: Option<Instant>,
     loaded: bool,
+    /// Counts tile changes (`LaneMotion.tiles`); never goes back, so the
+    /// lane never mistakes new tiles for the ones it has.
+    tiles_gen: i32,
 }
 
 /// Inputs for one lane's scroll update.
@@ -455,10 +461,19 @@ struct ScrollIn<'a> {
     vertical: bool,
     /// Outline tiles of an incoming track ([`render::outline_tile`]).
     outline: bool,
+    /// Low-CPU mode ([`crate::low_cpu::stepped`]): the lane is moved to the
+    /// engine position on each frame tick (rate 0), so it does not run the
+    /// display clock and redraw the window at the display's rate.
+    stepped: bool,
     now: Instant,
 }
 
 impl LaneScroll {
+    /// Starts over (new tiles on the next update), keeping the tile count.
+    fn redraw(&mut self) {
+        *self = Self { tiles_gen: self.tiles_gen, ..Self::default() };
+    }
+
     /// Brings the tiles up to date and returns a new motion row when the UI
     /// needs one (new tiles, speed change, drift, or a periodic resync).
     fn update(&mut self, i: &ScrollIn) -> Option<LaneMotion> {
@@ -466,8 +481,9 @@ impl LaneScroll {
             if !self.loaded {
                 return None;
             }
-            *self = Self::default();
-            return Some(LaneMotion::default());
+            let tiles = self.tiles_gen + 1;
+            *self = Self { tiles_gen: tiles, ..Self::default() };
+            return Some(LaneMotion { tiles, ..LaneMotion::default() });
         };
         let key = (
             m.id,
@@ -487,7 +503,7 @@ impl LaneScroll {
             self.first = None;
             force = true;
         }
-        let rate = i.speed / 1000.0;
+        let rate = if i.stepped { 0.0 } else { i.speed / 1000.0 };
         let elapsed_ms = self
             .sent_at
             .map(|t| i.now.duration_since(t).as_secs_f64() * 1000.0)
@@ -527,6 +543,7 @@ impl LaneScroll {
                 });
             }
             self.first = Some(first);
+            self.tiles_gen += 1;
         }
         let resync = elapsed_ms > 500.0;
         if !(force || tiles_moved || rate != self.sent_rate || drift.abs() > 0.004 || resync) {
@@ -545,6 +562,7 @@ impl LaneScroll {
             tile0: tile(first),
             tile1: tile(first + 1),
             tile2: tile(first + 2),
+            tiles: self.tiles_gen,
             t0: (first as f64 * i.span) as f32,
             t1: ((first + 1) as f64 * i.span) as f32,
             t2: ((first + 2) as f64 * i.span) as f32,
@@ -663,6 +681,7 @@ pub(crate) fn load_track(app: &App, deck: usize, track: TrackId, play_from: Opti
         vocals: Vec::new(),
         source: source.clone(),
         gain_adjust: crate::deck_grid::stored_gain(st.src(), track),
+        in_history: false,
         confidence: analysis.confidence,
     };
     let read_only = st.read_only();
@@ -1244,8 +1263,15 @@ fn request_stems(app: &App, track: TrackId, src: &TrackSource) {
         return;
     }
     let cache = d.stem_cache.clone();
+    // Low-CPU mode keeps half the cores free (set when the worker starts).
+    let threads = crate::low_cpu::separation_threads(
+        crate::low_cpu::on(app),
+        std::thread::available_parallelism().map_or(2, |n| n.get()),
+    );
     let worker = d.stem_worker.get_or_insert_with(|| {
-        od_stems::StemWorker::spawn(cache, od_stems::StemWorkerOptions::default())
+        let mut opts = od_stems::StemWorkerOptions::default();
+        opts.separator.threads = threads;
+        od_stems::StemWorker::spawn(cache, opts)
     });
     worker.enqueue(od_stems::StemJob {
         track,
@@ -1929,6 +1955,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
     let show_overview_phrases = app.ui.get_show_phrases_overview();
     let bar_mode = app.state.borrow().settings.view.bar_counter.clone();
     let show_overlay = app.state.borrow().settings.view.incoming_overlay;
+    let stepped = crate::low_cpu::stepped(crate::low_cpu::on(app));
     let notation = app.state.borrow().settings.key_notation();
     let scale = app.ui.window().scale_factor();
     let sampler_bank = app.sampler.bank.get();
@@ -2007,6 +2034,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
             phrases: show_phrases,
             vertical,
             outline: false,
+            stepped,
             now,
         };
         if let Some(row) = d.scroll[i].update(&input) {
@@ -2110,7 +2138,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
             d.views.publish(i);
         }
     }
-    project_overlay(d, state, count, master, (lane_width, height), show_overlay && !vertical, now);
+    project_overlay(d, state, count, master, (lane_width, height), show_overlay && !vertical, (now, stepped));
 }
 
 /// The deck whose track is drawn over the playing master `m`: one that
@@ -2141,7 +2169,7 @@ fn project_overlay(
     master: Option<usize>,
     (width, height): (u32, u32),
     show: bool,
-    now: Instant,
+    (now, stepped): (Instant, bool),
 ) {
     let pair = master
         .filter(|&m| show && state.decks[m].playing && d.loaded[m].is_some())
@@ -2181,6 +2209,7 @@ fn project_overlay(
                     phrases: false,
                     vertical: false,
                     outline: true,
+                    stepped,
                     now,
                 };
                 d.overlay_scroll[i].update(&input)
@@ -2196,6 +2225,7 @@ fn project_overlay(
                     phrases: false,
                     vertical: false,
                     outline: true,
+                    stepped,
                     now,
                 };
                 d.overlay_scroll[i].update(&input)
@@ -2936,7 +2966,7 @@ pub(crate) fn follow_grid(app: &App, id: TrackId, grid: &Beatgrid) {
                 continue;
             }
             m.grid = grid.clone();
-            dk.scroll[d] = LaneScroll::default();
+            dk.scroll[d].redraw();
             dk.views.lanes[d].track = None;
             if let Some(data) = dk.engine_data[d].as_ref().filter(|x| x.id == id) {
                 let next = data.with_beatgrid(grid.clone());

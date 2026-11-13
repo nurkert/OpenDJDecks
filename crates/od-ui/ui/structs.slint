@@ -257,6 +257,10 @@ export struct LaneMotion {
     tile0: image,
     tile1: image,
     tile2: image,
+    // Changes whenever the tiles do: the lanes take new tile images only
+    // then, so a row that only moves the playhead (low-CPU mode steps it on
+    // every frame) keeps their textures instead of uploading them again.
+    tiles: int,
     t0: float,
     t1: float,
     t2: float,

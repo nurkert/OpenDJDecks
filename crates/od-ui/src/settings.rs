@@ -157,7 +157,7 @@ pub struct AudioSettings {
     /// Output device name; empty = automatic (the controller's interface,
     /// else the system default).
     pub device: String,
-    /// Buffer size in frames; 0 = automatic (128, 256 in Lite).
+    /// Buffer size in frames; 0 = automatic (128, 256 in Lite and low-CPU mode).
     pub buffer: u32,
     /// Sample rate in Hz; 0 = the device's default.
     pub sample_rate: u32,
@@ -247,6 +247,10 @@ pub struct ViewSettings {
     pub touch_layout: bool,
     /// The touch layout was offered and answered (not offered again).
     pub touch_offered: bool,
+    /// Low-CPU mode (roadmap [68], `crate::low_cpu`): fewer redraws, no
+    /// decorative motion, a larger automatic audio buffer. Always on in the
+    /// Lite profile (Raspberry Pi).
+    pub low_cpu: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -523,6 +527,7 @@ impl Default for ViewSettings {
             calm_waveform: false,
             touch_layout: false,
             touch_offered: false,
+            low_cpu: false,
         }
     }
 }

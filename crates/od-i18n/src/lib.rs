@@ -1683,6 +1683,8 @@ const DE: &[(&str, &str)] = &[
     ("{} is {} Hz, the track {} Hz", "{} hat {} Hz, der Track {} Hz"),
     ("{} is {} s long, the track {} s", "{} ist {} s lang, der Track {} s"),
     ("{} could not be read: {}", "{} ließ sich nicht lesen: {}"),
+    ("Low-CPU mode on: fewer redraws, no decorative motion", "CPU-Sparmodus an: seltener neu gezeichnet, keine Animationen"),
+    ("Low-CPU mode off", "CPU-Sparmodus aus"),
 ];
 
 /// Whether `english` has a German translation (independent of the
