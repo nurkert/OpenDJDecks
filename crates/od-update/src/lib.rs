@@ -2,12 +2,13 @@
 //!
 //! The only network access of the app: `GET` on the public GitHub releases
 //! API of the project and, when the user installs, the release's asset and
-//! `SHA256SUMS.txt`. The User-Agent is `OpenDJDecks/<version>`; no
+//! `SHA256SUMS.txt` with its signature. The User-Agent is `OpenDJDecks/<version>`; no
 //! other identifiers, no cookies, no tokens.
 //!
 //! Flow: [`Updater::check`] → an [`Update`] (newest allowed release, the
 //! asset for this install and the [`Strategy`]) → [`Updater::prepare`]
-//! (download with resume, SHA-256 against `SHA256SUMS.txt`, staging) →
+//! (checksum list checked against its signature, download with resume,
+//! SHA-256 against `SHA256SUMS.txt`, staging) →
 //! [`Prepared`]: either a [`Finish`] to run when the app quits (swap and
 //! relaunch), or done already (DMG / release page opened). See
 //! `docs/updates.md`.
@@ -18,6 +19,7 @@ pub mod http;
 pub mod install;
 pub mod platform;
 pub mod release;
+pub mod signature;
 pub mod version;
 
 pub use http::{Http, UreqHttp};
@@ -54,6 +56,8 @@ pub enum Error {
     },
     #[error("the release has no checksum for {0}")]
     NoChecksum(String),
+    #[error("signature: {0}")]
+    Signature(String),
     #[error("install: {0}")]
     Install(String),
     #[error("cancelled")]
@@ -71,9 +75,10 @@ pub struct Update {
     /// Release notes (Markdown) and the release page.
     pub notes: String,
     pub page_url: String,
-    /// The file for this install kind and the checksum list.
+    /// The file for this install kind, the checksum list and its signature.
     pub asset: Option<Asset>,
     pub sums: Option<Asset>,
+    pub sums_sig: Option<Asset>,
     pub strategy: Strategy,
 }
 
@@ -120,6 +125,8 @@ pub struct Updater {
     /// Downloads and the helper script live here.
     pub cache: PathBuf,
     pub api_url: String,
+    /// The key the checksum list must be signed with.
+    pub release_key: [u8; 32],
 }
 
 impl Updater {
@@ -132,6 +139,7 @@ impl Updater {
             target: Target::detect(),
             cache,
             api_url: RELEASES_API.into(),
+            release_key: signature::RELEASE_KEY,
         }
     }
 
@@ -148,7 +156,11 @@ impl Updater {
         let t = &self.target;
         let asset = platform::select_asset(rel, t.os, t.arch, &t.kind).cloned();
         let sums = rel.sums().cloned();
-        let strategy = install::strategy(&t.kind, asset.is_some() && sums.is_some(), t.probe);
+        let sums_sig = rel.asset(signature::SIG_NAME).cloned();
+        // Installed in place only with a signed checksum list; otherwise the
+        // release page is opened.
+        let verifiable = asset.is_some() && sums.is_some() && sums_sig.is_some();
+        let strategy = install::strategy(&t.kind, verifiable, t.probe);
         Some(Update {
             version,
             tag: rel.tag_name.clone(),
@@ -161,6 +173,7 @@ impl Updater {
             },
             asset,
             sums,
+            sums_sig,
             strategy,
         })
     }
@@ -174,6 +187,7 @@ impl Updater {
             target,
             cache,
             api_url: RELEASES_API.into(),
+            release_key: signature::RELEASE_KEY,
         }
     }
 
@@ -185,15 +199,26 @@ impl Updater {
         progress: &mut dyn FnMut(u64, Option<u64>),
         cancel: &AtomicBool,
     ) -> Result<Prepared, Error> {
-        let (asset, sums) = match (&update.strategy, &update.asset, &update.sums) {
-            (Strategy::OpenReleasePage, _, _) => {
+        let (asset, sums, sig) = match (
+            &update.strategy,
+            &update.asset,
+            &update.sums,
+            &update.sums_sig,
+        ) {
+            (Strategy::OpenReleasePage, ..) => {
                 install::open(update.page_url.as_ref())?;
                 return Ok(Prepared::OpenedPage(update.page_url.clone()));
             }
-            (_, Some(a), Some(s)) => (a, s),
+            (_, Some(a), Some(s), Some(g)) => (a, s, g),
+            (_, _, _, None) => {
+                return Err(Error::Signature(format!("{} is not signed", update.tag)));
+            }
             _ => return Err(Error::NoChecksum(update.tag.clone())),
         };
-        let sums_text = http::get_text(&*self.http, &sums.browser_download_url, 1 << 20)?;
+        let sums_bytes = http::get_bytes(&*self.http, &sums.browser_download_url, 1 << 20)?;
+        let sig_bytes = http::get_bytes(&*self.http, &sig.browser_download_url, 1 << 10)?;
+        signature::verify(&self.release_key, &sums_bytes, &sig_bytes)?;
+        let sums_text = String::from_utf8(sums_bytes).map_err(|e| Error::Parse(e.to_string()))?;
         let expected = checksum::parse_sums(&sums_text)
             .remove(&asset.name)
             .ok_or_else(|| Error::NoChecksum(asset.name.clone()))?;
@@ -353,11 +378,88 @@ mod tests {
             },
             cache: cache.to_path_buf(),
             api_url: "https://api.example.invalid/releases".into(),
+            release_key: signature::tests::test_key(),
         }
     }
 
+    /// The recorded releases, with 0.2.0 signed (the recording predates
+    /// signatures).
     fn releases_json() -> String {
-        include_str!("../tests/fixtures/releases.json").to_string()
+        let sums = "\"browser_download_url\": \"https://github.com/nurkert/OpenDJDecks/releases/download/v0.2.0/SHA256SUMS.txt\"";
+        let json = include_str!("../tests/fixtures/releases.json");
+        assert_eq!(json.matches(sums).count(), 1);
+        json.replace(
+            sums,
+            &format!(
+                "{sums}}}, {{\"name\": \"{0}\", \"size\": 64, \"browser_download_url\": \"https://github.com/nurkert/OpenDJDecks/releases/download/v0.2.0/{0}\"",
+                signature::SIG_NAME
+            ),
+        )
+    }
+
+    #[test]
+    fn unsigned_release_opens_the_page() {
+        let json = include_str!("../tests/fixtures/releases.json");
+        let http = MockHttp::default().with("https://api.example.invalid/releases", json);
+        let d = tempfile::tempdir().unwrap();
+        let u = updater(
+            http,
+            InstallKind::AppImage {
+                path: "/home/me/OD.AppImage".into(),
+            },
+            Probe {
+                dir_writable: true,
+                ..Default::default()
+            },
+            Os::Linux,
+            d.path(),
+        )
+        .check(&Policy::default())
+        .unwrap()
+        .unwrap();
+        assert!(u.sums.is_some() && u.sums_sig.is_none());
+        assert_eq!(u.strategy, Strategy::OpenReleasePage);
+    }
+
+    #[test]
+    fn prepare_rejects_a_list_not_signed_with_the_release_key() {
+        let d = tempfile::tempdir().unwrap();
+        let current = d.path().join("OD.AppImage");
+        std::fs::write(&current, b"old").unwrap();
+        let payload = b"payload";
+        let (http, rels) = appimage_release(
+            payload,
+            &format!(
+                "{}  OpenDJDecks-0.2.0-x86_64.AppImage\n",
+                sha256_bytes(payload)
+            ),
+        );
+        let mut u = updater(
+            http,
+            InstallKind::AppImage {
+                path: current.clone(),
+            },
+            Probe {
+                dir_writable: true,
+                ..Default::default()
+            },
+            Os::Linux,
+            d.path(),
+        );
+        // Signed with the test key; the built-in release key must refuse it.
+        u.release_key = signature::RELEASE_KEY;
+        let up = u.pick(&rels, &Policy::default()).unwrap();
+        let e = u
+            .prepare(&up, &mut |_, _| {}, &AtomicBool::new(false))
+            .unwrap_err();
+        assert!(matches!(e, Error::Signature(_)), "{e}");
+        // Nothing downloaded or staged, nothing replaced.
+        let names: Vec<String> = std::fs::read_dir(d.path())
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(names, vec!["OD.AppImage".to_string()]);
+        assert_eq!(std::fs::read(&current).unwrap(), b"old");
     }
 
     #[test]
@@ -507,11 +609,20 @@ mod tests {
                     size: 0,
                     browser_download_url: format!("{base}/{SUMS_NAME}"),
                 },
+                Asset {
+                    name: signature::SIG_NAME.into(),
+                    size: 64,
+                    browser_download_url: format!("{base}/{}", signature::SIG_NAME),
+                },
             ],
         };
         let http = MockHttp::default()
             .with(&format!("{base}/{name}"), payload.to_vec())
-            .with(&format!("{base}/{SUMS_NAME}"), sums.to_string());
+            .with(&format!("{base}/{SUMS_NAME}"), sums.to_string())
+            .with(
+                &format!("{base}/{}", signature::SIG_NAME),
+                signature::tests::sign(sums.as_bytes()),
+            );
         (http, vec![rel])
     }
 

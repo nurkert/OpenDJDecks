@@ -36,16 +36,21 @@ pub fn user_agent(version: &str) -> String {
 
 /// GETs a small text resource (at most `limit` bytes).
 pub fn get_text(http: &dyn Http, url: &str, limit: u64) -> Result<String, Error> {
+    String::from_utf8(get_bytes(http, url, limit)?).map_err(|e| Error::Parse(e.to_string()))
+}
+
+/// GETs a small resource (at most `limit` bytes).
+pub fn get_bytes(http: &dyn Http, url: &str, limit: u64) -> Result<Vec<u8>, Error> {
     let r = http.get(url, None)?;
     if r.status != 200 {
         return Err(Error::Status(r.status, url.to_string()));
     }
-    let mut s = String::new();
+    let mut v = Vec::new();
     r.body
         .take(limit)
-        .read_to_string(&mut s)
+        .read_to_end(&mut v)
         .map_err(|e| Error::Network(e.to_string()))?;
-    Ok(s)
+    Ok(v)
 }
 
 /// `ureq` 3 with rustls.

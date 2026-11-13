@@ -165,7 +165,7 @@ Live coding stays out until real users ask for it. Whether rendered files with m
 - [ ] **[39]** Controller settings and jog displays, built only from USB captures on the owner's own device.
 - [x] **[40]** OneLibrary sticks, once it is clear whether the format needs a key. Settled, not built: public descriptions of the format say its database is encrypted and opens only with a key. OpenDJDecks never adds, derives or fetches such a key, so sticks keep the existing stick format.
 - [ ] **[41]** Network connection to club players, read-only first and limited to the user's own network.
-- [ ] **[42]** Signed updates, so that a release can be verified independently of GitHub.
+- [x] **[42]** Signed updates, so that a release can be verified independently of GitHub. Done: every release's `SHA256SUMS.txt` is signed with an Ed25519 release key (`packaging/sign-release.sh`, run by the maintainer after the release is published; the private key stays off the repository and GitHub). The app has the public key built in, checks the signature before the checksums and installs nothing in place without it, opening the release page instead; unit tests cover a changed list, a changed signature, another key and a missing signature. The public key is also on opendjdecks.de, and the getting-started guide shows the check with OpenSSL alone. 0.10.0 was signed this way and its signature verified by OpenSSL 3, OpenSSL 4 and the app's own code against the real release; installed 0.10.0 copies do not check signatures yet, the first version that does is the next one.
 
 ## Beta
 

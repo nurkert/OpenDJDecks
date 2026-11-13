@@ -23,6 +23,8 @@ export interface Release {
   publishedAt: Date;
   assets: Asset[];
   checksumsUrl?: string;
+  /** The signature over the checksum list (`SHA256SUMS.txt.sig`). */
+  signatureUrl?: string;
   /** Installer downloads per system across all releases, as GitHub counted them at build time. */
   downloads: Record<Platform, number>;
 }
@@ -102,7 +104,8 @@ async function fetchRelease(): Promise<Release | null> {
       url: data.html_url,
       publishedAt: new Date(data.published_at),
       assets: classify(data.assets),
-      checksumsUrl: data.assets.find((asset) => /^SHA256SUMS/i.test(asset.name))?.browser_download_url,
+      checksumsUrl: data.assets.find((asset) => /^SHA256SUMS(\.txt)?$/i.test(asset.name))?.browser_download_url,
+      signatureUrl: data.assets.find((asset) => /^SHA256SUMS(\.txt)?\.sig$/i.test(asset.name))?.browser_download_url,
       downloads,
     };
   } catch {

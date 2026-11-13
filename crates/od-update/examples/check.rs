@@ -1,10 +1,11 @@
 //! Manual check against the real GitHub API (network!):
 //!
 //! ```sh
-//! cargo run -p od-update --example check -- [--pre] [--as 0.0.0] [--pretend X.app|X.AppImage|deb] [--verify]
+//! cargo run -p od-update --example check -- [--pre] [--as 0.0.0] [--pretend X.app|X.AppImage|deb] [--sig] [--verify]
 //! ```
 //!
 //! Prints the install kind, the update found, its asset and strategy. With
+//! `--sig` it checks the release's `SHA256SUMS.txt` against its signature. With
 //! `--verify` it also downloads the asset into a temporary folder and checks
 //! it against `SHA256SUMS.txt` (nothing is installed).
 
@@ -58,6 +59,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let r = u.prepare(&up, &mut |_, _| {}, &AtomicBool::new(false))?;
         println!("prepared: {r:?}");
         return Ok(());
+    }
+    if args.iter().any(|a| a == "--sig") {
+        let url = |a: &Option<od_update::Asset>| a.as_ref().map(|a| a.browser_download_url.clone());
+        let sums = od_update::http::get_bytes(
+            &*u.http,
+            &url(&up.sums).ok_or("no SHA256SUMS.txt")?,
+            1 << 20,
+        )?;
+        let sig =
+            od_update::http::get_bytes(&*u.http, &url(&up.sums_sig).ok_or("not signed")?, 1 << 10)?;
+        od_update::signature::verify(&u.release_key, &sums, &sig)?;
+        println!("SHA256SUMS.txt is signed with the release key");
     }
     if args.iter().any(|a| a == "--verify") {
         let a = up.asset.as_ref().ok_or("no asset for this install")?;

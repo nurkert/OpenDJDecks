@@ -4628,6 +4628,7 @@ dependencies = [
 name = "od-update"
 version = "0.10.0"
 dependencies = [
+ "ring",
  "semver",
  "serde",
  "serde_json",
