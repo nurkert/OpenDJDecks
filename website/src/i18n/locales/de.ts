@@ -4,7 +4,7 @@ const de: typeof en = {
   meta: {
     title: 'OpenDJDecks · Kostenlose DJ-Software für Mac, Windows und Linux',
     description:
-      'Vorbereiten, synchronisieren, auflegen: freie Open-Source-DJ-Software für macOS, Linux, Windows und den Raspberry Pi. Mit Stems, Effekten, Sampler, Aufnahme, USB-Sticks, die von selbst aktuell bleiben, und CREATE für eigene Melodien und Drum-Loops.',
+      'Vorbereiten, synchronisieren, auflegen: freie Open-Source-DJ-Software für macOS, Linux, Windows und den Raspberry Pi. Mit Stems, Effekten, Sampler, Aufnahme, USB-Sticks, die von selbst aktuell bleiben, einer DMX-Lichtshow und Unterstützung für MIDI-Controller.',
     features: [
       'Bibliothek, Smart-Playlists und Set-Planung',
       'USB-Sticks, die von selbst aktuell bleiben',
@@ -14,7 +14,7 @@ const de: typeof en = {
       'Aufnahme mit automatischer Trackliste',
       'DMX-Lichtshow',
       'Controller-Belegungen und MIDI-Learn',
-      'CREATE: eine Melodie aus einem Ton, eine Drum-Machine mit eingebauten Kits und welche Töne passen',
+      'CREATE: eigene Melodien und Loops für deine Sets',
       'Raspberry Pi als Standalone',
     ],
   },
@@ -30,7 +30,7 @@ const de: typeof en = {
   },
   stage: {
     title: ['Vorbereiten.', 'Syncen.', 'Auflegen.'],
-    lede: 'Eine komplette DJ-Software für dein Laptop oder einen Raspberry Pi am Controller. Mit Stems, Effekten, Sampler, Aufnahme, Lichtshow und eigenen Melodien und Drum-Loops. Kostenlos, Open Source, ohne Konto.',
+    lede: 'Eine komplette DJ-Software für dein Laptop oder einen Raspberry Pi am Controller, vom Sortieren deiner Musik bis zum letzten Track der Nacht. Kostenlos, Open Source, ohne Konto.',
     cta: 'Download',
     ctaFor: 'kostenlos',
     ctaForMac: 'für Mac',
@@ -43,8 +43,58 @@ const de: typeof en = {
     windowClub: 'Club-Modus',
     videoAlt: 'OpenDJDecks in Perform, zwei Tracks laufen',
   },
+  glance: {
+    title: 'Alles, was du als DJ brauchst, in einer App.',
+    lede: 'Ob dein erster Mix oder dein tausendster Gig: Das macht OpenDJDecks für dich.',
+    columns: [
+      {
+        id: 'prepare',
+        label: 'Vorbereiten',
+        title: 'Deine Musik, bereit vor dem Gig',
+        points: [
+          'Beat, Tonart und Songteile für jeden Track erkannt',
+          'Playlists, die sich selbst füllen, Tags und ähnliche Tracks',
+          'Sets nach Tempo, Tonart und Energie geplant',
+          'Deine bisherige Bibliothek kommt mit, samt Cues',
+        ],
+      },
+      {
+        id: 'play',
+        label: 'Auflegen',
+        title: 'Zwei oder vier Decks und ein ganzer Mixer',
+        points: [
+          'Sync, Keylock, Loops, Beat Jumps und 8 Hot Cues pro Deck',
+          'Gesang, Drums, Bass und Instrumente getrennt, live',
+          'Effekte im Takt und ein Sampler mit 16 Plätzen',
+          'Mappings für gängige Controller, jeden anderen MIDI-Controller lernt die App in Minuten',
+        ],
+      },
+      {
+        id: 'gig',
+        label: 'Beim Gig',
+        title: 'Gemacht für die Kanzel',
+        points: [
+          'USB-Sticks, die jede Änderung von selbst mitnehmen',
+          'Die ganze Nacht aufnehmen, die Trackliste schreibt sich selbst',
+          'Club-Modus, Gig-Check und ein Neustart, der weitermacht, wo du warst',
+          'Ein Raspberry Pi am Controller statt eines Laptops',
+        ],
+      },
+      {
+        id: 'more',
+        label: 'Mehr',
+        title: 'Licht und eigene Sounds',
+        points: [
+          'Eine DMX-Lichtshow, die der Musik folgt',
+          'CREATE: Melodien und Loops aus dem Track, der gerade läuft',
+          'Anleitungen auf Deutsch und Englisch für jede Funktion',
+        ],
+      },
+    ],
+    facts: ['Kostenlos', 'Open Source', 'Ohne Konto', 'Läuft offline', 'macOS · Windows · Linux · Raspberry Pi'],
+  },
   create: {
-    eyebrow: 'Neu · CREATE',
+    eyebrow: 'Auch dabei · CREATE',
     title: 'Eigene Klänge, direkt neben den Decks.',
     lede: 'CREATE ist der vierte Tab neben Prepare, Perform und Lighting. Nimm einen Ton aus dem laufenden Track, bau daraus eine Melodie oder einen Drum-Loop und behalte ihn als Track für deine Sets. Die Decks spielen weiter, während du arbeitest.',
     items: [
@@ -67,12 +117,9 @@ const de: typeof en = {
         alt: 'CREATE, THEORY: die Tonarten beider Decks, Akkorde und die Prüfung der Melodie',
       },
     ],
-    renderTitle: 'Ab ins Set',
-    renderText: 'RENDERN schreibt eine neue WAV-Datei mit Beatgrid und einem Hot Cue pro Ton, als Track oder als Loop. Sie geht wie jeder andere Track in Playlists und auf Sticks. AN PERFORM legt die Töne auf die Pads jedes Decks.',
-    midi: 'Ein MIDI-Keyboard spielt und nimmt Töne auf, solange CREATE offen ist. Bisher ist das mit simulierten Tönen getestet, noch nicht mit echten Keyboards.',
     link: 'Die CREATE-Anleitung',
   },
-  teaserHead: 'Alles für den Gig',
+  teaserHead: 'Genauer hingeschaut',
   teaserLede: 'Vom ersten Import bis zum letzten Track der Nacht: eine App, auf dem Rechner, den du schon hast.',
   teasers: [
     {

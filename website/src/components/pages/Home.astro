@@ -1,6 +1,6 @@
 ---
 // The landing page: the pinned stage with the app windows and the animated front window, then
-// CREATE, then the teasers from the locale files, then the closing call.
+// everything at a glance, the teasers from the locale files, CREATE in brief, and the closing call.
 import { existsSync } from 'node:fs';
 import { Picture } from 'astro:assets';
 
@@ -15,8 +15,6 @@ import perform from '../../assets/stage/perform.png';
 import prepare from '../../assets/stage/prepare.png';
 import clubMode from '../../assets/stage/club.png';
 import createMelody from '../../assets/create/melody.png';
-import createDrums from '../../assets/create/drums.png';
-import createTheory from '../../assets/create/theory.png';
 
 interface Props {
   lang: Lang;
@@ -52,8 +50,9 @@ const publicDir = new URL('../../../public/media/', import.meta.url);
 const hasVideo = existsSync(new URL('perform.webm', publicDir)) && existsSync(new URL('perform.mp4', publicDir));
 const formats = ['avif', 'webp'] as const;
 
-// CREATE: its three views, each with a still of the app.
-const createStills: Record<string, ImageMetadata> = { melody: createMelody, drums: createDrums, theory: createTheory };
+// At a glance: what the app does, in four columns, for a first look.
+const g = t.glance;
+// CREATE in brief: one still and its three views named.
 const c = t.create;
 
 // The background: a spectrum of emission lines that breathes in a seamless loop, drawn by CSS,
@@ -135,37 +134,29 @@ const skyLines = Array.from({ length: 72 }, (_, i) => {
       </div>
     </section>
 
-    <section class="create" aria-labelledby="create-title">
+    <section class="glance" aria-labelledby="glance-title">
       <div class="container">
-        <header class="create__head">
+        <header class="glance__head">
           <div class="rail" aria-hidden="true"></div>
-          <p class="caps create__eyebrow">{c.eyebrow}</p>
-          <h2 class="create__title" id="create-title">{c.title}</h2>
-          <p class="create__lede">{c.lede}</p>
+          <h2 class="glance__title" id="glance-title">{g.title}</h2>
+          <p class="glance__lede">{g.lede}</p>
         </header>
-        <ol class="create__views">
+        <div class="glance__grid">
           {
-            c.items.map((item) => (
-              <li class={`create__view create__view--${item.id}`}>
-                <figure class="create__still">
-                  <Picture src={createStills[item.id]} alt={item.alt} formats={formats} fallbackFormat="webp" widths={[480, 800, 1280]} sizes="(max-width: 56rem) 92vw, 30vw" loading="lazy" decoding="async" />
-                </figure>
-                <h3 class="create__name">{item.title}</h3>
-                <p class="create__text">{item.text}</p>
-              </li>
+            g.columns.map((column) => (
+              <section class={`glance__col glance__col--${column.id}`} aria-labelledby={`glance-${column.id}`}>
+                <p class="caps glance__label">{column.label}</p>
+                <h3 class="glance__name" id={`glance-${column.id}`}>{column.title}</h3>
+                <ul class="glance__points">
+                  {column.points.map((point) => <li>{point}</li>)}
+                </ul>
+              </section>
             ))
           }
-        </ol>
-        <div class="create__foot">
-          <div class="create__render">
-            <h3 class="create__name">{c.renderTitle}</h3>
-            <p class="create__text">{c.renderText}</p>
-            <p class="create__note">{c.midi}</p>
-          </div>
-          <a class="plate-btn create__cta" href={guideHref('create', lang)}>
-            {c.link} <span aria-hidden="true">›</span>
-          </a>
         </div>
+        <ul class="glance__facts">
+          {g.facts.map((fact) => <li class="caps">{fact}</li>)}
+        </ul>
       </div>
     </section>
 
@@ -212,6 +203,25 @@ const skyLines = Array.from({ length: 72 }, (_, i) => {
             ))
           }
         </div>
+      </div>
+    </section>
+
+    <section class="create" aria-labelledby="create-title">
+      <div class="container create__inner">
+        <div class="create__copy">
+          <p class="caps create__eyebrow">{c.eyebrow}</p>
+          <h2 class="create__title" id="create-title">{c.title}</h2>
+          <p class="create__lede">{c.lede}</p>
+          <ul class="create__list">
+            {c.items.map((item) => <li><strong>{item.title}</strong></li>)}
+          </ul>
+          <a class="plate-btn create__cta" href={guideHref('create', lang)}>
+            {c.link} <span aria-hidden="true">›</span>
+          </a>
+        </div>
+        <figure class="create__still">
+          <Picture src={createMelody} alt={c.items[0].alt} formats={formats} fallbackFormat="webp" widths={[480, 800, 1280]} sizes="(max-width: 56rem) 92vw, 45vw" loading="lazy" decoding="async" />
+        </figure>
       </div>
     </section>
 

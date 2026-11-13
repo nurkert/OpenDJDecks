@@ -2,7 +2,7 @@ const en = {
   meta: {
     title: 'OpenDJDecks · Free open-source DJ software for Mac, Windows and Linux',
     description:
-      'Prepare, sync and perform with free, open-source DJ software for macOS, Linux, Windows and the Raspberry Pi: stems, effects, sampler, recording, USB sticks that stay in sync, and CREATE for your own melodies and drum loops.',
+      'Prepare, sync and perform with free, open-source DJ software for macOS, Linux, Windows and the Raspberry Pi: stems, effects, sampler, recording, USB sticks that stay in sync, a DMX light show and support for MIDI controllers.',
     features: [
       'Library, smart playlists and set planning',
       'USB sticks that stay in sync',
@@ -12,7 +12,7 @@ const en = {
       'Recording with an automatic tracklist',
       'DMX light show',
       'Controller mappings and MIDI learn',
-      'CREATE: a melody from one note, a drum machine with built-in kits, and which notes fit',
+      'CREATE: your own melodies and loops for your sets',
       'Raspberry Pi standalone',
     ],
   },
@@ -28,7 +28,7 @@ const en = {
   },
   stage: {
     title: ['Prepare.', 'Sync.', 'Perform.'],
-    lede: 'A complete DJ software for your laptop or a Raspberry Pi on your controller. Stems, effects, sampler, recording, a light show, and your own melodies and drum loops. Free, open source, and no accounts.',
+    lede: 'A complete DJ software for your laptop or a Raspberry Pi on your controller, from sorting your music to the last track of the night. Free, open source, and no accounts.',
     cta: 'Download',
     ctaFor: 'free',
     ctaForMac: 'for Mac',
@@ -41,8 +41,58 @@ const en = {
     windowClub: 'Club mode',
     videoAlt: 'OpenDJDecks in Perform, playing two tracks',
   },
+  glance: {
+    title: 'Everything a DJ needs, in one app.',
+    lede: 'Whether this is your first mix or your thousandth gig: here is what OpenDJDecks does for you.',
+    columns: [
+      {
+        id: 'prepare',
+        label: 'Prepare',
+        title: 'Your music, ready before the gig',
+        points: [
+          'Beat, key and song parts found for every track',
+          'Playlists that fill themselves, tags and similar tracks',
+          'Sets planned by tempo, key and energy',
+          'Your existing library comes along, cues included',
+        ],
+      },
+      {
+        id: 'play',
+        label: 'Play',
+        title: 'Two or four decks and a full mixer',
+        points: [
+          'Sync, key lock, loops, beat jumps and 8 hot cues per deck',
+          'Vocals, drums, bass and instruments separated, live',
+          'Effects in time with the beat, and a 16-slot sampler',
+          'Mappings for common controllers, and any other MIDI controller learned in minutes',
+        ],
+      },
+      {
+        id: 'gig',
+        label: 'At the gig',
+        title: 'Made for the booth',
+        points: [
+          'USB sticks that bring every change along by themselves',
+          'Record the whole night, the tracklist writes itself',
+          'Club mode, a gig check and a restart that picks up where you were',
+          'A Raspberry Pi on the controller instead of a laptop',
+        ],
+      },
+      {
+        id: 'more',
+        label: 'More',
+        title: 'Lights and your own sounds',
+        points: [
+          'A DMX light show that follows the music',
+          'CREATE: melodies and loops from the track that plays',
+          'Guides in English and German for every feature',
+        ],
+      },
+    ],
+    facts: ['Free', 'Open source', 'No account', 'Works offline', 'macOS · Windows · Linux · Raspberry Pi'],
+  },
   create: {
-    eyebrow: 'New · CREATE',
+    eyebrow: 'Also inside · CREATE',
     title: 'Make your own sounds, next to the decks.',
     lede: 'CREATE is the fourth tab next to Prepare, Perform and Lighting. Take one note from the track that is playing, build a melody or a drum loop, and keep it as a track for your sets. The decks keep playing while you work.',
     items: [
@@ -65,12 +115,9 @@ const en = {
         alt: 'CREATE, THEORY: the keys of both decks, chords and a check of the melody',
       },
     ],
-    renderTitle: 'Into your set',
-    renderText: 'RENDER writes a new WAV file with a beatgrid and a hot cue per note, as a track or as a loop. It goes into playlists and onto sticks like any other track. SEND TO PERFORM puts the notes on the pads of every deck.',
-    midi: 'A MIDI keyboard plays and records notes while CREATE is open. So far this is tested with simulated notes, not with real keyboards.',
     link: 'The CREATE guide',
   },
-  teaserHead: 'Everything for the gig',
+  teaserHead: 'A closer look',
   teaserLede: 'From the first import to the last track of the night: one app, on the computer you already own.',
   teasers: [
     {

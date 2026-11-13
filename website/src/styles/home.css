@@ -162,46 +162,165 @@
   transform-origin: right center;
 }
 
-/* CREATE: the fourth tab, its three views side by side. */
-.create {
+/* At a glance: four columns of what the app does, then the plain facts. */
+.glance {
   position: relative;
-  padding: clamp(3rem, 7vw, 5.5rem) 0 clamp(1rem, 3vw, 2rem);
+  padding: clamp(3rem, 7vw, 5.5rem) 0 clamp(1.5rem, 4vw, 3rem);
 }
-.create__head {
+.glance__head {
   display: grid;
   gap: 0.65rem;
-  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+  margin-bottom: clamp(2rem, 5vw, 3.25rem);
 }
-.create__head .rail {
+.glance__head .rail {
   margin-bottom: 1rem;
 }
-.create__eyebrow {
-  color: var(--sodium);
-}
-.create__title {
+.glance__title {
   font-size: clamp(2.2rem, 5vw, 3.6rem);
-  max-width: 20ch;
+  max-width: 22ch;
 }
-.create__lede {
-  max-width: 44rem;
+.glance__lede {
+  max-width: 42rem;
   font-size: 1.2rem;
   color: var(--bone-2);
 }
-.create__views {
+.glance__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(1.75rem, 3vw, 2.75rem);
-  margin: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+.glance__col {
+  --tone: var(--sodium);
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  padding: clamp(1.25rem, 2vw, 1.6rem) clamp(1.1rem, 1.8vw, 1.5rem) clamp(1.4rem, 2.2vw, 1.8rem);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-window);
+  background: var(--plate);
+  overflow: hidden;
+}
+/* The column's emission line along its top edge. */
+.glance__col::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--tone);
+  box-shadow: 0 0 18px var(--tone);
+}
+.glance__col--prepare {
+  --tone: var(--blue);
+}
+.glance__col--play {
+  --tone: var(--orange);
+}
+.glance__col--gig {
+  --tone: var(--sodium);
+}
+.glance__col--more {
+  --tone: var(--green);
+}
+.glance__label {
+  color: var(--tone);
+}
+.glance__name {
+  font-size: clamp(1.3rem, 1.9vw, 1.55rem);
+  line-height: 1.15;
+}
+.glance__points {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.5rem 0 0;
   padding: 0;
   list-style: none;
 }
-.create__view {
+.glance__points li {
+  position: relative;
+  padding-left: 1rem;
+  color: var(--bone-2);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.glance__points li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.3em;
+  width: 2px;
+  height: 0.85em;
+  background: var(--tone);
+}
+.glance__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: clamp(1.5rem, 3vw, 2.25rem) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.glance__facts li {
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  color: var(--bone);
+}
+@media (max-width: 72rem) {
+  .glance__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 40rem) {
+  .glance__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* CREATE in brief: the text beside one still. */
+.create {
+  position: relative;
+  padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(2rem, 5vw, 3.5rem);
+}
+.create__inner {
   display: grid;
-  align-content: start;
-  gap: 0.6rem;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: clamp(1.75rem, 5vw, 4rem);
+  align-items: center;
+  padding-top: clamp(2rem, 4vw, 3rem);
+  border-top: 1px solid var(--rule);
+}
+.create__copy {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+}
+.create__eyebrow {
+  color: var(--green);
+}
+.create__title {
+  font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+  max-width: 22ch;
+}
+.create__lede {
+  max-width: 38rem;
+  color: var(--bone-2);
+  font-size: 1.05rem;
+}
+.create__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0;
+  list-style: none;
+  color: var(--bone);
+}
+.create__list strong {
+  font-weight: 500;
 }
 .create__still {
-  margin: 0 0 0.6rem;
+  margin: 0;
   border: 1px solid var(--rule-strong);
   border-radius: var(--r-window);
   background: var(--ground-band);
@@ -213,40 +332,12 @@
   width: 100%;
   height: auto;
 }
-.create__name {
-  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
-}
-.create__text {
-  max-width: 34rem;
-  color: var(--bone-2);
-  font-size: 1.05rem;
-}
-.create__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1.25rem 2.5rem;
-  margin-top: clamp(2rem, 5vw, 3.25rem);
-  padding-top: clamp(1.5rem, 3vw, 2rem);
-  border-top: 1px solid var(--rule);
-}
-.create__render {
-  display: grid;
-  gap: 0.5rem;
-  max-width: 44rem;
-}
-.create__note {
-  color: var(--bone-3);
-  font-size: 0.95rem;
-}
 .create__cta span {
-  color: var(--sodium);
+  color: var(--green);
 }
 @media (max-width: 56rem) {
-  .create__views {
+  .create__inner {
     grid-template-columns: minmax(0, 1fr);
-    gap: 2.75rem;
   }
 }
 
