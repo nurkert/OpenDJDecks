@@ -5,7 +5,7 @@ use crate::action::{ControlAction, DeckAction, ParamTarget};
 use crate::device_module::{DeviceModule, ModuleContext, module_for};
 use crate::feedback::ControlFeedback;
 use crate::mapping::{InputMode, LayerMode, Mapping};
-use crate::midi::MidiMessage;
+use crate::midi::{MidiMessage, MsgKind};
 use crate::output::OutputEngine;
 use crate::takeover::SoftTakeover;
 use crate::templates::InputValue;
@@ -143,6 +143,9 @@ impl ControllerSession {
         let Some((addr, value)) = res.message.as_ref().and_then(MidiMessage::addr_value) else {
             return res;
         };
+        if addr.kind == MsgKind::Note {
+            self.output.touched(addr);
+        }
         for &idx in mapping.inputs_at(addr) {
             let b = &mapping.inputs[idx];
             let iv = match b.mode {

@@ -623,6 +623,11 @@ fn software_deck_layers_redirect_inputs_and_outputs() {
         feed(&mut s, &[[0x90, 0x01, 0x7F]]),
         vec![deck(1, DeckAction::PlayPause)]
     );
+    // The pressed button's LED goes out again with deck 1's state.
+    assert_eq!(
+        s.poll_output(t0 + Duration::from_millis(5)),
+        vec![vec![0x90, 0x01, 0x00]]
+    );
 
     // Deck 3 plays while hidden: nothing is sent.
     s.feedback(&ControlFeedback::deck_led(3, DeckElement::Play, true));
@@ -1015,4 +1020,34 @@ fn flx10_jog_revolution_moves_one_revolution() {
         }
     }
     assert_eq!(total, 720);
+}
+
+/// [H1] On the owner's DDJ-FLX10 the headphone CUE light could stay dark
+/// while the cue was on, and a second press set things straight: a unit that
+/// changes a pressed button's light itself left the app thinking the LED was
+/// right. After a press or release the button's LED is sent again.
+#[test]
+fn flx10_pressed_button_gets_its_led_again() {
+    let mut s = flx10();
+    let t0 = Instant::now();
+    s.output_mut().set_epoch(t0);
+    s.connect_messages();
+    drain(&mut s, t0);
+    let t = |ms| t0 + Duration::from_millis(ms);
+    let cue_on = ControlFeedback::led(
+        FeedbackTarget::Mixer {
+            channel: 1,
+            element: MixerElement::Cue,
+        },
+        true,
+    );
+    s.feedback(&cue_on);
+    assert_eq!(leds(s.poll_output(t(1))), vec![vec![0x90, 0x54, 0x7F]]);
+    // Same state, nothing new.
+    s.feedback(&cue_on);
+    assert!(leds(s.poll_output(t(2))).is_empty());
+    // The release of the CUE button: the LED goes out again with the state.
+    s.handle_midi(&[0x90, 0x54, 0x00]);
+    s.feedback(&cue_on);
+    assert_eq!(leds(s.poll_output(t(3))), vec![vec![0x90, 0x54, 0x7F]]);
 }
