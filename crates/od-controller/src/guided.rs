@@ -66,6 +66,10 @@ pub struct Step {
     /// guide outline while the step is current), if there is one.
     #[serde(default)]
     pub screen: Option<String>,
+    /// One of the further controls (loops, beat jump, effects …) the setup
+    /// offers after the core ones; the person chooses whether to go on.
+    #[serde(default)]
+    pub more: bool,
 }
 
 /// A controller class: the steps and the settings a mapping of this class
@@ -134,6 +138,8 @@ pub struct GuidedSetup {
     learn: LearnSession,
     /// MIDI port the controls came from.
     pub port: String,
+    /// Whether the further controls are wanted (`None`: not asked yet).
+    pub more: Option<bool>,
 }
 
 impl GuidedSetup {
@@ -145,6 +151,31 @@ impl GuidedSetup {
             learned: vec![None; n],
             learn: LearnSession::new(),
             port: String::new(),
+            more: None,
+        }
+    }
+
+    /// The core controls are done and the further ones come next: the
+    /// person is asked whether to go on ([`Self::choose_more`]).
+    pub fn at_more_choice(&self) -> bool {
+        self.more.is_none() && self.step().is_some_and(|s| s.more)
+    }
+
+    /// Go on with the further controls, or finish with the core ones.
+    pub fn choose_more(&mut self, yes: bool) {
+        self.more = Some(yes);
+        if !yes {
+            self.index = self.template.steps.len();
+        }
+        self.learn.reset();
+    }
+
+    /// Steps in this run: the core ones, plus the further ones once chosen.
+    pub fn total(&self) -> usize {
+        if self.more == Some(true) {
+            self.template.steps.len()
+        } else {
+            self.template.steps.iter().filter(|s| !s.more).count()
         }
     }
 
@@ -164,6 +195,9 @@ impl GuidedSetup {
     /// Feeds one incoming message (from `port`). Returns true when it
     /// counts for the current step.
     pub fn feed(&mut self, port: &str, bytes: &[u8]) -> bool {
+        if self.at_more_choice() {
+            return false;
+        }
         let Some(step) = self.step() else {
             return false;
         };
@@ -249,9 +283,21 @@ impl GuidedSetup {
         self.advance(1);
     }
 
-    /// Back one step, to learn it again.
+    /// Back one step, to learn it again. Saved with the core controls only,
+    /// back to the question about the further ones; from there or the first
+    /// further control, back to the last core one.
     pub fn back(&mut self) {
+        let core = self.template.steps.iter().filter(|s| !s.more).count();
+        if self.more == Some(false) && self.index >= self.template.steps.len() {
+            self.more = None;
+            self.index = core;
+            self.learn.reset();
+            return;
+        }
         self.advance(-1);
+        if self.index < core {
+            self.more = None;
+        }
     }
 
     /// Forgets what arrived for the current step.
@@ -417,6 +463,44 @@ mod tests {
         let battle = Template::bundled("two-deck-battle").unwrap();
         assert_eq!(battle.crossfader_curve, "cut");
         assert_eq!(Template::bundled("four-deck").unwrap().decks, 4);
+    }
+
+    #[test]
+    fn further_controls_follow_the_core_ones_after_a_question() {
+        for t in Template::all() {
+            let first_more = t.steps.iter().position(|s| s.more).expect("further controls");
+            assert!(t.steps[first_more..].iter().all(|s| s.more), "{}: core after further", t.id);
+            // Every further deck control exists for each deck.
+            for d in 1..=t.decks {
+                assert!(
+                    t.steps.iter().any(|s| s.more && s.action == "deck.loop_in" && s.deck == Some(d)),
+                    "{}: loop in on deck {d}",
+                    t.id
+                );
+            }
+        }
+        let mut g = GuidedSetup::new(Template::bundled("two-deck-entry").unwrap());
+        let core = g.total();
+        while !g.at_more_choice() {
+            g.skip();
+        }
+        assert_eq!(g.index, core);
+        // Nothing is learned while the question is open.
+        assert!(!g.feed("P", &[0x90, 0x10, 0x7F]));
+        g.choose_more(true);
+        assert!(g.total() > core);
+        assert!(g.step().unwrap().more);
+        press(&mut g, 0, 0x10);
+        g.accept().unwrap();
+        g.back();
+        g.back();
+        assert!(!g.step().unwrap().more && g.more.is_none(), "back to the last core control");
+        g.skip();
+        assert!(g.at_more_choice());
+        g.choose_more(false);
+        assert!(g.done());
+        g.back();
+        assert!(g.at_more_choice(), "back to the question");
     }
 
     #[test]

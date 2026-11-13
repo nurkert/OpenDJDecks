@@ -4266,7 +4266,7 @@ note = "Generated from the mapping files and the guided-setup templates. A model
 [[feature]]
 id = "ctrl-guided-setup"
 area = "preferences"
-name = "Guided setup for controllers without a mapping: move each core control when asked, save a shareable mapping"
+name = "Guided setup for controllers without a mapping: move each core control when asked, then optionally the further ones (SHIFT, pads E-H, loops, beat jump, key lock, slip, effects), save a shareable mapping"
 scope = "in"
 status = "done"
 prio = "P2"
@@ -4275,6 +4275,7 @@ tests = [
   "od-ui::controller_setup::tests::a_resting_control_is_taken_and_a_used_one_refused",
   "od-ui::controller_setup::tests::mapping_files_never_overwrite_one_another",
   "od-controller::guided::tests::learns_steps_in_order_and_writes_a_loadable_mapping",
+  "od-controller::guided::tests::further_controls_follow_the_core_ones_after_a_question",
 ]
 evidence = ["crates/od-controller/src/guided.rs", "crates/od-ui/src/controller_setup.rs", "ui/controller_setup.slint"]
 spec = "Roadmap [13]"

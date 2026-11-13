@@ -21,9 +21,9 @@ Which controllers OpenDJDecks knows and how far each is confirmed. A model count
 |---|---|---|---|---|
 | compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 12 verified, 117 partial, 147 untested |
 | compatible with DDJ-FLX4 | 2 | built in | MIDI port name `DDJ-FLX4` | not confirmed: 0 verified, 126 partial, 47 untested |
-| Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (46 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
-| Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (44 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
-| Any four-deck controller | 4 | guided setup, template `four-deck` (78 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
+| Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (76 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
+| Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (74 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
+| Any four-deck controller | 4 | guided setup, template `four-deck` (134 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
 <!-- controller-list:end -->
 
 Any other controller can be set up with the guided setup below, from one of three generic templates. More model mappings, for entry-level and battle-style controllers too, come from owners who capture their own unit with the guided setup and share the file. None of those is confirmed for other units yet. OpenDJDecks does not derive mappings from manufacturer manuals, MIDI charts, vendor software or other projects' mapping files.
@@ -37,7 +37,8 @@ For a controller without a mapping, press **SET UP A CONTROLLER** in **Preferenc
 1. Connect the controller by USB and choose what it is closest to: **2 DECKS · ENTRY LEVEL**, **2 DECKS · BATTLE** or **4 DECKS**. Press **START**.
 2. The band asks for one control at a time: PLAY, CUE and SYNC, the jog wheel (touch, then turn), the tempo fader and LOAD of each deck, then the hot cue pads, the channel faders, TRIM and the EQ knobs, headphone CUE, the crossfader, the browse knob and the master and headphone levels. The matching control on screen gets the guide outline.
 3. Move the control. **Heard** says what arrived; once the control rests for a moment the step is taken and the next one comes. A control that an earlier step already uses is refused with the number of that step. **SKIP** leaves out what your controller does not have, **BACK** goes one step back to learn it again, **AGAIN** forgets what arrived.
-4. At the end, give the controller a name and press **SAVE MAPPING**. The file is written next to your library in `mappings/`, becomes your own mapping file and is used from the next start. The battle-style template also sets the crossfader curve to **CUT**.
+4. After the core controls the band asks whether to go on: **MORE CONTROLS** learns SHIFT, hot cue pads E to H, LOOP IN and OUT, the 4-beat loop, beat jump back and forward, KEY LOCK and SLIP of each deck, the CH FX knobs, the headphone mix, browse back and an effect on/off key and level, each one skippable. **SAVE NOW** goes straight to saving with the core controls.
+5. At the end, give the controller a name and press **SAVE MAPPING**. The file is written next to your library in `mappings/`, becomes your own mapping file and is used from the next start. The battle-style template also sets the crossfader curve to **CUT**.
 
 The file is an ordinary mapping file you can share. Every entry in it is marked as not confirmed (`verify = true`), because only your unit has been heard. While the setup, MIDI learn or the monitor runs, OpenDJDecks also opens MIDI inputs that no mapping knows; on some systems another program cannot use such a port at the same time. The guided setup has been tested with simulated MIDI messages, not yet with a real controller.
 

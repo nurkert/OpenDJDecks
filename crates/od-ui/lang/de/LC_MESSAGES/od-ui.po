@@ -12027,3 +12027,93 @@ msgstr "Stufen: drei Töne die Tonleiter hinauf, jedes Mal eine Stufe höher"
 msgctxt "StarterRow"
 msgid "Pulse: a repeated root with its octave and fifth"
 msgstr "Puls: ein wiederholter Grundton mit Oktave und Quinte"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press SHIFT on deck {}"
+msgstr "Drücke SHIFT auf Deck {}"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press LOOP IN on deck {}"
+msgstr "Drücke LOOP IN auf Deck {}"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press LOOP OUT on deck {}"
+msgstr "Drücke LOOP OUT auf Deck {}"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press the 4-beat loop key on deck {}"
+msgstr "Drücke die 4-Beat-Loop-Taste auf Deck {}"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press beat jump back on deck {}"
+msgstr "Drücke Beat Jump zurück auf Deck {}"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press beat jump forward on deck {}"
+msgstr "Drücke Beat Jump vor auf Deck {}"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press KEY LOCK on deck {}"
+msgstr "Drücke KEY LOCK auf Deck {}"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press SLIP on deck {}"
+msgstr "Drücke SLIP auf Deck {}"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Turn the CH FX knob of channel {}"
+msgstr "Dreh den CH-FX-Regler von Kanal {}"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Turn the headphone mix knob"
+msgstr "Dreh den Kopfhörer-Mix-Regler"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press the browse back key"
+msgstr "Drücke die Browse-Zurück-Taste"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Press the effect on / off key"
+msgstr "Drücke die Effekt-an/aus-Taste"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Turn the effect level knob"
+msgstr "Dreh den Effekt-Pegel-Regler"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "{} of {} core controls learned. Go on with SHIFT, more pads, loops, beat jump, key lock, slip and effects?"
+msgstr "{} von {} Grund-Bedienelementen gelernt. Weiter mit SHIFT, mehr Pads, Loops, Beat Jump, Key Lock, Slip und Effekten?"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "MORE CONTROLS"
+msgstr "WEITERE ELEMENTE"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Learn the further controls too; each can be skipped"
+msgstr "Auch die weiteren Bedienelemente lernen; jedes lässt sich überspringen"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "SAVE NOW"
+msgstr "JETZT SPEICHERN"
+
+#: ui/controller_setup.slint
+msgctxt "ControllerSetupBar"
+msgid "Save with the core controls; the rest works from the screen and the keyboard"
+msgstr "Mit den Grund-Bedienelementen speichern; der Rest geht über Bildschirm und Tastatur"

@@ -198,6 +198,8 @@ export global ControllerSetup {
     callback skip();
     callback back();
     callback retry();
+    // After the core controls: go on with the further ones, or not.
+    callback more(bool);
     callback save(string);
     callback close();
     callback open();
