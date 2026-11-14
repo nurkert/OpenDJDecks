@@ -53,10 +53,17 @@ pub(crate) fn test_env() -> &'static Path {
 
 /// The simulated volumes directory is shared by every UI test. Tests that put
 /// a stick there hold this lock, and so do tests that need none: with an
-/// empty library a stick that appears opens on its own.
+/// empty library a stick that appears opens on its own. The holder starts
+/// with an empty directory: a sync still finishing from an earlier test can
+/// write a stick back after that test removed it.
 pub(crate) fn volumes_lock() -> std::sync::MutexGuard<'static, ()> {
     static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    let guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let volumes = test_env().join("volumes");
+    for entry in std::fs::read_dir(&volumes).into_iter().flatten().flatten() {
+        let _ = std::fs::remove_dir_all(entry.path());
+    }
+    guard
 }
 
 /// Writes a stereo 16-bit WAV: a 120 BPM kick-like click over a quiet tone
