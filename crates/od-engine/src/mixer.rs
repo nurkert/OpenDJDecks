@@ -66,6 +66,10 @@ pub(crate) struct Channel {
     pub eq: Eq3,
     pub eq_knobs: [f32; 3],
     pub color: ChannelFx,
+    /// The part the Channel FX is on ([`ChannelCommand::SetChannelFxPart`]).
+    pub color_part: Option<crate::stems::Stem>,
+    /// This block the Channel FX ran on the deck's split-off part already.
+    pub color_on_part: bool,
     pub fader: f32,
     pub fader_curve: FaderCurve,
     pub xf: XfAssign,
@@ -91,6 +95,8 @@ impl Channel {
             eq: Eq3::new(sample_rate),
             eq_knobs: [0.0; 3],
             color: ChannelFx::new(sample_rate, seed),
+            color_part: None,
+            color_on_part: false,
             fader: 1.0,
             fader_curve: FaderCurve::default(),
             xf: XfAssign::Thru,
@@ -118,6 +124,7 @@ impl Channel {
             ChannelCommand::SetEqKill { band, on } => self.eq.set_kill(band, on),
             ChannelCommand::SetChannelFx(k) => self.color.set_kind(k),
             ChannelCommand::SetChannelFxAmount(a) => self.color.set_amount(a),
+            ChannelCommand::SetChannelFxPart(p) => self.color_part = p,
             ChannelCommand::SetFader(v) => self.fader = v.clamp(0.0, 1.0),
             ChannelCommand::SetFaderCurve(c) => self.fader_curve = c,
             ChannelCommand::SetCrossfaderAssign(x) => self.xf = x,
@@ -154,7 +161,9 @@ impl Channel {
         if !self.eq.is_flat() {
             self.eq.process(buf);
         }
-        self.color.process(buf, clock);
+        if !self.color_on_part {
+            self.color.process(buf, clock);
+        }
         self.meter.process(buf);
     }
 
@@ -182,6 +191,7 @@ impl Channel {
             eq_kill: self.eq.kills(),
             channel_fx: self.color.kind(),
             channel_fx_amount: self.color.amount(),
+            channel_fx_part: self.color_part,
             xf_assign: self.xf,
             cue: self.cue,
             cut_in: self.cut_in,

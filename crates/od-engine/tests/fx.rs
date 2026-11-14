@@ -739,3 +739,108 @@ fn panic_stops_every_effect_at_once() {
     assert!(st.tempo_fx.iter().all(|u| !u.on && !u.ringing), "units off");
     assert_eq!(st.channels[0].channel_fx_amount, 0.0, "channel FX knob centred");
 }
+
+/// Silent 120 BPM track with a 50 ms burst of `freq` at `at` frames.
+fn tone_burst(freq: f64, at: usize) -> std::sync::Arc<TrackData> {
+    let n = 10 * SR as usize;
+    let mut s = vec![0f32; n * 2];
+    for k in 0..2400 {
+        let v = (std::f64::consts::TAU * freq * k as f64 / SR as f64).sin() as f32 * 0.5;
+        s[(at + k) * 2] = v;
+        s[(at + k) * 2 + 1] = v;
+    }
+    track_from(1, s, 120.0, 0.0)
+}
+
+/// Low cut echo thins each repeat: a low burst fades away much sooner than
+/// in a plain echo, a high one keeps ringing.
+#[test]
+fn low_cut_echo_takes_the_low_end_out_of_the_repeats() {
+    let second_repeat = |kind, freq| {
+        let mut rig = Rig::new(2);
+        rig.deck(0, DeckCommand::Load(tone_burst(freq, 2 * BEAT)));
+        rig.deck(0, DeckCommand::Play);
+        fx(&mut rig, 0, TempoFxCommand::SetKind(kind));
+        fx(&mut rig, 0, TempoFxCommand::SetBeats(1.0));
+        fx(&mut rig, 0, TempoFxCommand::SetLevel(1.0));
+        fx(&mut rig, 0, TempoFxCommand::SetOn(true));
+        let out = render_frames(&mut rig, 6 * BEAT);
+        rms(&out, 0, 4 * BEAT, 2400) / rms(&out, 0, 2 * BEAT, 2400)
+    };
+    let low = second_repeat(TempoFxKind::LowCutEcho, 80.0);
+    let high = second_repeat(TempoFxKind::LowCutEcho, 4000.0);
+    let plain_low = second_repeat(TempoFxKind::Echo, 80.0);
+    assert!(high > 0.2, "high repeats stay: {high}");
+    assert!(low < 0.3 * high, "low repeats thin out: {low} vs {high}");
+    assert!(low < 0.5 * plain_low, "thinner than a plain echo: {low} vs {plain_low}");
+}
+
+/// Multi tap: the first tap a quarter of the way in, on the left; the
+/// second halfway, on the right.
+#[test]
+fn multi_tap_spreads_its_taps_across_the_length() {
+    let mut rig = Rig::new(2);
+    rig.deck(0, DeckCommand::Load(burst_track(1, 10.0, 2 * BEAT)));
+    rig.deck(0, DeckCommand::Play);
+    fx(&mut rig, 0, TempoFxCommand::SetKind(TempoFxKind::MultiTap));
+    fx(&mut rig, 0, TempoFxCommand::SetBeats(1.0));
+    fx(&mut rig, 0, TempoFxCommand::SetLevel(1.0));
+    fx(&mut rig, 0, TempoFxCommand::SetOn(true));
+    let out = render_frames(&mut rig, 4 * BEAT);
+    let q = 2 * BEAT + BEAT / 4;
+    let h = 2 * BEAT + BEAT / 2;
+    assert!(rms(&out, 0, q, 2400) > 2.0 * rms(&out, 1, q, 2400), "quarter on the left");
+    assert!(rms(&out, 1, h, 2400) > 2.0 * rms(&out, 0, h, 2400), "half on the right");
+    assert!(rms(&out, 0, 2 * BEAT + BEAT / 8, 2400) < 1e-4, "nothing before the first tap");
+}
+
+/// Stretch plays slower but keeps the pitch.
+#[test]
+fn stretch_slows_down_without_changing_the_pitch() {
+    let mut rig = sine_rig(440.0);
+    fx(&mut rig, 0, TempoFxCommand::SetKind(TempoFxKind::Stretch));
+    fx(&mut rig, 0, TempoFxCommand::SetLevel(1.0));
+    fx(&mut rig, 0, TempoFxCommand::SetOn(true));
+    rig.render(40);
+    let f = estimate_freq(&rig.render(200));
+    assert!((f - 440.0).abs() < 13.0, "pitch kept: {f}");
+
+    // A ramp rising over each beat: half a beat in, the stretched sound is
+    // still about a quarter of the way up.
+    let n = 10 * SR as usize;
+    let s: Vec<f32> = (0..n)
+        .flat_map(|i| {
+            let v = (i % BEAT) as f32 / BEAT as f32 * 0.5;
+            [v, v]
+        })
+        .collect();
+    let mut rig = Rig::new(2);
+    rig.deck(0, DeckCommand::Load(track_from(1, s, 120.0, 0.0)));
+    rig.deck(0, DeckCommand::Play);
+    fx(&mut rig, 0, TempoFxCommand::SetKind(TempoFxKind::Stretch));
+    fx(&mut rig, 0, TempoFxCommand::SetBeats(1.0));
+    fx(&mut rig, 0, TempoFxCommand::SetLevel(1.0));
+    fx(&mut rig, 0, TempoFxCommand::SetOn(true));
+    let out = render_frames(&mut rig, BEAT);
+    let at = 4 * BEAT / 5;
+    let dry = (at % BEAT) as f32 / BEAT as f32 * 0.5;
+    assert!(out[at * 2] < dry - 0.1, "behind the dry ramp: {} vs {dry}", out[at * 2]);
+}
+
+/// Shepard sweeps never fall silent: the level stays even through the
+/// cycles while the sound keeps moving.
+#[test]
+fn shepard_sweeps_keep_an_even_level() {
+    for kind in [TempoFxKind::ShepardSaw, TempoFxKind::ShepardTri] {
+        let mut rig = rich_rig();
+        fx(&mut rig, 0, TempoFxCommand::SetKind(kind));
+        fx(&mut rig, 0, TempoFxCommand::SetBeats(1.0));
+        fx(&mut rig, 0, TempoFxCommand::SetLevel(1.0));
+        fx(&mut rig, 0, TempoFxCommand::SetOn(true));
+        let out = render_frames(&mut rig, 4 * BEAT);
+        let levels: Vec<f32> = (0..12).map(|k| rms(&out, 0, BEAT + k * BEAT / 4, BEAT / 8)).collect();
+        let (lo, hi) = levels.iter().fold((f32::MAX, 0f32), |(a, b), &v| (a.min(v), b.max(v)));
+        assert!(lo > 0.01, "{kind:?} never silent: {levels:?}");
+        assert!(hi < 6.0 * lo, "{kind:?} even: {levels:?}");
+    }
+}

@@ -233,6 +233,7 @@ pub const ACTION_NAMES: &[&str] = &[
     "channel_fx.select",
     "channel_fx.next",
     "channel_fx.toggle",
+    "channel_fx.part",
     "browse.rotate",
     "browse.press",
     "browse.back",
@@ -662,6 +663,13 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
             Button,
             on_press(|_| ControlAction::ChannelFx(ChannelFxAction::Toggle)),
         ),
+        "channel_fx.part" => {
+            let stem = stem_arg(&a)?;
+            (
+                Button,
+                on_press(move |_| ControlAction::ChannelFx(ChannelFxAction::Part(stem))),
+            )
+        }
 
         "browse.rotate" => {
             let shifted = a.bool_or("shifted", false)?;

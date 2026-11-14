@@ -43,6 +43,11 @@ const KINDS: usize = TempoFxKind::ALL.len();
 const QUIET: f32 = 1e-10;
 const FLANGER_MAX_S: f32 = 0.02;
 const SHIFT_WINDOW_S: f32 = 0.045;
+/// Stretch grain length.
+const GRAIN_S: f32 = 0.06;
+/// Shepard sweep: band-passes one octave apart from the lowest centre.
+const SHEPARD_BANDS: usize = 6;
+const SHEPARD_LOW_HZ: f32 = 55.0;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum TapeMode {
@@ -148,6 +153,13 @@ pub struct FxUnit {
     reverb: Reverb,
     svf: Svf,
     fb_filter: [f32; 2],
+    /// Low cut echo: one-pole high-pass in the feedback (last in, last out).
+    hp: [[f32; 2]; 2],
+    /// Stretch: read position in the capture (frames) and, per grain, where
+    /// it started and how far it got.
+    stretch_pos: f64,
+    grains: [(f64, f32); 2],
+    shepard: [Svf; SHEPARD_BANDS],
     gate: f32,
     phaser_z: [[f32; PHASER_STAGES]; 2],
     phaser_fb: [f32; 2],
@@ -235,6 +247,10 @@ impl FxUnit {
             reverb: Reverb::new(sample_rate),
             svf: Svf::new(1000.0, 0.7, sr),
             fb_filter: [0.0; 2],
+            hp: [[0.0; 2]; 2],
+            stretch_pos: 0.0,
+            grains: [(0.0, 0.0), (0.0, 0.5)],
+            shepard: std::array::from_fn(|_| Svf::new(1000.0, 4.0, sr)),
             gate: 1.0,
             phaser_z: [[0.0; PHASER_STAGES]; 2],
             phaser_fb: [0.0; 2],
@@ -306,6 +322,10 @@ impl FxUnit {
         self.delay_len = 0.0;
         self.svf.reset();
         self.fb_filter = [0.0; 2];
+        self.hp = [[0.0; 2]; 2];
+        for f in &mut self.shepard {
+            f.reset();
+        }
         self.gate = 1.0;
         self.phaser_z = [[0.0; PHASER_STAGES]; 2];
         self.phaser_fb = [0.0; 2];
@@ -321,6 +341,8 @@ impl FxUnit {
     /// Effect switched on (or kind changed while on).
     fn engage(&mut self) {
         self.ramp = 0.0;
+        self.stretch_pos = 0.0;
+        self.grains = [(0.0, 0.0), (0.0, 0.5)];
         self.roll_filled = 0;
         self.roll_pos = 0;
         self.roll_len = 0;
@@ -564,7 +586,7 @@ impl FxUnit {
             let phase = ((beat / self.beats as f64).rem_euclid(1.0)) as f32;
             let x = [f[0], f[1]];
             let (y, wet) = self.kind_frame(x, m, phase);
-            if self.kind != TempoFxKind::Flanger {
+            if !matches!(self.kind, TempoFxKind::Flanger | TempoFxKind::Jet) {
                 self.short.push(x);
             }
             if !matches!(self.kind, TempoFxKind::Pitch | TempoFxKind::Helix) {
@@ -862,6 +884,12 @@ impl FxUnit {
                 };
                 (Self::blend(x, y, m), [0.0; 2])
             }
+            TempoFxKind::LowCutEcho => self.low_cut_echo(x, m, d),
+            TempoFxKind::MultiTap => self.multi_tap(x, m, d),
+            TempoFxKind::Jet => self.jet(x, m, phase),
+            TempoFxKind::Stretch => self.stretch(x, m, d),
+            TempoFxKind::ShepardSaw => self.shepard(x, m, phase, true),
+            TempoFxKind::ShepardTri => self.shepard(x, m, phase, false),
             TempoFxKind::ReverseRoll => {
                 if self.roll_len == 0 {
                     self.roll_len = (d as usize).clamp(16, self.roll_buf.len());
@@ -882,6 +910,104 @@ impl FxUnit {
                 (Self::blend(x, y, m), [0.0; 2])
             }
         }
+    }
+
+    /// Low cut echo: an echo with a one-pole high-pass on what goes round
+    /// again, so each repeat is thinner than the one before.
+    fn low_cut_echo(&mut self, x: [f32; 2], m: f32, d: f32) -> ([f32; 2], [f32; 2]) {
+        let wet = self.delay.read(d);
+        let fc = 200.0 * 8f32.powf((self.param_s + 1.0) * 0.5);
+        let a = 1.0 / (1.0 + TAU * fc / self.sr);
+        let mut fb = [0.0; 2];
+        for ch in 0..2 {
+            let [last_in, last_out] = self.hp[ch];
+            let y = a * (last_out + wet[ch] - last_in);
+            self.hp[ch] = [wet[ch], y];
+            fb[ch] = y;
+        }
+        self.delay.push([x[0] * m + fb[0] * 0.6, x[1] * m + fb[1] * 0.6]);
+        ([x[0] + wet[0], x[1] + wet[1]], wet)
+    }
+
+    /// Multi tap: four taps across `d`, alternating sides, the last one fed
+    /// back softly.
+    fn multi_tap(&mut self, x: [f32; 2], m: f32, d: f32) -> ([f32; 2], [f32; 2]) {
+        const TAPS: [(f32, f32, usize); 4] = [(0.25, 0.35, 0), (0.5, 0.45, 1), (0.75, 0.55, 0), (1.0, 0.65, 1)];
+        let mut w = [0.0; 2];
+        for (at, gain, side) in TAPS {
+            let t = self.delay.read((d * at).max(2.0));
+            let mono = (t[0] + t[1]) * 0.5;
+            w[side] += mono * gain;
+            w[1 - side] += mono * gain * 0.35;
+        }
+        let last = self.delay.read(d);
+        self.delay.push([x[0] * m + last[0] * 0.3, x[1] * m + last[1] * 0.3]);
+        ([x[0] + w[0], x[1] + w[1]], w)
+    }
+
+    /// Jet: a resonant flanger with a short, bright sweep.
+    fn jet(&mut self, x: [f32; 2], m: f32, phase: f32) -> ([f32; 2], [f32; 2]) {
+        let tri = 1.0 - (2.0 * phase - 1.0).abs();
+        let dd = self.sr * (0.0002 + 0.0035 * tri);
+        let wet = self.short.read(dd);
+        self.short.push([x[0] + wet[0] * 0.82, x[1] + wet[1] * 0.82]);
+        let y = [
+            x[0] * (1.0 - 0.5 * m) + wet[0] * 0.6 * m,
+            x[1] * (1.0 - 0.5 * m) + wet[1] * 0.6 * m,
+        ];
+        (y, [0.0; 2])
+    }
+
+    /// Stretch: records from switching on (into the roll buffer) and plays
+    /// it back slower with two overlapping grains, so the pitch stays.
+    fn stretch(&mut self, x: [f32; 2], m: f32, d: f32) -> ([f32; 2], [f32; 2]) {
+        if self.roll_len == 0 {
+            self.roll_len = (d.max(self.sr * GRAIN_S * 4.0) as usize).clamp(16, self.roll_buf.len());
+        }
+        if self.roll_filled < self.roll_len {
+            self.roll_buf[self.roll_filled] = x;
+            self.roll_filled += 1;
+        }
+        let len = self.roll_len as f64;
+        let filled = self.roll_filled.max(1);
+        let grain = (self.sr * GRAIN_S).max(8.0);
+        let speed = 0.5 + 0.25 * self.param_s as f64;
+        let mut y = [0.0; 2];
+        for g in &mut self.grains {
+            if g.1 >= 1.0 {
+                *g = (self.stretch_pos, g.1 - 1.0);
+            }
+            let k = g.1 * grain;
+            let i = ((g.0 + k as f64) % len) as usize;
+            let s = self.roll_buf[i.min(filled - 1)];
+            // Hann windows half a grain apart sum to one.
+            let w = 0.5 - 0.5 * (g.1 * TAU).cos();
+            y[0] += s[0] * w;
+            y[1] += s[1] * w;
+            g.1 += 1.0 / grain;
+        }
+        self.stretch_pos = (self.stretch_pos + speed) % len;
+        (Self::blend(x, y, m), [0.0; 2])
+    }
+
+    /// Shepard sweep: octave-spaced band-passes moving together, each faded
+    /// by a bell over the octaves so the bank seems to keep rising (`saw`)
+    /// or to swing up and down.
+    fn shepard(&mut self, x: [f32; 2], m: f32, phase: f32, saw: bool) -> ([f32; 2], [f32; 2]) {
+        let s = if saw { phase } else { 1.0 - (2.0 * phase - 1.0).abs() };
+        let mid = (SHEPARD_BANDS as f32 - 1.0) * 0.5;
+        let mut y = [0.0; 2];
+        for (i, f) in self.shepard.iter_mut().enumerate() {
+            let pos = i as f32 + s;
+            if self.counter == 0 {
+                f.set(SHEPARD_LOW_HZ * 2f32.powf(pos), 4.0, self.sr);
+            }
+            let w = (-(pos - mid) * (pos - mid) / 2.88).exp();
+            y[0] += f.tick(0, x[0]).band * w;
+            y[1] += f.tick(1, x[1]).band * w;
+        }
+        self.counter = (self.counter + 1) % 16;
+        (Self::blend(x, [y[0] * 1.6, y[1] * 1.6], m), [0.0; 2])
     }
 
     #[inline]

@@ -472,18 +472,24 @@ impl EngineProcessor {
         }
     }
 
-    /// Tells each deck which part (if any) a live unit takes for Stem FX.
+    /// Tells each deck which part (if any) a live unit takes for Stem FX,
+    /// else the part its channel's Channel FX is on.
     fn update_fx_parts(&mut self) {
         for d in 0..self.decks.len() {
-            let part = self.tempo_fx.iter().enumerate().find_map(|(k, u)| {
-                let live = k % TEMPO_FX_SLOTS == 0 || self.tempo_fx_multi[k / TEMPO_FX_SLOTS];
-                match u.target() {
-                    FxTarget::Part(c, s) if live && c == d => Some(s),
-                    _ => None,
-                }
-            });
+            let part = self.tempo_part(d).or_else(|| self.channels.get(d).and_then(|c| c.color_part));
             self.decks[d].set_fx_part(part);
         }
+    }
+
+    /// The part of deck `d` a live Tempo FX unit is on.
+    fn tempo_part(&self, d: usize) -> Option<crate::stems::Stem> {
+        self.tempo_fx.iter().enumerate().find_map(|(k, u)| {
+            let live = k % TEMPO_FX_SLOTS == 0 || self.tempo_fx_multi[k / TEMPO_FX_SLOTS];
+            match u.target() {
+                FxTarget::Part(c, s) if live && c == d => Some(s),
+                _ => None,
+            }
+        })
     }
 
     fn ctx(&mut self) -> RtCtx<'_> {
@@ -525,6 +531,9 @@ impl EngineProcessor {
             Command::Channel(ch, c) => {
                 if let Some(chn) = self.channels.get_mut(ch) {
                     chn.apply(c);
+                    if matches!(c, crate::ChannelCommand::SetChannelFxPart(_)) {
+                        self.update_fx_parts();
+                    }
                 }
             }
             Command::Mixer(m) => match m {
@@ -780,8 +789,13 @@ impl EngineProcessor {
                 deck.render(&mut self.deck_bufs[i], n, &mut ctx);
             }
         }
-        // Stem FX: the split-off part goes through its unit(s), then back in.
+        // Stem FX: the split-off part goes through its unit(s), or its
+        // channel's Channel FX, then back in.
         for i in 0..self.decks.len() {
+            let tempo = self.tempo_part(i).is_some();
+            if let Some(ch) = self.channels.get_mut(i) {
+                ch.color_on_part = false;
+            }
             let Some(part) = self.decks[i].part_output(n) else {
                 continue;
             };
@@ -790,6 +804,13 @@ impl EngineProcessor {
                 if live && matches!(unit.target(), FxTarget::Part(c, _) if c == i) {
                     unit.process(part, &clocks[i]);
                 }
+            }
+            if !tempo
+                && let Some(ch) = self.channels.get_mut(i)
+                && ch.color_part.is_some()
+            {
+                ch.color.process(part, &clocks[i]);
+                ch.color_on_part = true;
             }
             for (m, p) in self.deck_bufs[i][..n * 2].iter_mut().zip(part.iter()) {
                 *m += *p;

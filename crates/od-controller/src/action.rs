@@ -419,6 +419,9 @@ pub enum ChannelFxAction {
     Select(String),
     Next,
     Toggle,
+    /// Puts the Channel FX of every channel on one part of its track, or
+    /// back on the whole channel when it is on that part already.
+    Part(StemPart),
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

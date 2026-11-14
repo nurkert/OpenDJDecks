@@ -11,7 +11,7 @@ use crate::settings::CHANNEL_FX;
 use crate::{FxSlotView, FxUnitView, decks, engine};
 use od_engine::{
     TEMPO_FX_SLOTS, TEMPO_FX_UNITS, TempoFxCommand, TempoFxKind, TempoFxState, ChannelCommand,
-    ChannelFxKind, Command, EngineState, FxTail, FxTarget, HoldFxEffect, HoldFxPreset, ExitFxKind,
+    ChannelFxKind, Command, EngineState, FxTail, FxTarget, HoldFxEffect, HoldFxPreset, ExitFxKind, Stem,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -100,18 +100,25 @@ pub(crate) fn step_kind(kind: TempoFxKind, delta: i32) -> TempoFxKind {
 }
 
 /// Tempo FX by a controller mapping name (`echo`, `low_cut_echo`, …). Names
-/// of effects OpenDJDecks does not have map to the closest one.
+/// of effects OpenDJDecks does not have map to the closest one; a model's
+/// own name for one of ours maps to it.
 pub(crate) fn kind_from_name(name: &str) -> Option<TempoFxKind> {
     Some(match name {
-        "echo" | "low_cut_echo" => TempoFxKind::Echo,
-        "delay" | "multi_tap_delay" => TempoFxKind::Delay,
+        "echo" => TempoFxKind::Echo,
+        "low_cut_echo" => TempoFxKind::LowCutEcho,
+        "delay" => TempoFxKind::Delay,
+        "multi_tap" | "multi_tap_delay" => TempoFxKind::MultiTap,
         "ping_pong" => TempoFxKind::PingPong,
         "reverb" | "shimmer" => TempoFxKind::Reverb,
-        "flanger" | "enigma_jet" => TempoFxKind::Flanger,
+        "flanger" => TempoFxKind::Flanger,
+        "jet" | "enigma_jet" => TempoFxKind::Jet,
         "phaser" => TempoFxKind::Phaser,
-        "roll" | "stretch" => TempoFxKind::Roll,
+        "roll" => TempoFxKind::Roll,
+        "stretch" => TempoFxKind::Stretch,
         "slip_roll" => TempoFxKind::SlipRoll,
-        "filter" | "mobius_saw" | "mobius_triangle" => TempoFxKind::Filter,
+        "filter" => TempoFxKind::Filter,
+        "shepard_saw" | "mobius_saw" => TempoFxKind::ShepardSaw,
+        "shepard_tri" | "mobius_triangle" => TempoFxKind::ShepardTri,
         "trans" => TempoFxKind::Trans,
         "pitch" => TempoFxKind::Pitch,
         "vinyl_brake" => TempoFxKind::VinylBrake,
@@ -335,6 +342,12 @@ fn kind_short(k: TempoFxKind) -> &'static str {
         K::BuildUp => "BUILD",
         K::Breakdown => "BREAK",
         K::ReverseRoll => "REV.ROLL",
+        K::LowCutEcho => "LC ECHO",
+        K::MultiTap => "M.TAP",
+        K::Jet => "JET",
+        K::Stretch => "STRETCH",
+        K::ShepardSaw => "SHEP.SAW",
+        K::ShepardTri => "SHEP.TRI",
     }
 }
 
@@ -544,6 +557,23 @@ pub(crate) fn select_channel_fx(app: &App, index: usize) {
     }
 }
 
+/// The part the Channel FX goes on after pressing `part`'s button: that
+/// part, or the whole channel again when it is on that part already.
+pub(crate) fn next_channel_fx_part(current: Option<Stem>, part: Stem) -> Option<Stem> {
+    (current != Some(part)).then_some(part)
+}
+
+/// A controller's FX part button: the Channel FX of every channel on
+/// `part` (needs stems), or back on the whole channels.
+pub(crate) fn toggle_channel_fx_part(app: &App, part: Stem) {
+    let current = engine::snapshot(app).and_then(|s| s.channels[0].channel_fx_part);
+    let next = next_channel_fx_part(current, part);
+    engine::ensure_engine(app);
+    for c in 0..decks::DECKS {
+        engine::send(app, Command::Channel(c, ChannelCommand::SetChannelFxPart(next)));
+    }
+}
+
 pub(crate) fn step_channel_fx(app: &App, delta: i32) {
     let cur = channel_fx_index(&app.state.borrow().settings.perform.channel_fx) as i32;
     select_channel_fx(
@@ -709,13 +739,28 @@ mod tests {
 
     #[test]
     fn kinds_wrap_and_map_controller_names() {
-        assert_eq!(step_kind(TempoFxKind::Echo, -1), TempoFxKind::ReverseRoll);
-        assert_eq!(step_kind(TempoFxKind::ReverseRoll, 1), TempoFxKind::Echo);
+        assert_eq!(step_kind(TempoFxKind::Echo, -1), TempoFxKind::ShepardTri);
+        assert_eq!(step_kind(TempoFxKind::ShepardTri, 1), TempoFxKind::Echo);
         assert_eq!(step_kind(TempoFxKind::Echo, 3), TempoFxKind::Reverb);
-        assert_eq!(kind_from_name("low_cut_echo"), Some(TempoFxKind::Echo));
+        // The four-deck mapping's selector: every position an effect of its own.
+        assert_eq!(kind_from_name("low_cut_echo"), Some(TempoFxKind::LowCutEcho));
+        assert_eq!(kind_from_name("multi_tap_delay"), Some(TempoFxKind::MultiTap));
+        assert_eq!(kind_from_name("enigma_jet"), Some(TempoFxKind::Jet));
+        assert_eq!(kind_from_name("stretch"), Some(TempoFxKind::Stretch));
+        assert_eq!(kind_from_name("mobius_saw"), Some(TempoFxKind::ShepardSaw));
+        assert_eq!(kind_from_name("mobius_triangle"), Some(TempoFxKind::ShepardTri));
         assert_eq!(kind_from_name("slip_roll"), Some(TempoFxKind::SlipRoll));
         assert_eq!(kind_from_name("vinyl_brake"), Some(TempoFxKind::VinylBrake));
         assert_eq!(kind_from_name("laser"), None);
+    }
+
+    /// A part button puts the Channel FX on its part; pressed again (or
+    /// another part's button) it moves or goes back to the whole channel.
+    #[test]
+    fn channel_fx_part_buttons_toggle() {
+        assert_eq!(next_channel_fx_part(None, Stem::Drums), Some(Stem::Drums));
+        assert_eq!(next_channel_fx_part(Some(Stem::Drums), Stem::Drums), None);
+        assert_eq!(next_channel_fx_part(Some(Stem::Drums), Stem::Vocals), Some(Stem::Vocals));
     }
 
     #[test]

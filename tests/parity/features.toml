@@ -1295,7 +1295,7 @@ status = "done"
 tests = [
   "od-engine::render::position_advances_at_tempo_ratios",
   "od-ui::decks::tests::tempo_ranges",
-  "od-controller::mappings::tempo_is_inverted_bipolar_with_centre_detent",
+  "od-controller::mappings::tempo_is_bipolar_with_centre_detent",
 ]
 note = "`TempoRange`; the range key above CUE (and on compact decks) and the controller cycle ±6 / ±10 / ±16 % / WIDE; the platter shows the range"
 
@@ -2104,10 +2104,14 @@ status = "done"
 prio = "P3"
 tests = [
   "od-engine::fx::every_tempo_fx_runs_and_returns_to_dry",
+  "od-engine::fx::low_cut_echo_takes_the_low_end_out_of_the_repeats",
+  "od-engine::fx::multi_tap_spreads_its_taps_across_the_length",
+  "od-engine::fx::stretch_slows_down_without_changing_the_pitch",
+  "od-engine::fx::shepard_sweeps_keep_an_even_level",
   "od-ui::fx::tests::kinds_wrap_and_map_controller_names",
 ]
 evidence = ["command.rs::TempoFxKind::ALL"]
-note = "17 effects selectable in the panel (list or ‹ ›); controller effect names map to the closest one"
+note = "23 effects selectable in the panel (list or ‹ ›), among them low cut echo, multi tap, jet, stretch and two Shepard sweeps, so a four-deck controller's effect selector reaches an effect of its own on every position; other controller effect names map to the closest one"
 
 [[feature]]
 id = "fx-channel-fx-select"

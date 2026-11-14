@@ -392,6 +392,7 @@ pub(crate) fn handle_action(app: &App, action: ControlAction) {
             },
             // One button cycles through the effects (two-deck controllers).
             ChannelFxAction::Next | ChannelFxAction::Toggle => fx::step_channel_fx(app, 1),
+            ChannelFxAction::Part(p) => fx::toggle_channel_fx_part(app, stem_of(p)),
         },
         ControlAction::Sampler(a) => sampler_action(app, a),
         ControlAction::Ignored => {}
@@ -838,7 +839,7 @@ mod tests {
     #[test]
     fn mapping_names_and_leds() {
         // The channel FX names a four-deck mapping sends.
-        for n in ["space", "dub_echo", "sweep", "noise", "crush", "filter"] {
+        for n in ["space", "dub_echo", "crush", "pitch", "noise", "filter"] {
             assert!(channel_fx_by_name(n).is_some(), "{n}");
         }
         assert_eq!(channel_fx_by_name("laser"), None);

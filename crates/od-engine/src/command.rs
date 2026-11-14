@@ -443,6 +443,10 @@ pub enum ChannelCommand {
     SetChannelFx(ChannelFxKind),
     /// Channel FX knob −1..=1, 0 = bypass.
     SetChannelFxAmount(f32),
+    /// Channel FX on one part of the deck's track only (needs stems; a Tempo
+    /// FX unit on a part of the same deck takes precedence). `None` = the
+    /// whole channel.
+    SetChannelFxPart(Option<crate::stems::Stem>),
     /// Channel fader 0..=1.
     SetFader(f32),
     SetFaderCurve(FaderCurve),
@@ -579,10 +583,27 @@ pub enum TempoFxKind {
     /// Remix effect: repeats the `beats` captured from switching on,
     /// played backwards.
     ReverseRoll,
+    /// Echo whose repeats lose more of their low end each time round;
+    /// `param` moves the cut (−1 ≈ 200 Hz … +1 ≈ 1.6 kHz). Tail.
+    LowCutEcho,
+    /// Delay with four taps across `beats` (¼, ½, ¾ and the whole),
+    /// alternating left and right and growing louder. Tail.
+    MultiTap,
+    /// Flanger with strong feedback and a short, bright sweep, one cycle per
+    /// `beats`.
+    Jet,
+    /// Plays the sound from switching on slower without changing its pitch
+    /// (grains); `param` sets the speed (−1 = ¼, 0 = ½, +1 = ¾).
+    Stretch,
+    /// Shepard sweep: octave-spaced band-passes that seem to rise for ever,
+    /// one octave per `beats`.
+    ShepardSaw,
+    /// Shepard sweep going up for half of `beats` and down for the other.
+    ShepardTri,
 }
 
 impl TempoFxKind {
-    pub const ALL: [TempoFxKind; 17] = [
+    pub const ALL: [TempoFxKind; 23] = [
         TempoFxKind::Echo,
         TempoFxKind::Delay,
         TempoFxKind::PingPong,
@@ -600,6 +621,12 @@ impl TempoFxKind {
         TempoFxKind::BuildUp,
         TempoFxKind::Breakdown,
         TempoFxKind::ReverseRoll,
+        TempoFxKind::LowCutEcho,
+        TempoFxKind::MultiTap,
+        TempoFxKind::Jet,
+        TempoFxKind::Stretch,
+        TempoFxKind::ShepardSaw,
+        TempoFxKind::ShepardTri,
     ];
 
     /// Index into [`TempoFxKind::ALL`].
@@ -617,6 +644,8 @@ impl TempoFxKind {
                 | TempoFxKind::Reverb
                 | TempoFxKind::Helix
                 | TempoFxKind::Spiral
+                | TempoFxKind::LowCutEcho
+                | TempoFxKind::MultiTap
         )
     }
 

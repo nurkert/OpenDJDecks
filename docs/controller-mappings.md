@@ -9,12 +9,19 @@ file lists where its message facts came from (header comment and
 `device.sources`), and marks entries not yet confirmed on real hardware with
 `verify = true`.
 
-The two bundled mappings took message facts from another project's working
-mappings when they were written. New model mappings are not derived from
-manufacturer manuals, MIDI implementation charts, vendor software or other
-projects' mapping files: they come from owners who capture their own unit
-with the guided setup (below) and share the file. Such a file names its
-template in `device.sources` and marks every entry `verify = true`.
+Message facts may come from:
+
+- the manufacturer's published MIDI message list for the model (facts only,
+  no text or drawings copied);
+- other projects' mapping files under a GPL-compatible licence (GPL, MIT,
+  BSD, public domain), named in `device.sources`;
+- captures of an owner's own unit (MIDI monitor, guided setup below, or a
+  request the unit answers).
+
+Nothing comes from disassembling or decompiling vendor software. Whatever
+the source, an entry counts as confirmed only after it was tried on a real
+unit (`confirmed = true`); a fact from a public source without such a try
+carries neither flag, a guess carries `verify = true`.
 
 ## Conventions
 
@@ -216,6 +223,7 @@ release.
 | `fx_panic` | press | | `FxPanic`: every effect off at once (both Tempo FX units with tails, exit and hold FX, the channel FX knobs) |
 | `channel_fx.select` | press | `effect` | |
 | `channel_fx.next`, `channel_fx.toggle` | press | | |
+| `channel_fx.part` | press | `stem` | Channel FX of every channel on that part of the track (needs stems); pressed again, back on the whole channel |
 | `browse.rotate` | relative | `shifted` (bool) | `Rotate { delta, shifted }` |
 | `browse.press` | press | `shifted` | |
 | `browse.back`, `browse.view_toggle`, `browse.similar` | press | | |

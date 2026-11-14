@@ -5,14 +5,14 @@
 # docs/controller-mappings.md). The model name is used only to name the
 # hardware this file is compatible with.
 #
-# MIDI message facts: [M] Mixxx project mappings of the same controller family
-# (offset-64 jog encoding, 14-bit LSB = MSB + 0x20, pad note blocks per pad
-# mode).
+# MIDI message facts: [L] the manufacturer's published MIDI message list for
+# this model (facts only); [M] Mixxx project mappings of the same controller
+# family (offset-64 jog encoding, 14-bit LSB = MSB + 0x20, pad note blocks per
+# pad mode).
 #
-# The unit was not connected while this file was written. Entries with
-# `confirmed = true` were checked on the owner's unit on 2026-11-13 (the
-# controls were used in OpenDJDecks and their messages recorded with the MIDI
-# monitor); everything else is not confirmed live yet. Entries marked
+# Entries with `confirmed = true` were checked on the owner's unit on
+# 2026-11-13 (the controls were used in OpenDJDecks and their messages
+# recorded with the MIDI monitor); everything else is not confirmed live yet. Entries marked
 # `verify = true` are not backed by a public source yet and need a check on
 # real hardware.
 #
@@ -39,6 +39,7 @@ model = "DDJ-FLX10"
 decks = 4
 module = "jog-controller"
 sources = [
+  "Manufacturer's MIDI message list for this model (facts only)",
   "Mixxx mappings of the same controller family (facts only)",
 ]
 
@@ -63,6 +64,14 @@ takeover_threshold = 0.03
 # of the platter, 2026-11-13); still to confirm with more turns.
 jog_ticks_per_revolution = 4800
 meter_interval_ms = 33
+
+# Asks the unit for the positions of all its faders, knobs and switches; it
+# answers at once with one message per control, so the app knows where the
+# channel faders stand without them being moved. The request follows the
+# Mixxx mappings of smaller models of the family; this model number was found
+# on the owner's unit on 2026-11-14 (four others got no answer).
+[[init]]
+bytes = [0xF0, 0x00, 0x40, 0x05, 0x00, 0x00, 0x04, 0x01, 0x00, 0x03, 0x01, 0xF7]
 
 # Placeholder pad colour palette (velocity value -> colour). The real
 # velocity/colour table has to be measured with `midi_monitor --leds`.
@@ -113,13 +122,6 @@ encoding = "twos_complement"
 confirmed = true
 
 [[input]]
-name = "Browse press"
-note = 0x41
-channel = 6
-action = "browse.press"
-verify = true
-
-[[input]]
 name = "Back"
 note = 0x65
 channel = 6
@@ -127,7 +129,6 @@ action = "browse.back"
 confirmed = true
 
 [[input]]
-verify = true
 name = "Back (shift)"
 note = 0x66
 channel = 6
@@ -141,21 +142,21 @@ channel = 6
 action = "browse.view_toggle"
 
 [[input]]
-verify = true
 name = "Browse view (long press)"
 note = 0x67
 channel = 6
 action = "ignore"
 
 [[input]]
-verify = true
 name = "Browse view (shift)"
 note = 0x68
 channel = 6
 action = "browse.similar"
 
+# Pressing the BROWSE knob loads into the deck that is active on that side
+# [L]; the unit has no separate press message.
 [[input]]
-name = "Load deck 1"
+name = "Browse press (deck 1 active)"
 note = 0x46
 channel = 6
 deck = 1
@@ -163,7 +164,7 @@ action = "deck.load"
 confirmed = true
 
 [[input]]
-name = "Load deck 2"
+name = "Browse press (deck 2 active)"
 note = 0x47
 channel = 6
 deck = 2
@@ -171,28 +172,77 @@ action = "deck.load"
 confirmed = true
 
 [[input]]
-name = "Load deck 3"
+name = "Browse press (deck 3 active)"
 note = 0x48
 channel = 6
 deck = 3
 action = "deck.load"
 
 [[input]]
-name = "Load deck 4"
+name = "Browse press (deck 4 active)"
 note = 0x49
 channel = 6
 deck = 4
 action = "deck.load"
 
+# SHIFT + BROWSE press, one note per active deck [L].
+[[input]]
+name = "Browse press (shift, deck 1 active)"
+note = 0x5D
+channel = 6
+action = "browse.press"
+args = { shifted = true }
+
+[[input]]
+name = "Browse press (shift, deck 2 active)"
+note = 0x6D
+channel = 6
+action = "browse.press"
+args = { shifted = true }
+
+[[input]]
+name = "Browse press (shift, deck 3 active)"
+note = 0x5E
+channel = 6
+action = "browse.press"
+args = { shifted = true }
+
+[[input]]
+name = "Browse press (shift, deck 4 active)"
+note = 0x6F
+channel = 6
+action = "browse.press"
+args = { shifted = true }
+
 # ---------------------------------------------------------------- deck layers
-# Deck select buttons: note 0x72 on the channel of the deck that became
-# active (deck 1/2 inferred).
+# DECK 1/3 and DECK 2/4: the unit reports the deck that became active with
+# 0x3C = 0x7F on its channel and 0x3C = 0x00 on the other deck of the side
+# [L]. 0x72 comes on the deck 3/4 channel for both buttons of a side, so it
+# does not tell which deck is active.
 [[input]]
 name = "Deck select"
-note = 0x72
+note = 0x3C
 channel = "deck"
 action = "deck.select"
 confirmed = true
+
+[[input]]
+name = "Deck select button"
+note = 0x72
+channel = "deck"
+action = "ignore"
+
+[[input]]
+name = "Deck select 1/3 (shift)"
+note = 0x7C
+channel = 6
+action = "ignore"
+
+[[input]]
+name = "Deck select 2/4 (shift)"
+note = 0x7D
+channel = 6
+action = "ignore"
 
 # ---------------------------------------------------------------- transport
 [[input]]
@@ -203,7 +253,6 @@ action = "deck.play_pause"
 confirmed = true
 
 [[input]]
-verify = true
 name = "Play/Pause (shift)"
 note = 0x47
 channel = "deck"
@@ -216,7 +265,6 @@ channel = "deck"
 action = "deck.cue"
 
 [[input]]
-verify = true
 name = "Cue (shift)"
 note = 0x48
 channel = "deck"
@@ -229,14 +277,12 @@ channel = "deck"
 action = "deck.sync"
 
 [[input]]
-verify = true
 name = "Sync (long press)"
 note = 0x78
 channel = "deck"
 action = "deck.sync_off"
 
 [[input]]
-verify = true
 name = "Sync (shift)"
 note = 0x5C
 channel = "deck"
@@ -285,7 +331,6 @@ channel = "deck"
 action = "deck.quantize"
 
 [[input]]
-verify = true
 name = "Quantize (shift)"
 note = 0x68
 channel = "deck"
@@ -311,7 +356,6 @@ channel = "deck"
 action = "deck.censor"
 
 [[input]]
-verify = true
 name = "Slip reverse (shift)"
 note = 0x38
 channel = "deck"
@@ -385,75 +429,154 @@ action = "deck.memory_cue_delete"
 
 # Mix point buttons: no OpenDJDecks function yet.
 [[input]]
-verify = true
-name = "Mix point / part buttons"
+name = "Mix point select back"
 note = 0x59
 channel = "deck"
 action = "ignore"
 [[input]]
-verify = true
-name = "Mix point / part buttons"
+name = "Mix point select forward"
 note = 0x5A
 channel = "deck"
 action = "ignore"
 [[input]]
-verify = true
-name = "Mix point / part buttons"
+name = "Mix point select back (shift)"
 note = 0x49
 channel = "deck"
 action = "ignore"
 [[input]]
-verify = true
-name = "Mix point / part buttons"
+name = "Mix point select forward (shift)"
 note = 0x42
 channel = "deck"
 action = "ignore"
 [[input]]
-name = "Mix point / part buttons"
+name = "Mix point link"
 note = 0x4A
 channel = "deck"
 action = "ignore"
 [[input]]
-verify = true
-name = "Mix point / part buttons"
+name = "Mix point link (shift)"
 note = 0x43
 channel = "deck"
 action = "ignore"
-# The row of three stem buttons per deck (notes 0x0D-0x0F, left to right on
-# the owner's unit, 2026-11-13). Each mutes or brings back one part; which
-# part each button names on the unit is still to confirm.
+# The row of three stem buttons per deck (ACTIVE PART DRUMS, VOCAL, INST
+# [L]). Each mutes or brings back one part.
 [[input]]
-verify = true
-name = "Stem button 1"
+name = "Stem button DRUMS"
 note = 0x0D
+channel = "deck"
+action = "deck.stem_mute"
+args = { stem = "drums" }
+
+[[input]]
+name = "Stem button VOCAL"
+note = 0x0E
 channel = "deck"
 action = "deck.stem_mute"
 args = { stem = "vocals" }
 
 [[input]]
-verify = true
-name = "Stem button 2"
-note = 0x0E
+name = "Stem button INST"
+note = 0x0F
 channel = "deck"
 action = "deck.stem_mute"
 args = { stem = "inst" }
 
+# SHIFT + a stem button pressed twice: channel 6, one note per deck [L].
+# Here it keeps only that part (the others muted).
 [[input]]
-verify = true
-name = "Stem button 3"
-note = 0x0F
-channel = "deck"
-action = "deck.stem_mute"
+name = "Stem button DRUMS (shift, twice)"
+note = 0x24
+channel = 6
+deck = 1
+action = "deck.stem_keep"
 args = { stem = "drums" }
+[[input]]
+name = "Stem button DRUMS (shift, twice)"
+note = 0x25
+channel = 6
+deck = 2
+action = "deck.stem_keep"
+args = { stem = "drums" }
+[[input]]
+name = "Stem button DRUMS (shift, twice)"
+note = 0x26
+channel = 6
+deck = 3
+action = "deck.stem_keep"
+args = { stem = "drums" }
+[[input]]
+name = "Stem button DRUMS (shift, twice)"
+note = 0x27
+channel = 6
+deck = 4
+action = "deck.stem_keep"
+args = { stem = "drums" }
+[[input]]
+name = "Stem button VOCAL (shift, twice)"
+note = 0x28
+channel = 6
+deck = 1
+action = "deck.stem_keep"
+args = { stem = "vocals" }
+[[input]]
+name = "Stem button VOCAL (shift, twice)"
+note = 0x29
+channel = 6
+deck = 2
+action = "deck.stem_keep"
+args = { stem = "vocals" }
+[[input]]
+name = "Stem button VOCAL (shift, twice)"
+note = 0x2A
+channel = 6
+deck = 3
+action = "deck.stem_keep"
+args = { stem = "vocals" }
+[[input]]
+name = "Stem button VOCAL (shift, twice)"
+note = 0x2B
+channel = 6
+deck = 4
+action = "deck.stem_keep"
+args = { stem = "vocals" }
+[[input]]
+name = "Stem button INST (shift, twice)"
+note = 0x2C
+channel = 6
+deck = 1
+action = "deck.stem_keep"
+args = { stem = "inst" }
+[[input]]
+name = "Stem button INST (shift, twice)"
+note = 0x2D
+channel = 6
+deck = 2
+action = "deck.stem_keep"
+args = { stem = "inst" }
+[[input]]
+name = "Stem button INST (shift, twice)"
+note = 0x2E
+channel = 6
+deck = 3
+action = "deck.stem_keep"
+args = { stem = "inst" }
+[[input]]
+name = "Stem button INST (shift, twice)"
+note = 0x2F
+channel = 6
+deck = 4
+action = "deck.stem_keep"
+args = { stem = "inst" }
 
 # ---------------------------------------------------------------- tempo / jog
+# 0x0000 = the minus side, 0x3FFF = the plus side [L]: no invert, plus is
+# faster. Direction still to try on the unit.
 [[input]]
 name = "Tempo fader"
 cc = 0x00
 lsb = 0x20
 channel = "deck"
 action = "deck.tempo"
-invert = true   # direction to verify
 verify = true
 
 [[input]]
@@ -462,11 +585,8 @@ cc = 0x05
 lsb = 0x25
 channel = "deck"
 action = "deck.tempo"
-invert = true
 verify = true
 
-# The presence and resolution of these messages in MIDI mode must be
-# confirmed.
 [[input]]
 name = "Jog touch"
 note = 0x36
@@ -479,19 +599,19 @@ name = "Jog touch (shift)"
 note = 0x67
 channel = "deck"
 action = "deck.jog_touch"
-verify = true
 
+# The unit picks the platter CC from its own vinyl setting [L]: 0x22 with
+# vinyl on, 0x23 with vinyl off.
 [[input]]
-name = "Jog scratch"
+name = "Jog platter (vinyl on)"
 cc = 0x22
 channel = "deck"
 action = "deck.jog_turn"
 args = { mode = "scratch" }
 encoding = "offset64"
-verify = true
 
 [[input]]
-name = "Jog top bend"
+name = "Jog platter (vinyl off)"
 cc = 0x23
 channel = "deck"
 action = "deck.jog_turn"
@@ -509,13 +629,28 @@ encoding = "offset64"
 confirmed = true
 
 [[input]]
-name = "Jog search (shift)"
+name = "Jog platter search (shift)"
 cc = 0x1F
 channel = "deck"
 action = "deck.jog_turn"
 args = { mode = "search" }
 encoding = "offset64"
+
+[[input]]
+name = "Jog side search (shift)"
+cc = 0x26
+channel = "deck"
+action = "deck.jog_turn"
+args = { mode = "search" }
+encoding = "offset64"
 verify = true
+
+# Platter turned while a 4 BEAT JUMP button is held [L]: no function yet.
+[[input]]
+name = "Jog (4 beat jump held)"
+cc = 0x29
+channel = "deck"
+action = "ignore"
 
 # ---------------------------------------------------------------- loops
 [[input]]
@@ -525,30 +660,26 @@ channel = "deck"
 action = "deck.loop_in"
 
 [[input]]
-name = "Loop in (loop active)"
-note = 0x12
-channel = "deck"
-action = "deck.loop_halve"
-verify = true
-
-[[input]]
 name = "Loop out"
 note = 0x11
 channel = "deck"
 action = "deck.loop_out"
 
+# LOOP IN・1/2X and LOOP OUT・2X send only their press and SHIFT notes [L];
+# halve and double sit on the SHIFT notes (the list names no function).
 [[input]]
-name = "Loop out (loop active)"
-note = 0x13
+name = "Loop in (shift)"
+note = 0x4C
 channel = "deck"
-action = "deck.loop_double"
+action = "deck.loop_halve"
 verify = true
 
 [[input]]
 name = "Loop out (shift)"
 note = 0x4D
 channel = "deck"
-action = "deck.reloop_exit"
+action = "deck.loop_double"
+verify = true
 
 [[input]]
 name = "4 beat loop"
@@ -558,8 +689,7 @@ action = "deck.auto_loop"
 args = { beats = 4.0 }
 
 [[input]]
-verify = true
-name = "4 beat loop (shift)"
+name = "4 beat / exit (shift)"
 note = 0x50
 channel = "deck"
 action = "deck.reloop_exit"
@@ -595,7 +725,7 @@ action = "mixer.eq_low"
 
 # Part isolator variants of the EQ knobs (the controller sends these while
 # its EQ knobs are switched to part isolation): HI = vocals, MID = inst,
-# LOW = drums.
+# LOW = drums. Not in the manufacturer's list; to check on the unit.
 [[input]]
 name = "Part isolator vocals"
 cc = 0x08
@@ -668,7 +798,6 @@ lsb = 0x3F
 channel = 6
 action = "crossfader"
 takeover = false
-verify = true
 
 [[input]]
 name = "Master level"
@@ -677,7 +806,6 @@ lsb = 0x28
 channel = 6
 action = "master_level"
 takeover = false
-verify = true
 
 [[input]]
 name = "Booth level"
@@ -686,7 +814,6 @@ lsb = 0x29
 channel = 6
 action = "booth_level"
 takeover = false
-verify = true
 
 [[input]]
 name = "Headphone mix"
@@ -695,7 +822,6 @@ lsb = 0x2C
 channel = 6
 action = "headphone_mix"
 takeover = false
-verify = true
 
 [[input]]
 name = "Headphone level"
@@ -704,7 +830,6 @@ lsb = 0x2D
 channel = 6
 action = "headphone_level"
 takeover = false
-verify = true
 
 [[input]]
 name = "Headphone cue"
@@ -714,21 +839,18 @@ action = "mixer.cue"
 confirmed = true
 
 [[input]]
-verify = true
 name = "Headphone cue (shift)"
 note = 0x39
 channel = "deck"
 action = "ignore"
 
 [[input]]
-verify = true
 name = "Master cue"
 note = 0x63
 channel = 6
 action = "master_cue"
 
 [[input]]
-verify = true
 name = "Master cue (shift)"
 note = 0x62
 channel = 6
@@ -740,7 +862,6 @@ note = 0x16
 channel = "deck"
 action = "mixer.crossfader_assign"
 args = { side = "a" }
-verify = true
 
 [[input]]
 name = "Crossfader assign THRU"
@@ -748,7 +869,6 @@ note = 0x1D
 channel = "deck"
 action = "mixer.crossfader_assign"
 args = { side = "thru" }
-verify = true
 
 [[input]]
 name = "Crossfader assign B"
@@ -756,16 +876,17 @@ note = 0x18
 channel = "deck"
 action = "mixer.crossfader_assign"
 args = { side = "b" }
-verify = true
 
+# INPUT SELECT PC-A / LINE-PHONO / PC-B: each position sends all three
+# notes, 0x7F on the chosen one [L].
 [[input]]
-verify = true
-name = "Input select / fader start"
+name = "Input select (PC-A / line-phono / PC-B)"
 note = 0x55
 repeat = 3
 channel = "deck"
 action = "ignore"
 
+# SHIFT + crossfader or channel fader moved off / onto zero [L].
 [[input]]
 name = "Fader start (play)"
 note = 0x66
@@ -773,34 +894,84 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
-verify = true
+name = "Fader start (sync)"
+note = 0x5D
+channel = "deck"
+action = "ignore"
+
+[[input]]
 name = "Fader start (cue)"
 note = 0x52
 channel = "deck"
 action = "ignore"
 
-# Sound channel FX selection (left to right on the panel; order to verify).
+# LINE / PHONO switch of channels 3 and 4 (0x00 phono, 0x7F line) [L].
+[[input]]
+name = "Line/phono (channel 3)"
+note = 0x46
+channel = 2
+action = "ignore"
+
+[[input]]
+name = "Line/phono (channel 4)"
+note = 0x46
+channel = 3
+action = "ignore"
+
+[[input]]
+name = "Mic EQ high"
+cc = 0x07
+lsb = 0x27
+channel = 6
+action = "ignore"
+
+[[input]]
+name = "Mic EQ low"
+cc = 0x0F
+lsb = 0x2F
+channel = 6
+action = "ignore"
+
+# MIC OFF / ON / TALKOVER: each position sends all three notes, 0x7F on the
+# chosen one [L].
+[[input]]
+name = "Mic switch (off / on / talkover)"
+note = 0x6A
+repeat = 3
+channel = 6
+action = "ignore"
+
+# SOUND COLOR FX buttons [L]: SPACE, D.ECHO, CRUSH, PITCH, NOISE, FILTER
+# (0x00-0x05; with SHIFT 0x08-0x0D).
 [[input]]
 name = "CH FX select"
 note = 0x00
 repeat = 6
 channel = 6
 action = "channel_fx.select"
-args = { effect = ["space", "dub_echo", "sweep", "noise", "crush", "filter"] }
-verify = true
+args = { effect = ["space", "dub_echo", "crush", "pitch", "noise", "filter"] }
 
 [[input]]
-verify = true
 name = "CH FX select (shift)"
 note = 0x08
 repeat = 6
 channel = 6
 action = "ignore"
 
+# FX PART SELECT [L]: VOCAL, DRUMS, INST (0x1B-0x1D; with SHIFT 0x1E-0x20).
+# Puts the Sound Color FX on that part (again: back on the whole channel).
 [[input]]
 name = "FX part select"
 note = 0x1B
-repeat = 6
+repeat = 3
+channel = 6
+action = "channel_fx.part"
+args = { stem = ["vocals", "drums", "inst"] }
+
+[[input]]
+name = "FX part select (shift)"
+note = 0x1E
+repeat = 3
 channel = 6
 action = "ignore"
 
@@ -812,36 +983,39 @@ channel = 6
 action = "sampler.volume"
 
 [[input]]
-verify = true
 name = "Sampler cue"
 note = 0x69
 channel = 6
 action = "sampler.cue"
 
+[[input]]
+name = "Sampler cue (shift)"
+note = 0x6E
+channel = 6
+action = "ignore"
+
 # ---------------------------------------------------------------- tempo FX
 [[input]]
-verify = true
 name = "Tempo FX beat down"
 note = 0x4A
 channel = 4
 action = "tempo_fx.beat_down"
 
 [[input]]
-verify = true
 name = "Tempo FX beat up"
 note = 0x4B
 channel = 4
 action = "tempo_fx.beat_up"
 
+# BEAT left / right with SHIFT [L]; the list names no function, auto beat
+# and tap are this file's choice.
 [[input]]
-verify = true
 name = "Tempo FX auto beat (shift)"
 note = 0x66
 channel = 4
 action = "tempo_fx.auto_beat"
 
 [[input]]
-verify = true
 name = "Tempo FX tap (shift)"
 note = 0x6B
 channel = 4
@@ -892,10 +1066,8 @@ name = "Tempo FX on"
 note = 0x47
 channel = 4
 action = "tempo_fx.toggle"
-verify = true
 
 [[input]]
-verify = true
 name = "Tempo FX release (shift)"
 note = 0x43
 channel = 4
@@ -903,12 +1075,17 @@ action = "tempo_fx.release"
 
 # ---------------------------------------------------------------- pad modes
 [[input]]
-verify = true
 name = "Pad mode hot cue"
 note = 0x1B
 channel = "deck"
 action = "deck.pad_mode"
 args = { mode = "hot_cue" }
+
+[[input]]
+name = "Pad mode hot cue (long press)"
+note = 0x4B
+channel = "deck"
+action = "ignore"
 
 [[input]]
 name = "Pad mode keyboard (shift)"
@@ -918,7 +1095,6 @@ action = "deck.pad_mode"
 args = { mode = "keyboard" }
 
 [[input]]
-verify = true
 name = "Pad mode hold FX 1"
 note = 0x1E
 channel = "deck"
@@ -926,7 +1102,6 @@ action = "deck.pad_mode"
 args = { mode = "hold_fx1" }
 
 [[input]]
-verify = true
 name = "Pad mode hold FX 2 (shift)"
 note = 0x6B
 channel = "deck"
@@ -934,7 +1109,6 @@ action = "deck.pad_mode"
 args = { mode = "hold_fx2" }
 
 [[input]]
-verify = true
 name = "Pad mode beat jump"
 note = 0x20
 channel = "deck"
@@ -942,7 +1116,6 @@ action = "deck.pad_mode"
 args = { mode = "beat_jump" }
 
 [[input]]
-verify = true
 name = "Pad mode beat loop (shift)"
 note = 0x6D
 channel = "deck"
@@ -957,17 +1130,18 @@ action = "deck.pad_mode"
 args = { mode = "sampler" }
 
 [[input]]
-verify = true
 name = "Pad mode key shift (shift)"
 note = 0x6F
 channel = "deck"
 action = "deck.pad_mode"
 args = { mode = "key_shift" }
 
-# Parameter page buttons left/right of the pads (0x24–0x2B left,
-# 0x2C–0x33 right, one per pad mode). Only the sampler bank pages are used.
+# PAGE buttons left/right of the pads, one note per pad mode [L]: 0x24-0x2B
+# left, 0x2C-0x33 right (hot cue, pad FX 1, beat jump, sampler, keyboard,
+# pad FX 2, beat loop, key shift). They pick page 1 / page 2, and the unit
+# itself then sends the pads' page 1 / page 2 notes. Only the sampler ones
+# have a function (bank down / up; an absolute page action does not exist).
 [[input]]
-verify = true
 name = "Pad page left"
 note = 0x24
 repeat = 3
@@ -975,7 +1149,6 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
-verify = true
 name = "Pad page left"
 note = 0x28
 repeat = 4
@@ -983,7 +1156,6 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
-verify = true
 name = "Pad page right"
 note = 0x2C
 repeat = 3
@@ -991,7 +1163,6 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
-verify = true
 name = "Pad page right"
 note = 0x30
 repeat = 4
@@ -999,18 +1170,43 @@ channel = "deck"
 action = "ignore"
 
 [[input]]
-verify = true
 name = "Sampler bank down"
 note = 0x27
 channel = "deck"
 action = "sampler.bank_prev"
 
 [[input]]
-verify = true
 name = "Sampler bank up"
 note = 0x2F
 channel = "deck"
 action = "sampler.bank_next"
+
+# PAGE left / right with SHIFT, one note per pad mode in the same order [L].
+[[input]]
+name = "Pad page left (shift)"
+note = 0x01
+repeat = 8
+channel = "deck"
+action = "ignore"
+
+[[input]]
+name = "Pad page right (shift)"
+note = 0x09
+channel = "deck"
+action = "ignore"
+
+[[input]]
+name = "Pad page right (shift)"
+note = 0x7A
+repeat = 6
+channel = "deck"
+action = "ignore"
+
+[[input]]
+name = "Pad page right (shift, key shift mode)"
+note = 0x00
+channel = "deck"
+action = "ignore"
 
 # ---------------------------------------------------------------- pads
 [[input]]
@@ -1038,7 +1234,6 @@ channel = "pad"
 action = "deck.pad"
 
 [[input]]
-verify = true
 name = "Beat jump pad"
 note = 0x20
 repeat = 8
@@ -1050,7 +1245,6 @@ args = { beats = [-1.0, 1.0, -2.0, 2.0, -4.0, 4.0, -8.0, 8.0] }
 # owner's unit the eight pads sent 0x38-0x3F after the pad page buttons
 # moved to the second page (2026-11-13): slots 9-16 of the bank.
 [[input]]
-verify = true
 name = "Sampler pad"
 note = 0x30
 repeat = 16
@@ -1059,7 +1253,6 @@ channel = "pad"
 action = "sampler.pad"
 
 [[input]]
-verify = true
 name = "Sampler pad (shift)"
 note = 0x30
 repeat = 16
@@ -1068,7 +1261,6 @@ channel = "pad_shift"
 action = "sampler.stop"
 
 [[input]]
-verify = true
 name = "Keyboard pad"
 note = 0x40
 repeat = 8
@@ -1085,7 +1277,6 @@ channel = "pad"
 action = "deck.pad"
 
 [[input]]
-verify = true
 name = "Beat loop pad"
 note = 0x60
 repeat = 8
@@ -1094,13 +1285,122 @@ action = "deck.loop_roll"
 args = { beats = [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0] }
 
 [[input]]
-verify = true
 name = "Key shift pad"
 note = 0x70
 repeat = 8
 index_arg = "index"
 channel = "pad"
 action = "deck.pad"
+
+# Page 2 of each pad mode: the page 1 block + 8 [L]. The app has one page
+# of hot cues and pads per mode, so page 2 plays the same ones; beat jump
+# page 2 jumps further. (Sampler page 2 is part of the block above.)
+[[input]]
+name = "Hot cue pad (page 2)"
+note = 0x08
+repeat = 8
+index_arg = "slot"
+channel = "pad"
+action = "deck.hot_cue"
+
+[[input]]
+name = "Hot cue pad (page 2, shift)"
+note = 0x08
+repeat = 8
+index_arg = "slot"
+channel = "pad_shift"
+action = "deck.hot_cue_delete"
+
+[[input]]
+name = "Hold FX 1 pad (page 2)"
+note = 0x18
+repeat = 8
+index_arg = "index"
+channel = "pad"
+action = "deck.pad"
+
+[[input]]
+name = "Beat jump pad (page 2)"
+note = 0x28
+repeat = 8
+channel = "pad"
+action = "deck.beat_jump"
+args = { beats = [-16.0, 16.0, -32.0, 32.0, -64.0, 64.0, -128.0, 128.0] }
+
+[[input]]
+name = "Keyboard pad (page 2)"
+note = 0x48
+repeat = 8
+index_arg = "index"
+channel = "pad"
+action = "deck.pad"
+
+[[input]]
+name = "Hold FX 2 pad (page 2)"
+note = 0x58
+repeat = 8
+index_arg = "index"
+channel = "pad"
+action = "deck.pad"
+
+[[input]]
+name = "Beat loop pad (page 2)"
+note = 0x68
+repeat = 8
+channel = "pad"
+action = "deck.loop_roll"
+args = { beats = [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0] }
+
+[[input]]
+name = "Key shift pad (page 2)"
+note = 0x78
+repeat = 8
+index_arg = "index"
+channel = "pad"
+action = "deck.pad"
+
+# Pads with SHIFT in the other modes (both pages) [L]: no function yet.
+[[input]]
+name = "Hold FX 1 pad (shift)"
+note = 0x10
+repeat = 16
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Beat jump pad (shift)"
+note = 0x20
+repeat = 16
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Keyboard pad (shift)"
+note = 0x40
+repeat = 16
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Hold FX 2 pad (shift)"
+note = 0x50
+repeat = 16
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Beat loop pad (shift)"
+note = 0x60
+repeat = 16
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Key shift pad (shift)"
+note = 0x70
+repeat = 16
+channel = "pad_shift"
+action = "ignore"
 
 # ================================================================ outputs
 [[output]]
@@ -1119,7 +1419,6 @@ note = 0x58
 channel = "deck"
 
 [[output]]
-verify = true
 target = "deck.master"
 note = 0x5C
 channel = "deck"
@@ -1166,7 +1465,11 @@ note = 0x15
 channel = "deck"
 
 [[output]]
-verify = true
+target = "deck.censor"
+note = 0x47
+channel = "deck"
+
+[[output]]
 target = "deck.reverse"
 note = 0x38
 channel = "deck"
@@ -1182,17 +1485,11 @@ note = 0x11
 channel = "deck"
 
 [[output]]
-target = "deck.reloop"
-note = 0x4D
-channel = "deck"
-
-[[output]]
 target = "deck.loop_active"
 note = 0x14
 channel = "deck"
 
 [[output]]
-verify = true
 target = "deck.loop_active"
 note = 0x50
 channel = "deck"
@@ -1202,12 +1499,14 @@ target = "mixer.cue"
 note = 0x54
 channel = "deck"
 
+# The meter follows the computer only while INPUT SELECT is on PC-A / PC-B [L].
 [[output]]
-verify = true
 target = "mixer.vu"
 cc = 0x02
 channel = "deck"
 
+# Not in the manufacturer's list (channel 15 has no notes 0x00-0x07 there);
+# to check with `midi_monitor --leds`.
 [[output]]
 verify = true
 target = "deck.loaded"
@@ -1258,8 +1557,70 @@ note = 0x07
 channel = 15
 deck = 4
 
+# Jog display indicators on channel 15 [L]: MASTER 0x18-0x1B, SYNC
+# 0x1C-0x1F, master tempo 0x20-0x23 (decks 1-4).
 [[output]]
-verify = true
+target = "deck.master"
+note = 0x18
+channel = 15
+deck = 1
+[[output]]
+target = "deck.master"
+note = 0x19
+channel = 15
+deck = 2
+[[output]]
+target = "deck.master"
+note = 0x1A
+channel = 15
+deck = 3
+[[output]]
+target = "deck.master"
+note = 0x1B
+channel = 15
+deck = 4
+[[output]]
+target = "deck.sync"
+note = 0x1C
+channel = 15
+deck = 1
+[[output]]
+target = "deck.sync"
+note = 0x1D
+channel = 15
+deck = 2
+[[output]]
+target = "deck.sync"
+note = 0x1E
+channel = 15
+deck = 3
+[[output]]
+target = "deck.sync"
+note = 0x1F
+channel = 15
+deck = 4
+[[output]]
+target = "deck.keylock"
+note = 0x20
+channel = 15
+deck = 1
+[[output]]
+target = "deck.keylock"
+note = 0x21
+channel = 15
+deck = 2
+[[output]]
+target = "deck.keylock"
+note = 0x22
+channel = 15
+deck = 3
+[[output]]
+target = "deck.keylock"
+note = 0x23
+channel = 15
+deck = 4
+
+[[output]]
 target = "deck.pad_mode"
 note = 0x1B
 channel = "deck"
@@ -1272,28 +1633,24 @@ channel = "deck"
 args = { mode = "keyboard" }
 
 [[output]]
-verify = true
 target = "deck.pad_mode"
 note = 0x1E
 channel = "deck"
 args = { mode = "hold_fx1" }
 
 [[output]]
-verify = true
 target = "deck.pad_mode"
 note = 0x6B
 channel = "deck"
 args = { mode = "hold_fx2" }
 
 [[output]]
-verify = true
 target = "deck.pad_mode"
 note = 0x20
 channel = "deck"
 args = { mode = "beat_jump" }
 
 [[output]]
-verify = true
 target = "deck.pad_mode"
 note = 0x6D
 channel = "deck"
@@ -1306,13 +1663,13 @@ channel = "deck"
 args = { mode = "sampler" }
 
 [[output]]
-verify = true
 target = "deck.pad_mode"
 note = 0x6F
 channel = "deck"
 args = { mode = "key_shift" }
 
-# Pads are RGB; colour is selected by the note-on value (palette above).
+# Pads are RGB: the note-on value is a colour number (palette above; 0x7F is
+# white), 0x00 leaves the pad dimmed, not dark [L].
 [[output]]
 target = "deck.pad"
 note = 0x00
@@ -1321,7 +1678,6 @@ index_arg = "index"
 channel = "pad"
 args = { mode = "hot_cue" }
 palette = "pads"
-verify = true
 
 [[output]]
 target = "deck.pad"
@@ -1332,7 +1688,6 @@ channel = "pad"
 args = { mode = "hold_fx1" }
 
 [[output]]
-verify = true
 target = "deck.pad"
 note = 0x20
 repeat = 8
@@ -1348,10 +1703,8 @@ index_arg = "index"
 channel = "pad"
 args = { mode = "sampler" }
 palette = "pads"
-verify = true
 
 [[output]]
-verify = true
 target = "deck.pad"
 note = 0x40
 repeat = 8
@@ -1368,7 +1721,6 @@ channel = "pad"
 args = { mode = "hold_fx2" }
 
 [[output]]
-verify = true
 target = "deck.pad"
 note = 0x60
 repeat = 8
@@ -1377,7 +1729,6 @@ channel = "pad"
 args = { mode = "beat_loop" }
 
 [[output]]
-verify = true
 target = "deck.pad"
 note = 0x70
 repeat = 8
@@ -1385,6 +1736,65 @@ index_arg = "index"
 channel = "pad"
 args = { mode = "key_shift" }
 
+# Page 2 pads light like page 1 (same hot cues and pads, see the inputs).
+[[output]]
+target = "deck.pad"
+note = 0x08
+repeat = 8
+index_arg = "index"
+channel = "pad"
+args = { mode = "hot_cue" }
+palette = "pads"
+
+[[output]]
+target = "deck.pad"
+note = 0x18
+repeat = 8
+index_arg = "index"
+channel = "pad"
+args = { mode = "hold_fx1" }
+
+[[output]]
+target = "deck.pad"
+note = 0x28
+repeat = 8
+index_arg = "index"
+channel = "pad"
+args = { mode = "beat_jump" }
+
+[[output]]
+target = "deck.pad"
+note = 0x48
+repeat = 8
+index_arg = "index"
+channel = "pad"
+args = { mode = "keyboard" }
+
+[[output]]
+target = "deck.pad"
+note = 0x58
+repeat = 8
+index_arg = "index"
+channel = "pad"
+args = { mode = "hold_fx2" }
+
+[[output]]
+target = "deck.pad"
+note = 0x68
+repeat = 8
+index_arg = "index"
+channel = "pad"
+args = { mode = "beat_loop" }
+
+[[output]]
+target = "deck.pad"
+note = 0x78
+repeat = 8
+index_arg = "index"
+channel = "pad"
+args = { mode = "key_shift" }
+
+# The list gives MASTER CUE no MIDI-OUT; to check whether the LED follows.
 [[output]]
 verify = true
 target = "master_cue"
@@ -1405,20 +1815,50 @@ args = { effect = "dub_echo" }
 target = "channel_fx"
 note = 0x02
 channel = 6
-args = { effect = "sweep" }
+args = { effect = "crush" }
 [[output]]
 target = "channel_fx"
 note = 0x03
 channel = 6
-args = { effect = "noise" }
+args = { effect = "pitch" }
 [[output]]
 target = "channel_fx"
 note = 0x04
 channel = 6
-args = { effect = "crush" }
+args = { effect = "noise" }
 [[output]]
 target = "channel_fx"
 note = 0x05
+channel = 6
+args = { effect = "filter" }
+[[output]]
+target = "channel_fx"
+note = 0x08
+channel = 6
+args = { effect = "space" }
+[[output]]
+target = "channel_fx"
+note = 0x09
+channel = 6
+args = { effect = "dub_echo" }
+[[output]]
+target = "channel_fx"
+note = 0x0A
+channel = 6
+args = { effect = "crush" }
+[[output]]
+target = "channel_fx"
+note = 0x0B
+channel = 6
+args = { effect = "pitch" }
+[[output]]
+target = "channel_fx"
+note = 0x0C
+channel = 6
+args = { effect = "noise" }
+[[output]]
+target = "channel_fx"
+note = 0x0D
 channel = 6
 args = { effect = "filter" }
 
@@ -1428,13 +1868,11 @@ note = 0x47
 channel = 4
 
 [[output]]
-verify = true
 target = "tempo_fx.release"
 note = 0x43
 channel = 4
 
 [[output]]
-verify = true
 target = "sampler.cue"
 note = 0x69
 channel = 6

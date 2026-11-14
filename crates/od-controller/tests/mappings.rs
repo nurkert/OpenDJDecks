@@ -36,6 +36,19 @@ fn drain(s: &mut ControllerSession, t: Instant) {
     while !s.poll_output(t).iter().all(|m| m[0] == 0xF0) {}
 }
 
+/// Every message the next polls at `t` send, over as many polls as the
+/// output budget needs.
+fn poll_all(s: &mut ControllerSession, t: Instant) -> Vec<Vec<u8>> {
+    let mut all = Vec::new();
+    loop {
+        let out = s.poll_output(t);
+        if out.is_empty() {
+            return all;
+        }
+        all.extend(out);
+    }
+}
+
 /// Output messages without keepalive SysEx.
 fn leds(v: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
     v.into_iter().filter(|m| m[0] != 0xF0).collect()
@@ -265,16 +278,20 @@ fn fourteen_bit_fader_needs_msb_and_lsb() {
     assert_eq!(a, vec![ControlAction::Crossfader(0.0)]);
 }
 
+/// The official MIDI message lists of both units: 0x0000 is the minus side
+/// of the tempo fader, 0x3FFF the plus side (faster).
 #[test]
-fn tempo_is_inverted_bipolar_with_centre_detent() {
-    let mut s = flx4();
-    // Exact centre (0x2000) is 0.00006 off in 14-bit; the device module snaps it.
-    let a = feed(&mut s, &[[0xB0, 0x00, 0x40], [0xB0, 0x20, 0x00]]);
-    assert_eq!(a, vec![deck(1, DeckAction::Tempo(0.0))]);
-    let a = feed(&mut s, &[[0xB0, 0x00, 0x00], [0xB0, 0x20, 0x00]]);
-    assert_eq!(a, vec![deck(1, DeckAction::Tempo(1.0))]);
-    let a = feed(&mut s, &[[0xB0, 0x00, 0x7F], [0xB0, 0x20, 0x7F]]);
-    assert_eq!(a, vec![deck(1, DeckAction::Tempo(-1.0))]);
+fn tempo_is_bipolar_with_centre_detent() {
+    for (mut s, ch) in [(flx4(), 0xB0u8), (flx10(), 0xB2)] {
+        let d = ch - 0xB0 + 1;
+        // Exact centre (0x2000) is 0.00006 off in 14-bit; the device module snaps it.
+        let a = feed(&mut s, &[[ch, 0x00, 0x40], [ch, 0x20, 0x00]]);
+        assert_eq!(a, vec![deck(d, DeckAction::Tempo(0.0))]);
+        let a = feed(&mut s, &[[ch, 0x00, 0x00], [ch, 0x20, 0x00]]);
+        assert_eq!(a, vec![deck(d, DeckAction::Tempo(-1.0))]);
+        let a = feed(&mut s, &[[ch, 0x00, 0x7F], [ch, 0x20, 0x7F]]);
+        assert_eq!(a, vec![deck(d, DeckAction::Tempo(1.0))]);
+    }
 }
 
 #[test]
@@ -416,20 +433,29 @@ fn flx10_deck_3_and_4_layers() {
     let mut s = flx10();
     assert_eq!(s.active_deck(1), Some(1));
     assert_eq!(s.active_deck(2), Some(2));
+    // A deck button press, as in the official MIDI message list: 0x72 on
+    // the deck 3/4 channel, then 0x3C on and off for the two decks.
     let a = feed(
         &mut s,
         &[
-            [0x92, 0x72, 0x7F], // DECK 3 selected on the left
+            [0x92, 0x72, 0x7F], // DECK 3 pressed on the left
+            [0x90, 0x3C, 0x00],
+            [0x92, 0x3C, 0x7F], // deck 3 active
             [0x92, 0x0B, 0x7F], // play deck 3
-            [0x93, 0x72, 0x7F], // DECK 4 on the right
+            [0x93, 0x72, 0x7F], // DECK 4 pressed on the right
+            [0x91, 0x3C, 0x00],
+            [0x93, 0x3C, 0x7F], // deck 4 active
             [0x9D, 0x02, 0x7F], // deck 4 hot cue C
             [0x9E, 0x05, 0x7F], // deck 4 shift pad: delete F
             [0xB2, 0x07, 0x10], // channel 3 EQ high
             [0xB2, 0x27, 0x00],
-            [0x96, 0x48, 0x7F], // load deck 3
-            [0x90, 0x72, 0x7F], // back to deck 1
+            [0x96, 0x48, 0x7F], // browse press with deck 3 active: load deck 3
+            [0x92, 0x72, 0x7F], // DECK 1 pressed: back to deck 1
+            [0x90, 0x3C, 0x7F],
+            [0x92, 0x3C, 0x00],
         ],
     );
+    let a: Vec<_> = a.into_iter().filter(|a| *a != ControlAction::Ignored).collect();
     assert_eq!(
         a,
         vec![
@@ -462,7 +488,7 @@ fn flx10_channel_fx_and_tempo_fx() {
     let a = feed(
         &mut s,
         &[
-            [0x96, 0x03, 0x7F],
+            [0x96, 0x03, 0x7F], // fourth SOUND COLOR FX button: PITCH (official list)
             [0x94, 0x24, 0x7F],
             [0x94, 0x14, 0x7F],
             [0x94, 0x11, 0x7F],
@@ -471,7 +497,7 @@ fn flx10_channel_fx_and_tempo_fx() {
     assert_eq!(
         a,
         vec![
-            ControlAction::ChannelFx(ChannelFxAction::Select("noise".into())),
+            ControlAction::ChannelFx(ChannelFxAction::Select("pitch".into())),
             ControlAction::TempoFx {
                 unit: 1,
                 action: TempoFxAction::Select("reverb".into())
@@ -493,7 +519,9 @@ fn ignored_controls_produce_ignored() {
     let mut s = flx10();
     let p = s.handle_midi(&[0x90, 0x59, 0x7F]); // mix preview select
     assert_eq!(p.actions, vec![ControlAction::Ignored]);
-    let p = s.handle_midi(&[0x90, 0x7E, 0x7F]); // nothing bound
+    // Channel 6 carries nothing in the official list (0x7E on the deck
+    // channels is a pad page button there).
+    let p = s.handle_midi(&[0x95, 0x10, 0x7F]); // nothing bound
     assert!(p.actions.is_empty() && p.hits.is_empty());
 }
 
@@ -550,7 +578,7 @@ fn soft_takeover_on_knob() {
 #[test]
 fn flx10_tempo_pickup_after_layer_switch() {
     let mut s = flx10();
-    // Deck 1 tempo fader at +50 % (raw 0x1000 → inverted).
+    // Deck 1 tempo fader at -50 % (raw 0x1000, the minus half).
     let a = feed(&mut s, &[[0xB0, 0x00, 0x10], [0xB0, 0x20, 0x00]]);
     assert_eq!(a.len(), 1);
     // Engine says deck 3 runs at 0 %; switching the left side to deck 3 makes
@@ -559,7 +587,7 @@ fn flx10_tempo_pickup_after_layer_switch() {
         target: ParamTarget::Tempo { deck: 3 },
         value: 0.0,
     });
-    feed(&mut s, &[[0x92, 0x72, 0x7F]]);
+    feed(&mut s, &[[0x92, 0x72, 0x7F], [0x90, 0x3C, 0x00], [0x92, 0x3C, 0x7F]]);
     let a = feed(&mut s, &[[0xB2, 0x00, 0x11], [0xB2, 0x20, 0x00]]);
     assert!(a.is_empty(), "far from engine value must not jump: {a:?}");
     let a = feed(&mut s, &[[0xB2, 0x00, 0x30], [0xB2, 0x20, 0x00]]);
@@ -685,7 +713,9 @@ fn feedback_is_diffed() {
     let t0 = Instant::now();
     s.output_mut().set_epoch(t0);
     s.connect_messages();
-    let init = s.poll_output(t0);
+    // The DDJ-FLX4's pad LEDs in the SHIFT layer (official MIDI message
+    // list) take the burst over one poll's budget.
+    let init = poll_all(&mut s, t0);
     // Keepalive + every output address cleared exactly once.
     let addrs: HashSet<_> = s.mapping().outputs.iter().map(|o| o.addr).collect();
     assert_eq!(init.len(), addrs.len() + 1);
@@ -697,7 +727,17 @@ fn feedback_is_diffed() {
     s.feedback(&ControlFeedback::deck_led(2, DeckElement::Cue, true));
     let mut out = s.poll_output(t(2));
     out.sort();
-    assert_eq!(out, vec![vec![0x90, 0x0B, 0x7F], vec![0x91, 0x0C, 0x7F]]);
+    // Each LED also in the SHIFT layer (PLAY 0x0E, CUE 0x48; official MIDI
+    // message list).
+    assert_eq!(
+        out,
+        vec![
+            vec![0x90, 0x0B, 0x7F],
+            vec![0x90, 0x0E, 0x7F],
+            vec![0x91, 0x0C, 0x7F],
+            vec![0x91, 0x48, 0x7F]
+        ]
+    );
     // Same state again: nothing.
     s.feedback(&ControlFeedback::deck_led(1, DeckElement::Play, true));
     assert!(s.poll_output(t(3)).is_empty());
@@ -706,7 +746,9 @@ fn feedback_is_diffed() {
     s.feedback(&ControlFeedback::deck_led(1, DeckElement::Play, true));
     assert!(s.poll_output(t(4)).is_empty());
     s.feedback(&ControlFeedback::deck_led(1, DeckElement::Play, false));
-    assert_eq!(s.poll_output(t(5)), vec![vec![0x90, 0x0B, 0x00]]);
+    let mut out = s.poll_output(t(5));
+    out.sort();
+    assert_eq!(out, vec![vec![0x90, 0x0B, 0x00], vec![0x90, 0x0E, 0x00]]);
     // Loop active drives three LEDs (two on the deck channel, one indicator).
     s.feedback(&ControlFeedback::deck_led(2, DeckElement::LoopActive, true));
     let mut out = s.poll_output(t(6));
@@ -721,7 +763,7 @@ fn feedback_is_diffed() {
     );
     // ResendAll repeats current state.
     s.feedback(&ControlFeedback::ResendAll);
-    assert_eq!(s.poll_output(t(7)).len(), addrs.len());
+    assert_eq!(poll_all(&mut s, t(7)).len(), addrs.len());
 }
 
 #[test]
@@ -729,7 +771,7 @@ fn meters_are_rate_limited() {
     let mut s = flx4();
     let t0 = Instant::now();
     s.connect_messages();
-    s.poll_output(t0);
+    drain(&mut s, t0);
     let t = |ms| t0 + Duration::from_millis(ms);
     s.feedback(&ControlFeedback::channel_vu(1, 0.5));
     assert_eq!(s.poll_output(t(100)), vec![vec![0xB0, 0x02, 64]]);
@@ -753,7 +795,7 @@ fn software_blink() {
     let t0 = Instant::now();
     s.output_mut().set_epoch(t0);
     s.connect_messages();
-    s.poll_output(t0);
+    drain(&mut s, t0);
     let t = |ms| t0 + Duration::from_millis(ms);
     s.feedback(&ControlFeedback::led_state(
         FeedbackTarget::Deck {
@@ -794,12 +836,21 @@ fn flx10_pad_colours_use_palette() {
     ));
     let mut out = s.poll_output(t0 + Duration::from_millis(5));
     out.sort();
-    assert_eq!(out, vec![vec![0x9B, 0x02, 0x14], vec![0x9D, 0x00, 0x01]]);
-    s.feedback(&ControlFeedback::pad_color(3, PadMode::HotCue, 2, None));
+    // Page 2 of the hot cue pads (0x08-0x0F, official MIDI message list)
+    // shows the same hot cues.
     assert_eq!(
-        s.poll_output(t0 + Duration::from_millis(6)),
-        vec![vec![0x9B, 0x02, 0x00]]
+        out,
+        vec![
+            vec![0x9B, 0x02, 0x14],
+            vec![0x9B, 0x0A, 0x14],
+            vec![0x9D, 0x00, 0x01],
+            vec![0x9D, 0x08, 0x01]
+        ]
     );
+    s.feedback(&ControlFeedback::pad_color(3, PadMode::HotCue, 2, None));
+    let mut out = s.poll_output(t0 + Duration::from_millis(6));
+    out.sort();
+    assert_eq!(out, vec![vec![0x9B, 0x02, 0x00], vec![0x9B, 0x0A, 0x00]]);
 }
 
 #[test]
@@ -819,7 +870,8 @@ fn monitor_shows_decoded_hits() {
     let mut s = flx10();
     let mon = MidiMonitor::new(2);
     let rx = mon.subscribe();
-    for m in [[0x92u8, 0x0B, 0x7F], [0x90, 0x7E, 0x7F], [0xB0, 0x22, 0x41]] {
+    // 0x95 carries nothing on this unit; SHIFT + SLIP as vinyl is still a guess.
+    for m in [[0x92u8, 0x0B, 0x7F], [0x95, 0x10, 0x7F], [0x90, 0x17, 0x7F]] {
         let p = s.handle_midi(&m);
         mon.record("DDJ-FLX10", Direction::In, &m, p.hits);
     }
@@ -875,8 +927,12 @@ fn the_published_hardware_status_matches_the_mapping_files() {
     // listed here. DDJ-FLX10: the owner's unit, 2026-11-13 (used in
     // OpenDJDecks, messages recorded with the MIDI monitor).
     let flx10: HashSet<&str> = [
-        "Browse rotate", "Browse rotate (shift)", "Back", "Load deck 1", "Load deck 2",
-        "Deck select", "Play/Pause", "Jog touch", "Jog top bend", "Jog side bend",
+        // "Browse press (deck N active)" were named "Load deck N", "Jog
+        // platter (vinyl off)" was "Jog top bend"; "Deck select" moved from
+        // 0x72 to 0x3C, both seen on that unit for every deck switch.
+        "Browse rotate", "Browse rotate (shift)", "Back", "Browse press (deck 1 active)",
+        "Browse press (deck 2 active)", "Deck select", "Play/Pause", "Jog touch",
+        "Jog platter (vinyl off)", "Jog side bend",
         "Channel fader", "Headphone cue",
     ]
     .into_iter()
@@ -1069,7 +1125,9 @@ fn flx10_sampler_pads_on_the_second_page() {
 }
 
 /// [H1] The row of three stem buttons on the owner's DDJ-FLX10 (0x0D-0x0F on
-/// the deck channel) mutes parts instead of being ignored.
+/// the deck channel) mutes parts: DRUMS, VOCAL, INST from left to right, as
+/// in the official MIDI message list (the owner saw the wrong parts toggle
+/// with the first guess).
 #[test]
 fn flx10_stem_buttons_mute_parts() {
     let mut s = flx10();
@@ -1077,8 +1135,136 @@ fn flx10_stem_buttons_mute_parts() {
     assert_eq!(
         a,
         vec![
-            deck(1, DeckAction::StemMuteToggle { stem: StemPart::Vocals }),
-            deck(2, DeckAction::StemMuteToggle { stem: StemPart::Drums }),
+            deck(1, DeckAction::StemMuteToggle { stem: StemPart::Drums }),
+            deck(2, DeckAction::StemMuteToggle { stem: StemPart::Inst }),
+        ]
+    );
+}
+
+/// [H1] The owner's DDJ-FLX10 answers the position request of its `[[init]]`
+/// with the state of every fader, knob and switch (captured 2026-11-14,
+/// channel 2's fader up, the others down, decks 1 and 2 active). The answer
+/// sets the channel faders and the active decks and never plays, cues or
+/// loads anything.
+#[test]
+fn flx10_position_answer_sets_the_faders() {
+    let m = load("ddj-flx10.toml");
+    assert_eq!(
+        m.file.init.iter().map(|i| i.bytes.clone()).collect::<Vec<_>>(),
+        vec![vec![0xF0, 0x00, 0x40, 0x05, 0x00, 0x00, 0x04, 0x01, 0x00, 0x03, 0x01, 0xF7]]
+    );
+    let mut s = ControllerSession::new(m);
+    let answer: &[[u8; 3]] = &[
+        [0xB2, 0x00, 0x3F], [0xB2, 0x20, 0x77], [0xB3, 0x00, 0x30], [0xB3, 0x20, 0x01],
+        [0xB0, 0x04, 0x3D], [0xB0, 0x24, 0x32], [0xB1, 0x04, 0x3E], [0xB1, 0x24, 0x65],
+        [0xB2, 0x04, 0x42], [0xB2, 0x24, 0x4D], [0xB3, 0x04, 0x42], [0xB3, 0x24, 0x5D],
+        [0xB0, 0x07, 0x00], [0xB0, 0x27, 0x00], [0xB1, 0x07, 0x40], [0xB1, 0x27, 0x00],
+        [0xB2, 0x07, 0x3F], [0xB2, 0x27, 0x2D], [0xB3, 0x07, 0x40], [0xB3, 0x27, 0x00],
+        [0xB0, 0x0B, 0x40], [0xB0, 0x2B, 0x00], [0xB1, 0x0B, 0x3F], [0xB1, 0x2B, 0x6F],
+        [0xB2, 0x0B, 0x3F], [0xB2, 0x2B, 0x4E], [0xB3, 0x0B, 0x40], [0xB3, 0x2B, 0x00],
+        [0xB0, 0x0F, 0x40], [0xB0, 0x2F, 0x00], [0xB1, 0x0F, 0x40], [0xB1, 0x2F, 0x00],
+        [0xB2, 0x0F, 0x40], [0xB2, 0x2F, 0x00], [0xB3, 0x0F, 0x40], [0xB3, 0x2F, 0x00],
+        [0xB6, 0x17, 0x40], [0xB6, 0x37, 0x00], [0xB6, 0x18, 0x40], [0xB6, 0x38, 0x11],
+        [0xB6, 0x19, 0x40], [0xB6, 0x39, 0x00], [0xB6, 0x1A, 0x40], [0xB6, 0x3A, 0x00],
+        [0xB0, 0x13, 0x00], [0xB0, 0x33, 0x00], [0xB1, 0x13, 0x7F], [0xB1, 0x33, 0x7F],
+        [0xB2, 0x13, 0x00], [0xB2, 0x33, 0x00], [0xB3, 0x13, 0x00], [0xB3, 0x33, 0x00],
+        [0xB6, 0x1F, 0x26], [0xB6, 0x3F, 0x24], [0xB4, 0x02, 0x00], [0xB4, 0x22, 0x00],
+        [0xB6, 0x03, 0x52], [0xB6, 0x23, 0x5F], [0xB6, 0x07, 0x40], [0xB6, 0x27, 0x00],
+        [0xB6, 0x0F, 0x40], [0xB6, 0x2F, 0x00], [0x94, 0x10, 0x7F], [0x90, 0x55, 0x7F],
+        [0x91, 0x55, 0x7F], [0x92, 0x55, 0x7F], [0x93, 0x55, 0x7F], [0x92, 0x46, 0x00],
+        [0x93, 0x46, 0x00], [0x90, 0x1D, 0x7F], [0x91, 0x1D, 0x7F], [0x92, 0x1D, 0x7F],
+        [0x93, 0x1D, 0x7F], [0x94, 0x25, 0x7F], [0x92, 0x3C, 0x00], [0x90, 0x3C, 0x7F],
+        [0x93, 0x3C, 0x00], [0x91, 0x3C, 0x7F], [0x96, 0x1B, 0x7F], [0x96, 0x1C, 0x7F],
+        [0x96, 0x1D, 0x7F], [0x90, 0x3A, 0x7F], [0x91, 0x3A, 0x7F], [0x92, 0x3A, 0x7F],
+        [0x93, 0x3A, 0x7F], [0x90, 0x3B, 0x00], [0x91, 0x3B, 0x00], [0x92, 0x3B, 0x00],
+        [0x93, 0x3B, 0x00], [0x96, 0x00, 0x00], [0x96, 0x01, 0x00], [0x96, 0x02, 0x00],
+        [0x96, 0x03, 0x7F], [0x96, 0x04, 0x00], [0x96, 0x05, 0x00], [0x94, 0x46, 0x00],
+        [0x94, 0x60, 0x00], [0xB4, 0x50, 0x09], [0xB4, 0x70, 0x30], [0x92, 0x4E, 0x7F],
+        [0xB0, 0x00, 0x3F], [0xB0, 0x20, 0x77], [0xB1, 0x00, 0x30], [0xB1, 0x20, 0x01],
+    ];
+    let a = feed(&mut s, answer);
+    let faders: Vec<(u8, f32)> = a
+        .iter()
+        .filter_map(|a| match a {
+            ControlAction::Mixer {
+                channel,
+                action: MixerAction::Fader(v),
+            } => Some((*channel, *v)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(faders, vec![(1, 0.0), (2, 1.0), (3, 0.0), (4, 0.0)]);
+    // 0x3C reports the active deck of each side (official MIDI message list).
+    let selected: Vec<u8> = a
+        .iter()
+        .filter_map(|a| match a {
+            ControlAction::Deck { deck, action: DeckAction::DeckSelect } => Some(*deck),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(selected, vec![1, 2]);
+    // Only positions and switch settings, nothing that plays or loads.
+    for a in &a {
+        assert!(
+            matches!(
+                a,
+                ControlAction::Mixer { .. }
+                    | ControlAction::Crossfader(_)
+                    | ControlAction::TempoFx { .. }
+                    | ControlAction::ChannelFx(_)
+                    | ControlAction::Sampler(SamplerAction::Volume(_))
+                    | ControlAction::Deck { action: DeckAction::Tempo(_), .. }
+                    | ControlAction::Deck { action: DeckAction::DeckSelect, .. }
+                    | ControlAction::Ignored
+            ),
+            "{a:?}"
+        );
+    }
+}
+
+/// The DDJ-FLX10's deck buttons, as in the official MIDI message list and as
+/// seen on the owner's unit: 0x72 comes on the deck 3/4 channel for both
+/// buttons of a side, and 0x3C = 0x7F on the channel of the deck that became
+/// active (0x00 for the other deck of the side) says which deck it is.
+#[test]
+fn flx10_deck_select_follows_note_3c() {
+    let mut s = flx10();
+    let selects = |a: Vec<ControlAction>| -> Vec<u8> {
+        a.iter()
+            .filter_map(|a| match a {
+                ControlAction::Deck { deck, action: DeckAction::DeckSelect } => Some(*deck),
+                ControlAction::Ignored => None,
+                other => panic!("{other:?}"),
+            })
+            .collect()
+    };
+    // 0x72 and the 0x00 messages select nothing.
+    assert!(selects(feed(&mut s, &[[0x92, 0x72, 0x7F], [0x92, 0x72, 0x00]])).is_empty());
+    assert!(selects(feed(&mut s, &[[0x90, 0x3C, 0x00], [0x92, 0x3C, 0x00]])).is_empty());
+    assert_eq!(s.active_deck(1), Some(1));
+    // DECK 3: deck 3 on, deck 1 off.
+    assert_eq!(selects(feed(&mut s, &[[0x92, 0x72, 0x7F], [0x90, 0x3C, 0x00], [0x92, 0x3C, 0x7F]])), vec![3]);
+    assert_eq!(s.active_deck(1), Some(3));
+    // DECK 1: deck 1 on, deck 3 off.
+    assert_eq!(selects(feed(&mut s, &[[0x92, 0x72, 0x7F], [0x90, 0x3C, 0x7F], [0x92, 0x3C, 0x00]])), vec![1]);
+    assert_eq!(s.active_deck(1), Some(1));
+    // The right side the same way on channels 2 and 4.
+    assert_eq!(selects(feed(&mut s, &[[0x93, 0x72, 0x7F], [0x91, 0x3C, 0x00], [0x93, 0x3C, 0x7F]])), vec![4]);
+    assert_eq!((s.active_deck(1), s.active_deck(2)), (Some(1), Some(4)));
+}
+
+/// [H1] FX PART SELECT on the DDJ-FLX10 (official list: VOCAL, DRUMS, INST on
+/// 0x1B-0x1D, channel 7) puts the Sound Color FX on that part.
+#[test]
+fn flx10_fx_part_buttons_pick_the_part() {
+    let mut s = flx10();
+    let a = feed(&mut s, &[[0x96, 0x1B, 0x7F], [0x96, 0x1C, 0x7F], [0x96, 0x1D, 0x7F]]);
+    assert_eq!(
+        a,
+        vec![
+            ControlAction::ChannelFx(ChannelFxAction::Part(StemPart::Vocals)),
+            ControlAction::ChannelFx(ChannelFxAction::Part(StemPart::Drums)),
+            ControlAction::ChannelFx(ChannelFxAction::Part(StemPart::Inst)),
         ]
     );
 }
