@@ -46,6 +46,9 @@ pub enum DeckElement {
     // application; the mapping only says where they go.
     /// Effective BPM × 10 (128.0 BPM = 1280), 0 without a track.
     Bpm,
+    /// Tempo change from the fader or sync on a linear scale from -100 %
+    /// (0) to +100 % (9999), 0 % = 5000; 5000 without a track.
+    Speed,
     /// Minutes of the shown time (elapsed or remaining), 0..=99.
     TimeMinutes,
     /// Seconds of the shown time, 0..=59.
@@ -69,6 +72,7 @@ impl DeckElement {
         matches!(
             self,
             DeckElement::Bpm
+                | DeckElement::Speed
                 | DeckElement::TimeMinutes
                 | DeckElement::TimeSeconds
                 | DeckElement::PositionAngle

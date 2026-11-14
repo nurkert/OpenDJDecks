@@ -373,6 +373,9 @@ pub enum MixerAction {
     CrossfaderAssign(CrossfaderSide),
     /// Kill of an EQ band on this channel, on / off per press.
     EqKill(EqBand),
+    /// STEM (part isolation) on / off: the EQ knobs and kill keys work on
+    /// the parts instead of the bands.
+    PartsToggle,
 }
 
 /// An EQ band of a mixer channel.

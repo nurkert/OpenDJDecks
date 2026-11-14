@@ -209,6 +209,7 @@ release.
 | `mixer.trim`, `mixer.eq_high`, `mixer.eq_mid`, `mixer.eq_low`, `mixer.fader` | absolute | | `MixerAction::*` |
 | `mixer.channel_fx` | absolute | | `ChannelFx(-1..1)` |
 | `mixer.cue` | press | | `CueToggle` (headphone cue) |
+| `mixer.parts` | press | | `PartsToggle`: STEM (part isolation) on / off, the EQ knobs and kill keys then set the drums, inst and vocals levels |
 | `mixer.eq_kill` | press | `band` = `low` / `mid` / `high` | `EqKill(band)`: kill of that band on this channel, on / off per press |
 | `mixer.crossfader_assign` | press | `side` = `a` / `thru` / `b` | |
 | `crossfader`, `master_level`, `booth_level`, `headphone_mix`, `headphone_level` | absolute | | |
@@ -327,6 +328,7 @@ deck = 1
 | `deck.time_remaining` | on while the jog display shows the remaining time, off for the elapsed time |
 | `key_camelot` | on for Camelot key names, off for classic names (the Key notation preference; Open Key shows as Camelot) |
 | `deck.bpm` (number) | effective BPM × 10 (128.0 BPM = 1280), 0 without a track |
+| `deck.speed` (number) | tempo change from the fader or sync, linear from -100 % (0) to +100 % (9999), 0 % = 5000 |
 | `deck.time_minutes`, `deck.time_seconds` (number) | the remaining time as on the screen's decks (Preferences › View › Remaining time), the elapsed time while the length is unknown; minutes up to 99 |
 | `deck.position_angle` (number) | playhead on a platter turning once per 1.8 s of playback, 0..359 degrees; give it a `min_interval_ms` (e.g. 33) |
 | `deck.cue_angle` (number) | the main cue point on the same platter, 0..359; no value without a track |

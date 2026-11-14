@@ -845,10 +845,10 @@ action = "mixer.cue"
 confirmed = true
 
 [[input]]
-name = "Headphone cue (shift)"
+name = "Headphone cue (shift): part iso"
 note = 0x39
 channel = "deck"
-action = "ignore"
+action = "mixer.parts"
 
 [[input]]
 name = "Master cue"
@@ -1652,9 +1652,8 @@ deck = 4
 # docs/controller-mappings.md); 14-bit values go MSB then LSB (LSB = MSB +
 # 0x20). Position ring and cue marker: 0-359 degrees, the cue marker hidden
 # with 0x7F/0x7F. Time: minutes 0x42/0x44/0x46/0x48, seconds one above;
-# time mode note 0x14-0x17 (0x7F = remaining). Playing speed (0x18-0x1B /
-# 0x38-0x3B, 0..9999 for -100..+100 %) is not sent: its encoding is not
-# stated in the list.
+# time mode note 0x14-0x17 (0x7F = remaining). Playing speed 0x18-0x1B /
+# 0x38-0x3B, 0..9999 for -100..+100 % (linear is an assumption: verify).
 [[output]]
 target = "deck.position_angle"
 cc = 0x10
@@ -1683,6 +1682,34 @@ mode = "value14"
 min_interval_ms = 33
 channel = 15
 deck = 4
+[[output]]
+target = "deck.speed"
+cc = 0x18
+mode = "value14"
+channel = 15
+deck = 1
+verify = true
+[[output]]
+target = "deck.speed"
+cc = 0x19
+mode = "value14"
+channel = 15
+deck = 2
+verify = true
+[[output]]
+target = "deck.speed"
+cc = 0x1A
+mode = "value14"
+channel = 15
+deck = 3
+verify = true
+[[output]]
+target = "deck.speed"
+cc = 0x1B
+mode = "value14"
+channel = 15
+deck = 4
+verify = true
 [[output]]
 target = "deck.bpm"
 cc = 0x14

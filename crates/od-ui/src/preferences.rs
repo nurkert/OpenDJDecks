@@ -216,10 +216,28 @@ pub(crate) fn wire(app: &Rc<App>) {
     let weak = Rc::downgrade(app);
     app.ui.window().on_close_requested(move || {
         if let Some(a) = weak.upgrade() {
+            if !quit_while_playing_ok(&a) {
+                return slint::CloseRequestResponse::KeepWindowShown;
+            }
             close(&a);
         }
         slint::CloseRequestResponse::HideWindow
     });
+}
+
+/// Closing the window while a deck plays asks first, so a set does not end
+/// by a stray click; the kiosk has no window to close.
+fn quit_while_playing_ok(app: &App) -> bool {
+    let playing = crate::engine::snapshot(app).is_some_and(|s| s.decks.iter().any(|d| d.playing));
+    !playing
+        || app.state.borrow().config.kiosk
+        || rfd::MessageDialog::new()
+            .set_title(od_i18n::tr("Quit OpenDJDecks?"))
+            .set_description(od_i18n::tr("A deck is playing right now. Quit anyway?"))
+            .set_buttons(rfd::MessageButtons::YesNo)
+            .set_level(rfd::MessageLevel::Warning)
+            .show()
+            == rfd::MessageDialogResult::Yes
 }
 
 /// Opens (or raises) the Preferences window.

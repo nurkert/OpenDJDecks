@@ -324,18 +324,19 @@ pub(crate) fn handle_action(app: &App, action: ControlAction) {
             let c = (channel as usize).saturating_sub(1).min(decks::DECKS - 1);
             let cmd = match action {
                 MixerAction::Trim(v) => ChannelCommand::SetTrim(trim_db(v)),
-                MixerAction::EqHigh(v) => ChannelCommand::SetEq {
-                    band: 2,
-                    value: v * 2.0 - 1.0,
-                },
-                MixerAction::EqMid(v) => ChannelCommand::SetEq {
-                    band: 1,
-                    value: v * 2.0 - 1.0,
-                },
-                MixerAction::EqLow(v) => ChannelCommand::SetEq {
-                    band: 0,
-                    value: v * 2.0 - 1.0,
-                },
+                MixerAction::EqHigh(v) | MixerAction::EqMid(v) | MixerAction::EqLow(v) => {
+                    let band = match action {
+                        MixerAction::EqHigh(_) => 2,
+                        MixerAction::EqMid(_) => 1,
+                        _ => 0,
+                    };
+                    crate::mixer::set_eq(app, c, band, v * 2.0 - 1.0);
+                    return;
+                }
+                MixerAction::PartsToggle => {
+                    crate::mixer::toggle_parts(app, c);
+                    return;
+                }
                 MixerAction::ChannelFx(v) => ChannelCommand::SetChannelFxAmount(v),
                 MixerAction::EqKill(band) => {
                     crate::mixer::toggle_kill(app, c, band.index());
@@ -764,6 +765,7 @@ pub(crate) fn feedback(app: &App) {
             ControlFeedback::number(FeedbackTarget::Deck { deck, element: el }, n)
         };
         ctrl.send_feedback(None, num(DeckElement::Bpm, jd.bpm));
+        ctrl.send_feedback(None, num(DeckElement::Speed, jd.speed));
         ctrl.send_feedback(None, led(DeckElement::TimeRemaining, jd.remaining));
         ctrl.send_feedback(None, num(DeckElement::TimeMinutes, jd.minutes));
         ctrl.send_feedback(None, num(DeckElement::TimeSeconds, jd.seconds));
@@ -890,6 +892,8 @@ pub(crate) fn feedback(app: &App) {
 pub(crate) struct JogDisplay {
     /// BPM × 10.
     pub bpm: i32,
+    /// Tempo change, -100 % = 0 … +100 % = 9999.
+    pub speed: i32,
     /// The time is the remaining time (else the elapsed time).
     pub remaining: bool,
     pub minutes: i32,
@@ -942,6 +946,10 @@ pub(crate) fn jog_display(s: &od_engine::DeckState, deck_time: &str) -> JogDispl
             (s.bpm * 10.0).round().clamp(0.0, 9999.0) as i32
         } else {
             0
+        },
+        speed: {
+            let t = if loaded && s.tempo.is_finite() { s.tempo } else { 1.0 };
+            ((t.clamp(0.0, 2.0) * 9999.0 / 2.0).round() as i32).clamp(0, 9999)
         },
         remaining,
         minutes: (secs / 60).min(99) as i32,
@@ -1068,6 +1076,7 @@ mod tests {
             jd,
             JogDisplay {
                 bpm: 1280,
+                speed: 6249,
                 remaining: true,
                 minutes: 2,
                 seconds: 30,
@@ -1094,7 +1103,7 @@ mod tests {
         // No track: nothing to show.
         s.track = None;
         let jd = jog_display(&s, "tempo");
-        assert_eq!((jd.bpm, jd.cue_angle, jd.key), (0, None, 0));
+        assert_eq!((jd.bpm, jd.speed, jd.cue_angle, jd.key), (0, 5000, None, 0));
     }
 
     #[test]
