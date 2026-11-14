@@ -18,10 +18,9 @@ Message facts may come from:
 - captures of an owner's own unit (MIDI monitor, guided setup below, or a
   request the unit answers).
 
-Nothing comes from disassembling or decompiling vendor software. Whatever
-the source, an entry counts as confirmed only after it was tried on a real
-unit (`confirmed = true`); a fact from a public source without such a try
-carries neither flag, a guess carries `verify = true`.
+Whatever the source, an entry counts as confirmed only after it was tried
+on a real unit (`confirmed = true`); a fact from a public source without
+such a try carries neither flag, a guess carries `verify = true`.
 
 ## Conventions
 
