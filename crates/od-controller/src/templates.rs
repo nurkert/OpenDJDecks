@@ -170,6 +170,7 @@ pub const ACTION_NAMES: &[&str] = &[
     "deck.loop_in",
     "deck.loop_out",
     "deck.auto_loop",
+    "deck.auto_loop_or_exit",
     "deck.loop_roll",
     "deck.loop_halve",
     "deck.loop_double",
@@ -402,6 +403,10 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
         "deck.auto_loop" => {
             let beats = a.f32("beats")?;
             (Button, deck_press(DeckAction::AutoLoop { beats }))
+        }
+        "deck.auto_loop_or_exit" => {
+            let beats = a.f32("beats")?;
+            (Button, deck_press(DeckAction::AutoLoopOrExit { beats }))
         }
         "deck.loop_roll" => {
             let beats = a.f32("beats")?;

@@ -184,6 +184,7 @@ release.
 | `deck.loop_in_or_halve`, `deck.loop_out_or_double` | press | | `LoopInOrHalve` / `LoopOutOrDouble`: a running loop halves / doubles, otherwise the loop in / out point is set |
 | `deck.loop_call` | press | `forward` (bool, default `true`) | `LoopCall { forward }`: a running loop halves (back) / doubles (forward), otherwise the previous / next memory cue is called |
 | `deck.auto_loop` | press | `beats` | `AutoLoop { beats }` |
+| `deck.auto_loop_or_exit` | press | `beats` | `AutoLoopOrExit { beats }`: a running loop is left, otherwise an auto loop of `beats` starts; a held loop roll stays |
 | `deck.loop_roll` | momentary | `beats` | `LoopRoll { beats, pressed }` |
 | `deck.loop_capture` | press | | `LoopCapture`: the loop just heard (a roll or a loop) becomes a hot loop on the first free pad of the bank, else a memory loop |
 | `deck.phrase_start` | press | | `PhraseStart`: a cued, paused deck starts on the master deck's next phrase; a second press cancels |
@@ -276,17 +277,36 @@ palette = "pads"
 |---|---|
 | `target` | Feedback element, see below. |
 | `note` / `cc`, `channel`, `deck`, `repeat`, `step`, `index_arg`, `args` | As for inputs. |
-| `mode` | `led` (default), `level` (default for meters and the jog indicator), `color` (default when `palette` is set). |
+| `mode` | `led` (default), `level` (default for meters and the jog indicator), `color` (default when `palette` is set), `value` (default for the number targets below: one byte), `value14` (default when `lsb` is set: a 14-bit controller pair). |
+| `lsb` | LSB controller of a `value14` output; default `cc + 0x20`. |
+| `offset` | Added to a number before it is sent (`value`, `value14`), e.g. `13` where the unit shows no key shift as `0x0D`. |
 | `on`, `off` | Values for lit / dark (default `0x7F` / `0x00`). |
 | `dim` | Value for `LedState::Dim` (default: `off`). |
 | `blink` | Value that makes the hardware blink by itself; without it blinking is done in software. |
-| `min`, `max` | Range for `level` outputs. |
+| `min`, `max` | Range for `level` outputs; clamp for `value` outputs. |
 | `palette` | Palette name for colour outputs. |
 | `min_interval_ms` | Rate limit for this output (default: `options.meter_interval_ms` for levels, 0 otherwise). |
 
 Several outputs may share a target (e.g. one LED on the button and one
 status indicator). Output is diffed per MIDI address: a message is only sent
 when its byte value differs from what was last sent.
+
+Number targets carry a value the app has already scaled; the mapping only
+says where it goes. A `value` output sends it clamped to `min`..`max`; a
+`value14` output clamps it to 0..16383 and sends MSB then LSB, both whenever
+either changes. A number target without a value (e.g. `deck.cue_angle` with
+no cue point, or before the first update) sends `off`, in both bytes for
+`value14` (so `off = 0x7F` hides a marker that is hidden with 0x7F/0x7F).
+Level and value outputs go out after LEDs within the poll budget.
+
+```toml
+[[output]]
+target = "deck.bpm"
+cc = 0x14            # LSB 0x34
+mode = "value14"
+channel = 15
+deck = 1
+```
 
 ### Targets
 
@@ -304,6 +324,14 @@ when its byte value differs from what was last sent.
 | `channel_fx` | `effect` |
 | `channel_fx.part` | `stem` = `vocals` / `drums` / `bass` / `inst`: on while the Channel FX acts on that part; every part on while it acts on the whole channel |
 | `sampler.cue`, `recording` | |
+| `deck.time_remaining` | on while the jog display shows the remaining time, off for the elapsed time |
+| `key_camelot` | on for Camelot key names, off for classic names (the Key notation preference; Open Key shows as Camelot) |
+| `deck.bpm` (number) | effective BPM × 10 (128.0 BPM = 1280), 0 without a track |
+| `deck.time_minutes`, `deck.time_seconds` (number) | the remaining time as on the screen's decks (Preferences › View › Remaining time), the elapsed time while the length is unknown; minutes up to 99 |
+| `deck.position_angle` (number) | playhead on a platter turning once per 1.8 s of playback, 0..359 degrees; give it a `min_interval_ms` (e.g. 33) |
+| `deck.cue_angle` (number) | the main cue point on the same platter, 0..359; no value without a track |
+| `deck.key` (number) | track key: 1 = C, 2 = Am, 3 = Db, 4 = Bbm … 23 = B, 24 = Abm (each major key in chromatic order, then its relative minor); 0 = no key |
+| `deck.key_shift` (number) | key shift in semitones, -12..12 |
 
 ## Device modules
 

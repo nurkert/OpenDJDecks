@@ -21,7 +21,7 @@ Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Model
 
 | Controller | Decks | Mapping | Erkannt an | Status |
 |---|---|---|---|---|
-| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 10 bestätigt, 453 teilweise, 12 ungetestet |
+| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 10 bestätigt, 461 teilweise, 13 ungetestet |
 | kompatibel mit DDJ-FLX4 | 2 | eingebaut | MIDI-Portname `DDJ-FLX4` | nicht bestätigt: 0 bestätigt, 219 teilweise, 2 ungetestet |
 | Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (76 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
 | Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (74 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
@@ -46,9 +46,11 @@ Die Datei ist eine gewöhnliche Mapping-Datei, die du weitergeben kannst. Jeder 
 
 ## Am Controller stöbern
 
-Drehe den Browse-Encoder, um durch die Liste zu gehen. **BACK** verschiebt den Fokus in die Listenspalte, wo Drehen von oben nach unten durch alles darin geht: die Sammlung, Playlists, die Ordner des Explorers, ähnliche Tracks, Sticks, Verläufe, Aufnahmen, die Tag-Liste, erstellte Tracks und AUTO SORT (mit Shift um acht). Die Spalte scrollt mit. Ein Druck oder **LOAD** an einem Deck geht eine Ebene hinein: Ein Ordner öffnet sich und sein erster Eintrag wird gewählt, eine Liste übergibt an ihre Tracks. **BACK** geht jedes Mal eine Ebene hinaus: von den Tracks zu ihrer Liste, von einem Eintrag zum Ordner, der ihn enthält, ein offener Ordner schließt sich, und von der obersten Ebene weiter in die Leiste der Quellen am linken Rand der Spalte. Dort geht Drehen durch die Quellen (**ALLE**, **LISTEN**, **ÄHNLICH**, **SAMPLER**, **DATEIEN**, **USB**, **VERLAUF**, **AUFNAHMEN**, **TAG-LISTE**) und die Spalte scrollt jeweils dorthin; ein Druck oder **LOAD** geht beim ersten Eintrag der Quelle wieder hinein (**SAMPLER** zeigt das Sampler-Panel). Eingeklappte Listen klappen auf, sobald der Encoder hineingeht. In der Trackliste lädt ein Druck auf ein freies Deck, **LOAD** auf sein Deck, und Shift-Druck fügt der Tag-Liste hinzu. Ein Track, den du mit der Maus anklickst, ist der, den **LOAD** lädt. **VIEW** schaltet in Prepare den ganzen Browser und in Perform das Browse-Layout.
+Drehe den Browse-Encoder, um durch die Liste zu gehen. **BACK** verschiebt den Fokus in die Listenspalte, wo Drehen von oben nach unten durch alles darin geht: die Sammlung, Playlists, die Ordner des Explorers, ähnliche Tracks, Sticks, Verläufe, Aufnahmen, die Tag-Liste, erstellte Tracks und AUTO SORT (mit Shift um acht). Die Spalte scrollt mit, und Ordner bleiben geschlossen, während du an ihnen vorbeidrehst. Ein Druck oder **LOAD** an einem Deck geht eine Ebene hinein: Ein geschlossener Ordner öffnet sich und sein erster Eintrag wird gewählt, ein offener Ordner schließt sich wieder, eine Liste übergibt an ihre Tracks. **BACK** geht jedes Mal eine Ebene hinaus: von den Tracks zu ihrer Liste, von einem Eintrag zum Ordner, der ihn enthält (er schließt sich), ein offener Ordner schließt sich, und von der obersten Ebene weiter in die Leiste der Quellen am linken Rand der Spalte. Dort geht Drehen durch die Quellen (**ALLE**, **LISTEN**, **ÄHNLICH**, **SAMPLER**, **DATEIEN**, **USB**, **VERLAUF**, **AUFNAHMEN**, **TAG-LISTE**) und die Spalte scrollt jeweils dorthin; ein Druck oder **LOAD** geht beim ersten Eintrag der Quelle wieder hinein (**SAMPLER** zeigt das Sampler-Panel). Eingeklappte Listen klappen auf, sobald der Encoder hineingeht. In der Trackliste lädt ein Druck auf ein freies Deck, **LOAD** auf sein Deck, und Shift-Druck fügt der Tag-Liste hinzu. Ein Track, den du mit der Maus anklickst, ist der, den **LOAD** lädt. **VIEW** schaltet in Prepare den ganzen Browser und in Perform das Browse-Layout.
 
 Verbindet sich ein Controller mit Kanalfadern, starten seine Kanäle geschlossen, weil die App nicht wissen kann, wo die Fader stehen, bis sie sich bewegen: Bewege jeden Fader einmal. **PLAY** auf einem Deck, dessen Fader sich noch nicht bewegt hat, sagt das in der Statuszeile.
+
+Controller mit Anzeigen in den Jogwheels (der DDJ-FLX10) zeigen dort jedes geladene Deck: BPM, die Restzeit wie auf den Decks am Bildschirm (Einstellungen › Ansicht › **Restzeit** wählt Trackzeit oder Echtzeit beim Tempo), die Tonart in Camelot- oder klassischer Schreibweise nach der Einstellung **Tonart-Schreibweise** (Open Key erscheint als Camelot), die Tonartverschiebung, die Abspielposition als Marke, die sich wie eine Platte alle 1,8 Sekunden einmal dreht, den Haupt-Cue-Punkt auf demselben Ring sowie die Anzeigen MASTER, SYNC und Keylock. Titel, Wellenform und Cover erscheinen dort nicht.
 
 ## MIDI-Learn
 
@@ -92,7 +94,7 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 
 | Modell | Bedienelemente | Bestätigt | Teilweise | Ungetestet |
 |---|---|---|---|---|
-| DDJ-FLX10 | 475 | 10 | 453 | 12 |
+| DDJ-FLX10 | 484 | 10 | 461 | 13 |
 | DDJ-FLX4 | 221 | 0 | 219 | 2 |
 
 ### DDJ-FLX10
@@ -565,7 +567,16 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 | deck loop active | Anzeige | teilweise |
 | mixer cue | Anzeige | teilweise |
 | mixer vu | Anzeige | teilweise |
-| deck loaded | Anzeige | ungetestet |
+| deck loaded | Anzeige | teilweise |
+| deck position angle | Anzeige | teilweise |
+| deck bpm | Anzeige | teilweise |
+| deck cue angle | Anzeige | teilweise |
+| deck time minutes | Anzeige | teilweise |
+| deck time seconds | Anzeige | teilweise |
+| deck time remaining | Anzeige | teilweise |
+| deck key | Anzeige | ungetestet |
+| deck key shift | Anzeige | teilweise |
+| key camelot | Anzeige | ungetestet |
 | deck pad mode | Anzeige | teilweise |
 | deck pad | Anzeige | teilweise |
 | master cue | Anzeige | ungetestet |

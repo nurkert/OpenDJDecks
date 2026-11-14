@@ -565,13 +565,25 @@ pub(crate) fn set_backups(app: &App, action: &str) {
 
 /// Opens a tree entry: a library list, "All tracks", a stick or a list on it.
 fn select_node(app: &App, id: i32) {
+    select_node_with(app, id, true);
+}
+
+/// Opens a tree entry; with `expand`, a folder (or an AUTO SORT group) also
+/// opens, as a click does. The controller's encoder passes over folders
+/// without opening them.
+pub(crate) fn select_node_with(app: &App, id: i32, expand: bool) {
     if sources::decode(id, &app.state.borrow().browser.histories).is_some() {
         sources::open(app, id);
         return;
     }
     let auto = auto::decode(id, &app.state.borrow().browser.auto.lists);
     match auto {
-        Some(auto::AutoNode::Group(g)) => return auto::toggle(app, g),
+        Some(auto::AutoNode::Group(g)) => {
+            if expand {
+                auto::toggle(app, g);
+            }
+            return;
+        }
         Some(auto::AutoNode::List(key)) => return sources::open_special(app, Special::Auto(key)),
         None => {}
     }
@@ -611,7 +623,7 @@ fn select_node(app: &App, id: i32) {
             .node
             .is_some_and(|n| st.src().node(n).is_ok_and(|n| n.kind.has_entries()));
         st.browser.reset_sort(in_list);
-        if let (Some(n), false) = (st.browser.node, st.read_only()) {
+        if let (Some(n), false, true) = (st.browser.node, st.read_only(), expand) {
             if st.lib.node(n).is_ok_and(|n| n.kind == NodeKind::Folder) {
                 st.browser.expanded.insert(n);
             }

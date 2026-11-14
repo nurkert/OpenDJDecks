@@ -659,7 +659,8 @@ action = "ignore"
 # ---------------------------------------------------------------- loops
 # LOOP IN・1/2X and LOOP OUT・2X send only their press and SHIFT notes [L].
 # As printed, a running loop halves (IN) or doubles (OUT); without one they
-# set the in and out points. SHIFT halves and doubles too.
+# set the in and out points. SHIFT halves and doubles too. 4 BEAT/EXIT
+# (0x14) leaves a running loop at once and sets a 4-beat loop otherwise.
 [[input]]
 name = "Loop in"
 note = 0x10
@@ -690,7 +691,7 @@ verify = true
 name = "4 beat loop"
 note = 0x14
 channel = "deck"
-action = "deck.auto_loop"
+action = "deck.auto_loop_or_exit"
 args = { beats = 4.0 }
 
 [[input]]
@@ -1644,6 +1645,234 @@ deck = 3
 [[output]]
 target = "deck.keylock"
 note = 0x23
+channel = 15
+deck = 4
+
+# Jog displays [L]. The numbers are scaled by the app (see the targets in
+# docs/controller-mappings.md); 14-bit values go MSB then LSB (LSB = MSB +
+# 0x20). Position ring and cue marker: 0-359 degrees, the cue marker hidden
+# with 0x7F/0x7F. Time: minutes 0x42/0x44/0x46/0x48, seconds one above;
+# time mode note 0x14-0x17 (0x7F = remaining). Playing speed (0x18-0x1B /
+# 0x38-0x3B, 0..9999 for -100..+100 %) is not sent: its encoding is not
+# stated in the list.
+[[output]]
+target = "deck.position_angle"
+cc = 0x10
+mode = "value14"
+min_interval_ms = 33
+channel = 15
+deck = 1
+[[output]]
+target = "deck.position_angle"
+cc = 0x11
+mode = "value14"
+min_interval_ms = 33
+channel = 15
+deck = 2
+[[output]]
+target = "deck.position_angle"
+cc = 0x12
+mode = "value14"
+min_interval_ms = 33
+channel = 15
+deck = 3
+[[output]]
+target = "deck.position_angle"
+cc = 0x13
+mode = "value14"
+min_interval_ms = 33
+channel = 15
+deck = 4
+[[output]]
+target = "deck.bpm"
+cc = 0x14
+mode = "value14"
+channel = 15
+deck = 1
+[[output]]
+target = "deck.bpm"
+cc = 0x15
+mode = "value14"
+channel = 15
+deck = 2
+[[output]]
+target = "deck.bpm"
+cc = 0x16
+mode = "value14"
+channel = 15
+deck = 3
+[[output]]
+target = "deck.bpm"
+cc = 0x17
+mode = "value14"
+channel = 15
+deck = 4
+[[output]]
+target = "deck.cue_angle"
+cc = 0x1C
+mode = "value14"
+off = 0x7F
+channel = 15
+deck = 1
+[[output]]
+target = "deck.cue_angle"
+cc = 0x1D
+mode = "value14"
+off = 0x7F
+channel = 15
+deck = 2
+[[output]]
+target = "deck.cue_angle"
+cc = 0x1E
+mode = "value14"
+off = 0x7F
+channel = 15
+deck = 3
+[[output]]
+target = "deck.cue_angle"
+cc = 0x1F
+mode = "value14"
+off = 0x7F
+channel = 15
+deck = 4
+[[output]]
+target = "deck.time_minutes"
+cc = 0x42
+channel = 15
+deck = 1
+[[output]]
+target = "deck.time_seconds"
+cc = 0x43
+channel = 15
+deck = 1
+[[output]]
+target = "deck.time_minutes"
+cc = 0x44
+channel = 15
+deck = 2
+[[output]]
+target = "deck.time_seconds"
+cc = 0x45
+channel = 15
+deck = 2
+[[output]]
+target = "deck.time_minutes"
+cc = 0x46
+channel = 15
+deck = 3
+[[output]]
+target = "deck.time_seconds"
+cc = 0x47
+channel = 15
+deck = 3
+[[output]]
+target = "deck.time_minutes"
+cc = 0x48
+channel = 15
+deck = 4
+[[output]]
+target = "deck.time_seconds"
+cc = 0x49
+channel = 15
+deck = 4
+[[output]]
+target = "deck.time_remaining"
+note = 0x14
+channel = 15
+deck = 1
+[[output]]
+target = "deck.time_remaining"
+note = 0x15
+channel = 15
+deck = 2
+[[output]]
+target = "deck.time_remaining"
+note = 0x16
+channel = 15
+deck = 3
+[[output]]
+target = "deck.time_remaining"
+note = 0x17
+channel = 15
+deck = 4
+# Key and key change amount on the deck channels [L]: change 0x0D = none, so
+# the app's semitones get 13 added. Key 0x01-0x18, 0 = none: the list's
+# classic column (C, Am, Db, Bbm ... B, Abm) and its Camelot column (1B, 1A,
+# 2B ... 12A) disagree; the app sends the classic order, to check on the unit.
+[[output]]
+verify = true
+target = "deck.key"
+cc = 0x49
+channel = "deck"
+[[output]]
+target = "deck.key_shift"
+cc = 0x4A
+offset = 13
+channel = "deck"
+# Key display format (0x7F = Camelot, 0x00 = classic) [L]: the list gives
+# status 9F but MIDI channels 1-4 for it.
+[[output]]
+verify = true
+target = "key_camelot"
+note = 0x5B
+channel = 15
+# Jog ring illumination (0x01 = white) [L]: the list names it a note but
+# gives status BF.
+[[output]]
+verify = true
+target = "deck.loaded"
+cc = 0x09
+on = 0x01
+channel = 15
+deck = 1
+[[output]]
+verify = true
+target = "deck.loaded"
+cc = 0x0A
+on = 0x01
+channel = 15
+deck = 2
+[[output]]
+verify = true
+target = "deck.loaded"
+cc = 0x0B
+on = 0x01
+channel = 15
+deck = 3
+[[output]]
+verify = true
+target = "deck.loaded"
+cc = 0x0C
+on = 0x01
+channel = 15
+deck = 4
+# Jog display information shown (0x00) or hidden (0x7F) [L].
+[[output]]
+target = "deck.loaded"
+note = 0x5D
+on = 0x00
+off = 0x7F
+channel = 15
+deck = 1
+[[output]]
+target = "deck.loaded"
+note = 0x5E
+on = 0x00
+off = 0x7F
+channel = 15
+deck = 2
+[[output]]
+target = "deck.loaded"
+note = 0x5F
+on = 0x00
+off = 0x7F
+channel = 15
+deck = 3
+[[output]]
+target = "deck.loaded"
+note = 0x60
+on = 0x00
+off = 0x7F
 channel = 15
 deck = 4
 

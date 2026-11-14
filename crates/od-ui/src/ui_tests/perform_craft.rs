@@ -485,3 +485,52 @@ fn controller_loop_keys_halve_and_double_a_running_loop() {
         snapshot(&ui).decks[0].loop_state
     );
 }
+
+/// [H1] 4 BEAT/EXIT: with a running IN/OUT loop one press leaves it; with no
+/// loop one press sets a 4-beat loop, and a held roll stays.
+#[test]
+fn controller_four_beat_exit_leaves_a_running_loop() {
+    use od_controller::{ControlAction, DeckAction};
+    use od_engine::DeckCommand as D;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    with_grid(&ui, ui.fx.tracks[0].0);
+    load(&ui, 0, 0);
+    let press = |ui: &Ui| {
+        let action = DeckAction::AutoLoopOrExit { beats: 4.0 };
+        crate::controller::handle_action(&ui.app, ControlAction::Deck { deck: 1, action });
+    };
+    let looping = |ui: &Ui, on: bool| ui.wait_until(5.0, |u| snapshot(u).decks[0].loop_state.active == on);
+
+    // An IN/OUT loop from 2 s to 3 s: one press leaves it.
+    crate::engine::deck_cmd(&ui.app, 0, D::Seek { seconds: 2.0 });
+    assert!(ui.wait_until(5.0, |u| (snapshot(u).decks[0].position - 2.0).abs() < 0.1));
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopIn);
+    crate::engine::deck_cmd(&ui.app, 0, D::Seek { seconds: 3.0 });
+    assert!(ui.wait_until(5.0, |u| (snapshot(u).decks[0].position - 3.0).abs() < 0.1));
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopOut);
+    assert!(looping(&ui, true), "the IN/OUT loop runs");
+    press(&ui);
+    assert!(looping(&ui, false), "one press leaves it: {:?}", snapshot(&ui).decks[0].loop_state);
+
+    // No loop: one press sets a 4-beat loop.
+    press(&ui);
+    assert!(
+        ui.wait_until(5.0, |u| {
+            let l = snapshot(u).decks[0].loop_state;
+            l.active && l.beats == Some(4.0)
+        }),
+        "one press sets a 4-beat loop: {:?}",
+        snapshot(&ui).decks[0].loop_state
+    );
+    press(&ui);
+    assert!(looping(&ui, false), "and the next leaves it");
+
+    // A held roll stays.
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopRoll { beats: 1.0, on: true });
+    assert!(ui.wait_until(5.0, |u| snapshot(u).decks[0].loop_state.roll));
+    press(&ui);
+    assert!(!ui.wait_until(0.3, |u| !snapshot(u).decks[0].loop_state.roll));
+    let l = snapshot(&ui).decks[0].loop_state;
+    assert!(l.active && l.roll && l.beats == Some(1.0), "the held roll stays: {l:?}");
+}

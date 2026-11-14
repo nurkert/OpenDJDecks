@@ -664,7 +664,9 @@ tests = [
   "od-ui::ui_tests::prepare::controller_browses_tree_and_list",
   "od-ui::ui_tests::prepare::controller_reaches_every_list_and_goes_in_and_out",
   "od-ui::ui_tests::prepare::controller_back_reaches_the_rail_of_sources",
+  "od-ui::ui_tests::prepare::controller_scrolls_past_closed_folders",
   "od-ui::browser::navigate::tests::steps_clamp_at_the_ends",
+  "od-ui::browser::navigate::tests::back_closes_the_folder_it_is_on_or_in",
   "od-ui::browser::navigate::tests::the_parent_is_one_level_up_of_the_same_kind",
   "od-ui::browser::navigate::tests::every_entry_has_its_source_in_the_rail",
 ]
@@ -1440,6 +1442,8 @@ tests = [
   "od-ui::ui_tests::waveform::pending_loop_in_shows_on_the_waveform",
   "od-ui::ui_tests::perform_craft::controller_loop_keys_halve_and_double_a_running_loop",
   "od-controller::mappings::flx10_loop_buttons_halve_and_double",
+  "od-ui::ui_tests::perform_craft::controller_four_beat_exit_leaves_a_running_loop",
+  "od-controller::mappings::four_beat_exit_leaves_a_running_loop",
 ]
 evidence = ["LoopIn/LoopOut/Reloop/LoopExit/LoopHalve/LoopDouble"]
 note = "`LoopIn/LoopOut/Reloop/LoopExit/LoopHalve/LoopDouble`; IN / OUT / EXIT key beside LOOP on every deck and in the Prepare player; a waiting in point shows as an IN line on the waveform, exit / RELOOP cancels it"
@@ -1627,6 +1631,24 @@ tests = [
 ]
 evidence = ["controller.rs::feedback"]
 note = "Pad mode LEDs and the pads of the current mode (on = engaged, dim = loaded / set)"
+
+[[feature]]
+id = "controller-jog-display"
+area = "deck"
+name = "Jog wheel displays on the controller"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-controller::output::tests::value14_sends_msb_then_lsb",
+  "od-controller::output::tests::value_sends_one_clamped_byte_with_offset",
+  "od-controller::output::tests::value14_honours_the_rate_limit",
+  "od-controller::mappings::flx10_jog_display_values",
+  "od-controller::mappings::flx10_jog_displays_start_hidden",
+  "od-ui::controller::tests::jog_display_projects_the_deck",
+]
+evidence = ["controller.rs::jog_display", "od-controller/src/output.rs"]
+note = "Number outputs (`value`, `value14`) carry BPM, remaining or elapsed time, key and key shift, the turning position ring and the cue marker to jog displays; playing speed is not sent (encoding not stated)"
 
 [[feature]]
 id = "deck-waveform-zoom"

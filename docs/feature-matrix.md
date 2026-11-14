@@ -4,7 +4,7 @@
 
 Snapshot: 2026-11-06, from a read of the source tree.
 
-**Summary:** 337 features; 331 in scope: 331 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
+**Summary:** 338 features; 332 in scope: 332 DONE (100 %), 0 PARTIAL, 0 ENGINE-ONLY, 0 MISSING; 1 deferred to a later milestone; 5 out of scope (SPEC §1).
 
 The list covers the professional feature set a DJ expects when preparing music and performing
 with a compatible controller (SPEC §1, §5.5, §10, §11, §12). Behaviour,
@@ -72,7 +72,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Sets with transition notes and flow view | DONE (own) | `sets.rs::set_flow`, `on_set_transition_note`, `ui/flow.slint` | 3 |  |
 | Set backup tracks / planned start | DONE | `nodes.rs::set_entry_backups/set_set_meta`, `crates/od-ui/src/browser/mod.rs::set_backups`; Set view: planned start field; backups of the selected position are taken from the tag list (BACKUPS FROM TAG LIST) or cleared | 1 |  |
 | Keyboard shortcuts for Prepare | DONE | `keymap.rs::registry`, `commands.rs::run`, `docs/keyboard.md`; One command registry (177 actions, conventional DJ-software defaults for decks 1/2); Preferences > Keyboard rebinds with conflict detection, reset, TOML import/export | 4 | P2 |
-| Browse from controller | DONE | `crates/od-ui/src/browser/navigate.rs`; `browser::navigate`: BACK moves the encoder into the lists column, turning steps through everything in it as drawn (collection, playlists, Explorer folders, similar, sticks, histories, recordings, tag list, created, AUTO SORT; ⇧ by eight) and the column scrolls along; a press or a deck's LOAD goes one level in (a folder opens and its first entry is taken, a list hands over to its tracks), BACK one level out (an open folder closes) and from the top level on to the rail of sources, where turning steps through every source (ALL to TAG LIST) and a press or LOAD goes in at its first entry (a folded column unfolds); in the track list turning steps rows, a press loads into a free deck, ⇧-press adds to the tag list; VIEW toggles the full browser (Prepare) or the Perform browse layout; SIMILAR opens the similar tracks. The tree marks the encoder focus | 7 | P2 |
+| Browse from controller | DONE | `crates/od-ui/src/browser/navigate.rs`; `browser::navigate`: BACK moves the encoder into the lists column, turning steps through everything in it as drawn (collection, playlists, Explorer folders, similar, sticks, histories, recordings, tag list, created, AUTO SORT; ⇧ by eight) and the column scrolls along; a press or a deck's LOAD goes one level in (a folder opens and its first entry is taken, a list hands over to its tracks), BACK one level out (an open folder closes) and from the top level on to the rail of sources, where turning steps through every source (ALL to TAG LIST) and a press or LOAD goes in at its first entry (a folded column unfolds); in the track list turning steps rows, a press loads into a free deck, ⇧-press adds to the tag list; VIEW toggles the full browser (Prepare) or the Perform browse layout; SIMILAR opens the similar tracks. The tree marks the encoder focus | 9 | P2 |
 | Explorer: browse folders on disk and play directly | DONE | `crates/od-ui/src/explorer.rs::ExplorerState::rows`, `crates/od-ui/src/explorer.rs::open_folder`, `crates/od-ui/ui/sidebar.slint::ExplorerItem`; User-added roots (persisted in library meta) as a nested folder tree of any depth: sub-folders are listed lazily on expand/select, each probed one level so only expandable folders get a mark; hidden and player data folders are skipped. Selecting a folder expands it and lists its audio files; (SPEC §5.5; UX §2.2) | 5 |  |
 | Explorer: "Include subfolders" lists the files of a folder and all its sub-folders | DONE (beyond the usual) | `crates/od-ui/src/explorer.rs::list_files`, `crates/od-ui/src/explorer.rs::set_recursive`, `crates/od-ui/ui/app.slint`; Toggle in the folder list header (persisted as `explorer.recursive`). Depth-first, each folder by name, symlink loops followed once, capped at 32 levels / 20 000 files; (SPEC §5.5) | 3 |  |
 | Explorer: loading a file adds it to the collection and analyses it in the background | DONE | `crates/od-ui/src/explorer.rs::start_import`, `crates/od-ui/src/explorer.rs::poll`; Loading a file from the Explorer adds it to the collection in the background (`workers::import_file`) and loads it; the flow test asserts the deck and the collection; (SPEC §5.5) | 1 |  |
@@ -162,7 +162,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Censor (slip reverse) | DONE | `DeckAction::Censor` in `handle_action` | 1 |  |
 | Beat jump | DONE | `DeckCommand::BeatJump`; UI ±4, controller, pad mode | 1 |  |
 | Beat jump size setting | DONE | `decks.rs::step_jump_size`; ‹ › in Beat Jump pad mode (1/8 … 64); the deck's −/+ buttons and the keyboard jump by it | 1 | P3 |
-| Manual loop in/out, reloop/exit, ½ / 2× | DONE | `LoopIn/LoopOut/Reloop/LoopExit/LoopHalve/LoopDouble`; IN / OUT / EXIT key beside LOOP on every deck and in the Prepare player; a waiting in point shows as an IN line on the waveform, exit / RELOOP cancels it | 5 |  |
+| Manual loop in/out, reloop/exit, ½ / 2× | DONE | `LoopIn/LoopOut/Reloop/LoopExit/LoopHalve/LoopDouble`; IN / OUT / EXIT key beside LOOP on every deck and in the Prepare player; a waiting in point shows as an IN line on the waveform, exit / RELOOP cancels it | 7 |  |
 | Auto beat loop (1/32 … 32) | DONE | `DeckCommand::AutoLoop`; UI size stepper | 1 |  |
 | Loop roll | DONE | `DeckCommand::LoopRoll`, `crates/od-ui/src/pads.rs::ROLL_BEATS`, `ui/wave.slint::WaveLane`; Roadmap [59]. ROLL pad mode on the deck (and `deck.loop_roll` / pad mode `loop_roll` in mappings): pads A–H roll 1/32 … 4 beats while held, quantised to the grid; the track carries on underneath (slip line on the waveform) and resumes there on release. The held pad is filled and the waveform's loop band carries ROLL and the size | 3 |  |
 | Needle search | DONE | `NeedleSearch`; overview click + the controller touch strip | 1 |  |
@@ -177,6 +177,7 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 | Pad mode: Key Shift | DONE | `pads.rs::press_commands`; Pads set the key shift −3 … +4 | 1 | P2 |
 | Pad mode: Slicer | DONE | `pads.rs::mode_change_commands`; `PadMode::Slicer`; domain 4 … 64 beats (‹ ›), starts and stops with the mode | 2 | P3 |
 | Pad LED feedback per mode | DONE | `controller.rs::feedback`; Pad mode LEDs and the pads of the current mode (on = engaged, dim = loaded / set) | 2 | P2 |
+| Jog wheel displays on the controller | DONE | `controller.rs::jog_display`, `od-controller/src/output.rs`; Number outputs (`value`, `value14`) carry BPM, remaining or elapsed time, key and key shift, the turning position ring and the cue marker to jog displays; playing speed is not sent (encoding not stated) | 6 | P2 |
 | Waveform zoom in Perform | DONE | `perform.rs`; Mouse wheel over a lane zooms that deck, double-click resets (`decks::zoom_by`); zoom buttons of the zone column are tracked by the view test (`wave.zoom-*`) | 4 |  |
 | Waveform overview + scrolling detail, cue markers, beat ticks | DONE | `render.rs::overview/detail`, `ui/plate.slint` | 3 |  |
 | Phrases on the overview and enlarged waveform, with display options | DONE | `crates/od-ui/src/player.rs::phrase_marks`, `crates/od-ui/src/render.rs`, `crates/od-ui/src/settings.rs::PHRASE_TYPES`; Phrases on the enlarged waveforms and the phrase bar under the overviews switch separately (Preferences > View), phrase types as names or colours only; Prepare player and Perform decks; (SPEC §10.1; UX §2.5) | 3 | P2 |
@@ -446,13 +447,13 @@ Priority (gaps only): **P1** = an experienced DJ hits it in the first session an
 
 | Status | Rows |
 |---|---|
-| DONE | 331 |
+| DONE | 332 |
 | PARTIAL | 0 |
 | ENGINE-ONLY | 0 |
 | MISSING | 0 |
 | deferred (in scope, later milestone) | 1 |
 | OUT-OF-SCOPE | 5 |
-| **Total** | **337** |
+| **Total** | **338** |
 
 ## P1 gaps and implementation notes
 

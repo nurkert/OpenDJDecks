@@ -2,17 +2,18 @@
 //! everything in the lists column, top to bottom as it is drawn (the
 //! collection, playlists, the Explorer's folders, similar tracks, sticks,
 //! histories, recordings, the tag list, created tracks and AUTO SORT) or,
-//! once a list is entered, through its tracks. A press or a deck's LOAD in
-//! the column goes one level in (opens a folder and steps to its first
-//! entry, or enters the track list); in the track list a press loads the
-//! track. BACK goes one level out every time: from the tracks to their list,
-//! from an entry to the folder holding it, an open folder closes, and from
-//! the top level on to the rail of sources at the column's left edge (all
-//! tracks, playlists, similar, sampler, files, sticks, histories,
-//! recordings, tag list), where the encoder steps through the sources and a
-//! press goes back in at the source's first entry. VIEW enlarges the browser
-//! and SIMILAR opens the similar tracks. The part with focus is marked in
-//! the window (`browse-focus`, `browse-rail`).
+//! once a list is entered, through its tracks. Folders stay closed while
+//! the encoder passes over them. A press or a deck's LOAD in the column
+//! goes one level in (opens a closed folder and steps to its first entry,
+//! closes an open one, or enters the track list); in the track list a press
+//! loads the track. BACK goes one level out every time: from the tracks to
+//! their list, from an entry to the folder holding it (which closes), an
+//! open folder closes, and from the top level on to the rail of sources at
+//! the column's left edge (all tracks, playlists, similar, sampler, files,
+//! sticks, histories, recordings, tag list), where the encoder steps through
+//! the sources and a press goes back in at the source's first entry. VIEW
+//! enlarges the browser and SIMILAR opens the similar tracks. The part with
+//! focus is marked in the window (`browse-focus`, `browse-rail`).
 
 use crate::app::App;
 use crate::decks;
@@ -252,11 +253,45 @@ pub(crate) fn parent(entries: &[Entry], i: usize) -> Option<usize> {
         .find(|&j| entries[j].same_kind(e) && entries[j].depth() < depth)
 }
 
-/// Opens an entry: its tracks show in the list.
+/// Where BACK on `entries[i]` goes in the lists column (pure).
+#[derive(Debug, PartialEq)]
+pub(crate) enum Out {
+    /// The open folder `i` closes, the encoder stays on it.
+    Close(usize),
+    /// Up to the folder `p` holding the entry, which closes.
+    Up(usize),
+    /// On to the rail.
+    Rail,
+}
+
+/// Where BACK on `entries[i]` goes: an open folder closes, an entry inside
+/// a folder goes up to it (and it closes), the top level goes to the rail.
+pub(crate) fn out_of(entries: &[Entry], i: usize) -> Out {
+    if entries.get(i).and_then(Entry::folder) == Some(true) {
+        return Out::Close(i);
+    }
+    match parent(entries, i) {
+        Some(p) => Out::Up(p),
+        None => Out::Rail,
+    }
+}
+
+/// Whether LOAD on `e` closes it: an open folder (pure).
+pub(crate) fn load_closes(e: &Entry) -> bool {
+    e.folder() == Some(true)
+}
+
+/// Opens an entry: its tracks show in the list. A folder stays closed (a
+/// click opens it, the encoder only passes over it).
 fn open(app: &App, e: &Entry) {
     match e {
-        Entry::Node { id, .. } => app.ui.invoke_select_node(*id),
-        Entry::Folder { id, .. } => app.ui.invoke_explorer_select(*id),
+        Entry::Node { id, .. } => super::select_node_with(app, *id, false),
+        Entry::Folder { id, .. } => {
+            let path = app.state.borrow().explorer.path_of(*id);
+            if let Some(p) = path {
+                crate::explorer::open_folder_with(app, p, false);
+            }
+        }
         Entry::Device { id, .. } => app.ui.invoke_open_device(*id),
         Entry::Recordings => app.ui.invoke_select_section("recordings".into()),
     }
@@ -317,8 +352,8 @@ fn go(app: &App, entries: &[Entry], i: usize) {
 }
 
 /// One level in from the lists column: a closed folder opens and its first
-/// entry is opened; an open folder hands over to its first entry; anything
-/// else enters its track list (the first track selected when none is).
+/// entry is opened; an open folder closes; anything else enters its track
+/// list (the first track selected when none is).
 pub(crate) fn enter(app: &App) {
     if let Some(r) = rail(app) {
         enter_source(app, r);
@@ -332,11 +367,13 @@ pub(crate) fn enter(app: &App) {
         return;
     };
     let e = list[i].clone();
+    if load_closes(&e) {
+        toggle(app, &e);
+        return;
+    }
     match e.folder() {
-        Some(expanded) => {
-            if !expanded {
-                toggle(app, &e);
-            }
+        Some(_) => {
+            toggle(app, &e);
             // The rows below appear with the toggle; take the first one.
             let list = entries(app);
             let child = list
@@ -374,8 +411,8 @@ fn enter_list(app: &App) {
 }
 
 /// One level out: from the tracks to the lists column; there, an open
-/// folder closes, an entry inside a folder steps to that folder, and an
-/// entry at the top level hands over to its source in the rail.
+/// folder closes, an entry inside a folder steps to that folder and closes
+/// it, and an entry at the top level hands over to its source in the rail.
 pub(crate) fn back(app: &App) {
     if !app.state.borrow().browser.focus_tree {
         set_focus(app, true);
@@ -389,13 +426,15 @@ pub(crate) fn back(app: &App) {
         set_rail(app, 0);
         return;
     };
-    if list[i].folder() == Some(true) {
-        toggle(app, &list[i]);
-        return;
-    }
-    match parent(&list, i) {
-        Some(p) => go(app, &list, p),
-        None => set_rail(app, rail_of(&sizes(app), i)),
+    match out_of(&list, i) {
+        Out::Close(i) => toggle(app, &list[i]),
+        Out::Up(p) => {
+            go(app, &list, p);
+            if list[p].folder() == Some(true) {
+                toggle(app, &list[p]);
+            }
+        }
+        Out::Rail => set_rail(app, rail_of(&sizes(app), i)),
     }
 }
 
@@ -522,6 +561,50 @@ mod tests {
         assert_eq!(parent(&list, 1), None, "top level");
         assert_eq!(parent(&list, 6), Some(5), "a folder's parent is a folder");
         assert_eq!(parent(&list, 5), None);
+    }
+
+    fn open(e: Entry) -> Entry {
+        match e {
+            Entry::Node { id, depth, .. } => Entry::Node {
+                id,
+                name: String::new(),
+                depth,
+                has_children: true,
+                expanded: true,
+            },
+            Entry::Folder { id, depth, .. } => Entry::Folder {
+                id,
+                name: String::new(),
+                depth,
+                has_children: true,
+                expanded: true,
+            },
+            e => e,
+        }
+    }
+
+    #[test]
+    fn back_closes_the_folder_it_is_on_or_in() {
+        // An open folder with a list, a closed folder (with sub-folders),
+        // then the Explorer: an open root with a sub-folder.
+        let closed = Entry::Node {
+            id: 3,
+            name: String::new(),
+            depth: 0,
+            has_children: true,
+            expanded: false,
+        };
+        let list = vec![open(n(1, 0)), n(2, 1), closed, open(f(0, 0)), f(1, 1)];
+        assert_eq!(out_of(&list, 0), Out::Close(0), "on an open folder: it closes");
+        assert_eq!(out_of(&list, 1), Out::Up(0), "inside: up to the folder");
+        assert_eq!(out_of(&list, 2), Out::Rail, "a closed top-level folder");
+        assert_eq!(out_of(&list, 3), Out::Close(3));
+        assert_eq!(out_of(&list, 4), Out::Up(3));
+        // LOAD closes an open folder only; a closed one opens.
+        assert!(load_closes(&list[0]));
+        assert!(load_closes(&list[3]));
+        assert!(!load_closes(&list[2]));
+        assert!(!load_closes(&list[1]), "a list enters its tracks");
     }
 
     #[test]

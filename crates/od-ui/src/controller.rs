@@ -12,6 +12,7 @@ use od_engine::{
     TEMPO_FX_UNITS, TempoFxCommand, ChannelCommand, Command, DeckCommand, JogMode, MemoryCueJump,
     MixerCommand, ExitFxKind, SamplerCommand, Stem, TempoRange, XfAssign,
 };
+use od_core::KeyNotation;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -609,6 +610,15 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
         DeckAction::AutoLoop { beats } => Some(DeckCommand::AutoLoop {
             beats: beats as f64,
         }),
+        // 4 BEAT/EXIT: one press leaves a running loop (an IN/OUT one too),
+        // otherwise it starts the auto loop. A roll the DJ holds stays.
+        DeckAction::AutoLoopOrExit { beats } => match (s.loop_state.active, s.loop_state.roll) {
+            (true, true) => None,
+            (true, false) => Some(DeckCommand::LoopExit),
+            (false, _) => Some(DeckCommand::AutoLoop {
+                beats: beats as f64,
+            }),
+        },
         DeckAction::LoopRoll { beats, pressed } => Some(DeckCommand::LoopRoll {
             beats: beats as f64,
             on: pressed,
@@ -702,6 +712,10 @@ pub(crate) fn feedback(app: &App) {
         return;
     }
     let channel_fx = app.state.borrow().settings.perform.channel_fx.clone();
+    let (deck_time, notation) = {
+        let st = app.state.borrow();
+        (st.settings.view.deck_time.clone(), st.settings.key_notation())
+    };
     let modes = app.decks.borrow().pad_mode;
     let pad_rows: Vec<Vec<crate::PadView>> = (0..decks::DECKS)
         .map(|d| decks::pad_rows(app, d, &state))
@@ -743,6 +757,26 @@ pub(crate) fn feedback(app: &App) {
         ctrl.send_feedback(None, led(DeckElement::Censor, s.censor));
         ctrl.send_feedback(None, led(DeckElement::Reverse, s.reverse));
         ctrl.send_feedback(None, led(DeckElement::Vinyl, s.jog_mode == JogMode::Vinyl));
+        // Jog display numbers; the output rate-limits the position ring and
+        // sends the rest only on change.
+        let jd = jog_display(s, &deck_time);
+        let num = |el: DeckElement, n: i32| {
+            ControlFeedback::number(FeedbackTarget::Deck { deck, element: el }, n)
+        };
+        ctrl.send_feedback(None, num(DeckElement::Bpm, jd.bpm));
+        ctrl.send_feedback(None, led(DeckElement::TimeRemaining, jd.remaining));
+        ctrl.send_feedback(None, num(DeckElement::TimeMinutes, jd.minutes));
+        ctrl.send_feedback(None, num(DeckElement::TimeSeconds, jd.seconds));
+        ctrl.send_feedback(None, num(DeckElement::PositionAngle, jd.position_angle));
+        ctrl.send_feedback(
+            None,
+            match jd.cue_angle {
+                Some(a) => num(DeckElement::CueAngle, a),
+                None => led(DeckElement::CueAngle, false),
+            },
+        );
+        ctrl.send_feedback(None, num(DeckElement::Key, jd.key));
+        ctrl.send_feedback(None, num(DeckElement::KeyShift, jd.key_shift));
         for part in [StemPart::Vocals, StemPart::Drums, StemPart::Bass, StemPart::Inst] {
             ctrl.send_feedback(None, led(DeckElement::StemActive(part), stem_led(s, part)));
         }
@@ -842,6 +876,81 @@ pub(crate) fn feedback(app: &App) {
         None,
         ControlFeedback::led(FeedbackTarget::Recording, recording),
     );
+    // Units know classic and Camelot names only; Open Key is a number
+    // notation too, so it shows as Camelot.
+    ctrl.send_feedback(
+        None,
+        ControlFeedback::led(FeedbackTarget::KeyCamelot, notation != KeyNotation::Musical),
+    );
+}
+
+/// What a jog display shows for one deck, as the value targets take it
+/// (`od_controller::DeckElement`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct JogDisplay {
+    /// BPM × 10.
+    pub bpm: i32,
+    /// The time is the remaining time (else the elapsed time).
+    pub remaining: bool,
+    pub minutes: i32,
+    pub seconds: i32,
+    pub position_angle: i32,
+    /// None: no cue point to mark.
+    pub cue_angle: Option<i32>,
+    /// 1 = C, 2 = Am, 3 = Db … 24 = Abm; 0 = no key.
+    pub key: i32,
+    pub key_shift: i32,
+}
+
+/// Seconds of playback per platter turn (33 1/3 rpm).
+const PLATTER_TURN_S: f64 = 1.8;
+
+/// Where a time in the track stands on a turning platter, 0..=359 degrees.
+pub(crate) fn platter_angle(secs: f64) -> i32 {
+    ((secs / PLATTER_TURN_S * 360.0).rem_euclid(360.0) as i32).min(359)
+}
+
+/// The key code of the jog displays: each major key, in chromatic order
+/// from C, followed by its relative minor.
+pub(crate) fn display_key(k: od_core::MusicalKey) -> i32 {
+    match k.mode {
+        od_core::Mode::Major => 2 * k.tonic as i32 + 1,
+        od_core::Mode::Minor => 2 * ((k.tonic as i32 + 3) % 12) + 2,
+    }
+}
+
+/// The jog display of deck `s`. The time is the remaining time like on the
+/// screen's decks: of the file with `deck_time` "track", else at the
+/// current tempo; the elapsed time while the length is unknown.
+pub(crate) fn jog_display(s: &od_engine::DeckState, deck_time: &str) -> JogDisplay {
+    let loaded = s.track.is_some();
+    let remaining = loaded && s.duration > 0.0;
+    let time = if remaining {
+        let left = (s.duration - s.position).max(0.0);
+        let tempo = if deck_time != "track" && s.tempo.is_finite() && s.tempo > 0.05 {
+            s.tempo
+        } else {
+            1.0
+        };
+        left / tempo
+    } else {
+        s.position.max(0.0)
+    };
+    let secs = time as i64;
+    JogDisplay {
+        bpm: if loaded {
+            (s.bpm * 10.0).round().clamp(0.0, 9999.0) as i32
+        } else {
+            0
+        },
+        remaining,
+        minutes: (secs / 60).min(99) as i32,
+        seconds: (secs % 60) as i32,
+        position_angle: platter_angle(s.position),
+        cue_angle: loaded.then(|| platter_angle(s.cue_point)),
+        key: s.track_key.filter(|_| loaded).map(display_key).unwrap_or(0),
+        key_shift: s.key_shift.round().clamp(-12.0, 12.0) as i32,
+    }
 }
 
 /// Stem button LED: lit while the part is heard (as a stem button press
@@ -937,6 +1046,55 @@ mod tests {
         // No track: all dark.
         s.track = None;
         assert!(!stem_led(&s, StemPart::Vocals));
+    }
+
+    #[test]
+    fn jog_display_projects_the_deck() {
+        use od_core::{Mode, MusicalKey};
+        let mut s = od_engine::DeckState {
+            track: Some(od_core::TrackId(1)),
+            duration: 300.0,
+            position: 112.5,
+            tempo: 1.25,
+            bpm: 128.04,
+            cue_point: 0.45,
+            track_key: Some(MusicalKey::new(9, Mode::Minor)),
+            key_shift: -2.0,
+            ..Default::default()
+        };
+        // 112.5 s = 62.5 turns: half a turn. 187.5 s left at +25 % = 150 s.
+        let jd = jog_display(&s, "tempo");
+        assert_eq!(
+            jd,
+            JogDisplay {
+                bpm: 1280,
+                remaining: true,
+                minutes: 2,
+                seconds: 30,
+                position_angle: 180,
+                cue_angle: Some(90),
+                key: 2,
+                key_shift: -2,
+            }
+        );
+        // The file's time left: 187.5 s.
+        let jd = jog_display(&s, "track");
+        assert_eq!((jd.minutes, jd.seconds), (3, 7));
+        // Length unknown: elapsed time.
+        s.duration = 0.0;
+        let jd = jog_display(&s, "track");
+        assert!(!jd.remaining);
+        assert_eq!((jd.minutes, jd.seconds), (1, 52));
+        // Keys: C = 1, B = 23, Abm = 24; the wheel never shows 360.
+        assert_eq!(display_key(MusicalKey::new(0, Mode::Major)), 1);
+        assert_eq!(display_key(MusicalKey::new(11, Mode::Major)), 23);
+        assert_eq!(display_key(MusicalKey::new(8, Mode::Minor)), 24);
+        assert_eq!(platter_angle(1.8 - 1e-9), 359);
+        assert_eq!(platter_angle(-0.45), 270);
+        // No track: nothing to show.
+        s.track = None;
+        let jd = jog_display(&s, "tempo");
+        assert_eq!((jd.bpm, jd.cue_angle, jd.key), (0, None, 0));
     }
 
     #[test]

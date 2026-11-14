@@ -232,7 +232,7 @@ action = "deck.loop_out"
 name = "4 beat loop"
 note = 0x4D
 channel = "deck"
-action = "deck.auto_loop"
+action = "deck.auto_loop_or_exit"
 args = { beats = 4.0 }
 
 [[input]]

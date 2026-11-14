@@ -240,6 +240,11 @@ pub enum DeckAction {
     AutoLoop {
         beats: f32,
     },
+    /// 4 BEAT/EXIT: leaves a running loop, else starts an auto loop of
+    /// `beats`. A held loop roll stays.
+    AutoLoopOrExit {
+        beats: f32,
+    },
     LoopRoll {
         beats: f32,
         pressed: bool,
