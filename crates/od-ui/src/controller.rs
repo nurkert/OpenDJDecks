@@ -245,20 +245,26 @@ pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
         ControllerEvent::Connected {
             device,
             channel_faders,
+            decks: deck_count,
+            asks_positions,
             ..
         } => {
-            if device.contains("FLX10") || device.contains("flx10") {
-                app.decks.borrow_mut().deck_count = 4;
-            }
+            app.controller.borrow_mut().name = Some(device.clone());
+            // As many decks as the controller has, or as many as were last
+            // chosen with it connected.
+            decks::set_deck_count(app, decks::controller_deck_count(app, &device, deck_count as usize));
             // [H1] The app cannot know where the physical channel faders are
-            // until they move: its channels close instead of playing at the
-            // level the software had, and each fader sets its channel on its
-            // first move (soft takeover lets the first position through).
+            // until they report: its channels close instead of playing at the
+            // level the software had, and each fader sets its channel when the
+            // unit answers the position request or the fader first moves
+            // (soft takeover lets the first position through).
             if channel_faders && engine::ensure_engine(app) {
                 for c in 0..decks::DECKS {
                     engine::send(app, Command::Channel(c, ChannelCommand::SetFader(0.0)));
                 }
                 app.controller.borrow_mut().fader_unknown = [true; decks::DECKS];
+            }
+            if channel_faders && !asks_positions {
                 app.status(od_i18n::trf(
                     "Controller connected: {}. Channels stay silent until you move their faders",
                     &[&device],
@@ -266,7 +272,6 @@ pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
             } else {
                 app.status(format!("Controller connected: {device}"));
             }
-            app.controller.borrow_mut().name = Some(device);
         }
         ControllerEvent::Disconnected { device, .. } => {
             app.status(format!("Controller disconnected: {device}"));

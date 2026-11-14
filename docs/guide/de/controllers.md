@@ -7,6 +7,8 @@ features: [ctrl-controller-list, ctrl-guided-setup, ctrl-class-templates, ctrl-s
 
 OpenDJDecks bringt Mappings mit, kompatibel mit Pioneer DJ DDJ-FLX10 und DDJ-FLX4, mit LED-Rückmeldung für Play, Cue, Sync, Master, Keylock, Slip, Loop, die Pads und die Pegelanzeigen. Die Mappings sind noch nicht vollständig auf echten Geräten bestätigt, einzelne Regler oder LEDs funktionieren vielleicht nicht: Probiere sie vor einem Gig aus. Stecke einen Controller per USB ein; er wird in wenigen Sekunden erkannt und sein Audio-Interface automatisch benutzt (**Einstellungen › Audio › Ausgabegerät**).
 
+Beim ersten Anschließen zeigt Perform so viele Decks, wie der Controller hat; stellst du auf 2 oder 4 Decks um, kommt diese Anzahl beim nächsten Anschließen desselben Controllers wieder. Controller, die ihre Fader und Regler melden können (der DDJ-FLX10 kann das), stellen den Mixer beim Anschließen darauf ein, du musst vorher nichts bewegen.
+
 Bewegst du nach einem Sprung im Preset einen Regler, sorgt Soft Takeover dafür, dass sich der Wert erst ändert, wenn der echte Regler dort angekommen ist.
 
 ![Die Seite Controller in den Einstellungen](../img/controllers.png)

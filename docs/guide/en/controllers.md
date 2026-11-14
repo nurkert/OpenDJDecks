@@ -7,6 +7,8 @@ features: [ctrl-controller-list, ctrl-guided-setup, ctrl-class-templates, ctrl-s
 
 OpenDJDecks ships with mappings compatible with the Pioneer DJ DDJ-FLX10 and DDJ-FLX4, with LED feedback for play, cue, sync, master, key lock, slip, loop and the pads, and the VU meters. The mappings are not yet fully confirmed on real devices, so individual controls or LEDs may not work: try them before a gig. Connect a controller by USB; it is picked up within a few seconds, and its audio interface is used automatically (**Preferences › Audio › Output device**).
 
+The first time a controller is connected, Perform shows as many decks as it has; switch to 2 or 4 decks and that count comes back the next time you connect the same controller. Controllers that can report their faders and knobs (the DDJ-FLX10 does) set the mixer to them on connecting, so nothing needs to be moved first.
+
 When you move a knob after a preset jumped, soft takeover makes sure the value only changes once the physical control has reached it.
 
 ![The controller page in Preferences](../img/controllers.png)
