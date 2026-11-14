@@ -127,6 +127,12 @@ pub(crate) struct Deck {
     /// Input frame at which the primed stretcher's output starts.
     kl_target: f64,
     kl_feed_pos: i64,
+    /// Input frames the stretcher's feed is ahead of the playhead, not
+    /// following the loop: the feed is placed again from it when the loop
+    /// changes, so audio and playhead never drift a loop length apart.
+    kl_lead: f64,
+    /// The loop range the feed last followed ([`Deck::kl_loop_range`]).
+    kl_loop: Option<(i64, i64)>,
     kl_discard: usize,
     kl_in: [Vec<f32>; 2],
     kl_out: [Vec<f32>; 2],
@@ -284,6 +290,8 @@ impl Deck {
             kl_target: 0.0,
             kl_mix: vec![0.0; MAX_FEED * 2],
             kl_feed_pos: 0,
+            kl_lead: 0.0,
+            kl_loop: None,
             kl_discard: 0,
             kl_in: [vec![0.0; MAX_FEED], vec![0.0; MAX_FEED]],
             kl_out: [
@@ -1867,6 +1875,31 @@ impl Deck {
         }
     }
 
+    /// The loop the stretcher's feed follows, in whole input frames.
+    fn kl_loop_range(&self) -> Option<(i64, i64)> {
+        match (self.loop_active, self.loop_in, self.loop_out) {
+            (true, Some(i), Some(o)) if o - i >= 2.0 => Some((i.round() as i64, o.round() as i64)),
+            _ => None,
+        }
+    }
+
+    /// Places the feed again after the loop changed: where the playhead
+    /// will be once the stretcher's buffered input has played, inside the
+    /// new loop. Without this, leaving or growing a loop while the feed had
+    /// already wrapped would play the audio a loop length behind the
+    /// playhead (and the waveform) until the next re-prime.
+    fn kl_resync_feed(&mut self, range: Option<(i64, i64)>) {
+        let mut p = (self.pos + self.kl_lead).round() as i64;
+        if let Some((i, o)) = range
+            && o > i
+            && p >= o
+        {
+            p = i + (p - o).rem_euclid(o - i);
+        }
+        self.kl_feed_pos = p;
+        self.kl_loop = range;
+    }
+
     /// Frames the playhead travels (forward, following an active loop)
     /// until it reaches `target`, or `None` if it has already passed it.
     fn frames_until(&self, target: f64) -> Option<f64> {
@@ -1921,15 +1954,13 @@ impl Deck {
             }
         }
         self.kl_feed_pos = p;
+        self.kl_lead += req as f64;
     }
 
     /// Feeds the stretcher from `kl_feed_pos` with at most `budget` input
     /// frames, until `need` output frames are available.
     fn kl_feed(&mut self, st: &mut Stretcher, track: &TrackData, need: usize, budget: usize) {
-        let loop_range = match (self.loop_active, self.loop_in, self.loop_out) {
-            (true, Some(i), Some(o)) if o - i >= 2.0 => Some((i.round() as i64, o.round() as i64)),
-            _ => None,
-        };
+        let loop_range = self.kl_loop_range();
         let mut fed = 0;
         while st.available() < need && fed < budget {
             let req = st
@@ -2005,7 +2036,9 @@ impl Deck {
         // Input fed per block: twice real time keeps a prime well inside the
         // block budget even for the R3 engine and several decks at once.
         let budget = (n * 2).max(256);
-        let restart = !self.kl_priming || self.frames_until(self.kl_target).is_none();
+        let restart = !self.kl_priming
+            || self.frames_until(self.kl_target).is_none()
+            || self.kl_loop_range() != self.kl_loop;
         if restart {
             st.reset();
             if let Some(ps) = self.part_st.as_mut() {
@@ -2028,6 +2061,9 @@ impl Deck {
             }
             self.kl_target = target;
             self.kl_feed_pos = target as i64 - pad as i64;
+            // The stretcher's output starts at `target`, `pad` frames after its first input.
+            self.kl_lead = -(pad as f64);
+            self.kl_loop = self.kl_loop_range();
             self.kl_discard = delay;
             self.part_discard = delay;
             self.kl_priming = true;
@@ -2210,10 +2246,10 @@ impl Deck {
             ps.set_time_ratio(1.0 / self.speed);
             ps.set_pitch_scale(pitch);
         }
-        let loop_range = match (self.loop_active, self.loop_in, self.loop_out) {
-            (true, Some(i), Some(o)) if o - i >= 2.0 => Some((i.round() as i64, o.round() as i64)),
-            _ => None,
-        };
+        let loop_range = self.kl_loop_range();
+        if loop_range != self.kl_loop {
+            self.kl_resync_feed(loop_range);
+        }
         // Feed until enough output is available.
         let mut guard = 0;
         while st.available() < n + self.kl_discard && guard < 64 {
@@ -2278,6 +2314,7 @@ impl Deck {
         self.stretcher = Some(st);
         self.track = Some(track);
         let mut p = self.pos + self.speed * n as f64;
+        self.kl_lead -= self.speed * n as f64;
         if let (true, Some(i), Some(o)) = (self.loop_active, self.loop_in, self.loop_out)
             && o > i
             && p >= o
