@@ -46,7 +46,13 @@ pub struct ControllerSession {
     /// The last deck message (status kind, number, value, side, deck, when)
     /// for [`Self::is_mirror`].
     last_deck_button: Option<(u8, u8, u8, usize, u8, Instant)>,
+    /// Until when messages count as the answer to the `[[init]]` request.
+    answer_until: Option<Instant>,
 }
+
+/// How long after connecting the unit's answer to the position request
+/// may take (it comes within a few milliseconds).
+const ANSWER_WINDOW: Duration = Duration::from_millis(300);
 
 /// How close a copy of a button for the other deck of the same side must
 /// follow to count as the hardware's mirror ([`ControllerSession::is_mirror`]).
@@ -75,6 +81,7 @@ impl ControllerSession {
             shift: HashMap::new(),
             active,
             last_deck_button: None,
+            answer_until: None,
         }
     }
 
@@ -119,6 +126,9 @@ impl ControllerSession {
     /// outputs reset to off.
     pub fn connect_messages(&mut self) -> Vec<Vec<u8>> {
         self.output.reset();
+        if !self.mapping.file.init.is_empty() {
+            self.answer_until = Some(Instant::now() + ANSWER_WINDOW);
+        }
         self.mapping
             .file
             .init
@@ -177,6 +187,15 @@ impl ControllerSession {
             if let Some(want) = b.shift
                 && self.shift_held(b.slot) != want
             {
+                continue;
+            }
+            if b.not_in_answer && self.answer_until.is_some_and(|t| Instant::now() < t) {
+                res.hits.push(MappingHit {
+                    binding: b.name.clone(),
+                    action: None,
+                    suppressed: Some("state in the answer to the position request"),
+                    verify: b.verify,
+                });
                 continue;
             }
             let deck = self.resolve_deck(b.slot);

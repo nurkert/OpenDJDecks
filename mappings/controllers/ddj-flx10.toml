@@ -967,6 +967,8 @@ repeat = 3
 channel = 6
 action = "channel_fx.part"
 args = { stem = ["vocals", "drums", "inst"] }
+# The unit reports all three lit in its position answer: not presses.
+not_in_answer = true
 
 [[input]]
 name = "FX part select (shift)"

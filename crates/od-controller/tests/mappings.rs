@@ -1182,7 +1182,12 @@ fn flx10_position_answer_sets_the_faders() {
         [0x94, 0x60, 0x00], [0xB4, 0x50, 0x09], [0xB4, 0x70, 0x30], [0x92, 0x4E, 0x7F],
         [0xB0, 0x00, 0x3F], [0xB0, 0x20, 0x77], [0xB1, 0x00, 0x30], [0xB1, 0x20, 0x01],
     ];
+    s.connect_messages();
     let a = feed(&mut s, answer);
+    assert!(
+        !a.iter().any(|a| matches!(a, ControlAction::ChannelFx(ChannelFxAction::Part(_)))),
+        "the FX part states in the answer are not presses: {a:?}"
+    );
     let faders: Vec<(u8, f32)> = a
         .iter()
         .filter_map(|a| match a {
@@ -1258,6 +1263,7 @@ fn flx10_deck_select_follows_note_3c() {
 #[test]
 fn flx10_fx_part_buttons_pick_the_part() {
     let mut s = flx10();
+    // Presses after the position answer (no connect here) count.
     let a = feed(&mut s, &[[0x96, 0x1B, 0x7F], [0x96, 0x1C, 0x7F], [0x96, 0x1D, 0x7F]]);
     assert_eq!(
         a,

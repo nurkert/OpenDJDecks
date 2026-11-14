@@ -267,6 +267,10 @@ pub struct InputSpec {
     /// docs/controller-mappings.md, "Hardware status").
     #[serde(default)]
     pub confirmed: bool,
+    /// A button the unit also reports in its answer to the `[[init]]`
+    /// position request: that report is not a press and is dropped.
+    #[serde(default)]
+    pub not_in_answer: bool,
 }
 
 fn one() -> u8 {
@@ -351,6 +355,7 @@ pub struct InputBinding {
     pub takeover: bool,
     pub verify: bool,
     pub confirmed: bool,
+    pub not_in_answer: bool,
     pub template: Arc<ActionTemplate>,
 }
 
@@ -615,6 +620,7 @@ impl Mapping {
                         takeover,
                         verify: spec.verify,
                         confirmed: spec.confirmed,
+                        not_in_answer: spec.not_in_answer,
                         template: Arc::new(template),
                     });
                 }

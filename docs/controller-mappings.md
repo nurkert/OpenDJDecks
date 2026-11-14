@@ -155,6 +155,7 @@ verify = false
 | `args` | Action arguments. An **array** value supplies one element per repetition: `args = { beats = [-1.0, 1.0, -2.0, 2.0] }`. |
 | `verify` | Not yet confirmed on hardware and not backed by a public source; flagged in the MIDI monitor. |
 | `confirmed` | Confirmed on a real unit with OpenDJDecks (also on `[[output]]`). Drives the hardware status below. |
+| `not_in_answer` | A button whose state the unit also reports when it answers the `[[init]]` position request; that report (in the first 300 ms after connecting) is not taken as a press. |
 
 14-bit pairs: the MSB is stored and the value is emitted when the LSB
 arrives (`(msb << 7 | lsb) / 16383`).
