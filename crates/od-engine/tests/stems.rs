@@ -520,3 +520,35 @@ fn stem_audition_without_parts_changes_nothing() {
     let st = rig.state().decks[0];
     assert_eq!((st.stem_audition, st.stem_audition_live), (VOCALS, 0));
 }
+
+/// Channel FX on one part: a hard high-pass on the vocals thins only them;
+/// the drums and the rest pass as before. Back on the whole channel it
+/// reaches every part.
+#[test]
+fn channel_fx_on_a_part_changes_only_that_part() {
+    let mut rig = playing_rig(false, 0.25);
+    rig.render(400);
+    let reference = rig.render(400);
+    let fr = |f: f64| f * 1.04;
+    for c in [
+        ChannelCommand::SetChannelFx(ChannelFxKind::Filter),
+        ChannelCommand::SetChannelFxPart(Some(Stem::Vocals)),
+        ChannelCommand::SetChannelFxAmount(0.95),
+    ] {
+        rig.send(Command::Channel(0, c));
+    }
+    rig.render(400);
+    let fx = rig.render(400);
+    assert_eq!(rig.state().channels[0].channel_fx_part, Some(Stem::Vocals));
+    let vocals = db(tone_level(&fx, fr(FV)), tone_level(&reference, fr(FV)));
+    assert!(vocals < -6.0, "vocals filtered: {vocals:.1} dB");
+    for f in [FD, FO] {
+        let d = db(tone_level(&fx, fr(f)), tone_level(&reference, fr(f)));
+        assert!(d.abs() < 0.5, "{f} Hz changed by {d:.2} dB");
+    }
+    rig.send(Command::Channel(0, ChannelCommand::SetChannelFxPart(None)));
+    rig.render(400);
+    let whole = rig.render(400);
+    let other = db(tone_level(&whole, fr(FO)), tone_level(&reference, fr(FO)));
+    assert!(other < -3.0, "the whole channel filtered again: {other:.1} dB");
+}

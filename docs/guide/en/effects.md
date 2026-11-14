@@ -24,6 +24,12 @@ Each unit, **FX1** and **FX2**, picks an effect (the list or **‹ ›**), a bea
 
 Echo, Delay, Ping Pong, Reverb, Flanger, Phaser, Roll, Slip Roll, Filter, Trans, Pitch, Vinyl Brake, Helix, Spiral and more, including the remix effects below. On a controller, its effect names map to the closest one.
 
+- **LOW CUT ECHO** is an echo whose repeats lose more of their low end each time; **PARAM** moves the cut.
+- **MULTI TAP** repeats four times across its length, alternating left and right.
+- **JET** is a flanger with strong feedback and a bright, short sweep.
+- **STRETCH** plays the sound from switching on slower without changing its pitch; **PARAM** sets the speed.
+- **SHEPARD SAW** seems to rise for ever, one octave per length; **SHEPARD TRI** goes up and down.
+
 ### Remix effects
 
 In the same list:

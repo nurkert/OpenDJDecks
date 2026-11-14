@@ -5114,6 +5114,30 @@ msgctxt "FxNames"
 msgid "REVERSE ROLL"
 msgstr "REVERSE ROLL"
 
+msgctxt "FxNames"
+msgid "LOW CUT ECHO"
+msgstr "LOW CUT ECHO"
+
+msgctxt "FxNames"
+msgid "MULTI TAP"
+msgstr "MULTI TAP"
+
+msgctxt "FxNames"
+msgid "JET"
+msgstr "JET"
+
+msgctxt "FxNames"
+msgid "STRETCH"
+msgstr "STRETCH"
+
+msgctxt "FxNames"
+msgid "SHEPARD SAW"
+msgstr "SHEPARD SAW"
+
+msgctxt "FxNames"
+msgid "SHEPARD TRI"
+msgstr "SHEPARD TRI"
+
 msgctxt "MixPreviewPanel"
 msgid "NOTHING RESERVED"
 msgstr "NICHTS VORGEMERKT"

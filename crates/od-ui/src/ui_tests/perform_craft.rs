@@ -305,6 +305,8 @@ fn play_on_a_closed_channel_says_why_it_is_silent() {
             port: "DDJ-FLX10".into(),
             usb: None,
             channel_faders: true,
+            decks: 4,
+            asks_positions: false,
         },
     );
     assert!(ui.wait_until(5.0, |u| snapshot(u).channels[0].fader < 0.01), "closed on connecting");
@@ -326,4 +328,47 @@ fn play_on_a_closed_channel_says_why_it_is_silent() {
     ui.app.status("");
     play(&ui);
     assert!(!ui.app.ui.get_status_text().contains("Channel 1"));
+}
+
+/// A controller shows as many decks as it has the first time, and the count
+/// chosen with it connected when it comes back; another controller keeps its
+/// own.
+#[test]
+fn deck_count_is_remembered_per_controller() {
+    use od_controller::io::ControllerEvent;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    let connect = |device: &str, decks: u8| {
+        crate::controller::handle_event(
+            &ui.app,
+            ControllerEvent::Connected {
+                device: device.into(),
+                port: device.into(),
+                usb: None,
+                channel_faders: false,
+                decks,
+                asks_positions: false,
+            },
+        );
+    };
+    let gone = |device: &str| {
+        crate::controller::handle_event(
+            &ui.app,
+            ControllerEvent::Disconnected { device: device.into(), port: device.into() },
+        );
+    };
+    let count = || ui.app.decks.borrow().deck_count;
+    connect("four-deck-unit", 4);
+    assert_eq!(count(), 4, "as many as it has");
+    crate::decks::set_deck_count(&ui.app, 2);
+    gone("four-deck-unit");
+    connect("two-deck-unit", 2);
+    assert_eq!(count(), 2);
+    gone("two-deck-unit");
+    connect("four-deck-unit", 4);
+    assert_eq!(count(), 2, "the choice made with it connected");
+    crate::decks::set_deck_count(&ui.app, 4);
+    gone("four-deck-unit");
+    connect("two-deck-unit", 2);
+    assert_eq!(count(), 2, "its own count");
 }

@@ -105,16 +105,31 @@ pub(crate) fn set_perform_view(app: &App, view: &str) {
     set_deck_count(app, count);
 }
 
-/// Shows 2 or 4 decks and remembers it.
+/// Shows 2 or 4 decks and remembers it, also for the connected controller.
 pub(crate) fn set_deck_count(app: &App, count: usize) {
     let count = count.clamp(2, DECKS);
     app.decks.borrow_mut().deck_count = count;
     show_empty(app);
-    let _ = app
-        .state
-        .borrow_mut()
-        .lib
-        .set_meta(META_DECK_COUNT, &count.to_string());
+    let device = app.controller.borrow().name.clone();
+    let mut st = app.state.borrow_mut();
+    let _ = st.lib.set_meta(META_DECK_COUNT, &count.to_string());
+    if let Some(d) = device {
+        let _ = st.lib.set_meta(&controller_deck_key(&d), &count.to_string());
+    }
+}
+
+fn controller_deck_key(device: &str) -> String {
+    format!("{META_DECK_COUNT}.{device}")
+}
+
+/// Decks to show with controller `device` (mapping id): the count last
+/// chosen while it was connected, else the decks it has.
+pub(crate) fn controller_deck_count(app: &App, device: &str, has: usize) -> usize {
+    let saved = app.state.borrow().lib.meta(&controller_deck_key(device)).ok().flatten();
+    saved
+        .and_then(|n| n.parse::<usize>().ok())
+        .unwrap_or(has)
+        .clamp(2, DECKS)
 }
 
 /// The key of the track the engine plays on deck `i` (0-based), as the

@@ -126,6 +126,8 @@ pub struct ChannelState {
     pub eq_kill: [bool; 3],
     pub channel_fx: ChannelFxKind,
     pub channel_fx_amount: f32,
+    /// The part the Channel FX is on, if one ([`crate::ChannelCommand::SetChannelFxPart`]).
+    pub channel_fx_part: Option<crate::stems::Stem>,
     pub xf_assign: XfAssign,
     pub cue: bool,
     /// Cut-in held: the crossfader is open for this channel.

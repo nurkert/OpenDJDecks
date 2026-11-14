@@ -5,9 +5,11 @@
 # docs/controller-mappings.md). The model name is used only to name the
 # hardware this file is compatible with.
 #
-# MIDI message facts: [M] Mixxx project, DDJ-FLX4 mapping (GPL-2.0-or-later),
-# used as a reference for jog encoding (offset 64), 14-bit LSB numbers
-# (MSB + 0x20), beat jump pad sizes, VU meter range and keepalive.
+# MIDI message facts: [L] the manufacturer's published MIDI message list for
+# this model (facts only); [M] Mixxx project, DDJ-FLX4 mapping
+# (GPL-2.0-or-later), used as a reference for jog encoding (offset 64),
+# 14-bit LSB numbers (MSB + 0x20), beat jump pad sizes, VU meter range and
+# keepalive.
 # Entries with `verify = true` are not backed by a public source yet and have
 # not been confirmed on a real unit.
 # Check them with: cargo run -p od-controller --example midi_monitor
@@ -28,6 +30,7 @@ model = "DDJ-FLX4"
 decks = 2
 module = "jog-controller"
 sources = [
+  "Manufacturer's MIDI message list for this model (facts only)",
   "Mixxx DDJ-FLX4 mapping (facts only)",
 ]
 
@@ -47,10 +50,11 @@ jog_ticks_per_revolution = 720   # verify on hardware
 meter_interval_ms = 33
 
 # Mixxx found that the unit expects this periodic SysEx while a host
-# application is active [M].
+# application is active; it also makes the unit report the positions of its
+# controls [M]. Sent at once on connect, then every 200 ms as in [M].
 [[keepalive]]
 bytes = [0xF0, 0x00, 0x40, 0x05, 0x00, 0x00, 0x04, 0x05, 0x00, 0x50, 0x02, 0xF7]
-interval_ms = 250
+interval_ms = 200
 verify = true
 
 # ---------------------------------------------------------------- browser
@@ -60,7 +64,6 @@ cc = 0x40
 channel = 6
 action = "browse.rotate"
 encoding = "twos_complement"
-verify = true
 
 [[input]]
 name = "Browse rotate (shift)"
@@ -69,7 +72,6 @@ channel = 6
 action = "browse.rotate"
 args = { shifted = true }
 encoding = "twos_complement"
-verify = true
 
 [[input]]
 name = "Browse press"
@@ -98,14 +100,12 @@ deck = 2
 action = "deck.load"
 
 [[input]]
-verify = true
 name = "Load deck 1 (shift)"
 note = 0x68
 channel = 6
 action = "browse.similar"
 
 [[input]]
-verify = true
 name = "Load deck 2 (shift)"
 note = 0x7A
 channel = 6
@@ -123,7 +123,6 @@ name = "Play/Pause (shift)"
 note = 0x0E
 channel = "deck"
 action = "deck.censor"
-verify = true
 
 [[input]]
 name = "Cue"
@@ -162,22 +161,14 @@ channel = "deck"
 action = "deck.shift"
 
 # ---------------------------------------------------------------- tempo / jog
+# 0x0000 = the minus side, 0x3FFF = the plus side, with or without SHIFT
+# [L]: no invert, plus is faster. Direction still to try on the unit.
 [[input]]
 name = "Tempo fader"
 cc = 0x00
 lsb = 0x20
 channel = "deck"
 action = "deck.tempo"
-invert = true   # 0x0000 = fastest per [M]; direction to verify
-verify = true
-
-[[input]]
-name = "Tempo fader (shift)"
-cc = 0x05
-lsb = 0x25
-channel = "deck"
-action = "deck.tempo"
-invert = true
 verify = true
 
 [[input]]
@@ -250,36 +241,33 @@ note = 0x50
 channel = "deck"
 action = "deck.reloop_exit"
 
-# The two CUE/LOOP CALL buttons report loop-size messages while a loop is
-# active and memory-cue messages otherwise; verify that only one of the
-# two is sent per press.
+# IN / OUT with SHIFT [L] ([M]: loop in / out adjust, which has no action
+# here yet).
 [[input]]
-name = "Call left (loop)"
-note = 0x12
+name = "Loop in (shift)"
+note = 0x4C
 channel = "deck"
-action = "deck.loop_halve"
-verify = true
+action = "ignore"
 
+[[input]]
+name = "Loop out (shift)"
+note = 0x4E
+channel = "deck"
+action = "ignore"
+
+# CUE/LOOP CALL sends only these notes, loop or not [L]; [M] halves and
+# doubles a loop with them, this file calls memory cues.
 [[input]]
 name = "Call left"
 note = 0x51
 channel = "deck"
 action = "deck.memory_cue_prev"
-verify = true
-
-[[input]]
-name = "Call right (loop)"
-note = 0x13
-channel = "deck"
-action = "deck.loop_double"
-verify = true
 
 [[input]]
 name = "Call right"
 note = 0x53
 channel = "deck"
 action = "deck.memory_cue_next"
-verify = true
 
 [[input]]
 name = "Call left (shift)"
@@ -353,8 +341,7 @@ channel = 6
 action = "crossfader"
 takeover = false
 
-# Level knobs act on the hardware mixer; whether they also report MIDI is
-# to be confirmed [R lists them without a function].
+# Level knobs act on the hardware mixer and report their position too [L].
 [[input]]
 name = "Master level"
 cc = 0x08
@@ -362,7 +349,6 @@ lsb = 0x28
 channel = 6
 action = "master_level"
 takeover = false
-verify = true
 
 [[input]]
 name = "Headphone mix"
@@ -371,7 +357,6 @@ lsb = 0x2C
 channel = 6
 action = "headphone_mix"
 takeover = false
-verify = true
 
 [[input]]
 name = "Headphone level"
@@ -380,7 +365,6 @@ lsb = 0x2D
 channel = 6
 action = "headphone_level"
 takeover = false
-verify = true
 
 [[input]]
 name = "Headphone cue"
@@ -395,57 +379,79 @@ channel = "deck"
 action = "deck.tap_bpm"
 
 [[input]]
-verify = true
 name = "Auto Channel FX"
 note = 0x00
 channel = 6
 action = "channel_fx.toggle"
 
 [[input]]
-verify = true
 name = "Auto Channel FX select"
 note = 0x08
 channel = 6
 action = "channel_fx.next"
 
 [[input]]
-verify = true
 name = "Auto fader"
 note = 0x01
 channel = 6
 action = "ignore"
 
 [[input]]
-verify = true
+name = "Master cue"
+note = 0x63
+channel = 6
+action = "master_cue"
+
+[[input]]
 name = "Master cue (shift)"
 note = 0x78
 channel = 6
 action = "ignore"
 
 [[input]]
-verify = true
+name = "Auto fader (shift)"
+note = 0x09
+channel = 6
+action = "ignore"
+
+[[input]]
+name = "Mic level"
+cc = 0x05
+lsb = 0x25
+channel = 6
+action = "ignore"
+
+# Android MONO / STEREO switch (0x00 stereo, 0x7F mono) [L].
+[[input]]
+name = "Android mono/stereo"
+note = 0x6D
+channel = 6
+action = "ignore"
+
+# SHIFT + channel fader or crossfader moved off / onto zero: both send the
+# same notes [L], so the two cannot be told apart.
+[[input]]
 name = "Fader start (play)"
 note = 0x66
 channel = "deck"
 action = "ignore"
 
 [[input]]
-verify = true
 name = "Fader start (cue)"
 note = 0x52
 channel = "deck"
 action = "ignore"
 
 # ---------------------------------------------------------------- tempo FX
-# The unit reports tempo FX controls on channel 4 or 5 depending on the
-# channel-select lever position [M].
+# The CH1 / CH2 / CH1&CH2 lever sends both notes, 0x7F or 0x00 each [L];
+# here only the 0x7F of each assigns (CH1&CH2 ends on CH2, and back to CH1
+# keeps CH2). FX ON/OFF also comes on channel 5 with the lever at CH2.
 [[input]]
 name = "Tempo FX lever CH1"
 note = 0x10
 channel = 4
 action = "tempo_fx.assign"
 args = { channel = 1 }
-verify = true
 
 [[input]]
 name = "Tempo FX lever CH2"
@@ -453,7 +459,6 @@ note = 0x11
 channel = 5
 action = "tempo_fx.assign"
 args = { channel = 2 }
-verify = true
 
 [[input]]
 name = "Tempo FX beat down"
@@ -462,34 +467,20 @@ channel = 4
 action = "tempo_fx.beat_down"
 
 [[input]]
-verify = true
-name = "Tempo FX beat down (lever CH2)"
-note = 0x4A
-channel = 5
-action = "tempo_fx.beat_down"
-
-[[input]]
 name = "Tempo FX beat up"
 note = 0x4B
 channel = 4
 action = "tempo_fx.beat_up"
 
+# BEAT left / right with SHIFT [L]; the list names no function, auto beat
+# and tap are this file's choice.
 [[input]]
-verify = true
-name = "Tempo FX beat up (lever CH2)"
-note = 0x4B
-channel = 5
-action = "tempo_fx.beat_up"
-
-[[input]]
-verify = true
 name = "Tempo FX auto beat (shift)"
 note = 0x66
 channel = 4
 action = "tempo_fx.auto_beat"
 
 [[input]]
-verify = true
 name = "Tempo FX tap (shift)"
 note = 0x6B
 channel = 4
@@ -514,6 +505,8 @@ lsb = 0x22
 channel = 4
 action = "tempo_fx.level"
 
+# Only basis: the list's channel column for LEVEL/DEPTH, while its status
+# byte is on channel 4 [L].
 [[input]]
 verify = true
 name = "Tempo FX level (lever CH2)"
@@ -622,7 +615,6 @@ channel = "pad_shift"
 action = "deck.hot_cue_delete"
 
 [[input]]
-verify = true
 name = "Hold FX 1 pad"
 note = 0x10
 repeat = 8
@@ -663,7 +655,6 @@ channel = "pad"
 action = "deck.pad"
 
 [[input]]
-verify = true
 name = "Hold FX 2 pad"
 note = 0x50
 repeat = 8
@@ -687,6 +678,50 @@ index_arg = "index"
 channel = "pad"
 action = "deck.pad"
 
+# Pads with SHIFT in the other modes [L]: no function yet.
+
+[[input]]
+name = "Hold FX 1 pad (shift)"
+note = 0x10
+repeat = 8
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Beat jump pad (shift)"
+note = 0x20
+repeat = 8
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Keyboard pad (shift)"
+note = 0x40
+repeat = 8
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Hold FX 2 pad (shift)"
+note = 0x50
+repeat = 8
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Beat loop pad (shift)"
+note = 0x60
+repeat = 8
+channel = "pad_shift"
+action = "ignore"
+
+[[input]]
+name = "Key shift pad (shift)"
+note = 0x70
+repeat = 8
+channel = "pad_shift"
+action = "ignore"
+
 # ================================================================ outputs
 [[output]]
 target = "deck.play"
@@ -696,6 +731,33 @@ channel = "deck"
 [[output]]
 target = "deck.cue"
 note = 0x0C
+channel = "deck"
+
+# The same LEDs in the SHIFT layer [L], so they keep their state while SHIFT
+# is held.
+[[output]]
+target = "deck.play"
+note = 0x0E
+channel = "deck"
+
+[[output]]
+target = "deck.cue"
+note = 0x48
+channel = "deck"
+
+[[output]]
+target = "deck.loop_in"
+note = 0x4C
+channel = "deck"
+
+[[output]]
+target = "deck.loop_out"
+note = 0x4E
+channel = "deck"
+
+[[output]]
+target = "mixer.cue"
+note = 0x68
 channel = "deck"
 
 [[output]]
@@ -718,6 +780,7 @@ target = "deck.loop_out"
 note = 0x11
 channel = "deck"
 
+# 4 BEAT/EXIT has no MIDI-OUT in [L]; [M] lights it, in both layers.
 [[output]]
 target = "deck.loop_active"
 note = 0x4D
@@ -732,7 +795,6 @@ channel = "deck"
 target = "deck.vinyl"
 note = 0x17
 channel = "deck"
-verify = true
 
 [[output]]
 target = "mixer.cue"
@@ -740,25 +802,24 @@ note = 0x54
 channel = "deck"
 
 [[output]]
-verify = true
 target = "mixer.vu"
 cc = 0x02
 channel = "deck"
 
+# Track load illumination [L]: 0x7F starts the animation.
 [[output]]
-verify = true
 target = "deck.loaded"
 note = 0x00
 channel = 15
 deck = 1
 
 [[output]]
-verify = true
 target = "deck.loaded"
 note = 0x01
 channel = 15
 deck = 2
 
+# Not in [L] or [M] (channel 15 has only notes 0x00 / 0x01 there).
 [[output]]
 target = "deck.loop_active"
 note = 0x04
@@ -831,7 +892,6 @@ channel = "pad"
 args = { mode = "hot_cue" }
 
 [[output]]
-verify = true
 target = "deck.pad"
 note = 0x10
 repeat = 8
@@ -864,7 +924,6 @@ channel = "pad"
 args = { mode = "keyboard" }
 
 [[output]]
-verify = true
 target = "deck.pad"
 note = 0x50
 repeat = 8
@@ -888,18 +947,85 @@ index_arg = "index"
 channel = "pad"
 args = { mode = "key_shift" }
 
+# The same pad LEDs on the SHIFT channels [L], so pads stay lit while SHIFT
+# is held.
+[[output]]
+target = "deck.pad"
+note = 0x00
+repeat = 8
+index_arg = "index"
+channel = "pad_shift"
+args = { mode = "hot_cue" }
+
+[[output]]
+target = "deck.pad"
+note = 0x10
+repeat = 8
+index_arg = "index"
+channel = "pad_shift"
+args = { mode = "hold_fx1" }
+
+[[output]]
+target = "deck.pad"
+note = 0x20
+repeat = 8
+index_arg = "index"
+channel = "pad_shift"
+args = { mode = "beat_jump" }
+
+[[output]]
+target = "deck.pad"
+note = 0x30
+repeat = 8
+index_arg = "index"
+channel = "pad_shift"
+args = { mode = "sampler" }
+
+[[output]]
+target = "deck.pad"
+note = 0x40
+repeat = 8
+index_arg = "index"
+channel = "pad_shift"
+args = { mode = "keyboard" }
+
+[[output]]
+target = "deck.pad"
+note = 0x50
+repeat = 8
+index_arg = "index"
+channel = "pad_shift"
+args = { mode = "hold_fx2" }
+
+[[output]]
+target = "deck.pad"
+note = 0x60
+repeat = 8
+index_arg = "index"
+channel = "pad_shift"
+args = { mode = "beat_loop" }
+
+[[output]]
+target = "deck.pad"
+note = 0x70
+repeat = 8
+index_arg = "index"
+channel = "pad_shift"
+args = { mode = "key_shift" }
+
+# FX ON/OFF: 0x7F blinks, 0x00 lights steadily [L]; the address is from [M],
+# which sends the same state in the SHIFT layer (0x43).
 [[output]]
 target = "tempo_fx.on"
 note = 0x47
 channel = 4
 
 [[output]]
-target = "tempo_fx.release"
+target = "tempo_fx.on"
 note = 0x43
 channel = 4
 
 [[output]]
-verify = true
 target = "channel_fx"
 note = 0x00
 channel = 6

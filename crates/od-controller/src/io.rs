@@ -85,6 +85,11 @@ pub enum ControllerEvent {
         /// The mapping has physical channel faders (their positions are
         /// unknown until they move).
         channel_faders: bool,
+        /// Decks the controller has (its mapping's `device.decks`).
+        decks: u8,
+        /// The mapping asks the unit for its control positions on connecting
+        /// (`[[init]]` or `[[keepalive]]`): the faders report without moving.
+        asks_positions: bool,
     },
     Disconnected {
         device: String,
@@ -504,6 +509,8 @@ fn rescan(
                     port: name.clone(),
                     usb: ids,
                     channel_faders,
+                    decks: m.device().decks,
+                    asks_positions: !m.file.init.is_empty() || !m.file.keepalive.is_empty(),
                 });
                 tracing::info!("controller connected: {device} on {name}");
                 (Some(session), output, device)
