@@ -6,9 +6,9 @@
 //! lazily: a folder's sub-folders are read when it is expanded (or selected),
 //! and each listed sub-folder is probed once for whether it has sub-folders
 //! of its own, so the expand mark only shows where there is something to
-//! expand. Selecting a folder expands it and lists its audio files in the
-//! track table at once (file names, or library data for files already in
-//! the collection); with "include subfolders" (`explorer.recursive`, kept in
+//! expand. Selecting a folder (a click; the controller's encoder leaves it
+//! closed) expands it and lists its audio files in the track table at once
+//! (file names, or library data for files already in the collection); with "include subfolders" (`explorer.recursive`, kept in
 //! the library meta) the files of all its sub-folders are listed as well —
 //! other players only list the folder itself. Tags are read in the background and
 //! fill in as they arrive. Loading a file adds it to the collection through
@@ -383,7 +383,7 @@ impl ExplorerState {
         out
     }
 
-    fn path_of(&self, row: i32) -> Option<PathBuf> {
+    pub(crate) fn path_of(&self, row: i32) -> Option<PathBuf> {
         usize::try_from(row)
             .ok()
             .and_then(|i| self.visible.get(i))
@@ -697,6 +697,13 @@ pub(crate) fn refresh_files(app: &App) {
 
 /// Shows `dir`'s audio files in the track table.
 pub(crate) fn open_folder(app: &App, dir: PathBuf) {
+    open_folder_with(app, dir, true);
+}
+
+/// Shows `dir`'s audio files; with `expand` its sub-folders show too, as a
+/// click does. The controller's encoder passes over folders without opening
+/// them.
+pub(crate) fn open_folder_with(app: &App, dir: PathBuf, expand: bool) {
     let (generation, untagged) = {
         let mut st = app.state.borrow_mut();
         let paths = list_files(&dir, st.explorer.recursive);
@@ -717,8 +724,10 @@ pub(crate) fn open_folder(app: &App, dir: PathBuf) {
         st.browser.sort = String::new();
         st.browser.descending = false;
         st.explorer.close();
-        // Selecting a folder also shows its sub-folders .
-        st.explorer.expand(&dir);
+        // Selecting a folder also shows its sub-folders.
+        if expand {
+            st.explorer.expand(&dir);
+        }
         st.explorer.open = Some(dir);
         let untagged = files
             .iter()

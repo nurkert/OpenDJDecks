@@ -663,11 +663,15 @@ tests = [
   "od-controller::mappings::browser_and_load",
   "od-ui::ui_tests::prepare::controller_browses_tree_and_list",
   "od-ui::ui_tests::prepare::controller_reaches_every_list_and_goes_in_and_out",
+  "od-ui::ui_tests::prepare::controller_back_reaches_the_rail_of_sources",
+  "od-ui::ui_tests::prepare::controller_scrolls_past_closed_folders",
   "od-ui::browser::navigate::tests::steps_clamp_at_the_ends",
+  "od-ui::browser::navigate::tests::back_closes_the_folder_it_is_on_or_in",
   "od-ui::browser::navigate::tests::the_parent_is_one_level_up_of_the_same_kind",
+  "od-ui::browser::navigate::tests::every_entry_has_its_source_in_the_rail",
 ]
 evidence = ["crates/od-ui/src/browser/navigate.rs"]
-note = "`browser::navigate`: BACK moves the encoder into the lists column, turning steps through everything in it as drawn (collection, playlists, Explorer folders, similar, sticks, histories, recordings, tag list, created, AUTO SORT; ⇧ by eight) and the column scrolls along; a press or a deck's LOAD goes one level in (a folder opens and its first entry is taken, a list hands over to its tracks), BACK one level out (an open folder closes); there turning steps rows, a press loads into a free deck, ⇧-press adds to the tag list; VIEW toggles the full browser (Prepare) or the Perform browse layout; SIMILAR opens the similar tracks. The tree marks the encoder focus"
+note = "`browser::navigate`: BACK moves the encoder into the lists column, turning steps through everything in it as drawn (collection, playlists, Explorer folders, similar, sticks, histories, recordings, tag list, created, AUTO SORT; ⇧ by eight) and the column scrolls along; a press or a deck's LOAD goes one level in (a folder opens and its first entry is taken, a list hands over to its tracks), BACK one level out (an open folder closes) and from the top level on to the rail of sources, where turning steps through every source (ALL to TAG LIST) and a press or LOAD goes in at its first entry (a folded column unfolds); in the track list turning steps rows, a press loads into a free deck, ⇧-press adds to the tag list; VIEW toggles the full browser (Prepare) or the Perform browse layout; SIMILAR opens the similar tracks. The tree marks the encoder focus"
 
 [[feature]]
 id = "browser-explorer"
@@ -1434,9 +1438,15 @@ scope = "in"
 status = "done"
 tests = [
   "od-engine::render::manual_loop_in_out_and_reloop",
+  "od-engine::render::pending_loop_in_is_reported_until_out_or_cancel",
+  "od-ui::ui_tests::waveform::pending_loop_in_shows_on_the_waveform",
+  "od-ui::ui_tests::perform_craft::controller_loop_keys_halve_and_double_a_running_loop",
+  "od-controller::mappings::flx10_loop_buttons_halve_and_double",
+  "od-ui::ui_tests::perform_craft::controller_four_beat_exit_leaves_a_running_loop",
+  "od-controller::mappings::four_beat_exit_leaves_a_running_loop",
 ]
 evidence = ["LoopIn/LoopOut/Reloop/LoopExit/LoopHalve/LoopDouble"]
-note = "`LoopIn/LoopOut/Reloop/LoopExit/LoopHalve/LoopDouble`; IN / OUT / EXIT key beside LOOP on every deck and in the Prepare player"
+note = "`LoopIn/LoopOut/Reloop/LoopExit/LoopHalve/LoopDouble`; IN / OUT / EXIT key beside LOOP on every deck and in the Prepare player; a waiting in point shows as an IN line on the waveform, exit / RELOOP cancels it"
 
 [[feature]]
 id = "deck-auto-loop"
@@ -1621,6 +1631,24 @@ tests = [
 ]
 evidence = ["controller.rs::feedback"]
 note = "Pad mode LEDs and the pads of the current mode (on = engaged, dim = loaded / set)"
+
+[[feature]]
+id = "controller-jog-display"
+area = "deck"
+name = "Jog wheel displays on the controller"
+scope = "in"
+status = "done"
+prio = "P2"
+tests = [
+  "od-controller::output::tests::value14_sends_msb_then_lsb",
+  "od-controller::output::tests::value_sends_one_clamped_byte_with_offset",
+  "od-controller::output::tests::value14_honours_the_rate_limit",
+  "od-controller::mappings::flx10_jog_display_values",
+  "od-controller::mappings::flx10_jog_displays_start_hidden",
+  "od-ui::controller::tests::jog_display_projects_the_deck",
+]
+evidence = ["controller.rs::jog_display", "od-controller/src/output.rs"]
+note = "Number outputs (`value`, `value14`) carry BPM, remaining or elapsed time, key and key shift, the turning position ring and the cue marker to jog displays; playing speed is not sent (encoding not stated)"
 
 [[feature]]
 id = "deck-waveform-zoom"
@@ -2122,6 +2150,9 @@ status = "done"
 prio = "P1"
 tests = [
   "od-engine::fx::every_channel_fx_runs_and_returns_to_dry",
+  "od-engine::channelfx::tests::filter_dead_zone_is_bit_exact_dry",
+  "od-engine::channelfx::tests::filter_low_pass_and_high_pass_sides",
+  "od-engine::channelfx::tests::filter_fast_sweeps_are_smooth_and_stereo_identical",
   "od-ui::fx::tests::channel_fx_follows_the_selection",
   "od-ui::controller::tests::mapping_names_and_leds",
 ]
@@ -2255,9 +2286,12 @@ scope = "in"
 milestone = "M6"
 status = "engine-only"
 prio = "P1"
-tests = []
+tests = [
+  "od-controller::mappings::flx10_stem_buttons_show_which_parts_play",
+  "od-ui::controller::tests::stem_leds_show_the_parts_heard",
+]
 evidence = ["DeckAction::StemMuteToggle", "mappings/controllers/ddj-flx10.toml"]
-note = "`DeckAction::StemMuteToggle` and the mapping action exist; which notes are the part buttons (vs. mix point buttons) still has to be confirmed on a real controller (M6)"
+note = "`DeckAction::StemMuteToggle` and the mapping action exist; which notes are the part buttons (vs. mix point buttons) still has to be confirmed on a real controller (M6). The button LEDs (`deck.stem_active`) light while the part is heard"
 
 [[feature]]
 id = "stems-batch-prepare"
@@ -2811,6 +2845,8 @@ tests = [
   "od-controller::mappings::feedback_is_diffed",
   "od-controller::mappings::software_blink",
   "od-controller::mappings::flx10_pad_colours_use_palette",
+  "od-controller::mappings::flx10_fx_part_and_color_fx_buttons_show_the_software_state",
+  "od-ui::fx::tests::channel_fx_part_leds",
 ]
 evidence = ["perform.rs::feedback"]
 note = "`perform.rs::feedback` (play, cue, sync, master, key lock, slip, loop, pads, VU)"
@@ -2996,6 +3032,8 @@ tests = [
   "od-ui::render::tests::transposed_tiles_run_top_to_bottom",
   "od-ui::ui_tests::perform::browse_layout_reduces_the_decks",
   "od-ui::ui_tests::features::perform_two_and_four_decks",
+  "od-ui::ui_tests::perform_craft::two_deck_view_follows_the_active_decks",
+  "od-ui::decks::tests::two_deck_view_lanes_follow_the_pair",
   "od-ui::ui_tests::views::view_completeness_desktop",
 ]
 note = "2 and 4 decks in three layouts (persisted): standard (lanes across the top), vertical (Alt+V: upright lanes with zoom keys above the mixer) and Browse (Alt+B: header, overview and parts per deck, browser enlarged)"

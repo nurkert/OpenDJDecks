@@ -205,6 +205,8 @@ export component RailItem inherits Rectangle {
     in property <string> tooltip;
     in property <string> command;
     in property <bool> current;
+    // A controller's browse encoder stands on this source.
+    in property <bool> marked;
     in property <bool> enabled: true;
     in property <color> tone: Theme.bone-2;
     // Narrow rail: the sign instead of the word (the word is the tooltip's
@@ -217,6 +219,7 @@ export component RailItem inherits Rectangle {
     accessible-checkable: true;
     accessible-checked: root.current;
     accessible-description: root.label;
+    accessible-value: root.marked ? "controller" : "";
     // Shrinks to the 24 px minimum target when the browser pane is short;
     // 44 px keys on the touch screen.
     min-height: Theme.target; preferred-height: Theme.touch ? 44px : 32px; max-height: Theme.touch ? 44px : 32px;
@@ -225,6 +228,8 @@ export component RailItem inherits Rectangle {
         y: 2px; height: parent.height - 4px;
         border-radius: Theme.r-control;
         background: root.current ? Theme.bone : touch.pressed || touch.has-hover ? Theme.plate-raised : transparent;
+        border-width: root.marked ? 2px : 0px;
+        border-color: Theme.attention;
     }
     // A word wider than the narrow rail (German): one rank smaller and
     // tighter, so it never breaks inside the word.
@@ -296,6 +301,8 @@ export component Sidebar inherits Rectangle {
     callback open-sampler();
     // A controller's browse encoder moves through the tree.
     in property <bool> browse-focus;
+    // The source of the rail the encoder stands on (-1: none).
+    in property <int> rail-focus: -1;
     // Narrow window (or a panel open): the rail shortens to its short forms.
     in property <bool> tight;
     background: Theme.ground-band; border-radius: Theme.r-panel;
@@ -372,6 +379,17 @@ export component Sidebar inherits Rectangle {
             root.show(top - tree-rows.absolute-position.y, top - tree-rows.absolute-position.y + h);
         }
     }
+    // The encoder steps through the rail: the tree scrolls to that source.
+    changed rail-focus => {
+        if (self.rail-focus == 0) { root.show(coll-h.y, coll-h.y + 2 * root.tree-row); }
+        if (self.rail-focus == 1) { root.show(pl-h.y, pl-h.y + 2 * root.tree-row); }
+        if (self.rail-focus == 2) { root.show(rel-h.y, rel-h.y + 2 * root.tree-row); }
+        if (self.rail-focus == 4) { root.show(ex-h.y, ex-h.y + 2 * root.tree-row); }
+        if (self.rail-focus == 5) { root.show(dev-h.y, dev-h.y + 2 * root.tree-row); }
+        if (self.rail-focus == 6) { root.show(hist-h.y, hist-h.y + 2 * root.tree-row); }
+        if (self.rail-focus == 7) { root.show(rec-h.y, rec-h.y + 2 * root.tree-row); }
+        if (self.rail-focus == 8) { root.show(tag-h.y, tag-h.y + 2 * root.tree-row); }
+    }
     changed selected-node => {
         if (self.selected-node == -1) { root.show(coll-h.y, coll-h.y + 2 * root.tree-row); }
         if (self.selected-node == -4) { root.show(rel-h.y, rel-h.y + 2 * root.tree-row); }
@@ -389,6 +407,7 @@ export component Sidebar inherits Rectangle {
             row: Math.floor(i / 4); col: Math.mod(i, 4);
             accessible-id: it.a11y; label: it.label; icon: it.icon; iconic: true; tone: it.tone; tooltip: it.tip;
             current: root.rail-current(i);
+            marked: root.rail-focus == i;
             clicked => { root.rail-click(i); }
         }
         NewListKey { row: 2; col: 1; accessible-id: "browser.tree.new-set"; label: @tr("SET"); tooltip: @tr("New set"); command: "browser.new.set"; tone: Theme.attention; clicked => { root.create-node("set"); } }
@@ -406,6 +425,7 @@ export component Sidebar inherits Rectangle {
             accessible-id: it.a11y; label: it.label; icon: it.icon; iconic: root.tight; tone: it.tone; tooltip: it.tip;
             command: i == 7 ? "section.recordings" : "";
             current: root.rail-current(i);
+            marked: root.rail-focus == i;
             clicked => { root.rail-click(i); }
         }
         Rectangle { vertical-stretch: 1; min-height: 0px; }

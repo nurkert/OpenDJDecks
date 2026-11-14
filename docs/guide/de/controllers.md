@@ -5,9 +5,9 @@ keywords: [controller, midi, midi learn, mapping, ddj, ddj-flx10, ddj-flx4, flx1
 features: [ctrl-controller-list, ctrl-guided-setup, ctrl-class-templates, ctrl-self-test, ctrl-hardware-status, ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
 ---
 
-OpenDJDecks bringt Mappings mit, kompatibel mit Pioneer DJ DDJ-FLX10 und DDJ-FLX4, mit LED-Rückmeldung für Play, Cue, Sync, Master, Keylock, Slip, Loop, die Pads und die Pegelanzeigen. Die Mappings sind noch nicht vollständig auf echten Geräten bestätigt, einzelne Regler oder LEDs funktionieren vielleicht nicht: Probiere sie vor einem Gig aus. Stecke einen Controller per USB ein; er wird in wenigen Sekunden erkannt und sein Audio-Interface automatisch benutzt (**Einstellungen › Audio › Ausgabegerät**).
+OpenDJDecks bringt Mappings mit, kompatibel mit Pioneer DJ DDJ-FLX10 und DDJ-FLX4, mit LED-Rückmeldung für Play, Cue, Sync, Master, Keylock, Slip, Loop, die Pads, die Stem-Tasten (leuchten, solange ihr Teil zu hören ist) und die Pegelanzeigen. Die Mappings sind noch nicht vollständig auf echten Geräten bestätigt, einzelne Regler oder LEDs funktionieren vielleicht nicht: Probiere sie vor einem Gig aus. Stecke einen Controller per USB ein; er wird in wenigen Sekunden erkannt und sein Audio-Interface automatisch benutzt (**Einstellungen › Audio › Ausgabegerät**).
 
-Beim ersten Anschließen zeigt Perform so viele Decks, wie der Controller hat; stellst du auf 2 oder 4 Decks um, kommt diese Anzahl beim nächsten Anschließen desselben Controllers wieder. Controller, die ihre Fader und Regler melden können (der DDJ-FLX10 kann das), stellen den Mixer beim Anschließen darauf ein, du musst vorher nichts bewegen.
+Beim ersten Anschließen zeigt Perform so viele Decks, wie der Controller hat; stellst du auf 2 oder 4 Decks um, kommt diese Anzahl beim nächsten Anschließen desselben Controllers wieder. Zeigst du an einem Controller mit vier Decks nur 2 Decks, zeigen die beiden Spuren die Decks, die am Controller gerade aktiv sind: Drückst du **DECK 1/3** oder **DECK 2/4**, wechselt die Spur dieser Seite, und die Tasten für Deck 1 und 2 auf der Tastatur wirken auf die linke und rechte Spur. Controller, die ihre Fader und Regler melden können (der DDJ-FLX10 kann das), stellen den Mixer beim Anschließen darauf ein, du musst vorher nichts bewegen.
 
 Bewegst du nach einem Sprung im Preset einen Regler, sorgt Soft Takeover dafür, dass sich der Wert erst ändert, wenn der echte Regler dort angekommen ist.
 
@@ -21,7 +21,7 @@ Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Model
 
 | Controller | Decks | Mapping | Erkannt an | Status |
 |---|---|---|---|---|
-| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 10 bestätigt, 451 teilweise, 12 ungetestet |
+| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 10 bestätigt, 461 teilweise, 13 ungetestet |
 | kompatibel mit DDJ-FLX4 | 2 | eingebaut | MIDI-Portname `DDJ-FLX4` | nicht bestätigt: 0 bestätigt, 219 teilweise, 2 ungetestet |
 | Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (76 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
 | Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (74 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
@@ -46,9 +46,11 @@ Die Datei ist eine gewöhnliche Mapping-Datei, die du weitergeben kannst. Jeder 
 
 ## Am Controller stöbern
 
-Drehe den Browse-Encoder, um durch die Liste zu gehen. **BACK** verschiebt den Fokus in die Listenspalte, wo Drehen von oben nach unten durch alles darin geht: die Sammlung, Playlists, die Ordner des Explorers, ähnliche Tracks, Sticks, Verläufe, Aufnahmen, die Tag-Liste, erstellte Tracks und AUTO SORT (mit Shift um acht). Die Spalte scrollt mit. Ein Druck oder **LOAD** an einem Deck geht eine Ebene hinein: Ein Ordner öffnet sich und sein erster Eintrag wird gewählt, eine Liste übergibt an ihre Tracks. **BACK** geht jedes Mal eine Ebene hinaus: von den Tracks zu ihrer Liste, von einem Eintrag zum Ordner, der ihn enthält, und ein offener Ordner schließt sich. In der Trackliste lädt ein Druck auf ein freies Deck, **LOAD** auf sein Deck, und Shift-Druck fügt der Tag-Liste hinzu. Ein Track, den du mit der Maus anklickst, ist der, den **LOAD** lädt. **VIEW** schaltet in Prepare den ganzen Browser und in Perform das Browse-Layout.
+Drehe den Browse-Encoder, um durch die Liste zu gehen. **BACK** verschiebt den Fokus in die Listenspalte, wo Drehen von oben nach unten durch alles darin geht: die Sammlung, Playlists, die Ordner des Explorers, ähnliche Tracks, Sticks, Verläufe, Aufnahmen, die Tag-Liste, erstellte Tracks und AUTO SORT (mit Shift um acht). Die Spalte scrollt mit, und Ordner bleiben geschlossen, während du an ihnen vorbeidrehst. Ein Druck oder **LOAD** an einem Deck geht eine Ebene hinein: Ein geschlossener Ordner öffnet sich und sein erster Eintrag wird gewählt, ein offener Ordner schließt sich wieder, eine Liste übergibt an ihre Tracks. **BACK** geht jedes Mal eine Ebene hinaus: von den Tracks zu ihrer Liste, von einem Eintrag zum Ordner, der ihn enthält (er schließt sich), ein offener Ordner schließt sich, und von der obersten Ebene weiter in die Leiste der Quellen am linken Rand der Spalte. Dort geht Drehen durch die Quellen (**ALLE**, **LISTEN**, **ÄHNLICH**, **SAMPLER**, **DATEIEN**, **USB**, **VERLAUF**, **AUFNAHMEN**, **TAG-LISTE**) und die Spalte scrollt jeweils dorthin; ein Druck oder **LOAD** geht beim ersten Eintrag der Quelle wieder hinein (**SAMPLER** zeigt das Sampler-Panel). Eingeklappte Listen klappen auf, sobald der Encoder hineingeht. In der Trackliste lädt ein Druck auf ein freies Deck, **LOAD** auf sein Deck, und Shift-Druck fügt der Tag-Liste hinzu. Ein Track, den du mit der Maus anklickst, ist der, den **LOAD** lädt. **VIEW** schaltet in Prepare den ganzen Browser und in Perform das Browse-Layout.
 
 Verbindet sich ein Controller mit Kanalfadern, starten seine Kanäle geschlossen, weil die App nicht wissen kann, wo die Fader stehen, bis sie sich bewegen: Bewege jeden Fader einmal. **PLAY** auf einem Deck, dessen Fader sich noch nicht bewegt hat, sagt das in der Statuszeile.
+
+Controller mit Anzeigen in den Jogwheels (der DDJ-FLX10) zeigen dort jedes geladene Deck: BPM, die Restzeit wie auf den Decks am Bildschirm (Einstellungen › Ansicht › **Restzeit** wählt Trackzeit oder Echtzeit beim Tempo), die Tonart in Camelot- oder klassischer Schreibweise nach der Einstellung **Tonart-Schreibweise** (Open Key erscheint als Camelot), die Tonartverschiebung, die Abspielposition als Marke, die sich wie eine Platte alle 1,8 Sekunden einmal dreht, den Haupt-Cue-Punkt auf demselben Ring sowie die Anzeigen MASTER, SYNC und Keylock. Titel, Wellenform und Cover erscheinen dort nicht.
 
 ## MIDI-Learn
 
@@ -92,7 +94,7 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 
 | Modell | Bedienelemente | Bestätigt | Teilweise | Ungetestet |
 |---|---|---|---|---|
-| DDJ-FLX10 | 473 | 10 | 451 | 12 |
+| DDJ-FLX10 | 484 | 10 | 461 | 13 |
 | DDJ-FLX4 | 221 | 0 | 219 | 2 |
 
 ### DDJ-FLX10
@@ -559,16 +561,27 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 | deck vinyl | Anzeige | ungetestet |
 | deck censor | Anzeige | teilweise |
 | deck reverse | Anzeige | teilweise |
+| deck stem active | Anzeige | teilweise |
 | deck loop in | Anzeige | teilweise |
 | deck loop out | Anzeige | teilweise |
 | deck loop active | Anzeige | teilweise |
 | mixer cue | Anzeige | teilweise |
 | mixer vu | Anzeige | teilweise |
-| deck loaded | Anzeige | ungetestet |
+| deck loaded | Anzeige | teilweise |
+| deck position angle | Anzeige | teilweise |
+| deck bpm | Anzeige | teilweise |
+| deck cue angle | Anzeige | teilweise |
+| deck time minutes | Anzeige | teilweise |
+| deck time seconds | Anzeige | teilweise |
+| deck time remaining | Anzeige | teilweise |
+| deck key | Anzeige | ungetestet |
+| deck key shift | Anzeige | teilweise |
+| key camelot | Anzeige | ungetestet |
 | deck pad mode | Anzeige | teilweise |
 | deck pad | Anzeige | teilweise |
 | master cue | Anzeige | ungetestet |
 | channel fx | Anzeige | teilweise |
+| channel fx part | Anzeige | teilweise |
 | tempo fx on | Anzeige | teilweise |
 | tempo fx release | Anzeige | teilweise |
 | sampler cue | Anzeige | teilweise |

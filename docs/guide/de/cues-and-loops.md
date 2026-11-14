@@ -62,7 +62,8 @@ Die Liste rechts im Player hat die Tabs **ALLE**, **MEMORY** und **HOT CUE**. W�
 Im Player-Tab **CUE / LOOP** und am Perform-Deck:
 
 - **LOOP** startet einen Auto-Loop der angezeigten Länge; ein zweiter Druck verlässt ihn. **½** und **2×** ändern die Länge von 1/32 bis 32 Beats.
-- **IN** und **OUT** setzen einen manuellen Loop; **EXIT** verlässt ihn. In Perform wird er mit demselben Knopf neu gestartet.
+- **IN** und **OUT** setzen einen manuellen Loop; **EXIT** verlässt ihn. In Perform wird er mit demselben Knopf neu gestartet. Bis du **OUT** drückst, markiert die Wellenform den In-Punkt mit einer bernsteinfarbenen **IN**-Linie; **EXIT** (oder RELOOP/EXIT am Controller) verwirft ihn.
+- Auf einem Controller, dessen LOOP-IN- und OUT-Tasten mit 1/2X und 2X beschriftet sind, halbieren und verdoppeln sie einen laufenden Loop und setzen sonst In- und Out-Punkt; mit SHIFT halbieren und verdoppeln sie immer. CUE/LOOP CALL ◀ / ▶ halbieren und verdoppeln einen laufenden Loop ebenfalls und rufen sonst Memory Cues auf. 4 BEAT/EXIT verlässt einen laufenden Loop mit einem Druck, auch einen IN/OUT-Loop, und setzt sonst einen 4-Beat-Loop; ein gehaltener Loop Roll bleibt.
 - Der Pad-Modus **ROLL** rollt einen kurzen Loop, solange du ein Pad hältst, siehe unten.
 
 Drücke **MEMORY +**, während ein Loop läuft, um ihn als Memory-Loop zu speichern, oder setze einen Hot Cue auf einen Loop. **AKTIV** im Cue-Editor macht aus einem gespeicherten Loop einen aktiven: Er greift von selbst, wenn die Wiedergabe ihn erreicht.

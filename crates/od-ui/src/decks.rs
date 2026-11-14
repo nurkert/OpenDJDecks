@@ -105,6 +105,33 @@ pub(crate) fn set_perform_view(app: &App, view: &str) {
     set_deck_count(app, count);
 }
 
+fn shown_decks(count: usize, pair: [usize; 2]) -> Vec<usize> {
+    if count == 2 { pair.to_vec() } else { (0..count.min(DECKS)).collect() }
+}
+
+fn lane_deck(count: usize, pair: [usize; 2], n: usize) -> usize {
+    match n {
+        1 | 2 if count == 2 => pair[n - 1],
+        _ => n.clamp(1, DECKS) - 1,
+    }
+}
+
+/// A four-deck controller made deck `d` (0-based) active on its side: the
+/// 2-deck view shows it in that side's lane (odd decks left, even right).
+pub(crate) fn show_on_side(app: &App, d: usize) {
+    if d >= DECKS {
+        return;
+    }
+    app.decks.borrow_mut().shown_pair[d % 2] = d;
+    show_empty(app);
+}
+
+/// The 2-deck view back on decks 1 and 2 (no four-deck controller).
+pub(crate) fn reset_shown(app: &App) {
+    app.decks.borrow_mut().shown_pair = [0, 1];
+    show_empty(app);
+}
+
 /// Shows 2 or 4 decks and remembers it, also for the connected controller.
 pub(crate) fn set_deck_count(app: &App, count: usize) {
     let count = count.clamp(2, DECKS);
@@ -304,6 +331,9 @@ enum Swap {
 pub(crate) struct Decks {
     /// Decks shown in Perform (2 or 4).
     pub deck_count: usize,
+    /// The decks (0-based) the two lanes of the 2-deck view show, left and
+    /// right: the decks a four-deck controller has active, else 1 and 2.
+    pub shown_pair: [usize; 2],
     loaded: [Option<Loaded>; DECKS],
     /// View data of tracks being prepared, moved to `loaded` on arrival.
     pending: [Option<Loaded>; DECKS],
@@ -411,6 +441,7 @@ impl Default for Decks {
         let (tx, rx) = unbounded();
         Self {
             deck_count: 2,
+            shown_pair: [0, 1],
             loaded: Default::default(),
             pending: Default::default(),
             prepared_tx: tx,
@@ -588,6 +619,17 @@ impl LaneScroll {
 }
 
 impl Decks {
+    /// The decks (0-based) Perform shows, in lane order.
+    pub fn shown(&self) -> Vec<usize> {
+        shown_decks(self.deck_count, self.shown_pair)
+    }
+
+    /// The deck (0-based) the keyboard's deck `n` (1-based) acts on: in the
+    /// 2-deck view decks 1 and 2 are the left and right lane.
+    pub fn lane_deck(&self, n: usize) -> usize {
+        lane_deck(self.deck_count, self.shown_pair, n)
+    }
+
     /// Tracks currently loaded on decks (preview deck excluded), 0-based decks.
     pub fn loaded_decks(&self) -> Vec<(TrackId, usize)> {
         (0..self.deck_count)
@@ -1109,19 +1151,22 @@ pub(crate) fn load_selected_into_free_deck(app: &App) {
     };
     let deck = {
         let d = app.decks.borrow();
-        free_deck(d.deck_count, &playing, |i| d.loaded[i].is_some())
+        free_deck(&d.shown(), &playing, |i| d.loaded[i].is_some())
     };
     load_track(app, deck, track, None);
 }
 
-/// First deck that is neither playing nor loaded, else the first that is
-/// not playing, else deck 1.
-pub(crate) fn free_deck(count: usize, playing: &[bool], loaded: impl Fn(usize) -> bool) -> usize {
+/// First shown deck that is neither playing nor loaded, else the first that
+/// is not playing, else the first shown.
+pub(crate) fn free_deck(shown: &[usize], playing: &[bool], loaded: impl Fn(usize) -> bool) -> usize {
     let idle = |d: usize| !playing.get(d).copied().unwrap_or(false);
-    (0..count)
+    let first = shown.first().copied().unwrap_or(0);
+    shown
+        .iter()
+        .copied()
         .find(|&d| idle(d) && !loaded(d))
-        .or_else(|| (0..count).find(|&d| idle(d)))
-        .unwrap_or(0)
+        .or_else(|| shown.iter().copied().find(|&d| idle(d)))
+        .unwrap_or(first)
 }
 
 /// LOAD on a deck: the selected track (an Explorer file is added to the
@@ -1496,6 +1541,8 @@ pub(crate) struct DeckFields {
     pub key_sync: bool,
     pub jump_size: SharedString,
     pub loop_in_set: bool,
+    /// The waiting loop in point (seconds), drawn on the waveform.
+    pub loop_pending: f32,
     /// Bars to the next drop and breakdown ([`phrase_mix::ahead_text`]).
     pub phrase_ahead: SharedString,
     /// Waits to start on the master's next phrase, and how long ("-3.2").
@@ -1713,9 +1760,8 @@ pub(crate) fn deck_fields(s: &DeckState, i: &DeckInputs) -> DeckFields {
             4.0
         })
         .into(),
-        loop_in_set: !s.loop_state.active
-            && s.loop_state.start.is_some()
-            && s.loop_state.end.is_none(),
+        loop_in_set: s.loop_state.pending_in().is_some(),
+        loop_pending: s.loop_state.pending_in().unwrap_or(0.0) as f32,
         phrase_ahead: meta
             .filter(|_| s.beat_in_bar > 0)
             .map(|m| crate::phrase_mix::ahead_text(&m.phrases, s.beat))
@@ -1892,6 +1938,7 @@ impl Lane {
             key_sync: f.key_sync,
             jump_size: f.jump_size,
             loop_in_set: f.loop_in_set,
+            loop_pending: f.loop_pending,
             phrase_ahead: f.phrase_ahead,
             start_armed: f.start_armed,
             start_wait: f.start_wait,
@@ -1921,11 +1968,13 @@ pub(crate) struct DeckViews {
     pub left: Rows<DeckView>,
     pub right: Rows<DeckView>,
     lanes: [Lane; DECKS],
+    /// The decks (0-based) in `all`, in lane order.
+    shown: Vec<usize>,
 }
 
 impl DeckViews {
-    /// Re-creates the rows for `count` decks (empty plates).
-    fn resize(&mut self, count: usize) {
+    /// Re-creates the rows for the decks `shown` (empty plates).
+    fn resize(&mut self, shown: &[usize]) {
         for (d, lane) in self.lanes.iter_mut().enumerate() {
             *lane = Lane::default();
             // Empty decks show their hot cue pads and mode too.
@@ -1957,7 +2006,8 @@ impl DeckViews {
                 ..Default::default()
             });
         }
-        let views: Vec<DeckView> = (0..count).map(|d| self.lanes[d].view()).collect();
+        self.shown = shown.to_vec();
+        let views: Vec<DeckView> = shown.iter().map(|&d| self.lanes[d].view()).collect();
         let side = |odd: bool| {
             views
                 .iter()
@@ -1970,21 +2020,25 @@ impl DeckViews {
         self.all.sync(views, |_, _| false);
     }
 
-    /// Writes deck `d` into the full list and its side column.
+    /// Writes deck `d` into the full list and its side column (if shown).
     fn publish(&self, d: usize) {
+        let Some(at) = self.shown.iter().position(|&s| s == d) else {
+            return;
+        };
         let v = self.lanes[d].view();
         let side = if d % 2 == 0 { &self.left } else { &self.right };
-        side.set(d / 2, v.clone());
-        self.all.set(d, v);
+        let row = self.shown[..at].iter().filter(|&&s| s % 2 == d % 2).count();
+        side.set(row, v.clone());
+        self.all.set(at, v);
     }
 }
 
 /// Before audio starts: empty plates so the Perform layout is complete.
 pub(crate) fn show_empty(app: &App) {
     let mut d = app.decks.borrow_mut();
-    let count = d.deck_count;
-    if d.views.all.len() != count {
-        d.views.resize(count);
+    let shown = d.shown();
+    if d.views.shown != shown {
+        d.views.resize(&shown);
     }
 }
 
@@ -2017,12 +2071,13 @@ pub(crate) fn project(app: &App, state: &EngineState) {
         )
     };
     let now = Instant::now();
-    let master = state.master_deck.filter(|&m| m < count);
+    let shown = d.shown();
+    let master = state.master_deck.filter(|m| shown.contains(m));
     let master_beat = master.map(|m| state.decks[m].beat);
-    if d.views.all.len() != count {
-        d.views.resize(count);
+    if d.views.shown != shown {
+        d.views.resize(&shown);
     }
-    for i in 0..count {
+    for &i in &shown {
         let s = &state.decks[i];
         // A track being loaded shows at once; a just-loaded one also while
         // the engine state has not caught up yet.
@@ -2155,7 +2210,7 @@ pub(crate) fn project(app: &App, state: &EngineState) {
         );
         // [62] The key against the other playing decks.
         let mut fields = fields;
-        let rel = if loading { None } else { crate::key_mix::relation(&state.decks, count, i) };
+        let rel = if loading { None } else { crate::key_mix::relation(&state.decks, count.max(i + 1), i) };
         fields.key_relation = crate::key_mix::relation_id(rel.map(|r| r.0)).into();
         fields.key_relation_text = crate::key_mix::relation_text(rel, notation).into();
         fields.key_alt = meta
@@ -2178,20 +2233,20 @@ pub(crate) fn project(app: &App, state: &EngineState) {
             d.views.publish(i);
         }
     }
-    project_overlay(d, state, count, master, (lane_width, height), show_overlay && !vertical, (now, stepped));
+    project_overlay(d, state, &shown, master, (lane_width, height), show_overlay && !vertical, (now, stepped));
 }
 
 /// The deck whose track is drawn over the playing master `m`: one that
 /// waits for the master's phrase first, then one that plays, then the
 /// first other loaded deck.
-fn incoming_deck(state: &EngineState, loaded: &[Option<Loaded>], count: usize, m: usize) -> Option<usize> {
+fn incoming_deck(state: &EngineState, loaded: &[Option<Loaded>], shown: &[usize], m: usize) -> Option<usize> {
     let ready = |j: usize| {
         j != m
             && loaded[j]
                 .as_ref()
                 .is_some_and(|l| Some(l.id) == state.decks[j].track)
     };
-    let cands: Vec<usize> = (0..count).filter(|&j| ready(j)).collect();
+    let cands: Vec<usize> = shown.iter().copied().filter(|&j| ready(j)).collect();
     cands
         .iter()
         .copied()
@@ -2205,7 +2260,7 @@ fn incoming_deck(state: &EngineState, loaded: &[Option<Loaded>], count: usize, m
 fn project_overlay(
     d: &mut Decks,
     state: &EngineState,
-    count: usize,
+    shown: &[usize],
     master: Option<usize>,
     (width, height): (u32, u32),
     show: bool,
@@ -2213,11 +2268,11 @@ fn project_overlay(
 ) {
     let pair = master
         .filter(|&m| show && state.decks[m].playing && d.loaded[m].is_some())
-        .and_then(|m| incoming_deck(state, &d.loaded, count, m).map(|j| (m, j)));
+        .and_then(|m| incoming_deck(state, &d.loaded, shown, m).map(|j| (m, j)));
     for i in 0..DECKS {
         let mut extra = (0, -1.0f32);
         let row = match pair {
-            Some((m, j)) if m == i && i < count => {
+            Some((m, j)) if m == i && shown.contains(&i) => {
                 let (ms, sj) = (&state.decks[m], &state.decks[j]);
                 let rate = if sj.sync && sj.track_bpm > 0.0 {
                     ms.bpm / sj.track_bpm
@@ -3665,10 +3720,24 @@ mod tests {
 
     #[test]
     fn free_deck_prefers_idle_empty() {
-        assert_eq!(free_deck(2, &[false, false], |d| d == 0), 1);
-        assert_eq!(free_deck(2, &[true, false], |_| true), 1);
-        assert_eq!(free_deck(2, &[true, true], |_| true), 0);
-        assert_eq!(free_deck(4, &[false; 4], |_| false), 0);
+        assert_eq!(free_deck(&[0, 1], &[false, false], |d| d == 0), 1);
+        assert_eq!(free_deck(&[0, 1], &[true, false], |_| true), 1);
+        assert_eq!(free_deck(&[0, 1], &[true, true], |_| true), 0);
+        assert_eq!(free_deck(&[0, 1, 2, 3], &[false; 4], |_| false), 0);
+        // The 2-deck view on decks 3 and 2: deck 1 is not a choice.
+        assert_eq!(free_deck(&[2, 1], &[false; 4], |d| d == 1), 2);
+        assert_eq!(free_deck(&[2, 1], &[true, true, true, true], |_| true), 2);
+    }
+
+    #[test]
+    fn two_deck_view_lanes_follow_the_pair() {
+        assert_eq!(shown_decks(2, [2, 1]), vec![2, 1]);
+        assert_eq!(shown_decks(4, [2, 3]), vec![0, 1, 2, 3]);
+        // Keyboard deck 1 and 2 are the lanes; 3 and 4 stay themselves.
+        assert_eq!(lane_deck(2, [2, 3], 1), 2);
+        assert_eq!(lane_deck(2, [2, 3], 2), 3);
+        assert_eq!(lane_deck(2, [2, 3], 3), 2);
+        assert_eq!(lane_deck(4, [2, 3], 1), 0);
     }
 
     #[test]

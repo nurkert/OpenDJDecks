@@ -62,7 +62,8 @@ The list on the right of the player has the tabs **ALL**, **MEMORY** and **HOT C
 In the player's **CUE / LOOP** tab and on the Perform deck:
 
 - **LOOP** starts an auto loop of the shown length; press it again to leave. **½** and **2×** change the length, from 1/32 to 32 beats.
-- **IN** and **OUT** set a manual loop; **EXIT** leaves it. In Perform it reloops with the same control.
+- **IN** and **OUT** set a manual loop; **EXIT** leaves it. In Perform it reloops with the same control. Until you press **OUT**, the waveform marks the in point with an amber **IN** line; **EXIT** (or RELOOP/EXIT on a controller) cancels it.
+- On a controller whose LOOP IN and OUT keys are printed 1/2X and 2X, they halve and double a running loop and set the in and out points otherwise; with SHIFT they always halve and double. CUE/LOOP CALL ◀ / ▶ halve and double a running loop too, and call memory cues otherwise. 4 BEAT/EXIT leaves a running loop with one press, an IN/OUT loop too, and sets a 4-beat loop otherwise; a loop roll you hold stays.
 - The **ROLL** pad mode rolls a short loop while you hold a pad, see below.
 
 Press **MEMORY +** while a loop plays to store it as a memory loop, or set a hot cue on a loop. **ACTIVE** in the cue editor turns a stored loop into an active one: it engages by itself when playback reaches it.

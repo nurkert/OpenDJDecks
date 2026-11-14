@@ -387,6 +387,8 @@ export struct DeckView {
     beat-pos: string,
     // Manual loop: the in point is set and waits for the out point.
     loop-in-set: bool,
+    // That waiting in point (seconds; only meaningful while loop-in-set).
+    loop-pending: float,
     // Bars to the next drop and breakdown, nearest first ("DROP 8 · BREAK 24").
     phrase-ahead: string,
     // Waits to start on the master's next phrase; bars.beats left ("-3.2").

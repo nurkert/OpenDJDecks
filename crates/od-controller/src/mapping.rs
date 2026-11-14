@@ -2,7 +2,7 @@
 //!
 //! The schema is documented in `docs/controller-mappings.md`.
 
-use crate::action::{CrossfaderSide, PadMode};
+use crate::action::{CrossfaderSide, PadMode, StemPart};
 use crate::feedback::{DeckElement, FeedbackTarget, MixerElement};
 use crate::midi::{MidiAddr, MsgKind};
 use crate::templates::{ActionTemplate, Natural, parse_action};
@@ -283,6 +283,10 @@ pub enum OutputMode {
     Led,
     Level,
     Color,
+    /// A number as one 7-bit value.
+    Value,
+    /// A number as a 14-bit MSB/LSB controller pair.
+    Value14,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -293,11 +297,18 @@ pub struct OutputSpec {
     pub note: Option<u8>,
     #[serde(default)]
     pub cc: Option<u8>,
+    /// LSB controller of a 14-bit pair; implies `mode = "value14"`. Defaults
+    /// to `cc + 0x20` in that mode.
+    #[serde(default)]
+    pub lsb: Option<u8>,
     pub channel: ChannelRef,
     #[serde(default)]
     pub deck: Option<u8>,
     #[serde(default)]
     pub mode: Option<OutputMode>,
+    /// Added to a number before it is sent (`value` / `value14`).
+    #[serde(default)]
+    pub offset: i32,
     #[serde(default = "full")]
     pub on: u8,
     #[serde(default)]
@@ -365,7 +376,10 @@ pub struct OutputBinding {
     pub name: String,
     pub target: FeedbackTarget,
     pub addr: MidiAddr,
+    /// LSB controller of a `value14` output (sent after `addr`, the MSB).
+    pub lsb: Option<MidiAddr>,
     pub mode: OutputMode,
+    pub offset: i32,
     pub on: u8,
     pub off: u8,
     pub dim: Option<u8>,
@@ -673,7 +687,14 @@ impl Mapping {
                     };
                     for (deck, active_when) in decks {
                         let target = parse_target(&spec.target, deck, &args)?;
-                        let mode = spec.mode.unwrap_or(if palette.is_some() {
+                        let mode = spec.mode.unwrap_or(if spec.lsb.is_some() {
+                            OutputMode::Value14
+                        } else if matches!(
+                            target,
+                            FeedbackTarget::Deck { element, .. } if element.is_value()
+                        ) {
+                            OutputMode::Value
+                        } else if palette.is_some() {
                             OutputMode::Color
                         } else if matches!(
                             target,
@@ -692,6 +713,22 @@ impl Mapping {
                         } else {
                             OutputMode::Led
                         });
+                        let lsb = match mode {
+                            OutputMode::Value14 => {
+                                if kind != MsgKind::Cc {
+                                    return Err(err("value14 requires `cc`".into()));
+                                }
+                                let l = spec
+                                    .lsb
+                                    .map(|l| l as u16 + rep as u16 * spec.step as u16)
+                                    .unwrap_or(number as u16 + 0x20);
+                                if l >= 0x80 {
+                                    return Err(err("LSB controller out of range".into()));
+                                }
+                                Some(MidiAddr::cc(channel, l as u8))
+                            }
+                            _ => None,
+                        };
                         let min_interval_ms = spec.min_interval_ms.unwrap_or(match mode {
                             OutputMode::Level => file.options.meter_interval_ms,
                             _ => 0,
@@ -700,7 +737,9 @@ impl Mapping {
                             name: spec.target.clone(),
                             target,
                             addr,
+                            lsb,
                             mode,
+                            offset: spec.offset,
                             on: spec.on,
                             off: spec.off,
                             dim: spec.dim,
@@ -841,6 +880,19 @@ pub fn parse_target(
             "shift" => DeckElement::Shift,
             "jog_indicator" => DeckElement::JogIndicator,
             "selected" => DeckElement::Selected,
+            "time_remaining" => DeckElement::TimeRemaining,
+            "bpm" => DeckElement::Bpm,
+            "time_minutes" => DeckElement::TimeMinutes,
+            "time_seconds" => DeckElement::TimeSeconds,
+            "position_angle" => DeckElement::PositionAngle,
+            "cue_angle" => DeckElement::CueAngle,
+            "key" => DeckElement::Key,
+            "key_shift" => DeckElement::KeyShift,
+            "stem_active" => DeckElement::StemActive({
+                let st = s("stem")?;
+                StemPart::parse(&st)
+                    .ok_or_else(|| targ_err(name, &format!("unknown stem `{st}`")))?
+            }),
             "pad_mode" => DeckElement::PadMode(pad_mode()?),
             "pad" => DeckElement::Pad {
                 mode: pad_mode()?,
@@ -877,8 +929,13 @@ pub fn parse_target(
             unit: u("unit").unwrap_or(1),
         },
         "channel_fx" => FeedbackTarget::ChannelFx(s("effect")?),
+        "channel_fx.part" => FeedbackTarget::ChannelFxPart({
+            let st = s("stem")?;
+            StemPart::parse(&st).ok_or_else(|| targ_err(name, &format!("unknown stem `{st}`")))?
+        }),
         "sampler.cue" => FeedbackTarget::SamplerCue,
         "recording" => FeedbackTarget::Recording,
+        "key_camelot" => FeedbackTarget::KeyCamelot,
         _ => return Err(MappingError::UnknownTarget(name.into())),
     })
 }

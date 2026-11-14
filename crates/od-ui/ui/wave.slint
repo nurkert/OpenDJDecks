@@ -200,6 +200,22 @@ export component WaveLane inherits Rectangle {
             roll-text := Text { text: @tr("ROLL {}", root.deck.roll-size); font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; color: Theme.ink-on; horizontal-alignment: center; vertical-alignment: center; }
         }
     }
+    // A manual loop's in point waiting for its out: an amber line with an
+    // IN plate at its head, until LOOP OUT closes the loop or exit cancels it.
+    if root.motion.loaded && root.deck.loop-in-set: Rectangle {
+        property <length> px: root.gutter + (root.deck.loop-pending - root.left-t) / root.motion.span * root.area;
+        accessible-role: image;
+        accessible-id: "wave.loop-in\{root.deck.deck}";
+        accessible-value: root.deck.loop-pending;
+        visible: self.px >= root.gutter && self.px <= root.width;
+        x: self.px - 1px; width: 2px; height: parent.height;
+        background: Theme.attention;
+        Rectangle {
+            x: 2px; y: 3px; width: in-text.preferred-width + 8px; height: 14px;
+            border-radius: 2px; background: Theme.attention;
+            in-text := Text { text: @tr("IN"); font-family: Theme.family; font-size: Theme.label; font-weight: Theme.weight-semi; color: Theme.ink-on; horizontal-alignment: center; vertical-alignment: center; }
+        }
+    }
     // Slip / roll: where playback carries on underneath, a thin line that
     // the playhead returns to on release.
     if root.motion.loaded && root.deck.slip-pos >= 0: Rectangle {

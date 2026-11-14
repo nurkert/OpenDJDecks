@@ -60,14 +60,15 @@ pub(crate) fn compare(reference: &DeckState, deck: &DeckState) -> Option<Compare
     })
 }
 
-/// The deck the others are measured against (0-based).
-pub(crate) fn reference(state: &EngineState, count: usize) -> Option<usize> {
-    let decks = &state.decks[..count.min(state.decks.len())];
+/// The deck the others are measured against (0-based), among the decks
+/// `shown` in Perform.
+pub(crate) fn reference(state: &EngineState, shown: &[usize]) -> Option<usize> {
+    let decks: Vec<usize> = shown.iter().copied().filter(|&d| d < state.decks.len()).collect();
     state
         .master_deck
-        .filter(|m| *m < decks.len() && has_grid(&decks[*m]))
-        .or_else(|| (0..decks.len()).find(|i| decks[*i].playing && has_grid(&decks[*i])))
-        .or_else(|| (0..decks.len()).find(|i| has_grid(&decks[*i])))
+        .filter(|m| decks.contains(m) && has_grid(&state.decks[*m]))
+        .or_else(|| decks.iter().copied().find(|&i| state.decks[i].playing && has_grid(&state.decks[i])))
+        .or_else(|| decks.iter().copied().find(|&i| has_grid(&state.decks[i])))
 }
 
 /// "+12 ms", "−4 ms".
@@ -114,17 +115,21 @@ pub(crate) fn set_practice(app: &App, on: bool) {
 
 /// Frame tick (Perform): the rows of the meter.
 pub(crate) fn project(app: &App, state: &EngineState) {
-    let count = app.decks.borrow().deck_count;
+    // The decks the lanes above show (in the 2-deck view, those a
+    // four-deck controller has active).
+    let shown = app.decks.borrow().shown();
     let g = app.ui.global::<crate::PhaseMeter>();
-    let Some(r) = reference(state, count) else {
+    let Some(r) = reference(state, &shown) else {
         g.set_reference(0);
         if g.get_rows().row_count() > 0 {
             g.set_rows(ModelRc::default());
         }
         return;
     };
-    let rows: Vec<crate::PhaseRow> = (0..count.min(state.decks.len()))
-        .filter(|d| *d != r)
+    let rows: Vec<crate::PhaseRow> = shown
+        .iter()
+        .copied()
+        .filter(|&d| d < state.decks.len() && d != r)
         .filter_map(|d| {
             let c = compare(&state.decks[r], &state.decks[d])?;
             Some(crate::PhaseRow {
@@ -211,8 +216,14 @@ mod tests {
         s.decks[0] = deck(1.0, 124.0);
         s.decks[0].playing = false;
         s.decks[1] = deck(1.0, 124.0);
-        assert_eq!(reference(&s, 2), Some(1), "the playing deck");
+        assert_eq!(reference(&s, &[0, 1]), Some(1), "the playing deck");
         s.master_deck = Some(0);
-        assert_eq!(reference(&s, 2), Some(0), "the sync master");
+        assert_eq!(reference(&s, &[0, 1]), Some(0), "the sync master");
+        // The 2-deck view on decks 3 and 2: a hidden master does not count.
+        s.decks[2] = deck(1.0, 124.0);
+        s.decks[2].playing = false;
+        assert_eq!(reference(&s, &[2, 1]), Some(1), "the playing shown deck");
+        s.decks[1].playing = false;
+        assert_eq!(reference(&s, &[2, 1]), Some(2), "the first shown deck");
     }
 }

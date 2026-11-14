@@ -886,12 +886,21 @@ impl Deck {
                     }
                 }
             }
-            DeckCommand::LoopExit => self.exit_loop(),
+            DeckCommand::LoopExit => {
+                // Exit also cancels an in point still waiting for its out.
+                if self.loop_out.is_none() {
+                    self.loop_in = None;
+                }
+                self.exit_loop();
+            }
             DeckCommand::Reloop => {
                 if self.loop_active {
                     self.exit_loop();
                 } else if let (Some(i), Some(o)) = (self.loop_in, self.loop_out) {
                     self.perform_jump(i, Some((i, o)));
+                } else {
+                    // RELOOP/EXIT with only an in point: cancel it.
+                    self.loop_in = None;
                 }
             }
             DeckCommand::AutoLoop { beats } => {

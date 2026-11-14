@@ -202,11 +202,12 @@ impl SelfTest {
 }
 
 /// Messages that switch every mapped light fully on (`on`) or off. Each
-/// address once.
+/// address once; value outputs (jog display numbers) are no lights.
 pub fn led_messages(m: &Mapping, on: bool) -> Vec<Vec<u8>> {
     let mut seen = std::collections::HashSet::new();
     m.outputs
         .iter()
+        .filter(|b| !matches!(b.mode, OutputMode::Value | OutputMode::Value14))
         .filter(|b| seen.insert(b.addr))
         .map(|b| {
             let value = match (on, b.mode) {

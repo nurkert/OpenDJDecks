@@ -143,6 +143,41 @@ fn manual_loop_in_out_and_reloop() {
     assert!((decode_pos(out[0]) - li).abs() < 1e-3);
 }
 
+/// LOOP IN alone shows as a pending in point until LOOP OUT closes the
+/// loop; exit (or RELOOP/EXIT) cancels a pending one.
+#[test]
+fn pending_loop_in_is_reported_until_out_or_cancel() {
+    let mut rig = Rig::new(2);
+    rig.send(Command::SetQuantize(false));
+    rig.deck(0, DeckCommand::Load(ramp_track(1, 20.0, 120.0)));
+    rig.deck(0, DeckCommand::Seek { seconds: 1.0 });
+    rig.render(1);
+    assert_eq!(rig.state().decks[0].loop_state.pending_in(), None);
+    rig.deck(0, DeckCommand::Play);
+    rig.deck(0, DeckCommand::LoopIn);
+    rig.render(100);
+    assert_eq!(rig.state().decks[0].loop_state.pending_in(), Some(1.0));
+    rig.deck(0, DeckCommand::LoopOut);
+    rig.render(1);
+    let ls = rig.state().decks[0].loop_state;
+    assert!(ls.active);
+    assert_eq!(ls.pending_in(), None, "closed loop is no longer pending");
+    rig.deck(0, DeckCommand::LoopExit);
+    rig.render(1);
+    assert_eq!(rig.state().decks[0].loop_state.pending_in(), None, "exited loop stays a loop");
+
+    for (name, cancel) in [("exit", DeckCommand::LoopExit), ("reloop", DeckCommand::Reloop)] {
+        rig.deck(0, DeckCommand::LoopIn);
+        rig.render(1);
+        assert!(rig.state().decks[0].loop_state.pending_in().is_some());
+        rig.deck(0, cancel);
+        rig.render(1);
+        let ls = rig.state().decks[0].loop_state;
+        assert_eq!(ls.pending_in(), None, "{name} cancels the pending in");
+        assert_eq!(ls.start, None);
+    }
+}
+
 #[test]
 fn hot_cue_quantize_set_and_trigger() {
     let mut rig = Rig::new(2);

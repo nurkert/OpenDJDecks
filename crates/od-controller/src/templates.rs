@@ -170,9 +170,13 @@ pub const ACTION_NAMES: &[&str] = &[
     "deck.loop_in",
     "deck.loop_out",
     "deck.auto_loop",
+    "deck.auto_loop_or_exit",
     "deck.loop_roll",
     "deck.loop_halve",
     "deck.loop_double",
+    "deck.loop_in_or_halve",
+    "deck.loop_out_or_double",
+    "deck.loop_call",
     "deck.reloop_exit",
     "deck.loop_capture",
     "deck.phrase_start",
@@ -400,6 +404,10 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
             let beats = a.f32("beats")?;
             (Button, deck_press(DeckAction::AutoLoop { beats }))
         }
+        "deck.auto_loop_or_exit" => {
+            let beats = a.f32("beats")?;
+            (Button, deck_press(DeckAction::AutoLoopOrExit { beats }))
+        }
         "deck.loop_roll" => {
             let beats = a.f32("beats")?;
             (
@@ -414,6 +422,12 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
         }
         "deck.loop_halve" => (Button, deck_press(DeckAction::LoopHalve)),
         "deck.loop_double" => (Button, deck_press(DeckAction::LoopDouble)),
+        "deck.loop_in_or_halve" => (Button, deck_press(DeckAction::LoopInOrHalve)),
+        "deck.loop_out_or_double" => (Button, deck_press(DeckAction::LoopOutOrDouble)),
+        "deck.loop_call" => {
+            let forward = a.bool_or("forward", true)?;
+            (Button, deck_press(DeckAction::LoopCall { forward }))
+        }
         "deck.reloop_exit" => (Button, deck_press(DeckAction::ReloopExit)),
         "deck.loop_capture" => (Button, deck_press(DeckAction::LoopCapture)),
         "deck.phrase_start" => (Button, deck_press(DeckAction::PhraseStart)),

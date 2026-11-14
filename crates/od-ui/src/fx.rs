@@ -563,6 +563,12 @@ pub(crate) fn next_channel_fx_part(current: Option<Stem>, part: Stem) -> Option<
     (current != Some(part)).then_some(part)
 }
 
+/// FX part button LED: lit for the part the Channel FX acts on, every part
+/// lit while it acts on the whole channel (as the unit shows by itself).
+pub(crate) fn channel_fx_part_led(current: Option<Stem>, part: Stem) -> bool {
+    current.is_none_or(|c| c == part)
+}
+
 /// A controller's FX part button: the Channel FX of every channel on
 /// `part` (needs stems), or back on the whole channels.
 pub(crate) fn toggle_channel_fx_part(app: &App, part: Stem) {
@@ -761,6 +767,18 @@ mod tests {
         assert_eq!(next_channel_fx_part(None, Stem::Drums), Some(Stem::Drums));
         assert_eq!(next_channel_fx_part(Some(Stem::Drums), Stem::Drums), None);
         assert_eq!(next_channel_fx_part(Some(Stem::Drums), Stem::Vocals), Some(Stem::Vocals));
+    }
+
+    /// The FX part buttons show where the Channel FX acts: all lit on the
+    /// whole channel, only the chosen one on a part.
+    #[test]
+    fn channel_fx_part_leds() {
+        for p in [Stem::Vocals, Stem::Drums, Stem::Inst] {
+            assert!(channel_fx_part_led(None, p), "{p:?}");
+        }
+        assert!(channel_fx_part_led(Some(Stem::Drums), Stem::Drums));
+        assert!(!channel_fx_part_led(Some(Stem::Drums), Stem::Vocals));
+        assert!(!channel_fx_part_led(Some(Stem::Drums), Stem::Inst));
     }
 
     #[test]

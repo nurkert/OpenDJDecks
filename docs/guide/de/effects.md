@@ -59,6 +59,8 @@ Getestet ist das mit erzeugten Tracks und in den Tests der App, noch nicht nach 
 
 **‹ FILTER ›** unter dem Mixer wählt den Channel FX, den der **CH FX**-Regler jedes Kanals steuert: Filter, Noise, Space, Crush, Echo, Pitch, Dub Echo und Sweep. Deine Wahl wird gemerkt. `⇧J` und `⇧S` schalten durch.
 
+Filter arbeitet wie der Colour-Filter eines Club-Mixers: Eine kleine Zone um die Mitte lässt den Klang unverändert, nach links fährt ein steiler Tiefpass (24 dB/Okt.) von 20 kHz bis etwa 70 Hz herunter, nach rechts ein Hochpass von 20 Hz bis etwa 6 kHz hinauf. Der größte Teil des Regelwegs liegt im musikalisch wichtigen Bereich, und die Resonanz steigt zu den Enden hin leicht an.
+
 Auto Channel FX ist einer davon: ein Regler mit Tiefpass und Echo nach links, Hochpass und Reverb nach rechts.
 
 ## Hold FX

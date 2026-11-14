@@ -330,6 +330,62 @@ fn play_on_a_closed_channel_says_why_it_is_silent() {
     assert!(!ui.app.ui.get_status_text().contains("Channel 1"));
 }
 
+/// The 2-deck view shows the decks a four-deck controller has active: DECK
+/// 1/3 switches the left lane to deck 3, and the lane's controls and the
+/// keyboard's deck 1 then act on deck 3. Without the controller it is decks
+/// 1 and 2 again.
+#[test]
+fn two_deck_view_follows_the_active_decks() {
+    use od_controller::io::ControllerEvent;
+    use od_controller::{ControlAction, DeckAction};
+    use slint::Model;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    crate::controller::handle_event(
+        &ui.app,
+        ControllerEvent::Connected {
+            device: "four-deck-unit".into(),
+            port: "four-deck-unit".into(),
+            usb: None,
+            channel_faders: false,
+            decks: 4,
+            asks_positions: false,
+        },
+    );
+    crate::decks::set_deck_count(&ui.app, 2);
+    let lanes = |ui: &Ui| {
+        let all = ui.app.ui.get_decks();
+        let side = |m: slint::ModelRc<crate::DeckView>| m.iter().map(|v| v.deck).collect::<Vec<_>>();
+        (side(all), side(ui.app.ui.get_decks_left()), side(ui.app.ui.get_decks_right()))
+    };
+    assert_eq!(lanes(&ui), (vec![1, 2], vec![1], vec![2]));
+    let select = |deck: u8| {
+        crate::controller::handle_action(&ui.app, ControlAction::Deck { deck, action: DeckAction::DeckSelect });
+    };
+    select(3);
+    assert_eq!(lanes(&ui), (vec![3, 2], vec![3], vec![2]), "deck 3 in the left lane");
+    select(4);
+    assert_eq!(lanes(&ui), (vec![3, 4], vec![3], vec![4]));
+    select(2);
+    // The left lane shows deck 3's track and its keyboard deck plays deck 3.
+    load(&ui, 2, 0);
+    assert!(ui.wait_until(5.0, |u| u.app.ui.get_decks().row_data(0).is_some_and(|v| v.deck == 3 && v.loaded)));
+    assert!(!ui.app.ui.get_decks().row_data(1).is_some_and(|v| v.loaded), "deck 2 stays empty");
+    crate::commands::run(&ui.app, "deck1.play");
+    assert!(ui.wait_until(5.0, |u| snapshot(u).decks[2].playing), "keyboard deck 1 = the left lane");
+    assert!(!snapshot(&ui).decks[0].playing);
+    // Four decks show all; back to two keeps the choice.
+    crate::decks::set_deck_count(&ui.app, 4);
+    assert_eq!(lanes(&ui).0, vec![1, 2, 3, 4]);
+    crate::decks::set_deck_count(&ui.app, 2);
+    assert_eq!(lanes(&ui).0, vec![3, 2]);
+    crate::controller::handle_event(
+        &ui.app,
+        ControllerEvent::Disconnected { device: "four-deck-unit".into(), port: "four-deck-unit".into() },
+    );
+    assert_eq!(lanes(&ui), (vec![1, 2], vec![1], vec![2]), "no controller: decks 1 and 2");
+}
+
 /// A controller shows as many decks as it has the first time, and the count
 /// chosen with it connected when it comes back; another controller keeps its
 /// own.
@@ -371,4 +427,110 @@ fn deck_count_is_remembered_per_controller() {
     gone("four-deck-unit");
     connect("two-deck-unit", 2);
     assert_eq!(count(), 2, "its own count");
+}
+
+/// [H1] LOOP IN・1/2X and LOOP OUT・2X: a running 4-beat loop halves on IN
+/// and doubles on OUT, CUE/LOOP CALL ◀ halves too; without a loop IN and OUT
+/// set the loop as before.
+#[test]
+fn controller_loop_keys_halve_and_double_a_running_loop() {
+    use od_controller::{ControlAction, DeckAction};
+    use od_engine::DeckCommand as D;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    with_grid(&ui, ui.fx.tracks[0].0);
+    load(&ui, 0, 0);
+    let press = |ui: &Ui, action: DeckAction| {
+        crate::controller::handle_action(&ui.app, ControlAction::Deck { deck: 1, action });
+    };
+    let beats = |ui: &Ui, b: f64| {
+        ui.wait_until(5.0, |u| {
+            let l = snapshot(u).decks[0].loop_state;
+            l.active && l.beats == Some(b)
+        })
+    };
+    crate::engine::deck_cmd(&ui.app, 0, D::Seek { seconds: 1.0 });
+    crate::engine::deck_cmd(&ui.app, 0, D::AutoLoop { beats: 4.0 });
+    assert!(beats(&ui, 4.0), "a 4-beat loop runs");
+    press(&ui, DeckAction::LoopInOrHalve);
+    assert!(beats(&ui, 2.0), "IN halves it");
+    press(&ui, DeckAction::LoopOutOrDouble);
+    assert!(beats(&ui, 4.0), "OUT doubles it");
+    press(&ui, DeckAction::LoopOutOrDouble);
+    assert!(beats(&ui, 8.0), "OUT doubles it again");
+    press(&ui, DeckAction::LoopCall { forward: false });
+    assert!(beats(&ui, 4.0), "CUE/LOOP CALL ◀ halves it");
+    let l = snapshot(&ui).decks[0].loop_state;
+    assert!(((l.end.unwrap() - l.start.unwrap()) - 1.0).abs() < 1e-3, "4 beats at 240 BPM: {l:?}");
+
+    // Without a loop IN and OUT set one.
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopExit);
+    assert!(ui.wait_until(5.0, |u| !snapshot(u).decks[0].loop_state.active));
+    crate::engine::deck_cmd(&ui.app, 0, D::Seek { seconds: 2.0 });
+    assert!(ui.wait_until(5.0, |u| (snapshot(u).decks[0].position - 2.0).abs() < 0.1));
+    press(&ui, DeckAction::LoopInOrHalve);
+    assert!(
+        ui.wait_until(5.0, |u| snapshot(u).decks[0].loop_state.pending_in().is_some_and(|p| (p - 2.0).abs() < 0.1)),
+        "IN sets the in point"
+    );
+    crate::engine::deck_cmd(&ui.app, 0, D::Seek { seconds: 3.0 });
+    assert!(ui.wait_until(5.0, |u| (snapshot(u).decks[0].position - 3.0).abs() < 0.1));
+    press(&ui, DeckAction::LoopOutOrDouble);
+    assert!(
+        ui.wait_until(5.0, |u| {
+            let l = snapshot(u).decks[0].loop_state;
+            l.active && l.start.is_some_and(|s| (s - 2.0).abs() < 0.1) && l.end.is_some_and(|e| (e - 3.0).abs() < 0.1)
+        }),
+        "OUT closes the loop: {:?}",
+        snapshot(&ui).decks[0].loop_state
+    );
+}
+
+/// [H1] 4 BEAT/EXIT: with a running IN/OUT loop one press leaves it; with no
+/// loop one press sets a 4-beat loop, and a held roll stays.
+#[test]
+fn controller_four_beat_exit_leaves_a_running_loop() {
+    use od_controller::{ControlAction, DeckAction};
+    use od_engine::DeckCommand as D;
+    let ui = Ui::open((1440, 900));
+    perform(&ui);
+    with_grid(&ui, ui.fx.tracks[0].0);
+    load(&ui, 0, 0);
+    let press = |ui: &Ui| {
+        let action = DeckAction::AutoLoopOrExit { beats: 4.0 };
+        crate::controller::handle_action(&ui.app, ControlAction::Deck { deck: 1, action });
+    };
+    let looping = |ui: &Ui, on: bool| ui.wait_until(5.0, |u| snapshot(u).decks[0].loop_state.active == on);
+
+    // An IN/OUT loop from 2 s to 3 s: one press leaves it.
+    crate::engine::deck_cmd(&ui.app, 0, D::Seek { seconds: 2.0 });
+    assert!(ui.wait_until(5.0, |u| (snapshot(u).decks[0].position - 2.0).abs() < 0.1));
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopIn);
+    crate::engine::deck_cmd(&ui.app, 0, D::Seek { seconds: 3.0 });
+    assert!(ui.wait_until(5.0, |u| (snapshot(u).decks[0].position - 3.0).abs() < 0.1));
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopOut);
+    assert!(looping(&ui, true), "the IN/OUT loop runs");
+    press(&ui);
+    assert!(looping(&ui, false), "one press leaves it: {:?}", snapshot(&ui).decks[0].loop_state);
+
+    // No loop: one press sets a 4-beat loop.
+    press(&ui);
+    assert!(
+        ui.wait_until(5.0, |u| {
+            let l = snapshot(u).decks[0].loop_state;
+            l.active && l.beats == Some(4.0)
+        }),
+        "one press sets a 4-beat loop: {:?}",
+        snapshot(&ui).decks[0].loop_state
+    );
+    press(&ui);
+    assert!(looping(&ui, false), "and the next leaves it");
+
+    // A held roll stays.
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopRoll { beats: 1.0, on: true });
+    assert!(ui.wait_until(5.0, |u| snapshot(u).decks[0].loop_state.roll));
+    press(&ui);
+    assert!(!ui.wait_until(0.3, |u| !snapshot(u).decks[0].loop_state.roll));
+    let l = snapshot(&ui).decks[0].loop_state;
+    assert!(l.active && l.roll && l.beats == Some(1.0), "the held roll stays: {l:?}");
 }

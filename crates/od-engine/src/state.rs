@@ -29,6 +29,14 @@ pub struct LoopState {
     pub roll: bool,
 }
 
+impl LoopState {
+    /// Manual loop in point (seconds) waiting for its out point: set by
+    /// LOOP IN, gone once LOOP OUT closes the loop or exit cancels it.
+    pub fn pending_in(&self) -> Option<f64> {
+        self.start.filter(|_| !self.active && self.end.is_none())
+    }
+}
+
 /// Slicer pad mode state (see [`crate::SlicerCommand`]).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct SlicerState {

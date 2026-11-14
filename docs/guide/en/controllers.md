@@ -5,9 +5,9 @@ keywords: [controller, controllers, midi, midi learn, mapping, ddj, ddj-flx10, d
 features: [ctrl-controller-list, ctrl-guided-setup, ctrl-class-templates, ctrl-self-test, ctrl-hardware-status, ctrl-led-feedback, ctrl-soft-takeover, ctrl-midi-learn-monitor, ctrl-mapping-four-deck, ctrl-mapping-two-deck, browser-controller-browse]
 ---
 
-OpenDJDecks ships with mappings compatible with the Pioneer DJ DDJ-FLX10 and DDJ-FLX4, with LED feedback for play, cue, sync, master, key lock, slip, loop and the pads, and the VU meters. The mappings are not yet fully confirmed on real devices, so individual controls or LEDs may not work: try them before a gig. Connect a controller by USB; it is picked up within a few seconds, and its audio interface is used automatically (**Preferences › Audio › Output device**).
+OpenDJDecks ships with mappings compatible with the Pioneer DJ DDJ-FLX10 and DDJ-FLX4, with LED feedback for play, cue, sync, master, key lock, slip, loop, the pads and the stem buttons (lit while their part is heard), and the VU meters. The mappings are not yet fully confirmed on real devices, so individual controls or LEDs may not work: try them before a gig. Connect a controller by USB; it is picked up within a few seconds, and its audio interface is used automatically (**Preferences › Audio › Output device**).
 
-The first time a controller is connected, Perform shows as many decks as it has; switch to 2 or 4 decks and that count comes back the next time you connect the same controller. Controllers that can report their faders and knobs (the DDJ-FLX10 does) set the mixer to them on connecting, so nothing needs to be moved first.
+The first time a controller is connected, Perform shows as many decks as it has; switch to 2 or 4 decks and that count comes back the next time you connect the same controller. With 2 decks shown on a four-deck controller, the two lanes show the decks active on it: press **DECK 1/3** or **DECK 2/4** and that side's lane switches, and the keyboard's deck 1 and 2 keys act on the left and right lane. Controllers that can report their faders and knobs (the DDJ-FLX10 does) set the mixer to them on connecting, so nothing needs to be moved first.
 
 When you move a knob after a preset jumped, soft takeover makes sure the value only changes once the physical control has reached it.
 
@@ -21,7 +21,7 @@ Which controllers OpenDJDecks knows and how far each is confirmed. A model count
 
 | Controller | Decks | Mapping | Recognised by | Status |
 |---|---|---|---|---|
-| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 10 verified, 451 partial, 12 untested |
+| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 10 verified, 461 partial, 13 untested |
 | compatible with DDJ-FLX4 | 2 | built in | MIDI port name `DDJ-FLX4` | not confirmed: 0 verified, 219 partial, 2 untested |
 | Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (76 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
 | Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (74 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
@@ -46,9 +46,11 @@ The file is an ordinary mapping file you can share. Every entry in it is marked 
 
 ## Browse from the controller
 
-Turn the browse encoder to move through the list. **BACK** moves the focus into the lists column, where turning steps through everything in it from top to bottom: the collection, playlists, the Explorer's folders, similar tracks, sticks, histories, recordings, the tag list, created tracks and AUTO SORT (hold shift to jump by eight). The column scrolls along. A press, or a deck's **LOAD**, goes one level in: a folder opens and its first entry is selected, a list hands over to its tracks. **BACK** goes one level out each time: from the tracks to their list, from an entry to the folder holding it, and an open folder closes. In the track list a press loads into a free deck, **LOAD** onto its deck, and shift-press adds to the tag list. A track you click with the mouse is the one **LOAD** loads. **VIEW** toggles the full browser in Prepare and the Browse layout in Perform.
+Turn the browse encoder to move through the list. **BACK** moves the focus into the lists column, where turning steps through everything in it from top to bottom: the collection, playlists, the Explorer's folders, similar tracks, sticks, histories, recordings, the tag list, created tracks and AUTO SORT (hold shift to jump by eight). The column scrolls along, and folders stay closed while you turn past them. A press, or a deck's **LOAD**, goes one level in: a closed folder opens and its first entry is selected, an open folder closes again, a list hands over to its tracks. **BACK** goes one level out each time: from the tracks to their list, from an entry to the folder holding it (which closes), an open folder closes, and from the top level on to the rail of sources at the column's left edge. There turning steps through the sources (**ALL**, **LISTS**, **SIMILAR**, **SAMPLER**, **FILES**, **USB**, **HISTORY**, **RECORDINGS**, **TAG LIST**) and the column scrolls to each; a press or **LOAD** goes back in at the source's first entry (**SAMPLER** shows the sampler panel). Folded lists unfold when the encoder goes into them. In the track list a press loads into a free deck, **LOAD** onto its deck, and shift-press adds to the tag list. A track you click with the mouse is the one **LOAD** loads. **VIEW** toggles the full browser in Prepare and the Browse layout in Perform.
 
 When a controller with channel faders connects, its channels start closed, because the app cannot know where the faders are until they move: move each fader once. **PLAY** on a deck whose fader has not moved yet says so in the status line.
+
+Controllers with displays in the jog wheels (the DDJ-FLX10) show each loaded deck there: BPM, the remaining time as on the screen's decks (Preferences › View › **Remaining time** picks track time or real time at tempo), the key in Camelot or classic notation after the **Key notation** preference (Open Key shows as Camelot), the key shift, the playhead as a marker turning once every 1.8 seconds like a record, the main cue point on the same ring, and the MASTER, SYNC and Keylock indicators. Track title, waveform and artwork are not shown there.
 
 ## MIDI learn
 
@@ -92,7 +94,7 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 
 | Model | Controls | Verified | Partial | Untested |
 |---|---|---|---|---|
-| DDJ-FLX10 | 473 | 10 | 451 | 12 |
+| DDJ-FLX10 | 484 | 10 | 461 | 13 |
 | DDJ-FLX4 | 221 | 0 | 219 | 2 |
 
 ### DDJ-FLX10
@@ -559,16 +561,27 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 | deck vinyl | light | untested |
 | deck censor | light | partial |
 | deck reverse | light | partial |
+| deck stem active | light | partial |
 | deck loop in | light | partial |
 | deck loop out | light | partial |
 | deck loop active | light | partial |
 | mixer cue | light | partial |
 | mixer vu | light | partial |
-| deck loaded | light | untested |
+| deck loaded | light | partial |
+| deck position angle | light | partial |
+| deck bpm | light | partial |
+| deck cue angle | light | partial |
+| deck time minutes | light | partial |
+| deck time seconds | light | partial |
+| deck time remaining | light | partial |
+| deck key | light | untested |
+| deck key shift | light | partial |
+| key camelot | light | untested |
 | deck pad mode | light | partial |
 | deck pad | light | partial |
 | master cue | light | untested |
 | channel fx | light | partial |
+| channel fx part | light | partial |
 | tempo fx on | light | partial |
 | tempo fx release | light | partial |
 | sampler cue | light | partial |

@@ -59,6 +59,8 @@ These were tested with generated tracks and in the app's tests, not yet by ear a
 
 **‹ FILTER ›** under the mixer selects the Channel FX that every channel's **CH FX** knob controls: Filter, Noise, Space, Crush, Echo, Pitch, Dub Echo and Sweep. Your choice is remembered. `⇧J` and `⇧S` step through them.
 
+Filter works like a club mixer's colour filter: a small zone around the centre leaves the sound untouched, left sweeps a steep (24 dB/oct) low-pass from 20 kHz down to about 70 Hz, right a high-pass from 20 Hz up to about 6 kHz. Most of the knob travel sits in the musical range, and the resonance rises gently towards the ends.
+
 Auto Channel FX is one of these: a single knob with low-pass and echo to the left, high-pass and reverb to the right.
 
 ## Hold FX

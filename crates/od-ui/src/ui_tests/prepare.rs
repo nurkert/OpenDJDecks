@@ -470,7 +470,7 @@ fn mix_preview_starts_the_next_deck() {
 }
 
 /// Browsing from a controller: BACK moves the encoder to the tree, turning
-/// it steps through the lists, a press on a folder opens it and on a list
+/// it steps through the lists, a press on a closed folder opens it and on a list
 /// moves into the tracks; there the encoder steps rows (⇧ by eight), ⇧-press
 /// collects into the tag list, a press loads; SIMILAR and VIEW switch view.
 #[test]
@@ -506,14 +506,14 @@ fn controller_browses_tree_and_list() {
     });
     assert_eq!(ui.app.ui.get_selected_node(), folder.0 as i32);
     assert!(
-        ui.app.ui.get_tree().iter().any(|r| r.id == inner.0 as i32),
-        "the folder opens"
+        !ui.app.ui.get_tree().iter().any(|r| r.id == inner.0 as i32),
+        "the folder stays closed"
     );
     go(B::Press { shifted: false });
     assert_eq!(
         ui.app.ui.get_selected_node(),
         inner.0 as i32,
-        "press on an open folder steps into it"
+        "press on a closed folder opens it and steps into it"
     );
     assert_eq!(ui.app.ui.get_browse_focus(), "tree");
     go(B::Back);
@@ -521,6 +521,10 @@ fn controller_browses_tree_and_list() {
         ui.app.ui.get_selected_node(),
         folder.0 as i32,
         "BACK in the tree goes up to the folder"
+    );
+    assert!(
+        !ui.app.ui.get_tree().iter().any(|r| r.id == inner.0 as i32),
+        "and closes it"
     );
     go(B::Rotate {
         delta: -5,
@@ -663,11 +667,10 @@ fn controller_reaches_every_list_and_goes_in_and_out() {
     assert_eq!(ui.app.ui.get_browse_focus(), "tree");
     let crate_dir = ui.app.ui.get_explorer_selected();
     assert_ne!(crate_dir, root, "one level in");
-    // BACK: up to the folder holding it, then the open folder closes.
+    // BACK: up to the folder holding it, which closes.
     let rows = ui.app.ui.get_explorer().row_count();
     go(B::Back);
     assert_eq!(ui.app.ui.get_explorer_selected(), root, "one level up");
-    go(B::Back);
     assert!(ui.app.ui.get_explorer().row_count() < rows, "the open folder closes");
     // In again, and LOAD on a folder without sub-folders enters its tracks.
     load(1);
@@ -693,17 +696,202 @@ fn controller_reaches_every_list_and_goes_in_and_out() {
         go(one.clone());
     }
     assert_eq!(ui.app.ui.get_section(), "recordings", "the encoder reaches the recordings");
-    // A track picked with the mouse: LOAD loads it, not into the lists.
+    // BACK on the top level: on to the rail, at the recordings' source.
     go(B::Back);
-    while ui.app.ui.get_section() != "library" || ui.app.ui.get_node_kind() != "all" {
-        go(B::Rotate {
-            delta: -1,
-            shifted: false,
-        });
-    }
+    assert_eq!(ui.app.ui.get_browse_focus(), "rail");
+    assert_eq!(ui.value("browser.rail.recordings"), "controller");
+    // A track picked with the mouse: LOAD loads it, not into the lists.
+    go(B::Rotate {
+        delta: -9,
+        shifted: false,
+    });
+    load(1);
+    assert_eq!(ui.app.ui.get_node_kind(), "all", "LOAD on ALL opens all tracks");
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
     ui.app.ui.invoke_row_clicked(1, false, false);
     ui.pump(100);
     assert_eq!(ui.app.ui.get_browse_focus(), "list");
+}
+
+/// [H1] On the owner's DDJ-FLX10 the encoder could not go all the way left:
+/// BACK stopped at the top level of the lists. Now BACK goes out level by
+/// level from the tracks to the rail of sources at the column's left edge
+/// (a folded column unfolds), turning there steps through every source
+/// (ALL to TAG LIST) and a press or LOAD goes in at the source's first
+/// entry; in the lists turning reaches All tracks and Similar tracks.
+#[test]
+fn controller_back_reaches_the_rail_of_sources() {
+    use od_controller::{BrowseAction as B, ControlAction, DeckAction};
+    let fx = Fixture::new();
+    let (folder, inner) = {
+        let mut lib = fx.lib();
+        let f = lib
+            .create_node(None, od_library::NodeKind::Folder, "Crates")
+            .unwrap();
+        let p = lib
+            .create_node(Some(f), od_library::NodeKind::Playlist, "Inner")
+            .unwrap();
+        (f.0 as i32, p.0 as i32)
+    };
+    let ui = Ui::start(fx, (1440, 900), false);
+    let go = |a: B| {
+        crate::browser::navigate::controller(&ui.app, &a);
+        ui.pump(100);
+    };
+    let turn = |delta: i32| {
+        go(B::Rotate {
+            delta,
+            shifted: false,
+        })
+    };
+    // A list inside a folder is open, the lists are folded, the tracks
+    // have the encoder.
+    ui.app.ui.invoke_toggle_node(folder);
+    ui.app.ui.invoke_select_node(inner);
+    ui.app.ui.set_lists_collapsed(true);
+    ui.pump(100);
+    assert_eq!(ui.app.ui.get_browse_focus(), "list");
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
+    assert!(!ui.app.ui.get_lists_collapsed(), "the lists unfold");
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_selected_node(), folder, "up to the folder");
+    assert!(
+        !ui.app.ui.get_tree().iter().any(|r| r.id == inner),
+        "the open folder closes"
+    );
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_focus(), "rail", "on to the rail");
+    assert_eq!(ui.app.ui.get_browse_rail(), 1, "at the playlists' source");
+    assert_eq!(ui.value("browser.rail.playlists"), "controller");
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_focus(), "rail", "the rail is the left edge");
+    // Turning steps through every source, clamped at both ends.
+    turn(-5);
+    assert_eq!(ui.value("browser.rail.collection"), "controller");
+    turn(20);
+    assert_eq!(ui.app.ui.get_browse_rail(), 8);
+    assert_eq!(ui.value("browser.rail.tag-list"), "controller");
+    turn(-6);
+    assert_eq!(ui.value("browser.rail.similar"), "controller");
+    // LOAD goes in at the source's first entry.
+    crate::controller::handle_action(
+        &ui.app,
+        ControlAction::Deck {
+            deck: 1,
+            action: DeckAction::Load,
+        },
+    );
+    ui.pump(100);
+    assert_eq!(ui.app.ui.get_node_kind(), "similar");
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
+    assert_eq!(ui.value("browser.rail.similar"), "", "the rail mark goes");
+    // In the lists, turning reaches the first entry, All tracks.
+    turn(-20);
+    assert_eq!(ui.app.ui.get_node_kind(), "all");
+    // And back to the rail, a press on ALL opens all tracks.
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_rail(), 0);
+    go(B::Press { shifted: false });
+    assert_eq!(ui.app.ui.get_node_kind(), "all");
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
+}
+
+/// [H1] On the owner's DDJ-FLX10 every folder the encoder passed over
+/// opened. Now folders stay closed while scrolling (in the library and the
+/// Explorer), LOAD on a closed folder opens it and steps in, LOAD on an
+/// open one closes it, and BACK from inside goes to the folder and closes
+/// it. A click still opens a folder.
+#[test]
+fn controller_scrolls_past_closed_folders() {
+    use od_controller::{BrowseAction as B, ControlAction, DeckAction};
+    let fx = Fixture::new();
+    let (folder, inner) = {
+        let mut lib = fx.lib();
+        let f = lib
+            .create_node(None, od_library::NodeKind::Folder, "Crates")
+            .unwrap();
+        let p = lib
+            .create_node(Some(f), od_library::NodeKind::Playlist, "Inner")
+            .unwrap();
+        (f.0 as i32, p.0 as i32)
+    };
+    let ui = Ui::start(fx, (1440, 900), false);
+    let go = |a: B| {
+        crate::browser::navigate::controller(&ui.app, &a);
+        ui.pump(100);
+    };
+    let turn = |delta: i32| {
+        go(B::Rotate {
+            delta,
+            shifted: false,
+        })
+    };
+    let load = || {
+        crate::controller::handle_action(
+            &ui.app,
+            ControlAction::Deck {
+                deck: 1,
+                action: DeckAction::Load,
+            },
+        );
+        ui.pump(100);
+    };
+    let inner_shown = || ui.app.ui.get_tree().iter().any(|r| r.id == inner);
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
+    // Over the folder and past it: it stays closed.
+    turn(-20);
+    for _ in 0..30 {
+        if ui.app.ui.get_selected_node() == folder {
+            break;
+        }
+        turn(1);
+    }
+    assert_eq!(ui.app.ui.get_selected_node(), folder);
+    assert!(!inner_shown(), "the highlighted folder stays closed");
+    turn(1);
+    assert_ne!(ui.app.ui.get_selected_node(), inner, "past the folder, not into it");
+    assert!(!inner_shown(), "still closed");
+    turn(-1);
+    assert_eq!(ui.app.ui.get_selected_node(), folder);
+    // LOAD opens it and steps in; BACK goes to the folder and closes it.
+    load();
+    assert!(inner_shown(), "LOAD opens the folder");
+    assert_eq!(ui.app.ui.get_selected_node(), inner, "and steps in");
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_selected_node(), folder, "BACK goes to the folder");
+    assert!(!inner_shown(), "and closes it");
+    // LOAD on an open folder closes it.
+    load();
+    turn(-1);
+    assert_eq!(ui.app.ui.get_selected_node(), folder);
+    assert!(inner_shown());
+    load();
+    assert!(!inner_shown(), "LOAD on an open folder closes it");
+    assert_eq!(ui.app.ui.get_selected_node(), folder);
+    // The Explorer: its root stays closed while the encoder passes it.
+    for _ in 0..30 {
+        if ui.app.ui.get_node_kind() == "explorer" {
+            break;
+        }
+        turn(1);
+    }
+    assert_eq!(ui.app.ui.get_node_kind(), "explorer");
+    let rows = || ui.app.ui.get_explorer().row_count();
+    let closed = rows();
+    assert!(
+        ui.app.ui.get_explorer().iter().all(|r| !r.expanded),
+        "the root stays closed"
+    );
+    load();
+    assert!(rows() > closed, "LOAD opens it");
+    go(B::Back);
+    assert_eq!(rows(), closed, "BACK closes it");
+    // A click on a folder still opens it.
+    ui.app.ui.invoke_select_node(folder);
+    ui.pump(100);
+    assert!(inner_shown(), "a click opens the folder");
 }
 
 

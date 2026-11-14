@@ -3,6 +3,11 @@
 //! Echo, dub echo and space feed their wet path with the knob amount, so
 //! their tails ring out after the knob returns to the centre; the channel
 //! is bit-exact dry again once the tail is silent.
+//!
+//! The filter (also the dry path of Auto) is a mixer-style colour filter:
+//! a centre dead zone that stays bit-exact dry, a log-frequency sweep with
+//! more travel towards the extremes, and a 4-pole (24 dB/oct) low-pass or
+//! high-pass whose resonance rises gently towards the ends.
 
 use crate::tempofx::BeatClock;
 use crate::command::ChannelFxKind;
@@ -12,17 +17,28 @@ use crate::dsp::pitchshift::PitchShifter;
 use crate::dsp::reverb::Reverb;
 use crate::dsp::smooth::Smoothed;
 use crate::dsp::svf::Svf;
+use std::f32::consts::PI;
 
 const UPDATE_EVERY: usize = 16;
 const DEAD_ZONE: f32 = 0.01;
 /// Wet energy per frame below which a tail counts as silent.
 const QUIET: f32 = 1e-10;
+/// Colour filter: knob travel around the centre that stays dry.
+const FILTER_DEAD: f32 = 0.04;
+/// Knob travel past the dead zone over which the filter fades in.
+const FILTER_FADE: f32 = 0.06;
+/// Sweep shape: >1 leaves more knob travel for the musical low end.
+const FILTER_CURVE: f32 = 1.6;
+const FILTER_LP_END_HZ: f32 = 70.0;
+const FILTER_HP_END_HZ: f32 = 6_000.0;
 
 pub struct ChannelFx {
     sr: f32,
     kind: ChannelFxKind,
     amount: Smoothed,
     svf: Svf,
+    /// Two cascaded 2-pole stages of the colour filter.
+    colour: [Svf; 2],
     noise_svf: Svf,
     noise: Noise,
     reverb: Reverb,
@@ -58,6 +74,7 @@ impl ChannelFx {
             kind: ChannelFxKind::Filter,
             amount: Smoothed::new(0.0, (sr * 0.02) as u32),
             svf: Svf::new(1000.0, 0.7, sr),
+            colour: [Svf::new(1000.0, 0.54, sr); 2],
             noise_svf: Svf::new(1000.0, 0.7, sr),
             noise: Noise::new(seed),
             reverb: Reverb::new(sample_rate),
@@ -79,6 +96,8 @@ impl ChannelFx {
         if kind != self.kind {
             self.kind = kind;
             self.svf.reset();
+            self.colour[0].reset();
+            self.colour[1].reset();
             self.noise_svf.reset();
             if self.ringing {
                 self.reverb.clear();
@@ -123,6 +142,45 @@ impl ChannelFx {
         }
     }
 
+    /// Colour filter cutoff and sweep position (0..=1) for a knob value. The
+    /// sweep starts at the edge of the audible band (20 kHz low-pass, 20 Hz
+    /// high-pass), so fading in past the dead zone causes no level jump.
+    fn colour_cutoff(a: f32) -> (f32, f32) {
+        let s = ((a.abs() - FILTER_DEAD) / (1.0 - FILTER_DEAD))
+            .clamp(0.0, 1.0)
+            .powf(FILTER_CURVE);
+        let fc = if a < 0.0 {
+            20_000.0 * (FILTER_LP_END_HZ / 20_000.0).powf(s)
+        } else {
+            20.0 * (FILTER_HP_END_HZ / 20.0).powf(s)
+        };
+        (fc, s)
+    }
+
+    /// One frame through the colour filter. Coefficients follow the smoothed
+    /// knob every frame, so fast turns do not zipper; both channels share them.
+    fn colour_filter(&mut self, x: [f32; 2], a: f32) -> [f32; 2] {
+        let (fc, s) = Self::colour_cutoff(a);
+        let g = (PI * fc.min(self.sr * 0.49) / self.sr).tan();
+        // Butterworth-like stage pair (Q 0.54 and ~1.3), the second stage
+        // rising from 0.9 to 1.4 towards the extremes: a gentle edge.
+        self.colour[0].set_g(g, 0.54);
+        self.colour[1].set_g(g, 0.9 + 0.5 * s);
+        let w = ((a.abs() - FILTER_DEAD) / FILTER_FADE).clamp(0.0, 1.0);
+        let lp = a < 0.0;
+        let mut y = x;
+        for ch in 0..2 {
+            // Run in the dead zone too, so the state is warm on the way out.
+            let o = self.colour[0].tick(ch, x[ch]);
+            let o = self.colour[1].tick(ch, if lp { o.low } else { o.high });
+            let filtered = if lp { o.low } else { o.high };
+            if w > 0.0 {
+                y[ch] = x[ch] + (filtered - x[ch]) * w;
+            }
+        }
+        y
+    }
+
     fn update_filters(&mut self, a: f32) {
         let mag = a.abs();
         match self.kind {
@@ -153,6 +211,9 @@ impl ChannelFx {
     /// channel's deck or the master clock).
     pub fn process(&mut self, buf: &mut [f32], clock: &BeatClock) {
         if self.bypassed() {
+            // Cold start for the colour filter: no stale state on re-entry.
+            self.colour[0].reset();
+            self.colour[1].reset();
             if self.kind == ChannelFxKind::Pitch {
                 // Keep the grain history continuous for a click-free start.
                 for f in buf.as_chunks::<2>().0 {
@@ -177,15 +238,7 @@ impl ChannelFx {
             let lp = a < 0.0;
             let x = [f[0], f[1]];
             let y = match self.kind {
-                ChannelFxKind::Filter => {
-                    let mut y = [0.0; 2];
-                    for ch in 0..2 {
-                        let o = self.svf.tick(ch, x[ch]);
-                        let filtered = if lp { o.low } else { o.high };
-                        y[ch] = x[ch] + (filtered - x[ch]) * w;
-                    }
-                    y
-                }
+                ChannelFxKind::Filter => self.colour_filter(x, a),
                 ChannelFxKind::Noise => {
                     let n = self.noise.next() * mag * 0.25;
                     let mut y = [0.0; 2];
@@ -260,12 +313,7 @@ impl ChannelFx {
                 }
                 ChannelFxKind::Auto => {
                     // Filter the dry signal as Filter does …
-                    let mut dry = [0.0; 2];
-                    for ch in 0..2 {
-                        let o = self.svf.tick(ch, x[ch]);
-                        let filtered = if lp { o.low } else { o.high };
-                        dry[ch] = x[ch] + (filtered - x[ch]) * w;
-                    }
+                    let dry = self.colour_filter(x, a);
                     // … and add an echo (left) or a reverb (right).
                     let send = mag * mag;
                     let wet = if lp {
@@ -353,5 +401,101 @@ impl ChannelFx {
         } else {
             self.ringing = false;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SR: u32 = 48_000;
+    const BLOCK: usize = 256;
+
+    fn clock() -> BeatClock {
+        BeatClock { bpm: 120.0, beat: 0.0, beats_per_frame: 2.0 / SR as f64 }
+    }
+
+    fn sine(freq: f32, frames: usize, phase0: usize) -> Vec<f32> {
+        (0..frames)
+            .flat_map(|i| {
+                let t = (i + phase0) as f32 / SR as f32;
+                let v = 0.5 * (std::f32::consts::TAU * freq * t).sin();
+                [v, v]
+            })
+            .collect()
+    }
+
+    fn filter_at(amount: f32) -> ChannelFx {
+        let mut fx = ChannelFx::new(SR, 1);
+        fx.set_kind(ChannelFxKind::Filter);
+        fx.set_amount(amount);
+        fx
+    }
+
+    /// Level change in dB of a settled tone through the filter at `amount`.
+    fn gain_db(amount: f32, freq: f32) -> f32 {
+        let mut fx = filter_at(amount);
+        let frames = SR as usize;
+        let mut buf = sine(freq, frames, 0);
+        for b in buf.chunks_mut(BLOCK * 2) {
+            fx.process(b, &clock());
+        }
+        let tail = &buf[frames..];
+        let rms = (tail.iter().map(|v| v * v).sum::<f32>() / tail.len() as f32).sqrt();
+        20.0 * (rms / (0.5 / 2f32.sqrt())).log10()
+    }
+
+    #[test]
+    fn filter_dead_zone_is_bit_exact_dry() {
+        for amount in [-0.03f32, 0.03, 0.0] {
+            let mut fx = filter_at(amount);
+            let dry = sine(440.0, SR as usize / 2, 0);
+            let mut buf = dry.clone();
+            for b in buf.chunks_mut(BLOCK * 2) {
+                fx.process(b, &clock());
+            }
+            assert!(buf == dry, "{amount} dry");
+        }
+    }
+
+    #[test]
+    fn filter_low_pass_and_high_pass_sides() {
+        let lp_hi = gain_db(-0.9, 3000.0);
+        let lp_lo = gain_db(-0.9, 80.0);
+        assert!(lp_hi < -30.0, "low-pass takes out 3 kHz: {lp_hi} dB");
+        assert!(lp_lo.abs() < 3.0, "low-pass keeps 80 Hz: {lp_lo} dB");
+        let hp_lo = gain_db(0.9, 80.0);
+        let hp_hi = gain_db(0.9, 3000.0);
+        assert!(hp_lo < -30.0, "high-pass takes out 80 Hz: {hp_lo} dB");
+        assert!(hp_hi.abs() < 3.0, "high-pass keeps 3 kHz: {hp_hi} dB");
+    }
+
+    #[test]
+    fn filter_fast_sweeps_are_smooth_and_stereo_identical() {
+        let mut fx = filter_at(0.0);
+        // 150 Hz at 0.5: the dry signal moves at most ~0.01 per sample.
+        let frames = SR as usize;
+        let mut buf = sine(150.0, frames, 0);
+        let dry_step = buf
+            .chunks(2)
+            .zip(buf.chunks(2).skip(1))
+            .map(|(a, b)| (b[0] - a[0]).abs())
+            .fold(0.0f32, f32::max);
+        // Knob slammed back and forth in MIDI-sized steps, 32 frames apart.
+        for (i, b) in buf.chunks_mut(64).enumerate() {
+            let p = (i % 64) as f32 / 32.0;
+            let tri = if p < 1.0 { p } else { 2.0 - p };
+            fx.set_amount(tri * 2.0 - 1.0);
+            fx.process(b, &clock());
+        }
+        let mut max_step = 0.0f32;
+        for (a, b) in buf.chunks(2).zip(buf.chunks(2).skip(1)) {
+            assert_eq!(a[0], a[1], "stereo identical");
+            max_step = max_step.max((b[0] - a[0]).abs());
+        }
+        assert!(
+            max_step < dry_step * 2.5,
+            "no zipper or jump: {max_step} vs dry {dry_step}"
+        );
     }
 }

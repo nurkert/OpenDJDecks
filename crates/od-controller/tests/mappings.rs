@@ -853,6 +853,56 @@ fn flx10_pad_colours_use_palette() {
     assert_eq!(out, vec![vec![0x9B, 0x02, 0x00], vec![0x9B, 0x0A, 0x00]]);
 }
 
+/// The jog displays get the numbers the app scales (official MIDI message
+/// list): BPM × 10 as a 14-bit pair, the time in two controllers, the key
+/// on the deck channel.
+#[test]
+fn flx10_jog_display_values() {
+    let mut s = flx10();
+    let t0 = Instant::now();
+    s.connect_messages();
+    drain(&mut s, t0);
+    let t = t0 + Duration::from_millis(100);
+    let num = |deck, element, n| {
+        ControlFeedback::number(FeedbackTarget::Deck { deck, element }, n)
+    };
+    s.feedback(&num(1, DeckElement::Bpm, 1280));
+    assert_eq!(leds(poll_all(&mut s, t)), vec![vec![0xBF, 0x14, 0x0A], vec![0xBF, 0x34, 0x00]]);
+    s.feedback(&num(2, DeckElement::Bpm, 1745));
+    assert_eq!(leds(poll_all(&mut s, t)), vec![vec![0xBF, 0x15, 0x0D], vec![0xBF, 0x35, 0x51]]);
+    s.feedback(&num(1, DeckElement::TimeMinutes, 3));
+    s.feedback(&num(1, DeckElement::TimeSeconds, 7));
+    s.feedback(&ControlFeedback::deck_led(1, DeckElement::TimeRemaining, true));
+    let mut out = leds(poll_all(&mut s, t));
+    out.sort();
+    assert_eq!(
+        out,
+        vec![vec![0x9F, 0x14, 0x7F], vec![0xBF, 0x42, 0x03], vec![0xBF, 0x43, 0x07]]
+    );
+    // 8A (A minor) is code 2; deck 3 sends on its deck channel.
+    s.feedback(&num(3, DeckElement::Key, 2));
+    s.feedback(&num(3, DeckElement::KeyShift, 2));
+    assert_eq!(leds(poll_all(&mut s, t)), vec![vec![0xB2, 0x49, 0x02], vec![0xB2, 0x4A, 0x0F]]);
+    // The cue marker starts hidden; a ring position goes out as degrees.
+    s.feedback(&num(4, DeckElement::PositionAngle, 300));
+    assert_eq!(leds(poll_all(&mut s, t)), vec![vec![0xBF, 0x13, 0x02], vec![0xBF, 0x33, 0x2C]]);
+    // A loaded deck lights the ring and shows its display information.
+    s.feedback(&ControlFeedback::deck_led(2, DeckElement::Loaded, true));
+    let out = leds(poll_all(&mut s, t));
+    assert!(out.contains(&vec![0xBF, 0x0A, 0x01]) && out.contains(&vec![0x9F, 0x5E, 0x00]));
+}
+
+#[test]
+fn flx10_jog_displays_start_hidden() {
+    let mut s = flx10();
+    let t0 = Instant::now();
+    s.connect_messages();
+    let init = poll_all(&mut s, t0);
+    for m in [[0xBF, 0x1C, 0x7F], [0xBF, 0x3C, 0x7F], [0x9F, 0x5D, 0x7F], [0xBF, 0x09, 0x00]] {
+        assert!(init.contains(&m.to_vec()), "{m:02X?}");
+    }
+}
+
 #[test]
 fn keepalive_is_periodic() {
     let mut s = flx4();
@@ -895,6 +945,69 @@ fn flx10_part_isolator_drives_stem_levels() {
     assert!(a.iter().any(|x| matches!(x, ControlAction::Deck { deck: 1, action: DeckAction::StemLevel { stem: StemPart::Vocals, level } } if *level == 0.0)), "{a:?}");
     let a = feed(&mut s, &[[0xB1, 0x10, 0x40], [0xB1, 0x30, 0x00]]);
     assert!(a.iter().any(|x| matches!(x, ControlAction::Deck { deck: 2, action: DeckAction::StemLevel { stem: StemPart::Drums, level } } if *level >= 0.99)), "{a:?}");
+}
+
+/// The three stem buttons per deck light while their part is heard
+/// (MIDI-OUT 9n 0D/0E/0F, official MIDI message list).
+#[test]
+fn flx10_stem_buttons_show_which_parts_play() {
+    let mut s = flx10();
+    let t0 = Instant::now();
+    s.output_mut().set_epoch(t0);
+    s.connect_messages();
+    poll_all(&mut s, t0);
+    let t = |ms| t0 + Duration::from_millis(ms);
+    let stem = |deck, part, on| ControlFeedback::deck_led(deck, DeckElement::StemActive(part), on);
+    s.feedback(&stem(1, StemPart::Drums, true));
+    s.feedback(&stem(1, StemPart::Vocals, true));
+    s.feedback(&stem(2, StemPart::Inst, true));
+    let mut out = s.poll_output(t(1));
+    out.sort();
+    assert_eq!(
+        out,
+        vec![vec![0x90, 0x0D, 0x7F], vec![0x90, 0x0E, 0x7F], vec![0x91, 0x0F, 0x7F]]
+    );
+    // Muting the drums of deck 1 turns its button off.
+    s.feedback(&stem(1, StemPart::Drums, false));
+    assert_eq!(s.poll_output(t(2)), vec![vec![0x90, 0x0D, 0x00]]);
+}
+
+/// FX PART SELECT lights where the Sound Color FX acts (MIDI-OUT 96
+/// 1B/1C/1D, with SHIFT 1E/1F/20, official MIDI message list): all three on
+/// the whole channel, only the chosen part's otherwise. The SOUND COLOR FX
+/// buttons light the selected effect (96 00-05, with SHIFT 08-0D).
+#[test]
+fn flx10_fx_part_and_color_fx_buttons_show_the_software_state() {
+    let mut s = flx10();
+    let t0 = Instant::now();
+    s.output_mut().set_epoch(t0);
+    s.connect_messages();
+    poll_all(&mut s, t0);
+    let t = |ms| t0 + Duration::from_millis(ms);
+    let part = |p, on| ControlFeedback::led(FeedbackTarget::ChannelFxPart(p), on);
+    for p in [StemPart::Vocals, StemPart::Drums, StemPart::Inst] {
+        s.feedback(&part(p, true));
+    }
+    let mut out = s.poll_output(t(1));
+    out.sort();
+    let all: Vec<Vec<u8>> = (0x1B..=0x20).map(|n| vec![0x96, n, 0x7F]).collect();
+    assert_eq!(out, all);
+    // On the drums only: VOCAL and INST go dark.
+    s.feedback(&part(StemPart::Vocals, false));
+    s.feedback(&part(StemPart::Inst, false));
+    let mut out = s.poll_output(t(2));
+    out.sort();
+    assert_eq!(
+        out,
+        [0x1B, 0x1D, 0x1E, 0x20].map(|n| vec![0x96, n, 0x00]).to_vec()
+    );
+    // SOUND COLOR FX: PITCH selected lights PITCH alone.
+    for e in ["space", "dub_echo", "crush", "pitch", "noise", "filter"] {
+        s.feedback(&ControlFeedback::led(FeedbackTarget::ChannelFx(e.into()), e == "pitch"));
+    }
+    let mut out = s.poll_output(t(3));
+    out.sort();
+    assert_eq!(out, vec![vec![0x96, 0x03, 0x7F], vec![0x96, 0x0B, 0x7F]]);
 }
 
 /// The hardware status in the controllers guide is generated from the
@@ -1273,4 +1386,43 @@ fn flx10_fx_part_buttons_pick_the_part() {
             ControlAction::ChannelFx(ChannelFxAction::Part(StemPart::Inst)),
         ]
     );
+}
+
+/// [H1] LOOP IN・1/2X and LOOP OUT・2X on the DDJ-FLX10 (official list: 0x10,
+/// 0x11, SHIFT 0x4C, 0x4D) halve and double a running loop as printed, and
+/// CUE/LOOP CALL ◀ / ▶ (0x51, 0x53) do the same or call memory cues.
+#[test]
+fn flx10_loop_buttons_halve_and_double() {
+    let mut s = flx10();
+    let a = feed(
+        &mut s,
+        &[[0x90, 0x10, 0x7F], [0x90, 0x11, 0x7F], [0x90, 0x4C, 0x7F], [0x90, 0x4D, 0x7F], [0x91, 0x51, 0x7F], [0x91, 0x53, 0x7F]],
+    );
+    assert_eq!(
+        a,
+        vec![
+            deck(1, DeckAction::LoopInOrHalve),
+            deck(1, DeckAction::LoopOutOrDouble),
+            deck(1, DeckAction::LoopHalve),
+            deck(1, DeckAction::LoopDouble),
+            deck(2, DeckAction::LoopCall { forward: false }),
+            deck(2, DeckAction::LoopCall { forward: true }),
+        ]
+    );
+}
+
+/// [H1] 4 BEAT/EXIT on the DDJ-FLX10 (official list: 0x14, SHIFT 0x50) and
+/// the DDJ-FLX4 (0x4D, SHIFT 0x50) leaves a running loop with one press and
+/// sets a 4-beat loop otherwise.
+#[test]
+fn four_beat_exit_leaves_a_running_loop() {
+    let mut s = flx10();
+    let a = feed(&mut s, &[[0x90, 0x14, 0x7F], [0x90, 0x14, 0x00], [0x91, 0x50, 0x7F]]);
+    assert_eq!(
+        a,
+        vec![deck(1, DeckAction::AutoLoopOrExit { beats: 4.0 }), deck(2, DeckAction::ReloopExit)]
+    );
+    let mut s = flx4();
+    let a = feed(&mut s, &[[0x91, 0x4D, 0x7F], [0x91, 0x4D, 0x00]]);
+    assert_eq!(a, vec![deck(2, DeckAction::AutoLoopOrExit { beats: 4.0 })]);
 }

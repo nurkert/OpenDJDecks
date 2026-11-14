@@ -26,6 +26,41 @@ fn loop_shows_on_the_waveform() {
     assert!(band.w > 10.0 && band.x <= head.x + 1.0 && band.right() >= head.x, "around the playhead: {band:?}");
 }
 
+/// LOOP IN alone marks its point on the lane (an IN line) until LOOP OUT
+/// turns it into the loop band; RELOOP/EXIT cancels a waiting in point.
+#[test]
+fn pending_loop_in_shows_on_the_waveform() {
+    use od_engine::DeckCommand as D;
+    let ui = Ui::open((1440, 900));
+    perform_with_track(&ui);
+    assert!(!ui.has("wave.loop-in1"), "no in point yet");
+    let len = crate::engine::snapshot(&ui.app).unwrap().decks[0].duration;
+    crate::engine::deck_cmd(&ui.app, 0, D::Seek { seconds: len * 0.25 });
+    crate::engine::deck_cmd(&ui.app, 0, D::Play);
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopIn);
+    assert!(ui.wait_until(5.0, |u| u.has("wave.loop-in1")), "in marker shown");
+    let view = &deck_views(&ui)[0];
+    // Quantize may snap the in point back to a beat before the playhead.
+    let pending = crate::engine::snapshot(&ui.app).unwrap().decks[0].loop_state.pending_in();
+    assert!(view.loop_in_set && pending.is_some_and(|p| (p as f32 - view.loop_pending).abs() < 1e-3), "pending at {}", view.loop_pending);
+    assert!((len * 0.25 - view.loop_pending as f64).abs() < 1.0, "near the playhead: {}", view.loop_pending);
+    let at: f32 = ui.value("wave.loop-in1").parse().unwrap();
+    assert!((at - view.loop_pending).abs() < 1e-3, "marker at the in point: {at}");
+    let mark = Rect::of(&ui.get("wave.loop-in1"));
+    assert!(Rect::of(&ui.get("wave.lane1")).contains(&mark, 1.0), "inside the lane");
+    assert!(!ui.has("wave.loop1"), "no loop band yet");
+    // Move on (the headless clock may not play far) and close the loop.
+    crate::engine::deck_cmd(&ui.app, 0, D::Seek { seconds: len * 0.6 });
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopOut);
+    assert!(ui.wait_until(5.0, |u| u.has("wave.loop1") && !u.has("wave.loop-in1")), "band replaces the marker");
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopExit);
+    crate::engine::deck_cmd(&ui.app, 0, D::LoopIn);
+    assert!(ui.wait_until(5.0, |u| u.has("wave.loop-in1")), "new in marker");
+    crate::engine::deck_cmd(&ui.app, 0, D::Reloop);
+    assert!(ui.wait_until(5.0, |u| !u.has("wave.loop-in1")), "RELOOP/EXIT cancels it");
+    assert!(!deck_views(&ui)[0].loop_in_set);
+}
+
 /// The bar counter is large, says what it counts, and a click picks the
 /// next mode (stored like the preference).
 #[test]

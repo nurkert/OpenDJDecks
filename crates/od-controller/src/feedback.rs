@@ -1,6 +1,6 @@
 //! State the application pushes to a controller (LEDs, meters, pad colours).
 
-use crate::action::{CrossfaderSide, PadMode, ParamTarget};
+use crate::action::{CrossfaderSide, PadMode, ParamTarget, StemPart};
 use od_core::CueColor;
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +37,46 @@ pub enum DeckElement {
     JogIndicator,
     /// The deck is the active one on its side (4-deck controllers).
     Selected,
+    /// A part of the track is heard: on while the part plays, off while it
+    /// is muted (lit = active, like the part buttons on the hardware).
+    StemActive(StemPart),
+    /// The jog display shows the remaining time (on) or the elapsed time.
+    TimeRemaining,
+    // Values (`FeedbackValue::Number`) for jog displays, scaled by the
+    // application; the mapping only says where they go.
+    /// Effective BPM × 10 (128.0 BPM = 1280), 0 without a track.
+    Bpm,
+    /// Minutes of the shown time (elapsed or remaining), 0..=99.
+    TimeMinutes,
+    /// Seconds of the shown time, 0..=59.
+    TimeSeconds,
+    /// Playhead on a turning platter, 0..=359 degrees (one turn per 1.8 s).
+    PositionAngle,
+    /// The main cue point on the same platter, 0..=359 degrees; off (the
+    /// output's `off` value) while there is none.
+    CueAngle,
+    /// Track key, each major key followed by its relative minor in
+    /// chromatic order: 1 = C, 2 = Am, 3 = Db, 4 = Bbm … 23 = B, 24 = Abm;
+    /// 0 = no key.
+    Key,
+    /// Key shift in semitones, -12..=12.
+    KeyShift,
+}
+
+impl DeckElement {
+    /// Elements whose feedback is a number, not a light.
+    pub fn is_value(self) -> bool {
+        matches!(
+            self,
+            DeckElement::Bpm
+                | DeckElement::TimeMinutes
+                | DeckElement::TimeSeconds
+                | DeckElement::PositionAngle
+                | DeckElement::CueAngle
+                | DeckElement::Key
+                | DeckElement::KeyShift
+        )
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -72,8 +112,13 @@ pub enum FeedbackTarget {
     },
     /// Channel FX selection button, by effect name.
     ChannelFx(String),
+    /// FX part button: on while the Channel FX acts on that part (every
+    /// part on while it acts on the whole channel).
+    ChannelFxPart(StemPart),
     SamplerCue,
     Recording,
+    /// Keys are shown in Camelot notation (on) or classic (off).
+    KeyCamelot,
 }
 
 /// LED rendering state.
@@ -104,6 +149,9 @@ pub enum FeedbackValue {
         color: Option<CueColor>,
         state: LedState,
     },
+    /// A number for `value` / `value14` outputs (see the value elements of
+    /// [`DeckElement`]).
+    Number(i32),
 }
 
 /// A message from the application to the controller layer.
@@ -142,6 +190,13 @@ impl ControlFeedback {
         ControlFeedback::Set {
             target,
             value: FeedbackValue::Level(level),
+        }
+    }
+
+    pub fn number(target: FeedbackTarget, n: i32) -> Self {
+        ControlFeedback::Set {
+            target,
+            value: FeedbackValue::Number(n),
         }
     }
 
