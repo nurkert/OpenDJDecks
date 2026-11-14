@@ -1049,6 +1049,11 @@ const DE: &[(&str, &str)] = &[
     ("Export library XML", "Bibliotheks-XML exportieren"),
     ("Import library XML", "Bibliotheks-XML importieren"),
     ("Export library archive", "Bibliotheksarchiv exportieren"),
+    ("Quit OpenDJDecks?", "OpenDJDecks beenden?"),
+    (
+        "A deck is playing right now. Quit anyway?",
+        "Gerade spielt ein Deck. Trotzdem beenden?",
+    ),
     (
         "Include the audio files? The archive then holds everything to move the library to another computer.",
         "Audiodateien einschließen? Dann enthält das Archiv alles, um die Bibliothek auf einen anderen Computer umzuziehen.",

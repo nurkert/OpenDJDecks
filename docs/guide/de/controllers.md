@@ -21,7 +21,7 @@ Welche Controller OpenDJDecks kennt und wie weit jeder bestätigt ist. Ein Model
 
 | Controller | Decks | Mapping | Erkannt an | Status |
 |---|---|---|---|---|
-| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 10 bestätigt, 461 teilweise, 13 ungetestet |
+| kompatibel mit DDJ-FLX10 | 4 | eingebaut | MIDI-Portname `DDJ-FLX10` | teilweise bestätigt: 10 bestätigt, 461 teilweise, 14 ungetestet |
 | kompatibel mit DDJ-FLX4 | 2 | eingebaut | MIDI-Portname `DDJ-FLX4` | nicht bestätigt: 0 bestätigt, 219 teilweise, 2 ungetestet |
 | Jeder Einsteiger-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-entry` (76 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
 | Jeder Battle-Controller mit zwei Decks | 2 | geführte Einrichtung, Vorlage `two-deck-battle` (74 Bedienelemente) | der Port des eingerichteten Geräts | nicht bestätigt: deine eigene Aufnahme, kein anderes Gerät |
@@ -94,7 +94,7 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 
 | Modell | Bedienelemente | Bestätigt | Teilweise | Ungetestet |
 |---|---|---|---|---|
-| DDJ-FLX10 | 484 | 10 | 461 | 13 |
+| DDJ-FLX10 | 485 | 10 | 461 | 14 |
 | DDJ-FLX4 | 221 | 0 | 219 | 2 |
 
 ### DDJ-FLX10
@@ -189,7 +189,7 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 | Headphone mix | Eingabe | teilweise |
 | Headphone level | Eingabe | teilweise |
 | Headphone cue | Eingabe | bestätigt |
-| Headphone cue (shift) | Eingabe | teilweise |
+| Headphone cue (shift): part iso | Eingabe | teilweise |
 | Master cue | Eingabe | teilweise |
 | Master cue (shift) | Eingabe | teilweise |
 | Crossfader assign A | Eingabe | teilweise |
@@ -569,6 +569,7 @@ Einige Elemente des DDJ-FLX10 sind an einem Gerät bestätigt: Browsen und Laden
 | mixer vu | Anzeige | teilweise |
 | deck loaded | Anzeige | teilweise |
 | deck position angle | Anzeige | teilweise |
+| deck speed | Anzeige | ungetestet |
 | deck bpm | Anzeige | teilweise |
 | deck cue angle | Anzeige | teilweise |
 | deck time minutes | Anzeige | teilweise |

@@ -365,11 +365,18 @@ export component Sidebar inherits Rectangle {
     function reveal(y: length) {
         tree.content-y = -max(0px, min(y, tree.content-height - tree.height));
     }
-    // A source opened elsewhere (controller, menu, view switch) scrolls into
-    // view when the part from `y` to `end` is not fully shown; selecting in
-    // the visible tree never jumps.
+    // A source selected elsewhere (controller, menu, view switch) scrolls
+    // into view by no more than needed: above the pane it lands at the top
+    // edge, below it at the bottom edge (one encoder step = one row). A part
+    // taller than the pane shows its top; selecting in the visible tree never
+    // moves it.
     function show(y: length, end: length) {
-        if (y < -tree.content-y || end > -tree.content-y + tree.height) { root.reveal(y); }
+        let top = -tree.content-y;
+        if (y < top) {
+            tree.content-y = -max(0px, y);
+        } else if (end > top + tree.height) {
+            tree.content-y = -max(0px, min(min(y, end - tree.height), tree.content-height - tree.height));
+        }
     }
     // A row selected anywhere (the encoder, the menu) at window position
     // `top` and `h` high comes into view; rows hidden by a filter do not move

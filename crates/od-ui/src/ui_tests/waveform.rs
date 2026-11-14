@@ -17,13 +17,19 @@ fn loop_shows_on_the_waveform() {
     let ui = Ui::open((1440, 900));
     perform_with_track(&ui);
     assert!(!ui.has("wave.loop1"), "no loop yet");
+    // Playing: with quantize the loop may start on the next beat, which the
+    // playhead reaches at once.
+    crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::Play);
     crate::engine::deck_cmd(&ui.app, 0, od_engine::DeckCommand::AutoLoop { beats: 4.0 });
     assert!(ui.wait_until(5.0, |u| u.has("wave.loop1")), "loop band shown");
-    let band = Rect::of(&ui.get("wave.loop1"));
+    let around = |u: &Ui| {
+        let band = Rect::of(&u.get("wave.loop1"));
+        let head = Rect::of(&u.get("wave.playhead"));
+        band.w > 10.0 && band.x <= head.x + 1.0 && band.right() >= head.x
+    };
+    assert!(ui.wait_until(5.0, around), "around the playhead: {:?}", Rect::of(&ui.get("wave.loop1")));
     let lane = Rect::of(&ui.get("wave.lane1"));
-    let head = Rect::of(&ui.get("wave.playhead"));
-    assert!(lane.contains(&band, 1.0), "inside the lane");
-    assert!(band.w > 10.0 && band.x <= head.x + 1.0 && band.right() >= head.x, "around the playhead: {band:?}");
+    assert!(lane.contains(&Rect::of(&ui.get("wave.loop1")), 1.0), "inside the lane");
 }
 
 /// LOOP IN alone marks its point on the lane (an IN line) until LOOP OUT

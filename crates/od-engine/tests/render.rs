@@ -143,6 +143,79 @@ fn manual_loop_in_out_and_reloop() {
     assert!((decode_pos(out[0]) - li).abs() < 1e-3);
 }
 
+/// With quantize LOOP OUT closes a whole number of beats after the in
+/// point (at least one) and an auto loop starts on the nearest beat; a roll
+/// starts on the last beat passed. Without quantize both sit exactly at the
+/// playhead.
+#[test]
+fn quantized_loops_follow_the_grid() {
+    let mut rig = Rig::new(2);
+    rig.deck(0, DeckCommand::Load(ramp_track(1, 20.0, 120.0)));
+    let range = |rig: &mut Rig| {
+        let ls = rig.state().decks[0].loop_state;
+        (ls.start.unwrap(), ls.end.unwrap())
+    };
+    let near = |a: f64, b: f64| (a - b).abs() < 1e-6;
+    // Beats every 0.5 s. IN at 1.1 s snaps to 1.0; OUT soon after gives one beat.
+    rig.deck(0, DeckCommand::Seek { seconds: 1.1 });
+    rig.deck(0, DeckCommand::LoopIn);
+    rig.deck(0, DeckCommand::Play);
+    rig.render(20);
+    rig.deck(0, DeckCommand::LoopOut);
+    rig.render(1);
+    let (s, e) = range(&mut rig);
+    assert!(near(s, 1.0) && near(e, 1.5), "{s}..{e}");
+    // IN rounded forward past the playhead (1.3 s -> 1.5 s): still a loop.
+    rig.deck(0, DeckCommand::LoopExit);
+    rig.deck(0, DeckCommand::Seek { seconds: 1.3 });
+    rig.deck(0, DeckCommand::LoopIn);
+    rig.render(10);
+    rig.deck(0, DeckCommand::LoopOut);
+    rig.render(1);
+    let (s, e) = range(&mut rig);
+    assert!(near(s, 1.5) && near(e, 2.0), "{s}..{e}");
+    // OUT 1.1 s after an in point on 1.0: rounds to two beats.
+    rig.deck(0, DeckCommand::LoopExit);
+    rig.deck(0, DeckCommand::Seek { seconds: 1.0 });
+    rig.deck(0, DeckCommand::LoopIn);
+    rig.deck(0, DeckCommand::Seek { seconds: 2.1 });
+    rig.deck(0, DeckCommand::LoopOut);
+    rig.render(1);
+    let (s, e) = range(&mut rig);
+    assert!(near(s, 1.0) && near(e, 2.0), "{s}..{e}");
+    // Auto loop just before a beat starts on it; a roll on the beat passed.
+    rig.deck(0, DeckCommand::LoopExit);
+    rig.deck(0, DeckCommand::Pause);
+    rig.deck(0, DeckCommand::Seek { seconds: 1.48 });
+    rig.deck(0, DeckCommand::AutoLoop { beats: 4.0 });
+    rig.render(1);
+    let (s, e) = range(&mut rig);
+    assert!(near(s, 1.5) && near(e, 3.5), "{s}..{e}");
+    rig.deck(0, DeckCommand::LoopExit);
+    rig.deck(0, DeckCommand::Seek { seconds: 1.48 });
+    rig.deck(0, DeckCommand::LoopRoll { beats: 0.25, on: true });
+    rig.render(1);
+    let (s, _) = range(&mut rig);
+    assert!(near(s, 1.375), "{s}");
+    rig.deck(0, DeckCommand::LoopRoll { beats: 0.25, on: false });
+    // No quantize: exactly at the playhead.
+    rig.send(Command::SetQuantize(false));
+    rig.deck(0, DeckCommand::LoopExit);
+    rig.deck(0, DeckCommand::Seek { seconds: 1.37 });
+    rig.deck(0, DeckCommand::AutoLoop { beats: 4.0 });
+    rig.render(1);
+    let (s, e) = range(&mut rig);
+    assert!(near(s, 1.37) && near(e, 3.37), "{s}..{e}");
+    rig.deck(0, DeckCommand::LoopExit);
+    rig.deck(0, DeckCommand::Seek { seconds: 1.1 });
+    rig.deck(0, DeckCommand::LoopIn);
+    rig.deck(0, DeckCommand::Seek { seconds: 1.73 });
+    rig.deck(0, DeckCommand::LoopOut);
+    rig.render(1);
+    let (s, e) = range(&mut rig);
+    assert!(near(s, 1.1) && near(e, 1.73), "{s}..{e}");
+}
+
 /// LOOP IN alone shows as a pending in point until LOOP OUT closes the
 /// loop; exit (or RELOOP/EXIT) cancels a pending one.
 #[test]

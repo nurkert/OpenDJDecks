@@ -1426,3 +1426,22 @@ fn four_beat_exit_leaves_a_running_loop() {
     let a = feed(&mut s, &[[0x91, 0x4D, 0x7F], [0x91, 0x4D, 0x00]]);
     assert_eq!(a, vec![deck(2, DeckAction::AutoLoopOrExit { beats: 4.0 })]);
 }
+
+/// SHIFT + headphone CUE turns part isolation on for that channel, as on
+/// the unit: the EQ knobs then set the parts.
+#[test]
+fn flx10_shift_cue_toggles_part_iso() {
+    let mut s = flx10();
+    let a = feed(&mut s, &[[0x91, 0x39, 0x7F], [0x91, 0x39, 0x00]]);
+    let parts: Vec<_> = a
+        .iter()
+        .filter(|a| !matches!(a, ControlAction::Ignored))
+        .collect();
+    assert_eq!(
+        parts,
+        vec![&ControlAction::Mixer {
+            channel: 2,
+            action: MixerAction::PartsToggle
+        }]
+    );
+}

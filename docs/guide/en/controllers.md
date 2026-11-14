@@ -21,7 +21,7 @@ Which controllers OpenDJDecks knows and how far each is confirmed. A model count
 
 | Controller | Decks | Mapping | Recognised by | Status |
 |---|---|---|---|---|
-| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 10 verified, 461 partial, 13 untested |
+| compatible with DDJ-FLX10 | 4 | built in | MIDI port name `DDJ-FLX10` | partly confirmed: 10 verified, 461 partial, 14 untested |
 | compatible with DDJ-FLX4 | 2 | built in | MIDI port name `DDJ-FLX4` | not confirmed: 0 verified, 219 partial, 2 untested |
 | Any two-deck entry-level controller | 2 | guided setup, template `two-deck-entry` (76 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
 | Any two-deck battle-style controller | 2 | guided setup, template `two-deck-battle` (74 controls) | the port of the unit you set up | not confirmed: your own capture, nobody else's unit |
@@ -94,7 +94,7 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 
 | Model | Controls | Verified | Partial | Untested |
 |---|---|---|---|---|
-| DDJ-FLX10 | 484 | 10 | 461 | 13 |
+| DDJ-FLX10 | 485 | 10 | 461 | 14 |
 | DDJ-FLX4 | 221 | 0 | 219 | 2 |
 
 ### DDJ-FLX10
@@ -189,7 +189,7 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 | Headphone mix | input | partial |
 | Headphone level | input | partial |
 | Headphone cue | input | verified |
-| Headphone cue (shift) | input | partial |
+| Headphone cue (shift): part iso | input | partial |
 | Master cue | input | partial |
 | Master cue (shift) | input | partial |
 | Crossfader assign A | input | partial |
@@ -569,6 +569,7 @@ A few DDJ-FLX10 controls are verified on one unit: browsing and loading, PLAY, h
 | mixer vu | light | partial |
 | deck loaded | light | partial |
 | deck position angle | light | partial |
+| deck speed | light | untested |
 | deck bpm | light | partial |
 | deck cue angle | light | partial |
 | deck time minutes | light | partial |

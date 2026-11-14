@@ -338,6 +338,39 @@ pub(crate) fn toggle_auto_fader(app: &App) {
 
 /// Kill of EQ band `band` (0 low, 1 mid, 2 high) on channel `c`
 /// (0-based) on or off.
+/// An EQ knob of channel `c` (0-based), `v` -1..=1: the band, or with STEM
+/// on the band's part level.
+pub(crate) fn set_eq(app: &App, c: usize, band: usize, v: f32) {
+    engine::ensure_engine(app);
+    let c = c.min(decks::DECKS - 1);
+    let band = band.min(2);
+    if app.mixer.parts.get()[c] {
+        engine::deck_cmd(
+            app,
+            c,
+            DeckCommand::SetStemLevel {
+                stem: PART_BANDS[band],
+                level: knob_to_part(v),
+            },
+        );
+    } else {
+        engine::send(app, Command::Channel(c, ChannelCommand::SetEq { band, value: v }));
+    }
+}
+
+/// STEM of channel `c` (0-based) on or off: the EQ knobs and kill keys
+/// work on the parts (drums, inst, vocals) instead of the bands.
+pub(crate) fn toggle_parts(app: &App, c: usize) {
+    let i = c.min(decks::DECKS - 1);
+    let mut p = app.mixer.parts.get();
+    p[i] = !p[i];
+    app.mixer.parts.set(p);
+    // STEM on a deck without parts: the switch asks for them.
+    if p[i] && !engine::snapshot(app).is_some_and(|s| s.decks[i].stems_available) {
+        crate::stems_model::part_pressed(app, i);
+    }
+}
+
 pub(crate) fn toggle_kill(app: &App, c: usize, band: usize) {
     engine::ensure_engine(app);
     let c = c.min(decks::DECKS - 1);
@@ -529,47 +562,17 @@ pub(crate) fn wire(app: &Rc<App>) {
         ChannelCommand::SetTrim(knob_to_trim(v))
     )));
     ui.on_mixer_eq(handler!(app, |a, c: i32, band: i32, v: f32| {
-        let i = (c as usize).saturating_sub(1).min(decks::DECKS - 1);
-        if a.mixer.parts.get()[i] {
-            engine::ensure_engine(&a);
-            let stem = PART_BANDS[(band as usize).min(2)];
-            engine::deck_cmd(
-                &a,
-                i,
-                DeckCommand::SetStemLevel {
-                    stem,
-                    level: knob_to_part(v),
-                },
-            );
-        } else {
-            ch(
-                &a,
-                c,
-                ChannelCommand::SetEq {
-                    band: band as usize,
-                    value: v,
-                },
-            )
-        }
+        set_eq(&a, (c as usize).saturating_sub(1), band as usize, v)
     }));
     ui.global::<crate::MixerParts>()
         .on_toggle_auto_fader(handler!(app, |a| toggle_auto_fader(&a)));
     ui.global::<crate::MixerParts>()
         .on_toggle_xf(handler!(app, |a| toggle_crossfader(&a)));
     ui.global::<crate::MixerParts>()
-        .on_toggle(handler!(app, |a, c: i32| {
-            let i = (c as usize).saturating_sub(1).min(decks::DECKS - 1);
-            let mut p = a.mixer.parts.get();
-            p[i] = !p[i];
-            a.mixer.parts.set(p);
-            // STEM on a deck without parts: the switch asks for them.
-            if p[i]
-                && !engine::snapshot(&a)
-                    .is_some_and(|s| s.decks[i].stems_available)
-            {
-                crate::stems_model::part_pressed(&a, i);
-            }
-        }));
+        .on_toggle(handler!(app, |a, c: i32| toggle_parts(
+            &a,
+            (c as usize).saturating_sub(1)
+        )));
     ui.on_mixer_channel_fx(handler!(app, |a, c: i32, v: f32| ch(
         &a,
         c,

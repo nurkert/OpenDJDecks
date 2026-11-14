@@ -882,6 +882,7 @@ pub fn parse_target(
             "selected" => DeckElement::Selected,
             "time_remaining" => DeckElement::TimeRemaining,
             "bpm" => DeckElement::Bpm,
+            "speed" => DeckElement::Speed,
             "time_minutes" => DeckElement::TimeMinutes,
             "time_seconds" => DeckElement::TimeSeconds,
             "position_angle" => DeckElement::PositionAngle,

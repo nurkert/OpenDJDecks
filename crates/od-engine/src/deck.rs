@@ -617,15 +617,38 @@ impl Deck {
         self.update_slip(was);
     }
 
+    /// Out point for LOOP OUT. With quantize the loop is a whole number of
+    /// beats from the in point (at least one, also when the in point was
+    /// rounded forward past the playhead); without it the out sits exactly at
+    /// the playhead.
+    fn loop_out_at(&self, i: f64, quantize: bool) -> f64 {
+        if quantize
+            && self.has_grid()
+            && let (Some(bi), Some(bp)) = (self.beat_at(i), self.beat_at(self.pos))
+            && bp >= bi - 0.5
+            && let Some(f) = self.frames_of_beat(bi + (bp - bi).round().max(1.0))
+        {
+            return f;
+        }
+        self.pos
+    }
+
     /// Start/end frames of an auto loop of `beats` beats at the playhead.
-    fn auto_loop_range(&self, beats: f64, quantize: bool) -> (f64, f64) {
+    /// With quantize an auto loop starts on the nearest beat (or loop-size
+    /// unit below one beat), a roll (`nearest` false) on the last one passed
+    /// so it starts at once.
+    fn auto_loop_range(&self, beats: f64, quantize: bool, nearest: bool) -> (f64, f64) {
         let beats = beats.clamp(1.0 / 32.0, 512.0);
         if self.has_grid()
             && let Some(cur) = self.beat_at(self.pos)
         {
             let start_beat = if quantize {
                 let unit = beats.min(1.0);
-                (cur / unit + 1e-9).floor() * unit
+                if nearest {
+                    (cur / unit).round() * unit
+                } else {
+                    (cur / unit + 1e-9).floor() * unit
+                }
             } else {
                 cur
             };
@@ -877,10 +900,7 @@ impl Deck {
             }
             DeckCommand::LoopOut => {
                 if let Some(i) = self.loop_in {
-                    let mut o = self.snap(self.pos, ctx.quantize);
-                    if o <= i + 1.0 {
-                        o = self.pos;
-                    }
+                    let o = self.loop_out_at(i, ctx.quantize);
                     if o > i + 1.0 {
                         self.set_loop(i, o, None);
                     }
@@ -907,7 +927,7 @@ impl Deck {
                 if self.loop_active && self.loop_beats == Some(beats) && !self.roll {
                     self.exit_loop();
                 } else {
-                    let (s, e) = self.auto_loop_range(beats, ctx.quantize);
+                    let (s, e) = self.auto_loop_range(beats, ctx.quantize, true);
                     self.set_loop(s, e, Some(beats.clamp(1.0 / 32.0, 512.0)));
                 }
             }
@@ -1252,7 +1272,7 @@ impl Deck {
                 self.slip_diverged = true;
             }
             self.roll = true;
-            let (s, e) = self.auto_loop_range(beats, ctx.quantize);
+            let (s, e) = self.auto_loop_range(beats, ctx.quantize, false);
             self.loop_in = Some(s);
             self.loop_out = Some(e);
             self.loop_beats = Some(beats);

@@ -210,6 +210,7 @@ pub const ACTION_NAMES: &[&str] = &[
     "mixer.channel_fx",
     "mixer.fader",
     "mixer.cue",
+    "mixer.parts",
     "mixer.crossfader_assign",
     "crossfader",
     "master_level",
@@ -557,6 +558,13 @@ pub fn parse_action(name: &str, args: &Table) -> Result<ActionTemplate, MappingE
             on_press(|d| ControlAction::Mixer {
                 channel: d.unwrap_or(0),
                 action: MixerAction::CueToggle,
+            }),
+        ),
+        "mixer.parts" => (
+            Button,
+            on_press(|d| ControlAction::Mixer {
+                channel: d.unwrap_or(0),
+                action: MixerAction::PartsToggle,
             }),
         ),
         "mixer.crossfader_assign" => {
