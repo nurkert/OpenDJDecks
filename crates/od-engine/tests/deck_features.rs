@@ -602,3 +602,74 @@ fn set_loop_restores_a_loop_as_it_was() {
     assert_eq!(st.loop_state.start, Some(1.0));
     assert_eq!(st.loop_state.end, Some(2.0));
 }
+
+/// With keylock the stretcher's feed runs ahead of the playhead and wraps
+/// in the loop first: leaving or doubling the loop must not leave the audio
+/// a loop length behind the playhead (and the waveform).
+#[test]
+fn keylock_audio_follows_the_playhead_after_a_loop() {
+    if !keylock::Stretcher::AVAILABLE {
+        return;
+    }
+    // 400 Hz up to 2.5 s, 700 Hz up to 3.0 s, 1000 Hz after.
+    let n = 5 * SR as usize;
+    let s = (0..n)
+        .flat_map(|i| {
+            let t = i as f64 / SR as f64;
+            let f = if t < 2.5 {
+                400.0
+            } else if t < 3.0 {
+                700.0
+            } else {
+                1000.0
+            };
+            let v = (std::f64::consts::TAU * f * t).sin() as f32 * 0.5;
+            [v, v]
+        })
+        .collect();
+    let track = track_from(1, s, 120.0, 0.0);
+    // (command near the loop end, playhead to listen at, expected tone)
+    for (name, cmd, at, want) in [
+        ("exit", DeckCommand::LoopExit, 3.4, 1000.0),
+        ("double", DeckCommand::LoopDouble, 2.8, 700.0),
+    ] {
+        let mut rig = Rig::new(2);
+        rig.deck(0, DeckCommand::Load(track.clone()));
+        rig.deck(0, DeckCommand::SetTempoRange(TempoRange::Sixteen));
+        rig.deck(0, DeckCommand::SetTempoFader(0.5)); // +8 %
+        rig.deck(0, DeckCommand::SetKeylock(true));
+        rig.deck(0, DeckCommand::Play);
+        while rig.state().decks[0].position < 2.1 {
+            rig.render(1);
+        }
+        rig.deck(
+            0,
+            DeckCommand::SetLoop {
+                start: 2.0,
+                end: 2.5,
+                active: true,
+            },
+        );
+        // A few passes, then stop just before the loop end: the feed has
+        // wrapped back to the loop start already.
+        rig.render(1500);
+        while rig.state().decks[0].position < 2.45 {
+            rig.render(1);
+        }
+        rig.deck(0, cmd);
+        while rig.state().decks[0].position < at {
+            rig.render(1);
+        }
+        let out = rig.render(20);
+        let level = |f| tone_level(&out, f);
+        let others = [400.0, 700.0, 1000.0].into_iter().filter(|&f| f != want);
+        for f in others {
+            assert!(
+                level(want) > 4.0 * level(f),
+                "{name}: {want} Hz {:.3} vs {f} Hz {:.3}",
+                level(want),
+                level(f)
+            );
+        }
+    }
+}
