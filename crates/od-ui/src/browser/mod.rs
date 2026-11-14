@@ -92,6 +92,9 @@ pub(crate) struct BrowserState {
     pub history_year: Option<String>,
     /// The controller's browse encoder works in the tree (else the list).
     pub focus_tree: bool,
+    /// In the lists column: the encoder stands on this source of the rail
+    /// at its left edge (one level out from the tree).
+    pub focus_rail: Option<usize>,
     /// AUTO SORT: the classified collection.
     pub auto: auto::AutoState,
     /// [63] The list before the search, folded for it: kept while only the
@@ -165,6 +168,7 @@ impl Default for BrowserState {
             history_year: None,
             tree_filter: String::new(),
             focus_tree: false,
+            focus_rail: None,
             auto: auto::AutoState::default(),
             search_base: None,
             played_tonight: HashSet::new(),

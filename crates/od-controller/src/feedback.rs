@@ -1,6 +1,6 @@
 //! State the application pushes to a controller (LEDs, meters, pad colours).
 
-use crate::action::{CrossfaderSide, PadMode, ParamTarget};
+use crate::action::{CrossfaderSide, PadMode, ParamTarget, StemPart};
 use od_core::CueColor;
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +37,9 @@ pub enum DeckElement {
     JogIndicator,
     /// The deck is the active one on its side (4-deck controllers).
     Selected,
+    /// A part of the track is heard: on while the part plays, off while it
+    /// is muted (lit = active, like the part buttons on the hardware).
+    StemActive(StemPart),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -72,6 +75,9 @@ pub enum FeedbackTarget {
     },
     /// Channel FX selection button, by effect name.
     ChannelFx(String),
+    /// FX part button: on while the Channel FX acts on that part (every
+    /// part on while it acts on the whole channel).
+    ChannelFxPart(StemPart),
     SamplerCue,
     Recording,
 }

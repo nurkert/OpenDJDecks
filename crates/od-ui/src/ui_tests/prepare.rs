@@ -693,17 +693,106 @@ fn controller_reaches_every_list_and_goes_in_and_out() {
         go(one.clone());
     }
     assert_eq!(ui.app.ui.get_section(), "recordings", "the encoder reaches the recordings");
-    // A track picked with the mouse: LOAD loads it, not into the lists.
+    // BACK on the top level: on to the rail, at the recordings' source.
     go(B::Back);
-    while ui.app.ui.get_section() != "library" || ui.app.ui.get_node_kind() != "all" {
-        go(B::Rotate {
-            delta: -1,
-            shifted: false,
-        });
-    }
+    assert_eq!(ui.app.ui.get_browse_focus(), "rail");
+    assert_eq!(ui.value("browser.rail.recordings"), "controller");
+    // A track picked with the mouse: LOAD loads it, not into the lists.
+    go(B::Rotate {
+        delta: -9,
+        shifted: false,
+    });
+    load(1);
+    assert_eq!(ui.app.ui.get_node_kind(), "all", "LOAD on ALL opens all tracks");
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
     ui.app.ui.invoke_row_clicked(1, false, false);
     ui.pump(100);
     assert_eq!(ui.app.ui.get_browse_focus(), "list");
+}
+
+/// [H1] On the owner's DDJ-FLX10 the encoder could not go all the way left:
+/// BACK stopped at the top level of the lists. Now BACK goes out level by
+/// level from the tracks to the rail of sources at the column's left edge
+/// (a folded column unfolds), turning there steps through every source
+/// (ALL to TAG LIST) and a press or LOAD goes in at the source's first
+/// entry; in the lists turning reaches All tracks and Similar tracks.
+#[test]
+fn controller_back_reaches_the_rail_of_sources() {
+    use od_controller::{BrowseAction as B, ControlAction, DeckAction};
+    let fx = Fixture::new();
+    let (folder, inner) = {
+        let mut lib = fx.lib();
+        let f = lib
+            .create_node(None, od_library::NodeKind::Folder, "Crates")
+            .unwrap();
+        let p = lib
+            .create_node(Some(f), od_library::NodeKind::Playlist, "Inner")
+            .unwrap();
+        (f.0 as i32, p.0 as i32)
+    };
+    let ui = Ui::start(fx, (1440, 900), false);
+    let go = |a: B| {
+        crate::browser::navigate::controller(&ui.app, &a);
+        ui.pump(100);
+    };
+    let turn = |delta: i32| {
+        go(B::Rotate {
+            delta,
+            shifted: false,
+        })
+    };
+    // A list inside a folder is open, the lists are folded, the tracks
+    // have the encoder.
+    ui.app.ui.invoke_toggle_node(folder);
+    ui.app.ui.invoke_select_node(inner);
+    ui.app.ui.set_lists_collapsed(true);
+    ui.pump(100);
+    assert_eq!(ui.app.ui.get_browse_focus(), "list");
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
+    assert!(!ui.app.ui.get_lists_collapsed(), "the lists unfold");
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_selected_node(), folder, "up to the folder");
+    go(B::Back);
+    assert!(
+        !ui.app.ui.get_tree().iter().any(|r| r.id == inner),
+        "the open folder closes"
+    );
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_focus(), "rail", "on to the rail");
+    assert_eq!(ui.app.ui.get_browse_rail(), 1, "at the playlists' source");
+    assert_eq!(ui.value("browser.rail.playlists"), "controller");
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_focus(), "rail", "the rail is the left edge");
+    // Turning steps through every source, clamped at both ends.
+    turn(-5);
+    assert_eq!(ui.value("browser.rail.collection"), "controller");
+    turn(20);
+    assert_eq!(ui.app.ui.get_browse_rail(), 8);
+    assert_eq!(ui.value("browser.rail.tag-list"), "controller");
+    turn(-6);
+    assert_eq!(ui.value("browser.rail.similar"), "controller");
+    // LOAD goes in at the source's first entry.
+    crate::controller::handle_action(
+        &ui.app,
+        ControlAction::Deck {
+            deck: 1,
+            action: DeckAction::Load,
+        },
+    );
+    ui.pump(100);
+    assert_eq!(ui.app.ui.get_node_kind(), "similar");
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
+    assert_eq!(ui.value("browser.rail.similar"), "", "the rail mark goes");
+    // In the lists, turning reaches the first entry, All tracks.
+    turn(-20);
+    assert_eq!(ui.app.ui.get_node_kind(), "all");
+    // And back to the rail, a press on ALL opens all tracks.
+    go(B::Back);
+    assert_eq!(ui.app.ui.get_browse_rail(), 0);
+    go(B::Press { shifted: false });
+    assert_eq!(ui.app.ui.get_node_kind(), "all");
+    assert_eq!(ui.app.ui.get_browse_focus(), "tree");
 }
 
 

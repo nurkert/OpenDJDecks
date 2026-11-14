@@ -623,7 +623,7 @@ pub(crate) fn wire(app: &Rc<App>) {
         };
         let deck = {
             let d = a.decks.borrow();
-            decks::free_deck(d.deck_count, &playing, |i| d.loaded_id(i).is_some())
+            decks::free_deck(&d.shown(), &playing, |i| d.loaded_id(i).is_some())
         };
         decks::load_track(&a, deck, TrackId(id as i64), None);
     }));

@@ -403,17 +403,21 @@ channel = "deck"
 action = "deck.search"
 args = { forward = true }
 
+# CUE/LOOP CALL ◀ / ▶: halve or double a running loop, else call the
+# previous or next memory cue.
 [[input]]
 name = "Memory cue call back"
 note = 0x51
 channel = "deck"
-action = "deck.memory_cue_prev"
+action = "deck.loop_call"
+args = { forward = false }
 
 [[input]]
 name = "Memory cue call forward"
 note = 0x53
 channel = "deck"
-action = "deck.memory_cue_next"
+action = "deck.loop_call"
+args = { forward = true }
 
 [[input]]
 name = "Memory cue call back (shift)"
@@ -653,20 +657,21 @@ channel = "deck"
 action = "ignore"
 
 # ---------------------------------------------------------------- loops
+# LOOP IN・1/2X and LOOP OUT・2X send only their press and SHIFT notes [L].
+# As printed, a running loop halves (IN) or doubles (OUT); without one they
+# set the in and out points. SHIFT halves and doubles too.
 [[input]]
 name = "Loop in"
 note = 0x10
 channel = "deck"
-action = "deck.loop_in"
+action = "deck.loop_in_or_halve"
 
 [[input]]
 name = "Loop out"
 note = 0x11
 channel = "deck"
-action = "deck.loop_out"
+action = "deck.loop_out_or_double"
 
-# LOOP IN・1/2X and LOOP OUT・2X send only their press and SHIFT notes [L];
-# halve and double sit on the SHIFT notes (the list names no function).
 [[input]]
 name = "Loop in (shift)"
 note = 0x4C
@@ -1476,6 +1481,26 @@ target = "deck.reverse"
 note = 0x38
 channel = "deck"
 
+# The stem buttons light while their part is heard and go dark while it is
+# muted (MIDI-OUT 9n 0D/0E/0F, OFF=0x00 ON=0x7F) [L].
+[[output]]
+target = "deck.stem_active"
+note = 0x0D
+channel = "deck"
+args = { stem = "drums" }
+
+[[output]]
+target = "deck.stem_active"
+note = 0x0E
+channel = "deck"
+args = { stem = "vocals" }
+
+[[output]]
+target = "deck.stem_active"
+note = 0x0F
+channel = "deck"
+args = { stem = "inst" }
+
 [[output]]
 target = "deck.loop_in"
 note = 0x10
@@ -1863,6 +1888,39 @@ target = "channel_fx"
 note = 0x0D
 channel = 6
 args = { effect = "filter" }
+
+# FX PART SELECT [L] (MIDI-OUT 96 1B/1C/1D, with SHIFT 1E/1F/20): lit where
+# the Sound Color FX acts, all three while it is on the whole channel.
+[[output]]
+target = "channel_fx.part"
+note = 0x1B
+channel = 6
+args = { stem = "vocals" }
+[[output]]
+target = "channel_fx.part"
+note = 0x1C
+channel = 6
+args = { stem = "drums" }
+[[output]]
+target = "channel_fx.part"
+note = 0x1D
+channel = 6
+args = { stem = "inst" }
+[[output]]
+target = "channel_fx.part"
+note = 0x1E
+channel = 6
+args = { stem = "vocals" }
+[[output]]
+target = "channel_fx.part"
+note = 0x1F
+channel = 6
+args = { stem = "drums" }
+[[output]]
+target = "channel_fx.part"
+note = 0x20
+channel = 6
+args = { stem = "inst" }
 
 [[output]]
 target = "tempo_fx.on"

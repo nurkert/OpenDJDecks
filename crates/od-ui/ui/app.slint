@@ -256,8 +256,10 @@ export component AppWindow inherits Window {
     callback files-dropped(data-transfer, int);
     // A file drag hovers the window (native drops that carry no position).
     in-out property <bool> file-drag;
-    // Where a controller's browse encoder works: "tree" or "list".
+    // Where a controller's browse encoder works: "rail", "tree" or "list";
+    // in the rail, the source it stands on.
     in property <string> browse-focus: "list";
+    in property <int> browse-rail: -1;
     // Status band: summary of the open list (tracks, time, size).
     in property <string> list-summary;
     // Duplicates view: groups found.
@@ -1024,6 +1026,7 @@ export component AppWindow inherits Window {
                         node-dropped(s, t) => { root.node-dropped(s, t); }
                         node-kind: root.node-kind;
                         browse-focus: root.browse-focus == "tree";
+                        rail-focus: root.browse-focus == "rail" ? root.browse-rail : -1;
                         open-sampler => { root.menu-action("browser.source.sampler"); }
                     }
                     if !root.lists-yield && !root.lists-collapsed && !Theme.touch-mode: Splitter {

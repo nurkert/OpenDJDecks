@@ -2,7 +2,7 @@
 //!
 //! The schema is documented in `docs/controller-mappings.md`.
 
-use crate::action::{CrossfaderSide, PadMode};
+use crate::action::{CrossfaderSide, PadMode, StemPart};
 use crate::feedback::{DeckElement, FeedbackTarget, MixerElement};
 use crate::midi::{MidiAddr, MsgKind};
 use crate::templates::{ActionTemplate, Natural, parse_action};
@@ -841,6 +841,11 @@ pub fn parse_target(
             "shift" => DeckElement::Shift,
             "jog_indicator" => DeckElement::JogIndicator,
             "selected" => DeckElement::Selected,
+            "stem_active" => DeckElement::StemActive({
+                let st = s("stem")?;
+                StemPart::parse(&st)
+                    .ok_or_else(|| targ_err(name, &format!("unknown stem `{st}`")))?
+            }),
             "pad_mode" => DeckElement::PadMode(pad_mode()?),
             "pad" => DeckElement::Pad {
                 mode: pad_mode()?,
@@ -877,6 +882,10 @@ pub fn parse_target(
             unit: u("unit").unwrap_or(1),
         },
         "channel_fx" => FeedbackTarget::ChannelFx(s("effect")?),
+        "channel_fx.part" => FeedbackTarget::ChannelFxPart({
+            let st = s("stem")?;
+            StemPart::parse(&st).ok_or_else(|| targ_err(name, &format!("unknown stem `{st}`")))?
+        }),
         "sampler.cue" => FeedbackTarget::SamplerCue,
         "recording" => FeedbackTarget::Recording,
         _ => return Err(MappingError::UnknownTarget(name.into())),

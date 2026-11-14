@@ -246,6 +246,15 @@ pub enum DeckAction {
     },
     LoopHalve,
     LoopDouble,
+    /// LOOP IN・1/2X: halves a running loop, else sets the loop in point.
+    LoopInOrHalve,
+    /// LOOP OUT・2X: doubles a running loop, else sets the loop out point.
+    LoopOutOrDouble,
+    /// CUE/LOOP CALL ◀ / ▶: halves (`forward == false`) or doubles a
+    /// running loop, else calls the previous or next memory cue.
+    LoopCall {
+        forward: bool,
+    },
     ReloopExit,
     /// Saves the current (or last) loop as a hot loop on the first free pad.
     LoopCapture,

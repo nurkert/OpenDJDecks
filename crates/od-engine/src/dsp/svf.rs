@@ -39,6 +39,17 @@ impl Svf {
         self.a3 = self.g * self.a2;
     }
 
+    /// Like [`Svf::set`] with the prewarped `g = tan(pi * f / sr)` given,
+    /// for callers that share one `g` across stages.
+    #[inline]
+    pub fn set_g(&mut self, g: f32, q: f32) {
+        self.g = g;
+        self.k = 1.0 / q.max(0.05);
+        self.a1 = 1.0 / (1.0 + g * (g + self.k));
+        self.a2 = g * self.a1;
+        self.a3 = g * self.a2;
+    }
+
     #[inline]
     pub fn tick(&mut self, ch: usize, v0: f32) -> SvfOut {
         let v3 = v0 - self.ic2[ch];

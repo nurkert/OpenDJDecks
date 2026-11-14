@@ -1258,7 +1258,7 @@ pub(crate) fn project_controls(app: &App, state: Option<&od_engine::EngineState>
         );
     }
     ui.set_player_looping(l.active);
-    ui.set_player_loop_in_set(!l.active && l.start.is_some() && l.end.is_none());
+    ui.set_player_loop_in_set(l.pending_in().is_some());
     ui.set_player_quantize(state.map(|s| s.quantize).unwrap_or(true));
     let jl = jump_label(jump);
     if set(ui.get_player_jump_size(), &jl) {

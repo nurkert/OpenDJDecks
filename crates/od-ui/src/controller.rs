@@ -250,6 +250,8 @@ pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
             ..
         } => {
             app.controller.borrow_mut().name = Some(device.clone());
+            // A unit starts on the first deck of each side.
+            decks::reset_shown(app);
             // As many decks as the controller has, or as many as were last
             // chosen with it connected.
             decks::set_deck_count(app, decks::controller_deck_count(app, &device, deck_count as usize));
@@ -275,6 +277,7 @@ pub(crate) fn handle_event(app: &App, e: ControllerEvent) {
         }
         ControllerEvent::Disconnected { device, .. } => {
             app.status(format!("Controller disconnected: {device}"));
+            decks::reset_shown(app);
             let mut c = app.controller.borrow_mut();
             c.name = None;
             c.fader_unknown = [false; decks::DECKS];
@@ -465,6 +468,11 @@ fn stem_of(p: StemPart) -> Stem {
 }
 
 fn deck_action(app: &App, d: usize, action: DeckAction) {
+    // DECK 1/3 or 2/4 on a four-deck unit: the 2-deck view follows.
+    if matches!(action, DeckAction::DeckSelect) {
+        decks::show_on_side(app, d);
+        return;
+    }
     let Some(s) = engine::snapshot(app).map(|st| st.decks[d]) else {
         if matches!(action, DeckAction::Load) {
             if crate::browser::navigate::in_lists(app) {
@@ -607,6 +615,24 @@ fn deck_action(app: &App, d: usize, action: DeckAction) {
         }),
         DeckAction::LoopHalve => Some(DeckCommand::LoopHalve),
         DeckAction::LoopDouble => Some(DeckCommand::LoopDouble),
+        // LOOP IN・1/2X, LOOP OUT・2X and CUE/LOOP CALL ◀ / ▶: a running loop
+        // halves or doubles, otherwise they do their own job.
+        DeckAction::LoopInOrHalve => Some(if s.loop_state.active {
+            DeckCommand::LoopHalve
+        } else {
+            DeckCommand::LoopIn
+        }),
+        DeckAction::LoopOutOrDouble => Some(if s.loop_state.active {
+            DeckCommand::LoopDouble
+        } else {
+            DeckCommand::LoopOut
+        }),
+        DeckAction::LoopCall { forward } => Some(match (s.loop_state.active, forward) {
+            (true, false) => DeckCommand::LoopHalve,
+            (true, true) => DeckCommand::LoopDouble,
+            (false, false) => DeckCommand::MemoryCue(MemoryCueJump::Previous),
+            (false, true) => DeckCommand::MemoryCue(MemoryCueJump::Next),
+        }),
         DeckAction::ReloopExit => Some(if s.loop_state.active {
             DeckCommand::LoopExit
         } else {
@@ -717,6 +743,9 @@ pub(crate) fn feedback(app: &App) {
         ctrl.send_feedback(None, led(DeckElement::Censor, s.censor));
         ctrl.send_feedback(None, led(DeckElement::Reverse, s.reverse));
         ctrl.send_feedback(None, led(DeckElement::Vinyl, s.jog_mode == JogMode::Vinyl));
+        for part in [StemPart::Vocals, StemPart::Drums, StemPart::Bass, StemPart::Inst] {
+            ctrl.send_feedback(None, led(DeckElement::StemActive(part), stem_led(s, part)));
+        }
         for slot in 0..8u8 {
             ctrl.send_feedback(
                 None,
@@ -790,6 +819,17 @@ pub(crate) fn feedback(app: &App) {
             ControlFeedback::led(FeedbackTarget::ChannelFx(name.to_string()), name == channel_fx),
         );
     }
+    // Every channel's Channel FX goes on the same part (fx::toggle_channel_fx_part).
+    let fx_part = state.channels[0].channel_fx_part;
+    for part in [StemPart::Vocals, StemPart::Drums, StemPart::Bass, StemPart::Inst] {
+        ctrl.send_feedback(
+            None,
+            ControlFeedback::led(
+                FeedbackTarget::ChannelFxPart(part),
+                fx::channel_fx_part_led(fx_part, stem_of(part)),
+            ),
+        );
+    }
     ctrl.send_feedback(
         None,
         ControlFeedback::led(FeedbackTarget::SamplerCue, state.sampler_cue),
@@ -802,6 +842,13 @@ pub(crate) fn feedback(app: &App) {
         None,
         ControlFeedback::led(FeedbackTarget::Recording, recording),
     );
+}
+
+/// Stem button LED: lit while the part is heard (as a stem button press
+/// toggles it at half level), dark while muted or with no track. A track
+/// without stems plays whole, so every part shows lit.
+pub(crate) fn stem_led(s: &od_engine::DeckState, part: StemPart) -> bool {
+    s.track.is_some() && (!s.stems_available || s.stem_levels[stem_of(part).index()] >= 0.5)
 }
 
 /// Pad LED of a non-hot-cue mode: on while engaged, dim when it has
@@ -870,6 +917,26 @@ mod tests {
         assert_eq!(pad_led(true, true), LedState::On);
         assert_eq!(pad_led(true, false), LedState::Dim);
         assert_eq!(pad_led(false, false), LedState::Off);
+    }
+
+    #[test]
+    fn stem_leds_show_the_parts_heard() {
+        let mut s = od_engine::DeckState {
+            track: Some(od_core::TrackId(1)),
+            stems_available: true,
+            stem_levels: [1.0, 0.0, 0.4, 0.5],
+            ..Default::default()
+        };
+        assert!(stem_led(&s, StemPart::Vocals));
+        assert!(!stem_led(&s, StemPart::Drums));
+        assert!(!stem_led(&s, StemPart::Bass));
+        assert!(stem_led(&s, StemPart::Inst));
+        // Without stems the whole track plays.
+        s.stems_available = false;
+        assert!(stem_led(&s, StemPart::Drums));
+        // No track: all dark.
+        s.track = None;
+        assert!(!stem_led(&s, StemPart::Vocals));
     }
 
     #[test]

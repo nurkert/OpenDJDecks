@@ -897,6 +897,69 @@ fn flx10_part_isolator_drives_stem_levels() {
     assert!(a.iter().any(|x| matches!(x, ControlAction::Deck { deck: 2, action: DeckAction::StemLevel { stem: StemPart::Drums, level } } if *level >= 0.99)), "{a:?}");
 }
 
+/// The three stem buttons per deck light while their part is heard
+/// (MIDI-OUT 9n 0D/0E/0F, official MIDI message list).
+#[test]
+fn flx10_stem_buttons_show_which_parts_play() {
+    let mut s = flx10();
+    let t0 = Instant::now();
+    s.output_mut().set_epoch(t0);
+    s.connect_messages();
+    poll_all(&mut s, t0);
+    let t = |ms| t0 + Duration::from_millis(ms);
+    let stem = |deck, part, on| ControlFeedback::deck_led(deck, DeckElement::StemActive(part), on);
+    s.feedback(&stem(1, StemPart::Drums, true));
+    s.feedback(&stem(1, StemPart::Vocals, true));
+    s.feedback(&stem(2, StemPart::Inst, true));
+    let mut out = s.poll_output(t(1));
+    out.sort();
+    assert_eq!(
+        out,
+        vec![vec![0x90, 0x0D, 0x7F], vec![0x90, 0x0E, 0x7F], vec![0x91, 0x0F, 0x7F]]
+    );
+    // Muting the drums of deck 1 turns its button off.
+    s.feedback(&stem(1, StemPart::Drums, false));
+    assert_eq!(s.poll_output(t(2)), vec![vec![0x90, 0x0D, 0x00]]);
+}
+
+/// FX PART SELECT lights where the Sound Color FX acts (MIDI-OUT 96
+/// 1B/1C/1D, with SHIFT 1E/1F/20, official MIDI message list): all three on
+/// the whole channel, only the chosen part's otherwise. The SOUND COLOR FX
+/// buttons light the selected effect (96 00-05, with SHIFT 08-0D).
+#[test]
+fn flx10_fx_part_and_color_fx_buttons_show_the_software_state() {
+    let mut s = flx10();
+    let t0 = Instant::now();
+    s.output_mut().set_epoch(t0);
+    s.connect_messages();
+    poll_all(&mut s, t0);
+    let t = |ms| t0 + Duration::from_millis(ms);
+    let part = |p, on| ControlFeedback::led(FeedbackTarget::ChannelFxPart(p), on);
+    for p in [StemPart::Vocals, StemPart::Drums, StemPart::Inst] {
+        s.feedback(&part(p, true));
+    }
+    let mut out = s.poll_output(t(1));
+    out.sort();
+    let all: Vec<Vec<u8>> = (0x1B..=0x20).map(|n| vec![0x96, n, 0x7F]).collect();
+    assert_eq!(out, all);
+    // On the drums only: VOCAL and INST go dark.
+    s.feedback(&part(StemPart::Vocals, false));
+    s.feedback(&part(StemPart::Inst, false));
+    let mut out = s.poll_output(t(2));
+    out.sort();
+    assert_eq!(
+        out,
+        [0x1B, 0x1D, 0x1E, 0x20].map(|n| vec![0x96, n, 0x00]).to_vec()
+    );
+    // SOUND COLOR FX: PITCH selected lights PITCH alone.
+    for e in ["space", "dub_echo", "crush", "pitch", "noise", "filter"] {
+        s.feedback(&ControlFeedback::led(FeedbackTarget::ChannelFx(e.into()), e == "pitch"));
+    }
+    let mut out = s.poll_output(t(3));
+    out.sort();
+    assert_eq!(out, vec![vec![0x96, 0x03, 0x7F], vec![0x96, 0x0B, 0x7F]]);
+}
+
 /// The hardware status in the controllers guide is generated from the
 /// mapping files; regenerate it with
 /// `cargo run -p od-controller --example hardware_status -- --write`.
@@ -1271,6 +1334,29 @@ fn flx10_fx_part_buttons_pick_the_part() {
             ControlAction::ChannelFx(ChannelFxAction::Part(StemPart::Vocals)),
             ControlAction::ChannelFx(ChannelFxAction::Part(StemPart::Drums)),
             ControlAction::ChannelFx(ChannelFxAction::Part(StemPart::Inst)),
+        ]
+    );
+}
+
+/// [H1] LOOP IN・1/2X and LOOP OUT・2X on the DDJ-FLX10 (official list: 0x10,
+/// 0x11, SHIFT 0x4C, 0x4D) halve and double a running loop as printed, and
+/// CUE/LOOP CALL ◀ / ▶ (0x51, 0x53) do the same or call memory cues.
+#[test]
+fn flx10_loop_buttons_halve_and_double() {
+    let mut s = flx10();
+    let a = feed(
+        &mut s,
+        &[[0x90, 0x10, 0x7F], [0x90, 0x11, 0x7F], [0x90, 0x4C, 0x7F], [0x90, 0x4D, 0x7F], [0x91, 0x51, 0x7F], [0x91, 0x53, 0x7F]],
+    );
+    assert_eq!(
+        a,
+        vec![
+            deck(1, DeckAction::LoopInOrHalve),
+            deck(1, DeckAction::LoopOutOrDouble),
+            deck(1, DeckAction::LoopHalve),
+            deck(1, DeckAction::LoopDouble),
+            deck(2, DeckAction::LoopCall { forward: false }),
+            deck(2, DeckAction::LoopCall { forward: true }),
         ]
     );
 }

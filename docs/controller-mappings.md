@@ -181,6 +181,8 @@ release.
 | `deck.hot_cue_delete` | press | `slot` | |
 | `deck.memory_cue_set` / `_delete` / `_prev` / `_next` | press | | |
 | `deck.loop_in`, `deck.loop_out`, `deck.loop_halve`, `deck.loop_double`, `deck.reloop_exit` | press | | |
+| `deck.loop_in_or_halve`, `deck.loop_out_or_double` | press | | `LoopInOrHalve` / `LoopOutOrDouble`: a running loop halves / doubles, otherwise the loop in / out point is set |
+| `deck.loop_call` | press | `forward` (bool, default `true`) | `LoopCall { forward }`: a running loop halves (back) / doubles (forward), otherwise the previous / next memory cue is called |
 | `deck.auto_loop` | press | `beats` | `AutoLoop { beats }` |
 | `deck.loop_roll` | momentary | `beats` | `LoopRoll { beats, pressed }` |
 | `deck.loop_capture` | press | | `LoopCapture`: the loop just heard (a roll or a loop) becomes a hot loop on the first free pad of the bank, else a memory loop |
@@ -294,11 +296,13 @@ when its byte value differs from what was last sent.
 | `deck.jog_indicator` | level |
 | `deck.pad_mode` | `mode` |
 | `deck.pad` | `mode`, `index` |
+| `deck.stem_active` | `stem` = `vocals` / `drums` / `bass` / `inst`: on while that part of the track is heard, off while it is muted (a track without stems plays whole, so all parts show on) |
 | `mixer.cue`, `mixer.vu` (level) | |
 | `mixer.crossfader_assign` | `side` |
 | `master.vu_left`, `master.vu_right` (level), `master_cue` | |
 | `tempo_fx.on`, `tempo_fx.release` | `unit` (default 1) |
 | `channel_fx` | `effect` |
+| `channel_fx.part` | `stem` = `vocals` / `drums` / `bass` / `inst`: on while the Channel FX acts on that part; every part on while it acts on the whole channel |
 | `sampler.cue`, `recording` | |
 
 ## Device modules

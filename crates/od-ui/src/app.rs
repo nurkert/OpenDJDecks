@@ -65,7 +65,7 @@ pub struct App {
     pub(crate) worker_tx: Sender<WorkerEvent>,
     /// The Preferences window, created when first opened.
     pub(crate) prefs: RefCell<preferences::Prefs>,
-    /// Held keyboard actions (pitch bend): (action, deck).
+    /// Held keyboard actions (pitch bend): (action id, deck).
     pub(crate) held: RefCell<Vec<(String, usize)>>,
     /// Update check and install (SPEC §14.1).
     pub(crate) update: RefCell<update::UpdateRuntime>,

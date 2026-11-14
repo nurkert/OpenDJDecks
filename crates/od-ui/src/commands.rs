@@ -303,8 +303,9 @@ pub(crate) fn run(app: &Rc<App>, id: &str) {
             } else if let Some(l) = id.strip_prefix("player.hotcue.") {
                 ui.invoke_hot_cue(slot(l));
             } else if let Some(rest) = id.strip_prefix("browser.load.deck") {
-                if let Ok(n) = rest.parse::<i32>() {
-                    ui.invoke_deck_load(n);
+                if let Ok(n) = rest.parse::<usize>() {
+                    let d = app.decks.borrow().lane_deck(n);
+                    ui.invoke_deck_load(d as i32 + 1);
                 }
             } else if let Some(n) = id
                 .strip_prefix("sampler.slot")
@@ -373,12 +374,15 @@ fn end_fx_release(app: &App, id: &str) {
     crate::fx::release(app, u, kind, false);
 }
 
-/// Deck actions (1-based deck number).
+/// Deck actions (1-based deck number; in the 2-deck view decks 1 and 2 are
+/// the lanes, whichever decks they show).
 fn deck_action(app: &App, n: usize, action: &str) {
     use od_engine::{DeckCommand as D, MemoryCueJump};
     let ui = &app.ui;
-    let d = n as i32;
-    let i = n - 1;
+    let i = app.decks.borrow().lane_deck(n);
+    let d = i as i32 + 1;
+    // The key's own action id, to match its release.
+    let id = format!("deck{n}.{action}");
     let slot = |l: &str| {
         l.bytes()
             .next()
@@ -405,7 +409,7 @@ fn deck_action(app: &App, n: usize, action: &str) {
             let cmd = match action {
                 "start" => Some(D::Seek { seconds: 0.0 }),
                 "bend.up" | "bend.down" => {
-                    app.held.borrow_mut().push((action.to_string(), i));
+                    app.held.borrow_mut().push((id, i));
                     Some(D::SetPitchBend(if action == "bend.up" {
                         0.04
                     } else {
@@ -492,9 +496,9 @@ pub(crate) fn release(app: &App, text: &str) {
     let keymap_hits: Vec<String> = {
         let st = app.state.borrow();
         held.iter()
-            .filter(|(a, deck)| {
+            .filter(|(a, _)| {
                 st.keymap
-                    .bindings(&held_id(a, *deck))
+                    .bindings(a)
                     .iter()
                     .any(|c| c.key == chord.key)
             })
@@ -514,13 +518,4 @@ pub(crate) fn release(app: &App, text: &str) {
         }
     }
     *app.held.borrow_mut() = keep;
-}
-
-/// The action id of a held entry.
-fn held_id(action: &str, deck: usize) -> String {
-    if deck == NO_DECK {
-        action.to_string()
-    } else {
-        format!("deck{}.{action}", deck + 1)
-    }
 }

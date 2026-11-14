@@ -4083,6 +4083,10 @@ msgid "GRID"
 msgstr "GRID"
 
 msgctxt "WaveLane"
+msgid "IN"
+msgstr "IN"
+
+msgctxt "WaveLane"
 msgid "Edit beatgrid…"
 msgstr "Beatgrid bearbeiten…"
 
